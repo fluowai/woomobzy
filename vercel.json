@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "server/api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/admin",
+      "has": [
+        {
+          "type": "host",
+          "value": "app.imobisaas.com"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/texts/bulk",
+      "destination": "/server/api/texts/index.js?action=bulk"
+    },
+    {
+      "source": "/api/texts/seed",
+      "destination": "/server/api/texts/index.js?action=seed"
+    },
+    {
+      "source": "/api/texts/:key",
+      "destination": "/server/api/texts/index.js?key=:key"
+    },
+    {
+      "source": "/api/texts",
+      "destination": "/server/api/texts/index.js"
+    },
+    {
+      "source": "/api/evolution/chats",
+      "destination": "/server/api/evolution/index.js?path=chats"
+    },
+    {
+      "source": "/api/evolution/messages/send",
+      "destination": "/server/api/evolution/index.js?path=messages"
+    },
+    {
+      "source": "/api/evolution/messages/:remoteJid",
+      "destination": "/server/api/evolution/index.js?path=messages&remoteJid=:remoteJid"
+    },
+    {
+      "source": "/api/evolution/instances/:instanceName/connect",
+      "destination": "/server/api/evolution/index.js?path=instances&instanceName=:instanceName&action=connect"
+    },
+    {
+      "source": "/api/evolution/instances/:instanceName/logout",
+      "destination": "/server/api/evolution/index.js?path=instances&instanceName=:instanceName&action=logout"
+    },
+    {
+      "source": "/api/evolution/instances/:id",
+      "destination": "/server/api/evolution/index.js?path=instances&id=:id"
+    },
+    {
+      "source": "/api/evolution/instances",
+      "destination": "/server/api/evolution/index.js?path=instances"
+    },
+    {
+      "source": "/api/evolution/webhook",
+      "destination": "/server/api/evolution/index.js?path=webhook"
+    },
+    {
+      "source": "/api/tenant/current",
+      "destination": "/server/api/tenant/index.js"
+    },
+    {
+      "source": "/api/tenant/resolve",
+      "destination": "/server/api/tenant/index.js"
+    },
+    {
+      "source": "/api/public/landing-page",
+      "destination": "/server/api/public/index.js?path=landing-page"
+    },
+    {
+      "source": "/api/public/properties",
+      "destination": "/server/api/public/index.js?path=properties"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/server/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, x-tenant-id, x-tenant-name, x-tenant-subdomain, x-tenant-type"
+        }
+      ]
+    }
+  ]
+}

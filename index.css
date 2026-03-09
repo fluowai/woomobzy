@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #064e3b;
+  --color-primary-light: #065f46;
+  --color-primary-dark: #022c22;
+  --color-secondary: #451a03;
+  --color-secondary-light: #78350f;
+  --color-accent: #d4af37;
+  --color-accent-light: #fcd34d;
+  
+  --shadow-premium: 0 4px 20px -2px rgba(6, 78, 59, 0.1);
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-900);
+  }
+}
+
+@layer components {
+  .btn-premium {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  .btn-premium:hover {
+    background-color: var(--color-primary-light);
+  }
+
+  .btn-gold {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition-property: all;
+    background-color: var(--color-accent);
+    color: var(--color-secondary);
+    border: 1px solid var(--color-accent);
+  }
+
+  .card-rural {
+    background-color: white;
+    border: 1px solid var(--color-slate-200);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+}

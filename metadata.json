@@ -1,0 +1,7 @@
+{
+  "name": "ImobiSaaS - Real Estate CRM & Portal",
+  "description": "A comprehensive SaaS platform for real estate agencies and brokers, featuring a public property portal, robust CRM, and AI-powered management tools.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

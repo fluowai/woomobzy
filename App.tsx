@@ -132,16 +132,14 @@ const AppContent: React.FC = () => {
       {/* Setup */}
       {/* <Route path="/admin/setup" element={<ProtectedRoute><Layout><SetupWizard /></Layout></ProtectedRoute>} /> */}
 
-      {/* Super Admin Routes (Deprecated - Moved to Settings) */}
-      {/* 
+      {/* Super Admin Routes */}
       <Route path="/superadmin" element={<ProtectedRoute><SuperAdminLayout /></ProtectedRoute>}>
           <Route index element={<SuperAdminDashboard />} />
           <Route path="tenants" element={<TenantManager />} />
           <Route path="domains" element={<DomainManager />} />
           <Route path="plans" element={<PlanManager />} />
           <Route path="settings" element={<GlobalSettings />} />
-      </Route> 
-      */}
+      </Route>
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

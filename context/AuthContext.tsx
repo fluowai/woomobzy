@@ -8,6 +8,13 @@ interface UserProfile {
   full_name: string;
   role: 'admin' | 'broker' | 'superadmin';
   avatar_url?: string;
+  organization_id?: string;
+  organization?: {
+    id: string;
+    name: string;
+    slug: string;
+    niche: 'rural' | 'traditional' | 'hybrid';
+  };
   created_at: string;
 }
 
@@ -58,7 +65,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          organization:organizations (
+            id,
+            name,
+            slug,
+            niche
+          )
+        `)
         .eq('id', userId)
         .single();
 

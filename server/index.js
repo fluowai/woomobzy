@@ -903,6 +903,7 @@ app.post('/api/onboarding', async (req, res) => {
                 secondary_color: secondaryColor || '#d4af37',
                 logo_url: logoUrl || null,
                 plan: plan || 'free',
+                niche: profileType || 'traditional',
                 status: 'active',
             })
             .select()

@@ -19,7 +19,8 @@ import {
   Layout,
   DollarSign,
   Activity,
-  BarChart3
+  BarChart3,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -47,6 +48,7 @@ const SuperAdminLayout: React.FC = () => {
     { icon: ScrollText, label: 'Audit Log', path: '/superadmin/audit-log' },
     { icon: Layout, label: 'Templates', path: '/superadmin/templates' },
     { icon: Globe, label: 'Domínios', path: '/superadmin/domains' },
+    { icon: Zap, label: 'Importador IA', path: '/superadmin/importer' },
     { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
   ];
 

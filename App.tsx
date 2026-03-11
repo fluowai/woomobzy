@@ -65,6 +65,7 @@ import PlatformMonitoring from './views/superadmin/PlatformMonitoring';
 import AnalyticsDashboard from './views/superadmin/AnalyticsDashboard';
 import SupportManager from './views/superadmin/SupportManager';
 import TeamManager from './views/superadmin/TeamManager';
+import SmartImporter from './views/superadmin/SmartImporter';
 
 // Portals
 import PortalProprietarioRural from './views/rural/PortalProprietarioRural';
@@ -243,6 +244,7 @@ const AppContent: React.FC = () => {
           <Route path="feature-flags" element={<FeatureFlags />} />
           <Route path="audit-log" element={<AuditLog />} />
           <Route path="templates" element={<TemplateManager />} />
+          <Route path="importer" element={<SmartImporter />} />
           <Route path="settings" element={<GlobalSettings />} />
       </Route>
 

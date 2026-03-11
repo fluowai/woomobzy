@@ -72,8 +72,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => subscription.unsubscribe();
   }, []);
 
+  // Ref to prevent multiple simultaneous profile fetches
+  const fetchInProgress = React.useRef<string | null>(null);
+
   const loadProfile = async (userId: string) => {
+    // If already fetching THIS user, don't repeat
+    if (fetchInProgress.current === userId) return;
+    
     try {
+      fetchInProgress.current = userId;
       setLoading(true);
       console.log('📡 [AuthContext] Loading profile for:', userId);
       
@@ -92,10 +99,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // Handle impersonation
         const impOrgId = sessionStorage.getItem('impersonated_org_id');
-        console.log('🕵️ [AuthContext] Impersonation check:', { role: profileData.role, impOrgId });
         
         if (profileData.role === 'superadmin' && impOrgId && impOrgId !== 'null' && impOrgId !== 'undefined') {
-          console.log('🎭 [AuthContext] Fetching impersonated org info:', impOrgId);
           const { data: orgData, error: orgError } = await supabase
             .from('organizations')
             .select('*')
@@ -103,7 +108,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .single();
             
           if (!orgError && orgData) {
-            console.log('✅ [AuthContext] Impersonation active:', orgData.name);
             finalProfile = {
               ...profileData,
               organization_id: orgData.id,
@@ -111,7 +115,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
             setIsImpersonating(true);
           } else {
-            console.warn('⚠️ [AuthContext] Impersonation target failed to load:', orgError);
             sessionStorage.removeItem('impersonated_org_id');
             setIsImpersonating(false);
           }
@@ -122,16 +125,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
         
-        console.log('🔍 [AuthContext] Final Profile State:', { id: finalProfile.id, role: finalProfile.role, org: finalProfile.organization?.name });
         setProfile(finalProfile);
       }
     } catch (err: any) {
       console.error('❌ [AuthContext] Critical exception in loadProfile:', err);
       if (err?.code === 'PGRST303' || err?.message?.includes('JWT expired')) {
-          console.warn('Session expired, signing out...');
           await signOut();
       }
     } finally {
+      fetchInProgress.current = null;
       setLoading(false);
     }
   };

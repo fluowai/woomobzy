@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // Impersonation Components
 import ImpersonateCallback from './views/ImpersonateCallback';
@@ -128,6 +128,7 @@ const NicheRedirect: React.FC = () => {
 const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, isImpersonating, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
@@ -135,10 +136,10 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) 
       // If not on superadmin path, force redirect
       if (!path.startsWith('/superadmin') && path !== '/login' && path !== '/impersonate') {
         console.log('🛡️ [GlobalGuard] Super Admin escaping! Redirecting to /superadmin');
-        window.location.href = '/superadmin';
+        navigate('/superadmin', { replace: true });
       }
     }
-  }, [profile, isImpersonating, loading, location.pathname]);
+  }, [profile, isImpersonating, loading, location.pathname, navigate]);
 
   return <>{children}</>;
 };

@@ -51,8 +51,8 @@ const Login: React.FC = () => {
         console.log('📋 [Login] Profile result:', profile);
 
         if (profile?.role === 'superadmin') {
-          console.log('👑 [Login] Role detected is SUPERADMIN. Forcing hard redirect to /superadmin');
-          window.location.href = '/superadmin';
+          console.log('👑 [Login] Role detected is SUPERADMIN. Using navigate to /superadmin');
+          navigate('/superadmin', { replace: true });
         } else {
           console.log('🏢 [Login] Role detected is NOT superadmin. Using standard redirect.');
           navigate('/admin');

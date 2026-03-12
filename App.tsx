@@ -141,7 +141,12 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const { profile, isImpersonating, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <>{children}</>;
+  console.log('🛡️ [SuperAdminGuard] Rendering. Path:', location.pathname, 'Profile:', profile?.role, 'Loading:', loading);
+
+  if (loading) {
+    console.log('🛡️ [SuperAdminGuard] Auth loading, returning null');
+    return null;
+  }
 
   if (profile?.role === 'superadmin' && !isImpersonating) {
     const path = location.pathname;
@@ -161,6 +166,8 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) 
 const AppContent: React.FC = () => {
   const { settings, loading } = useSettings();
   
+  console.log('📦 [AppContent] Rendering. Settings loading:', loading);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">

@@ -30,6 +30,8 @@ const SuperAdminLayout: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  console.log('👑 [SuperAdminLayout] Rendering. Role:', profile?.role);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');

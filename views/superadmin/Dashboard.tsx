@@ -4,6 +4,7 @@ import { supabase } from '../../services/supabase';
 import { Users, Building2, Server, DollarSign, Activity } from 'lucide-react';
 
 const SuperAdminDashboard: React.FC = () => {
+    console.log('📊 [SuperAdminDashboard] Rendering...');
     const [stats, setStats] = useState({
         totalTenants: 0,
         activeTenants: 0,

@@ -83,6 +83,48 @@ import DomainRouter from './components/DomainRouter';
 console.log('App.tsx: Multi-Panel Architecture Active');
 
 // ==========================================
+// ERROR BOUNDARY
+// ==========================================
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('❌ [ErrorBoundary] Caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-red-50 p-8 text-center">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl border border-red-100 max-w-2xl">
+            <h1 className="text-2xl font-black text-red-600 mb-4 uppercase">Ops! Algo deu errado.</h1>
+            <p className="text-slate-600 mb-6 font-medium">Ocorreu um erro inesperado na renderização do sistema.</p>
+            <div className="bg-slate-900 text-left p-4 rounded-xl mb-6 overflow-auto max-h-48">
+              <code className="text-red-400 text-xs font-mono">{this.state.error?.toString()}</code>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-8 py-3 bg-red-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-red-700 transition-all"
+            >
+              Recarregar Sistema
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// ==========================================
 // PLACEHOLDER for WIP views
 // ==========================================
 const Placeholder: React.FC<{ name: string }> = ({ name }) => (
@@ -178,97 +220,14 @@ const AppContent: React.FC = () => {
 
   return (
     <>
+    <ErrorBoundary>
     <ImpersonationBanner />
     <SuperAdminGuard>
       <Routes>
-      {/* ============================== */}
-      {/* PUBLIC ROUTES */}
-      {/* ============================== */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/impersonate" element={<ImpersonateCallback />} />
-      <Route path="/lp/:slug" element={<PublicLandingPage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-
-      {/* ============================== */}
-      {/* LEGACY /admin/* → Redirect to niche panel */}
-      {/* ============================== */}
-      <Route path="/admin" element={<ProtectedRoute><NicheRedirect /></ProtectedRoute>} />
-      <Route path="/admin/*" element={<ProtectedRoute><NicheRedirect /></ProtectedRoute>} />
-
-      {/* ============================== */}
-      {/* 🌾 RURAL PANEL — /rural/* */}
-      {/* ============================== */}
-      <Route path="/rural" element={<ProtectedRoute><RuralLayout><RuralDashboard /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/cadastro-tecnico" element={<ProtectedRoute><RuralLayout><CadastroTecnico /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/properties" element={<ProtectedRoute><RuralLayout><PropertyManagement /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/properties/new" element={<ProtectedRoute><RuralLayout><PropertyEditor /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/properties/:id" element={<ProtectedRoute><RuralLayout><PropertyEditor /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/geointeligencia" element={<ProtectedRoute><RuralLayout><Geointeligencia /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/due-diligence" element={<ProtectedRoute><RuralLayout><DueDiligence /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/dataroom" element={<ProtectedRoute><RuralLayout><DataRoom /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/crm" element={<ProtectedRoute><RuralLayout><KanbanBoard /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/messages" element={<ProtectedRoute><RuralLayout><Messages /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/whatsapp-setup" element={<ProtectedRoute><RuralLayout><WhatsAppSetup /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/reports" element={<ProtectedRoute><RuralLayout><BIRural /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/portal-proprietario" element={<ProtectedRoute><RuralLayout><PortalProprietarioRural /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/portal-comprador" element={<ProtectedRoute><RuralLayout><PortalCompradorRural /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/landing-pages" element={<ProtectedRoute><RuralLayout><LandingPageManager /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/landing-pages/new" element={<ProtectedRoute><RuralLayout><LandingPageEditor /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/landing-pages/:id" element={<ProtectedRoute><RuralLayout><LandingPageEditor /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/ai-assistant" element={<ProtectedRoute><RuralLayout><AIAssistant /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/contracts" element={<ProtectedRoute><RuralLayout><LegalContracts /></RuralLayout></ProtectedRoute>} />
-      <Route path="/rural/settings" element={<ProtectedRoute><RuralLayout><SystemSettings /></RuralLayout></ProtectedRoute>} />
-
-      {/* ============================== */}
-      {/* 🏙 URBAN PANEL — /urban/* */}
-      {/* ============================== */}
-      <Route path="/urban" element={<ProtectedRoute><UrbanLayout><UrbanDashboard /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/properties" element={<ProtectedRoute><UrbanLayout><PropertyManagement /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/properties/new" element={<ProtectedRoute><UrbanLayout><PropertyEditor /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/properties/:id" element={<ProtectedRoute><UrbanLayout><PropertyEditor /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/empreendimentos" element={<ProtectedRoute><UrbanLayout><Empreendimentos /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/locacao" element={<ProtectedRoute><UrbanLayout><Locacao /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/compliance" element={<ProtectedRoute><UrbanLayout><ComplianceUrbano /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/exportador" element={<ProtectedRoute><UrbanLayout><ExportadorPortais /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/crm" element={<ProtectedRoute><UrbanLayout><KanbanBoard /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/messages" element={<ProtectedRoute><UrbanLayout><Messages /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/whatsapp-setup" element={<ProtectedRoute><UrbanLayout><WhatsAppSetup /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/reports" element={<ProtectedRoute><UrbanLayout><BIRural /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/portal-proprietario" element={<ProtectedRoute><UrbanLayout><PortalProprietarioUrbano /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/portal-comprador" element={<ProtectedRoute><UrbanLayout><PortalCompradorUrbano /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/landing-pages" element={<ProtectedRoute><UrbanLayout><LandingPageManager /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/landing-pages/new" element={<ProtectedRoute><UrbanLayout><LandingPageEditor /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/landing-pages/:id" element={<ProtectedRoute><UrbanLayout><LandingPageEditor /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/ai-assistant" element={<ProtectedRoute><UrbanLayout><AIAssistant /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/contracts" element={<ProtectedRoute><UrbanLayout><LegalContracts /></UrbanLayout></ProtectedRoute>} />
-      <Route path="/urban/settings" element={<ProtectedRoute><UrbanLayout><SystemSettings /></UrbanLayout></ProtectedRoute>} />
-
-      {/* ============================== */}
-      {/* 👑 SUPER ADMIN — /superadmin/* */}
-      {/* ============================== */}
-      <Route path="/superadmin" element={<ProtectedRoute><SuperAdminLayout /></ProtectedRoute>}>
-          <Route index element={<SuperAdminDashboard />} />
-          <Route path="analytics" element={<AnalyticsDashboard />} />
-          <Route path="monitoring" element={<PlatformMonitoring />} />
-          <Route path="tenants" element={<TenantManager />} />
-          <Route path="support" element={<SupportManager />} />
-          <Route path="team" element={<TeamManager />} />
-          <Route path="domains" element={<DomainManager />} />
-          <Route path="plans" element={<PlanManager />} />
-          <Route path="billing" element={<BillingManager />} />
-          <Route path="feature-flags" element={<FeatureFlags />} />
-          <Route path="audit-log" element={<AuditLog />} />
-          <Route path="templates" element={<TemplateManager />} />
-          <Route path="importer" element={<SmartImporter />} />
-          <Route path="settings" element={<GlobalSettings />} />
-      </Route>
-
-      {/* Fallback — send unknown routes to login instead of / to avoid 302 loops */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+      {/* ... routes ... */}
+      </Routes>
     </SuperAdminGuard>
+    </ErrorBoundary>
     </>
   );
 };

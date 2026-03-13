@@ -32,6 +32,11 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(process.cwd(), '.'),
         }
+      },
+      test: {
+        globals: true,
+        environment: 'jsdom',
+        setupFiles: ['./src/test/setup.ts']
       }
     };
 });

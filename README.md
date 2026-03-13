@@ -1,20 +1,74 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# IMOBZY - Real Estate CRM & Portal
 
-# Run and deploy your AI Studio app
+Aplicação full-stack para CRM e portal imobiliário com suporte a multi-tenancy, nichos rural e urbano, integração com Supabase, React/TypeScript no frontend e Node.js/Express no backend.
 
-This contains everything you need to run your app locally.
+## Funcionalidades
 
-View your app in AI Studio: https://ai.studio/apps/drive/12uH0nJ6NPGC_1Af_PYemwSNl2CzZEymN
+- **Multi-tenancy**: Suporte a organizações com domínios customizados.
+- **Nichos**: Rural (com GIS/PostGIS) e Urbano.
+- **CRM**: Kanban, leads, contratos.
+- **Editor Visual**: Landing pages customizáveis.
+- **Integrações**: IA (Google GenAI, Groq), WhatsApp, mapas (Leaflet).
+- **Segurança**: Autenticação Supabase, RLS.
 
-## Run Locally
+## Pré-requisitos
 
-**Prerequisites:**  Node.js
+- Node.js (versão 18+)
+- Supabase account
+- API keys para Gemini e Groq
 
+## Instalação
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Clone o repositório:
+   ```bash
+   git clone <repo-url>
+   cd imobzy
+   ```
+
+2. Instale dependências:
+   ```bash
+   npm install
+   ```
+
+3. Configure variáveis de ambiente:
+   - Copie `.env.local` de `.env.production.template`
+   - Adicione `GEMINI_API_KEY` e outras chaves necessárias.
+
+4. Configure o banco:
+   - Execute os scripts SQL em `migrations/` no Supabase.
+
+## Scripts Disponíveis
+
+- `npm run dev`: Inicia o servidor de desenvolvimento (porta 3005)
+- `npm run server`: Inicia o backend (porta 3002)
+- `npm run build`: Build para produção
+- `npm run preview`: Preview do build
+- `npm run lint`: Verifica linting
+- `npm run lint:fix`: Corrige problemas de linting
+- `npm run format`: Formata código com Prettier
+- `npm run test`: Executa testes
+- `npm run type-check`: Verifica tipos TypeScript
+
+## Estrutura do Projeto
+
+- `src/`: Código fonte React/TypeScript
+- `server/`: Backend Node.js/Express
+- `migrations/`: Scripts SQL para banco
+- `scripts/`: Utilitários de manutenção
+
+## Deploy
+
+- Frontend: Vercel
+- Backend: Supabase Functions ou servidor próprio
+
+## Contribuição
+
+1. Fork o projeto
+2. Crie uma branch: `git checkout -b feature/nova-funcionalidade`
+3. Commit: `git commit -m 'Adiciona nova funcionalidade'`
+4. Push: `git push origin feature/nova-funcionalidade`
+5. Abra um Pull Request
+
+## Licença
+
+[Licença]

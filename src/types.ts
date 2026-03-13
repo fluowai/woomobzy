@@ -56,7 +56,7 @@ export interface Lead {
 export interface PropertyPolygon {
   id: string;
   property_id: string;
-  geom: any; -- GeoJSON
+  geom: any; // GeoJSON
   source: string;
   area_ha: number;
 }

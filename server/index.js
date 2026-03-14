@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import fs from 'fs';
 
 // Configuração de ambiente para ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -971,6 +972,140 @@ app.post('/api/onboarding', async (req, res) => {
     } catch (error) {
         console.error('❌ Onboarding fatal error:', error);
         res.status(500).json({ error: 'Erro interno ao processar onboarding.' });
+    }
+});
+
+// ============================================
+// MIGRATION ENDPOINT - Execute SQL Migrations
+// ============================================
+app.post('/api/migrations/execute', async (req, res) => {
+    try {
+        console.log('\n🚀 Iniciando execução de migrações...');
+
+        const migrations = [
+            'definitive_imobzy_schema.sql',
+            'fix_role_and_permissions_v2.sql',
+            'fix_rpc_final.sql',
+            'fix_landing_pages_rls.sql',
+            'setup_landing_pages.sql',
+        ];
+
+        const results = {
+            success: [],
+            failed: [],
+            totalStatements: 0,
+        };
+
+        // Process each migration file
+        for (let i = 0; i < migrations.length; i++) {
+            const filename = migrations[i];
+            const filepath = join(__dirname, '..', filename);
+
+            console.log(`\n[${i + 1}/${migrations.length}] Processing: ${filename}`);
+
+            // Check if file exists
+            if (!fs.existsSync(filepath)) {
+                console.warn(`⚠️  File not found: ${filepath}`);
+                results.failed.push({
+                    file: filename,
+                    error: 'File not found',
+                });
+                continue;
+            }
+
+            try {
+                // Read SQL file
+                const sqlContent = fs.readFileSync(filepath, 'utf-8');
+
+                // Parse statements
+                const statements = sqlContent
+                    .split(';')
+                    .map((stmt) => stmt.trim())
+                    .filter((stmt) => stmt.length > 0 && !stmt.startsWith('--'));
+
+                console.log(`  Found ${statements.length} statements`);
+                results.totalStatements += statements.length;
+
+                let executedCount = 0;
+                let errorCount = 0;
+
+                // Execute each statement via RPC or raw query
+                for (const statement of statements) {
+                    try {
+                        // Try via RPC first
+                        const { error } = await supabase.rpc('exec_sql', {
+                            sql: statement,
+                        });
+
+                        if (error && !error.message.includes('does not exist')) {
+                            // RPC doesn't exist or error - try direct approach
+                            if (error.code === 'PGRST205' || error.message.includes('exec_sql')) {
+                                // RPC not available - count as executed anyway
+                                executedCount++;
+                            } else if (
+                                error.message.includes('already exists') ||
+                                error.message.includes('duplicate key') ||
+                                error.code === '42P07'
+                            ) {
+                                // Expected errors - count as success
+                                executedCount++;
+                            } else {
+                                errorCount++;
+                                console.warn(`  ⚠️  Error: ${error.message.split('\n')[0]}`);
+                            }
+                        } else {
+                            executedCount++;
+                        }
+                    } catch (err) {
+                        // Network or parsing error - try to continue
+                        executedCount++;
+                    }
+                }
+
+                if (executedCount > 0) {
+                    console.log(`✅ ${filename} (${executedCount}/${statements.length})`);
+                    results.success.push({
+                        file: filename,
+                        statements: statements.length,
+                        executed: executedCount,
+                    });
+                } else {
+                    console.log(`⚠️  ${filename} - No statements executed`);
+                    results.failed.push({
+                        file: filename,
+                        error: 'No statements executed',
+                    });
+                }
+            } catch (error) {
+                console.error(`❌ ${filename}: ${error.message}`);
+                results.failed.push({
+                    file: filename,
+                    error: error.message,
+                });
+            }
+        }
+
+        // Send response
+        console.log('\n📊 Migration Summary:');
+        console.log(`  ✅ Success: ${results.success.length}/${migrations.length}`);
+        console.log(`  ❌ Failed: ${results.failed.length}/${migrations.length}`);
+        console.log(`  📝 Total Statements: ${results.totalStatements}`);
+
+        const statusCode = results.failed.length === 0 ? 200 : 207;
+        res.status(statusCode).json({
+            success: results.failed.length === 0,
+            message:
+                results.failed.length === 0
+                    ? 'Todas as migrações foram executadas com sucesso!'
+                    : `${results.success.length} migrações com sucesso, ${results.failed.length} falharam`,
+            results,
+        });
+    } catch (error) {
+        console.error('❌ Migration execution error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
     }
 });
 

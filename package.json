@@ -15,7 +15,8 @@
     "type-check": "tsc --noEmit",
     "check-db": "node --env-file=.env scripts/check-db.mjs",
     "setup-db": "node --env-file=.env scripts/setup-db.mjs",
-    "run-migrations": "node --env-file=.env scripts/run-migrations.mjs"
+    "run-migrations": "node --env-file=.env scripts/run-migrations.mjs",
+    "migrate": "node --env-file=.env scripts/auto-migrate.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -42,6 +43,7 @@
     "leaflet-draw": "^1.0.4",
     "lucide-react": "^0.473.0",
     "nodemailer": "^7.0.12",
+    "pg": "^8.20.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-leaflet": "^5.0.0",

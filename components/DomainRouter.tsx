@@ -78,7 +78,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           try {
             const { data, error } = await supabase
               .rpc('get_tenant_by_domain', { domain_input: cleanHostname })
-              .single();
+              .maybeSingle();
 
             if (data && !error) {
               log(

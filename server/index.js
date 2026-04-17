@@ -22,6 +22,8 @@ import tenantHandler from './api/tenant/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load .env only if it exists (for local development)
 dotenv.config({ path: join(__dirname, '../.env') });
 
 const app = express();

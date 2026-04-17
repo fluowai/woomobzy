@@ -1,0 +1,9 @@
+node_modules
+.git
+.sessions
+dist
+.env
+.env.*
+*.log
+scratch
+scripts/debug

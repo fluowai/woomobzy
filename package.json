@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "node server/index.js",
     "dev": "vite --port 3006 --strictPort",
     "server": "node --env-file=.env server/index.js",
     "build": "vite build",
@@ -77,5 +78,8 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

@@ -91,6 +91,7 @@ export const SettingsProvider: React.FC<{
             headerColor: data.header_color,
             logoUrl: data.logo_url,
             logoHeight: data.logo_height,
+            isLive: data.is_live ?? false, // Mapeamento do status de manutenção
             fontFamily: data.font_family,
             baseFontSize: data.base_font_size,
             headingFontSize: data.heading_font_size,
@@ -141,6 +142,8 @@ export const SettingsProvider: React.FC<{
         instagram_url: newSettings.socialLinks?.instagram,
         facebook_url: newSettings.socialLinks?.facebook,
         whatsapp_number: newSettings.socialLinks?.whatsapp,
+        social_links: newSettings.socialLinks,
+        is_live: newSettings.isLive,
         home_content: newSettings.homeContent,
         integrations: newSettings.integrations,
         updated_at: new Date().toISOString(),

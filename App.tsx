@@ -45,6 +45,7 @@ import KanbanBoard from './views/CRM/KanbanBoard';
 import WhatsAppInstances from './views/admin/WhatsAppInstances';
 import Chat from './views/admin/Chat';
 import TestMessages from './views/admin/TestMessages';
+import WaitlistLeads from './views/admin/WaitlistLeads';
 
 // Rural-Specific Views
 import CadastroTecnico from './views/rural/CadastroTecnico';
@@ -218,6 +219,17 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
 // ==========================================
 const AppContent: React.FC = () => {
   const { loading } = useSettings();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    // 1. Redirecionamento do Domínio Principal (Painel)
+    if (
+      window.location.hostname === 'imobzy.consultio.com.br' &&
+      window.location.pathname === '/'
+    ) {
+      window.location.href = '/login';
+    }
+  }, []);
 
   if (loading) return <FullScreenSpinner />;
 
@@ -277,9 +289,8 @@ const AppContent: React.FC = () => {
             <Route path="reports" element={<BIRural />} />
             <Route path="portal-proprietario" element={<PortalProprietarioRural />} />
             <Route path="portal-comprador" element={<PortalCompradorRural />} />
-            <Route path="landing-pages" element={<LandingPageManager />} />
-            <Route path="landing-pages/new" element={<LandingPageEditor />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
+            <Route path="waitlist" element={<WaitlistLeads />} />
             <Route path="site-setup" element={<SiteSetupWizard />} />
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
@@ -311,9 +322,8 @@ const AppContent: React.FC = () => {
             <Route path="reports" element={<BIRural />} />
             <Route path="portal-proprietario" element={<PortalProprietarioUrbano />} />
             <Route path="portal-comprador" element={<PortalCompradorUrbano />} />
-            <Route path="landing-pages" element={<LandingPageManager />} />
-            <Route path="landing-pages/new" element={<LandingPageEditor />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
+            <Route path="waitlist" element={<WaitlistLeads />} />
             <Route path="site-setup" element={<SiteSetupWizard />} />
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />

@@ -8,9 +8,24 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Lazy-load Supabase to ensure environment variables are loaded first
+let _supabaseCache = null;
+const getSupabase = () => {
+  if (_supabaseCache) return _supabaseCache;
+  
+  const url = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)?.trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)?.trim();
+  
+  if (!url) {
+    console.error('❌ CRITICAL: SUPABASE_URL is missing from environment.');
+    throw new Error('SUPABASE_URL is required.');
+  }
+
+  _supabaseCache = createClient(url, key);
+  return _supabaseCache;
+};
+
+// Replace direct usage of supabase with getSupabase() where needed
 
 const sessionsDir = path.join(__dirname, '../../.sessions');
 if (!fs.existsSync(sessionsDir)) {
@@ -87,7 +102,7 @@ class WhatsAppManager {
           this.emit(instanceId, 'qr', qrImage);
           
           console.log(`[WhatsApp] 💾 Salvando QR Code no banco de dados para Realtime...`);
-          const { error } = await supabase
+          const { error } = await getSupabase()
             .from('whatsapp_instances')
             .update({ qr_code: qrImage, status: 'connecting' })
             .eq('id', instanceId);
@@ -165,7 +180,7 @@ class WhatsAppManager {
   async loadSessions() {
     try {
       console.log('🔄 Loading WhatsApp sessions from database...');
-      const { data: instances, error } = await supabase
+      const { data: instances, error } = await getSupabase()
         .from('whatsapp_instances')
         .select('*')
         .in('status', ['connected', 'connecting', 'reconnecting']);
@@ -196,7 +211,7 @@ class WhatsAppManager {
 
   async saveSessionToDB(instanceId, sessionData) {
     try {
-      await supabase
+      await getSupabase()
         .from('whatsapp_instances')
         .update({ session_data: sessionData })
         .eq('id', instanceId);
@@ -211,7 +226,7 @@ class WhatsAppManager {
       if (phoneNumber) update.phone_number = phoneNumber;
       if (status === 'connected') update.qr_code = null;
       
-      await supabase
+      await getSupabase()
         .from('whatsapp_instances')
         .update(update)
         .eq('id', instanceId);
@@ -238,7 +253,7 @@ class WhatsAppManager {
       else if (msg?.listResponseMessage?.title) content = msg.listResponseMessage.title;
 
       // 1. Garantir que o chat existe
-      const { data: chatData, error: chatQueryError } = await supabase
+      const { data: chatData, error: chatQueryError } = await getSupabase()
         .from('whatsapp_chats')
         .select('id')
         .eq('instance_id', instanceId)
@@ -248,7 +263,7 @@ class WhatsAppManager {
       let chatId;
 
       if (!chatData) {
-        const { data: newChat, error: chatError } = await supabase
+        const { data: newChat, error: chatError } = await getSupabase()
           .from('whatsapp_chats')
           .insert({
             instance_id: instanceId,
@@ -263,7 +278,7 @@ class WhatsAppManager {
         chatId = newChat.id;
       } else {
         chatId = chatData.id;
-        await supabase
+        await getSupabase()
           .from('whatsapp_chats')
           .update({ 
             last_message_at: new Date(message.messageTimestamp * 1000).toISOString(),
@@ -273,7 +288,7 @@ class WhatsAppManager {
       }
 
       // 2. Salvar a mensagem
-      const { error: msgError } = await supabase.from('whatsapp_messages').upsert({
+      const { error: msgError } = await getSupabase().from('whatsapp_messages').upsert({
         instance_id: instanceId,
         chat_id: chatId,
         key_id: message.key.id,

@@ -97,6 +97,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
         { icon: Eye, label: 'Portal Proprietário', path: '/urban/portal-proprietario' },
         { icon: Heart, label: 'Portal Comprador', path: '/urban/portal-comprador' },
         { icon: LayoutTemplate, label: 'Landing Pages', path: '/urban/landing-pages' },
+        { icon: Clock, label: 'Lista de Espera', path: '/urban/waitlist' },
         { icon: Sparkles, label: 'Site Express ✨', path: '/urban/site-setup' },
       ],
     },

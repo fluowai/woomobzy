@@ -7,6 +7,8 @@ import MainLandingPage from './LandingPage';
 import Login from './Login'; // Import Login Component
 import { SettingsProvider } from '../context/SettingsContext';
 import { Loader } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import ComingSoon from '../components/ComingSoon';
 
 // Import public block components
 import HeaderBlock from '../components/LandingPageBlocks/HeaderBlock';
@@ -43,6 +45,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
   const [error, setError] = useState<string | null>(null); // Added error state
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { profile } = useAuth(); // Para permitir bypass de admin
   const [organization, setOrganization] = useState<any>(null);
   const [showMainSite, setShowMainSite] = useState(false); // Flag to show main component
   const [showLogin, setShowLogin] = useState(false); // Flag to show branding login
@@ -277,6 +280,13 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
         </div>
       </div>
     );
+  }
+
+  // LÓGICA DE MANUTENÇÃO / EM BREVE
+  // Se o site não estiver LIVE e o usuário não for admin daquela org, mostrar ComingSoon
+  const isSiteOwner = profile?.organization_id === organization?.id || profile?.role === 'superadmin';
+  if (settings && !settings.is_live && !isSiteOwner) {
+    return <ComingSoon organizationId={organization.id} agencyName={settings.agencyName || organization.name} />;
   }
 
   // RENDER LOGIN IF REQUESTED

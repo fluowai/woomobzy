@@ -72,6 +72,7 @@ const RuralLayout: React.FC = () => {
       title: 'CAPTAÇÃO',
       items: [
         { icon: Globe, label: 'Landing Pages', path: '/rural/landing-pages' },
+        { icon: Clock, label: 'Lista de Espera', path: '/rural/waitlist' },
         { icon: UserCheck, label: 'Portal Comprador', path: '/rural/portal-comprador' },
         { icon: Users, label: 'Portal Proprietário', path: '/rural/portal-proprietario' },
       ],

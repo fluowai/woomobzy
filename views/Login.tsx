@@ -81,8 +81,18 @@ const Login: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-black uppercase italic tracking-tighter mb-2">
-            {settings.agencyName || 'ImobiSaaS'}
+          <Link to="/" className="inline-block">
+            <img 
+              src="/logo-imobzy.png" 
+              alt="IMOBZY" 
+              className="h-16 w-auto mx-auto mb-4"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </Link>
+          <h1 className="text-4xl font-black text-orange-600 uppercase italic tracking-tighter mb-2">
+            {settings.agencyName || 'IMOBZY'}
           </h1>
           <p className="text-black/60 font-medium">Acesso Administrativo</p>
         </div>

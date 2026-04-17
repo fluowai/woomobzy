@@ -19,9 +19,9 @@ export const MOCK_USER: User = {
 };
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  agencyName: 'Minha Imobiliária',
+  agencyName: 'IMOBZY',
   templateId: 'modern',
-  primaryColor: '#4F46E5', // Indigo 600
+  primaryColor: '#FF6B00', // Laranja vibrante
   secondaryColor: '#1E293B', // Slate 800
   logoUrl: '',
   logoHeight: 80,

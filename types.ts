@@ -481,8 +481,9 @@ export interface LayoutConfig {
 }
 
 export interface SiteSettings {
-  id?: string; // Add optional ID for database persistence
-  agencyName: string; // Add agency name
+  id?: string;
+  agencyName: string;
+  isLive?: boolean; // Novo controle de visibilidade
   templateId: 'modern' | 'classic' | 'minimal';
   primaryColor: string;
   secondaryColor: string;

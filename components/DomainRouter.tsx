@@ -53,8 +53,6 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         log(`🌍 [Router] Checking: ${hostname}${path}`);
 
         // 1. Whitelist (System Domains)
-
-        // 1. Whitelist (System Domains)
         const panelUrl = import.meta.env.VITE_PANEL_URL || '';
         // Remove protocol and trailing slash
         const panelHost = panelUrl
@@ -69,7 +67,8 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           hostname.includes('localhost') ||
           hostname.includes('vercel.app') ||
           hostname === 'app.imobisaas.com.br' ||
-          hostname === panelHost;
+          hostname === 'imobzy.consultio.com.br' ||
+          hostname === cleanPanelHost;
 
         // 2. Custom Domain Logic
         if (!isSystemDomain) {

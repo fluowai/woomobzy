@@ -1,7 +1,5 @@
-// Domain Automation Service
-// Integrates with Vercel API to manage custom domains
-
 import axios from 'axios';
+import { directAdminService } from './directAdminService.js';
 
 const VERCEL_TOKEN = process.env.VERCEL_API_TOKEN;
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
@@ -90,13 +88,17 @@ export async function provisionTenantDomain(subdomain) {
 
   const fullDomain = `${subdomain}.${MAIN_DOMAIN}`;
   
-  // Apenas Vercel é necessário
+  // 1. Avisar a Vercel
   const vercel = await addVercelDomain(fullDomain);
+
+  // 2. Criar DNS no DirectAdmin (Opcional, se configurado)
+  const dns = await directAdminService.addTenantDNS(subdomain);
 
   return {
     subdomain,
     fullDomain,
     vercel,
+    dns,
     success: vercel.success,
   };
 }

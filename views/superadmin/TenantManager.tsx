@@ -22,6 +22,7 @@ interface Organization {
   owner_email?: string;
   plan_id?: string;
   created_at: string;
+  custom_domain?: string;
   plans?: {
     name: string;
   };
@@ -51,6 +52,7 @@ const TenantManager: React.FC = () => {
     owner_email: '',
     plan_id: '',
     status: 'active',
+    custom_domain: '',
   });
 
   useEffect(() => {
@@ -100,6 +102,7 @@ const TenantManager: React.FC = () => {
         owner_email: tenant.owner_email || '',
         plan_id: tenant.plan_id || '',
         status: tenant.status,
+        custom_domain: tenant.custom_domain || '',
       });
     } else {
       setEditingId(null);
@@ -109,6 +112,7 @@ const TenantManager: React.FC = () => {
         owner_email: '',
         plan_id: plans.length > 0 ? plans[0].id : '',
         status: 'active',
+        custom_domain: '',
       });
     }
     setIsModalOpen(true);
@@ -125,6 +129,7 @@ const TenantManager: React.FC = () => {
         slug: formData.slug,
         status: formData.status,
         plan_id: formData.plan_id || undefined,
+        custom_domain: formData.custom_domain || null,
       };
 
       let res: Response;
@@ -432,6 +437,24 @@ const TenantManager: React.FC = () => {
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Endereço de acesso: seussistema.com/{formData.slug || '...'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Domínio Customizado (Opcional)
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="ex: imobiliaria.com.br"
+                  value={formData.custom_domain}
+                  onChange={(e) =>
+                    setFormData({ ...formData, custom_domain: e.target.value.toLowerCase().trim() })
+                  }
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Aponte o DNS do domínio para o IP da plataforma.
                 </p>
               </div>
 

@@ -30,10 +30,15 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
 
 router.post('/organizations', verifySuperAdmin, async (req, res) => {
   try {
-    const { name, slug, plan_id, status } = req.body;
+    const { name, slug, plan_id, status, custom_domain } = req.body;
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
     
-    const payload = { name, slug: slug || null, status: status || 'active' };
+    const payload = { 
+      name, 
+      slug: slug || null, 
+      status: status || 'active',
+      custom_domain: custom_domain || null
+    };
     if (plan_id) payload.plan_id = plan_id;
     
     const { data, error } = await supabase
@@ -51,13 +56,14 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
 router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, slug, plan_id, status } = req.body;
+    const { name, slug, plan_id, status, custom_domain } = req.body;
     
     const payload = {};
     if (name !== undefined) payload.name = name;
     if (slug !== undefined) payload.slug = slug;
     if (status !== undefined) payload.status = status;
     if (plan_id !== undefined) payload.plan_id = plan_id || null;
+    if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
     
     const { data, error } = await supabase
       .from('organizations')

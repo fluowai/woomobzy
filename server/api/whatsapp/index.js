@@ -242,4 +242,32 @@ router.post('/send-test', verifyAdmin, async (req, res) => {
   }
 });
 
+// Rota de Diagnóstico (Auditoria de Dados)
+router.get('/debug', verifyAdmin, async (req, res) => {
+  try {
+    const { data: msgCount } = await supabase.from('whatsapp_messages').select('id', { count: 'exact', head: true });
+    const { data: chatCount } = await supabase.from('whatsapp_chats').select('id', { count: 'exact', head: true });
+    const { data: instCount } = await supabase.from('whatsapp_instances').select('id', { count: 'exact', head: true });
+    
+    // Busca as últimas 5 mensagens para ver se têm conteúdo
+    const { data: lastMessages } = await supabase
+      .from('whatsapp_messages')
+      .select('id, content, created_at, instance_id')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    res.json({
+      success: true,
+      stats: {
+        total_messages: msgCount?.length || 0,
+        total_chats: chatCount?.length || 0,
+        total_instances: instCount?.length || 0
+      },
+      last_messages_snapshot: lastMessages
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

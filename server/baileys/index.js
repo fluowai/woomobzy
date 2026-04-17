@@ -101,11 +101,10 @@ class WhatsAppManager {
     sock.ev.on('creds.update', async () => {
       try {
         await saveCreds();
-        // Sincroniza as credenciais com o Banco de Dados para persistência
-        const creds = JSON.parse(fs.readFileSync(path.join(sessionPath, 'creds.json'), 'utf-8'));
-        await this.saveSessionToDB(instanceId, creds);
+        // Sincroniza as credenciais EM MEMÓRIA com o Banco de Dados para evitar atrasos de IO de arquivo
+        await this.saveSessionToDB(instanceId, state.creds);
       } catch (e) {
-        console.error('Error saving creds:', e);
+        console.error('[WhatsApp] ❌ Erro crítico ao sincronizar credenciais:', e.message);
       }
     });
 
@@ -209,17 +208,11 @@ class WhatsAppManager {
 
       for (const instance of instances) {
         try {
-          // Check if session folder exists
-          const sessionPath = path.join(sessionsDir, `${instance.id}`);
-          if (fs.existsSync(sessionPath)) {
-            console.log(`Restoring session for ${instance.name} (${instance.id})...`);
-            await this.initSession(instance.id, instance.organization_id);
-          } else {
-            console.warn(`Session folder missing for ${instance.name} (${instance.id}), marking as disconnected.`);
-            await this.updateInstanceStatus(instance.id, 'disconnected');
-          }
+          console.log(`[WhatsApp] ♻️ Restaurando instância ativa: ${instance.name} (${instance.id})...`);
+          // Agora chamamos initSession direto. Ela mesma verificará se tem arquivo local ou se precisa baixar do Banco.
+          await this.initSession(instance.id, instance.organization_id);
         } catch (err) {
-          console.error(`Failed to restore session for ${instance.id}:`, err.message);
+          console.error(`[WhatsApp] ❌ Falha catastrófica ao restaurar ${instance.id}:`, err.message);
         }
       }
     } catch (e) {

@@ -45,6 +45,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
   const [landingPage, setLandingPage] = useState<LandingPage | null>(null);
   const [error, setError] = useState<string | null>(null); // Added error state
   const [settings, setSettings] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const { profile } = useAuth(); // Para permitir bypass de admin
   const location = useLocation();
   const [organization, setOrganization] = useState<any>(null);
@@ -282,8 +283,11 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
     );
   }
 
+  // LÓGICA DE MANUTENÇÃO / EM BREVE
+  const isSiteOwner = profile?.organization_id === organization?.id || profile?.role === 'superadmin';
+  const isLive = settings?.is_live === true;
+
   // Se o site não estiver LIVE e o usuário não for admin daquela org (ou superadmin), mostrar ComingSoon
-  // Se 'settings' for nulo, isLive será falso, então entrará aqui (comportamento desejado: segurança primeiro)
   if ((forceComingSoon || !isLive) && !isSiteOwner) {
     // Se não estivermos já na rota /embreve, podemos redirecionar para ela (opcional, conforme pedido)
     const isMaintenancePath = location.pathname.includes('/embreve');

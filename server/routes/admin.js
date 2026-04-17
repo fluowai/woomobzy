@@ -66,23 +66,56 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
     if (owner_email !== undefined) payload.owner_email = owner_email || null;
     
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('organizations')
       .update(payload)
       .eq('id', id)
       .select()
       .single();
+
+    // Se o erro for coluna não encontrada (owner_email), tenta sem ela
+    if (error && (error.message.includes('owner_email') || error.code === 'PGRST204' || error.code === '42703')) {
+      console.warn('⚠️ Coluna owner_email não encontrada, tentando salvar sem ela...');
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.owner_email;
+      
+      const retry = await supabase
+        .from('organizations')
+        .update(fallbackPayload)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error) throw error;
 
-    // Se uma senha foi fornecida, atualizar a senha do usuário dono do e-mail
+    // Se uma senha foi fornecida, atualizar a senha de forma inteligente
     if (password && password.length >= 6) {
-      const targetEmail = owner_email || data.owner_email;
+      let targetEmail = owner_email || data.owner_email;
+
+      // Se não temos o e-mail no metadado, buscamos o administrador da organização nos perfis
+      if (!targetEmail) {
+        const { data: adminProfile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('organization_id', id)
+          .eq('role', 'admin')
+          .limit(1)
+          .maybeSingle();
+        
+        targetEmail = adminProfile?.email;
+      }
+
       if (targetEmail) {
-        const { data: userData, error: listError } = await supabase.auth.admin.listUsers();
+        const { data: userData } = await supabase.auth.admin.listUsers();
         const userToUpdate = userData?.users?.find(u => u.email === targetEmail);
         
         if (userToUpdate) {
-          await supabase.auth.admin.updateUserById(userToUpdate.id, { password });
+          const { error: updateError } = await supabase.auth.admin.updateUserById(userToUpdate.id, { password });
+          if (!updateError) console.log(`🔐 Password updated for user: ${targetEmail}`);
         }
       }
     }

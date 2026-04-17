@@ -34,6 +34,7 @@ import { useSettings } from '../context/SettingsContext'; // For public page mig
 
 interface PublicLandingPageProps {
   forceSlug?: string;
+  forceComingSoon?: boolean;
 }
 
 const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
@@ -44,8 +45,8 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
   const [landingPage, setLandingPage] = useState<LandingPage | null>(null);
   const [error, setError] = useState<string | null>(null); // Added error state
   const [settings, setSettings] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const { profile } = useAuth(); // Para permitir bypass de admin
+  const location = useLocation();
   const [organization, setOrganization] = useState<any>(null);
   const [showMainSite, setShowMainSite] = useState(false); // Flag to show main component
   const [showLogin, setShowLogin] = useState(false); // Flag to show branding login
@@ -110,10 +111,9 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
       // 2. Load Public Site Settings
       if (orgId) {
         try {
-          const { data: siteSettings } = await supabase.rpc(
-            'get_site_settings_public',
-            { org_id: orgId }
-          );
+          const { data: siteSettings } = await supabase
+            .rpc('get_site_settings_public', { org_id: orgId })
+            .single();
           if (siteSettings) {
             setSettings(siteSettings);
           }
@@ -282,11 +282,17 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
     );
   }
 
-  // LÓGICA DE MANUTENÇÃO / EM BREVE
-  // Se o site não estiver LIVE e o usuário não for admin daquela org, mostrar ComingSoon
-  const isSiteOwner = profile?.organization_id === organization?.id || profile?.role === 'superadmin';
-  if (settings && !settings.is_live && !isSiteOwner) {
-    return <ComingSoon organizationId={organization.id} agencyName={settings.agencyName || organization.name} />;
+  // Se o site não estiver LIVE e o usuário não for admin daquela org (ou superadmin), mostrar ComingSoon
+  // Se 'settings' for nulo, isLive será falso, então entrará aqui (comportamento desejado: segurança primeiro)
+  if ((forceComingSoon || !isLive) && !isSiteOwner) {
+    // Se não estivermos já na rota /embreve, podemos redirecionar para ela (opcional, conforme pedido)
+    const isMaintenancePath = location.pathname.includes('/embreve');
+    if (!isMaintenancePath && !forceComingSoon) {
+       window.location.href = '/embreve';
+       return <div className="min-h-screen bg-white" />;
+    }
+    
+    return <ComingSoon organizationId={organization?.id || ''} agencyName={settings?.agencyName || organization?.name || 'Imobiliária'} />;
   }
 
   // RENDER LOGIN IF REQUESTED
@@ -350,6 +356,14 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
       {isPreview && (
         <div className="bg-yellow-500 text-black px-4 py-2 text-center font-medium sticky top-0 z-50">
           🔍 MODO PREVIEW - Esta página ainda não está publicada
+        </div>
+      )}
+
+      {/* Admin Maintenance Banner */}
+      {!isLive && isSiteOwner && (
+        <div className="bg-indigo-600 text-white px-4 py-2 text-center text-xs font-bold sticky top-0 z-[100] flex items-center justify-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+          MODO MANUTENÇÃO: O público está vendo a página "Em Breve". Você está visualizando o site real por ser Administrador.
         </div>
       )}
 

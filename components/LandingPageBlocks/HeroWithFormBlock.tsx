@@ -4,6 +4,7 @@ import {
   LandingPageTheme,
 } from '../../types/landingPage';
 import { Send, CheckCircle, Shield, Star, Clock } from 'lucide-react';
+import { getApiUrl } from '../../src/lib/api';
 
 interface HeroWithFormBlockProps {
   config: HeroWithFormBlockConfig;
@@ -40,7 +41,7 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
         ...trackingData,
       };
 
-      const response = await fetch('http://localhost:3002/api/contact', {
+      const response = await fetch(getApiUrl('/api/contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(leadData),

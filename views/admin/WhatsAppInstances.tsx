@@ -13,6 +13,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../src/lib/api';
 
 interface WhatsAppInstance {
   id: string;
@@ -118,7 +119,7 @@ const WhatsAppInstances: React.FC = () => {
     setQrLoading(true);
 
     try {
-      const response = await fetch(`/api/whatsapp/instances/${instance.id}/connect`, {
+      const response = await fetch(getApiUrl(`/api/whatsapp/instances/${instance.id}/connect`), {
         method: 'POST',
         headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
       });
@@ -170,7 +171,7 @@ const WhatsAppInstances: React.FC = () => {
 
   const disconnectInstance = async (id: string) => {
     try {
-      await fetch(`/api/whatsapp/instances/${id}/disconnect`, {
+      await fetch(getApiUrl(`/api/whatsapp/instances/${id}/disconnect`), {
         method: 'POST',
         headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
       });

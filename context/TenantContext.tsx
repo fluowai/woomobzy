@@ -5,6 +5,7 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
+import { getApiUrl } from '../src/lib/api';
 
 /**
  * TENANT CONTEXT
@@ -42,7 +43,7 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({
       setError(null);
 
       // Buscar informações do tenant baseado no domínio atual
-      const response = await fetch('/api/tenant/current');
+      const response = await fetch(getApiUrl('/api/tenant/current'));
 
       if (!response.ok) {
         throw new Error('Falha ao carregar informações do site');

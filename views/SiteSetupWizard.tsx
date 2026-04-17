@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../src/lib/api';
 import { supabase } from '../services/supabase';
 import { geminiService } from '../services/geminiService';
 import { landingPageService } from '../services/landingPages';
@@ -137,7 +138,7 @@ const SiteSetupWizard: React.FC = () => {
     setMigrationLogs(["Conectando ao sistema de importação...", "Validando URL: " + siteData.migrationUrl]);
     
     try {
-      const response = await fetch('http://localhost:3002/api/import/analyze', {
+      const response = await fetch(getApiUrl('/api/import/analyze'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: siteData.migrationUrl, organizationId: profile?.organization_id }),
@@ -203,7 +204,7 @@ const SiteSetupWizard: React.FC = () => {
       // Salva os imóveis migrados (se existirem)
       if (siteData.extractedProperties && siteData.extractedProperties.length > 0) {
         try {
-           await fetch('http://localhost:3002/api/import/finalize', {
+           await fetch(getApiUrl('/api/import/finalize'), {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({ properties: siteData.extractedProperties, organizationId: profile.organization_id }),

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../src/lib/api';
 
 const ImpersonateCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -19,10 +20,7 @@ const ImpersonateCallback: React.FC = () => {
     const exchangeToken = async () => {
       try {
         // 1. Call your backend to exchange code for token
-        // Use full URL if simple relative path fails due to port diffs in dev
-        const apiUrl =
-          (import.meta as any).env.VITE_API_URL || 'http://localhost:3002';
-        const response = await fetch(`${apiUrl}/api/support/exchange`, {
+        const response = await fetch(getApiUrl('/api/support/exchange'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

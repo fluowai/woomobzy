@@ -3,6 +3,7 @@
  */
 
 import { Property } from '../types';
+import { getApiUrl } from '../src/lib/api';
 
 export const ruralDataService = {
   /**
@@ -57,7 +58,7 @@ export const ruralDataService = {
    * Consulta os dados do CAR via Proxy Backend
    */
   async fetchCarData(carNumber: string) {
-    const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/rural/car/${encodeURIComponent(carNumber)}`;
+    const apiUrl = getApiUrl(`/api/rural/car/${encodeURIComponent(carNumber)}`);
 
     const response = await fetch(apiUrl);
     if (!response.ok) {

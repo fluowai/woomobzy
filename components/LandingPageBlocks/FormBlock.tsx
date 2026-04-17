@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FormBlockConfig, LandingPageTheme } from '../../types/landingPage';
 import { Send, CheckCircle } from 'lucide-react';
+import { getApiUrl } from '../../src/lib/api';
 
 interface FormBlockProps {
   config: FormBlockConfig;
@@ -38,7 +39,7 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
       };
 
       // Enviar para API
-      const response = await fetch('http://localhost:3002/api/contact', {
+      const response = await fetch(getApiUrl('/api/contact'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

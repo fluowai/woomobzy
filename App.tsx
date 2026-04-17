@@ -243,6 +243,7 @@ const AppContent: React.FC = () => {
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/embreve" element={<PublicLandingPage forceComingSoon={true} />} />
           <Route path="/register" element={<Register />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/site/:slug/*" element={<PublicLandingPage />} />

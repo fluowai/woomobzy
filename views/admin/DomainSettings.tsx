@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { getApiUrl } from '../../src/lib/api';
 
 interface DomainData {
   name: string;
@@ -99,7 +100,7 @@ const DomainSettings: React.FC = () => {
     setVerifyingDomain(true);
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/domains/${domainName}/verify?retries=${retries}`
+        getApiUrl(`/api/domains/${domainName}/verify?retries=${retries}`)
       );
       const data = await res.json();
 
@@ -145,7 +146,7 @@ const DomainSettings: React.FC = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/domains`,
+        getApiUrl('/api/domains'),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -185,7 +186,7 @@ const DomainSettings: React.FC = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/domains`,
+        getApiUrl('/api/domains'),
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },

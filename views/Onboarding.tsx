@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../src/lib/api';
 import {
   Building2,
   Palette,
@@ -148,7 +149,7 @@ const Onboarding: React.FC = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      const res = await fetch('/api/system-status', { signal: controller.signal });
+      const res = await fetch(getApiUrl('/api/system-status'), { signal: controller.signal });
       clearTimeout(timeoutId);
       
       if (!res.ok) {
@@ -225,7 +226,7 @@ const Onboarding: React.FC = () => {
     setError('');
 
     try {
-      const res = await fetch('/api/onboarding', {
+      const res = await fetch(getApiUrl('/api/onboarding'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

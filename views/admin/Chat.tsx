@@ -170,6 +170,7 @@ const Chat: React.FC = () => {
 
   const startRealtime = () => {
     if (subscriptionRef.current) subscriptionRef.current.unsubscribe();
+    console.log(`📡 [Chat] Iniciando Realtime para Instância: ${selectedInstance?.id}`);
     
     subscriptionRef.current = supabase
       .channel('whatsapp-realtime')
@@ -180,10 +181,19 @@ const Chat: React.FC = () => {
         filter: `instance_id=eq.${selectedInstance?.id}`
       }, (payload) => {
         const newMsg = payload.new as Message;
+        console.log('📩 [Chat] Nova mensagem recebida via Realtime:', newMsg);
+        
         if (selectedChat && (newMsg as any).chat_id === selectedChat.id) {
+          console.log('✅ [Chat] Mensagem pertence ao chat aberto, atualizando UI.');
           setMessages(prev => [...prev, newMsg]);
+        } else {
+          console.log('ℹ️ [Chat] Mensagem pertence a outro chat ou nenhum chat selecionado.');
         }
-        if (selectedInstance) fetchChats(selectedInstance.id);
+        
+        if (selectedInstance) {
+          console.log('🔄 [Chat] Atualizando lista de conversas...');
+          fetchChats(selectedInstance.id);
+        }
       })
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -192,6 +202,8 @@ const Chat: React.FC = () => {
         filter: `instance_id=eq.${selectedInstance?.id}`
       }, (payload) => {
         const updatedMsg = payload.new as Message;
+        console.log('🆙 [Chat] Status de mensagem atualizado:', updatedMsg);
+        
         if (selectedChat && (updatedMsg as any).chat_id === selectedChat.id) {
           setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
         }
@@ -201,10 +213,13 @@ const Chat: React.FC = () => {
         schema: 'public',
         table: 'whatsapp_chats',
         filter: `instance_id=eq.${selectedInstance?.id}`
-      }, () => {
+      }, (payload) => {
+        console.log('🗂️ [Chat] Conversa atualizada:', payload.new);
         if (selectedInstance) fetchChats(selectedInstance.id);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [Chat] Status da inscrição Realtime:', status);
+      });
   };
 
   const filteredChats = chats.filter(chat =>

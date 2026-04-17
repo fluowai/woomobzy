@@ -54,17 +54,25 @@ const BIRural: React.FC = () => {
         'get_bi_stats',
         { org_id: settings.id }
       );
-      if (statsError) console.error('Error fetching BI stats:', statsError);
-      else setBiStats(stats);
+      
+      if (statsError) {
+        console.warn('⚠️ RPC get_bi_stats não encontrada ou falhou. Usando fallback local.');
+      } else {
+        setBiStats(stats);
+      }
 
       // Fetch lead sources via RPC
       const { data: sources, error: sourcesError } = await supabase.rpc(
         'get_bi_lead_sources',
         { org_id: settings.id }
       );
-      if (sourcesError)
-        console.error('Error fetching Lead sources:', sourcesError);
-      else setLeadSources(sources || []);
+      
+      if (sourcesError) {
+        console.warn('⚠️ RPC get_bi_lead_sources não encontrada ou falhou.');
+        setLeadSources([]);
+      } else {
+        setLeadSources(sources || []);
+      }
 
       // Fetch real properties for other charts
       const { data: props, error: propsError } = await supabase

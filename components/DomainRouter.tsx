@@ -121,8 +121,16 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           '/lp/',
           '/site/',
           '/embreve',
+          '/chat',
+          '/crm',
+          '/reports',
+          '/settings',
+          '/properties',
+          '/error'
         ];
-        const isSystemRoute = systemRoutes.some((r) => path.startsWith(r));
+        const isSystemRoute = systemRoutes.some((r) => 
+          path === r || path.startsWith(r + '/') || path.startsWith(r)
+        );
 
         if (isSystemRoute || path === '/') {
           log(`⚡ [Router] System Route Detected: ${path}`);

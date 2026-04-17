@@ -23,6 +23,94 @@ import {
 import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { Plus, X } from 'lucide-react';
+
+interface NewLeadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  orgId?: string;
+}
+
+const NewLeadModal: React.FC<NewLeadModalProps> = ({ isOpen, onClose, onSuccess, orgId }) => {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    source: 'Manual / CRM'
+  });
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await leadService.create({
+        ...formData,
+        organization_id: orgId
+      } as any);
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      alert('Erro ao criar lead: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white">
+          <div className="flex items-center gap-3">
+            <Plus size={24} />
+            <h3 className="text-xl font-black uppercase italic tracking-tighter">Cadastrar Novo Lead</h3>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg"><X size={20} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Nome Completo</label>
+            <input 
+              required
+              className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+              value={formData.name}
+              onChange={e => setFormData({...formData, name: e.target.value})}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">WhatsApp</label>
+              <input 
+                required
+                className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                value={formData.phone}
+                onChange={e => setFormData({...formData, phone: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">E-mail</label>
+              <input 
+                type="email"
+                className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                value={formData.email}
+                onChange={e => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+          </div>
+          <button 
+            disabled={loading}
+            className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-all disabled:opacity-50"
+          >
+            {loading ? 'Salvando...' : 'Finalizar Cadastro'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const PIPELINE_STAGES = [
   {
@@ -68,6 +156,7 @@ const KanbanBoard: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { profile } = useAuth();
   const isImpersonating = !!localStorage.getItem('impersonatedOrgId');
@@ -153,7 +242,22 @@ const KanbanBoard: React.FC = () => {
             className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none w-64"
           />
         </div>
+
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20"
+        >
+          <Plus size={18} />
+          NOVO LEAD
+        </button>
       </div>
+
+      <NewLeadModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={() => loadLeads()}
+        orgId={targetOrgId}
+      />
 
       <div className="flex-1 overflow-x-auto pb-4">
         <DragDropContext onDragEnd={onDragEnd}>

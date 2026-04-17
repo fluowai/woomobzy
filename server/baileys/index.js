@@ -55,6 +55,22 @@ class WhatsAppManager {
 
     const sessionPath = path.join(sessionsDir, `${instanceId}`);
     
+    // Tenta restaurar a sessão do Banco de Dados caso a pasta local não exista (Persistência Infinita)
+    if (!fs.existsSync(path.join(sessionPath, 'creds.json'))) {
+      console.log(`[WhatsApp] 🔍 Tentando recuperar credenciais do Banco para: ${instanceId}`);
+      const { data: instanceData } = await getSupabase()
+        .from('whatsapp_instances')
+        .select('session_data')
+        .eq('id', instanceId)
+        .single();
+      
+      if (instanceData?.session_data) {
+        if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true });
+        fs.writeFileSync(path.join(sessionPath, 'creds.json'), JSON.stringify(instanceData.session_data));
+        console.log(`[WhatsApp] ♻️ Sessão recuperada com sucesso do Banco de Dados.`);
+      }
+    }
+
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
     
     // Restaurando busca dinâmica de versão com tratamento de erro
@@ -71,13 +87,12 @@ class WhatsAppManager {
       version,
       auth: state,
       printQRInTerminal: false,
-      browser: ['Windows', 'Chrome', '111.0.0.0'],
+      browser: ['Windows', 'Chrome', '115.0.0.0'],
       syncFullHistory: false,
-      markOnline: false, 
-      generateHighQualityLinkPreview: false,
-      defaultQueryTimeoutMs: 120000,
-      connectTimeoutMs: 120000,
-      retryRequestDelayMs: 5000,
+      markOnline: true, // Importante para receber novidades em tempo real
+      defaultQueryTimeoutMs: 60000,
+      connectTimeoutMs: 60000,
+      keepAliveIntervalMs: 30000,
       getMessage: async (key) => {
         return { conversation: '' };
       }
@@ -86,6 +101,9 @@ class WhatsAppManager {
     sock.ev.on('creds.update', async () => {
       try {
         await saveCreds();
+        // Sincroniza as credenciais com o Banco de Dados para persistência
+        const creds = JSON.parse(fs.readFileSync(path.join(sessionPath, 'creds.json'), 'utf-8'));
+        await this.saveSessionToDB(instanceId, creds);
       } catch (e) {
         console.error('Error saving creds:', e);
       }

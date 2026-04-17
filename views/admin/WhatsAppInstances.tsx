@@ -70,6 +70,13 @@ const WhatsAppInstances: React.FC = () => {
       })
       .subscribe();
 
+    // Auto-start Realtime for instances that are already connecting/reconnecting
+    instances.forEach(inst => {
+      if (inst.status === 'connecting' || inst.status === 'reconnecting') {
+        startRealtimeQR(inst.id);
+      }
+    });
+
     return () => {
       supabase.removeChannel(channel);
       if (subscriptionRef.current) subscriptionRef.current.unsubscribe();

@@ -180,12 +180,21 @@ const Chat: React.FC = () => {
         filter: `instance_id=eq.${selectedInstance?.id}`
       }, (payload) => {
         const newMsg = payload.new as Message;
-        // Se a mensagem for do chat selecionado, adiciona na hora
         if (selectedChat && (newMsg as any).chat_id === selectedChat.id) {
           setMessages(prev => [...prev, newMsg]);
         }
-        // Atualiza a lista de chats para mostrar a nova mensagem
         if (selectedInstance) fetchChats(selectedInstance.id);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'whatsapp_messages',
+        filter: `instance_id=eq.${selectedInstance?.id}`
+      }, (payload) => {
+        const updatedMsg = payload.new as Message;
+        if (selectedChat && (updatedMsg as any).chat_id === selectedChat.id) {
+          setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+        }
       })
       .on('postgres_changes', {
         event: 'UPDATE',

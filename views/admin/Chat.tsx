@@ -89,15 +89,16 @@ const Chat: React.FC = () => {
 
   const fetchChats = async (instanceId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('whatsapp_chats')
-        .select('*')
-        .eq('instance_id', instanceId)
-        .order('last_message_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setChats(data || []);
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`/api/whatsapp/instances/${instanceId}/chats`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setChats(data.chats || []);
+      }
     } catch (error) {
       console.error('Error fetching chats:', error);
     }
@@ -105,16 +106,16 @@ const Chat: React.FC = () => {
 
   const fetchMessages = async (instanceId: string, chatId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('whatsapp_messages')
-        .select('*')
-        .eq('instance_id', instanceId)
-        .eq('chat_id', chatId)
-        .order('timestamp', { ascending: true })
-        .limit(100);
-
-      if (error) throw error;
-      setMessages(data || []);
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`/api/whatsapp/instances/${instanceId}/chats/${chatId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMessages(data.messages || []);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     }

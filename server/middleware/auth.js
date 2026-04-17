@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
+const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('⚠️ [AuthMiddleware] Supabase credentials missing.');
+}
+
+const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
 
 export const verifyAdmin = async (req, res, next) => {
   const authHeader = req.headers.authorization;

@@ -4,9 +4,14 @@ import { verifySuperAdmin, verifyAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
+const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('⚠️ [AdminRoutes] Supabase credentials missing. Some routes will fail.');
+}
+
+const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
 
 // --- Organizations Management ---
 

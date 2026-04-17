@@ -5,9 +5,14 @@ import { rateLimit } from 'express-rate-limit';
 import { sendContactFormEmail } from '../services/emailService.js';
 
 const router = express.Router();
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
+const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('⚠️ [PublicRoutes] Supabase credentials missing.');
+}
+
+const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
 
 const contactLimiter = rateLimit({
   windowMs: 60 * 1000,

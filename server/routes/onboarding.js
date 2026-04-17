@@ -5,9 +5,14 @@ import { rateLimit } from 'express-rate-limit';
 import { provisionTenantDomain } from '../domainService.js';
 
 const router = express.Router();
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
+const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('⚠️ [OnboardingRoutes] Supabase credentials missing.');
+}
+
+const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

@@ -12,7 +12,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const location = useLocation();
   const [isSystemPath] = useState(() => {
     const path = window.location.pathname;
-    const systemRoutes = ['/login', '/register', '/onboarding', '/admin', '/rural', '/urban', '/superadmin', '/impersonate', '/lp/', '/site/'];
+    const systemRoutes = ['/login', '/register', '/onboarding', '/admin', '/rural', '/urban', '/superadmin', '/impersonate', '/lp/', '/site/', '/embreve'];
     return systemRoutes.some(r => path.startsWith(r)) || path === '/';
   });
 
@@ -120,6 +120,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           '/impersonate',
           '/lp/',
           '/site/',
+          '/embreve',
         ];
         const isSystemRoute = systemRoutes.some((r) => path.startsWith(r));
 

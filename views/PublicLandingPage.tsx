@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { landingPageService } from '../services/landingPages';
 import { LandingPage, BlockType } from '../types/landingPage';
 import { supabase } from '../services/supabase';

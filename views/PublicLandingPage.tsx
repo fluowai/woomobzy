@@ -37,7 +37,7 @@ interface PublicLandingPageProps {
   forceComingSoon?: boolean;
 }
 
-const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
+const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug, forceComingSoon }) => {
   const { slug: routeSlug } = useParams<{ slug: string }>();
   // Prefer the prop from DomainRouter, fallback to URL parameter
   const activeSlug = forceSlug || routeSlug;

@@ -1,22 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ArrowUpRight,
-  ArrowDownRight,
-  Activity,
+  TrendingUp,
+  Users as UsersIcon,
   ShieldCheck,
   FileText,
-  Map as MapIcon,
+  Search,
+  Plus,
+  ArrowUpRight,
   Wheat,
-  TreePine,
-  Users,
-  Eye,
+  Activity,
+  Map as MapIcon,
+  Target,
+  Briefcase
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 import {
   XAxis,
   YAxis,
@@ -25,395 +24,191 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
 
-// Fix Leaflet default marker icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl:
-    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl:
-    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
-const COLORS = ['#059669', '#d97706', '#2563eb', '#7c3aed', '#dc2626'];
-
 const RuralDashboard: React.FC = () => {
-  const { settings } = useSettings();
+  const { profile } = useAuth();
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
-  const [properties, setProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      const { data: props, count: pCount } = await supabase
-        .from('properties')
-        .select(
-          'id, title, city, state, total_area_ha, price, status, centroid',
-          { count: 'exact' }
-        );
+    if (!profile?.organization_id) return;
 
-      const { count: lCount } = await supabase
-        .from('leads')
-        .select('id', { count: 'exact' });
+    const loadData = async () => {
+      try {
+        const { count: pCount } = await supabase
+          .from('properties')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', profile.organization_id);
 
-      setPropertyCount(pCount || 0);
-      setLeadCount(lCount || 0);
-      setProperties(props || []);
+        const { count: lCount } = await supabase
+          .from('leads')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', profile.organization_id);
+
+        setPropertyCount(pCount || 0);
+        setLeadCount(lCount || 0);
+      } catch (err) {
+        console.error('Loader error:', err);
+      } finally {
+        setLoading(false);
+      }
     };
-    load();
-  }, []);
 
-  const stats = [
-    {
-      label: 'Propriedades Cadastradas',
-      value: String(propertyCount),
-      change: '+8%',
-      trend: 'up',
-      icon: Wheat,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-    },
-    {
-      label: 'Investidores Ativos',
-      value: String(leadCount),
-      change: '+5%',
-      trend: 'up',
-      icon: Users,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
-    {
-      label: 'Acessos Data Room',
-      value: '34',
-      change: '+15%',
-      trend: 'up',
-      icon: ShieldCheck,
-      color: 'text-amber-600',
-      bg: 'bg-amber-50',
-    },
-    {
-      label: 'Dossiês Gerados',
-      value: '12',
-      change: '+24%',
-      trend: 'up',
-      icon: FileText,
-      color: 'text-slate-600',
-      bg: 'bg-slate-50',
-    },
+    loadData();
+  }, [profile?.organization_id]);
+
+  const kpis = [
+    { label: 'PROPRIEDADES', value: String(propertyCount), change: '+12%', icon: Wheat, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'INVESTIDORES', value: String(leadCount), change: '+5%', icon: UsersIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'DUE DILIGENCE', value: '18', change: '+8%', icon: ShieldCheck, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'NEGÓCIOS (MÊS)', value: 'R$ 8.2M', change: '+24%', icon: TrendingUp, color: 'text-purple-500', bg: 'bg-purple-50' },
   ];
 
   const chartData = [
-    { name: 'Jan', leads: 4, visitas: 2 },
-    { name: 'Fev', leads: 6, visitas: 3 },
-    { name: 'Mar', leads: 8, visitas: 5 },
-    { name: 'Abr', leads: 12, visitas: 7 },
-    { name: 'Mai', leads: 9, visitas: 6 },
-    { name: 'Jun', leads: 15, visitas: 9 },
-  ];
-
-  const aptitudeData = [
-    { name: 'Pecuária', value: 40 },
-    { name: 'Agricultura', value: 30 },
-    { name: 'Mista', value: 20 },
-    { name: 'Lazer', value: 10 },
+    { name: 'Jan', valor: 45 },
+    { name: 'Fev', valor: 52 },
+    { name: 'Mar', valor: 48 },
+    { name: 'Abr', valor: 61 },
+    { name: 'Mai', valor: 55 },
+    { name: 'Jun', valor: 67 },
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="space-y-10">
+      {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
-          <Wheat className="text-emerald-600" size={32} />
-          Dashboard Rural
-        </h1>
-        <p className="text-black/60 font-medium">
-          Visão geral da sua operação agro imobiliária.
-        </p>
+        <h1 className="text-2xl font-bold text-[#0F172A] mb-1">Visão Geral</h1>
+        <p className="text-sm text-[#64748B]">Gerenciamento de ativos e performance comercial.</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, idx) => (
-          <div
-            key={idx}
-            className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all"
-          >
+        {kpis.map((kpi, idx) => (
+          <div key={idx} className="card-premium flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
-                <stat.icon size={24} />
+              <div className={`p-2.5 rounded-xl ${kpi.bg}`}>
+                <kpi.icon size={20} className={kpi.color} />
               </div>
-              <div
-                className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest ${stat.trend === 'up' ? 'text-emerald-600' : 'text-red-600'}`}
-              >
-                {stat.change}
-                {stat.trend === 'up' ? (
-                  <ArrowUpRight size={14} />
-                ) : (
-                  <ArrowDownRight size={14} />
-                )}
+              <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                {kpi.change}
+                <ArrowUpRight size={14} />
               </div>
             </div>
-            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">
-              {stat.label}
-            </h3>
-            <p className="text-3xl font-black text-slate-900 italic tracking-tighter">
-              {stat.value}
-            </p>
+            <div>
+              <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-[0.1em] mb-1">{kpi.label}</p>
+              <h2 className="text-2xl font-bold text-[#0F172A]">{kpi.value}</h2>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Map + Sidebar */}
+      {/* Main Grid Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Interactive Map */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-black flex items-center gap-2">
-              <MapIcon size={20} className="text-emerald-600" />
-              Mapa de Propriedades
-            </h3>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              {propertyCount} propriedades
-            </span>
-          </div>
-          <div style={{ height: '400px' }}>
-            <MapContainer
-              center={[-14.235, -51.925]}
-              zoom={4}
-              style={{ height: '100%', width: '100%' }}
-              scrollWheelZoom={true}
-            >
-              <TileLayer
-                attribution="&copy; Esri"
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              />
-              <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" />
-              {properties
-                .filter((p) => p.centroid)
-                .map((prop) => {
-                  try {
-                    const coords =
-                      typeof prop.centroid === 'string'
-                        ? JSON.parse(prop.centroid)
-                        : prop.centroid;
-                    if (coords?.coordinates) {
-                      return (
-                        <Marker
-                          key={prop.id}
-                          position={[
-                            coords.coordinates[1],
-                            coords.coordinates[0],
-                          ]}
-                        >
-                          <Popup>
-                            <strong>{prop.title}</strong>
-                            <br />
-                            {prop.city}/{prop.state}
-                            <br />
-                            {prop.total_area_ha
-                              ? `${prop.total_area_ha} ha`
-                              : ''}
-                          </Popup>
-                        </Marker>
-                      );
-                    }
-                  } catch {
-                    /* skip invalid coords */
-                  }
-                  return null;
-                })}
-            </MapContainer>
-          </div>
-        </div>
-
-        {/* Quick Actions Sidebar */}
-        <div className="space-y-6">
-          {/* Score Cards */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h3 className="text-sm font-bold text-black mb-4">
-              Score Fundiário Médio
-            </h3>
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full border-4 border-emerald-500 flex items-center justify-center">
-                <span className="text-xl font-black text-emerald-600">85</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-600">
-                  Regularidade documental
-                </p>
-                <p className="text-xs text-slate-400">
-                  Baseado em {propertyCount} propriedades
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h3 className="text-sm font-bold text-black mb-4">
-              Score Ambiental Médio
-            </h3>
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full border-4 border-blue-500 flex items-center justify-center">
-                <span className="text-xl font-black text-blue-600">72</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-600">
-                  Conformidade ambiental
-                </p>
-                <p className="text-xs text-slate-400">
-                  CAR, Reserva Legal, APP
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h3 className="text-sm font-bold text-black mb-4">Ações Rápidas</h3>
-            <div className="space-y-2">
-              <Link
-                to="/rural/properties/new"
-                className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all text-sm font-medium"
-              >
-                <Wheat size={18} /> Nova Propriedade
-              </Link>
-              <Link
-                to="/rural/cadastro-tecnico"
-                className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all text-sm font-medium"
-              >
-                <MapIcon size={18} /> Cadastro Técnico
-              </Link>
-              <Link
-                to="/rural/due-diligence"
-                className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all text-sm font-medium"
-              >
-                <ShieldCheck size={18} /> Due Diligence
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Lead Performance */}
-        <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+        {/* Performance Chart */}
+        <div className="lg:col-span-2 card-premium">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-bold text-black">
-              Investidores × Visitas Técnicas
-            </h3>
-            <select className="bg-slate-50 border-none rounded-lg text-sm font-medium text-slate-600 px-3 py-1.5 outline-none">
+            <div>
+              <h3 className="text-lg font-bold text-[#0F172A]">Volume de Negociações</h3>
+              <p className="text-xs text-[#64748B]">Variação mensal de captação em milhões (R$)</p>
+            </div>
+            <select className="text-xs font-bold text-[#64748B] bg-[#F8FAFC] border-none rounded-lg px-3 py-2 outline-none cursor-pointer hover:bg-slate-100 transition-colors">
               <option>Últimos 6 meses</option>
               <option>Este ano</option>
             </select>
           </div>
-          <div className="h-[250px]">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#059669" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#059669" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorVisitas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                  <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22C55E" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#f1f5f9"
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fill: '#94A3B8', fontSize: 11, fontWeight: 500}}
+                  dy={10}
                 />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#64748b', fontSize: 12 }}
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fill: '#94A3B8', fontSize: 11, fontWeight: 500}}
                 />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                />
-                <Tooltip
+                <Tooltip 
                   contentStyle={{
                     backgroundColor: '#fff',
                     borderRadius: '12px',
-                    border: 'none',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    border: '1px solid #E2E8F0',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                    fontSize: '12px'
                   }}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="leads"
-                  name="Investidores"
-                  stroke="#059669"
+                <Area 
+                  type="monotone" 
+                  dataKey="valor" 
+                  stroke="#22C55E" 
                   strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorLeads)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="visitas"
-                  name="Visitas"
-                  stroke="#2563eb"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorVisitas)"
+                  fillOpacity={1} 
+                  fill="url(#colorVal)" 
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Aptitude Pie */}
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-          <h3 className="text-lg font-bold text-black mb-6">
-            Aptidão por Tipo
-          </h3>
-          <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={aptitudeData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {aptitudeData.map((_, idx) => (
-                    <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 space-y-2">
-            {aptitudeData.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: COLORS[idx] }}
-                  />
-                  <span className="text-slate-600">{item.name}</span>
+        {/* Quick Actions & Tasks */}
+        <div className="space-y-6">
+          <div className="card-premium">
+            <h3 className="text-sm font-bold text-[#0F172A] mb-4 uppercase tracking-wider">Ações Estratégicas</h3>
+            <div className="space-y-2">
+              <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-50 transition-all group text-left border border-transparent hover:border-slate-100">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                  <Activity size={16} />
                 </div>
-                <span className="font-bold text-slate-800">{item.value}%</span>
-              </div>
-            ))}
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A]">Análise Fundiária</p>
+                  <p className="text-[10px] text-[#64748B]">Sincronizar dados do CAR/SIGEF</p>
+                </div>
+              </button>
+              <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-50 transition-all group text-left border border-transparent hover:border-slate-100">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                  <Target size={16} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A]">Inteligência Comercial</p>
+                  <p className="text-[10px] text-[#64748B]">Mapa de calor de investidores</p>
+                </div>
+              </button>
+              <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-50 transition-all group text-left border border-transparent hover:border-slate-100">
+                <div className="p-2 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                  <Briefcase size={16} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A]">Novo Prospecto</p>
+                  <p className="text-[10px] text-[#64748B]">Criar apresentação personalizada</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div className="card-premium bg-[#0F172A] border-none text-white">
+            <h3 className="text-xs font-bold text-slate-400 mb-4 uppercase tracking-[0.15em]">Meta de Captação</h3>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold">R$ 12.5M / R$ 15M</span>
+              <span className="text-xs font-bold text-emerald-400">82%</span>
+            </div>
+            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full" style={{ width: '82%' }} />
+            </div>
+            <p className="mt-4 text-[10px] text-slate-400 leading-relaxed font-medium">
+              Você está a apenas R$ 2.5M da meta trimestral. Mantenha o foco em grandes ativos.
+            </p>
           </div>
         </div>
       </div>

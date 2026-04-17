@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
 import {
   Check,
   X,
@@ -26,6 +27,7 @@ interface UserProfile {
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [processing, setProcessing] = useState<string | null>(null);
@@ -43,10 +45,23 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('profiles')
         .select('*, full_name:name')
         .order('created_at', { ascending: false });
+
+      // Filtragem por Organização (Privacidade)
+      // Se não for superadmin, vê apenas usuários da própria organização
+      if (profile?.role !== 'superadmin') {
+        if (profile?.organization_id) {
+          query = query.eq('organization_id', profile.organization_id);
+        } else {
+          // Se não tem organização e não é superadmin, não deve ver nada ou apenas ele mesmo
+          query = query.eq('id', profile?.id);
+        }
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setUsers(data || []);

@@ -518,12 +518,6 @@ export interface SiteSettings {
     };
   };
   integrations?: {
-    evolutionApi?: {
-      baseUrl: string;
-      token: string;
-      instanceName: string;
-      enabled: boolean;
-    };
     groq?: {
       apiKey: string;
       model?: string;

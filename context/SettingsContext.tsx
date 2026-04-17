@@ -71,7 +71,7 @@ export const SettingsProvider: React.FC<{
           .from('site_settings')
           .select('*')
           .eq('organization_id', activeOrgId)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.warn('⚠️ [SettingsContext] Load Error:', error.message);

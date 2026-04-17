@@ -10,7 +10,7 @@ export const leadService = {
     }
 
     const { data, error } = await supabase
-      .from('crm_leads')
+      .from('leads')
       .insert({
         organization_id: (lead as any).organization_id,
         name: lead.name,
@@ -77,7 +77,7 @@ export const leadService = {
   // List leads for Kanban (Single Tenant)
   async list() {
     let query = supabase
-      .from('crm_leads')
+      .from('leads')
       .select(
         `
         *,
@@ -98,7 +98,7 @@ export const leadService = {
   // Update lead status (drag and drop)
   async updateStatus(id: string, status: string) {
     const { data, error } = await supabase
-      .from('crm_leads')
+      .from('leads')
       .update({ status })
       .eq('id', id)
       .select()

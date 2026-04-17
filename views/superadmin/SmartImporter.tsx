@@ -15,7 +15,10 @@ import {
   Hash,
   Type,
   Paintbrush,
+  Crown,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../services/supabase';
 import {
   ImportMode,
   ImportStatus,
@@ -26,62 +29,110 @@ import {
 import VisualPreview from '../../components/importer/VisualPreview';
 import PropertyReviewTable from '../../components/importer/PropertyReviewTable';
 
-const MOCK_PROPERTIES: CapturedProperty[] = [
-  {
-    id: '1',
-    title: 'Fazenda Vale do Ouro - 500ha',
-    location: 'Uberaba, MG',
-    price: 15000000,
-    description: 'Excelente aptidão agrícola...',
-    images: [
-      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=400',
-    ],
-    features: ['Curral', 'Casa Sede', 'Rio'],
-    type: 'Rural',
-    status: 'Venda',
-  },
-  {
-    id: '2',
-    title: 'Penthouse Infinity View',
-    location: 'São Paulo, SP',
-    price: 4200000,
-    description: 'Luxo e sofisticação no Itaim Bibi...',
-    images: [
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=400',
-    ],
-    features: ['Piscina Acadêmica', '4 Vagas', 'Automação'],
-    type: 'Urban',
-    status: 'Venda',
-  },
-];
-
-const MOCK_IDENTITY: VisualIdentity = {
-  palette: ['#4f46e5', '#1e293b', '#10b981', '#f59e0b'],
-  fonts: ['Poppins', 'Inter'],
-  primaryColor: '#4f46e5',
-  secondaryColor: '#1e293b',
-  suggestedTheme: 'Nexus Dark',
-};
-
 const SmartImporter: React.FC = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(() => sessionStorage.getItem('importer_url') || '');
   const [authorized, setAuthorized] = useState(false);
   const [mode, setMode] = useState<ImportMode>('migration');
   const [status, setStatus] = useState<ImportStatus>('idle');
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState(() => sessionStorage.getItem('importer_org_id') || '');
+  const [capturedProperties, setCapturedProperties] = useState<CapturedProperty[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Persistence effects
+  React.useEffect(() => {
+    sessionStorage.setItem('importer_url', url);
+  }, [url]);
+
+  React.useEffect(() => {
+    sessionStorage.setItem('importer_org_id', selectedOrgId);
+  }, [selectedOrgId]);
+
+  // Fetch organizations for the selector
+  React.useEffect(() => {
+    const fetchOrgs = async () => {
+      try {
+        const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+        const response = await fetch(`${apiUrl}/api/organizations`, {
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setOrganizations(data.organizations);
+          if (data.organizations.length > 0) setSelectedOrgId(data.organizations[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to fetch organizations:', err);
+      }
+    };
+    fetchOrgs();
+  }, []);
 
   const handleStart = () => {
-    if (!url || !authorized) return;
+    if (!url || !authorized || !selectedOrgId) return;
     setStep(2);
   };
 
-  const startAnalysis = () => {
+  const startAnalysis = async () => {
     setStatus('analyzing');
-    // Simulate process
-    setTimeout(() => {
-      setStep(3);
+    setError(null);
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+      const response = await fetch(`${apiUrl}/api/import/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({ url, organizationId: selectedOrgId })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setCapturedProperties(data.properties);
+        setStep(5); // Jump to review table
+      } else {
+        throw new Error(data.error || 'Falha na análise');
+      }
+    } catch (err: any) {
+      setError(err.message);
+      setStatus('error');
+    } finally {
       setStatus('idle');
-    }, 2000);
+    }
+  };
+
+  const finalizeImport = async () => {
+    setStatus('importing');
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+      const response = await fetch(`${apiUrl}/api/import/finalize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({ 
+          properties: capturedProperties, 
+          organizationId: selectedOrgId 
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setStep(6);
+      } else {
+        throw new Error(data.error || 'Erro ao finalizar importação');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setStatus('idle');
+    }
   };
 
   React.useEffect(() => {
@@ -141,12 +192,29 @@ const SmartImporter: React.FC = () => {
                 <span className="text-indigo-600 italic">IMOBZY</span>?
               </h2>
               <p className="text-slate-500 text-lg">
-                Informe a URL do site da imobiliária para começarmos a análise
-                de conteúdo e design.
+                Selecione a conta de destino e a URL do site original.
               </p>
             </div>
 
             <div className="w-full max-w-xl space-y-4">
+              {/* Organization Selector */}
+              <div className="text-left space-y-2">
+                <label className="text-xs font-black uppercase text-slate-400 tracking-widest ml-1">
+                  Conta de Destino (Migrar para...)
+                </label>
+                <select
+                  value={selectedOrgId}
+                  onChange={(e) => setSelectedOrgId(e.target.value)}
+                  className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold focus:border-indigo-600 outline-none transition-all appearance-none cursor-pointer"
+                >
+                  {organizations.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.name} ({org.slug})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="relative group">
                 <div className="absolute inset-y-0 left-4 flex items-center text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                   <Globe size={20} />
@@ -415,15 +483,9 @@ const SmartImporter: React.FC = () => {
         {step === 5 && (
           <div className="p-12 flex-1 animate-in slide-in-from-right duration-500">
             <PropertyReviewTable
-              properties={MOCK_PROPERTIES}
-              onConfirm={() => {
-                setStatus('importing');
-                setTimeout(() => {
-                  setStep(6);
-                  setStatus('idle');
-                }, 1500);
-              }}
-              onBack={() => setStep(4)}
+              properties={capturedProperties}
+              onConfirm={finalizeImport}
+              onBack={() => setStep(2)}
             />
           </div>
         )}

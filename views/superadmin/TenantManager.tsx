@@ -10,6 +10,7 @@ import {
   X,
   Save,
   Key,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -29,7 +30,7 @@ interface Organization {
 interface Plan {
   id: string;
   name: string;
-  price: number;
+  price_monthly: number;
 }
 
 const TenantManager: React.FC = () => {
@@ -60,27 +61,28 @@ const TenantManager: React.FC = () => {
   const fetchPlans = async () => {
     const { data } = await supabase
       .from('plans')
-      .select('id, name, price')
+      .select('id, name, price_monthly')
       .eq('is_active', true);
     if (data) setPlans(data);
+  };
+
+  // Helper para pegar o token JWT do Supabase
+  const getAuthHeaders = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token}`,
+    };
   };
 
   const fetchTenants = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('organizations')
-        .select(
-          `
-                    *,
-                    plans ( name )
-                `
-        )
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      // @ts-ignore
-      setTenants(data || []);
+      const headers = await getAuthHeaders();
+      const res = await fetch('/api/admin/organizations', { headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao carregar');
+      setTenants(data.organizations || []);
     } catch (error: any) {
       console.error('Error fetching tenants:', error);
       setErrorMsg(error.message || 'Erro desconhecido');
@@ -105,7 +107,7 @@ const TenantManager: React.FC = () => {
         name: '',
         slug: '',
         owner_email: '',
-        plan_id: plans.length > 0 ? plans[0].id : '', // Default to first plan
+        plan_id: plans.length > 0 ? plans[0].id : '',
         status: 'active',
       });
     }
@@ -117,26 +119,35 @@ const TenantManager: React.FC = () => {
     setFormLoading(true);
 
     try {
+      const headers = await getAuthHeaders();
+      const payload = {
+        name: formData.name,
+        slug: formData.slug,
+        status: formData.status,
+        plan_id: formData.plan_id || undefined,
+      };
+
+      let res: Response;
       if (editingId) {
-        // Update
-        const { error } = await supabase
-          .from('organizations')
-          .update(formData)
-          .eq('id', editingId);
-        if (error) throw error;
+        res = await fetch(`/api/admin/organizations/${editingId}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify(payload),
+        });
       } else {
-        // Create
-        const { error } = await supabase
-          .from('organizations')
-          .insert([formData]);
-        if (error) throw error;
+        res = await fetch('/api/admin/organizations', {
+          method: 'POST', headers,
+          body: JSON.stringify(payload),
+        });
       }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
 
       setIsModalOpen(false);
       fetchTenants();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving:', error);
-      alert('Erro ao salvar imobiliária.');
+      alert(`Erro ao salvar imobiliária: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setFormLoading(false);
     }
@@ -147,15 +158,35 @@ const TenantManager: React.FC = () => {
     if (!confirm(`Deseja alterar o status para ${newStatus}?`)) return;
 
     try {
-      const { error } = await supabase
-        .from('organizations')
-        .update({ status: newStatus })
-        .eq('id', id);
-
-      if (error) throw error;
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/admin/organizations/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
       fetchTenants();
-    } catch (error) {
-      alert('Erro ao atualizar status');
+    } catch (error: any) {
+      alert(`Erro ao atualizar status: ${error.message}`);
+    }
+  };
+
+  const deleteTenant = async (id: string, name: string) => {
+    if (!confirm(`⚠️ Tem certeza que deseja EXCLUIR a imobiliária "${name}"?\n\nEssa ação é IRREVERSÍVEL e vai remover todos os dados associados.`)) return;
+    if (!confirm(`Última confirmação: Excluir "${name}" permanentemente?`)) return;
+
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/admin/organizations/${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      fetchTenants();
+    } catch (error: any) {
+      alert(`Erro ao excluir: ${error.message}`);
     }
   };
 
@@ -331,6 +362,13 @@ const TenantManager: React.FC = () => {
                     >
                       <Key size={18} />
                     </button>
+                    <button
+                      onClick={() => deleteTenant(tenant.id, tenant.name)}
+                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                      title="Excluir Imobiliária"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -429,7 +467,7 @@ const TenantManager: React.FC = () => {
                   <option value="">Selecione um plano...</option>
                   {plans.map((plan) => (
                     <option key={plan.id} value={plan.id}>
-                      {plan.name} - R$ {plan.price}
+                      {plan.name} - R$ {plan.price_monthly}
                     </option>
                   ))}
                 </select>

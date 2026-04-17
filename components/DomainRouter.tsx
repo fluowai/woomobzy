@@ -9,10 +9,16 @@ interface DomainRouterProps {
 }
 
 const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
-  const [isPublicSite, setIsPublicSite] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [resolvedSlug, setResolvedSlug] = useState<string | null>(null);
   const location = useLocation();
+  const [isSystemPath] = useState(() => {
+    const path = window.location.pathname;
+    const systemRoutes = ['/login', '/register', '/onboarding', '/admin', '/rural', '/urban', '/superadmin', '/impersonate', '/lp/', '/site/'];
+    return systemRoutes.some(r => path.startsWith(r)) || path === '/';
+  });
+
+  const [isPublicSite, setIsPublicSite] = useState(false);
+  const [loading, setLoading] = useState(!isSystemPath);
+  const [resolvedSlug, setResolvedSlug] = useState<string | null>(null);
   const { isVisualMode } = useTexts();
 
   // A3: Prevent redundant re-execution
@@ -104,7 +110,6 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         }
 
         // 3. Sub-path Logic (Slug)
-        // BUG 2 FIX: Added /rural and /urban to system routes list
         const systemRoutes = [
           '/login',
           '/register',
@@ -115,11 +120,12 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           '/superadmin',
           '/impersonate',
           '/lp/',
+          '/site/',
         ];
         const isSystemRoute = systemRoutes.some((r) => path.startsWith(r));
 
         if (isSystemRoute || path === '/') {
-          log(`⚡ [Router] System Route: ${path}`);
+          log(`⚡ [Router] System Route Detected: ${path}`);
           setIsPublicSite(false);
           setLoading(false);
           return;

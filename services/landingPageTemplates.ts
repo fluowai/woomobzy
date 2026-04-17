@@ -1504,6 +1504,295 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       },
     ],
   },
+  
+  // ============================================
+  // TEMPLATES URBANOS (IMOBILIÁRIAS TRADICIONAIS)
+  // ============================================
+
+  // 1. URBAN ELEGANCE
+  {
+    id: 'urban-elegance',
+    name: 'Urban Elegance',
+    description: 'Design sofisticado em preto e dourado para imóveis de luxo.',
+    thumbnail: '🏙️',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#0a0a0a',
+      secondaryColor: '#d4af37',
+      backgroundColor: '#ffffff',
+      textColor: '#1a1a1a',
+      fontFamily: 'Playfair Display',
+      borderRadius: '0px',
+      spacing: { xs: '1rem', sm: '2rem', md: '3rem', lg: '4rem', xl: '6rem' },
+      fontSize: { base: '1.125rem', heading1: '4rem', heading2: '3rem', heading3: '2rem' },
+    },
+    blocks: [
+      {
+        type: BlockType.HEADER, order: 0, visible: true,
+        config: { brandName: 'Premium Estate', showWhatsApp: true, sticky: true, transparent: true, textColor: '#ffffff' } as any,
+        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.HERO, order: 1, visible: true,
+        config: {
+          title: 'Exclusividade em Cada Detalhe',
+          subtitle: 'Os melhores endereços para o seu estilo de vida sofisticado',
+          backgroundImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80',
+          overlayOpacity: 0.6,
+          ctaText: 'Ver Portfólio Exclusivo',
+          ctaLink: '#imoveis',
+          height: 800,
+          alignment: 'center',
+          textColor: '#d4af37',
+        },
+        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.PROPERTY_GRID, order: 2, visible: true,
+        config: { columns: 2, gap: 40, showFilters: false, maxItems: 4, sortBy: 'price', cardStyle: 'modern' },
+        styles: { padding: '100px 20px', backgroundColor: '#ffffff' }, responsive: {}
+      },
+      {
+        type: BlockType.CTA, order: 3, visible: true,
+        config: {
+          title: 'Atendimento Personalizado VIP',
+          description: 'Nossos Private Brokers estão prontos para encontrar o imóvel perfeito para você.',
+          buttonText: 'Falar com um Concierge',
+          buttonLink: 'https://wa.me/5544900000000',
+          backgroundColor: '#0a0a0a',
+          textColor: '#d4af37',
+        },
+        styles: { padding: '120px 20px' }, responsive: {}
+      }
+    ],
+  },
+  
+  // 2. LAR DOCE LAR
+  {
+    id: 'lar-doce-lar',
+    name: 'Lar Doce Lar',
+    description: 'Cores vibrantes focadas em famílias que buscam financiamento e o primeiro imóvel.',
+    thumbnail: '🏡',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#f97316',
+      secondaryColor: '#3b82f6',
+      backgroundColor: '#f8fafc',
+      textColor: '#334155',
+      fontFamily: 'Inter',
+      borderRadius: '0.75rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '2.5rem', heading2: '2rem', heading3: '1.5rem' },
+    },
+    blocks: [
+      {
+        type: BlockType.HEADER, order: 0, visible: true,
+        config: { brandName: 'Lar Imóveis', showWhatsApp: true, sticky: true, transparent: false, textColor: '#0f172a' } as any,
+        styles: { padding: '0', backgroundColor: '#ffffff' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.HERO, order: 1, visible: true,
+        config: {
+          title: 'Conquiste a Casa Própria Hoje!',
+          subtitle: 'Imóveis com Financiamento Facilitado para você e sua família',
+          backgroundImage: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1920&q=80',
+          overlayOpacity: 0.4,
+          ctaText: 'Faça uma Simulação',
+          ctaLink: '#simulacao',
+          height: 600,
+          alignment: 'left',
+          textColor: '#ffffff',
+        },
+        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.FEATURES, order: 2, visible: true,
+        config: {
+          features: [
+            { title: 'Aprovação Rápida', description: 'Parceria com todos os bancos', icon: '⚡' },
+            { title: 'Use seu FGTS', description: 'Você pode usar o saldo na entrada', icon: '💰' },
+            { title: 'Taxas Reduzidas', description: 'As melhores condições do mercado', icon: '📉' }
+          ], columns: 3
+        },
+        styles: { padding: '60px 20px', backgroundColor: '#ffffff' }, responsive: {}
+      },
+      {
+        type: BlockType.PROPERTY_GRID, order: 3, visible: true,
+        config: { columns: 3, gap: 24, showFilters: true, maxItems: 6, sortBy: 'date', cardStyle: 'modern' },
+        styles: { padding: '40px 20px' }, responsive: {}
+      }
+    ],
+  },
+
+  // 3. METRÓPOLE SMART
+  {
+    id: 'metropole-smart',
+    name: 'Metrópole Smart',
+    description: 'Design jovem voltado a studios, moradia compacta e investidores tech.',
+    thumbnail: '🏢',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#8b5cf6',
+      secondaryColor: '#10b981',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Roboto',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.5rem', heading3: '2rem' },
+    },
+    blocks: [
+      {
+        type: BlockType.HEADER, order: 0, visible: true,
+        config: { brandName: 'NeoStudios', showWhatsApp: true, sticky: true, transparent: false, textColor: '#1f2937' } as any,
+        styles: { padding: '0', backgroundColor: '#ffffff' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.HERO, order: 1, visible: true,
+        config: {
+          title: 'O Futuro é Smart',
+          subtitle: 'Studios e Apartamentos Compactos perto de tudo.',
+          backgroundImage: 'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=1920&q=80',
+          overlayOpacity: 0.6,
+          ctaText: 'Ver Mapa de Studios',
+          ctaLink: '#properties',
+          height: 650,
+          alignment: 'center',
+          textColor: '#ffffff',
+        },
+        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.STATS, order: 2, visible: true,
+        config: {
+          stats: [
+            { icon: '📈', value: '1.2%', label: 'Rentabilidade Mensal' },
+            { icon: '🚉', value: '5 min', label: 'do Metrô' },
+            { icon: '🔒', value: '24h', label: 'Segurança Inteligente' },
+          ], columns: 3
+        } as any,
+        styles: { padding: '60px 20px', backgroundColor: '#8b5cf6', color: '#ffffff' }, responsive: {}
+      },
+      {
+        type: BlockType.PROPERTY_GRID, order: 3, visible: true,
+        config: { columns: 3, gap: 16, showFilters: true, maxItems: 6, sortBy: 'price', cardStyle: 'modern' },
+        styles: { padding: '80px 20px' }, responsive: {}
+      }
+    ],
+  },
+
+  // 4. CLASSIC REAL ESTATE
+  {
+    id: 'classic-real-estate',
+    name: 'Classic Real Estate',
+    description: 'Imobiliária de bairro, confiável, segurança jurídica.',
+    thumbnail: '🏛️',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#1e3a8a',
+      secondaryColor: '#f1f5f9',
+      backgroundColor: '#ffffff',
+      textColor: '#334155',
+      fontFamily: 'Lora',
+      borderRadius: '0.25rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '2rem', lg: '3rem', xl: '4rem' },
+      fontSize: { base: '1rem', heading1: '2.5rem', heading2: '1.875rem', heading3: '1.5rem' },
+    },
+    blocks: [
+      {
+        type: BlockType.HEADER, order: 0, visible: true,
+        config: { brandName: 'Tradição Imóveis', showWhatsApp: true, sticky: true, transparent: false, textColor: '#ffffff' } as any,
+        styles: { padding: '0', backgroundColor: '#1e3a8a' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.HERO, order: 1, visible: true,
+        config: {
+          title: 'Encontre o Imóvel Perfeito na Região Central',
+          subtitle: 'Tradição e Confiança desde 1990 gerando negócios imobiliários.',
+          backgroundImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=80',
+          overlayOpacity: 0.5,
+          ctaText: 'Ver Nossos Imóveis',
+          ctaLink: '#imoveis',
+          height: 500,
+          alignment: 'center',
+          textColor: '#ffffff',
+        },
+        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.PROPERTY_GRID, order: 2, visible: true,
+        config: { columns: 3, gap: 30, showFilters: true, maxItems: 9, sortBy: 'date', cardStyle: 'modern' },
+        styles: { padding: '80px 20px' }, responsive: {}
+      },
+      {
+        type: BlockType.FORM, order: 3, visible: true,
+        config: {
+          title: 'Quer Avaliar Seu Imóvel?',
+          fields: [
+            { name: 'name', type: 'text', label: 'Nome', required: true },
+            { name: 'phone', type: 'tel', label: 'Celular', required: true }
+          ],
+          submitText: 'Solicitar Avaliação',
+          successMessage: 'Obrigado. Um corretor fará contato logo!'
+        },
+        styles: { padding: '60px 20px', backgroundColor: '#f1f5f9' }, responsive: {}
+      }
+    ],
+  },
+  
+  // 5. MODERN MINIMALIST
+  {
+    id: 'modern-minimalist',
+    name: 'Modern Minimalist',
+    description: 'Estilo clean, focado na arquitetura e design da propriedade.',
+    thumbnail: '🖼️',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#171717',
+      secondaryColor: '#f5f5f5',
+      backgroundColor: '#ffffff',
+      textColor: '#262626',
+      fontFamily: 'Inter',
+      borderRadius: '0px',
+      spacing: { xs: '1rem', sm: '2rem', md: '4rem', lg: '6rem', xl: '8rem' },
+      fontSize: { base: '1rem', heading1: '4.5rem', heading2: '3rem', heading3: '2rem' },
+    },
+    blocks: [
+      {
+        type: BlockType.HEADER, order: 0, visible: true,
+        config: { brandName: 'ArqEstate', showWhatsApp: false, sticky: true, transparent: true, textColor: '#171717' } as any,
+        styles: { padding: '0', backgroundColor: 'transparent' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.HERO, order: 1, visible: true,
+        config: {
+          title: 'Curadoria de Imóveis Especiais',
+          subtitle: '',
+          backgroundImage: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1920&q=80',
+          overlayOpacity: 0.1,
+          ctaText: 'Explore o Acervo',
+          ctaLink: '#imoveis',
+          height: 900,
+          alignment: 'center',
+          textColor: '#ffffff',
+        },
+        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+      },
+      {
+        type: BlockType.TEXT, order: 2, visible: true,
+        config: {
+          content: '<h2 style="font-weight:300; font-size:2.5rem; text-align:center;">Para nós, a beleza está no vazio perfeito.</h2>',
+          fontSize: 24, fontWeight: 300, color: '#171717', alignment: 'center'
+        },
+        styles: { padding: '120px 20px' }, responsive: {}
+      },
+      {
+        type: BlockType.PROPERTY_CAROUSEL, order: 3, visible: true,
+        config: { images: [], autoplay: true, autoplayDelay: 4000, showThumbnails: false, showDots: true } as any,
+        styles: { padding: '0 20px 100px 20px' }, responsive: {}
+      }
+    ],
+  }
 ];
 
 // Helper para buscar template por ID

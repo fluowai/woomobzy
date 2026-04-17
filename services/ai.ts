@@ -8,9 +8,19 @@ import {
 } from '../types/landingPage';
 import { v4 as uuidv4 } from 'uuid';
 import { geminiService } from './geminiService';
+import { openaiService } from './openaiService';
+import { groqService } from './groqService';
+
+export interface AIConfig {
+  provider?: 'openai' | 'gemini' | 'groq';
+  openaiKey?: string;
+  geminiKey?: string;
+  groqKey?: string;
+}
 
 export const generateLandingPageFromProperty = async (
-  property: Property
+  property: Property,
+  config?: AIConfig
 ): Promise<Partial<LandingPage>> => {
   // Construct enhanced prompt with copywriting expertise
   const propertyImages =
@@ -142,7 +152,6 @@ ESTRUTURA OBRIGATÓRIA (RETORNE APENAS O JSON):
         ]
       }
     }
-    // Adicione outros blocos relevantes (property_carousel, cta, form)
   ]
 }
 
@@ -150,9 +159,27 @@ RETORNE APENAS O JSON. SEM MARKDOWN. SEM EXPLICAÇÕES.
 `;
 
   try {
-    const text = await geminiService.generateText(prompt);
+    let text = '{}';
+    
+    // Choose Provider with fallback
+    if (config?.openaiKey) {
+      console.log('🤖 Using OpenAI for landing page generation...');
+      text = await openaiService.generateText(prompt, config.openaiKey);
+    } else if (config?.geminiKey) {
+      console.log('🤖 Using Gemini (Config) for landing page generation...');
+      text = await geminiService.generateText(prompt); // geminiService handles its own key currently, but we could refactor
+    } else if (config?.groqKey) {
+      console.log('🤖 Using Groq for landing page generation...');
+      text = await groqService.generateText(prompt, config.groqKey);
+    } else {
+      // Default to env key if available (Gemini)
+      console.log('🤖 Using Default Gemini (Env) for landing page generation...');
+      text = await geminiService.generateText(prompt);
+    }
 
-    const parsed = JSON.parse(text);
+    // Clean JSON string if returned with ```json
+    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleanJson);
 
     // Post-process to ensure IDs and types match our system
     let blocks: Block[] = (parsed.blocks || []).map(

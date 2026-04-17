@@ -378,18 +378,18 @@ const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
               </h3>
 
               {(
-                Object.keys(theme.spacing) as Array<keyof typeof theme.spacing>
+                Object.keys(theme.spacing) as Array<keyof LandingPageTheme['spacing']>
               ).map((key) => (
-                <div key={key}>
+                <div key={String(key)}>
                   <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
                     {key}
                   </label>
                   <input
                     type="text"
-                    value={theme.spacing[key as keyof typeof theme.spacing]}
+                    value={theme.spacing[key]}
                     onChange={(e) =>
                       updateSpacing(
-                        key as keyof typeof theme.spacing,
+                        key,
                         e.target.value
                       )
                     }

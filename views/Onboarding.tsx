@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   Building2,
   Palette,
@@ -131,10 +132,44 @@ const PROFILES = [
 // ==========================================
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isSystemSetup, setIsSystemSetup] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<any>(null);
+
+  React.useEffect(() => {
+    checkSystem();
+  }, []);
+
+  const checkSystem = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const res = await fetch('/api/system-status', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) {
+        console.warn('⚠️ Backend returned error:', res.status);
+        return;
+      }
+      
+      const data = await res.json();
+      console.log('✅ Backend connected. Fresh system:', data.fresh);
+      if (data.fresh) {
+        setIsSystemSetup(true);
+        setStep(3); // Go straight to account
+      }
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+        console.warn('⚠️ Backend check timed out (server may not be running)');
+      } else {
+        console.warn('⚠️ Backend unavailable:', e.message);
+      }
+    }
+  };
 
   const [formData, setFormData] = useState({
     // Plan
@@ -157,7 +192,7 @@ const Onboarding: React.FC = () => {
     logoUrl: '',
   });
 
-  const totalSteps = 5;
+  const totalSteps = isSystemSetup ? 3 : 5;
 
   const update = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -167,9 +202,9 @@ const Onboarding: React.FC = () => {
   const canProceed = () => {
     switch (step) {
       case 1:
-        return !!formData.plan;
+        return !!formData.plan || isSystemSetup;
       case 2:
-        return !!formData.profileType;
+        return !!formData.profileType || isSystemSetup;
       case 3:
         return (
           !!formData.email &&
@@ -177,7 +212,7 @@ const Onboarding: React.FC = () => {
           formData.password.length >= 6
         );
       case 4:
-        return !!formData.agencyName;
+        return !!formData.agencyName || isSystemSetup;
       case 5:
         return true;
       default:
@@ -223,6 +258,15 @@ const Onboarding: React.FC = () => {
         <p className="text-slate-500 mt-1">
           Comece gratuitamente e escale quando precisar
         </p>
+        <button
+          onClick={() => {
+            setIsSystemSetup(true);
+            setStep(3);
+          }}
+          className="mt-2 text-xs text-emerald-600 hover:text-emerald-700 font-bold underline"
+        >
+          Eu sou o proprietário do sistema
+        </button>
       </div>
 
       <div className="grid gap-4">
@@ -361,9 +405,13 @@ const Onboarding: React.FC = () => {
   const renderAccountStep = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-black text-slate-900">Crie sua Conta</h2>
+        <h2 className="text-2xl font-black text-slate-900">
+          {isSystemSetup ? 'Configuração do Proprietário' : 'Crie sua Conta'}
+        </h2>
         <p className="text-slate-500 mt-1">
-          Dados de acesso ao painel administrativo
+          {isSystemSetup
+            ? 'Defina os dados de acesso do Dono do Sistema'
+            : 'Dados de acesso ao painel administrativo'}
         </p>
       </div>
 
@@ -688,6 +736,43 @@ const Onboarding: React.FC = () => {
     </div>
   );
 
+  // Superadmin & Admin Bypass UI
+  if (profile?.role === 'superadmin' || profile?.role === 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 text-center shadow-2xl">
+          <div className="w-20 h-20 bg-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3">
+            {profile.role === 'superadmin' ? <Crown size={40} className="text-white -rotate-3" /> : <Shield size={40} className="text-white -rotate-3" />}
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 mb-2">Olá, {profile.role === 'superadmin' ? 'Administrador!' : 'Gestor!'}</h2>
+          <p className="text-slate-500 mb-8 font-medium">
+            Você já possui acesso ao painel. Deseja pular o cadastro de imobiliária e ir para o Dashboard?
+          </p>
+          
+          <div className="space-y-4">
+            <button
+              onClick={() => navigate(profile.role === 'superadmin' ? '/superadmin' : '/admin')}
+              className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 group"
+            >
+              Ir para o Painel
+              <ArrowRight className="inline ml-2 group-hover:translate-x-1 transition-transform" />
+            </button>
+            
+            <button
+              onClick={() => {
+                // Let them stay if they really want to finish onboarding
+                setStep(1);
+              }}
+              className="w-full text-slate-400 py-2 font-bold text-sm hover:text-slate-600 transition-colors"
+            >
+              Quero cadastrar minha imobiliária agora
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ==========================================
   // RENDER
   // ==========================================
@@ -735,11 +820,17 @@ const Onboarding: React.FC = () => {
 
           {/* Content */}
           <div className="p-8">
-            {step === 1 && renderPlanStep()}
-            {step === 2 && renderProfileStep()}
-            {step === 3 && renderAccountStep()}
-            {step === 4 && renderOrgStep()}
-            {step === 5 && renderConfirmStep()}
+            {isSystemSetup ? (
+              renderAccountStep()
+            ) : (
+              <>
+                {step === 1 && renderPlanStep()}
+                {step === 2 && renderProfileStep()}
+                {step === 3 && renderAccountStep()}
+                {step === 4 && renderOrgStep()}
+                {step === 5 && renderConfirmStep()}
+              </>
+            )}
             {step === 6 && renderSuccess()}
 
             {/* Error */}
@@ -752,7 +843,7 @@ const Onboarding: React.FC = () => {
             {/* Navigation */}
             {step <= totalSteps && (
               <div className="flex gap-3 mt-6">
-                {step > 1 && (
+                {!isSystemSetup && step > 1 && (
                   <button
                     onClick={() => setStep((s) => s - 1)}
                     className="flex-1 bg-white text-slate-600 border-2 border-slate-200 p-3.5 rounded-xl font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
@@ -760,7 +851,7 @@ const Onboarding: React.FC = () => {
                     <ArrowLeft size={16} /> Voltar
                   </button>
                 )}
-                {step < totalSteps ? (
+                {!isSystemSetup && step < totalSteps ? (
                   <button
                     onClick={() => setStep((s) => s + 1)}
                     disabled={!canProceed()}
@@ -772,17 +863,17 @@ const Onboarding: React.FC = () => {
                   <button
                     onClick={handleSubmit}
                     disabled={loading || !canProceed()}
-                    className="flex-[2] bg-gradient-to-r from-emerald-500 to-emerald-700 text-white p-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:from-emerald-600 hover:to-emerald-800 transition-all shadow-lg shadow-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-emerald-500 to-emerald-700 text-white p-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:from-emerald-600 hover:to-emerald-800 transition-all shadow-lg shadow-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <>
                         <Loader2 size={18} className="animate-spin" />
-                        Criando sua conta...
+                        {isSystemSetup ? 'Configurando Sistema...' : 'Criando sua conta...'}
                       </>
                     ) : (
                       <>
                         <Sparkles size={18} />
-                        Criar Minha Conta
+                        {isSystemSetup ? 'Finalizar Configuração de Dono' : 'Criar Minha Conta'}
                       </>
                     )}
                   </button>

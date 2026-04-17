@@ -12,12 +12,15 @@ export default defineConfig(({ mode }) => {
   return {
     root: process.cwd(),
     server: {
-      port: 3005,
+      port: 3006,
       strictPort: true,
       host: true,
+      watch: {
+        ignored: ['**/.sessions/**']
+      },
       proxy: {
         '/api': {
-          target: 'http://localhost:3002',
+          target: 'http://127.0.0.1:3002',
           changeOrigin: true,
           secure: false,
         },

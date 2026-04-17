@@ -35,8 +35,13 @@ export const getAllTexts = async (category = null, section = null) => {
     });
 
     return { texts: textsMap, raw: data };
-  } catch (error) {
-    console.error('Error fetching texts:', error);
+  } catch (error: any) {
+    // Only log as error if it's NOT a JWT issue (those are handled upstream)
+    if (error?.message?.includes('JWT expired') || error?.code === 'PGRST303') {
+      console.warn('⚠️ [texts.ts] JWT expired, skipping fetch');
+    } else {
+      console.error('Error fetching texts:', error);
+    }
     throw error;
   }
 };

@@ -28,6 +28,9 @@ const Login: React.FC = () => {
 
     if (profile.role === 'superadmin') {
       navigate('/superadmin', { replace: true });
+    } else if (profile.role === 'admin') {
+      // Admins should be allowed to the basic dashboard to manage settings
+      navigate('/admin', { replace: true });
     } else if (!profile.organization_id) {
       navigate('/onboarding', { replace: true });
     } else {

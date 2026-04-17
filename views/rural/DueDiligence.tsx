@@ -12,6 +12,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 type DocStatus = 'approved' | 'pending' | 'rejected' | 'missing';
 
@@ -145,6 +146,7 @@ const statusConfig: Record<
 };
 
 const DueDiligence: React.FC = () => {
+  const { profile } = useAuth();
   const [checklist, setChecklist] =
     useState<ChecklistItem[]>(DEFAULT_CHECKLIST);
   const [expandedCategory, setExpandedCategory] = useState<string>('fundiario');
@@ -153,14 +155,18 @@ const DueDiligence: React.FC = () => {
 
   useEffect(() => {
     const loadProps = async () => {
+      if (!profile?.organization_id) return;
+
       const { data } = await supabase
         .from('properties')
         .select('id, title')
+        .eq('organization_id', profile?.organization_id)
+        .in('property_type', ['Rural', 'Fazenda'])
         .order('title');
       setProperties(data || []);
     };
     loadProps();
-  }, []);
+  }, [profile?.organization_id]);
 
   const cycleStatus = (id: string) => {
     const order: DocStatus[] = ['missing', 'pending', 'approved', 'rejected'];

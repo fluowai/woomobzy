@@ -5,10 +5,13 @@ import {
   Brain,
   Check,
   Info,
-  Activity,
   Globe,
   Palette,
   Users,
+  Activity,
+  ArrowRight,
+  Shield,
+  Key
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
@@ -17,6 +20,7 @@ import UserManagement from './admin/UserManagement';
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
+  const [openaiKey, setOpenaiKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [saving, setSaving] = useState(false);
@@ -26,6 +30,9 @@ const SystemSettings: React.FC = () => {
   >('appearance');
 
   useEffect(() => {
+    if (settings?.integrations?.openai?.apiKey) {
+      setOpenaiKey(settings.integrations.openai.apiKey);
+    }
     if (settings?.integrations?.groq?.apiKey) {
       setGroqKey(settings.integrations.groq.apiKey);
     }
@@ -41,6 +48,10 @@ const SystemSettings: React.FC = () => {
         ...settings,
         integrations: {
           ...settings.integrations,
+          openai: {
+            apiKey: openaiKey,
+            model: 'gpt-4o',
+          },
           groq: {
             apiKey: groqKey,
             model: 'llama-3.3-70b-versatile',
@@ -54,7 +65,6 @@ const SystemSettings: React.FC = () => {
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Erro ao salvar configurações');
     } finally {
       setSaving(false);
     }
@@ -62,233 +72,145 @@ const SystemSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="flex items-center justify-center p-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
       </div>
     );
   }
 
+  const tabs = [
+    { id: 'appearance', label: 'Aparência', icon: Palette },
+    { id: 'users', label: 'Membros & Acesso', icon: Users },
+    { id: 'domains', label: 'Domínios', icon: Globe },
+    { id: 'ai', label: 'IA & Chaves', icon: Brain },
+    { id: 'tracking', label: 'Tracking', icon: Activity },
+  ];
+
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-[1200px] mx-auto space-y-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Configurações & Gestão
-          </h1>
-          <p className="text-gray-500">
-            Controle completo do seu sistema imobiliário.
-          </p>
+          <h1 className="text-2xl font-bold text-[#0F172A] mb-1">Configurações & Gestão</h1>
+          <p className="text-sm text-[#64748B]">Controle completo do seu sistema imobiliário e integrações.</p>
         </div>
+        
+        {activeTab === 'ai' && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="btn-primary-agro shadow-lg shadow-emerald-500/20"
+          >
+            {saving ? 'SALVANDO...' : saved ? 'SALVO!' : 'SALVAR CHAVES'}
+            {!saving && !saved && <Save size={18} />}
+            {saved && <Check size={18} />}
+          </button>
+        )}
       </div>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8 overflow-x-auto">
+      {/* Modern Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#E2E8F0] overflow-x-auto custom-scrollbar no-scrollbar">
+        {tabs.map((tab) => (
           <button
-            onClick={() => setActiveTab('appearance')}
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
             className={`
-              py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap
-              ${
-                activeTab === 'appearance'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
+              flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-all relative whitespace-nowrap
+              ${activeTab === tab.id ? 'text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}
             `}
           >
-            <div className="flex items-center gap-2">
-              <Palette size={18} />
-              Aparência
-            </div>
+            <tab.icon size={18} />
+            {tab.label}
+            {activeTab === tab.id && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#22C55E]" />
+            )}
           </button>
-
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`
-              py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap
-              ${
-                activeTab === 'users'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            <div className="flex items-center gap-2">
-              <Users size={18} />
-              Membros & Acesso
-            </div>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('domains')}
-            className={`
-              py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap
-              ${
-                activeTab === 'domains'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            <div className="flex items-center gap-2">
-              <Globe size={18} />
-              Domínios
-            </div>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('ai')}
-            className={`
-              py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap
-              ${
-                activeTab === 'ai'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            <div className="flex items-center gap-2">
-              <Brain size={18} />
-              IA & Chaves
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('tracking')}
-            className={`
-              py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap
-              ${
-                activeTab === 'tracking'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            <div className="flex items-center gap-2">
-              <Activity size={18} />
-              Tracking
-            </div>
-          </button>
-        </nav>
+        ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="min-h-[500px]">
-        {activeTab === 'appearance' ? (
-          <AppearanceSettings />
-        ) : activeTab === 'users' ? (
-          <UserManagement />
-        ) : activeTab === 'domains' ? (
-          <DomainSettings />
-        ) : activeTab === 'ai' ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* AI Content same as before but wrapped nicely */}
-            <div className="p-6 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                <Brain size={20} />
+      {/* Content Area */}
+      <div className="min-h-[600px] animate-in fade-in duration-500">
+        {activeTab === 'appearance' && <AppearanceSettings />}
+        {activeTab === 'users' && <UserManagement />}
+        {activeTab === 'domains' && <DomainSettings />}
+        {activeTab === 'tracking' && <TrackingSettings />}
+        
+        {activeTab === 'ai' && (
+          <div className="space-y-6">
+            <div className="card-premium">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-slate-50 text-slate-900 rounded-2xl">
+                  <Key size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#0F172A]">API & Inteligência Artificial</h3>
+                  <p className="text-xs text-[#64748B]">Configure as chaves secretas para alimentar o IA Studio e automações.</p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-semibold text-gray-800">
-                  Inteligência Artificial (Groq AI)
-                </h2>
-                <p className="text-xs text-gray-500">
-                  Configure a chave de API da Groq para geração rápida e de
-                  baixo custo
-                </p>
+
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">OpenAI API Key (GPT-4o)</label>
+                    <input
+                      type="password"
+                      value={openaiKey}
+                      onChange={(e) => setOpenaiKey(e.target.value)}
+                      placeholder="sk-..."
+                      className="input-premium w-full"
+                    />
+                    <p className="text-[10px] text-slate-400">Usado para gerações complexas e análise de dossiês.</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Gemini API Key (Google)</label>
+                    <input
+                      type="password"
+                      value={geminiKey}
+                      onChange={(e) => setGeminiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="input-premium w-full"
+                    />
+                    <p className="text-[10px] text-slate-400">Obtenha sua chave gratuita no Google AI Studio.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Groq API Key (Llama 3)</label>
+                    <input
+                      type="password"
+                      value={groqKey}
+                      onChange={(e) => setGroqKey(e.target.value)}
+                      placeholder="gsk_..."
+                      className="input-premium w-full"
+                    />
+                    <p className="text-[10px] text-slate-400">Gerações ultrarrápidas de baixo custo.</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-3">
+                  <Info size={16} className="text-emerald-600 mt-0.5" />
+                  <p className="text-xs text-emerald-800 leading-relaxed">
+                    <strong>Dica Premium:</strong> Recomendamos o uso da <strong>Gemini (1.5 Flash)</strong> para custos otimizados e maior velocidade de resposta em atendimentos de chat e descrições técnicas.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gemini API Key (Google)
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={geminiKey}
-                    onChange={(e) => setGeminiKey(e.target.value)}
-                    placeholder="Ex: AIzaSy..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                  />
+            <div className="card-premium">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                    <Shield size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Segurança & Criptografia</h3>
+                    <p className="text-[10px] text-[#64748B]">Suas chaves são armazenadas com criptografia de ponta a ponta.</p>
+                  </div>
                 </div>
-                <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
-                  <Info size={12} />
-                  Obtenha gratuitamente no{' '}
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 hover:underline"
-                  >
-                    Google AI Studio
-                  </a>
-                  .
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-gray-100">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Groq API Key (Opcional / Fallback)
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={groqKey}
-                    onChange={(e) => setGroqKey(e.target.value)}
-                    placeholder="Ex: gsk_..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                  />
-                </div>
-                <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
-                  <Info size={12} />
-                  Você pode obter uma chave gratuita no{' '}
-                  <a
-                    href="https://console.groq.com/keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 hover:underline"
-                  >
-                    Groq Console
-                  </a>
-                  .
-                </p>
-              </div>
-
-              <div className="flex justify-end pt-4 border-t border-gray-100">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className={`
-                        flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all
-                        ${
-                          saved
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 shadow-lg'
-                        }
-                        disabled:opacity-70 disabled:cursor-not-allowed
-                        `}
-                >
-                  {saving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Salvando...
-                    </>
-                  ) : saved ? (
-                    <>
-                      <Check size={18} />
-                      Salvo!
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18} />
-                      Salvar Configurações
-                    </>
-                  )}
-                </button>
+                <button className="text-xs font-bold text-blue-600 hover:underline">Ver Termos</button>
               </div>
             </div>
           </div>
-        ) : (
-          <TrackingSettings />
         )}
       </div>
     </div>

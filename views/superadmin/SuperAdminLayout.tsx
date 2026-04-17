@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
@@ -29,7 +29,7 @@ const SuperAdminLayout: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  console.log('👑 [SuperAdminLayout] Rendering. Role:', profile?.role);
+  // rendering...
 
   const handleSignOut = async () => {
     await signOut();
@@ -101,19 +101,13 @@ const SuperAdminLayout: React.FC = () => {
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive =
-                location.pathname === item.path ||
-                (item.path !== '/superadmin' &&
-                  location.pathname.startsWith(item.path));
-
               return (
-                <button
+                <NavLink
                   key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`
+                  to={item.path}
+                  end={item.path === '/superadmin'}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={({ isActive }) => `
                     w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                     ${
                       isActive
@@ -124,7 +118,7 @@ const SuperAdminLayout: React.FC = () => {
                 >
                   <Icon size={20} />
                   {item.label}
-                </button>
+                </NavLink>
               );
             })}
           </nav>

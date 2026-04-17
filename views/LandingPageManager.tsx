@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { landingPageService } from '../services/landingPages';
 import { propertyService } from '../services/properties';
 import { generateLandingPageFromProperty } from '../services/ai';
@@ -732,6 +733,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
   const [step, setStep] = useState<'template' | 'property' | 'generating'>(
     'template'
   );
+  const { settings } = useSettings();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     null
   );
@@ -790,9 +792,16 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       setStep('generating');
 
       // AI Generation
-      setGenerationStage('Escrevendo copy persuasiva...');
-      console.log('Calling generateLandingPageFromProperty...');
-      const aiData = await generateLandingPageFromProperty(property);
+      setGenerationStage('Escrevendo copy persuasiva com IA...');
+      console.log('Calling generateLandingPageFromProperty with keys...');
+      
+      const config = {
+        openaiKey: settings.integrations?.openai?.apiKey,
+        geminiKey: settings.integrations?.gemini?.apiKey,
+        groqKey: settings.integrations?.groq?.apiKey,
+      };
+
+      const aiData = await generateLandingPageFromProperty(property, config);
       console.log('AI Data received:', aiData);
 
       setGenerationStage('Montando layout v2.0...');

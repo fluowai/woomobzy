@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Environment files - NEVER COMMIT THESE
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,4 +31,17 @@ dist-ssr
 *.sw?
 
 .vercel
-.env
+
+# Secrets backup (if you need to document compromised keys)
+*.secrets.md
+
+# Debug files
+debug_scrape.html
+*.debug
+
+# Test coverage
+coverage
+
+# Backup files
+*.bak
+*.backup

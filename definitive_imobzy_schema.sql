@@ -1,11 +1,10 @@
 -- ============================================
--- IMOBZY RURAL PLATFORM - DEFINITIVE SCHEMA
+-- IMOBZY RURAL PLATFORM - DEFINITIVE SCHEMA (SEM POSTGIS)
 -- ============================================
--- Includes: Multi-tenancy, Rural technical fields, GIS/PostGIS, 
+-- Includes: Multi-tenancy, Rural technical fields,
 -- CRM, Visual Editor support and WhatsApp integration.
 
 -- 1. EXTENSIONS
-CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 2. ORGANIZATIONS (Tenants)
@@ -54,7 +53,8 @@ CREATE TABLE IF NOT EXISTS properties (
   neighborhood TEXT,
   state TEXT,
   address TEXT,
-  centroid GEOGRAPHY(POINT, 4326),
+  latitude NUMERIC(10,8),
+  longitude NUMERIC(11,8),
   
   -- Technical Rural Fields
   property_type TEXT, -- FAZENDA, SITIO, etc.
@@ -81,12 +81,12 @@ CREATE TABLE IF NOT EXISTS properties (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 5. PROPERTY POLYGONS (GIS)
+-- 5. PROPERTY POLYGONS (Simplified - no PostGIS)
 CREATE TABLE IF NOT EXISTS property_polygons (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   property_id UUID REFERENCES properties(id) ON DELETE CASCADE,
   organization_id UUID REFERENCES organizations(id),
-  geom GEOMETRY(GEOMETRY, 4326),
+  geom_data TEXT, -- GeoJSON or WKT string (simplified)
   source TEXT, -- MANUAL, CAR, SIGEF
   area_calculated_ha NUMERIC(15,2),
   created_at TIMESTAMPTZ DEFAULT now()
@@ -143,22 +143,67 @@ CREATE TABLE IF NOT EXISTS due_diligence_items (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Indices
-CREATE INDEX idx_props_org ON properties(organization_id);
-CREATE INDEX idx_props_geom ON properties USING GIST (centroid);
-CREATE INDEX idx_poly_geom ON property_polygons USING GIST (geom);
-CREATE INDEX idx_leads_org ON leads(organization_id);
+-- 9. LANDING PAGES
+CREATE TABLE IF NOT EXISTS landing_pages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content JSONB DEFAULT '[]'::jsonb,
+  settings JSONB DEFAULT '{}'::jsonb,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(organization_id, slug)
+);
 
+-- 10. SITE TEXTS
+CREATE TABLE IF NOT EXISTS site_texts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  key TEXT NOT NULL,
+  value TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(organization_id, key)
+);
+
+-- 11. PLANS
+CREATE TABLE IF NOT EXISTS plans (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL UNIQUE,
+  price_monthly NUMERIC(10,2) NOT NULL,
+  features JSONB DEFAULT '{}'::jsonb,
+  limits JSONB DEFAULT '{}'::jsonb,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 12. SAAS SETTINGS
+CREATE TABLE IF NOT EXISTS saas_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  global_evolution_url TEXT,
+  global_evolution_api_key TEXT,
+  default_plan_id UUID REFERENCES plans(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Indices
+CREATE INDEX IF NOT EXISTS idx_props_org ON properties(organization_id);
+CREATE INDEX IF NOT EXISTS idx_leads_org ON leads(organization_id);
 -- RLS (Basic tenant isolation)
 ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant isolation properties" ON properties 
+CREATE POLICY "Tenant isolation properties" ON properties
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant isolation leads" ON leads 
+CREATE POLICY "Tenant isolation leads" ON leads
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
--- 9. EVOLUTION API (Messaging)
+-- 13. EVOLUTION API (Messaging)
 CREATE TABLE IF NOT EXISTS instances (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
@@ -195,13 +240,13 @@ CREATE TABLE IF NOT EXISTS messages (
 
 -- RLS for Messaging
 ALTER TABLE instances ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant isolation instances" ON instances 
+CREATE POLICY "Tenant isolation instances" ON instances
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
 ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant isolation contacts" ON contacts 
+CREATE POLICY "Tenant isolation contacts" ON contacts
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant isolation messages" ON messages 
+CREATE POLICY "Tenant isolation messages" ON messages
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));

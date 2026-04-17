@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { NavLink, Link, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Home,
@@ -24,22 +24,23 @@ import {
   Heart,
   LayoutTemplate,
   LifeBuoy,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { usePlans } from '../context/PlansContext';
 import SupportModal from './SupportModal';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
+interface LayoutProps {}
 
-const UrbanLayout: React.FC<LayoutProps> = ({ children }) => {
+const UrbanLayout: React.FC<LayoutProps> = () => {
   const { settings } = useSettings();
   const { profile, signOut, stopImpersonation, isImpersonating, loading } =
     useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const { pathname } = useLocation();
 
   // Guard: Super Admin can ONLY see this if impersonating
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
@@ -58,52 +59,98 @@ const UrbanLayout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
-    { icon: Home, label: 'Imóveis', path: '/urban/properties' },
+  const menuGroups = [
     {
-      icon: Building2,
-      label: 'Empreendimentos',
-      path: '/urban/empreendimentos',
+      title: 'Painel & Análises',
+      items: [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
+        { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
+      ],
     },
-    { icon: Key, label: 'Locação & Administração', path: '/urban/locacao' },
-    { icon: ClipboardCheck, label: 'Compliance', path: '/urban/compliance' },
-    { icon: Upload, label: 'Exportador Portais', path: '/urban/exportador' },
-    { icon: Users, label: 'Leads & CRM', path: '/urban/crm' },
-    { icon: Phone, label: 'Mensagens', path: '/urban/messages' },
     {
-      icon: Settings,
-      label: 'Conexões WhatsApp',
-      path: '/urban/whatsapp-setup',
+      title: 'Gestão de Imóveis',
+      items: [
+        { icon: Home, label: 'Imóveis', path: '/urban/properties' },
+        { icon: Building2, label: 'Empreendimentos', path: '/urban/empreendimentos' },
+        { icon: Key, label: 'Locação & Administração', path: '/urban/locacao' },
+      ],
     },
-    { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
     {
-      icon: Eye,
-      label: 'Portal Proprietário',
-      path: '/urban/portal-proprietario',
+      title: 'Negócios & Gestão',
+      items: [
+        { icon: ClipboardCheck, label: 'Compliance', path: '/urban/compliance' },
+        { icon: Upload, label: 'Exportador Portais', path: '/urban/exportador' },
+        { icon: FileText, label: 'Contratos', path: '/urban/contracts' },
+      ],
     },
-    { icon: Heart, label: 'Portal Comprador', path: '/urban/portal-comprador' },
     {
-      icon: LayoutTemplate,
-      label: 'Landing Pages',
-      path: '/urban/landing-pages',
+      title: 'Comercial & CRM',
+      items: [
+        { icon: Users, label: 'Leads & CRM', path: '/urban/crm' },
+        { icon: Phone, label: 'Mensagens', path: '/urban/chat' },
+        { icon: Settings, label: 'Conexões WhatsApp', path: '/urban/whatsapp-instances' },
+      ],
     },
-    { icon: Sparkles, label: 'IA Studio', path: '/urban/ai-assistant' },
-    { icon: FileText, label: 'Contratos', path: '/urban/contracts' },
-    { icon: Settings, label: 'Configurações', path: '/urban/settings' },
+    {
+      title: 'Portais & Captação',
+      items: [
+        { icon: Eye, label: 'Portal Proprietário', path: '/urban/portal-proprietario' },
+        { icon: Heart, label: 'Portal Comprador', path: '/urban/portal-comprador' },
+        { icon: LayoutTemplate, label: 'Landing Pages', path: '/urban/landing-pages' },
+        { icon: Sparkles, label: 'Site Express ✨', path: '/urban/site-setup' },
+      ],
+    },
+    {
+      title: 'Ferramentas & Setup',
+      items: [
+        { icon: Sparkles, label: 'IA Studio', path: '/urban/ai-assistant' },
+        { icon: Eye, label: 'Editor Visual de Site', path: '/urban/visual-editor' },
+        { icon: Settings, label: 'Configurações', path: '/urban/settings' },
+      ],
+    },
   ];
 
   if (profile?.role === 'superadmin') {
-    menuItems.push({
-      icon: ShieldAlert,
-      label: 'Super Admin',
-      path: '/superadmin',
+    menuGroups.push({
+      title: 'Administração',
+      items: [
+        {
+          icon: ShieldAlert,
+          label: 'Super Admin',
+          path: '/superadmin',
+        }
+      ]
     });
   }
 
+  // Estado para os grupos abertos
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
+
+  // Expandir automaticamente o grupo que contém a rota atual
+  useEffect(() => {
+    const currentGroup = menuGroups.find(group => 
+      group.items.some(item => 
+        (item.path === '/urban' && pathname === '/urban') ||
+        (item.path !== '/urban' && pathname.startsWith(item.path))
+      )
+    );
+    if (currentGroup && !openGroups.includes(currentGroup.title)) {
+      setOpenGroups(prev => [...prev, currentGroup.title]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  const toggleGroup = (title: string) => {
+    setOpenGroups(prev => 
+      prev.includes(title) 
+        ? prev.filter(t => t !== title)
+        : [...prev, title]
+    );
+  };
+
   const { hasFeature } = usePlans();
 
-  const SidebarContent = () => (
+  const renderSidebarContent = () => (
     <>
       <div className="p-6 md:p-8 border-b border-white/5">
         <Link
@@ -134,7 +181,7 @@ const UrbanLayout: React.FC<LayoutProps> = ({ children }) => {
           )}
         </Link>
         <a
-          href="/"
+          href={`/site/${(profile?.organization as any)?.slug || ''}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-4 md:mt-6 flex items-center justify-center gap-2 w-full bg-blue-600/20 text-blue-300 hover:bg-blue-600 hover:text-white py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border border-blue-500/30"
@@ -143,38 +190,66 @@ const UrbanLayout: React.FC<LayoutProps> = ({ children }) => {
         </a>
       </div>
 
-      <nav className="flex-1 p-4 md:p-5 space-y-1 md:space-y-1.5 overflow-y-auto">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/urban'}
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 md:py-3.5 rounded-xl transition-all ${
-                isActive
-                  ? 'bg-blue-900/40 text-white shadow-lg'
-                  : 'text-white/50 hover:bg-white/5 hover:text-white'
-              }`
-            }
-            style={({ isActive }) =>
-              isActive ? { borderLeft: '4px solid #2563eb' } : {}
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <item.icon
-                  size={20}
-                  className={isActive ? 'text-blue-400' : 'text-white/50'}
-                />
-                <span className="font-semibold text-sm">{item.label}</span>
-              </>
-            )}
-          </NavLink>
-        ))}
+      <nav className="flex-1 p-3 md:p-4 overflow-y-auto space-y-4">
+        {menuGroups.map((group) => {
+          const isOpen = openGroups.includes(group.title);
+          
+          return (
+            <div key={group.title} className="flex flex-col">
+              <button
+                onClick={() => toggleGroup(group.title)}
+                className="flex items-center justify-between px-3 py-2 text-white/50 hover:text-white transition-colors group mb-1"
+              >
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                  {group.title}
+                </span>
+                {isOpen ? (
+                  <ChevronDown size={14} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                ) : (
+                  <ChevronRight size={14} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                )}
+              </button>
+              
+              <div
+                className={`flex-col space-y-1 transition-all overflow-hidden ${
+                  isOpen ? 'flex' : 'hidden'
+                }`}
+              >
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.path === '/urban'}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                        isActive
+                          ? 'bg-blue-900/40 text-white shadow-sm'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`
+                    }
+                    style={({ isActive }) =>
+                      isActive ? { borderLeft: '3px solid #2563eb' } : { borderLeft: '3px solid transparent' }
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <item.icon
+                          size={18}
+                          className={isActive ? 'text-blue-400' : 'text-white/50'}
+                        />
+                        <span className="font-semibold text-sm">{item.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
-      <div className="p-4 md:p-6 border-t border-white/5">
+      <div className="p-4 md:p-6 border-t border-white/5 shrink-0">
         <div className="flex items-center gap-3 mb-3 md:mb-4">
           <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-400 font-black text-sm">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'U'}
@@ -240,18 +315,18 @@ const UrbanLayout: React.FC<LayoutProps> = ({ children }) => {
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0a0a0a] text-white flex flex-col animate-in slide-in-from-left duration-300">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all z-50"
             >
               <X size={20} />
             </button>
-            <SidebarContent />
+            {renderSidebarContent()}
           </aside>
         </div>
       )}
 
       {/* Desktop Sidebar — Blue Theme */}
       <aside className="w-68 bg-[#0a0a0a] text-white flex-col hidden md:flex transition-all">
-        <SidebarContent />
+        {renderSidebarContent()}
       </aside>
 
       <main className="flex-1 flex flex-col h-full overflow-hidden">
@@ -296,7 +371,7 @@ const UrbanLayout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 bg-slate-50/50">
-          {children}
+          <Outlet />
         </div>
       </main>
     </div>

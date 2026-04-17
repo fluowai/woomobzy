@@ -134,6 +134,7 @@ const ComplianceUrbano: React.FC = () => {
       const { data } = await supabase
         .from('properties')
         .select('id, title')
+        .not('property_type', 'in', '("Rural","Fazenda")')
         .order('title');
       setProperties(data || []);
     };

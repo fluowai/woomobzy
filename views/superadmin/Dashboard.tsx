@@ -11,6 +11,7 @@ const SuperAdminDashboard: React.FC = () => {
     serverStatus: 'Online',
   });
   const [loading, setLoading] = useState(true);
+  const [isFresh, setIsFresh] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -36,8 +37,9 @@ const SuperAdminDashboard: React.FC = () => {
         totalTenants: total || 0,
         activeTenants: active || 0,
         totalRevenue: revenue,
-        serverStatus: 'Online', // Placeholder
+        serverStatus: 'Online',
       });
+      setIsFresh((total || 0) === 0);
     } catch (error) {
       console.error('Error fetching admin stats:', error);
     } finally {
@@ -75,8 +77,44 @@ const SuperAdminDashboard: React.FC = () => {
   if (loading) return <div>Carregando dashboard...</div>;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Visão Geral</h1>
+    <>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Visão Geral</h1>
+        {isFresh && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg animate-pulse">
+            <Activity size={18} />
+            <span className="text-sm font-bold">Início Rápido Ativo</span>
+          </div>
+        )}
+      </div>
+
+      {isFresh && (
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white mb-8 shadow-xl">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-black mb-3 text-white">
+              Bem-vindo ao seu novo painel, Proprietário!
+            </h2>
+            <p className="text-blue-100 mb-6 text-lg">
+              O sistema está pronto. O primeiro passo é criar os planos de
+              assinatura e depois cadastrar sua primeira imobiliária.
+            </p>
+            <div className="flex gap-4">
+              <a
+                href="/superadmin/plans"
+                className="px-6 py-3 bg-white text-blue-700 rounded-xl font-bold hover:bg-blue-50 transition-all shadow-lg"
+              >
+                Configurar Planos
+              </a>
+              <a
+                href="/superadmin/tenants"
+                className="px-6 py-3 bg-blue-500 text-white border border-blue-400 rounded-xl font-bold hover:bg-blue-400 transition-all"
+              >
+                Cadastrar Imobiliária
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {modules.map((mod, index) => {
@@ -122,7 +160,7 @@ const SuperAdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -122,4 +122,54 @@ export const geminiService = {
       return '{}';
     }
   },
+
+  extractColorsFromLogo: async (base64Image: string, mimeType: string) => {
+    const client = getAI();
+    if (!client) {
+      // Retorna uma paleta padrão fallback
+      return { primaryColor: '#2563eb', secondaryColor: '#10b981' }; 
+    }
+
+    try {
+      const prompt = `Analise a logomarca fornecida nesta imagem.
+Extraia a cor principal (primaryColor) e a cor secundária (secondaryColor) dessa marca garantindo que haja um bom contraste caso as duas sejam usadas juntas.
+Retorne APENAS um JSON no formato:
+{
+  "primaryColor": "#HEX",
+  "secondaryColor": "#HEX"
+}`;
+
+      // Remove the data URL prefix if present
+      const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/, '');
+
+      const response = await client.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
+          prompt,
+          {
+            inlineData: {
+              data: cleanBase64,
+              mimeType: mimeType || 'image/png'
+            }
+          }
+        ],
+        config: {
+          temperature: 0.1,
+          responseMimeType: "application/json"
+        },
+      });
+
+      const text = response.text || '{}';
+      const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+
+      return {
+        primaryColor: parsed.primaryColor || '#2563eb',
+        secondaryColor: parsed.secondaryColor || '#10b981'
+      };
+    } catch (error) {
+      console.error('Error extracting colors from logo via Gemini:', error);
+      return { primaryColor: '#2563eb', secondaryColor: '#10b981' };
+    }
+  }
 };

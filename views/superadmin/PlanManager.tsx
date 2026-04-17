@@ -5,8 +5,8 @@ import { CreditCard, Plus, X, Save, Edit2, Trash2, Check } from 'lucide-react';
 interface Plan {
   id: string;
   name: string;
-  price: number;
-  currency: string;
+  price_monthly: number;
+  currency?: string;
   limits: {
     users: number;
     properties: number;
@@ -33,7 +33,7 @@ const PlanManager: React.FC = () => {
 
   const [formData, setFormData] = useState<Partial<Plan>>({
     name: '',
-    price: 0,
+    price_monthly: 0,
     limits: { users: 1, properties: 50, whatsapp_instances: 1 },
     features: [],
     is_active: true,
@@ -48,7 +48,7 @@ const PlanManager: React.FC = () => {
     const { data, error } = await supabase
       .from('plans')
       .select('*')
-      .order('price', { ascending: true });
+      .order('price_monthly', { ascending: true });
 
     if (error) console.error('Error fetching plans:', error);
     else setPlans(data || []);
@@ -63,7 +63,7 @@ const PlanManager: React.FC = () => {
       setEditingId(null);
       setFormData({
         name: '',
-        price: 0,
+        price_monthly: 0,
         limits: { users: 1, properties: 50, whatsapp_instances: 1 },
         features: [],
         is_active: true,
@@ -135,7 +135,7 @@ const PlanManager: React.FC = () => {
                   {plan.name}
                 </h3>
                 <p className="text-2xl font-bold text-blue-600">
-                  R$ {plan.price}
+                  R$ {plan.price_monthly}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -217,17 +217,17 @@ const PlanManager: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Preço (R$)
+                    Preço Mensal (R$)
                   </label>
                   <input
                     type="number"
                     required
                     className="w-full px-3 py-2 border rounded-lg"
-                    value={formData.price}
+                    value={formData.price_monthly}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        price: Number(e.target.value),
+                        price_monthly: Number(e.target.value),
                       })
                     }
                   />

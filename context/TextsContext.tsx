@@ -88,7 +88,10 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
               Date.now().toString()
             );
           })
-          .catch(console.error);
+          .catch((e) => {
+            // Silently ignore background refresh errors (e.g. JWT expired)
+            console.warn('⚠️ [TextsContext] Background refresh failed:', e?.message || e);
+          });
 
         return;
       }
@@ -100,9 +103,21 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
       // Salvar no cache
       localStorage.setItem('site_texts', JSON.stringify(freshTexts));
       localStorage.setItem('site_texts_cache_time', Date.now().toString());
-    } catch (err) {
-      console.error('Error loading texts:', err);
-      setError('Erro ao carregar textos do site');
+    } catch (err: any) {
+      const isAuthError = err?.message?.includes('JWT expired') || err?.code === 'PGRST303';
+      
+      if (isAuthError) {
+        // JWT expired — fall back to stale cache if available, don't show error
+        console.warn('⚠️ [TextsContext] JWT expired, using cached texts');
+        const staleCache = localStorage.getItem('site_texts');
+        if (staleCache) {
+          setTexts(JSON.parse(staleCache));
+        }
+        // Don't set error — this is a transient auth issue
+      } else {
+        console.error('Error loading texts:', err);
+        setError('Erro ao carregar textos do site');
+      }
     } finally {
       setIsLoading(false);
     }

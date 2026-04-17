@@ -12,11 +12,12 @@ import {
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 interface PropertyGeo {
   id: string;
   title: string;
-  total_area_ha: number;
+  area_total_ha: number;
   area_agricultavel: number;
   area_reserva: number;
   bioma: string;
@@ -28,6 +29,7 @@ interface PropertyGeo {
 }
 
 const CadastroTecnico: React.FC = () => {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'list' | 'import'>('list');
   const [geoData, setGeoData] = useState<any>(null);
   const [fileName, setFileName] = useState('');
@@ -35,14 +37,18 @@ const CadastroTecnico: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
+      if (!profile?.organization_id) return;
+      
       const { data } = await supabase
         .from('properties')
-        .select('id, title, total_area_ha, city, state, status')
+        .select('id, title, area_total_ha, location_city, location_state, status')
+        .eq('organization_id', profile?.organization_id)
+        .in('property_type', ['Rural', 'Fazenda'])
         .order('created_at', { ascending: false });
       setProperties(data || []);
     };
     load();
-  }, []);
+  }, [profile?.organization_id]);
 
   const handleFileUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -376,10 +382,10 @@ const CadastroTecnico: React.FC = () => {
                         {prop.title}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {prop.city}/{prop.state}
+                        {prop.location_city}/{prop.location_state}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {prop.total_area_ha || '—'}
+                        {prop.area_total_ha || '—'}
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-700">

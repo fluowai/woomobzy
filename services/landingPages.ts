@@ -541,6 +541,7 @@ const mapToModel = (dbItem: any): LandingPage => ({
 const mapToDatabase = (model: Partial<LandingPage>): any => {
   const db: any = {};
 
+  if (model.organizationId !== undefined) db.organization_id = model.organizationId;
   if (model.userId !== undefined) db.user_id = model.userId;
   if (model.name !== undefined) db.name = model.name;
   if (model.slug !== undefined) db.slug = model.slug;

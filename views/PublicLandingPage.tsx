@@ -64,66 +64,82 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
       setLoading(true);
       console.log('🔍 Loading Public Site for Slug:', slug);
 
-      // 1. Find Organization by Slug using Public RPC
-      const { data: org, error: orgError } = await supabase
-        .rpc('get_tenant_public', { slug_input: slug })
-        .single();
+      // 1. Find Organization by Slug
+      let resolvedOrg: any = null;
 
-      if (orgError) console.warn('Erro ao buscar org via RPC:', orgError);
+      // Try RPC first
+      try {
+        const { data: org, error: orgError } = await supabase
+          .rpc('get_tenant_public', { slug_input: slug })
+          .single();
 
-      if (!org) {
-        // Fallback for direct query if RPC fails or not deployed yet (during dev)
+        if (!orgError && org) {
+          resolvedOrg = org;
+        } else {
+          console.warn('RPC fallback:', orgError?.message);
+        }
+      } catch (e) {
+        console.warn('RPC not available, using direct query');
+      }
+
+      // Fallback: direct query
+      if (!resolvedOrg) {
         const { data: orgDirect, error: directError } = await supabase
           .from('organizations')
           .select('id, name, slug')
           .eq('slug', slug)
           .single();
 
-        if (!orgDirect) {
-          console.error('Organization not found for slug:', slug);
-          setLoading(false);
-          return;
+        if (orgDirect) {
+          resolvedOrg = orgDirect;
         }
-        // Note: If RLS blocks this, it will fail.
-        setOrganization(orgDirect);
-      } else {
-        setOrganization(org);
       }
 
-      const orgId = (org as any)?.id || (organization as any)?.id;
+      if (!resolvedOrg) {
+        console.error('Organization not found for slug:', slug);
+        setLoading(false);
+        return;
+      }
 
+      setOrganization(resolvedOrg);
+      const orgId = resolvedOrg.id;
+
+      // 2. Load Public Site Settings
       if (orgId) {
-        // 2. Load Public Site Settings
-        const { data: siteSettings } = await supabase.rpc(
-          'get_site_settings_public',
-          { org_id: orgId }
-        );
-
-        if (siteSettings) {
-          setSettings(siteSettings);
-        } else {
-          // Try standard select if RPC returns null (maybe empty settings)
-          // But standard select might be blocked by RLS.
-          // console.warn('Using default settings');
+        try {
+          const { data: siteSettings } = await supabase.rpc(
+            'get_site_settings_public',
+            { org_id: orgId }
+          );
+          if (siteSettings) {
+            setSettings(siteSettings);
+          }
+        } catch (e) {
+          // RPC might not exist, try direct
+          const { data: directSettings } = await supabase
+            .from('site_settings')
+            .select('*')
+            .eq('organization_id', orgId)
+            .maybeSingle();
+          if (directSettings) setSettings(directSettings);
         }
       }
 
       // 3. Load Active Landing Page
       if (orgId) {
-        const targetPageSlug = searchParams.get('page'); // Use top-level variable
+        const targetPageSlug = searchParams.get('page');
 
         // Check for Login Route
         const path = window.location.pathname;
         if (path.endsWith('/site/login')) {
           setShowLogin(true);
           setLoading(false);
-          return; // Stop loading page logic
+          return;
         }
 
         let pageData = null;
 
         if (targetPageSlug) {
-          // Specific page requested
           const { data } = await supabase
             .from('landing_pages')
             .select('*')
@@ -133,7 +149,6 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
             .single();
           pageData = data;
         } else {
-          // Root access: Try to find a dedicated homepage
           const { data } = await supabase
             .from('landing_pages')
             .select('*')
@@ -142,12 +157,10 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
             .in('slug', ['home', 'inicio', 'index', 'main', 'site'])
             .limit(1)
             .maybeSingle();
-
           pageData = data;
         }
 
         if (pageData) {
-          // Map DB snake_case to CamelCase
           const mappedPage: any = {
             ...pageData,
             themeConfig: pageData.theme_config || pageData.themeConfig || {},
@@ -165,7 +178,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ forceSlug }) => {
           setLandingPage(mappedPage);
           setShowMainSite(false);
         } else if (!targetPageSlug) {
-          // NO HOME PAGE FOUND -> SHOW MAIN SITE COMPONENT (Terra Produtiva Model)
+          // NO HOME PAGE FOUND -> SHOW MAIN SITE COMPONENT
           console.log('Using Main LandingPage Component');
           setShowMainSite(true);
         }

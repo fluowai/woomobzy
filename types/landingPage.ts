@@ -889,4 +889,173 @@ export const BLOCK_METADATA: Record<BlockType, BlockMetadata> = {
       padding: '60px 20px',
     },
   },
+  [BlockType.PROPERTY_CAROUSEL]: {
+    type: BlockType.PROPERTY_CAROUSEL,
+    name: 'Carrossel de Imóveis',
+    description: 'Exibe imóveis em carrossel deslizável',
+    icon: '🎠',
+    category: 'property',
+    defaultConfig: {
+      columns: 3,
+      gap: 16,
+      showFilters: false,
+      maxItems: 6,
+      sortBy: 'price',
+      cardStyle: 'modern',
+      autoPlay: true,
+      interval: 5000,
+    } as PropertyGridBlockConfig,
+    defaultStyles: {
+      padding: '60px 20px',
+    },
+  },
+  [BlockType.PROPERTY_FEATURED]: {
+    type: BlockType.PROPERTY_FEATURED,
+    name: 'Imóvel em Destaque',
+    description: 'Destaca um imóvel principal',
+    icon: '⭐',
+    category: 'property',
+    defaultConfig: {
+      showDetails: true,
+      showMap: true,
+      showGallery: true,
+    } as any,
+    defaultStyles: {
+      padding: '60px 20px',
+    },
+  },
+  [BlockType.PROPERTY_SEARCH]: {
+    type: BlockType.PROPERTY_SEARCH,
+    name: 'Busca de Imóveis',
+    description: 'Filtro avançado de busca',
+    icon: '🔍',
+    category: 'interactive',
+    defaultConfig: {
+      showFilters: true,
+      showMap: true,
+      resultsPerPage: 12,
+    } as any,
+    defaultStyles: {
+      padding: '40px 20px',
+    },
+  },
+  [BlockType.GALLERY]: {
+    type: BlockType.GALLERY,
+    name: 'Galeria de Imagens',
+    description: 'Galeria com lightbox',
+    icon: '🖼️',
+    category: 'content',
+    defaultConfig: {
+      columns: 3,
+      gap: 16,
+      images: [],
+    } as any,
+    defaultStyles: {
+      padding: '40px 20px',
+    },
+  },
+  [BlockType.TESTIMONIALS]: {
+    type: BlockType.TESTIMONIALS,
+    name: 'Depoimentos',
+    description: 'Lista de depoimentos de clientes',
+    icon: '💬',
+    category: 'content',
+    defaultConfig: {
+      testimonials: [
+        {
+          name: 'João Silva',
+          text: 'Excelente serviço, recomendo!',
+          avatar: '',
+          rating: 5,
+        },
+      ],
+      columns: 3,
+    } as any,
+    defaultStyles: {
+      padding: '60px 20px',
+    },
+  },
+  [BlockType.MAP]: {
+    type: BlockType.MAP,
+    name: 'Mapa',
+    description: 'Mapa interativo de localização',
+    icon: '🗺️',
+    category: 'interactive',
+    defaultConfig: {
+      latitude: -23.5505,
+      longitude: -46.6333,
+      zoom: 12,
+      markers: [],
+    } as any,
+    defaultStyles: {
+      padding: '0px',
+      height: '500px',
+    },
+  },
+  [BlockType.TIMELINE]: {
+    type: BlockType.TIMELINE,
+    name: 'Cronologia',
+    description: 'Timeline de eventos ou processo',
+    icon: '📅',
+    category: 'content',
+    defaultConfig: {
+      events: [
+        { date: '2024', title: 'Evento 1', description: 'Descrição' },
+      ],
+    } as any,
+    defaultStyles: {
+      padding: '60px 20px',
+    },
+  },
+  [BlockType.BROKER_CARD]: {
+    type: BlockType.BROKER_CARD,
+    name: 'Cartão de Broker',
+    description: 'Informações do agente/broker',
+    icon: '👤',
+    category: 'content',
+    defaultConfig: {
+      name: 'Nome do Broker',
+      title: 'Agente Imobiliário',
+      image: '',
+      phone: '',
+      email: '',
+      whatsapp: '',
+    } as any,
+    defaultStyles: {
+      padding: '40px 20px',
+    },
+  },
+  [BlockType.FEATURES]: {
+    type: BlockType.FEATURES,
+    name: 'Características',
+    description: 'Lista de características destacadas',
+    icon: '✨',
+    category: 'content',
+    defaultConfig: {
+      features: [
+        {
+          title: 'Característica 1',
+          description: 'Descrição',
+          icon: '🎯',
+        },
+      ],
+      columns: 3,
+    } as any,
+    defaultStyles: {
+      padding: '60px 20px',
+    },
+  },
+  [BlockType.CUSTOM_HTML]: {
+    type: BlockType.CUSTOM_HTML,
+    name: 'HTML Customizado',
+    description: 'Código HTML personalizado',
+    icon: '💻',
+    category: 'interactive',
+    defaultConfig: {
+      html: '<div>Seu HTML aqui</div>',
+    } as any,
+    defaultStyles: {
+      padding: '20px',
+    },
+  },
 };

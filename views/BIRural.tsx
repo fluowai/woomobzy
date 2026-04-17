@@ -70,6 +70,7 @@ const BIRural: React.FC = () => {
       const { data: props, error: propsError } = await supabase
         .from('properties')
         .select('*')
+        .in('property_type', ['Rural', 'Fazenda'])
         .neq('status', 'Pendente');
 
       if (propsError) console.error('Error fetching properties:', propsError);

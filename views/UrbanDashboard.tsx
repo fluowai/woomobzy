@@ -40,7 +40,8 @@ const UrbanDashboard: React.FC = () => {
     const load = async () => {
       const { count: pCount } = await supabase
         .from('properties')
-        .select('id', { count: 'exact' });
+        .select('id', { count: 'exact' })
+        .not('property_type', 'in', '("Rural","Fazenda")');
       const { count: lCount } = await supabase
         .from('leads')
         .select('id', { count: 'exact' });

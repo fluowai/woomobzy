@@ -50,6 +50,7 @@ const MIGRATIONS = [
   'definitive_imobzy_schema.sql',
   'fix_role_and_permissions_v2.sql',
   'fix_rpc_final.sql',
+  'fix_superadmin_permissions.sql',
   'fix_landing_pages_rls.sql',
   'setup_landing_pages.sql',
 ];

@@ -50,6 +50,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Track whether INITIAL_SESSION has been processed to debounce SIGNED_IN
   const initialSessionProcessed = React.useRef(false);
   const retryCount = React.useRef(0);
+  // Ref to track current profile (avoids stale closure in useEffect)
+  const profileRef = React.useRef<UserProfile | null>(null);
+
+  // Keep profileRef in sync with profile state
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
 
   useEffect(() => {
     // Listen for auth changes
@@ -80,7 +87,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       if (session?.user) {
         setUser(session.user);
-        retryCount.current = 0;
+
+        // Skip redundant SIGNED_IN events if profile is already loaded for this user
+        if (_event === 'SIGNED_IN' && profileRef.current?.id === session.user.id) {
+          console.log('⏭️ [AuthContext] Profile already loaded, skipping redundant SIGNED_IN');
+          return;
+        }
+
+        // Only reset retryCount on INITIAL_SESSION or TOKEN_REFRESHED (not every SIGNED_IN)
+        if (_event === 'INITIAL_SESSION' || _event === 'TOKEN_REFRESHED') {
+          retryCount.current = 0;
+        }
+
         await loadProfile(session.user.id);
       } else {
         console.log('🔄 [AuthContext] Auth Event: User is null');
@@ -191,21 +209,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
     } catch (err: any) {
       console.error('❌ [AuthContext] Critical exception in loadProfile:', err);
-      if (err?.message?.includes('JWT expired')) {
-        console.warn('⚠️ Token expired, logging out...');
-        await signOut();
-      } else if (err?.message?.includes('timeout') && retryCount.current < 1) {
-        // RETRY FIX: On first timeout, retry once after a short delay
-        console.warn(
-          '🔄 [AuthContext] Timeout on first load, retrying in 2s...'
-        );
-        retryCount.current++;
-        fetchInProgress.current = null; // allow retry
-        setTimeout(() => loadProfile(userId), 2000);
-        return; // don't set loading=false yet
-      } else {
-        setProfile((prev) => (prev && prev.id === userId ? prev : null));
-      }
+      // Se der erro fatal, paramos de tentar para não entrar em loop
+      setProfile((prev) => (prev && prev.id === userId ? prev : null));
     } finally {
       console.log('🏁 [AuthContext] loadProfile finished.');
       fetchInProgress.current = null;

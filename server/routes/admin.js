@@ -56,7 +56,7 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
 router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, slug, plan_id, status, custom_domain } = req.body;
+    const { name, slug, plan_id, status, custom_domain, owner_email, password } = req.body;
     
     const payload = {};
     if (name !== undefined) payload.name = name;
@@ -64,6 +64,7 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     if (status !== undefined) payload.status = status;
     if (plan_id !== undefined) payload.plan_id = plan_id || null;
     if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
+    if (owner_email !== undefined) payload.owner_email = owner_email || null;
     
     const { data, error } = await supabase
       .from('organizations')
@@ -72,6 +73,20 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+
+    // Se uma senha foi fornecida, atualizar a senha do usuário dono do e-mail
+    if (password && password.length >= 6) {
+      const targetEmail = owner_email || data.owner_email;
+      if (targetEmail) {
+        const { data: userData, error: listError } = await supabase.auth.admin.listUsers();
+        const userToUpdate = userData?.users?.find(u => u.email === targetEmail);
+        
+        if (userToUpdate) {
+          await supabase.auth.admin.updateUserById(userToUpdate.id, { password });
+        }
+      }
+    }
+
     res.json({ success: true, organization: data });
   } catch (error) {
     res.status(500).json({ error: error.message });

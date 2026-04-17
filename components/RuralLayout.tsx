@@ -24,7 +24,8 @@ import {
   ChevronRight,
   Menu,
   X,
-  CreditCard
+  CreditCard,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';

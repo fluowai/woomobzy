@@ -25,7 +25,8 @@ import {
   LayoutTemplate,
   LifeBuoy,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';

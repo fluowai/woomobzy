@@ -126,6 +126,17 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           '/reports',
           '/settings',
           '/properties',
+          '/whatsapp-instances',
+          '/geointeligencia',
+          '/cadastro-tecnico',
+          '/due-diligence',
+          '/dataroom',
+          '/waitlist',
+          '/site-setup',
+          '/visual-editor',
+          '/ai-assistant',
+          '/contracts',
+          '/test-messages',
           '/error'
         ];
         const isSystemRoute = systemRoutes.some((r) => 

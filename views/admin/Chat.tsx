@@ -96,6 +96,7 @@ const Chat: React.FC = () => {
         }
       });
       const data = await response.json();
+      console.log('📬 [Chat] Resposta da API de Chats:', data);
       if (data.success) {
         setChats(data.chats || []);
       }
@@ -113,6 +114,7 @@ const Chat: React.FC = () => {
         }
       });
       const data = await response.json();
+      console.log('💬 [Chat] Resposta da API de Mensagens:', data);
       if (data.success) {
         setMessages(data.messages || []);
       }

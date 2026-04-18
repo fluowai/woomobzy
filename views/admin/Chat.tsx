@@ -58,6 +58,7 @@ const Chat: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'private' | 'groups'>('all');
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
   
@@ -299,10 +300,14 @@ const Chat: React.FC = () => {
   // ──────────────────────────────────────────────
   // UI Helpers
   // ──────────────────────────────────────────────
-  const filteredChats = chats.filter(chat =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.jid.includes(searchQuery)
-  );
+  const filteredChats = chats.filter(chat => {
+    const matchesSearch = chat.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const isGroup = chat.jid.endsWith('@g.us');
+    
+    if (filterType === 'private') return matchesSearch && !isGroup;
+    if (filterType === 'groups') return matchesSearch && isGroup;
+    return matchesSearch;
+  });
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -390,6 +395,34 @@ const Chat: React.FC = () => {
               className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border-transparent focus:border-green-500/30 focus:bg-white focus:ring-4 focus:ring-green-500/5 rounded-2xl outline-none transition-all text-sm"
             />
           </div>
+        </div>
+
+        {/* Filtros de Tipo de Chat */}
+        <div className="flex p-1 gap-1 bg-gray-100/50 mx-4 mb-4 rounded-xl border border-gray-100">
+          <button
+            onClick={() => setFilterType('all')}
+            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+              filterType === 'all' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
+            }`}
+          >
+            Todas
+          </button>
+          <button
+            onClick={() => setFilterType('private')}
+            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+              filterType === 'private' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
+            }`}
+          >
+            Privadas
+          </button>
+          <button
+            onClick={() => setFilterType('groups')}
+            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+              filterType === 'groups' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
+            }`}
+          >
+            Grupos
+          </button>
         </div>
 
         {/* Lista de Chats */}
@@ -488,10 +521,6 @@ const Chat: React.FC = () => {
                     <p className="text-xs font-bold text-amber-800">Conexão em espera</p>
                     <p className="text-[10px] text-amber-600 font-medium">Reconectando automaticamente com o servidor...</p>
                   </div>
-                </div>
-              </div>
-            )}
-
             {/* Listagem de Mensagens */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar pattern-bg">
               {messages.map((msg, idx) => {

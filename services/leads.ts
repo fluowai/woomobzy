@@ -4,9 +4,15 @@ import { callApi } from '../src/lib/api';
 export const leadService = {
   // Create a new lead (Now Backend-Driven)
   async create(lead: Partial<Lead>) {
-    const data = await callApi('/api/crm/leads', {
+    // Se temos organization_id mas não temos token, usamos a rota pública
+    const { data: { session } } = await supabase.auth.getSession();
+    const isPublic = !session?.access_token && lead.organization_id;
+    const endpoint = isPublic ? '/api/public/leads' : '/api/crm/leads';
+
+    const data = await callApi(endpoint, {
       method: 'POST',
       body: JSON.stringify({
+        organization_id: lead.organization_id, // Incluído para rotas públicas
         name: lead.name,
         phone: lead.phone,
         email: lead.email,
@@ -15,7 +21,7 @@ export const leadService = {
       })
     });
 
-    return mapToModel(data.lead);
+    return mapToModel(data.lead || { id: data.leadId, ...lead });
   },
 
   // List leads for Kanban (Implicitly Isolated by Backend)

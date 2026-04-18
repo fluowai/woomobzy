@@ -298,7 +298,7 @@ const Chat: React.FC = () => {
       setSending(false);
     }
   };
-  
+
   const deleteMessage = async (messageId: string) => {
     if (!window.confirm('Deseja excluir esta mensagem do seu painel?')) return;
     
@@ -311,7 +311,6 @@ const Chat: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
-        // Remove a mensagem localmente para feedback instantâneo
         setMessages(prev => prev.filter(m => m.id !== messageId));
       } else {
         setError(data.error || 'Erro ao deletar mensagem');
@@ -619,15 +618,18 @@ const Chat: React.FC = () => {
                         <span>{formatTime(msg.timestamp)}</span>
                         {getStatusIcon(msg.status, msg.from_me)}
                         <button
-                          onClick={() => deleteMessage(msg.id)}
-                          className={`ml-2 p-1 rounded-md transition-all ${
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteMessage(msg.id);
+                          }}
+                          className={`ml-3 p-1.5 rounded-lg transition-all border ${
                             msg.from_me 
-                              ? 'hover:bg-white/20 text-green-100 hover:text-white' 
-                              : 'hover:bg-gray-100 text-gray-300 hover:text-red-500'
+                              ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20' 
+                              : 'bg-gray-50 border-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50'
                           }`}
                           title="Excluir mensagem"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>

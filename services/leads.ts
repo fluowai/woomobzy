@@ -1,111 +1,37 @@
-import { supabase } from './supabase';
 import { Lead } from '../types';
+import { callApi } from '../src/lib/api';
 
 export const leadService = {
-  // Create a new lead
+  // Create a new lead (Now Backend-Driven)
   async create(lead: Partial<Lead>) {
-    // Basic validation
-    if (!lead.name || !lead.phone) {
-      throw new Error('Nome e Telefone são obrigatórios');
-    }
-
-    const { data, error } = await supabase
-      .from('leads')
-      .insert({
-        organization_id: (lead as any).organization_id,
+    const data = await callApi('/api/crm/leads', {
+      method: 'POST',
+      body: JSON.stringify({
         name: lead.name,
         phone: lead.phone,
         email: lead.email,
-        property_id: lead.propertyId, // Map propertyId to property_id (snake_case)
-        status: 'Novo',
-        source: lead.source || 'Site',
+        property_id: lead.propertyId,
+        source: lead.source
       })
-      .select()
-      .single();
+    });
 
-    if (error) throw error;
-
-    // --- TRIGGER WHATSAPP AUTOMATION (Async / Fire & Forget) ---
-    (async () => {
-      try {
-        // Buscar configurações da Evolution API
-        const { data: settingsData } = await supabase
-          .from('site_settings')
-          .select('integrations')
-          .single();
-
-        if (!settingsData?.integrations?.evolutionApi?.enabled) {
-          console.log('⚠️ WhatsApp desativado nas configurações');
-          return;
-        }
-
-        const config = settingsData.integrations.evolutionApi;
-
-        // Formatar telefone
-        const cleanPhone = lead.phone!.replace(/\D/g, '');
-        const formattedPhone =
-          cleanPhone.length <= 11 ? `55${cleanPhone}` : cleanPhone;
-
-        // Mensagem
-        const propertyTitle = lead.property?.title || 'um de nossos imóveis';
-        const message = `Olá, ${lead.name}! 👋\n\nRecebemos seu interesse em *${propertyTitle}*.\n\nNosso especialista já foi notificado e entrará em contato em breve para tirar suas dúvidas.\n\nEnquanto isso, salve nosso contato!`;
-
-        // Enviar via Evolution API
-        const apiUrl = `${config.baseUrl}/message/sendText/${config.instanceName}`;
-
-        await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            apikey: config.token,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            number: formattedPhone,
-            text: message,
-          }),
-        });
-
-        console.log(`✅ WhatsApp enviado para ${lead.name}`);
-      } catch (err) {
-        console.error('❌ Erro ao enviar WhatsApp:', err);
-      }
-    })();
-
-    return mapToModel(data);
+    return mapToModel(data.lead);
   },
 
-  // List leads for Kanban (Single Tenant)
-  async list() {
-    let query = supabase
-      .from('leads')
-      .select(
-        `
-        *,
-        properties (
-          title,
-          price,
-          images
-        )
-      `
-      )
-      .order('created_at', { ascending: false });
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return data.map(mapToModel);
+  // List leads for Kanban (Implicitly Isolated by Backend)
+  async list(page: number = 1, limit: number = 100) {
+    const data = await callApi(`/api/crm/leads?page=${page}&limit=${limit}`);
+    return data.leads.map(mapToModel);
   },
 
-  // Update lead status (drag and drop)
+  // Update lead status (Now Backend-Driven)
   async updateStatus(id: string, status: string) {
-    const { data, error } = await supabase
-      .from('leads')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
+    const data = await callApi(`/api/crm/leads/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
 
-    if (error) throw error;
-    return mapToModel(data);
+    return mapToModel(data.lead);
   },
 };
 
@@ -117,7 +43,7 @@ const mapToModel = (dbItem: any): Lead => ({
   phone: dbItem.phone,
   source: dbItem.source,
   status: dbItem.status,
-  budget: 0, // Not captured yet
+  budget: 0,
   preferences: {},
   createdAt: dbItem.created_at,
   propertyId: dbItem.property_id,

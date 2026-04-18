@@ -9,7 +9,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 // --- Middlewares & Services ---
-import { whatsappManager } from './baileys/index.js';
+import { sessionManager } from './baileys/index.js';
 
 // --- Modular Routes ---
 import adminRoutes from './routes/admin.js';
@@ -18,7 +18,10 @@ import publicRoutes from './routes/public.js';
 import onboardingRoutes from './routes/onboarding.js';
 import domainRoutes from './routes/domains.js';
 import whatsappRoutes from './api/whatsapp/index.js';
+import crmRoutes from './api/crm/index.js';
+import propertyRoutes from './api/properties/index.js';
 import tenantHandler from './api/tenant/index.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -80,8 +83,11 @@ app.use('/api/public', publicRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/domains', domainRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/crm', crmRoutes);
+app.use('/api/properties', propertyRoutes);
 
 // Tenant Resolution
+
 app.get('/api/tenant/resolve', (req, res) => tenantHandler(req, res));
 app.get('/api/tenant/current', (req, res) => tenantHandler(req, res));
 
@@ -112,12 +118,12 @@ const PORT = process.env.PORT || 3006;
 app.listen(PORT, async () => {
   console.log(`✅ IMOBZY Server active on port ${PORT}`);
   
-  // Auto-load WhatsApp sessions on start
+  // Boot seguro do sistema WhatsApp (reseta presas, restaura conectadas, inicia heartbeat)
   try {
-    console.log('📱 Loading WhatsApp sessions...');
-    await whatsappManager.loadSessions();
+    console.log('📱 Iniciando sistema WhatsApp (boot seguro)...');
+    await sessionManager.boot();
   } catch (e) {
-    console.error('⚠️ WhatsApp session load failed:', e.message);
+    console.error('⚠️ WhatsApp boot falhou (não crítico):', e.message);
   }
 });
 

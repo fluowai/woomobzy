@@ -56,7 +56,9 @@
     "react-router-dom": "7.1.1",
     "recharts": "2.15.0",
     "uuid": "^13.0.0",
+    "sonner": "^1.7.0",
     "zod": "^3.24.0"
+
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

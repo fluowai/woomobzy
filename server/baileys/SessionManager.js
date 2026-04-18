@@ -1,0 +1,543 @@
+/**
+ * SessionManager.js — Gerenciador do Ciclo de Vida das Sessões WhatsApp
+ *
+ * Responsabilidades:
+ *   - Iniciar, restaurar e encerrar sessões Baileys
+ *   - Controlar reconexões com backoff exponencial
+ *   - Monitorar saúde dos sockets via heartbeat
+ *   - Emitir eventos com suporte a múltiplos listeners (EventEmitter)
+ *   - Garantir consistência de estado via StateMachine
+ *   - Delegar persistência ao PersistenceManager
+ */
+
+import EventEmitter from 'events';
+import {
+  makeWASocket,
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+  DisconnectReason,
+} from '@whiskeysockets/baileys';
+import qrcode from 'qrcode';
+import { createClient } from '@supabase/supabase-js';
+
+import { ConnectionStateMachine, WA_STATES } from './StateMachine.js';
+import { PersistenceManager } from './PersistenceManager.js';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Constantes
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const BACKOFF_DELAYS_MS = [1000, 5000, 15000, 30000, 60000];
+const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
+const WS_READY_STATE_OPEN = 1; // WebSocket.OPEN
+const TERMINAL_DISCONNECT_CODES = new Set([
+  DisconnectReason.loggedOut,     // 401
+  DisconnectReason.forbidden,     // 403
+  DisconnectReason.badSession,    // 500 (sessão corrompida)
+  DisconnectReason.multideviceMismatch, // 411
+]);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Estrutura de uma sessão gerenciada
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+class ManagedSession {
+  constructor(instanceId, organizationId) {
+    this.instanceId = instanceId;
+    this.organizationId = organizationId;
+    this.sock = null;
+    this.stateMachine = new ConnectionStateMachine(instanceId);
+    this.retryCount = 0;
+    this.retryTimer = null;
+    this.isShuttingDown = false;
+  }
+
+  getNextBackoffDelay() {
+    const idx = Math.min(this.retryCount, BACKOFF_DELAYS_MS.length - 1);
+    return BACKOFF_DELAYS_MS[idx];
+  }
+
+  incrementRetry() {
+    this.retryCount++;
+  }
+
+  resetRetry() {
+    this.retryCount = 0;
+  }
+
+  clearRetryTimer() {
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+  }
+
+  /**
+   * Verifica se o socket WebSocket está genuinamente aberto.
+   * Não confia apenas na existência do objeto — verifica o readyState.
+   */
+  isSocketAlive() {
+    if (!this.sock) return false;
+    const ws = this.sock.ws;
+    if (!ws) return false;
+    // ws pode ser um objeto com readyState ou com um socket subjacente
+    return ws.readyState === WS_READY_STATE_OPEN;
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SessionManager
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export class SessionManager extends EventEmitter {
+  constructor(sessionsDir) {
+    super();
+    this.setMaxListeners(100); // Suporta muitas instâncias simultâneas
+    this.sessions = new Map(); // instanceId → ManagedSession
+    this.persistence = new PersistenceManager(sessionsDir);
+    this._heartbeatTimer = null;
+    this._baileysVersion = null; // Cache da versão
+  }
+
+  // ──────────────────────────────────────────────
+  // Inicialização do Servidor
+  // ──────────────────────────────────────────────
+  /**
+   * Chamado UMA VEZ no boot do servidor.
+   * 1. Reseta instâncias "presas"
+   * 2. Restaura apenas as genuinamente conectadas
+   * 3. Inicia heartbeat
+   */
+  async boot() {
+    console.log('[SessionManager] 🚀 Iniciando boot seguro...');
+    const supabase = await this.persistence.getSupabaseClient();
+
+    // ── PASSO 1: Limpar estado inconsistente ──────────
+    const { error: resetErr } = await supabase
+      .from('whatsapp_instances')
+      .update({ status: 'disconnected', updated_at: new Date().toISOString() })
+      .in('status', ['connecting', 'reconnecting', 'qr_pending']);
+
+    if (resetErr) {
+      console.warn('[SessionManager] ⚠️ Falha ao resetar instâncias presas:', resetErr.message);
+    } else {
+      console.log('[SessionManager] 🧹 Instâncias "presas" resetadas para disconnected.');
+    }
+
+    // ── PASSO 2: Restaurar sessões connected ──────────
+    const { data: instances, error } = await supabase
+      .from('whatsapp_instances')
+      .select('id, name, organization_id')
+      .eq('status', 'connected');
+
+    if (error) {
+      console.error('[SessionManager] ❌ Falha ao buscar instâncias conectadas:', error.message);
+    } else {
+      console.log(`[SessionManager] 📱 ${instances?.length || 0} instância(s) para restaurar.`);
+      for (const instance of instances || []) {
+        try {
+          console.log(`[SessionManager] ♻️ Restaurando: ${instance.name} (${instance.id})`);
+          await this.startSession(instance.id, instance.organization_id);
+        } catch (err) {
+          console.error(`[SessionManager] ❌ Falha ao restaurar ${instance.id}:`, err.message);
+          await this.persistence.updateStatus(instance.id, 'disconnected');
+        }
+      }
+    }
+
+    // ── PASSO 3: Iniciar heartbeat ──────────────────
+    this._startHeartbeat();
+    console.log('[SessionManager] ✅ Boot completo.');
+  }
+
+  // ──────────────────────────────────────────────
+  // Busca versão do Baileys com cache
+  // ──────────────────────────────────────────────
+  async _getBaileysVersion() {
+    if (this._baileysVersion) return this._baileysVersion;
+    try {
+      const { version } = await fetchLatestBaileysVersion();
+      this._baileysVersion = version;
+      console.log(`[SessionManager] 🛠️ Versão Baileys: v${version.join('.')}`);
+    } catch {
+      this._baileysVersion = [2, 3000, 1015901307];
+      console.warn(`[SessionManager] ⚠️ Usando versão fallback: v${this._baileysVersion.join('.')}`);
+    }
+    return this._baileysVersion;
+  }
+
+  // ──────────────────────────────────────────────
+  // Iniciar / Restaurar Sessão
+  // ──────────────────────────────────────────────
+  /**
+   * Inicia ou restaura uma sessão WhatsApp.
+   * Pode ser chamado tanto no boot quanto quando o usuário clica "Conectar".
+   */
+  async startSession(instanceId, organizationId) {
+    // Se já existe uma sessão ativa para este ID, encerra antes
+    const existing = this.sessions.get(instanceId);
+    if (existing) {
+      if (existing.isSocketAlive()) {
+        console.log(`[SessionManager] ℹ️ Sessão ${instanceId} já está ativa. Ignorando.`);
+        return;
+      }
+      await this._teardownSocket(existing);
+    }
+
+    // Cria nova sessão gerenciada
+    const session = new ManagedSession(instanceId, organizationId);
+    this.sessions.set(instanceId, session);
+
+    // Tenta conectar
+    await this._connect(session);
+  }
+
+  // ──────────────────────────────────────────────
+  // Conexão Principal (Baileys)
+  // ──────────────────────────────────────────────
+  async _connect(session) {
+    const { instanceId, organizationId } = session;
+
+    if (session.isShuttingDown) {
+      console.log(`[SessionManager] 🛑 Sessão ${instanceId} está encerrando. Cancelando conexão.`);
+      return;
+    }
+
+    session.stateMachine.transition(WA_STATES.CONNECTING, 'iniciando conexão');
+    await this.persistence.updateStatus(instanceId, 'connecting');
+
+    const sessionPath = this.persistence.getSessionPath(instanceId);
+
+    // Garante que as credenciais estão no FS (FS ou DB fallback)
+    const hasCredentials = await this.persistence.ensureSessionReady(instanceId);
+    console.log(`[SessionManager] 🔑 Credenciais para ${instanceId}: ${hasCredentials ? 'existem' : 'ausentes (vai gerar QR)'}`);
+
+    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+    const version = await this._getBaileysVersion();
+
+    const sock = makeWASocket({
+      version,
+      auth: state,
+      printQRInTerminal: false,
+      browser: ['Chrome (Linux)', '', ''],
+      syncFullHistory: false,
+      markOnline: true,
+      defaultQueryTimeoutMs: 60000,
+      connectTimeoutMs: 60000,
+      keepAliveIntervalMs: 25000,
+      retryRequestDelayMs: 2000,
+      getMessage: async () => ({ conversation: '' }),
+    });
+
+    session.sock = sock;
+
+    // ── Evento: Credenciais Atualizadas ──────────────
+    sock.ev.on('creds.update', async () => {
+      try {
+        await saveCreds(); // Baileys salva no FS (fonte de verdade)
+        this.persistence.scheduleDBSync(instanceId); // Sincroniza com DB (debounced + mutex)
+      } catch (e) {
+        console.error(`[SessionManager] ❌ Erro em creds.update para ${instanceId}:`, e.message);
+      }
+    });
+
+    // ── Evento: Atualização de Conexão ───────────────
+    sock.ev.on('connection.update', async (update) => {
+      await this._handleConnectionUpdate(session, update, saveCreds);
+    });
+
+    // ── Evento: Mensagens ────────────────────────────
+    sock.ev.on('messages.upsert', async (m) => {
+      for (const message of m.messages) {
+        if (message?.key?.remoteJid) {
+          await this._saveMessage(instanceId, message);
+          this.emit(`message:${instanceId}`, message);
+          this.emit('message', { instanceId, message });
+        }
+      }
+    });
+
+    // ── Evento: Histórico ────────────────────────────
+    sock.ev.on('messaging-history.set', async ({ messages }) => {
+      console.log(`[SessionManager] 📚 Histórico recebido: ${messages.length} msgs para ${instanceId}`);
+      for (const message of messages) {
+        if (message?.key?.remoteJid) {
+          await this._saveMessage(instanceId, message);
+        }
+      }
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  // Handler de Atualização de Conexão
+  // ──────────────────────────────────────────────
+  async _handleConnectionUpdate(session, update, saveCreds) {
+    const { instanceId, organizationId } = session;
+    const { connection, lastDisconnect, qr } = update;
+
+    // ── QR Code ──────────────────────────────────────
+    if (qr) {
+      try {
+        console.log(`[SessionManager] 📲 QR gerado para ${instanceId}`);
+        session.stateMachine.transition(WA_STATES.QR_PENDING, 'QR gerado');
+        const qrImage = await qrcode.toDataURL(qr);
+        await this.persistence.saveQRCode(instanceId, qrImage);
+        this.emit(`qr:${instanceId}`, qrImage);
+        this.emit('qr', { instanceId, qrImage });
+      } catch (e) {
+        console.error(`[SessionManager] ❌ Erro ao processar QR de ${instanceId}:`, e.message);
+      }
+    }
+
+    // ── Conexão Estabelecida ─────────────────────────
+    if (connection === 'open') {
+      console.log(`[SessionManager] ✅ Instância conectada: ${instanceId}`);
+      const phoneNumber = session.sock?.user?.id?.split(':')[0]?.split('@')[0] || '';
+      session.stateMachine.transition(WA_STATES.CONNECTED, 'socket aberto');
+      session.resetRetry();
+      await this.persistence.updateStatus(instanceId, 'connected', { phone_number: phoneNumber || null });
+      this.emit(`connected:${instanceId}`, { phoneNumber });
+      this.emit('connected', { instanceId, phoneNumber });
+    }
+
+    // ── Conexão Fechada ──────────────────────────────
+    if (connection === 'close') {
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      const isTerminal = TERMINAL_DISCONNECT_CODES.has(statusCode);
+
+      console.log(`[SessionManager] 🔌 Sessão ${instanceId} fechada. Código: ${statusCode}. Terminal: ${isTerminal}`);
+
+      if (isTerminal) {
+        // Desconexão definitiva (logout, sessão inválida, etc.)
+        console.log(`[SessionManager] 🚫 Desconexão terminal para ${instanceId}. Limpando sessão.`);
+        session.stateMachine.transition(WA_STATES.DISCONNECTED, `código terminal: ${statusCode}`);
+        await this._teardownSocket(session);
+
+        // Para código 401 (loggedOut): apaga creds completamente
+        if (statusCode === DisconnectReason.loggedOut || statusCode === DisconnectReason.badSession) {
+          await this.persistence.clearSession(instanceId);
+        } else {
+          await this.persistence.updateStatus(instanceId, 'disconnected');
+        }
+
+        this.sessions.delete(instanceId);
+        this.emit(`disconnected:${instanceId}`, { statusCode, terminal: true });
+        this.emit('disconnected', { instanceId, statusCode, terminal: true });
+      } else {
+        // Desconexão transitória → tentar reconectar com backoff
+        session.stateMachine.transition(WA_STATES.RECONNECTING, `código: ${statusCode}`);
+        await this.persistence.updateStatus(instanceId, 'reconnecting');
+        this.emit(`reconnecting:${instanceId}`, { statusCode });
+        this.emit('reconnecting', { instanceId, statusCode });
+
+        session.incrementRetry();
+        const delay = session.getNextBackoffDelay();
+        console.log(`[SessionManager] 🔄 Reconectando ${instanceId} em ${delay}ms (tentativa ${session.retryCount})`);
+
+        session.clearRetryTimer();
+        session.retryTimer = setTimeout(async () => {
+          if (session.isShuttingDown) return;
+          // Verifica se a sessão ainda é a mesma (não foi substituída)
+          if (this.sessions.get(instanceId) !== session) return;
+          await this._connect(session);
+        }, delay);
+      }
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  // Encerramento de Socket
+  // ──────────────────────────────────────────────
+  async _teardownSocket(session) {
+    session.clearRetryTimer();
+    if (session.sock) {
+      try {
+        session.sock.ev.removeAllListeners('connection.update');
+        session.sock.ev.removeAllListeners('creds.update');
+        session.sock.ev.removeAllListeners('messages.upsert');
+        session.sock.ev.removeAllListeners('messaging-history.set');
+        if (session.isSocketAlive()) {
+          session.sock.end();
+        }
+      } catch (e) {
+        // Ignora erros ao fechar socket
+      }
+      session.sock = null;
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  // Heartbeat
+  // ──────────────────────────────────────────────
+  _startHeartbeat() {
+    if (this._heartbeatTimer) clearInterval(this._heartbeatTimer);
+
+    this._heartbeatTimer = setInterval(async () => {
+      console.log(`[SessionManager] 🫀 Heartbeat — verificando ${this.sessions.size} sessão(ões)...`);
+
+      for (const [instanceId, session] of this.sessions) {
+        const state = session.stateMachine.getState();
+
+        // Só verifica sessões que deveriam estar conectadas
+        if (state !== WA_STATES.CONNECTED && state !== WA_STATES.STALE) continue;
+
+        if (!session.isSocketAlive()) {
+          console.warn(`[SessionManager] ⚠️ Heartbeat: socket morto para ${instanceId}. Reconectando...`);
+          session.stateMachine.transition(WA_STATES.STALE, 'socket morto detectado pelo heartbeat');
+          await this.persistence.updateStatus(instanceId, 'reconnecting');
+          session.stateMachine.transition(WA_STATES.RECONNECTING, 'iniciando reconexão pelo heartbeat');
+          session.clearRetryTimer();
+          await this._connect(session);
+        } else {
+          console.log(`[SessionManager] ✅ Heartbeat: ${instanceId} OK`);
+        }
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  stopHeartbeat() {
+    if (this._heartbeatTimer) {
+      clearInterval(this._heartbeatTimer);
+      this._heartbeatTimer = null;
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  // Logout (encerramento manual)
+  // ──────────────────────────────────────────────
+  async logout(instanceId) {
+    const session = this.sessions.get(instanceId);
+    if (session) {
+      session.isShuttingDown = true;
+      if (session.sock && session.isSocketAlive()) {
+        try {
+          await session.sock.logout();
+        } catch (e) {
+          // Ignora erros de logout
+        }
+      }
+      await this._teardownSocket(session);
+      this.sessions.delete(instanceId);
+    }
+    await this.persistence.clearSession(instanceId);
+    console.log(`[SessionManager] 👋 Logout completo para ${instanceId}`);
+  }
+
+  // ──────────────────────────────────────────────
+  // Envio de Mensagem
+  // ──────────────────────────────────────────────
+  async sendMessage(instanceId, jid, text) {
+    const session = this.sessions.get(instanceId);
+    if (!session?.sock || !session.isSocketAlive()) {
+      throw new Error(`Instância ${instanceId} não está conectada`);
+    }
+    const result = await session.sock.sendMessage(jid, { text });
+    await this._saveMessage(instanceId, result);
+    return result;
+  }
+
+  // ──────────────────────────────────────────────
+  // Getters de Estado
+  // ──────────────────────────────────────────────
+  getSession(instanceId) {
+    return this.sessions.get(instanceId) || null;
+  }
+
+  getSessionState(instanceId) {
+    return this.sessions.get(instanceId)?.stateMachine.getState() || WA_STATES.DISCONNECTED;
+  }
+
+  isSessionAlive(instanceId) {
+    return this.sessions.get(instanceId)?.isSocketAlive() || false;
+  }
+
+  getAllSessionStates() {
+    const result = {};
+    for (const [id, session] of this.sessions) {
+      result[id] = {
+        state: session.stateMachine.getState(),
+        alive: session.isSocketAlive(),
+        retryCount: session.retryCount,
+      };
+    }
+    return result;
+  }
+
+  // ──────────────────────────────────────────────
+  // Persistência de Mensagens
+  // ──────────────────────────────────────────────
+  async _saveMessage(instanceId, message) {
+    try {
+      const chatJid = message.key?.remoteJid;
+      if (!chatJid || chatJid === 'status@broadcast' || chatJid.includes('@newsletter')) return;
+
+      const supabase = await this.persistence.getSupabaseClient();
+      const fromMe = message.key?.fromMe ?? false;
+      const messageType = Object.keys(message.message || {})[0] || 'unknown';
+
+      // Extração de conteúdo
+      let content = '';
+      const msg = message.message;
+      if (msg?.conversation) content = msg.conversation;
+      else if (msg?.extendedTextMessage?.text) content = msg.extendedTextMessage.text;
+      else if (msg?.imageMessage?.caption) content = msg.imageMessage.caption;
+      else if (msg?.videoMessage?.caption) content = msg.videoMessage.caption;
+      else if (msg?.buttonsResponseMessage?.selectedButtonId) content = msg.buttonsResponseMessage.selectedButtonId;
+      else if (msg?.listResponseMessage?.title) content = msg.listResponseMessage.title;
+      else if (msg?.documentMessage?.caption) content = msg.documentMessage.caption;
+
+      // Garante que o chat existe (upsert)
+      const { data: existingChat } = await supabase
+        .from('whatsapp_chats')
+        .select('id, name')
+        .eq('instance_id', instanceId)
+        .eq('jid', chatJid)
+        .maybeSingle();
+
+      let chatId;
+      let displayName = message.pushName || chatJid.split('@')[0];
+
+      // Busca nome real de grupos
+      if (chatJid.endsWith('@g.us')) {
+        const session = this.sessions.get(instanceId);
+        if (session?.sock) {
+          try {
+            const meta = await session.sock.groupMetadata(chatJid).catch(() => null);
+            if (meta?.subject) displayName = meta.subject;
+          } catch { /* noop */ }
+        }
+      }
+
+      const timestamp = new Date((message.messageTimestamp || Date.now() / 1000) * 1000).toISOString();
+
+      if (!existingChat) {
+        const { data: newChat, error } = await supabase
+          .from('whatsapp_chats')
+          .insert({ instance_id: instanceId, jid: chatJid, name: displayName, last_message_at: timestamp })
+          .select('id')
+          .single();
+        if (error) throw error;
+        chatId = newChat.id;
+      } else {
+        chatId = existingChat.id;
+        const updates = { last_message_at: timestamp };
+        if (!chatJid.endsWith('@g.us') && message.pushName) updates.name = message.pushName;
+        await supabase.from('whatsapp_chats').update(updates).eq('id', chatId);
+      }
+
+      // Salva mensagem (upsert por key_id para idempotência)
+      const { error: msgErr } = await supabase.from('whatsapp_messages').upsert({
+        instance_id: instanceId,
+        chat_id: chatId,
+        key_id: message.key.id,
+        message_type: messageType,
+        content,
+        from_me: fromMe,
+        status: fromMe ? 'sent' : 'received',
+        timestamp,
+        metadata: message,
+      }, { onConflict: 'key_id' });
+
+      if (msgErr) console.error(`[SessionManager] ❌ Erro ao salvar mensagem:`, msgErr.message);
+    } catch (e) {
+      console.error(`[SessionManager] ❌ Falha crítica em _saveMessage:`, e.message);
+    }
+  }
+}

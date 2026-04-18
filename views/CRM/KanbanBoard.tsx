@@ -24,6 +24,8 @@ import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, X } from 'lucide-react';
+import { toast } from 'sonner';
+
 
 interface NewLeadModalProps {
   isOpen: boolean;
@@ -53,11 +55,13 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({ isOpen, onClose, onSuccess,
       } as any);
       onSuccess();
       onClose();
+      toast.success('Lead cadastrado com sucesso!');
     } catch (err: any) {
-      alert('Erro ao criar lead: ' + err.message);
+      toast.error('Erro ao criar lead: ' + err.message);
     } finally {
       setLoading(false);
     }
+
   };
 
   return (

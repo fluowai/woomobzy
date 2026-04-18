@@ -1,19 +1,50 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { verifySuperAdmin, verifyAdmin } from '../middleware/auth.js';
+import { verifySuperAdmin, verifyAdmin, verifyAuth } from '../middleware/auth.js';
+import { requireTenant } from '../middleware/tenant.js';
 
 const router = express.Router();
 
 const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
 const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️ [AdminRoutes] Supabase credentials missing. Some routes will fail.');
-}
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
+// --- 🔓 IMPERSONATION (BLOCO 3) ---
 
-// --- Organizations Management ---
+/**
+ * POST /api/admin/impersonate
+ * Inicia o modo suporte para uma organização específica.
+ */
+router.post('/impersonate', verifySuperAdmin, async (req, res) => {
+  const { organizationId } = req.body;
+  if (!organizationId) return res.status(400).json({ error: 'ID da organização é obrigatório' });
+
+  try {
+    // Verificar se a organização existe
+    const { data: org, error } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .eq('id', organizationId)
+      .single();
+
+    if (error || !org) return res.status(404).json({ error: 'Organização não encontrada' });
+
+    console.log(`[Impersonation] 🛡️ SuperAdmin ${req.user.email} iniciando suporte para ${org.name}`);
+    
+    // Na arquitetura de API, o frontend apenas armazena esse ID e envia no header x-impersonate-org-id
+    // O backend já valida a role no middleware verifyAuth
+    res.json({ 
+      success: true, 
+      message: `Modo suporte ativado para ${org.name}`,
+      orgId: org.id 
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- 🏢 Organizations Management ---
 
 router.get('/organizations', verifySuperAdmin, async (req, res) => {
   try {
@@ -64,110 +95,90 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     if (status !== undefined) payload.status = status;
     if (plan_id !== undefined) payload.plan_id = plan_id || null;
     if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
-    if (owner_email !== undefined) payload.owner_email = owner_email || null;
     
-    let { data, error } = await supabase
+    const { data: organization, error: updateError } = await supabase
       .from('organizations')
       .update(payload)
       .eq('id', id)
       .select()
       .single();
 
-    // Se o erro for coluna não encontrada (owner_email), tenta sem ela
-    if (error && (error.message.includes('owner_email') || error.code === 'PGRST204' || error.code === '42703')) {
-      console.warn('⚠️ Coluna owner_email não encontrada, tentando salvar sem ela...');
-      const fallbackPayload = { ...payload };
-      delete fallbackPayload.owner_email;
-      
-      const retry = await supabase
-        .from('organizations')
-        .update(fallbackPayload)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      data = retry.data;
-      error = retry.error;
-    }
+    if (updateError) throw updateError;
 
-    if (error) throw error;
-
-    // Se uma senha foi fornecida, atualizar a senha de forma inteligente
+    // Password Update Logic (Secure)
     if (password && password.length >= 6) {
-      let targetEmail = owner_email || data.owner_email;
-
-      // Se não temos o e-mail no metadado, buscamos o administrador da organização nos perfis
-      if (!targetEmail) {
-        const { data: adminProfile } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('organization_id', id)
-          .eq('role', 'admin')
-          .limit(1)
-          .maybeSingle();
-        
-        targetEmail = adminProfile?.email;
-      }
-
-      if (targetEmail) {
-        const { data: userData } = await supabase.auth.admin.listUsers();
-        const userToUpdate = userData?.users?.find(u => u.email === targetEmail);
-        
-        if (userToUpdate) {
-          const { error: updateError } = await supabase.auth.admin.updateUserById(userToUpdate.id, { password });
-          if (!updateError) console.log(`🔐 Password updated for user: ${targetEmail}`);
-        }
+      const { data: adminProfile } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('organization_id', id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      if (adminProfile) {
+        await supabase.auth.admin.updateUserById(adminProfile.id, { password });
       }
     }
 
-    res.json({ success: true, organization: data });
+    res.json({ success: true, organization });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.delete('/organizations/:id', verifySuperAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await supabase.from('domains').delete().eq('organization_id', id);
-    await supabase.from('site_settings').delete().eq('organization_id', id);
-    await supabase.from('profiles').update({ organization_id: null }).eq('organization_id', id);
-    
-    const { error } = await supabase.from('organizations').delete().eq('id', id);
-    if (error) throw error;
-    res.json({ success: true, message: 'Organização excluída com sucesso' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// --- 👥 User Management (Tenant Isolated) ---
 
-// --- User Management ---
-
-router.put('/users/:id/password', verifyAdmin, async (req, res) => {
+router.put('/users/:id/password', verifyAdmin, requireTenant, async (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
-  if (!password || password.length < 6) return res.status(400).json({ error: 'Senha curta' });
+  
+  if (!password || password.length < 6) return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
 
   try {
+    // SEGURANÇA: Verificar se o usuário pertence à mesma Org do Admin
+    const { data: targetUser, error: checkError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || targetUser.organization_id !== req.orgId) {
+      console.warn(`[Security] ❌ Bloqueio de ação cross-tenant por ${req.user.email}`);
+      return res.status(403).json({ error: 'Não autorizado: Usuário não pertence à sua organização' });
+    }
+
     const { error } = await supabase.auth.admin.updateUserById(id, { password });
     if (error) throw error;
-    res.json({ success: true, message: 'Senha atualizada' });
+    res.json({ success: true, message: 'Senha atualizada com sucesso' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.delete('/users/:id', verifyAdmin, async (req, res) => {
+router.delete('/users/:id', verifyAdmin, requireTenant, async (req, res) => {
   const { id } = req.params;
-  if (id === req.user.id) return res.status(400).json({ error: 'Não pode se auto-excluir' });
+  if (id === req.user.id) return res.status(400).json({ error: 'Não é possível excluir o próprio usuário' });
 
   try {
+    // SEGURANÇA: Verificar se o usuário pertence à mesma Org do Admin
+    const { data: targetUser, error: checkError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || targetUser.organization_id !== req.orgId) {
+      return res.status(403).json({ error: 'Não autorizado: Usuário não pertence à sua organização' });
+    }
+
     const { error } = await supabase.auth.admin.deleteUser(id);
     if (error) throw error;
-    res.json({ success: true, message: 'Usuário excluído' });
+    res.json({ success: true, message: 'Usuário excluído com sucesso' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
+export default router;
+
 
 export default router;

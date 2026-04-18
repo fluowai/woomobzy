@@ -55,7 +55,7 @@ const SmartImporter: React.FC = () => {
     const fetchOrgs = async () => {
       try {
         const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-        const response = await fetch(`${apiUrl}/api/organizations`, {
+        const response = await fetch(`${apiUrl}/api/admin/organizations`, {
           headers: {
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
           }

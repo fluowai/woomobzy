@@ -11,6 +11,8 @@ import {
 // Impersonation Components
 import ImpersonateCallback from './views/ImpersonateCallback';
 import ImpersonationBanner from './components/ImpersonationBanner';
+import { Toaster } from 'sonner';
+
 
 // Layouts
 import RuralLayout from './components/RuralLayout';
@@ -235,8 +237,10 @@ const AppContent: React.FC = () => {
 
   return (
     <>
+      <Toaster richColors closeButton position="top-right" />
       <ImpersonationBanner />
       <SuperAdminGuard>
+
         <Routes>
           {/* ====== PUBLIC ROUTES ====== */}
           <Route path="/" element={<LandingPage />} />

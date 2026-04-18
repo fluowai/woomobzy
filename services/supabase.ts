@@ -30,7 +30,46 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// No frontend, o organization_id deve ser derivado do Perfil ou do Impersonation
+// Usamos o global.headers para que o backend receba a intenção de impersonação para validação segura
+const getHeaders = () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (typeof window !== 'undefined') {
+    const impId = sessionStorage.getItem('impersonated_org_id');
+    if (impId && impId !== 'null') {
+      headers['x-impersonate-org-id'] = impId;
+    }
+  }
+
+  return headers;
+};
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    global: {
+      headers: getHeaders()
+    }
+  }
 );
+
+/**
+ * Helper para forçar atualização de headers após mudança de impersonação
+ * (Ex: logout de suporte)
+ */
+export const refreshSupabaseHeaders = () => {
+  // Como o client do Supabase é um singleton, em alguns casos é necessário 
+  // que o app recarregue ou que as chamadas individuais injetem os headers.
+  // No IMOBZY, o reload é o padrão após troca de tenant de suporte.
+  window.location.reload();
+};
+

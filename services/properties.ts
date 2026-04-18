@@ -1,91 +1,45 @@
-import { supabase } from './supabase';
-import {
-  Property,
-  PropertyType,
-  PropertyStatus,
-  PropertyPurpose,
-  PropertyAptitude,
-} from '../types';
+import { Property } from '../types';
+import { callApi } from '../src/lib/api';
 
 export const propertyService = {
-  // Listar Imóveis (Supports filtering by organizationId)
-  async list(organizationId?: string) {
-    let query = supabase
-      .from('properties')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (organizationId) {
-      query = query.eq('organization_id', organizationId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-    return data.map(mapToModel);
+  // Listar Imóveis (Implicitly Isolated by Backend Token)
+  async list(page: number = 1, limit: number = 50) {
+    const data = await callApi(`/api/properties?page=${page}&limit=${limit}`);
+    return data.properties.map(mapToModel);
   },
 
   // Obter um Imóvel por ID
   async getById(id: string) {
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    return mapToModel(data);
+    const data = await callApi(`/api/properties/${id}`);
+    return mapToModel(data.property);
   },
 
   // Criar Imóvel
   async create(property: Partial<Property>) {
-    const payload = mapToDatabase(property);
-    const { data, error } = await supabase
-      .from('properties')
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return mapToModel(data);
+    const data = await callApi('/api/properties', {
+      method: 'POST',
+      body: JSON.stringify(property)
+    });
+    return mapToModel(data.property);
   },
 
   // Atualizar Imóvel
   async update(id: string, property: Partial<Property>) {
-    const payload = mapToDatabase(property);
-    const { data, error } = await supabase
-      .from('properties')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return mapToModel(data);
+    const data = await callApi(`/api/properties/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(property)
+    });
+    return mapToModel(data.property);
   },
 
   // Excluir Imóvel
   async delete(id: string) {
-    const { error } = await supabase.from('properties').delete().eq('id', id);
-
-    if (error) throw error;
-  },
-
-  // Submeter Imóvel (Público)
-  async submit(property: Partial<Property>) {
-    const payload = mapToDatabase(property);
-    payload.status = 'Pendente'; // Força status pendente para submissões públicas
-
-    const { data, error } = await supabase
-      .from('properties')
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return mapToModel(data);
+    await callApi(`/api/properties/${id}`, {
+      method: 'DELETE'
+    });
   },
 };
+
 
 // Mappers para converter entre Banco de Dados (snake_case/flat) e Modelo da Aplicação (CamelCase/Nested)
 const mapToModel = (dbItem: any): Property => ({

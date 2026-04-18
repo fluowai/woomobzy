@@ -281,13 +281,16 @@ class WhatsAppManager {
         // Se for grupo, tenta buscar o nome real via metadados
         if (chatJid.endsWith('@g.us')) {
            try {
-             const sock = this.sessions.get(instanceId)?.sock;
-             if (sock) {
-               const metadata = await sock.groupMetadata(chatJid);
-               displayName = metadata.subject || `Grupo: ${chatJid.split('@')[0].slice(-4)}`;
+             const session = this.sessions.get(instanceId);
+             const sock = session?.sock;
+             if (sock && typeof sock.groupMetadata === 'function') {
+               const metadata = await sock.groupMetadata(chatJid).catch(() => null);
+               if (metadata?.subject) {
+                 displayName = metadata.subject;
+               }
              }
            } catch (e) {
-             displayName = `Grupo: ${chatJid.split('@')[0].slice(-4)}`;
+             console.warn('[WhatsApp] ⚠️ Não foi possível obter nome do grupo:', e.message);
            }
         }
 

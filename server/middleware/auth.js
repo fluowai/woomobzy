@@ -44,10 +44,6 @@ export const verifyAuth = async (req, res, next) => {
     req.userRole = profile.role;
     req.realOrgId = profile.organization_id;
     
-    // --- LÓGICA DE IMPERSONATION (BLOCO 3) ---
-    // Apenas SuperAdmins podem solicitar impersonação via header
-    const impersonateId = req.headers['x-impersonate-org-id'];
-    
     if (impersonateId && profile.role === 'superadmin') {
       console.log(`[Auth] 🔐 SuperAdmin ${user.email} impersonando Org: ${impersonateId}`);
       req.orgId = impersonateId;
@@ -56,6 +52,9 @@ export const verifyAuth = async (req, res, next) => {
       req.orgId = profile.organization_id;
       req.isImpersonating = false;
     }
+
+    // Se for superadmin e não estiver impersonando, req.orgId pode ser nulo para rotas globais
+    // Mas para rotas de tenant (leads, props), next middlewares farão o check se necessário
 
     next();
   } catch (e) {

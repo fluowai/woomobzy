@@ -135,6 +135,13 @@ const WhatsAppInstances: React.FC = () => {
     try {
       const headers = await getAuthHeaders();
       const response = await fetch(getApiUrl('/api/whatsapp/instances'), { headers });
+      
+      if (response.status === 401 || response.status === 403) {
+        console.warn('[WhatsAppInstances] Acesso negado pela API. Parando tentativas.');
+        setLoading(false);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
         setInstances(data.instances || []);

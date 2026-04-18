@@ -311,7 +311,7 @@ class WhatsAppManager {
         chatId = chatData.id;
         
         // Atualização inteligente do nome
-        const updates: any = { 
+        const updates = { 
           last_message_at: new Date(message.messageTimestamp * 1000).toISOString() 
         };
         

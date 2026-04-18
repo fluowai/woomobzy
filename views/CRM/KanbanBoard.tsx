@@ -10,7 +10,7 @@ import { Lead } from '../../types';
 import {
   MessageCircle,
   Phone,
-  Clock,
+  Clock3,
   FileCheck,
   CheckCircle2,
   XCircle,
@@ -467,7 +467,7 @@ const KanbanBoard: React.FC = () => {
 
                                 <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                                   <span className="flex items-center gap-1">
-                                    <Clock size={10} />
+                                    <Clock3 size={10} />
                                     {new Date(
                                       lead.createdAt
                                     ).toLocaleDateString()}

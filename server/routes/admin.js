@@ -179,6 +179,3 @@ router.delete('/users/:id', verifyAdmin, requireTenant, async (req, res) => {
 });
 
 export default router;
-
-
-export default router;

@@ -88,11 +88,21 @@ const Chat: React.FC = () => {
       const data = await response.json();
       
       if (data.success) {
+        console.log(`📱 [Chat] ${data.instances?.length || 0} instâncias encontradas na API.`);
         setInstances(data.instances || []);
         // Se não houver selecionado, pega o primeiro conectado e vivo
         if (!selectedInstance && data.instances?.length > 0) {
-          const firstConnected = data.instances.find((i: Instance) => i.status === 'connected' && i.socket_alive);
-          if (firstConnected) setSelectedInstance(firstConnected);
+          const firstConnected = data.instances.find((i: Instance) => {
+             console.log(`   - Verificando: ${i.name} (Status: ${i.status}, Alive: ${i.socket_alive})`);
+             return i.status === 'connected' && i.socket_alive;
+          });
+          if (firstConnected) {
+            console.log(`✅ [Chat] Selecionando automaticamente a instância: ${firstConnected.name}`);
+            setSelectedInstance(firstConnected);
+          } else {
+            console.warn('⚠️ [Chat] Nenhuma instância conectada e viva encontrada. Selecionando a primeira da lista como fallback.');
+            setSelectedInstance(data.instances[0]);
+          }
         }
       }
     } catch (err) {

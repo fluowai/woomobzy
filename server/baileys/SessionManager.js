@@ -482,6 +482,10 @@ export class SessionManager extends EventEmitter {
       const chatJid = message.key?.remoteJid;
       if (!chatJid || chatJid === 'status@broadcast' || chatJid.includes('@newsletter')) return;
 
+      const session = this.sessions.get(instanceId);
+      if (!session) return;
+      
+      const organizationId = session.organizationId;
       const supabase = await this.persistence.getSupabaseClient();
       const fromMe = message.key?.fromMe ?? false;
       const messageType = Object.keys(message.message || {})[0] || 'unknown';
@@ -510,7 +514,6 @@ export class SessionManager extends EventEmitter {
 
       // Busca nome real de grupos
       if (chatJid.endsWith('@g.us')) {
-        const session = this.sessions.get(instanceId);
         if (session?.sock) {
           try {
             const meta = await session.sock.groupMetadata(chatJid).catch(() => null);
@@ -524,14 +527,23 @@ export class SessionManager extends EventEmitter {
       if (!existingChat) {
         const { data: newChat, error } = await supabase
           .from('whatsapp_chats')
-          .insert({ instance_id: instanceId, jid: chatJid, name: displayName, last_message_at: timestamp })
+          .insert({ 
+            instance_id: instanceId, 
+            organization_id: organizationId, // <--- ADICIONADO
+            jid: chatJid, 
+            name: displayName, 
+            last_message_at: timestamp 
+          })
           .select('id')
           .single();
         if (error) throw error;
         chatId = newChat.id;
       } else {
         chatId = existingChat.id;
-        const updates = { last_message_at: timestamp };
+        const updates = { 
+          last_message_at: timestamp,
+          organization_id: organizationId // Garante que e o org_id esteja preenchido
+        };
         if (!chatJid.endsWith('@g.us') && message.pushName) updates.name = message.pushName;
         await supabase.from('whatsapp_chats').update(updates).eq('id', chatId);
       }
@@ -539,6 +551,7 @@ export class SessionManager extends EventEmitter {
       // Salva mensagem (upsert por key_id para idempotência)
       const { error: msgErr } = await supabase.from('whatsapp_messages').upsert({
         instance_id: instanceId,
+        organization_id: organizationId, // <--- ADICIONADO
         chat_id: chatId,
         key_id: message.key.id,
         message_type: messageType,

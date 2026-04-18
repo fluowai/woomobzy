@@ -293,6 +293,43 @@ router.post('/instances/:id/disconnect', verifyAdmin, async (req, res) => {
 // Mensagens e Chats
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+/** DELETE /api/whatsapp/messages/:id — Deletar mensagem do painel */
+router.delete('/messages/:id', verifyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Garante que a mensagem pertence à organização (Join com chats)
+    const { data: msg, error: fetchErr } = await supabase
+      .from('whatsapp_messages')
+      .select(`
+        id,
+        instance_id,
+        whatsapp_instances!inner(organization_id)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !msg) return res.status(404).json({ error: 'Mensagem não encontrada' });
+    
+    // Verifica se a organização coincide
+    if (msg.whatsapp_instances.organization_id !== req.orgId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const { error: delErr } = await supabase
+      .from('whatsapp_messages')
+      .delete()
+      .eq('id', id);
+
+    if (delErr) throw delErr;
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[WhatsApp API] Erro ao deletar mensagem:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 /** GET /api/whatsapp/instances/:id/chats */
 router.get('/instances/:id/chats', verifyAdmin, async (req, res) => {
   try {

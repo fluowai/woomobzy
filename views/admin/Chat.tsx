@@ -14,6 +14,7 @@ import {
   File,
   AlertCircle,
   Smartphone,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl } from '../../src/lib/api';
@@ -295,6 +296,31 @@ const Chat: React.FC = () => {
       setTimeout(() => setError(null), 3000);
     } finally {
       setSending(false);
+    }
+  };
+  
+  const deleteMessage = async (messageId: string) => {
+    if (!window.confirm('Deseja excluir esta mensagem do seu painel?')) return;
+    
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(getApiUrl(`/api/whatsapp/messages/${messageId}`), {
+        method: 'DELETE',
+        headers
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Remove a mensagem localmente para feedback instantâneo
+        setMessages(prev => prev.filter(m => m.id !== messageId));
+      } else {
+        setError(data.error || 'Erro ao deletar mensagem');
+        setTimeout(() => setError(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error deleting message:', err);
+      setError('Erro de conexão ao deletar');
+      setTimeout(() => setError(null), 3000);
     }
   };
 
@@ -592,6 +618,17 @@ const Chat: React.FC = () => {
                       }`}>
                         <span>{formatTime(msg.timestamp)}</span>
                         {getStatusIcon(msg.status, msg.from_me)}
+                        <button
+                          onClick={() => deleteMessage(msg.id)}
+                          className={`ml-2 p-1 rounded-md transition-all ${
+                            msg.from_me 
+                              ? 'hover:bg-white/20 text-green-100 hover:text-white' 
+                              : 'hover:bg-gray-100 text-gray-300 hover:text-red-500'
+                          }`}
+                          title="Excluir mensagem"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
                   </div>

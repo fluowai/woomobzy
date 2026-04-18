@@ -32,8 +32,9 @@ function getRealStatus(dbInstance) {
   const socketAlive = sessionManager.isSessionAlive(dbInstance.id);
   const memoryState = sessionManager.getSessionState(dbInstance.id);
 
-  // Se o DB diz connected mas socket está morto → estado real é reconnecting
-  if (dbInstance.status === 'connected' && !socketAlive) {
+  // Só força 'reconnecting' se o DB diz connected E a memória diz que REALMENTE desconectou.
+  // Se estiver em estado STALE ou CONNECTED na memória, mantemos o rótulo do DB para evitar flicker.
+  if (dbInstance.status === 'connected' && !socketAlive && memoryState === WA_STATES.DISCONNECTED) {
     return { ...dbInstance, status: 'reconnecting', socketAlive: false, memoryState };
   }
 

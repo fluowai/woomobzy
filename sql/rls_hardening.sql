@@ -1,5 +1,5 @@
 -- ============================================================
--- IMOBZY HARDENING: MULTI-TENANT ISOLATION (RLS) - STABLE
+-- IMOBZY HARDENING: MULTI-TENANT ISOLATION (RLS) - FINAL STABLE
 -- ============================================================
 
 -- 1. HABILITAR RLS NAS TABELAS CRÍTICAS
@@ -13,31 +13,50 @@ ALTER TABLE whatsapp_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE domains ENABLE ROW LEVEL SECURITY;
 
--- 2. FUNÇÃO DE RESOLUÇÃO DE TENANT (ESTÁVEL)
--- Usa SECURITY DEFINER e busca direta para evitar recursão infinita
+-- 2. SINCRONIZAÇÃO DE METADADOS (JWT)
+-- Mantém o organization_id dentro do token do usuário para evitar recursão
+CREATE OR REPLACE FUNCTION sync_user_org_metadata()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE auth.users 
+  SET raw_app_meta_data = raw_app_meta_data || 
+    jsonb_build_object('organization_id', NEW.organization_id)
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_profile_org_update ON profiles;
+CREATE TRIGGER on_profile_org_update
+  AFTER INSERT OR UPDATE OF organization_id ON profiles
+  FOR EACH ROW EXECUTE FUNCTION sync_user_org_metadata();
+
+-- Sincronizar dados atuais
+UPDATE auth.users u
+SET raw_app_meta_data = raw_app_meta_data || 
+    jsonb_build_object('organization_id', p.organization_id)
+FROM profiles p
+WHERE u.id = p.id AND p.organization_id IS NOT NULL;
+
+-- 3. POLÍTICAS PARA PROFILES (NÃO-RECURSIVAS VIA JWT)
+DROP POLICY IF EXISTS "Profiles_Standard_Access" ON profiles;
+CREATE POLICY "Profiles_Standard_Access" ON profiles
+FOR ALL USING (
+  id = auth.uid() 
+  OR 
+  organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid 
+);
+
+-- 4. FUNÇÃO DE APOIO PARA DEMAIS TABELAS
 CREATE OR REPLACE FUNCTION get_my_org_id() 
 RETURNS uuid AS $$
-  SELECT organization_id FROM profiles WHERE id = auth.uid() LIMIT 1;
-$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
+  -- Retorna o ID vindo do metadado do token para máxima performance
+  SELECT (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid;
+$$ LANGUAGE sql STABLE;
 
--- 3. POLÍTICAS PARA PROFILES (NÃO-RECURSIVAS)
-DROP POLICY IF EXISTS "Profiles_Self_Access" ON profiles;
-CREATE POLICY "Profiles_Self_Access" ON profiles FOR ALL USING (id = auth.uid());
-
-DROP POLICY IF EXISTS "Profiles_Org_Access" ON profiles;
-CREATE POLICY "Profiles_Org_Access" ON profiles FOR SELECT 
-USING (organization_id = (SELECT p.organization_id FROM profiles p WHERE p.id = auth.uid() LIMIT 1));
-
-DROP POLICY IF EXISTS "Profiles_SuperAdmin_Access" ON profiles;
-CREATE POLICY "Profiles_SuperAdmin_Access" ON profiles FOR ALL 
-USING ((SELECT role FROM profiles WHERE id = auth.uid() LIMIT 1) = 'superadmin');
-
--- 4. POLÍTICAS PARA AS DEMAIS TABELAS (PROPERTIES, LEADS, ETC)
+-- 5. POLÍTICAS PARA AS DEMAIS TABELAS (EXEMPLO)
 -- Aplicar para: properties, leads, whatsapp_instances, site_settings, domains
--- Exemplo para Properties:
-DROP POLICY IF EXISTS "Tenant isolation for properties" ON properties;
-CREATE POLICY "Tenant isolation for properties" ON properties FOR ALL 
+DROP POLICY IF EXISTS "Tenant isolation policy" ON properties;
+CREATE POLICY "Tenant isolation policy" ON properties FOR ALL 
 USING (organization_id = get_my_org_id())
 WITH CHECK (organization_id = get_my_org_id());
-
--- (O padrão acima se repete para as outras tabelas usando get_my_org_id())

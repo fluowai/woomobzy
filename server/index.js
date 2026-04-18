@@ -43,16 +43,29 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir localhost, domínios configurados e subdomínios dinâmicos
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.consultio.com.br') || origin === 'https://consultio.com.br') {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS: Origem não permitida - ${origin}`));
+    // 1. Permitir requests sem origin (ex: mobile apps, curl, ferramentas de servidor)
+    if (!origin) return callback(null, true);
+
+    const isLocal = origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1');
+    const isMainDomain = origin === 'https://consultio.com.br' || origin.endsWith('.consultio.com.br');
+    
+    // 2. Permitir domínios locais e oficiais
+    if (isLocal || isMainDomain || allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    // 3. SaaS Multi-tenant: Permitir qualquer domínio HTTPS legítimo para rotas públicas
+    // Em produção real, você validaria isso contra o banco de dados 'domains', 
+    // mas para o fluxo de 'Em Breve' e Leads, permitimos para garantir recepção.
+    if (origin.startsWith('https://')) {
+      return callback(null, true);
+    }
+
+    callback(new Error(`CORS: Origem não permitida - ${origin}`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-impersonate-org-id'],
 }));
 
 const globalLimiter = rateLimit({

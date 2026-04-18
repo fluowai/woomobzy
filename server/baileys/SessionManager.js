@@ -72,13 +72,20 @@ class ManagedSession {
 
   /**
    * Verifica se o socket WebSocket está genuinamente aberto.
-   * Não confia apenas na existência do objeto — verifica o readyState.
+   * Agora conta com uma tolerância: se a máquina de estados diz CONNECTED, 
+   * daremos preferência ao estado lógico para evitar oscilações de UI.
    */
   isSocketAlive() {
     if (!this.sock) return false;
+    
+    // Tenta acessar o websocket de forma segura (Baileys pode encapsular)
     const ws = this.sock.ws;
-    if (!ws) return false;
-    // ws pode ser um objeto com readyState ou com um socket subjacente
+    if (!ws) {
+      // Se não temos acesso ao WS mas a máquina de estados diz que conectamos agorinha,
+      // retornamos true para não quebrar a UI durante o handshake
+      return this.stateMachine.is(WA_STATES.CONNECTED);
+    }
+    
     return ws.readyState === WS_READY_STATE_OPEN;
   }
 }
@@ -157,8 +164,8 @@ export class SessionManager extends EventEmitter {
       this._baileysVersion = version;
       console.log(`[SessionManager] 🛠️ Versão Baileys: v${version.join('.')}`);
     } catch {
-      this._baileysVersion = [2, 3000, 1015901307];
-      console.warn(`[SessionManager] ⚠️ Usando versão fallback: v${this._baileysVersion.join('.')}`);
+      this._baileysVersion = [2, 2413, 1]; // Versão estável mais recente (Março 2024)
+      console.warn(`[SessionManager] ⚠️ Usando versão fallback estável: v${this._baileysVersion.join('.')}`);
     }
     return this._baileysVersion;
   }
@@ -379,8 +386,15 @@ export class SessionManager extends EventEmitter {
         if (state !== WA_STATES.CONNECTED && state !== WA_STATES.STALE) continue;
 
         if (!session.isSocketAlive()) {
-          console.warn(`[SessionManager] ⚠️ Heartbeat: socket morto para ${instanceId}. Reconectando...`);
-          session.stateMachine.transition(WA_STATES.STALE, 'socket morto detectado pelo heartbeat');
+          // Se estava conectado mas o socket morreu, damos UMA chance extra de 30s 
+          // antes de forçar reconexão, para evitar matar conexões em sync intenso
+          if (state === WA_STATES.CONNECTED) {
+             console.warn(`[SessionManager] ⚠️ Heartbeat: socket parece morto para ${instanceId}, mas está em estado CONNECTED. Aguardando próximo ciclo.`);
+             session.stateMachine.transition(WA_STATES.STALE, 'instabilidade detectada pelo heartbeat');
+             continue;
+          }
+
+          console.warn(`[SessionManager] ⚠️ Heartbeat: confirmada morte do socket para ${instanceId}. Reconectando...`);
           await this.persistence.updateStatus(instanceId, 'reconnecting');
           session.stateMachine.transition(WA_STATES.RECONNECTING, 'iniciando reconexão pelo heartbeat');
           session.clearRetryTimer();

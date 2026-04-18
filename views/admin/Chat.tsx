@@ -27,6 +27,11 @@ interface Chat {
   unread_count: number;
 }
 
+interface Message {
+  id: string;
+  content: string;
+  from_me: boolean;
+  status: string;
   timestamp: string;
   message_type: string;
   chat_id: string;

@@ -1,5 +1,6 @@
 import { Lead } from '../types';
 import { callApi } from '../src/lib/api';
+import { supabase } from './supabase';
 
 export const leadService = {
   // Create a new lead (Now Backend-Driven)

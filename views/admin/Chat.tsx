@@ -521,6 +521,8 @@ const Chat: React.FC = () => {
                     <p className="text-xs font-bold text-amber-800">Conexão em espera</p>
                     <p className="text-[10px] text-amber-600 font-medium">Reconectando automaticamente com o servidor...</p>
                   </div>
+                </div>
+              )}
             {/* Listagem de Mensagens */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar pattern-bg">
               {messages.map((msg, idx) => {

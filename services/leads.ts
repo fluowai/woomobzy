@@ -52,6 +52,9 @@ const mapToModel = (dbItem: any): Lead => ({
   status: dbItem.status,
   budget: 0,
   preferences: {},
+  notes: dbItem.notes,
+  classification: dbItem.classification,
+  chat_jid: dbItem.chat_jid,
   createdAt: dbItem.created_at,
   propertyId: dbItem.property_id,
   property: dbItem.properties

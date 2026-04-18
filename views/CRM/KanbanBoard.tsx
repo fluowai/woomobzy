@@ -318,14 +318,25 @@ const KanbanBoard: React.FC = () => {
                                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
                                       {lead.name.slice(0, 2)}
                                     </div>
-                                    <div>
-                                      <h4 className="font-bold text-slate-800 text-sm leading-tight">
-                                        {lead.name}
-                                      </h4>
-                                      <span className="text-[10px] text-slate-400 font-medium">
-                                        Via {lead.source}
-                                      </span>
-                                    </div>
+                                      <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <h4 className="font-bold text-slate-800 text-sm leading-tight">
+                                            {lead.name}
+                                          </h4>
+                                          {lead.classification && (
+                                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${
+                                              lead.classification.includes('Alta') ? 'bg-orange-100 text-orange-600' : 
+                                              lead.classification.includes('Interessado') ? 'bg-emerald-100 text-emerald-600' :
+                                              'bg-slate-100 text-slate-500'
+                                            }`}>
+                                              {lead.classification}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 font-medium">
+                                          Via {lead.source}
+                                        </span>
+                                      </div>
                                   </div>
                                   <button
                                     onClick={(e) => {
@@ -340,6 +351,18 @@ const KanbanBoard: React.FC = () => {
                                   >
                                     <MessageCircle size={16} />
                                   </button>
+                                  {lead.chat_jid && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.location.href = `/rural/chat?jid=${lead.chat_jid}`;
+                                      }}
+                                      className="text-indigo-500 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors"
+                                      title="Abrir Chat no IMOBZY"
+                                    >
+                                      <Send size={16} />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={async (e) => {
                                       e.stopPropagation();
@@ -445,6 +468,14 @@ const KanbanBoard: React.FC = () => {
                                     <Send size={16} />
                                   </button>
                                 </div>
+
+                                {lead.notes && (
+                                  <div className="mb-3 p-2.5 bg-amber-50/50 border border-amber-100/50 rounded-lg">
+                                    <p className="text-[11px] text-amber-900 font-medium italic leading-snug">
+                                      "{(lead as any).notes}"
+                                    </p>
+                                  </div>
+                                )}
 
                                 {lead.property && (
                                   <div className="bg-slate-50 rounded-lg p-2 flex items-center gap-3 mb-3 hover:bg-slate-100 transition-colors cursor-pointer group/prop">

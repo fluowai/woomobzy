@@ -146,8 +146,20 @@ const Chat: React.FC = () => {
   }, [getAuthHeaders]);
 
   // ──────────────────────────────────────────────
-  // Realtime Logic
+  // Deep Linking Logic
   // ──────────────────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const jid = params.get('jid');
+    
+    if (jid && chats.length > 0) {
+      const targetChat = chats.find(c => c.jid === jid);
+      if (targetChat && selectedChat?.jid !== jid) {
+        console.log(`🎯 [Chat] Deep Link detectado! Selecionando chat: ${jid}`);
+        setSelectedChat(targetChat);
+      }
+    }
+  }, [chats, selectedChat]);
   const startRealtime = useCallback((instanceId: string) => {
     if (subscriptionRef.current) {
       supabase.removeChannel(subscriptionRef.current);

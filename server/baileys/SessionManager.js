@@ -610,8 +610,79 @@ export class SessionManager extends EventEmitter {
       }, { onConflict: 'key_id' });
 
       if (msgErr) console.error(`[SessionManager] ❌ Erro ao salvar mensagem:`, msgErr.message);
+
+      // DISPARO DE AUTOMAÇÃO WHATSAPP-TO-LEAD (W2L)
+      if (!fromMe && !chatJid.endsWith('@g.us')) {
+        this._handleLeadAutomation(instanceId, organizationId, chatJid, message, content, supabase).catch(e => {
+          console.error('[SessionManager] ❌ Erro na automação W2L:', e.message);
+        });
+      }
     } catch (e) {
       console.error(`[SessionManager] ❌ Falha crítica em _saveMessage:`, e.message);
     }
+  }
+
+  /**
+   * Automação de Leads: Transforma novos contatos em oportunidades no Pipeline
+   */
+  async _handleLeadAutomation(instanceId, organizationId, chatJid, message, content, supabase) {
+    const phone = chatJid.split('@')[0];
+    
+    // 1. Verifica se já existe um lead com este telefone
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('phone', phone)
+      .maybeSingle();
+
+    if (existingLead) return; 
+
+    console.log(`[W2L] 🤖 Nova oportunidade detectada! Processando lead para: ${phone}`);
+
+    // 2. Inteligência Artificial: Resumo e Classificação
+    let summary = 'Novo contato via WhatsApp';
+    let classification = 'Lead Frio';
+    
+    try {
+      const apiKey = process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+      if (apiKey && content && content.length > 5) {
+        // Importação dinâmica para compatibilidade
+        const { openaiService } = await import('../../services/openaiService.js').then(m => m.default || m).catch(() => ({}));
+        
+        const prompt = `Analise esta mensagem de um interessado em imóveis e retorne APENAS um JSON (sem markdown) com os campos "resumo" (curto) e "classificacao" (Alta Prioridade, Interessado ou Curioso). Mensagem: "${content}"`;
+        
+        if (openaiService?.generateText) {
+          const aiResponse = await openaiService.generateText(prompt, apiKey);
+          try {
+            const aiData = JSON.parse(aiResponse.replace(/```json|```/g, ''));
+            summary = aiData.resumo || summary;
+            classification = aiData.classificacao || classification;
+          } catch (e) {
+            console.warn('[W2L] IA retornou texto não-JSON, usando como resumo.');
+            summary = aiResponse.substring(0, 100);
+          }
+        }
+      }
+    } catch (aiErr) {
+      console.warn('[W2L] ⚠️ IA falhou:', aiErr.message);
+    }
+
+    // 3. Criação do Lead no Pipeline
+    const { error: leadErr } = await supabase
+      .from('leads')
+      .insert({
+        organization_id: organizationId,
+        name: message.pushName || `Lead ${phone.substring(phone.length - 4)}`,
+        phone: phone,
+        source: 'WhatsApp',
+        status: 'Novo',
+        notes: summary,
+        classification: classification,
+        chat_jid: chatJid
+      });
+
+    if (leadErr) console.error('[W2L] ❌ Erro ao criar lead:', leadErr.message);
+    else console.log(`[W2L] ✅ Lead criado com sucesso para ${phone} (${classification})`);
   }
 }

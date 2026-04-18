@@ -59,6 +59,9 @@ export interface Lead {
   aptitude_interest?: string[];
   min_area?: number;
   max_budget?: number;
+  notes?: string;
+  classification?: string;
+  chat_jid?: string;
   created_at: string;
 }
 

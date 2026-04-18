@@ -7,14 +7,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error(
     '❌ ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas!'
   );
-  console.error(
-    'Certifique-se de que VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão definidas no arquivo .env'
-  );
-  console.error('Exemplo:');
-  console.error('VITE_SUPABASE_URL=https://seu-projeto.supabase.co');
-  console.error('VITE_SUPABASE_ANON_KEY=sua-chave-aqui');
-
-  // Criar cliente mock para evitar crash total
+  
   if (typeof window !== 'undefined') {
     const errorDiv = document.createElement('div');
     errorDiv.style.cssText =
@@ -29,11 +22,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
     setTimeout(() => document.body?.appendChild(errorDiv), 100);
   }
 }
-
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // No frontend, o organization_id deve ser derivado do Perfil ou do Impersonation
 // Usamos o global.headers para que o backend receba a intenção de impersonação para validação segura
@@ -72,4 +60,3 @@ export const refreshSupabaseHeaders = () => {
   // No IMOBZY, o reload é o padrão após troca de tenant de suporte.
   window.location.reload();
 };
-

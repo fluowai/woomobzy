@@ -69,6 +69,9 @@ router.post('/instances', verifyAdmin, async (req, res) => {
   }
 });
 
+/** GET /api/whatsapp/instances — Listar instâncias da organização */
+router.get('/instances', verifyAdmin, async (req, res) => {
+  try {
     let query = supabase
       .from('whatsapp_instances')
       .select('*')

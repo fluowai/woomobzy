@@ -501,6 +501,12 @@ export class SessionManager extends EventEmitter {
       else if (msg?.listResponseMessage?.title) content = msg.listResponseMessage.title;
       else if (msg?.documentMessage?.caption) content = msg.documentMessage.caption;
       
+      // Fallback para conteúdo de mídia sem legenda
+      if (!content && ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(messageType)) {
+        const labels = { imageMessage: '(Imagem)', videoMessage: '(Vídeo)', audioMessage: '(Áudio)', documentMessage: '(Arquivo)' };
+        content = labels[messageType] || '(Mídia)';
+      }
+      
       // Detecção e Processamento de Mídia
       let mediaUrl = null;
       let mimeType = null;
@@ -577,9 +583,12 @@ export class SessionManager extends EventEmitter {
         chatId = existingChat.id;
         const updates = { 
           last_message_at: timestamp,
-          organization_id: organizationId // Garante que e o org_id esteja preenchido
+          organization_id: organizationId 
         };
-        if (!chatJid.endsWith('@g.us') && message.pushName) updates.name = message.pushName;
+        // SÓ atualiza o nome do chat se a mensagem NÃO vier de mim (para não sobrescrever o contato com meu nome)
+        if (!fromMe && !chatJid.endsWith('@g.us') && message.pushName) {
+           updates.name = message.pushName;
+        }
         await supabase.from('whatsapp_chats').update(updates).eq('id', chatId);
       }
 

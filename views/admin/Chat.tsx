@@ -32,6 +32,7 @@ interface Message {
   content: string;
   from_me: boolean;
   status: string;
+  sender_name: string | null;
   timestamp: string;
   message_type: string;
   chat_id: string;
@@ -549,7 +550,7 @@ const Chat: React.FC = () => {
                     >
                       {!msg.from_me && selectedChat.jid.endsWith('@g.us') && showAvatar && (
                         <span className="block text-[10px] font-black text-indigo-500 mb-1 tracking-tighter uppercase">
-                          {(msg as any).metadata?.pushName || 'Participante'}
+                          {msg.sender_name || (msg as any).metadata?.pushName || 'Participante'}
                         </span>
                       )}
                       {msg.media_url ? (

@@ -592,6 +592,7 @@ export class SessionManager extends EventEmitter {
         message_type: messageType,
         content,
         from_me: fromMe,
+        sender_name: message.pushName || null,
         status: fromMe ? 'sent' : 'received',
         timestamp,
         media_url: mediaUrl,

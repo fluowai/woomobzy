@@ -148,12 +148,14 @@ const Chat: React.FC = () => {
         table: 'whatsapp_messages',
         filter: `instance_id=eq.${instanceId}`
       }, (payload) => {
+        console.log('📬 [Chat] NOVAL MENSAGEM VIA REALTIME:', payload.new);
         const newMsg = payload.new as Message;
         
         // Atualiza mensagens se for o chat aberto
         if (selectedChat && newMsg.chat_id === selectedChat.id) {
           setMessages(prev => {
             if (prev.some(m => m.id === newMsg.id)) return prev;
+            console.log('✨ [Chat] Inserindo nova mensagem no estado UI');
             return [...prev, newMsg];
           });
           setTimeout(() => scrollToBottom(), 50);
@@ -168,6 +170,7 @@ const Chat: React.FC = () => {
         table: 'whatsapp_messages',
         filter: `instance_id=eq.${instanceId}`
       }, (payload) => {
+        console.log('🔄 [Chat] MENSAGEM ATUALIZADA (Status):', payload.new);
         const updatedMsg = payload.new as Message;
         if (selectedChat && updatedMsg.chat_id === selectedChat.id) {
           setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));

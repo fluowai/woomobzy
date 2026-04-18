@@ -323,6 +323,31 @@ const Chat: React.FC = () => {
     }
   };
 
+  const clearChat = async () => {
+    if (!selectedChat) return;
+    if (!window.confirm(`Deseja apagar TODO o histórico de mensagens com ${selectedChat.name}? Esta ação não pode ser desfeita.`)) return;
+    
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(getApiUrl(`/api/whatsapp/chats/${selectedChat.id}/messages`), {
+        method: 'DELETE',
+        headers
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setMessages([]);
+      } else {
+        setError(data.error || 'Erro ao limpar conversa');
+        setTimeout(() => setError(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error clearing chat:', err);
+      setError('Erro de conexão ao limpar');
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
   // ──────────────────────────────────────────────
   // UI Helpers
   // ──────────────────────────────────────────────
@@ -531,9 +556,19 @@ const Chat: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all" title="Mais Opções">
-                <MoreVertical className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={clearChat}
+                  className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center gap-1.5"
+                  title="Limpar Conversa"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Limpar Chat</span>
+                </button>
+                <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all" title="Mais Opções">
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Balão de Alerta de Conexão */}

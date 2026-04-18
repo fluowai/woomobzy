@@ -330,6 +330,35 @@ router.delete('/messages/:id', verifyAdmin, async (req, res) => {
   }
 });
 
+/** DELETE /api/whatsapp/chats/:chatId/messages — Limpar todo o histórico de um chat */
+router.delete('/chats/:chatId/messages', verifyAdmin, async (req, res) => {
+  try {
+    const { chatId } = req.params;
+
+    // Valida se o chat pertence à organização
+    const { data: chat, error: fetchErr } = await supabase
+      .from('whatsapp_chats')
+      .select('id, organization_id')
+      .eq('id', chatId)
+      .single();
+
+    if (fetchErr || !chat) return res.status(404).json({ error: 'Chat não encontrado' });
+    if (chat.organization_id !== req.orgId) return res.status(403).json({ error: 'Acesso negado' });
+
+    const { error: delErr } = await supabase
+      .from('whatsapp_messages')
+      .delete()
+      .eq('chat_id', chatId);
+
+    if (delErr) throw delErr;
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[WhatsApp API] Erro ao limpar conversa:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 /** GET /api/whatsapp/instances/:id/chats */
 router.get('/instances/:id/chats', verifyAdmin, async (req, res) => {
   try {

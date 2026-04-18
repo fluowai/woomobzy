@@ -69,14 +69,17 @@ router.post('/instances', verifyAdmin, async (req, res) => {
   }
 });
 
-/** GET /api/whatsapp/instances — Listar instâncias da organização */
-router.get('/instances', verifyAdmin, async (req, res) => {
-  try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('whatsapp_instances')
       .select('*')
-      .eq('organization_id', req.orgId)
       .order('created_at', { ascending: false });
+
+    // Se NÃO for superadmin, ou se for superadmin e estiver impersonando, filtra por orgId
+    if (req.userRole !== 'superadmin' || req.isImpersonating) {
+      query = query.eq('organization_id', req.orgId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 

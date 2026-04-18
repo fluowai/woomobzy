@@ -500,6 +500,41 @@ export class SessionManager extends EventEmitter {
       else if (msg?.buttonsResponseMessage?.selectedButtonId) content = msg.buttonsResponseMessage.selectedButtonId;
       else if (msg?.listResponseMessage?.title) content = msg.listResponseMessage.title;
       else if (msg?.documentMessage?.caption) content = msg.documentMessage.caption;
+      
+      // Detecção e Processamento de Mídia
+      let mediaUrl = null;
+      let mimeType = null;
+      const mediaType = messageType.replace('Message', '');
+      const isMedia = ['image', 'video', 'audio', 'document'].includes(mediaType);
+
+      if (isMedia && session?.sock) {
+        try {
+          console.log(`[SessionManager] 📥 Baixando mídia: ${mediaType}...`);
+          const { downloadMediaMessage } = await import('@whiskeysockets/baileys');
+          const buffer = await downloadMediaMessage(message, 'buffer', {});
+          
+          if (buffer) {
+            const fileName = `${instanceId}/${message.key.id}.${mediaType === 'document' ? 'pdf' : mediaType === 'audio' ? 'ogg' : 'jpg'}`;
+            const path = `messages/${fileName}`;
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('imobzymsg')
+              .upload(path, buffer, {
+                contentType: msg[messageType]?.mimetype || 'application/octet-stream',
+                upsert: true
+              });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage.from('imobzymsg').getPublicUrl(path);
+            mediaUrl = publicUrl;
+            mimeType = msg[messageType]?.mimetype;
+            console.log(`[SessionManager] ✅ Mídia salva: ${mediaUrl}`);
+          }
+        } catch (mediaErr) {
+          console.error(`[SessionManager] ❌ Erro ao processar mídia:`, mediaErr.message);
+        }
+      }
 
       // Garante que o chat existe (upsert)
       const { data: existingChat } = await supabase
@@ -559,6 +594,8 @@ export class SessionManager extends EventEmitter {
         from_me: fromMe,
         status: fromMe ? 'sent' : 'received',
         timestamp,
+        media_url: mediaUrl,
+        mime_type: mimeType,
         metadata: message,
       }, { onConflict: 'key_id' });
 

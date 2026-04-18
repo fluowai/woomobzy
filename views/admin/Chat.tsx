@@ -27,14 +27,11 @@ interface Chat {
   unread_count: number;
 }
 
-interface Message {
-  id: string;
-  content: string;
-  from_me: boolean;
-  status: string;
   timestamp: string;
   message_type: string;
   chat_id: string;
+  media_url?: string;
+  mime_type?: string;
   metadata?: any;
 }
 
@@ -518,6 +515,37 @@ const Chat: React.FC = () => {
                           {(msg as any).metadata?.pushName || 'Participante'}
                         </span>
                       )}
+                      {msg.media_url ? (
+                        <div className="mb-2">
+                          {msg.mime_type?.startsWith('image/') ? (
+                            <img 
+                              src={msg.media_url} 
+                              alt="Anexo" 
+                              className="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-95 transition-opacity"
+                              onClick={() => window.open(msg.media_url, '_blank')}
+                            />
+                          ) : msg.mime_type?.startsWith('audio/') ? (
+                            <audio controls className="w-full h-8 opacity-90 brightness-110">
+                              <source src={msg.media_url} type={msg.mime_type} />
+                            </audio>
+                          ) : (
+                            <a 
+                              href={msg.media_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-2 p-3 rounded-xl border ${
+                                msg.from_me ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-50 border-gray-200 text-gray-700'
+                              } hover:scale-[1.02] transition-transform`}
+                            >
+                              <File className="w-6 h-6" />
+                              <div className="overflow-hidden">
+                                <p className="text-xs font-bold truncate">Documento</p>
+                                <p className="text-[10px] opacity-70">Clique para baixar</p>
+                              </div>
+                            </a>
+                          )}
+                        </div>
+                      ) : null}
                       <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed">
                         {msg.content}
                       </p>

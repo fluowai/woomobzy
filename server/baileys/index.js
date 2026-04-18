@@ -249,7 +249,8 @@ class WhatsAppManager {
   async saveMessage(instanceId, message) {
     try {
       const chatJid = message.key.remoteJid;
-      if (!chatJid || chatJid === 'status@broadcast') return;
+      // BLOQUEIO: Não salvar mensagens de Canais ou Newsletters
+      if (!chatJid || chatJid === 'status@broadcast' || chatJid.includes('@newsletter')) return;
 
       const fromMe = message.key.fromMe;
       const messageType = Object.keys(message.message || {})[0] || 'unknown';
@@ -274,12 +275,28 @@ class WhatsAppManager {
       let chatId;
 
       if (!chatData) {
+        // Trata o nome padrão: Prioriza PushName para privados
+        let displayName = message.pushName || chatJid.split('@')[0];
+        
+        // Se for grupo, tenta buscar o nome real via metadados
+        if (chatJid.endsWith('@g.us')) {
+           try {
+             const sock = this.sessions.get(instanceId)?.sock;
+             if (sock) {
+               const metadata = await sock.groupMetadata(chatJid);
+               displayName = metadata.subject || `Grupo: ${chatJid.split('@')[0].slice(-4)}`;
+             }
+           } catch (e) {
+             displayName = `Grupo: ${chatJid.split('@')[0].slice(-4)}`;
+           }
+        }
+
         const { data: newChat, error: chatError } = await getSupabase()
           .from('whatsapp_chats')
           .insert({
             instance_id: instanceId,
             jid: chatJid,
-            name: message.pushName || chatJid.replace('@s.whatsapp.net', '').replace('@g.us', ''),
+            name: displayName,
             last_message_at: new Date(message.messageTimestamp * 1000).toISOString(),
           })
           .select()
@@ -289,12 +306,20 @@ class WhatsAppManager {
         chatId = newChat.id;
       } else {
         chatId = chatData.id;
+        
+        // Atualização inteligente do nome
+        const updates: any = { 
+          last_message_at: new Date(message.messageTimestamp * 1000).toISOString() 
+        };
+        
+        // Se for chat privado e temos um pushName novo, atualiza
+        if (!chatJid.endsWith('@g.us') && message.pushName) {
+          updates.name = message.pushName;
+        }
+
         await getSupabase()
           .from('whatsapp_chats')
-          .update({ 
-            last_message_at: new Date(message.messageTimestamp * 1000).toISOString(),
-            name: message.pushName || undefined // Atualiza o nome se disponível
-          })
+          .update(updates)
           .eq('id', chatId);
       }
 

@@ -334,7 +334,9 @@ const Chat: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 truncate">{chat.jid}</p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {chat.jid.endsWith('@g.us') ? 'Conversa em Grupo' : 'Conversa Privada'}
+                  </p>
                 </div>
                 {chat.unread_count > 0 && (
                   <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
@@ -364,7 +366,9 @@ const Chat: React.FC = () => {
               </div>
               <div className="flex-1">
                 <h2 className="font-semibold text-gray-800">{selectedChat.name}</h2>
-                <p className="text-sm text-gray-500">{selectedChat.jid}</p>
+                <p className="text-sm text-gray-500">
+                  {selectedChat.jid.endsWith('@g.us') ? 'Grupo' : 'WhatsApp'}
+                </p>
               </div>
               <button className="p-2 hover:bg-gray-100 rounded-lg">
                 <MoreVertical className="w-5 h-5 text-gray-500" />
@@ -382,9 +386,14 @@ const Chat: React.FC = () => {
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
                       msg.from_me
                         ? 'bg-green-600 text-white rounded-br-md'
-                        : 'bg-white text-gray-800 rounded-bl-md'
+                        : 'bg-white text-gray-800 rounded-bl-md shadow-sm border border-gray-100'
                     }`}
                   >
+                    {!msg.from_me && selectedChat.jid.endsWith('@g.us') && (
+                      <span className="block text-[10px] font-bold text-green-600 mb-1 uppercase tracking-wider">
+                        {(msg as any).metadata?.pushName || 'Participante'}
+                      </span>
+                    )}
                     <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                     <div className={`flex items-center gap-1 mt-1 text-xs ${msg.from_me ? 'justify-end text-green-100' : 'text-gray-500'}`}>
                       <span>{formatTime(msg.timestamp)}</span>

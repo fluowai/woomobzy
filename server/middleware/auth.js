@@ -43,6 +43,9 @@ export const verifyAuth = async (req, res, next) => {
     req.user = user;
     req.userRole = profile.role;
     req.realOrgId = profile.organization_id;
+    // --- LÓGICA DE IMPERSONATION ---
+    // Apenas SuperAdmins podem solicitar impersonação via header
+    const impersonateId = req.headers['x-impersonate-org-id'];
     
     if (impersonateId && profile.role === 'superadmin') {
       console.log(`[Auth] 🔐 SuperAdmin ${user.email} impersonando Org: ${impersonateId}`);

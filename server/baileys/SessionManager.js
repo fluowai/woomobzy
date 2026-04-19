@@ -181,8 +181,16 @@ export class SessionManager extends EventEmitter {
     // Se já existe uma sessão ativa para este ID, encerra antes
     const existing = this.sessions.get(instanceId);
     if (existing) {
-      if (existing.isSocketAlive()) {
-        console.log(`[SessionManager] ℹ️ Sessão ${instanceId} já está ativa. Ignorando.`);
+      const state = existing.stateMachine.getState();
+      const isTransient = [
+        WA_STATES.CONNECTING, 
+        WA_STATES.RECONNECTING, 
+        WA_STATES.QR_PENDING, 
+        WA_STATES.AUTHENTICATED
+      ].includes(state);
+
+      if (existing.isSocketAlive() || isTransient) {
+        console.log(`[SessionManager] ℹ️ Sessão ${instanceId} já está ativa ou em transição (${state}). Ignorando.`);
         return;
       }
       await this._teardownSocket(existing);

@@ -43,23 +43,9 @@ interface WhatsAppInstance {
 // Helpers de UI
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const getStatusConfig = (instance: WhatsAppInstance) => {
-  const alive = instance.socket_alive;
-
-  // Estado conectado E socket confirmado morto → alerta especial
-  // IMPORTANTE: socket_alive === undefined significa que nao sabemos (fallback usado)
-  // Nesse caso, confiamos no status do banco e mostramos "Conectado"
-  if (instance.status === 'connected' && alive === false) {
-    return {
-      icon: <AlertTriangle className="w-5 h-5 text-amber-500" />,
-      label: 'Reconectando...',
-      color: 'text-amber-600',
-      bg: 'bg-amber-50 border-amber-200',
-    };
-  }
-
-  // Se conectado mas socket_alive nao foi verificado (undefined), mostra conectado
-  // Isso evita o falso positivo "Reconectando" quando a API falha e usa fallback
-
+  // FIX: status='connected' tem prioridade absoluta.
+  // socket_alive é um campo virtual da API e não deve bloquear este estado.
+  // Qualquer dado de Realtime com status='connected' deve mostrar 'Conectado'.
   switch (instance.status) {
     case 'connected':
       return {
@@ -214,22 +200,25 @@ const WhatsAppInstances: React.FC = () => {
             return;
           }
 
-          // Merge Inteligente: preserva campos virtuais (socket_alive) que o Realtime não possui
+          // FIX: Aplica os dados do Realtime diretamente, sem preservar socket_alive.
+          // socket_alive é um campo virtual da API — nunca vem do Realtime.
+          // Preservá-lo causava que status='connected' fosse sobrescrito por socket_alive=false stale.
+          // O fetchInstances subsequente sincronizará socket_alive com o valor real da API.
           setInstances((prev) =>
             prev.map((inst) => {
               if (inst.id === updated.id) {
                 return {
                   ...inst,
                   ...updated,
-                  socket_alive: inst.socket_alive, // Preserva o estado vivo atual
+                  // socket_alive: não preservado — será atualizado pelo fetchInstances
                 };
               }
               return inst;
             })
           );
 
-          // Atualiza via API com um pequeno delay para garantir que o socket_alive esteja pronto
-          setTimeout(fetchInstances, 1000);
+          // Sincroniza socket_alive via API após o Realtime atualizar o status
+          setTimeout(fetchInstances, 500);
         }
       )
       .subscribe((status) => {
@@ -496,9 +485,9 @@ const WhatsAppInstances: React.FC = () => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {instances.map((instance) => {
             const statusConfig = getStatusConfig(instance);
-            const isConnected =
-              instance.status === 'connected' &&
-              instance.socket_alive !== false;
+            // FIX: isConnected baseado apenas em status, sem depender de socket_alive.
+            // socket_alive pode estar desatualizado logo após um evento Realtime.
+            const isConnected = instance.status === 'connected';
             const isConnecting = connectingId === instance.id;
 
             return (
@@ -546,13 +535,14 @@ const WhatsAppInstances: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Aviso de socket morto */}
-                {instance.status === 'connected' &&
-                  instance.socket_alive === false && (
+                {/* Aviso de socket morto: só exibe se o status do banco TAMBÉM indicar reconexão.
+                    FIX: removida a condição socket_alive=false com status=connected,
+                    pois socket_alive é virtual e pode estar desatualizado após Realtime. */}
+                {instance.status === 'reconnecting' && (
                     <div className="flex items-center gap-2 mb-4 p-2 bg-amber-50 border border-amber-200 rounded-lg">
                       <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                       <p className="text-xs text-amber-700">
-                        Conexão perdida. Reconexão automática em andamento.
+                        Reconexão automática em andamento.
                       </p>
                     </div>
                   )}

@@ -799,24 +799,37 @@ const Chat: React.FC = () => {
                       {msg.media_url ? (
                         <div className="mb-2">
                           {msg.mime_type?.startsWith('image/') ? (
-                            <img
-                              src={msg.media_url}
-                              alt="Anexo"
-                              className="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-95 transition-opacity"
-                              onClick={() =>
-                                window.open(msg.media_url, '_blank')
-                              }
-                            />
-                          ) : msg.mime_type?.startsWith('audio/') ? (
-                            <audio
-                              controls
-                              className="w-full h-8 opacity-90 brightness-110"
-                            >
-                              <source
+                            <div className="relative group/img">
+                              <img
                                 src={msg.media_url}
-                                type={msg.mime_type}
+                                alt="Anexo"
+                                className="max-w-full max-h-56 w-auto rounded-lg shadow-sm cursor-pointer hover:opacity-95 transition-opacity object-cover"
+                                onClick={() =>
+                                  window.open(msg.media_url!, '_blank')
+                                }
                               />
-                            </audio>
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                <span className="bg-black/50 text-white text-[10px] px-2 py-1 rounded-full font-bold">Ampliar</span>
+                              </div>
+                            </div>
+                          ) : msg.mime_type?.startsWith('audio/') ? (
+                            <div className={`flex items-center gap-2 p-2 rounded-xl ${
+                              msg.from_me ? 'bg-white/10' : 'bg-gray-100'
+                            }`}>
+                              <audio
+                                controls
+                                preload="metadata"
+                                className="w-full"
+                                style={{ minWidth: '220px', height: '40px' }}
+                              >
+                                <source
+                                  src={msg.media_url!}
+                                  type={msg.mime_type || 'audio/ogg'}
+                                />
+                                <source src={msg.media_url!} />
+                                Seu navegador não suporta áudio.
+                              </audio>
+                            </div>
                           ) : msg.mime_type?.startsWith('video/') ? (
                             <video
                               controls
@@ -868,12 +881,14 @@ const Chat: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteMessage(msg.id);
+                            if (window.confirm('Excluir esta mensagem do painel?')) {
+                              deleteMessage(msg.id);
+                            }
                           }}
                           className={`ml-3 p-1.5 rounded-lg transition-all border ${
                             msg.from_me
-                              ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20'
-                              : 'bg-gray-50 border-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50'
+                              ? 'bg-white/10 border-white/20 text-white/70 hover:bg-red-500/30 hover:border-red-400'
+                              : 'bg-gray-50 border-gray-100 text-gray-300 hover:text-red-500 hover:bg-red-50 hover:border-red-200'
                           }`}
                           title="Excluir mensagem"
                         >

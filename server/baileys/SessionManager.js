@@ -178,20 +178,25 @@ export class SessionManager extends EventEmitter {
    * Pode ser chamado tanto no boot quanto quando o usuário clica "Conectar".
    */
   async startSession(instanceId, organizationId) {
-    // Se já existe uma sessão ativa para este ID, encerra antes
+    // ── PASSO 1: Verificar se já existe em memória ──────────
     const existing = this.sessions.get(instanceId);
+    
     if (existing) {
       const state = existing.stateMachine.getState();
+      const isBusy = [WA_STATES.CONNECTING, WA_STATES.QR_PENDING, WA_STATES.AUTHENTICATED].includes(state);
       
-      // Regra Sênior: Se o socket está VIVO, ignoramos para não duplicar.
-      // MAS, se o usuário está tentando conectar e o estado está 'travado', permitimos o teardown.
-      if (existing.isSocketAlive()) {
-        console.log(`[SessionManager] ℹ️ Sessão ${instanceId} já possui socket vivo. Ignorando.`);
-        return;
+      if (isBusy) {
+        console.log(`[SessionManager] ⏳ Instância ${instanceId} já está em transição (${state}). Aguardando...`);
+        return existing;
       }
 
-      console.log(`[SessionManager] 🔄 Forçando reinicialização da sessão ${instanceId} (Estado anterior: ${state})`);
-      await this._teardownSocket(existing);
+      if (!existing.isSocketAlive()) {
+        console.log(`[SessionManager] 🔄 Reiniciando instância travada ou offline: ${instanceId}`);
+        await this._teardownSocket(existing);
+      } else {
+        console.log(`[SessionManager] ✅ Instância ${instanceId} já está ativa e operacional.`);
+        return existing;
+      }
     }
 
     // Cria nova sessão gerenciada

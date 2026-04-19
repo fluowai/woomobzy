@@ -5,7 +5,7 @@
  *   - Todas as rotas verificam estado REAL do socket (não apenas DB)
  *   - /connect detecta socket morto e reconecta automaticamente
  *   - /qr nunca retorna "connected" se socket não está vivo
- *   - Respostas padronizadas com `socketAlive` para o frontend
+ *   - Respostas padronizadas com `socket_alive` para o frontend
  */
 
 import { Router } from 'express';
@@ -35,12 +35,12 @@ function getRealStatus(dbInstance) {
   // Só força 'reconnecting' se o DB diz connected E a memória diz que REALMENTE desconectou.
   // Se estiver em estado STALE ou CONNECTED na memória, mantemos o rótulo do DB para evitar flicker.
   if (dbInstance.status === 'connected' && !socketAlive && memoryState === WA_STATES.DISCONNECTED) {
-    return { ...dbInstance, status: 'reconnecting', socketAlive: false, memoryState };
+    return { ...dbInstance, status: 'reconnecting', socket_alive: false, memoryState };
   }
 
   return {
     ...dbInstance,
-    socketAlive,
+    socket_alive: socketAlive,
     memoryState,
   };
 }
@@ -177,7 +177,7 @@ router.post('/instances/:id/connect', verifyAdmin, async (req, res) => {
       return res.json({
         success: true,
         status: 'connected',
-        socketAlive: true,
+        socket_alive: true,
         phoneNumber: instance.phone_number,
       });
     }
@@ -189,7 +189,7 @@ router.post('/instances/:id/connect', verifyAdmin, async (req, res) => {
       sessionManager.startSession(instanceId, req.orgId).catch(e => {
         console.error(`[WhatsApp API] ❌ Falha na reconexão de ${instanceId}:`, e.message);
       });
-      return res.json({ success: true, status: 'reconnecting', socketAlive: false });
+      return res.json({ success: true, status: 'reconnecting', socket_alive: false });
     }
 
     // Caso 3: Novo inicio de sessão (pending, disconnected, etc.)
@@ -230,7 +230,7 @@ router.get('/instances/:id/qr', verifyAdmin, async (req, res) => {
       return res.json({
         success: true,
         status: 'connected',
-        socketAlive: true,
+        socket_alive: true,
         phoneNumber: instance.phone_number,
       });
     }
@@ -239,7 +239,7 @@ router.get('/instances/:id/qr', verifyAdmin, async (req, res) => {
     if (instance.status === 'connected' && !socketAlive) {
       console.log(`[WhatsApp API] 🔄 /qr: socket morto para ${instanceId}. Iniciando reconexão...`);
       sessionManager.startSession(instanceId, req.orgId).catch(() => {});
-      return res.json({ success: true, status: 'reconnecting', socketAlive: false });
+      return res.json({ success: true, status: 'reconnecting', socket_alive: false });
     }
 
     // Instância desconectada ou pendente → inicia sessão (vai gerar QR)
@@ -256,12 +256,12 @@ router.get('/instances/:id/qr', verifyAdmin, async (req, res) => {
         success: true,
         status: 'qr_pending',
         qrCode: instance.qr_code,
-        socketAlive: false,
+        socket_alive: false,
       });
     }
 
     // QR ainda sendo gerado
-    res.json({ success: true, status: 'generating_qr', socketAlive: false });
+    res.json({ success: true, status: 'generating_qr', socket_alive: false });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -433,7 +433,7 @@ router.post('/instances/:id/send', verifyAdmin, async (req, res) => {
     if (!sessionManager.isSessionAlive(instanceId)) {
       return res.status(400).json({
         error: 'Instância não está conectada ou socket inativo',
-        socketAlive: false,
+        socket_alive: false,
       });
     }
 

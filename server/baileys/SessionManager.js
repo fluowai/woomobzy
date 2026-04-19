@@ -595,7 +595,7 @@ export class SessionManager extends EventEmitter {
         chatId = newChat.id;
       } else {
         chatId = existingChat.id;
-        const updates: any = { 
+        const updates = { 
           last_message_at: timestamp,
           organization_id: organizationId 
         };

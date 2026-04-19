@@ -520,9 +520,13 @@ const Chat: React.FC = () => {
     );
   }
 
+  // Fix: socket_alive é a fonte de verdade para o estado operacional.
+  // se socket_alive=true → socket ativo → permite envio (mesmo que DB diga 'reconnecting')
+  // se socket_alive=false → socket morto → bloqueia
+  // se socket_alive=undefined (desconhecido) → usa status do banco como fallback
   const isInstanceDead =
-    selectedInstance?.status !== 'connected' ||
-    selectedInstance?.socket_alive === false;
+    selectedInstance?.socket_alive === false ||
+    (selectedInstance?.socket_alive == null && selectedInstance?.status !== 'connected');
 
   return (
     <div className="flex h-full bg-white overflow-hidden">

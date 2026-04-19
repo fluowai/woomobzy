@@ -55,7 +55,9 @@ interface Instance {
 
 const Chat: React.FC = () => {
   const [instances, setInstances] = useState<Instance[]>([]);
-  const [selectedInstance, setSelectedInstance] = useState<Instance | null>(null);
+  const [selectedInstance, setSelectedInstance] = useState<Instance | null>(
+    null
+  );
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -63,10 +65,12 @@ const Chat: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'private' | 'groups'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'private' | 'groups'>(
+    'all'
+  );
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const subscriptionRef = useRef<any>(null);
   const instancesSubscriptionRef = useRef<any>(null);
@@ -75,10 +79,12 @@ const Chat: React.FC = () => {
   // Helpers
   // ──────────────────────────────────────────────
   const getAuthHeaders = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return { 
-      'Authorization': `Bearer ${session?.access_token}`,
-      'Content-Type': 'application/json'
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return {
+      Authorization: `Bearer ${session?.access_token}`,
+      'Content-Type': 'application/json',
     };
   }, []);
 
@@ -92,23 +98,37 @@ const Chat: React.FC = () => {
   const fetchInstances = useCallback(async () => {
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl(`/api/whatsapp/instances?t=${Date.now()}`), { headers });
+      const response = await fetch(
+        getApiUrl(`/api/whatsapp/instances?t=${Date.now()}`),
+        { headers }
+      );
       const data = await response.json();
-      
+
       if (data.success) {
-        console.log(`📱 [Chat] ${data.instances?.length || 0} instâncias encontradas na API.`);
+        console.log(
+          `📱 [Chat] ${data.instances?.length || 0} instâncias encontradas na API.`
+        );
         setInstances(data.instances || []);
-        // Se não houver selecionado, pega o primeiro conectado e vivo
+        // Se nao houver selecionado, pega o primeiro conectado
+        // IMPORTANTE: socket_alive === undefined significa que nao sabemos (API nao respondeu)
+        // Nesse caso, aceptamos qualquer instancia com status connected
         if (!selectedInstance && data.instances?.length > 0) {
           const firstConnected = data.instances.find((i: Instance) => {
-             console.log(`   - Verificando: ${i.name} (Status: ${i.status}, Alive: ${i.socket_alive})`);
-             return i.status === 'connected' && i.socket_alive;
+            console.log(
+              `   - Verificando: ${i.name} (Status: ${i.status}, Alive: ${i.socket_alive})`
+            );
+            // Se status = connected E socket_alive nao e explicitamente falso, aceita
+            return i.status === 'connected' && i.socket_alive !== false;
           });
           if (firstConnected) {
-            console.log(`✅ [Chat] Selecionando automaticamente a instância: ${firstConnected.name}`);
+            console.log(
+              `[Chat] Selecionando automaticamente a instancia: ${firstConnected.name}`
+            );
             setSelectedInstance(firstConnected);
           } else {
-            console.warn('⚠️ [Chat] Nenhuma instância conectada e viva encontrada. Selecionando a primeira da lista como fallback.');
+            console.warn(
+              '[Chat] Nenhuma instancia conectada encontrada. Selecionando a primeira como fallback.'
+            );
             setSelectedInstance(data.instances[0]);
           }
         }
@@ -121,32 +141,46 @@ const Chat: React.FC = () => {
     }
   }, [getAuthHeaders, selectedInstance]);
 
-  const fetchChats = useCallback(async (instanceId: string) => {
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl(`/api/whatsapp/instances/${instanceId}/chats`), { headers });
-      const data = await response.json();
-      if (data.success) {
-        setChats(data.chats || []);
+  const fetchChats = useCallback(
+    async (instanceId: string) => {
+      try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(
+          getApiUrl(`/api/whatsapp/instances/${instanceId}/chats`),
+          { headers }
+        );
+        const data = await response.json();
+        if (data.success) {
+          setChats(data.chats || []);
+        }
+      } catch (err) {
+        console.error('Error fetching chats:', err);
       }
-    } catch (err) {
-      console.error('Error fetching chats:', err);
-    }
-  }, [getAuthHeaders]);
+    },
+    [getAuthHeaders]
+  );
 
-  const fetchMessages = useCallback(async (instanceId: string, chatId: string) => {
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl(`/api/whatsapp/instances/${instanceId}/chats/${chatId}/messages`), { headers });
-      const data = await response.json();
-      if (data.success) {
-        setMessages(data.messages || []);
-        setTimeout(() => scrollToBottom('auto'), 100);
+  const fetchMessages = useCallback(
+    async (instanceId: string, chatId: string) => {
+      try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(
+          getApiUrl(
+            `/api/whatsapp/instances/${instanceId}/chats/${chatId}/messages`
+          ),
+          { headers }
+        );
+        const data = await response.json();
+        if (data.success) {
+          setMessages(data.messages || []);
+          setTimeout(() => scrollToBottom('auto'), 100);
+        }
+      } catch (err) {
+        console.error('Error fetching messages:', err);
       }
-    } catch (err) {
-      console.error('Error fetching messages:', err);
-    }
-  }, [getAuthHeaders]);
+    },
+    [getAuthHeaders]
+  );
 
   // ──────────────────────────────────────────────
   // Deep Linking Logic
@@ -154,94 +188,117 @@ const Chat: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const jid = params.get('jid');
-    
+
     if (jid && chats.length > 0) {
-      const targetChat = chats.find(c => c.jid === jid);
+      const targetChat = chats.find((c) => c.jid === jid);
       if (targetChat && selectedChat?.jid !== jid) {
         console.log(`🎯 [Chat] Deep Link detectado! Selecionando chat: ${jid}`);
         setSelectedChat(targetChat);
       }
     }
   }, [chats, selectedChat]);
-  const startRealtime = useCallback((instanceId: string) => {
-    if (subscriptionRef.current) {
-      supabase.removeChannel(subscriptionRef.current);
-    }
+  const startRealtime = useCallback(
+    (instanceId: string) => {
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+      }
 
-    console.log(`📡 [Chat] Iniciando Realtime para: ${instanceId}`);
-    
-    subscriptionRef.current = supabase
-      .channel(`chat-realtime-${instanceId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'whatsapp_messages',
-        filter: `instance_id=eq.${instanceId}`
-      }, (payload) => {
-        console.log('📬 [Chat] NOVAL MENSAGEM VIA REALTIME:', payload.new);
-        const newMsg = payload.new as Message;
-        
-        // Atualiza mensagens se for o chat aberto
-        if (selectedChat && newMsg.chat_id === selectedChat.id) {
-          setMessages(prev => {
-            if (prev.some(m => m.id === newMsg.id)) return prev;
-            console.log('✨ [Chat] Inserindo nova mensagem no estado UI');
-            return [...prev, newMsg];
-          });
-          setTimeout(() => scrollToBottom(), 50);
-        }
-        
-        // Sempre atualiza a lista de chats para mostrar o preview/timestamp correto
-        fetchChats(instanceId);
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'whatsapp_messages',
-        filter: `instance_id=eq.${instanceId}`
-      }, (payload) => {
-        console.log('🔄 [Chat] MENSAGEM ATUALIZADA (Status):', payload.new);
-        const updatedMsg = payload.new as Message;
-        if (selectedChat && updatedMsg.chat_id === selectedChat.id) {
-          setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
-        }
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'whatsapp_chats',
-        filter: `instance_id=eq.${instanceId}`
-      }, () => {
-        fetchChats(instanceId);
-      })
-      .subscribe();
-  }, [selectedChat, fetchChats]);
+      console.log(`📡 [Chat] Iniciando Realtime para: ${instanceId}`);
+
+      subscriptionRef.current = supabase
+        .channel(`chat-realtime-${instanceId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'whatsapp_messages',
+            filter: `instance_id=eq.${instanceId}`,
+          },
+          (payload) => {
+            console.log('📬 [Chat] NOVAL MENSAGEM VIA REALTIME:', payload.new);
+            const newMsg = payload.new as Message;
+
+            // Atualiza mensagens se for o chat aberto
+            if (selectedChat && newMsg.chat_id === selectedChat.id) {
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === newMsg.id)) return prev;
+                console.log('✨ [Chat] Inserindo nova mensagem no estado UI');
+                return [...prev, newMsg];
+              });
+              setTimeout(() => scrollToBottom(), 50);
+            }
+
+            // Sempre atualiza a lista de chats para mostrar o preview/timestamp correto
+            fetchChats(instanceId);
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'whatsapp_messages',
+            filter: `instance_id=eq.${instanceId}`,
+          },
+          (payload) => {
+            console.log('🔄 [Chat] MENSAGEM ATUALIZADA (Status):', payload.new);
+            const updatedMsg = payload.new as Message;
+            if (selectedChat && updatedMsg.chat_id === selectedChat.id) {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
+              );
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'whatsapp_chats',
+            filter: `instance_id=eq.${instanceId}`,
+          },
+          () => {
+            fetchChats(instanceId);
+          }
+        )
+        .subscribe();
+    },
+    [selectedChat, fetchChats]
+  );
 
   // Monitora status das instâncias para avisar se cair
   const subscribeToInstanceChanges = useCallback(() => {
     if (!profile?.organization_id) return;
-    
+
     if (instancesSubscriptionRef.current) {
       supabase.removeChannel(instancesSubscriptionRef.current);
     }
 
     instancesSubscriptionRef.current = supabase
       .channel('chat-instances-status')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'whatsapp_instances',
-        filter: `organization_id=eq.${profile.organization_id}`
-      }, (payload) => {
-        const updated = payload.new as Instance;
-        // Atualiza na lista de instâncias
-        setInstances(prev => prev.map(i => i.id === updated.id ? { ...i, ...updated } : i));
-        
-        // Se a instância selecionada foi afetada, atualizamos nosso estado
-        if (selectedInstance?.id === updated.id) {
-          fetchInstances(); // Pega o status real via API (socket_alive)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'whatsapp_instances',
+          filter: `organization_id=eq.${profile.organization_id}`,
+        },
+        (payload) => {
+          const updated = payload.new as Instance;
+          // Atualiza na lista de instâncias
+          setInstances((prev) =>
+            prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i))
+          );
+
+          // Se a instância selecionada foi afetada, atualizamos nosso estado
+          if (selectedInstance?.id === updated.id) {
+            fetchInstances(); // Pega o status real via API (socket_alive)
+          }
         }
-      })
+      )
       .subscribe();
   }, [profile?.organization_id, selectedInstance, fetchInstances]);
 
@@ -252,8 +309,10 @@ const Chat: React.FC = () => {
     fetchInstances();
     subscribeToInstanceChanges();
     return () => {
-      if (subscriptionRef.current) supabase.removeChannel(subscriptionRef.current);
-      if (instancesSubscriptionRef.current) supabase.removeChannel(instancesSubscriptionRef.current);
+      if (subscriptionRef.current)
+        supabase.removeChannel(subscriptionRef.current);
+      if (instancesSubscriptionRef.current)
+        supabase.removeChannel(instancesSubscriptionRef.current);
     };
   }, [profile?.organization_id]);
 
@@ -278,10 +337,13 @@ const Chat: React.FC = () => {
   // Actions
   // ──────────────────────────────────────────────
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedInstance || !selectedChat || sending) return;
+    if (!newMessage.trim() || !selectedInstance || !selectedChat || sending)
+      return;
 
-    if (!selectedInstance.socket_alive) {
-      setError('Instância desconectada. Aguarde a reconexão.');
+    // IMPORTANTE: socket_alive === undefined significa que nao sabemos
+    // Confiamos no status connected do banco nesse caso
+    if (selectedInstance.socket_alive === false) {
+      setError('Instancia desconectada. Aguarde a reconexao.');
       setTimeout(() => setError(null), 3000);
       return;
     }
@@ -289,14 +351,17 @@ const Chat: React.FC = () => {
     setSending(true);
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl(`/api/whatsapp/instances/${selectedInstance.id}/send`), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          jid: selectedChat.jid,
-          text: newMessage.trim(),
-        }),
-      });
+      const response = await fetch(
+        getApiUrl(`/api/whatsapp/instances/${selectedInstance.id}/send`),
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            jid: selectedChat.jid,
+            text: newMessage.trim(),
+          }),
+        }
+      );
 
       const data = await response.json();
       if (data.success) {
@@ -316,17 +381,20 @@ const Chat: React.FC = () => {
 
   const deleteMessage = async (messageId: string) => {
     if (!window.confirm('Deseja excluir esta mensagem do seu painel?')) return;
-    
+
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl(`/api/whatsapp/messages/${messageId}`), {
-        method: 'DELETE',
-        headers
-      });
+      const response = await fetch(
+        getApiUrl(`/api/whatsapp/messages/${messageId}`),
+        {
+          method: 'DELETE',
+          headers,
+        }
+      );
 
       const data = await response.json();
       if (data.success) {
-        setMessages(prev => prev.filter(m => m.id !== messageId));
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
       } else {
         setError(data.error || 'Erro ao deletar mensagem');
         setTimeout(() => setError(null), 3000);
@@ -340,14 +408,22 @@ const Chat: React.FC = () => {
 
   const clearChat = async () => {
     if (!selectedChat) return;
-    if (!window.confirm(`Deseja apagar TODO o histórico de mensagens com ${getDisplayName(selectedChat)}? Esta ação não pode ser desfeita.`)) return;
-    
+    if (
+      !window.confirm(
+        `Deseja apagar TODO o histórico de mensagens com ${getDisplayName(selectedChat)}? Esta ação não pode ser desfeita.`
+      )
+    )
+      return;
+
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl(`/api/whatsapp/chats/${selectedChat.id}/messages`), {
-        method: 'DELETE',
-        headers
-      });
+      const response = await fetch(
+        getApiUrl(`/api/whatsapp/chats/${selectedChat.id}/messages`),
+        {
+          method: 'DELETE',
+          headers,
+        }
+      );
 
       const data = await response.json();
       if (data.success) {
@@ -366,17 +442,22 @@ const Chat: React.FC = () => {
   // ──────────────────────────────────────────────
   // UI Helpers
   // ──────────────────────────────────────────────
-  const filteredChats = chats.filter(chat => {
-    const matchesSearch = chat.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredChats = chats.filter((chat) => {
+    const matchesSearch = chat.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     const isGroup = chat.jid.endsWith('@g.us');
-    
+
     if (filterType === 'private') return matchesSearch && !isGroup;
     if (filterType === 'groups') return matchesSearch && isGroup;
     return matchesSearch;
   });
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return new Date(timestamp).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const formatJidToPhone = (jid: string) => {
@@ -393,10 +474,14 @@ const Chat: React.FC = () => {
   const getStatusIcon = (status: string, fromMe: boolean) => {
     if (!fromMe) return null;
     switch (status) {
-      case 'sent': return <Check className="w-3.5 h-3.5 text-gray-400" />;
-      case 'delivered': return <CheckCheck className="w-3.5 h-3.5 text-gray-400" />;
-      case 'read': return <CheckCheck className="w-3.5 h-3.5 text-blue-500" />;
-      default: return <Check className="w-3.5 h-3.5 text-gray-300" />;
+      case 'sent':
+        return <Check className="w-3.5 h-3.5 text-gray-400" />;
+      case 'delivered':
+        return <CheckCheck className="w-3.5 h-3.5 text-gray-400" />;
+      case 'read':
+        return <CheckCheck className="w-3.5 h-3.5 text-blue-500" />;
+      default:
+        return <Check className="w-3.5 h-3.5 text-gray-300" />;
     }
   };
 
@@ -418,9 +503,12 @@ const Chat: React.FC = () => {
         <div className="p-6 bg-white rounded-3xl shadow-sm mb-6">
           <MessageSquare className="w-20 h-20 text-gray-200" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Sem conexão WhatsApp</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          Sem conexão WhatsApp
+        </h2>
         <p className="text-gray-500 max-w-md mb-8">
-          Você precisa conectar pelo menos uma instância de WhatsApp para começar a conversar.
+          Você precisa conectar pelo menos uma instância de WhatsApp para
+          começar a conversar.
         </p>
         <a
           href="/whatsapp-instances"
@@ -432,36 +520,42 @@ const Chat: React.FC = () => {
     );
   }
 
-  const isInstanceDead = selectedInstance?.status !== 'connected' || selectedInstance?.socket_alive === false;
+  const isInstanceDead =
+    selectedInstance?.status !== 'connected' ||
+    selectedInstance?.socket_alive === false;
 
   return (
     <div className="flex h-full bg-white overflow-hidden">
       {/* Sidebar de Chats */}
-      <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 border-r border-gray-100`}>
+      <div
+        className={`${selectedChat ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 border-r border-gray-100`}
+      >
         {/* Header da Sidebar */}
         <div className="p-4 bg-white border-b border-gray-50">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Conversas</h1>
+            <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+              Conversas
+            </h1>
             <div className="relative group">
-               <select 
+              <select
                 title="Escolha uma Instância"
                 value={selectedInstance?.id || ''}
                 onChange={(e) => {
-                  const inst = instances.find(i => i.id === e.target.value);
+                  const inst = instances.find((i) => i.id === e.target.value);
                   if (inst) setSelectedInstance(inst);
                 }}
                 className="appearance-none bg-gray-100 border-none rounded-xl px-3 py-1.5 text-xs font-bold text-gray-700 pr-8 cursor-pointer hover:bg-gray-200 transition-colors"
-               >
-                 {instances.map(inst => (
-                   <option key={inst.id} value={inst.id}>
-                     {inst.name} {inst.status !== 'connected' ? '(Offline)' : ''}
-                   </option>
-                 ))}
-               </select>
-               <Smartphone className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              >
+                {instances.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.name} {inst.status !== 'connected' ? '(Offline)' : ''}
+                  </option>
+                ))}
+              </select>
+              <Smartphone className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
             </div>
           </div>
-          
+
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -479,7 +573,9 @@ const Chat: React.FC = () => {
           <button
             onClick={() => setFilterType('all')}
             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
-              filterType === 'all' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
+              filterType === 'all'
+                ? 'bg-white text-green-600 shadow-sm'
+                : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
             }`}
           >
             Todas
@@ -487,7 +583,9 @@ const Chat: React.FC = () => {
           <button
             onClick={() => setFilterType('private')}
             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
-              filterType === 'private' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
+              filterType === 'private'
+                ? 'bg-white text-green-600 shadow-sm'
+                : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
             }`}
           >
             Privadas
@@ -495,7 +593,9 @@ const Chat: React.FC = () => {
           <button
             onClick={() => setFilterType('groups')}
             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
-              filterType === 'groups' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
+              filterType === 'groups'
+                ? 'bg-white text-green-600 shadow-sm'
+                : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
             }`}
           >
             Grupos
@@ -509,7 +609,9 @@ const Chat: React.FC = () => {
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                 <Search className="w-8 h-8 text-gray-200" />
               </div>
-              <p className="text-gray-400 text-sm font-medium">Nenhuma conversa encontrada</p>
+              <p className="text-gray-400 text-sm font-medium">
+                Nenhuma conversa encontrada
+              </p>
             </div>
           ) : (
             filteredChats.map((chat) => (
@@ -517,21 +619,29 @@ const Chat: React.FC = () => {
                 key={chat.id}
                 onClick={() => setSelectedChat(chat)}
                 className={`flex items-center gap-3.5 p-4 mx-2 my-1 rounded-2xl cursor-pointer transition-all duration-200 group ${
-                  selectedChat?.id === chat.id 
-                    ? 'bg-green-50' 
+                  selectedChat?.id === chat.id
+                    ? 'bg-green-50'
                     : 'hover:bg-gray-50'
                 }`}
               >
-                <div className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-lg shadow-sm ${
-                  chat.jid.endsWith('@g.us') ? 'bg-indigo-500' : 'bg-green-500'
-                }`}>
+                <div
+                  className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-lg shadow-sm ${
+                    chat.jid.endsWith('@g.us')
+                      ? 'bg-indigo-500'
+                      : 'bg-green-500'
+                  }`}
+                >
                   {chat.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-0.5">
-                    <h3 className={`font-bold truncate text-sm ${
-                      selectedChat?.id === chat.id ? 'text-green-900' : 'text-gray-800'
-                    }`}>
+                    <h3
+                      className={`font-bold truncate text-sm ${
+                        selectedChat?.id === chat.id
+                          ? 'text-green-900'
+                          : 'text-gray-800'
+                      }`}
+                    >
                       {getDisplayName(chat)}
                     </h3>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -541,11 +651,17 @@ const Chat: React.FC = () => {
                         </span>
                       )}
                       {chat.lead_info?.classification && (
-                        <span className={`text-[8px] px-1 py-0.5 rounded-md font-black uppercase tracking-tighter ${
-                          chat.lead_info.classification.includes('Alta') ? 'bg-orange-100 text-orange-600' : 
-                          chat.lead_info.classification.includes('Interessado') ? 'bg-emerald-100 text-emerald-600' :
-                          'bg-slate-100 text-slate-500'
-                        }`}>
+                        <span
+                          className={`text-[8px] px-1 py-0.5 rounded-md font-black uppercase tracking-tighter ${
+                            chat.lead_info.classification.includes('Alta')
+                              ? 'bg-orange-100 text-orange-600'
+                              : chat.lead_info.classification.includes(
+                                    'Interessado'
+                                  )
+                                ? 'bg-emerald-100 text-emerald-600'
+                                : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
                           {chat.lead_info.classification}
                         </span>
                       )}
@@ -557,7 +673,9 @@ const Chat: React.FC = () => {
                 </div>
                 {chat.unread_count > 0 && (
                   <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center shadow-lg shadow-green-100">
-                    <span className="text-[10px] font-black text-white">{chat.unread_count}</span>
+                    <span className="text-[10px] font-black text-white">
+                      {chat.unread_count}
+                    </span>
                   </div>
                 )}
               </div>
@@ -567,7 +685,9 @@ const Chat: React.FC = () => {
       </div>
 
       {/* Área de Mensagens */}
-      <div className={`${!selectedChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-gray-50 relative`}>
+      <div
+        className={`${!selectedChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-gray-50 relative`}
+      >
         {selectedChat ? (
           <>
             {/* Header do Chat */}
@@ -579,22 +699,30 @@ const Chat: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm ${
-                selectedChat.jid.endsWith('@g.us') ? 'bg-indigo-500' : 'bg-green-500'
-              }`}>
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm ${
+                  selectedChat.jid.endsWith('@g.us')
+                    ? 'bg-indigo-500'
+                    : 'bg-green-500'
+                }`}
+              >
                 {selectedChat.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <h2 className="font-extrabold text-gray-900 text-base leading-tight">{getDisplayName(selectedChat)}</h2>
+                <h2 className="font-extrabold text-gray-900 text-base leading-tight">
+                  {getDisplayName(selectedChat)}
+                </h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className={`w-2 h-2 rounded-full ${isInstanceDead ? 'bg-gray-300' : 'bg-emerald-500'}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${isInstanceDead ? 'bg-gray-300' : 'bg-emerald-500'}`}
+                  />
                   <p className="text-[11px] font-bold text-gray-400 tracking-wide uppercase">
                     {isInstanceDead ? 'Instância Offline' : 'WhatsApp Online'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button 
+                <button
                   onClick={clearChat}
                   className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center gap-1.5"
                   title="Limpar Conversa"
@@ -602,7 +730,10 @@ const Chat: React.FC = () => {
                   <Trash2 className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Limpar Chat</span>
                 </button>
-                <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all" title="Mais Opções">
+                <button
+                  className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
+                  title="Mais Opções"
+                >
                   <MoreVertical className="w-5 h-5" />
                 </button>
               </div>
@@ -616,8 +747,12 @@ const Chat: React.FC = () => {
                     <AlertCircle className="w-4 h-4 text-amber-700" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-amber-800">Conexão em espera</p>
-                    <p className="text-[10px] text-amber-600 font-medium">Reconectando automaticamente com o servidor...</p>
+                    <p className="text-xs font-bold text-amber-800">
+                      Conexão em espera
+                    </p>
+                    <p className="text-[10px] text-amber-600 font-medium">
+                      Reconectando automaticamente com o servidor...
+                    </p>
                   </div>
                 </div>
               </div>
@@ -626,18 +761,25 @@ const Chat: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar pattern-bg">
               {messages.map((msg, idx) => {
                 const prevMsg = messages[idx - 1];
-                const showAvatar = !msg.from_me && (!prevMsg || prevMsg.from_me || (prevMsg as any).metadata?.pushName !== (msg as any).metadata?.pushName);
+                const showAvatar =
+                  !msg.from_me &&
+                  (!prevMsg ||
+                    prevMsg.from_me ||
+                    (prevMsg as any).metadata?.pushName !==
+                      (msg as any).metadata?.pushName);
 
                 return (
                   <div
                     key={msg.id}
                     className={`flex items-end gap-2.5 ${msg.from_me ? 'justify-end' : 'justify-start'}`}
                   >
-                    {!msg.from_me && selectedChat.jid.endsWith('@g.us') && showAvatar && (
-                       <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 flex-shrink-0 shadow-sm">
-                         {(msg as any).metadata?.pushName?.charAt(0) || '?'}
-                       </div>
-                    )}
+                    {!msg.from_me &&
+                      selectedChat.jid.endsWith('@g.us') &&
+                      showAvatar && (
+                        <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 flex-shrink-0 shadow-sm">
+                          {(msg as any).metadata?.pushName?.charAt(0) || '?'}
+                        </div>
+                      )}
                     <div
                       className={`max-w-[80%] md:max-w-[70%] px-4 py-2 shadow-sm ${
                         msg.from_me
@@ -645,46 +787,67 @@ const Chat: React.FC = () => {
                           : 'bg-white text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100'
                       }`}
                     >
-                      {!msg.from_me && selectedChat.jid.endsWith('@g.us') && showAvatar && (
-                        <span className="block text-[10px] font-black text-indigo-500 mb-1 tracking-tighter uppercase">
-                          {msg.sender_name || (msg as any).metadata?.pushName || 'Participante'}
-                        </span>
-                      )}
+                      {!msg.from_me &&
+                        selectedChat.jid.endsWith('@g.us') &&
+                        showAvatar && (
+                          <span className="block text-[10px] font-black text-indigo-500 mb-1 tracking-tighter uppercase">
+                            {msg.sender_name ||
+                              (msg as any).metadata?.pushName ||
+                              'Participante'}
+                          </span>
+                        )}
                       {msg.media_url ? (
                         <div className="mb-2">
                           {msg.mime_type?.startsWith('image/') ? (
-                            <img 
-                              src={msg.media_url} 
-                              alt="Anexo" 
+                            <img
+                              src={msg.media_url}
+                              alt="Anexo"
                               className="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-95 transition-opacity"
-                              onClick={() => window.open(msg.media_url, '_blank')}
+                              onClick={() =>
+                                window.open(msg.media_url, '_blank')
+                              }
                             />
                           ) : msg.mime_type?.startsWith('audio/') ? (
-                            <audio controls className="w-full h-8 opacity-90 brightness-110">
-                              <source src={msg.media_url} type={msg.mime_type} />
+                            <audio
+                              controls
+                              className="w-full h-8 opacity-90 brightness-110"
+                            >
+                              <source
+                                src={msg.media_url}
+                                type={msg.mime_type}
+                              />
                             </audio>
                           ) : msg.mime_type?.startsWith('video/') ? (
-                            <video 
-                              controls 
+                            <video
+                              controls
                               className="max-w-full rounded-lg shadow-sm bg-black"
                               preload="metadata"
                             >
-                              <source src={msg.media_url} type={msg.mime_type} />
+                              <source
+                                src={msg.media_url}
+                                type={msg.mime_type}
+                              />
                               Seu navegador não suporta vídeos.
                             </video>
                           ) : (
-                            <a 
-                              href={msg.media_url} 
-                              target="_blank" 
+                            <a
+                              href={msg.media_url}
+                              target="_blank"
                               rel="noopener noreferrer"
                               className={`flex items-center gap-2 p-3 rounded-xl border ${
-                                msg.from_me ? 'bg-white/10 border-white/20 text-white' : 'bg-gray-50 border-gray-200 text-gray-700'
+                                msg.from_me
+                                  ? 'bg-white/10 border-white/20 text-white'
+                                  : 'bg-gray-50 border-gray-200 text-gray-700'
                               } hover:scale-[1.02] transition-transform`}
                             >
                               <File className="w-6 h-6" />
                               <div className="overflow-hidden">
-                                <p className="text-xs font-bold truncate">Documento</p>
-                                <p className="text-[10px] opacity-70">Clique para baixar</p>
+                                <p className="text-xs font-bold truncate">
+                                  Documento
+                                </p>
+                                <p className="text-[10px] opacity-70">
+                                  Clique para baixar
+                                </p>
                               </div>
                             </a>
                           )}
@@ -693,9 +856,13 @@ const Chat: React.FC = () => {
                       <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed">
                         {msg.content}
                       </p>
-                      <div className={`flex items-center gap-1.5 mt-1.5 text-[10px] font-bold ${
-                        msg.from_me ? 'justify-end text-green-100' : 'text-gray-400'
-                      }`}>
+                      <div
+                        className={`flex items-center gap-1.5 mt-1.5 text-[10px] font-bold ${
+                          msg.from_me
+                            ? 'justify-end text-green-100'
+                            : 'text-gray-400'
+                        }`}
+                      >
                         <span>{formatTime(msg.timestamp)}</span>
                         {getStatusIcon(msg.status, msg.from_me)}
                         <button
@@ -704,8 +871,8 @@ const Chat: React.FC = () => {
                             deleteMessage(msg.id);
                           }}
                           className={`ml-3 p-1.5 rounded-lg transition-all border ${
-                            msg.from_me 
-                              ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20' 
+                            msg.from_me
+                              ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20'
                               : 'bg-gray-50 border-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50'
                           }`}
                           title="Excluir mensagem"
@@ -722,15 +889,18 @@ const Chat: React.FC = () => {
 
             {/* Input de Mensagem */}
             <div className="p-4 bg-white border-t border-gray-100">
-               {error && (
-                 <div className="absolute bottom-20 left-1/2 -translate-x-1/2 animate-bounce">
-                    <div className="bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-xl">
-                      {error}
-                    </div>
-                 </div>
-               )}
+              {error && (
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 animate-bounce">
+                  <div className="bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-xl">
+                    {error}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2 max-w-5xl mx-auto">
-                <button className="p-3 text-gray-400 hover:bg-gray-50 rounded-2xl transition-all" title="Anexar Imagem">
+                <button
+                  className="p-3 text-gray-400 hover:bg-gray-50 rounded-2xl transition-all"
+                  title="Anexar Imagem"
+                >
                   <Image className="w-5 h-5" />
                 </button>
                 <div className="flex-1 relative">
@@ -738,9 +908,15 @@ const Chat: React.FC = () => {
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                    onKeyPress={(e) =>
+                      e.key === 'Enter' && !e.shiftKey && sendMessage()
+                    }
                     disabled={isInstanceDead}
-                    placeholder={isInstanceDead ? "Aguardando conexão..." : "Escreva sua mensagem aqui..."}
+                    placeholder={
+                      isInstanceDead
+                        ? 'Aguardando conexão...'
+                        : 'Escreva sua mensagem aqui...'
+                    }
                     className="w-full px-5 py-3.5 bg-gray-100 border-none focus:bg-white focus:ring-4 focus:ring-green-500/10 rounded-3xl outline-none transition-all text-sm font-medium"
                   />
                 </div>
@@ -766,9 +942,12 @@ const Chat: React.FC = () => {
                 <MessageSquare className="w-8 h-8 text-green-600" />
               </div>
             </div>
-            <h2 className="text-3xl font-black text-gray-900 mb-3">Bem-vindo ao Chat</h2>
+            <h2 className="text-3xl font-black text-gray-900 mb-3">
+              Bem-vindo ao Chat
+            </h2>
             <p className="text-gray-500 max-w-sm font-medium text-base leading-relaxed">
-              Dê um passo à frente na sua comunicação imobiliária. Selecione um contato à esquerda e comece a fechar negócios.
+              Dê um passo à frente na sua comunicação imobiliária. Selecione um
+              contato à esquerda e comece a fechar negócios.
             </p>
           </div>
         )}

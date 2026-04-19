@@ -45,7 +45,9 @@ interface WhatsAppInstance {
 const getStatusConfig = (instance: WhatsAppInstance) => {
   const alive = instance.socket_alive;
 
-  // Estado conectado mas socket morto → alerta especial
+  // Estado conectado E socket confirmado morto → alerta especial
+  // IMPORTANTE: socket_alive === undefined significa que nao sabemos (fallback usado)
+  // Nesse caso, confiamos no status do banco e mostramos "Conectado"
   if (instance.status === 'connected' && alive === false) {
     return {
       icon: <AlertTriangle className="w-5 h-5 text-amber-500" />,
@@ -54,6 +56,9 @@ const getStatusConfig = (instance: WhatsAppInstance) => {
       bg: 'bg-amber-50 border-amber-200',
     };
   }
+
+  // Se conectado mas socket_alive nao foi verificado (undefined), mostra conectado
+  // Isso evita o falso positivo "Reconectando" quando a API falha e usa fallback
 
   switch (instance.status) {
     case 'connected':
@@ -112,7 +117,10 @@ const WhatsAppInstances: React.FC = () => {
   const [newInstanceName, setNewInstanceName] = useState('');
   const [creating, setCreating] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
-  const [qrModal, setQrModal] = useState<{ instance: WhatsAppInstance; qrCode: string | null } | null>(null);
+  const [qrModal, setQrModal] = useState<{
+    instance: WhatsAppInstance;
+    qrCode: string | null;
+  } | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const { profile } = useAuth();
 
@@ -124,7 +132,9 @@ const WhatsAppInstances: React.FC = () => {
   // Token de auth helper
   // ──────────────────────────────────────────────
   const getAuthHeaders = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     return { Authorization: `Bearer ${session?.access_token}` };
   }, []);
 
@@ -134,10 +144,15 @@ const WhatsAppInstances: React.FC = () => {
   const fetchInstances = useCallback(async () => {
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl(`/api/whatsapp/instances?t=${Date.now()}`), { headers });
-      
+      const response = await fetch(
+        getApiUrl(`/api/whatsapp/instances?t=${Date.now()}`),
+        { headers }
+      );
+
       if (response.status === 401 || response.status === 403) {
-        console.warn('[WhatsAppInstances] Acesso negado pela API. Parando tentativas.');
+        console.warn(
+          '[WhatsAppInstances] Acesso negado pela API. Parando tentativas.'
+        );
         setLoading(false);
         return;
       }
@@ -147,16 +162,22 @@ const WhatsAppInstances: React.FC = () => {
         setInstances(data.instances || []);
       }
     } catch (error) {
-      console.error('[WhatsAppInstances] Erro ao buscar instâncias:', error);
+      console.error('[WhatsAppInstances] Erroao buscar instances:', error);
 
-      // Fallback: busca direto no Supabase se API não responder
+      // Fallback: busca direto no Supabase se API nao responder
+      // IMPORTANTE: socket_alive nao existe no DB - nao assume que socket esta morto!
       if (profile?.organization_id) {
         const { data } = await supabase
           .from('whatsapp_instances')
           .select('*')
           .eq('organization_id', profile.organization_id)
           .order('created_at', { ascending: false });
-        setInstances(data || []);
+
+        const instancesWithUnknownSocket = (data || []).map((inst) => ({
+          ...inst,
+          socket_alive: undefined as boolean | undefined, // Desconhecido, nao assume falso
+        }));
+        setInstances(instancesWithUnknownSocket);
       }
     } finally {
       setLoading(false);
@@ -176,33 +197,41 @@ const WhatsAppInstances: React.FC = () => {
 
     instancesChannelRef.current = supabase
       .channel(`wa-instances-org-${profile.organization_id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'whatsapp_instances',
-        filter: `organization_id=eq.${profile.organization_id}`,
-      }, (payload) => {
-        const updated = payload.new as WhatsAppInstance;
-        if (payload.eventType === 'DELETE') {
-          setInstances(prev => prev.filter(i => i.id !== (payload.old as any).id));
-          return;
-        }
-
-        // Merge Inteligente: preserva campos virtuais (socket_alive) que o Realtime não possui
-        setInstances(prev => prev.map(inst => {
-          if (inst.id === updated.id) {
-            return { 
-              ...inst, 
-              ...updated, 
-              socket_alive: inst.socket_alive // Preserva o estado vivo atual
-            };
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'whatsapp_instances',
+          filter: `organization_id=eq.${profile.organization_id}`,
+        },
+        (payload) => {
+          const updated = payload.new as WhatsAppInstance;
+          if (payload.eventType === 'DELETE') {
+            setInstances((prev) =>
+              prev.filter((i) => i.id !== (payload.old as any).id)
+            );
+            return;
           }
-          return inst;
-        }));
 
-        // Atualiza via API com um pequeno delay para garantir que o socket_alive esteja pronto
-        setTimeout(fetchInstances, 1000);
-      })
+          // Merge Inteligente: preserva campos virtuais (socket_alive) que o Realtime não possui
+          setInstances((prev) =>
+            prev.map((inst) => {
+              if (inst.id === updated.id) {
+                return {
+                  ...inst,
+                  ...updated,
+                  socket_alive: inst.socket_alive, // Preserva o estado vivo atual
+                };
+              }
+              return inst;
+            })
+          );
+
+          // Atualiza via API com um pequeno delay para garantir que o socket_alive esteja pronto
+          setTimeout(fetchInstances, 1000);
+        }
+      )
       .subscribe((status) => {
         console.log('[WhatsAppInstances] 📡 Subscription status:', status);
       });
@@ -211,47 +240,59 @@ const WhatsAppInstances: React.FC = () => {
   // ──────────────────────────────────────────────
   // Realtime: ouvir chegada do QR Code
   // ──────────────────────────────────────────────
-  const subscribeToQR = useCallback((instanceId: string) => {
-    // Remove subscription de QR anterior
-    if (qrChannelRef.current) {
-      supabase.removeChannel(qrChannelRef.current);
-    }
+  const subscribeToQR = useCallback(
+    (instanceId: string) => {
+      // Remove subscription de QR anterior
+      if (qrChannelRef.current) {
+        supabase.removeChannel(qrChannelRef.current);
+      }
 
-    qrChannelRef.current = supabase
-      .channel(`wa-qr-${instanceId}-${Date.now()}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'whatsapp_instances',
-        filter: `id=eq.${instanceId}`,
-      }, (payload) => {
-        const updated = payload.new as any;
-        console.log('[WhatsAppInstances] 🔔 Realtime QR update:', updated.status);
+      qrChannelRef.current = supabase
+        .channel(`wa-qr-${instanceId}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'whatsapp_instances',
+            filter: `id=eq.${instanceId}`,
+          },
+          (payload) => {
+            const updated = payload.new as any;
+            console.log(
+              '[WhatsAppInstances] 🔔 Realtime QR update:',
+              updated.status
+            );
 
-        if (updated.qr_code && updated.status === 'qr_pending') {
-          setQrModal(prev => prev ? { ...prev, qrCode: updated.qr_code } : null);
-          setQrLoading(false);
-        }
+            if (updated.qr_code && updated.status === 'qr_pending') {
+              setQrModal((prev) =>
+                prev ? { ...prev, qrCode: updated.qr_code } : null
+              );
+              setQrLoading(false);
+            }
 
-        if (updated.status === 'connected') {
-          // Conexão estabelecida! Fecha modal e atualiza
-          setQrModal(null);
-          setQrLoading(false);
-          setConnectingId(null);
-          fetchInstances();
-          // Remove subscription de QR (não precisamos mais)
-          if (qrChannelRef.current) {
-            supabase.removeChannel(qrChannelRef.current);
-            qrChannelRef.current = null;
+            if (updated.status === 'connected') {
+              // Conexão estabelecida! Fecha modal e atualiza
+              setQrModal(null);
+              setQrLoading(false);
+              setConnectingId(null);
+              fetchInstances();
+              // Remove subscription de QR (não precisamos mais)
+              if (qrChannelRef.current) {
+                supabase.removeChannel(qrChannelRef.current);
+                qrChannelRef.current = null;
+              }
+            }
+
+            if (['disconnected', 'reconnecting'].includes(updated.status)) {
+              fetchInstances();
+            }
           }
-        }
-
-        if (['disconnected', 'reconnecting'].includes(updated.status)) {
-          fetchInstances();
-        }
-      })
-      .subscribe();
-  }, [fetchInstances]);
+        )
+        .subscribe();
+    },
+    [fetchInstances]
+  );
 
   // ──────────────────────────────────────────────
   // Lifecycle
@@ -261,7 +302,8 @@ const WhatsAppInstances: React.FC = () => {
     subscribeToInstances();
 
     return () => {
-      if (instancesChannelRef.current) supabase.removeChannel(instancesChannelRef.current);
+      if (instancesChannelRef.current)
+        supabase.removeChannel(instancesChannelRef.current);
       if (qrChannelRef.current) supabase.removeChannel(qrChannelRef.current);
     };
   }, [profile?.organization_id]);
@@ -280,7 +322,8 @@ const WhatsAppInstances: React.FC = () => {
         body: JSON.stringify({ name: newInstanceName.trim() }),
       });
       const data = await response.json();
-      if (!data.success) throw new Error(data.error || 'Erro ao criar instância');
+      if (!data.success)
+        throw new Error(data.error || 'Erro ao criar instância');
       setShowNewModal(false);
       setNewInstanceName('');
       fetchInstances();
@@ -306,10 +349,13 @@ const WhatsAppInstances: React.FC = () => {
 
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl(`/api/whatsapp/instances/${instance.id}/connect`), {
-        method: 'POST',
-        headers,
-      });
+      const response = await fetch(
+        getApiUrl(`/api/whatsapp/instances/${instance.id}/connect`),
+        {
+          method: 'POST',
+          headers,
+        }
+      );
       const data = await response.json();
 
       if (!data.success) {
@@ -344,10 +390,13 @@ const WhatsAppInstances: React.FC = () => {
   const disconnectInstance = async (instanceId: string) => {
     try {
       const headers = await getAuthHeaders();
-      await fetch(getApiUrl(`/api/whatsapp/instances/${instanceId}/disconnect`), {
-        method: 'POST',
-        headers,
-      });
+      await fetch(
+        getApiUrl(`/api/whatsapp/instances/${instanceId}/disconnect`),
+        {
+          method: 'POST',
+          headers,
+        }
+      );
       fetchInstances();
     } catch (error) {
       console.error('[WhatsAppInstances] Erro ao desconectar:', error);
@@ -365,7 +414,7 @@ const WhatsAppInstances: React.FC = () => {
         method: 'DELETE',
         headers,
       });
-      setInstances(prev => prev.filter(i => i.id !== id));
+      setInstances((prev) => prev.filter((i) => i.id !== id));
     } catch (error) {
       console.error('[WhatsAppInstances] Erro ao excluir:', error);
       alert('Erro ao excluir instância');
@@ -396,8 +445,12 @@ const WhatsAppInstances: React.FC = () => {
             <Smartphone className="w-7 h-7 text-green-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Instâncias WhatsApp</h1>
-            <p className="text-sm text-gray-500">{instances.length} instância(s) configurada(s)</p>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Instâncias WhatsApp
+            </h1>
+            <p className="text-sm text-gray-500">
+              {instances.length} instância(s) configurada(s)
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -426,8 +479,12 @@ const WhatsAppInstances: React.FC = () => {
       ) : instances.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-14 text-center">
           <Smartphone className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">Nenhuma instância criada</h3>
-          <p className="text-gray-500 mb-6">Crie sua primeira instância para começar a usar o WhatsApp</p>
+          <h3 className="text-lg font-semibold text-gray-600 mb-2">
+            Nenhuma instância criada
+          </h3>
+          <p className="text-gray-500 mb-6">
+            Crie sua primeira instância para começar a usar o WhatsApp
+          </p>
           <button
             onClick={() => setShowNewModal(true)}
             className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -439,7 +496,9 @@ const WhatsAppInstances: React.FC = () => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {instances.map((instance) => {
             const statusConfig = getStatusConfig(instance);
-            const isConnected = instance.status === 'connected' && instance.socket_alive !== false;
+            const isConnected =
+              instance.status === 'connected' &&
+              instance.socket_alive !== false;
             const isConnecting = connectingId === instance.id;
 
             return (
@@ -450,16 +509,23 @@ const WhatsAppInstances: React.FC = () => {
                 {/* Cabeçalho do Card */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl ${isConnected ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                      {isConnected
-                        ? <Wifi className="w-6 h-6 text-emerald-600" />
-                        : <WifiOff className="w-6 h-6 text-gray-500" />
-                      }
+                    <div
+                      className={`p-2.5 rounded-xl ${isConnected ? 'bg-emerald-100' : 'bg-gray-100'}`}
+                    >
+                      {isConnected ? (
+                        <Wifi className="w-6 h-6 text-emerald-600" />
+                      ) : (
+                        <WifiOff className="w-6 h-6 text-gray-500" />
+                      )}
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-800 text-lg leading-tight">{instance.name}</h3>
+                      <h3 className="font-bold text-gray-800 text-lg leading-tight">
+                        {instance.name}
+                      </h3>
                       <p className="text-sm text-gray-500">
-                        {instance.phone_number ? `+${instance.phone_number}` : 'Sem número vinculado'}
+                        {instance.phone_number
+                          ? `+${instance.phone_number}`
+                          : 'Sem número vinculado'}
                       </p>
                     </div>
                   </div>
@@ -481,21 +547,22 @@ const WhatsAppInstances: React.FC = () => {
                 </div>
 
                 {/* Aviso de socket morto */}
-                {instance.status === 'connected' && instance.socket_alive === false && (
-                  <div className="flex items-center gap-2 mb-4 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                    <p className="text-xs text-amber-700">
-                      Conexão perdida. Reconexão automática em andamento.
-                    </p>
-                  </div>
-                )}
+                {instance.status === 'connected' &&
+                  instance.socket_alive === false && (
+                    <div className="flex items-center gap-2 mb-4 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                      <p className="text-xs text-amber-700">
+                        Conexão perdida. Reconexão automática em andamento.
+                      </p>
+                    </div>
+                  )}
 
                 {/* Ações */}
                 <div className="flex gap-2">
                   {isConnected ? (
                     <>
                       <button
-                        onClick={() => window.location.href = '/chat'}
+                        onClick={() => (window.location.href = '/chat')}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm font-medium"
                       >
                         <MessageSquare className="w-4 h-4" />
@@ -511,7 +578,14 @@ const WhatsAppInstances: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => connectInstance(instance)}
-                      disabled={isConnecting || ['connecting', 'reconnecting', 'authenticated'].includes(instance.status)}
+                      disabled={
+                        isConnecting ||
+                        [
+                          'connecting',
+                          'reconnecting',
+                          'authenticated',
+                        ].includes(instance.status)
+                      }
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                     >
                       {isConnecting ? (
@@ -519,7 +593,9 @@ const WhatsAppInstances: React.FC = () => {
                       ) : (
                         <QrCode className="w-4 h-4" />
                       )}
-                      {['connecting', 'reconnecting'].includes(instance.status) ? 'Aguardando...' : 'Conectar'}
+                      {['connecting', 'reconnecting'].includes(instance.status)
+                        ? 'Aguardando...'
+                        : 'Conectar'}
                     </button>
                   )}
                 </div>
@@ -533,9 +609,15 @@ const WhatsAppInstances: React.FC = () => {
       {showNewModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Nova Instância WhatsApp</h2>
-            <p className="text-sm text-gray-500 mb-5">Cada instância conecta um número de WhatsApp diferente.</p>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome da instância</label>
+            <h2 className="text-xl font-bold text-gray-800 mb-1">
+              Nova Instância WhatsApp
+            </h2>
+            <p className="text-sm text-gray-500 mb-5">
+              Cada instância conecta um número de WhatsApp diferente.
+            </p>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Nome da instância
+            </label>
             <input
               type="text"
               value={newInstanceName}
@@ -547,7 +629,10 @@ const WhatsAppInstances: React.FC = () => {
             />
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => { setShowNewModal(false); setNewInstanceName(''); }}
+                onClick={() => {
+                  setShowNewModal(false);
+                  setNewInstanceName('');
+                }}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
               >
                 Cancelar
@@ -585,7 +670,11 @@ const WhatsAppInstances: React.FC = () => {
                 </div>
               ) : qrModal.qrCode ? (
                 <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                  <img src={qrModal.qrCode} alt="QR Code WhatsApp" className="w-56 h-56" />
+                  <img
+                    src={qrModal.qrCode}
+                    alt="QR Code WhatsApp"
+                    className="w-56 h-56"
+                  />
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3">
@@ -597,11 +686,17 @@ const WhatsAppInstances: React.FC = () => {
 
             {/* Instruções */}
             <div className="bg-gray-50 rounded-xl p-4 text-left mb-5">
-              <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">Como conectar</p>
+              <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">
+                Como conectar
+              </p>
               <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
                 <li>Abra o WhatsApp no seu celular</li>
-                <li>Toque em <strong>Dispositivos conectados</strong></li>
-                <li>Toque em <strong>Conectar um dispositivo</strong></li>
+                <li>
+                  Toque em <strong>Dispositivos conectados</strong>
+                </li>
+                <li>
+                  Toque em <strong>Conectar um dispositivo</strong>
+                </li>
                 <li>Aponte a câmera para o QR Code acima</li>
               </ol>
             </div>
@@ -609,7 +704,11 @@ const WhatsAppInstances: React.FC = () => {
             <div className="flex flex-col gap-2">
               <button
                 onClick={async () => {
-                  if (confirm('Deseja resetar a tentativa atual e tentar gerar um novo QR?')) {
+                  if (
+                    confirm(
+                      'Deseja resetar a tentativa atual e tentar gerar um novo QR?'
+                    )
+                  ) {
                     setQrLoading(true);
                     await disconnectInstance(qrModal.instance.id);
                     setTimeout(() => connectInstance(qrModal.instance), 1000);

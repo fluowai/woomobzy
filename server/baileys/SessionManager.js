@@ -78,13 +78,13 @@ class ManagedSession {
   isSocketAlive() {
     if (!this.sock) return false;
     
-    // Tenta acessar o websocket de forma segura (Baileys pode encapsular)
+    // Regra Sênior: Se a máquina de estados diz CONNECTED, confiamos nela.
+    // Isso evita que oscilações de milissegundos no readyState do WebSocket
+    // escondam o status de sucesso para o usuário.
+    if (this.stateMachine.is(WA_STATES.CONNECTED)) return true;
+
     const ws = this.sock.ws;
-    if (!ws) {
-      // Se não temos acesso ao WS mas a máquina de estados diz que conectamos agorinha,
-      // retornamos true para não quebrar a UI durante o handshake
-      return this.stateMachine.is(WA_STATES.CONNECTED);
-    }
+    if (!ws) return false;
     
     return ws.readyState === WS_READY_STATE_OPEN;
   }

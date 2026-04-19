@@ -92,7 +92,7 @@ const Chat: React.FC = () => {
   const fetchInstances = useCallback(async () => {
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl('/api/whatsapp/instances'), { headers });
+      const response = await fetch(getApiUrl(`/api/whatsapp/instances?t=${Date.now()}`), { headers });
       const data = await response.json();
       
       if (data.success) {

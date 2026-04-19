@@ -595,12 +595,26 @@ const WhatsAppInstances: React.FC = () => {
               </ol>
             </div>
 
-            <button
-              onClick={closeQrModal}
-              className="w-full px-4 py-2.5 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-            >
-              Fechar (conexão continua em background)
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={async () => {
+                  if (confirm('Deseja resetar a tentativa atual e tentar gerar um novo QR?')) {
+                    setQrLoading(true);
+                    await disconnectInstance(qrModal.instance.id);
+                    setTimeout(() => connectInstance(qrModal.instance), 1000);
+                  }
+                }}
+                className="w-full px-4 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-xl transition-colors border border-dashed border-amber-300"
+              >
+                Demorando muito? Clique aqui para tentar novamente
+              </button>
+              <button
+                onClick={closeQrModal}
+                className="w-full px-4 py-2.5 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+              >
+                Fechar (conexão continua em background)
+              </button>
+            </div>
           </div>
         </div>
       )}

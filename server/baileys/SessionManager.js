@@ -487,12 +487,18 @@ export class SessionManager extends EventEmitter {
   // ──────────────────────────────────────────────
   async _saveMessage(instanceId, message) {
     try {
-      const chatJid = message.key?.remoteJid;
-      if (!chatJid || chatJid === 'status@broadcast' || chatJid.includes('@newsletter')) return;
+      // 1. Normalização Identitária (Senior Fix)
+      const contactJid = message.key?.remoteJid;
+      if (!contactJid || contactJid === 'status@broadcast' || contactJid.includes('@newsletter')) return;
 
-      const session = this.sessions.get(instanceId);
-      if (!session) return;
+      const instanceJid = session.sock?.user?.id?.split(':')[0] + '@s.whatsapp.net';
       
+      // Bloqueio de auto-poluição: Não salvamos a instância como um contato comum
+      if (contactJid === instanceJid) {
+        console.log(`[SessionManager] 🛡️ Ignorando upsert de chat para a própria instância: ${contactJid}`);
+      }
+
+      const phoneNumber = '+' + contactJid.split('@')[0];
       const organizationId = session.organizationId;
       const supabase = await this.persistence.getSupabaseClient();
       const fromMe = message.key?.fromMe ?? false;
@@ -552,37 +558,35 @@ export class SessionManager extends EventEmitter {
         }
       }
 
-      // Garante que o chat existe (upsert)
+      // Regra de Ouro: Mensagens enviadas NUNCA definem o nome do contato
+      let allowNameUpdate = !fromMe;
+      
+      // Se for grupo, o pushName é do participante, não do grupo. Nome de grupo vem de metadata.
+      const isGroup = contactJid.endsWith('@g.us');
+      if (isGroup) allowNameUpdate = false; 
+
+      // Garante que o chat existe (upsert idempotente)
       const { data: existingChat } = await supabase
         .from('whatsapp_chats')
         .select('id, name')
         .eq('instance_id', instanceId)
-        .eq('jid', chatJid)
+        .eq('jid', contactJid)
         .maybeSingle();
 
       let chatId;
-      let displayName = (!fromMe && message.pushName) ? message.pushName : chatJid.split('@')[0];
-
-      // Busca nome real de grupos
-      if (chatJid.endsWith('@g.us')) {
-        if (session?.sock) {
-          try {
-            const meta = await session.sock.groupMetadata(chatJid).catch(() => null);
-            if (meta?.subject) displayName = meta.subject;
-          } catch { /* noop */ }
-        }
-      }
-
       const timestamp = new Date((message.messageTimestamp || Date.now() / 1000) * 1000).toISOString();
 
       if (!existingChat) {
+        // Criação: Fallback é o número formatado caso não tenhamos pushName (ou se for fromMe)
+        const initialName = (allowNameUpdate && message.pushName) ? message.pushName : phoneNumber;
+        
         const { data: newChat, error } = await supabase
           .from('whatsapp_chats')
           .insert({ 
             instance_id: instanceId, 
-            organization_id: organizationId, // <--- ADICIONADO
-            jid: chatJid, 
-            name: displayName, 
+            organization_id: organizationId,
+            jid: contactJid, 
+            name: initialName, 
             last_message_at: timestamp 
           })
           .select('id')
@@ -591,14 +595,16 @@ export class SessionManager extends EventEmitter {
         chatId = newChat.id;
       } else {
         chatId = existingChat.id;
-        const updates = { 
+        const updates: any = { 
           last_message_at: timestamp,
           organization_id: organizationId 
         };
-        // SÓ atualiza o nome do chat se a mensagem NÃO vier de mim (para não sobrescrever o contato com meu nome)
-        if (!fromMe && !chatJid.endsWith('@g.us') && message.pushName) {
+
+        // Atualização: SÓ atualiza nome se permitido, for privado e tiver pushName válido
+        if (allowNameUpdate && message.pushName && !isGroup) {
            updates.name = message.pushName;
         }
+        
         await supabase.from('whatsapp_chats').update(updates).eq('id', chatId);
       }
 

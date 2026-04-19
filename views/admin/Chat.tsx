@@ -340,7 +340,7 @@ const Chat: React.FC = () => {
 
   const clearChat = async () => {
     if (!selectedChat) return;
-    if (!window.confirm(`Deseja apagar TODO o histórico de mensagens com ${selectedChat.name}? Esta ação não pode ser desfeita.`)) return;
+    if (!window.confirm(`Deseja apagar TODO o histórico de mensagens com ${getDisplayName(selectedChat)}? Esta ação não pode ser desfeita.`)) return;
     
     try {
       const headers = await getAuthHeaders();
@@ -377,6 +377,17 @@ const Chat: React.FC = () => {
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatJidToPhone = (jid: string) => {
+    if (!jid) return '';
+    const number = jid.split('@')[0].split(':')[0];
+    return `+${number}`;
+  };
+
+  const getDisplayName = (chat: Chat) => {
+    if (chat.name && !chat.name.includes('@s.whatsapp.net')) return chat.name;
+    return formatJidToPhone(chat.jid);
   };
 
   const getStatusIcon = (status: string, fromMe: boolean) => {
@@ -521,7 +532,7 @@ const Chat: React.FC = () => {
                     <h3 className={`font-bold truncate text-sm ${
                       selectedChat?.id === chat.id ? 'text-green-900' : 'text-gray-800'
                     }`}>
-                      {chat.name}
+                      {getDisplayName(chat)}
                     </h3>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       {chat.last_message_at && (
@@ -574,7 +585,7 @@ const Chat: React.FC = () => {
                 {selectedChat.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <h2 className="font-extrabold text-gray-900 text-base leading-tight">{selectedChat.name}</h2>
+                <h2 className="font-extrabold text-gray-900 text-base leading-tight">{getDisplayName(selectedChat)}</h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <div className={`w-2 h-2 rounded-full ${isInstanceDead ? 'bg-gray-300' : 'bg-emerald-500'}`} />
                   <p className="text-[11px] font-bold text-gray-400 tracking-wide uppercase">

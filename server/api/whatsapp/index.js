@@ -169,7 +169,7 @@ router.post('/instances/:id/connect', verifyAdmin, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (error || !instance) return res.status(404).json({ error: 'Instância não encontrada' });
+    if (error || !instance) return res.status(404).json({ error: 'Inst\u00e2ncia n\u00e3o encontrada' });
 
     const socketAlive = sessionManager.isSessionAlive(instanceId);
 
@@ -183,19 +183,39 @@ router.post('/instances/:id/connect', verifyAdmin, async (req, res) => {
       });
     }
 
-    // Caso 2: DB diz connected mas socket morreu → reconexão automática
+    // Caso 2: DB diz connected mas socket morreu → reconex\u00e3o autom\u00e1tica
     if (instance.status === 'connected' && !socketAlive) {
-      console.log(`[WhatsApp API] 🔄 Socket morto para ${instanceId}. Reconectando automaticamente...`);
-      // startSession é não-bloqueante — a reconexão acontece em background
+      console.log(`[WhatsApp API] \uD83D\uDD04 Socket morto para ${instanceId}. Reconectando automaticamente...`);
       sessionManager.startSession(instanceId, req.orgId).catch(e => {
-        console.error(`[WhatsApp API] ❌ Falha na reconexão de ${instanceId}:`, e.message);
+        console.error(`[WhatsApp API] \u274C Falha na reconex\u00e3o de ${instanceId}:`, e.message);
       });
       return res.json({ success: true, status: 'reconnecting', socket_alive: false });
     }
 
-    // Caso 3: Novo inicio de sessão (pending, disconnected, etc.)
+    // Caso 3: status = 'reconnecting' (usu\u00e1rio clicou "For\u00e7ar Reconex\u00e3o")
+    // For\u00e7a reset completo da sess\u00e3o presa
+    if (instance.status === 'reconnecting') {
+      console.log(`[WhatsApp API] \uD83D\uDD04 For\u00e7ando reset de sess\u00e3o presa: ${instanceId}`);
+      // 1. Atualiza banco para disconnected para limpar o estado preso
+      await supabase
+        .from('whatsapp_instances')
+        .update({ status: 'disconnected', updated_at: new Date().toISOString() })
+        .eq('id', instanceId);
+      // 2. Derruba qualquer sess\u00e3o em mem\u00f3ria
+      const existingSession = sessionManager.getSession(instanceId);
+      if (existingSession) {
+        await sessionManager.logout(instanceId);
+      }
+      // 3. Inicia nova sess\u00e3o
+      sessionManager.startSession(instanceId, req.orgId).catch(e => {
+        console.error(`[WhatsApp API] \u274C Falha no reset de ${instanceId}:`, e.message);
+      });
+      return res.json({ success: true, status: 'connecting' });
+    }
+
+    // Caso 4: Novo in\u00edcio de sess\u00e3o (pending, disconnected, etc.)
     sessionManager.startSession(instanceId, req.orgId).catch(e => {
-      console.error(`[WhatsApp API] ❌ Falha ao iniciar sessão ${instanceId}:`, e.message);
+      console.error(`[WhatsApp API] \u274C Falha ao iniciar sess\u00e3o ${instanceId}:`, e.message);
     });
     res.json({ success: true, status: 'connecting' });
   } catch (e) {

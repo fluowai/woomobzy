@@ -582,7 +582,6 @@ const WhatsAppInstances: React.FC = () => {
                         isConnecting ||
                         [
                           'connecting',
-                          'reconnecting',
                           'authenticated',
                         ].includes(instance.status)
                       }
@@ -590,11 +589,15 @@ const WhatsAppInstances: React.FC = () => {
                     >
                       {isConnecting ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : instance.status === 'reconnecting' ? (
+                        <RefreshCw className="w-4 h-4" />
                       ) : (
                         <QrCode className="w-4 h-4" />
                       )}
-                      {['connecting', 'reconnecting'].includes(instance.status)
-                        ? 'Aguardando...'
+                      {instance.status === 'connecting'
+                        ? 'Conectando...'
+                        : instance.status === 'reconnecting'
+                        ? 'Forçar Reconexão'
                         : 'Conectar'}
                     </button>
                   )}

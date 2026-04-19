@@ -26,6 +26,9 @@ interface Chat {
   profile_photo_url: string | null;
   last_message_at: string | null;
   unread_count: number;
+  lead_info?: {
+    classification: string;
+  } | null;
 }
 
 interface Message {
@@ -520,11 +523,22 @@ const Chat: React.FC = () => {
                     }`}>
                       {chat.name}
                     </h3>
-                    {chat.last_message_at && (
-                      <span className="text-[10px] font-bold text-gray-400">
-                        {formatTime(chat.last_message_at)}
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      {chat.last_message_at && (
+                        <span className="text-[10px] font-bold text-gray-400">
+                          {formatTime(chat.last_message_at)}
+                        </span>
+                      )}
+                      {chat.lead_info?.classification && (
+                        <span className={`text-[8px] px-1 py-0.5 rounded-md font-black uppercase tracking-tighter ${
+                          chat.lead_info.classification.includes('Alta') ? 'bg-orange-100 text-orange-600' : 
+                          chat.lead_info.classification.includes('Interessado') ? 'bg-emerald-100 text-emerald-600' :
+                          'bg-slate-100 text-slate-500'
+                        }`}>
+                          {chat.lead_info.classification}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-xs text-gray-500 truncate font-medium">
                     {chat.jid.endsWith('@g.us') ? 'Grupo' : 'Mensagem Privada'}
@@ -638,6 +652,15 @@ const Chat: React.FC = () => {
                             <audio controls className="w-full h-8 opacity-90 brightness-110">
                               <source src={msg.media_url} type={msg.mime_type} />
                             </audio>
+                          ) : msg.mime_type?.startsWith('video/') ? (
+                            <video 
+                              controls 
+                              className="max-w-full rounded-lg shadow-sm bg-black"
+                              preload="metadata"
+                            >
+                              <source src={msg.media_url} type={msg.mime_type} />
+                              Seu navegador não suporta vídeos.
+                            </video>
                           ) : (
                             <a 
                               href={msg.media_url} 

@@ -362,15 +362,33 @@ router.delete('/chats/:chatId/messages', verifyAdmin, async (req, res) => {
 /** GET /api/whatsapp/instances/:id/chats */
 router.get('/instances/:id/chats', verifyAdmin, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    // 1. Busca os chats
+    const { data: chats, error: chatErr } = await supabase
       .from('whatsapp_chats')
       .select('*')
       .eq('instance_id', req.params.id)
       .order('last_message_at', { ascending: false })
       .limit(100);
 
-    if (error) throw error;
-    res.json({ success: true, chats: data || [] });
+    if (chatErr) throw chatErr;
+
+    // 2. Busca leads da organização para fazer o vínculo de nomes
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('name, classification, chat_jid')
+      .eq('organization_id', req.orgId);
+
+    // 3. Mapeia leads para os chats (Vínculo de Inteligência)
+    const enrichedChats = (chats || []).map(chat => {
+      const lead = (leads || []).find(l => l.chat_jid === chat.jid);
+      return {
+        ...chat,
+        name: lead?.name || chat.name, // Prioriza o nome do Lead se existir
+        lead_info: lead ? { classification: lead.classification } : null
+      };
+    });
+
+    res.json({ success: true, chats: enrichedChats });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

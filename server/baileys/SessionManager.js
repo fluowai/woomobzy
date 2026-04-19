@@ -520,7 +520,9 @@ export class SessionManager extends EventEmitter {
           const buffer = await downloadMediaMessage(message, 'buffer', {});
           
           if (buffer) {
-            const fileName = `${instanceId}/${message.key.id}.${mediaType === 'document' ? 'pdf' : mediaType === 'audio' ? 'ogg' : 'jpg'}`;
+            const extensionMap = { 'image': 'jpg', 'video': 'mp4', 'audio': 'ogg', 'document': 'pdf' };
+            const ext = extensionMap[mediaType] || 'bin';
+            const fileName = `${instanceId}/${message.key.id}.${ext}`;
             const path = `messages/${fileName}`;
             
             const { data: uploadData, error: uploadError } = await supabase.storage
@@ -551,7 +553,7 @@ export class SessionManager extends EventEmitter {
         .maybeSingle();
 
       let chatId;
-      let displayName = message.pushName || chatJid.split('@')[0];
+      let displayName = (!fromMe && message.pushName) ? message.pushName : chatJid.split('@')[0];
 
       // Busca nome real de grupos
       if (chatJid.endsWith('@g.us')) {

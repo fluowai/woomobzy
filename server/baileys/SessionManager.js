@@ -182,17 +182,15 @@ export class SessionManager extends EventEmitter {
     const existing = this.sessions.get(instanceId);
     if (existing) {
       const state = existing.stateMachine.getState();
-      const isTransient = [
-        WA_STATES.CONNECTING, 
-        WA_STATES.RECONNECTING, 
-        WA_STATES.QR_PENDING, 
-        WA_STATES.AUTHENTICATED
-      ].includes(state);
-
-      if (existing.isSocketAlive() || isTransient) {
-        console.log(`[SessionManager] ℹ️ Sessão ${instanceId} já está ativa ou em transição (${state}). Ignorando.`);
+      
+      // Regra Sênior: Se o socket está VIVO, ignoramos para não duplicar.
+      // MAS, se o usuário está tentando conectar e o estado está 'travado', permitimos o teardown.
+      if (existing.isSocketAlive()) {
+        console.log(`[SessionManager] ℹ️ Sessão ${instanceId} já possui socket vivo. Ignorando.`);
         return;
       }
+
+      console.log(`[SessionManager] 🔄 Forçando reinicialização da sessão ${instanceId} (Estado anterior: ${state})`);
       await this._teardownSocket(existing);
     }
 
@@ -487,6 +485,9 @@ export class SessionManager extends EventEmitter {
   // ──────────────────────────────────────────────
   async _saveMessage(instanceId, message) {
     try {
+      const session = this.sessions.get(instanceId);
+      if (!session) return;
+
       // 1. Normalização Identitária (Senior Fix)
       const contactJid = message.key?.remoteJid;
       if (!contactJid || contactJid === 'status@broadcast' || contactJid.includes('@newsletter')) return;

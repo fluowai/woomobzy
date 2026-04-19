@@ -306,7 +306,7 @@ const WhatsAppInstances: React.FC = () => {
       }
 
       // Se já está conectado (socket vivo), fecha modal imediatamente
-      if (data.status === 'connected' && data.socketAlive) {
+      if (data.status === 'connected' && data.socket_alive) {
         setQrModal(null);
         setQrLoading(false);
         setConnectingId(null);

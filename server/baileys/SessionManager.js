@@ -628,8 +628,8 @@ export class SessionManager extends EventEmitter {
       if (msgErr) console.error(`[SessionManager] ❌ Erro ao salvar mensagem:`, msgErr.message);
 
       // DISPARO DE AUTOMAÇÃO WHATSAPP-TO-LEAD (W2L)
-      if (!fromMe && !chatJid.endsWith('@g.us')) {
-        this._handleLeadAutomation(instanceId, organizationId, chatJid, message, content, supabase).catch(e => {
+      if (!fromMe && !contactJid.endsWith('@g.us')) {
+        this._handleLeadAutomation(instanceId, organizationId, contactJid, message, content, supabase).catch(e => {
           console.error('[SessionManager] ❌ Erro na automação W2L:', e.message);
         });
       }

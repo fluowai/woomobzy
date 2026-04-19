@@ -38,11 +38,12 @@ function getRealStatus(dbInstance) {
     return { ...dbInstance, status: 'reconnecting', socket_alive: false, memoryState };
   }
 
-  return {
+  const res = {
     ...dbInstance,
     socket_alive: socketAlive,
     memoryState,
   };
+  return res;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

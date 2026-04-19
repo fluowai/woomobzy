@@ -182,15 +182,26 @@ const WhatsAppInstances: React.FC = () => {
         table: 'whatsapp_instances',
         filter: `organization_id=eq.${profile.organization_id}`,
       }, (payload) => {
-        console.log('[WhatsAppInstances] 🔔 Realtime: mudança de instância', payload.eventType);
-
+        const updated = payload.new as WhatsAppInstance;
         if (payload.eventType === 'DELETE') {
           setInstances(prev => prev.filter(i => i.id !== (payload.old as any).id));
           return;
         }
 
-        // Para INSERT/UPDATE: atualiza via API para pegar socketAlive também
-        fetchInstances();
+        // Merge Inteligente: preserva campos virtuais (socket_alive) que o Realtime não possui
+        setInstances(prev => prev.map(inst => {
+          if (inst.id === updated.id) {
+            return { 
+              ...inst, 
+              ...updated, 
+              socket_alive: inst.socket_alive // Preserva o estado vivo atual
+            };
+          }
+          return inst;
+        }));
+
+        // Atualiza via API com um pequeno delay para garantir que o socket_alive esteja pronto
+        setTimeout(fetchInstances, 1000);
       })
       .subscribe((status) => {
         console.log('[WhatsAppInstances] 📡 Subscription status:', status);

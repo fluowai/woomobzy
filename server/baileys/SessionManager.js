@@ -48,6 +48,7 @@ class ManagedSession {
     this.retryCount = 0;
     this.retryTimer = null;
     this.isShuttingDown = false;
+    this.statusVersion = 0; // Logical clock para o banco de dados
   }
 
   getNextBackoffDelay() {
@@ -247,8 +248,9 @@ export class SessionManager extends EventEmitter {
       return;
     }
 
+    session.statusVersion++;
     session.stateMachine.transition(WA_STATES.CONNECTING, 'iniciando conexão');
-    await this.persistence.updateStatus(instanceId, 'connecting');
+    await this.persistence.updateStatus(instanceId, 'connecting', session.statusVersion);
 
     const sessionPath = this.persistence.getSessionPath(instanceId);
 
@@ -331,9 +333,10 @@ export class SessionManager extends EventEmitter {
     if (qr) {
       try {
         console.log(`[SessionManager] 📲 QR gerado para ${instanceId}`);
+        session.statusVersion++;
         session.stateMachine.transition(WA_STATES.QR_PENDING, 'QR gerado');
         const qrImage = await qrcode.toDataURL(qr);
-        await this.persistence.saveQRCode(instanceId, qrImage);
+        await this.persistence.saveQRCode(instanceId, qrImage, session.statusVersion);
         this.emit(`qr:${instanceId}`, qrImage);
         this.emit('qr', { instanceId, qrImage });
       } catch (e) {
@@ -349,9 +352,10 @@ export class SessionManager extends EventEmitter {
       console.log(`[SessionManager] ✅ Instância conectada: ${instanceId}`);
       const phoneNumber =
         session.sock?.user?.id?.split(':')[0]?.split('@')[0] || '';
+      session.statusVersion++;
       session.stateMachine.transition(WA_STATES.CONNECTED, 'socket aberto');
       session.resetRetry();
-      await this.persistence.updateStatus(instanceId, 'connected', {
+      await this.persistence.updateStatus(instanceId, 'connected', session.statusVersion, {
         phone_number: phoneNumber || null,
       });
       this.emit(`connected:${instanceId}`, { phoneNumber });
@@ -385,7 +389,7 @@ export class SessionManager extends EventEmitter {
         ) {
           await this.persistence.clearSession(instanceId);
         } else {
-          await this.persistence.updateStatus(instanceId, 'disconnected');
+          await this.persistence.updateStatus(instanceId, 'disconnected', ++session.statusVersion);
         }
 
         this.sessions.delete(instanceId);
@@ -393,11 +397,12 @@ export class SessionManager extends EventEmitter {
         this.emit('disconnected', { instanceId, statusCode, terminal: true });
       } else {
         // Desconexão transitória → tentar reconectar com backoff
+        session.statusVersion++;
         session.stateMachine.transition(
           WA_STATES.RECONNECTING,
           `código: ${statusCode}`
         );
-        await this.persistence.updateStatus(instanceId, 'reconnecting');
+        await this.persistence.updateStatus(instanceId, 'reconnecting', session.statusVersion);
         this.emit(`reconnecting:${instanceId}`, { statusCode });
         this.emit('reconnecting', { instanceId, statusCode });
 
@@ -486,7 +491,8 @@ export class SessionManager extends EventEmitter {
           console.warn(
             `[SessionManager] ⚠️ Heartbeat: confirmada morte do socket para ${instanceId}. Reconectando...`
           );
-          await this.persistence.updateStatus(instanceId, 'reconnecting');
+          session.statusVersion++;
+          await this.persistence.updateStatus(instanceId, 'reconnecting', session.statusVersion);
           session.stateMachine.transition(
             WA_STATES.RECONNECTING,
             'iniciando reconexao pelo heartbeat'

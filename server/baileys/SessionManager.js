@@ -268,7 +268,7 @@ export class SessionManager extends EventEmitter {
       version,
       auth: state,
       printQRInTerminal: false,
-      browser: ['Chrome (Linux)', '', ''],
+      browser: ['Ubuntu', 'Chrome', '22.0.0.40'],
       syncFullHistory: false,
       markOnline: true,
       defaultQueryTimeoutMs: 60000,

@@ -15,7 +15,6 @@
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
-import { ConnectionStateResolver } from './ConnectionStateResolver.js';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Supabase lazy singleton
@@ -284,65 +283,46 @@ export class PersistenceManager {
   // ──────────────────────────────────────────────
   // Status do Banco
   // ──────────────────────────────────────────────
-  async updateStatus(instanceId, status, version = 0, extras = {}) {
+  async updateStatus(instanceId, status, extras = {}) {
     try {
-      const normalizedStatus = ConnectionStateResolver.normalizeStatus(status);
       const timestamp = new Date().toISOString();
-      
-      const update = { 
-        status: normalizedStatus, 
-        status_version: version,
-        updated_at: timestamp, 
-        ...extras 
-      };
+      const update = { status, updated_at: timestamp, ...extras };
 
-      if (normalizedStatus === 'connected') {
+      if (status === 'connected') {
         update.qr_code = null;
         update.last_connected_at = timestamp;
       }
 
-      // ATOMIC UPDATE: Só atualiza se a versão fornecida for maior que a atual no banco
-      const { data, error, status: httpStatus } = await getSupabase()
+      const { error } = await getSupabase()
         .from('whatsapp_instances')
         .update(update)
-        .eq('id', instanceId)
-        .lt('status_version', version) // <--- GARANTIA DETERMINÍSTICA (Race Condition Protection)
-        .select('id, status');
+        .eq('id', instanceId);
 
       if (error) {
         console.error(`[PersistenceManager] ❌ Erro ao atualizar status (${status}):`, error.message);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        // Se cair aqui, significa que um evento mais novo (versão maior) já foi processado.
-        console.log(`[PersistenceManager] 🛡️ Evento IGNORADO para ${instanceId}: Status "${status}" v${version} é mais antigo que o estado atual.`);
       } else {
-        console.log(`[PersistenceManager] ✅ Status atualizado: ${instanceId} ➔ ${normalizedStatus} (v${version})`);
+        console.log(`[PersistenceManager] ✅ Status atualizado: ${instanceId} ➔ ${status}`);
       }
     } catch (e) {
       console.error(`[PersistenceManager] ❌ Exceção ao atualizar status:`, e.message);
     }
   }
 
-  async saveQRCode(instanceId, qrCode, version = 0) {
+  async saveQRCode(instanceId, qrCode) {
     try {
-      const { data, error } = await getSupabase()
+      const { error } = await getSupabase()
         .from('whatsapp_instances')
         .update({ 
           qr_code: qrCode, 
           status: 'qr_pending', 
-          status_version: version, 
           updated_at: new Date().toISOString() 
         })
-        .eq('id', instanceId)
-        .lt('status_version', version)
-        .select('id');
+        .eq('id', instanceId);
 
       if (error) {
         console.error(`[PersistenceManager] ❌ Erro ao salvar QR:`, error.message);
-      } else if (data && data.length > 0) {
-        console.log(`[PersistenceManager] 📲 QR Code salvo para ${instanceId} (v${version})`);
+      } else {
+        console.log(`[PersistenceManager] 📲 QR Code salvo para ${instanceId}`);
       }
     } catch (e) {
       console.error(`[PersistenceManager] ❌ Exceção ao salvar QR:`, e.message);

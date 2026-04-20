@@ -535,17 +535,7 @@ const WhatsAppInstances: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Aviso de socket morto: só exibe se o status do banco TAMBÉM indicar reconexão.
-                    FIX: removida a condição socket_alive=false com status=connected,
-                    pois socket_alive é virtual e pode estar desatualizado após Realtime. */}
-                {instance.status === 'reconnecting' && (
-                    <div className="flex items-center gap-2 mb-4 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                      <p className="text-xs text-amber-700">
-                        Reconexão automática em andamento.
-                      </p>
-                    </div>
-                  )}
+                {/* Aviso de socket morto removido devido à simplificação do backend */}
 
                 {/* Ações */}
                 <div className="flex gap-2">
@@ -577,17 +567,13 @@ const WhatsAppInstances: React.FC = () => {
                       }
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                     >
-                      {isConnecting ? (
+                      {isConnecting || instance.status === 'connecting' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : instance.status === 'reconnecting' ? (
-                        <RefreshCw className="w-4 h-4" />
                       ) : (
                         <QrCode className="w-4 h-4" />
                       )}
                       {instance.status === 'connecting'
                         ? 'Conectando...'
-                        : instance.status === 'reconnecting'
-                        ? 'Forçar Reconexão'
                         : 'Conectar'}
                     </button>
                   )}

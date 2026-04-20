@@ -447,29 +447,15 @@ router.post('/instances/:id/send', verifyAdmin, async (req, res) => {
 
     if (error || !instance) return res.status(404).json({ error: 'Instância não encontrada' });
 
-    // ── Verificação de socket OTIMISTA ────────────────────────────────────────
+    // ── Verificação de socket DIRETA ────────────────────────────────────────
     const session = sessionManager.getSession(instanceId);
-    const ws = session?.sock?.ws || session?.sock?.socket?.ws;
-    const socketReadyState = ws?.readyState;
-    const internalState = sessionManager.getSessionState(instanceId);
-    const isAlive = sessionManager.isSessionAlive(instanceId);
     
-    console.log(`[WhatsApp API: /send] Iniciando /send para ${instanceId}`);
-    console.log(`   - JID alvo: ${jid}`);
-    console.log(`   - isAlive (SessionManager): ${isAlive}`);
-    console.log(`   - internalState: ${internalState}`);
-    console.log(`   - readyState: ${socketReadyState}`);
-    console.log(`   - func sendMessage existe?: ${!!session?.sock?.sendMessage}`);
-
-    // Se temos uma função sendMessage, tentamos enviar, a não ser que tenhamos explicitamente "disconnected" a máquina de estados.
-    const canAttemptSend = !!session?.sock?.sendMessage && internalState !== 'disconnected';
-
-    if (!canAttemptSend) {
-      console.warn(`[WhatsApp API] ❌ /send bloqueado: instância realmente offline ou inexistente para ${instanceId}`);
+    if (!session || session.status !== 'conectado') {
+      console.warn(`[WhatsApp API] ❌ /send bloqueado: instância não está conectada. Status atual: ${session?.status}`);
       return res.status(400).json({
-        error: 'Instância offline. Por favor, aguarde a reconexão ou reconecte manualmente.',
-        socket_alive: isAlive,
-        state: internalState
+        error: 'Instância offline ou desconectada. Por favor, aguarde a reconexão.',
+        socket_alive: false,
+        state: session?.status || 'desconectado'
       });
     }
 

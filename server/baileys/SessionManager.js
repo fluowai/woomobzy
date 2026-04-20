@@ -40,7 +40,7 @@ const TERMINAL_DISCONNECT_CODES = new Set([
 // Estrutura de uma sessão gerenciada
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 class ManagedSession {
-  constructor(instanceId, organizationId) {
+  constructor(instanceId, organizationId, initialVersion = 0) {
     this.instanceId = instanceId;
     this.organizationId = organizationId;
     this.sock = null;
@@ -48,7 +48,7 @@ class ManagedSession {
     this.retryCount = 0;
     this.retryTimer = null;
     this.isShuttingDown = false;
-    this.statusVersion = 0; // Logical clock para o banco de dados
+    this.statusVersion = initialVersion; // Logical clock sincronizado com o banco
   }
 
   getNextBackoffDelay() {
@@ -141,7 +141,7 @@ export class SessionManager extends EventEmitter {
     // ── PASSO 2: Restaurar sessões connected ──────────
     const { data: instances, error } = await supabase
       .from('whatsapp_instances')
-      .select('id, name, organization_id')
+      .select('id, name, organization_id, status_version')
       .eq('status', 'connected');
 
     if (error) {
@@ -156,9 +156,9 @@ export class SessionManager extends EventEmitter {
       for (const instance of instances || []) {
         try {
           console.log(
-            `[SessionManager] ♻️ Restaurando: ${instance.name} (${instance.id})`
+            `[SessionManager] ♻️ Restaurando: ${instance.name} (${instance.id}) | Versão DB: ${instance.status_version || 0}`
           );
-          await this.startSession(instance.id, instance.organization_id);
+          await this.startSession(instance.id, instance.organization_id, instance.status_version || 0);
         } catch (err) {
           console.error(
             `[SessionManager] ❌ Falha ao restaurar ${instance.id}:`,
@@ -197,9 +197,11 @@ export class SessionManager extends EventEmitter {
   // ──────────────────────────────────────────────
   /**
    * Inicia ou restaura uma sessão WhatsApp.
-   * Pode ser chamado tanto no boot quanto quando o usuário clica "Conectar".
+   * @param {string} instanceId
+   * @param {string} organizationId
+   * @param {number} initialVersion - Versão inicial do relógio lógico
    */
-  async startSession(instanceId, organizationId) {
+  async startSession(instanceId, organizationId, initialVersion = 0) {
     // ── PASSO 1: Verificar se já existe em memória ──────────
     const existing = this.sessions.get(instanceId);
 
@@ -232,7 +234,7 @@ export class SessionManager extends EventEmitter {
     }
 
     // Cria nova sessão gerenciada
-    const session = new ManagedSession(instanceId, organizationId);
+    const session = new ManagedSession(instanceId, organizationId, initialVersion);
     this.sessions.set(instanceId, session);
 
     // Tenta conectar

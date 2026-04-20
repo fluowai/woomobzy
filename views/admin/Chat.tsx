@@ -927,18 +927,13 @@ const Chat: React.FC = () => {
                     onKeyPress={(e) =>
                       e.key === 'Enter' && !e.shiftKey && sendMessage()
                     }
-                    disabled={isInstanceDead}
-                    placeholder={
-                      isInstanceDead
-                        ? 'Aguardando conexão...'
-                        : 'Escreva sua mensagem aqui...'
-                    }
+                    placeholder="Escreva sua mensagem aqui..."
                     className="w-full px-5 py-3.5 bg-gray-100 border-none focus:bg-white focus:ring-4 focus:ring-green-500/10 rounded-3xl outline-none transition-all text-sm font-medium"
                   />
                 </div>
                 <button
                   onClick={sendMessage}
-                  disabled={!newMessage.trim() || sending || isInstanceDead}
+                  disabled={!newMessage.trim() || sending}
                   className="p-4 bg-green-600 text-white rounded-2xl hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-green-200"
                   title="Enviar Mensagem"
                 >

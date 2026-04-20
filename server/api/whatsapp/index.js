@@ -9,17 +9,13 @@
  */
 
 import { Router } from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { sessionManager } from '../../baileys/index.js';
 import { WA_STATES } from '../../baileys/StateMachine.js';
 import { verifyAdmin } from '../../middleware/auth.js';
 
 const router = Router();
-
-// Cliente Supabase (service role para operações internas)
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Helpers
@@ -451,10 +447,24 @@ router.post('/instances/:id/send', verifyAdmin, async (req, res) => {
 
     if (error || !instance) return res.status(404).json({ error: 'Instância não encontrada' });
 
-    if (!sessionManager.isSessionAlive(instanceId)) {
+    // ── Verificação de socket ROBUSTA ────────────────────────────────────────
+    // Causa #1 Fix: usa verificação dupla para não bloquear envio durante
+    // estados transitórios (STALE, breve oscilação do ws.readyState)
+    const session = sessionManager.getSession(instanceId);
+    const socketReadyState = session?.sock?.ws?.readyState;
+    const canSend =
+      sessionManager.isSessionAlive(instanceId) ||
+      socketReadyState === 1; // WS_OPEN fallback direto
+
+    if (!canSend) {
+      console.warn(`[WhatsApp API] ❌ /send: socket indisponível para ${instanceId}. ` +
+        `isAlive=${sessionManager.isSessionAlive(instanceId)}, ` +
+        `ws.readyState=${socketReadyState}, ` +
+        `state=${sessionManager.getSessionState(instanceId)}`);
       return res.status(400).json({
         error: 'Instância não está conectada ou socket inativo',
         socket_alive: false,
+        ws_state: socketReadyState,
       });
     }
 

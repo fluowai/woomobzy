@@ -1,13 +1,12 @@
 import express from 'express';
-import { createClient } from '@supabase/supabase-js';
 import { verifySuperAdmin } from '../middleware/auth.js';
 import { extractProperties } from '../services/siteCloner.js';
 import { runScraperScrapeOnly } from '../services/scraperService.js';
+import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+
 
 // Analyze site for properties (Admin)
 router.post('/admin/analyze', verifySuperAdmin, async (req, res) => {

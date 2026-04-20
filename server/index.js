@@ -1,7 +1,7 @@
 
 import express from 'express';
 import cors from 'cors';
-import { createClient } from '@supabase/supabase-js';
+
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -10,6 +10,7 @@ import rateLimit from 'express-rate-limit';
 
 // --- Middlewares & Services ---
 import { sessionManager } from './baileys/index.js';
+import { getSupabaseServer } from './lib/supabase-server.js';
 
 // --- Modular Routes ---
 import adminRoutes from './routes/admin.js';
@@ -28,6 +29,18 @@ const __dirname = dirname(__filename);
 
 // Load .env only if it exists (for local development)
 dotenv.config({ path: join(__dirname, '../.env') });
+
+// ── Validação de Variáveis de Ambiente Obrigatórias ───────────────────────
+const REQUIRED_ENV_VARS = ['VITE_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+const missingVars = REQUIRED_ENV_VARS.filter(v => !process.env[v]?.trim());
+if (missingVars.length > 0) {
+  console.error('\n❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias não encontradas:');
+  missingVars.forEach(v => console.error(`   ❗ ${v}`));
+  console.error('\n → Em produção (Railway): adicione em Settings → Variables');
+  console.error(' → Em desenvolvimento: verifique o arquivo .env na raiz\n');
+  // Não encerra o processo — permite que o servidor suba mas retorna erros
+  // claros em cada requisição em vez de crashar no boot.
+}
 
 const app = express();
 
@@ -84,10 +97,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- Supabase Client (Service Role for internal use) ---
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+// --- Supabase Client (lazy, via shared singleton) ---
+// Nota: não criamos o client aqui para evitar crash se env vars estiverem ausentes.
+// O cliente é criado sob demanda em cada rota via getSupabaseServer().
 
 // --- API Route Mapping ---
 app.use('/api/admin', adminRoutes);
@@ -107,6 +119,7 @@ app.get('/api/tenant/current', (req, res) => tenantHandler(req, res));
 // System Status & Health
 app.get('/api/system-status', async (req, res) => {
   try {
+    const supabase = getSupabaseServer();
     const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     res.json({ fresh: (count || 0) === 0, timestamp: new Date().toISOString() });
   } catch (error) {

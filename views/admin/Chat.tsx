@@ -337,16 +337,12 @@ const Chat: React.FC = () => {
   // Actions
   // ──────────────────────────────────────────────
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedInstance || !selectedChat || sending)
-      return;
+    if (!newMessage.trim() || !selectedInstance || !selectedChat || sending) return;
 
-    // IMPORTANTE: socket_alive === undefined significa que nao sabemos
-    // Confiamos no status connected do banco nesse caso
-    if (selectedInstance.socket_alive === false) {
-      setError('Instancia desconectada. Aguarde a reconexao.');
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
+    // REMOVIDO: Não bloqueamos mais no frontend com base em socket_alive.
+    // O backend é a fonte de verdade do estado real do socket.
+    // Um socket_alive=false cacheado pode ser stale e bloquear envios válidos.
+    // O backend retorna 400 com mensagem clara se o socket estiver realmente inativo.
 
     setSending(true);
     try {
@@ -367,8 +363,9 @@ const Chat: React.FC = () => {
       if (data.success) {
         setNewMessage('');
       } else {
+        console.warn('[Chat] Falha ao enviar mensagem:', data);
         setError(data.error || 'Erro ao enviar');
-        setTimeout(() => setError(null), 3000);
+        setTimeout(() => setError(null), 4000);
       }
     } catch (err) {
       console.error('Error sending message:', err);

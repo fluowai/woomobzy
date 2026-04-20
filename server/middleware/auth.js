@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
-const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { getSupabaseServer } from '../lib/supabase-server.js';
 
 /**
  * Middleware Central de Autenticação e Resolução de Tenant
@@ -22,6 +17,7 @@ export const verifyAuth = async (req, res, next) => {
   const token = authHeader.replace('Bearer ', '');
   
   try {
+    const supabase = getSupabaseServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {

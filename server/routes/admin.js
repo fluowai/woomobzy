@@ -1,14 +1,13 @@
 import express from 'express';
-import { createClient } from '@supabase/supabase-js';
 import { verifySuperAdmin, verifyAdmin, verifyAuth } from '../middleware/auth.js';
 import { requireTenant } from '../middleware/tenant.js';
+import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
 
-const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
-const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Proxy lazy: delega transparentemente para getSupabaseServer() na 1ª chamada
+// Isso permite usar supabase.from(), supabase.auth, etc. sem mudar o resto do código.
+const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 
 // --- 🔓 IMPERSONATION (BLOCO 3) ---
 

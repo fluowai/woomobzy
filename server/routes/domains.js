@@ -1,18 +1,10 @@
 import express from 'express';
-import { createClient } from '@supabase/supabase-js';
 import { verifySuperAdmin } from '../middleware/auth.js';
 import { addVercelDomain, removeVercelDomain, checkVercelDomainStatus } from '../domainService.js';
+import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
-
-const supabaseUrl = (process.env.VITE_SUPABASE_URL || '').trim();
-const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️ [DomainRoutes] Supabase credentials missing.');
-}
-
-const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
+const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 
 // ==========================================
 // POST /add — Link custom domain to Vercel & DB

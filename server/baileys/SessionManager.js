@@ -79,10 +79,14 @@ class ManagedSession {
   isSocketAlive() {
     if (!this.sock) return false;
 
-    // Regra Sênior: Se a máquina de estados diz CONNECTED, confiamos nela.
-    // Isso evita que oscilações de milissegundos no readyState do WebSocket
-    // escondam o status de sucesso para o usuário.
-    if (this.stateMachine.is(WA_STATES.CONNECTED)) return true;
+    // Regra Sênior: Se a máquina de estados diz CONNECTED ou STALE, confiamos nela.
+    // STALE = conexão instável mas ainda ativa (o heartbeat deu 1 chance antes de reconectar).
+    // Retornar true aqui evita que o frontend e o /send bloqueiem mensagens durante
+    // pequenas oscilações do WebSocket que são recuperáveis.
+    if (
+      this.stateMachine.is(WA_STATES.CONNECTED) ||
+      this.stateMachine.is(WA_STATES.STALE)
+    ) return true;
 
     const ws = this.sock.ws;
     if (!ws) return false;

@@ -77,21 +77,35 @@ class ManagedSession {
    * daremos preferência ao estado lógico para evitar oscilações de UI.
    */
   isSocketAlive() {
-    if (!this.sock) return false;
+    if (!this.sock) {
+      console.log(`[isSocketAlive:${this.instanceId}] ❌ Falso: this.sock ausente.`);
+      return false;
+    }
 
-    // Regra Sênior: Se a máquina de estados diz CONNECTED ou STALE, confiamos nela.
-    // STALE = conexão instável mas ainda ativa (o heartbeat deu 1 chance antes de reconectar).
-    // Retornar true aqui evita que o frontend e o /send bloqueiem mensagens durante
-    // pequenas oscilações do WebSocket que são recuperáveis.
-    if (
-      this.stateMachine.is(WA_STATES.CONNECTED) ||
-      this.stateMachine.is(WA_STATES.STALE)
-    ) return true;
+    const state = this.stateMachine.getState();
+    const ws = this.sock.ws || this.sock.socket?.ws;
+    const readyState = ws?.readyState;
 
-    const ws = this.sock.ws;
-    if (!ws) return false;
+    // Log para entendermos as chamadas reais de estado
+    // console.log(`[isSocketAlive:${this.instanceId}] Avaliando... State: ${state}, readyState: ${readyState}`);
 
-    return ws.readyState === WS_READY_STATE_OPEN;
+    // 1. Se a máquina de estados diz CONNECTED ou STALE, confiamos nela (SoT Lógico)
+    if (state === WA_STATES.CONNECTED || state === WA_STATES.STALE) {
+      return true;
+    }
+
+    // 2. Checagem Física (Fallback)
+    if (readyState === 1) {
+      return true;
+    }
+
+    // 3. Checagem por funcionalidade: se temos métodos de envio, damos o benefício da dúvida
+    if (state !== WA_STATES.DISCONNECTED && this.sock.sendMessage) {
+       return true;
+    }
+
+    console.log(`[isSocketAlive:${this.instanceId}] ❌ Falso: Estado (${state}), readyState (${readyState}), sendMessage (${!!this.sock.sendMessage})`);
+    return false;
   }
 }
 

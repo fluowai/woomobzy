@@ -447,24 +447,29 @@ router.post('/instances/:id/send', verifyAdmin, async (req, res) => {
 
     if (error || !instance) return res.status(404).json({ error: 'Instância não encontrada' });
 
-    // ── Verificação de socket ROBUSTA ────────────────────────────────────────
-    // Causa #1 Fix: usa verificação dupla para não bloquear envio durante
-    // estados transitórios (STALE, breve oscilação do ws.readyState)
+    // ── Verificação de socket OTIMISTA ────────────────────────────────────────
     const session = sessionManager.getSession(instanceId);
-    const socketReadyState = session?.sock?.ws?.readyState;
-    const canSend =
-      sessionManager.isSessionAlive(instanceId) ||
-      socketReadyState === 1; // WS_OPEN fallback direto
+    const ws = session?.sock?.ws || session?.sock?.socket?.ws;
+    const socketReadyState = ws?.readyState;
+    const internalState = sessionManager.getSessionState(instanceId);
+    const isAlive = sessionManager.isSessionAlive(instanceId);
+    
+    console.log(`[WhatsApp API: /send] Iniciando /send para ${instanceId}`);
+    console.log(`   - JID alvo: ${jid}`);
+    console.log(`   - isAlive (SessionManager): ${isAlive}`);
+    console.log(`   - internalState: ${internalState}`);
+    console.log(`   - readyState: ${socketReadyState}`);
+    console.log(`   - func sendMessage existe?: ${!!session?.sock?.sendMessage}`);
 
-    if (!canSend) {
-      console.warn(`[WhatsApp API] ❌ /send: socket indisponível para ${instanceId}. ` +
-        `isAlive=${sessionManager.isSessionAlive(instanceId)}, ` +
-        `ws.readyState=${socketReadyState}, ` +
-        `state=${sessionManager.getSessionState(instanceId)}`);
+    // Se temos uma função sendMessage, tentamos enviar, a não ser que tenhamos explicitamente "disconnected" a máquina de estados.
+    const canAttemptSend = !!session?.sock?.sendMessage && internalState !== 'disconnected';
+
+    if (!canAttemptSend) {
+      console.warn(`[WhatsApp API] ❌ /send bloqueado: instância realmente offline ou inexistente para ${instanceId}`);
       return res.status(400).json({
-        error: 'Instância não está conectada ou socket inativo',
-        socket_alive: false,
-        ws_state: socketReadyState,
+        error: 'Instância offline. Por favor, aguarde a reconexão ou reconecte manualmente.',
+        socket_alive: isAlive,
+        state: internalState
       });
     }
 

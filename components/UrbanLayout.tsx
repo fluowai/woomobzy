@@ -184,7 +184,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
   const renderSidebarContent = () => (
     <>
-      <div className="p-6 md:p-8 border-b border-white/5">
+      <div className="p-6 md:p-8 border-b border-subtle">
         <Link
           to="/"
           className="flex items-center gap-3"
@@ -198,15 +198,15 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
             />
           ) : (
             <>
-              <div className="p-2 rounded-xl bg-blue-700">
-                <Building2 className="text-white" size={24} />
+              <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center">
+                <Building2 className="text-white" size={22} />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl md:text-2xl font-black tracking-tighter uppercase italic">
-                  PAINEL
-                </span>
-                <span className="text-[9px] font-bold text-blue-400 uppercase tracking-[0.3em]">
-                  Tradicional
+                <h1 className="text-base font-bold text-text-primary tracking-tight leading-none">
+                  IMOBZY <span className="text-brand">Urbano</span>
+                </h1>
+                <span className="text-[10px] text-tertiary font-bold uppercase tracking-widest mt-0.5 block">
+                  Painel Urbano
                 </span>
               </div>
             </>
@@ -216,43 +216,33 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
           href={`/site/${(profile?.organization as any)?.slug || ''}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 md:mt-6 flex items-center justify-center gap-2 w-full bg-blue-600/20 text-blue-300 hover:bg-blue-600 hover:text-white py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border border-blue-500/30"
+          className="mt-4 md:mt-6 flex items-center justify-center gap-2 w-full border border-subtle text-secondary hover:text-text-primary hover:border-brand py-2 rounded-lg text-xs font-medium uppercase tracking-wide transition-all"
         >
           <Globe size={14} /> Visualizar Site
         </a>
       </div>
 
-      <nav className="flex-1 p-3 md:p-4 overflow-y-auto space-y-4">
+      <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-8 custom-scrollbar">
         {menuGroups.map((group) => {
           const isOpen = openGroups.includes(group.title);
 
           return (
-            <div key={group.title} className="flex flex-col">
+            <div key={group.title}>
               <button
                 onClick={() => toggleGroup(group.title)}
-                className="flex items-center justify-between px-3 py-2 text-white/50 hover:text-white transition-colors group mb-1"
+                className="flex items-center justify-between w-full px-3 mb-2 text-tertiary hover:text-text-secondary transition-colors group"
               >
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider">
                   {group.title}
-                </span>
+                </h3>
                 {isOpen ? (
-                  <ChevronDown
-                    size={14}
-                    className="opacity-50 group-hover:opacity-100 transition-opacity"
-                  />
+                  <ChevronDown size={12} className="opacity-60" />
                 ) : (
-                  <ChevronRight
-                    size={14}
-                    className="opacity-50 group-hover:opacity-100 transition-opacity"
-                  />
+                  <ChevronRight size={12} className="opacity-60" />
                 )}
               </button>
 
-              <div
-                className={`flex-col space-y-1 transition-all overflow-hidden ${
-                  isOpen ? 'flex' : 'hidden'
-                }`}
-              >
+              <div className={`space-y-1 ${isOpen ? 'block' : 'hidden'}`}>
                 {group.items.map((item) => (
                   <NavLink
                     key={item.path}
@@ -260,29 +250,21 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
                     end={item.path === '/urban'}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                      `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group ${
                         isActive
-                          ? 'bg-blue-900/40 text-white shadow-sm'
-                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                          ? 'bg-brand/15 text-brand border-l-2 border-brand'
+                          : 'text-secondary hover:bg-bg-hover hover:text-text-primary'
                       }`
-                    }
-                    style={({ isActive }) =>
-                      isActive
-                        ? { borderLeft: '3px solid #2563eb' }
-                        : { borderLeft: '3px solid transparent' }
                     }
                   >
                     {({ isActive }) => (
                       <>
                         <item.icon
                           size={18}
-                          className={
-                            isActive ? 'text-blue-400' : 'text-white/50'
-                          }
+                          strokeWidth={2}
+                          className={isActive ? 'text-brand' : ''}
                         />
-                        <span className="font-semibold text-sm">
-                          {item.label}
-                        </span>
+                        <span className="text-sm font-medium">{item.label}</span>
                       </>
                     )}
                   </NavLink>
@@ -293,26 +275,22 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
         })}
       </nav>
 
-      <div className="p-4 md:p-6 border-t border-white/5 shrink-0">
-        <div className="flex items-center gap-3 mb-3 md:mb-4">
-          <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-400 font-black text-sm">
+      <div className="p-4 border-t border-subtle bg-bg-hover">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold border border-brand/30">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'U'}
           </div>
-          <div className="flex-1">
-            <p className="text-xs font-black text-white">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-text-primary truncate">
               {profile?.full_name || profile?.name || 'Carregando...'}
             </p>
             {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-500 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">
+              <span className="inline-block mt-0.5 px-2 py-0.5 bg-brand/20 text-brand text-[9px] font-bold uppercase tracking-widest rounded">
                 SUPER ADMIN
               </span>
             ) : (
-              <p className="text-[10px] text-white/40 uppercase tracking-widest">
-                {profile?.role === 'admin'
-                  ? 'Admin Imobiliária'
-                  : loading
-                    ? '...'
-                    : profile?.role || 'Corretor'}
+              <p className="text-[10px] text-tertiary font-medium uppercase tracking-wide truncate">
+                {profile?.role === 'admin' ? 'Admin Imobiliária' : loading ? '...' : profile?.role || 'Corretor'}
               </p>
             )}
           </div>
@@ -320,22 +298,17 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
         <button
           onClick={() => setIsSupportOpen(true)}
-          className="w-full flex items-center gap-3 px-4 py-3 mb-1 text-blue-400/80 hover:text-blue-400 hover:bg-blue-900/20 rounded-xl transition-all group border border-blue-900/30"
+          className="w-full flex items-center gap-2 text-tertiary hover:text-brand text-xs font-medium transition-colors p-2 rounded-lg hover:bg-bg-card mb-1"
         >
-          <LifeBuoy size={18} />
-          <span className="text-xs font-black uppercase tracking-widest">
-            Suporte Imobzy
-          </span>
+          <LifeBuoy size={14} />
+          <span>Suporte Imobzy</span>
         </button>
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all group"
+          className="flex items-center gap-2 text-tertiary hover:text-text-primary text-xs font-medium transition-colors w-full p-2 rounded-lg hover:bg-bg-card"
         >
-          <LogOut size={18} className="opacity-60 group-hover:opacity-100" />
-          <span className="text-xs font-black uppercase tracking-widest">
-            Sair
-          </span>
+          <LogOut size={14} /> Sair
         </button>
       </div>
       <SupportModal
@@ -346,17 +319,14 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
   );
 
   return (
-    <div
-      className="flex h-screen bg-slate-50 overflow-hidden"
-      style={{ fontFamily: '"Poppins", sans-serif', fontSize: '16px' }}
-    >
+    <div className="flex h-screen bg-bg-primary overflow-hidden selection:bg-brand/20 selection:text-brand">
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0a0a0a] text-white flex flex-col animate-in slide-in-from-left duration-300">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-bg-card text-text-primary flex flex-col animate-in slide-in-from-left duration-300 border-r border-subtle">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all z-50"
@@ -369,11 +339,11 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="w-64 bg-bg-card text-text-primary flex-col hidden md:flex transition-all border-r border-subtle">
+      <aside className="w-64 bg-bg-card border-r border-subtle text-text-primary hidden md:flex flex-col shrink-0">
         {renderSidebarContent()}
       </aside>
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <header className="h-16 bg-bg-card border-b border-subtle flex items-center justify-between px-6 z-10 gap-3">
           <button
             onClick={() => setIsMobileMenuOpen(true)}

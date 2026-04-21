@@ -645,7 +645,8 @@ const Chat: React.FC = () => {
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a2e38; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #007850; }
       `}</style>
     </div>
   );

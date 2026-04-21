@@ -127,6 +127,7 @@ app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/rural', ruralRoutes);
+app.use('/api/urban', urbanRoutes);
 
 // Tenant Resolution
 

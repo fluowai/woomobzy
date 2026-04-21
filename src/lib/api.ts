@@ -4,8 +4,12 @@ import { supabase } from '../../services/supabase';
 export const getApiUrl = (path: string = '') => {
   const baseUrl = import.meta.env.VITE_API_URL || '';
   const sanitizedPath = path.startsWith('/') ? path : `/${path}`;
-  const sanitizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-  return sanitizedBaseUrl ? `${sanitizedBaseUrl}${sanitizedPath}` : sanitizedPath;
+  const sanitizedBaseUrl = baseUrl.endsWith('/')
+    ? baseUrl.slice(0, -1)
+    : baseUrl;
+  return sanitizedBaseUrl
+    ? `${sanitizedBaseUrl}${sanitizedPath}`
+    : sanitizedPath;
 };
 
 /**
@@ -14,9 +18,11 @@ export const getApiUrl = (path: string = '') => {
  */
 export const callApi = async (path: string, options: RequestInit = {}) => {
   const url = getApiUrl(path);
-  
+
   // Obter token da sessão atual do Supabase
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   const token = session?.access_token;
 
   const headers = new Headers(options.headers || {});
@@ -46,4 +52,3 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
 
   return response.json();
 };
-

@@ -6,7 +6,9 @@ export const leadService = {
   // Create a new lead (Now Backend-Driven)
   async create(lead: Partial<Lead>) {
     // Se temos organization_id mas não temos token, usamos a rota pública
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const isPublic = !session?.access_token && lead.organization_id;
     const endpoint = isPublic ? '/api/public/leads' : '/api/crm/leads';
 
@@ -18,8 +20,8 @@ export const leadService = {
         phone: lead.phone,
         email: lead.email,
         property_id: lead.propertyId,
-        source: lead.source
-      })
+        source: lead.source,
+      }),
     });
 
     return mapToModel(data.lead || { id: data.leadId, ...lead });
@@ -35,7 +37,7 @@ export const leadService = {
   async updateStatus(id: string, status: string) {
     const data = await callApi(`/api/crm/leads/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status }),
     });
 
     return mapToModel(data.lead);

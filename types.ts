@@ -264,6 +264,7 @@ export interface Lead {
   phone: string;
   source: string;
   status: 'Novo' | 'Em Atendimento' | 'Proposta' | 'Fechado' | 'Perdido';
+  classification?: string;
   aptitude_interest?: PropertyAptitude[];
   budget?: number;
   preferences?: {
@@ -275,6 +276,7 @@ export interface Lead {
   createdAt: string;
   propertyId?: string;
   notes?: string;
+  chat_jid?: string;
   property?: {
     title: string;
     price: number;
@@ -357,6 +359,8 @@ export interface BlockStyles {
   height?: string;
   display?: string;
   textAlign?: 'left' | 'center' | 'right' | 'justify';
+  color?: string;
+  backgroundColor?: string;
 }
 
 // Configurações responsivas

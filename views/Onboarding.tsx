@@ -148,15 +148,17 @@ const Onboarding: React.FC = () => {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const res = await fetch(getApiUrl('/api/system-status'), { signal: controller.signal });
+
+      const res = await fetch(getApiUrl('/api/system-status'), {
+        signal: controller.signal,
+      });
       clearTimeout(timeoutId);
-      
+
       if (!res.ok) {
         console.warn('⚠️ Backend returned error:', res.status);
         return;
       }
-      
+
       const data = await res.json();
       console.log('✅ Backend connected. Fresh system:', data.fresh);
       if (data.fresh) {
@@ -743,22 +745,33 @@ const Onboarding: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 text-center shadow-2xl">
           <div className="w-20 h-20 bg-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3">
-            {profile.role === 'superadmin' ? <Crown size={40} className="text-white -rotate-3" /> : <Shield size={40} className="text-white -rotate-3" />}
+            {profile.role === 'superadmin' ? (
+              <Crown size={40} className="text-white -rotate-3" />
+            ) : (
+              <Shield size={40} className="text-white -rotate-3" />
+            )}
           </div>
-          <h2 className="text-3xl font-black text-slate-900 mb-2">Olá, {profile.role === 'superadmin' ? 'Administrador!' : 'Gestor!'}</h2>
+          <h2 className="text-3xl font-black text-slate-900 mb-2">
+            Olá, {profile.role === 'superadmin' ? 'Administrador!' : 'Gestor!'}
+          </h2>
           <p className="text-slate-500 mb-8 font-medium">
-            Você já possui acesso ao painel. Deseja pular o cadastro de imobiliária e ir para o Dashboard?
+            Você já possui acesso ao painel. Deseja pular o cadastro de
+            imobiliária e ir para o Dashboard?
           </p>
-          
+
           <div className="space-y-4">
             <button
-              onClick={() => navigate(profile.role === 'superadmin' ? '/superadmin' : '/admin')}
+              onClick={() =>
+                navigate(
+                  profile.role === 'superadmin' ? '/superadmin' : '/admin'
+                )
+              }
               className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 group"
             >
               Ir para o Painel
               <ArrowRight className="inline ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
-            
+
             <button
               onClick={() => {
                 // Let them stay if they really want to finish onboarding
@@ -869,12 +882,16 @@ const Onboarding: React.FC = () => {
                     {loading ? (
                       <>
                         <Loader2 size={18} className="animate-spin" />
-                        {isSystemSetup ? 'Configurando Sistema...' : 'Criando sua conta...'}
+                        {isSystemSetup
+                          ? 'Configurando Sistema...'
+                          : 'Criando sua conta...'}
                       </>
                     ) : (
                       <>
                         <Sparkles size={18} />
-                        {isSystemSetup ? 'Finalizar Configuração de Dono' : 'Criar Minha Conta'}
+                        {isSystemSetup
+                          ? 'Finalizar Configuração de Dono'
+                          : 'Criar Minha Conta'}
                       </>
                     )}
                   </button>

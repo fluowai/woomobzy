@@ -489,6 +489,7 @@ const DueDiligence: React.FC = () => {
                 href={`/rural/properties/${selectedProperty}`}
                 target="_blank"
                 className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
+                rel="noreferrer"
               >
                 <ExternalLink size={14} />
               </a>

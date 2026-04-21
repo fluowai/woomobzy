@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../context/SettingsContext';
-import { Save, Check, Upload, Palette, Layout, Type } from 'lucide-react';
+import {
+  Save,
+  Check,
+  Upload,
+  Palette,
+  Layout,
+  Type,
+  Globe,
+} from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { extractColorsFromImage } from '../../utils/colors';
 
@@ -122,17 +130,24 @@ const AppearanceSettings: React.FC = () => {
         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex items-center justify-between gap-6">
           <div className="flex-1">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">
-              <Globe size={18} className={formData.isLive ? 'text-emerald-500' : 'text-orange-500'} />
+              <Globe
+                size={18}
+                className={
+                  formData.isLive ? 'text-emerald-500' : 'text-orange-500'
+                }
+              />
               Status de Visibilidade do Site
             </h3>
             <p className="text-sm text-slate-500 mt-1">
-              {formData.isLive 
-                ? 'Seu site está ONLINE para o público geral.' 
+              {formData.isLive
+                ? 'Seu site está ONLINE para o público geral.'
                 : 'Seu site está em MODO MANUTENÇÃO. Apenas administradores podem visualizá-lo.'}
             </p>
           </div>
           <button
-            onClick={() => setFormData({ ...formData, isLive: !formData.isLive })}
+            onClick={() =>
+              setFormData({ ...formData, isLive: !formData.isLive })
+            }
             className={`
               relative inline-flex h-8 w-14 items-center rounded-full transition-colors outline-none
               ${formData.isLive ? 'bg-emerald-500' : 'bg-slate-300'}

@@ -6,7 +6,11 @@ interface UseAuthReturn {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    metadata?: Record<string, unknown>
+  ) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -16,15 +20,17 @@ export function useAuth(): UseAuthReturn {
 
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
-        
+
         setUser(profile as User);
       }
       setLoading(false);
@@ -32,14 +38,16 @@ export function useAuth(): UseAuthReturn {
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
-        
+
         setUser(profile as User);
       } else {
         setUser(null);
@@ -50,14 +58,28 @@ export function useAuth(): UseAuthReturn {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) throw error;
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, metadata?: Record<string, unknown>) => {
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: metadata } });
-    if (error) throw error;
-  }, []);
+  const signUp = useCallback(
+    async (
+      email: string,
+      password: string,
+      metadata?: Record<string, unknown>
+    ) => {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: metadata },
+      });
+      if (error) throw error;
+    },
+    []
+  );
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();

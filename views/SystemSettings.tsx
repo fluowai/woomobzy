@@ -11,7 +11,7 @@ import {
   Activity,
   ArrowRight,
   Shield,
-  Key
+  Key,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
@@ -69,10 +69,10 @@ const SystemSettings: React.FC = () => {
           },
           asaas: {
             apiKey: asaasKey,
-            environment: 'production'
+            environment: 'production',
           },
           zapsign: {
-            apiKey: zapsignKey
+            apiKey: zapsignKey,
           },
         },
       });
@@ -106,10 +106,14 @@ const SystemSettings: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A] mb-1">Configurações & Gestão</h1>
-          <p className="text-sm text-[#64748B]">Controle completo do seu sistema imobiliário e integrações.</p>
+          <h1 className="text-2xl font-bold text-[#0F172A] mb-1">
+            Configurações & Gestão
+          </h1>
+          <p className="text-sm text-[#64748B]">
+            Controle completo do seu sistema imobiliário e integrações.
+          </p>
         </div>
-        
+
         {activeTab === 'ai' && (
           <button
             onClick={handleSave}
@@ -149,7 +153,7 @@ const SystemSettings: React.FC = () => {
         {activeTab === 'users' && <UserManagement />}
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
-        
+
         {activeTab === 'ai' && (
           <div className="space-y-6">
             <div className="card-premium">
@@ -158,15 +162,22 @@ const SystemSettings: React.FC = () => {
                   <Key size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#0F172A]">Centro de Integrações 360</h3>
-                  <p className="text-xs text-[#64748B]">Configure as chaves secretas para unificar Financeiro, Jurídico e IA em um só painel.</p>
+                  <h3 className="text-lg font-bold text-[#0F172A]">
+                    Centro de Integrações 360
+                  </h3>
+                  <p className="text-xs text-[#64748B]">
+                    Configure as chaves secretas para unificar Financeiro,
+                    Jurídico e IA em um só painel.
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">OpenAI API Key (GPT-4o)</label>
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                      OpenAI API Key (GPT-4o)
+                    </label>
                     <input
                       type="password"
                       value={openaiKey}
@@ -174,11 +185,15 @@ const SystemSettings: React.FC = () => {
                       placeholder="sk-..."
                       className="input-premium w-full"
                     />
-                    <p className="text-[10px] text-slate-400">Usado para gerações complexas e análise de dossiês.</p>
+                    <p className="text-[10px] text-slate-400">
+                      Usado para gerações complexas e análise de dossiês.
+                    </p>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Gemini API Key (Google)</label>
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                      Gemini API Key (Google)
+                    </label>
                     <input
                       type="password"
                       value={geminiKey}
@@ -186,11 +201,15 @@ const SystemSettings: React.FC = () => {
                       placeholder="AIzaSy..."
                       className="input-premium w-full"
                     />
-                    <p className="text-[10px] text-slate-400">Obtenha sua chave gratuita no Google AI Studio.</p>
+                    <p className="text-[10px] text-slate-400">
+                      Obtenha sua chave gratuita no Google AI Studio.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Groq API Key (Llama 3)</label>
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                      Groq API Key (Llama 3)
+                    </label>
                     <input
                       type="password"
                       value={groqKey}
@@ -198,17 +217,23 @@ const SystemSettings: React.FC = () => {
                       placeholder="gsk_..."
                       className="input-premium w-full"
                     />
-                    <p className="text-[10px] text-slate-400">Gerações ultrarrápidas de baixo custo.</p>
+                    <p className="text-[10px] text-slate-400">
+                      Gerações ultrarrápidas de baixo custo.
+                    </p>
                   </div>
                 </div>
 
                 <div className="h-px bg-slate-100 my-8" />
-                
-                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Módulos de Negócio (360)</h4>
-                
+
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">
+                  Módulos de Negócio (360)
+                </h4>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Asaas API Key (Financeiro)</label>
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                      Asaas API Key (Financeiro)
+                    </label>
                     <input
                       type="password"
                       value={asaasKey}
@@ -216,11 +241,15 @@ const SystemSettings: React.FC = () => {
                       placeholder="$... (API Key de Produção)"
                       className="input-premium w-full text-blue-600 font-mono"
                     />
-                    <p className="text-[10px] text-slate-400">Para automação de boletos, PIX e gestão de aluguéis.</p>
+                    <p className="text-[10px] text-slate-400">
+                      Para automação de boletos, PIX e gestão de aluguéis.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">ZapSign API Token (Jurídico)</label>
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                      ZapSign API Token (Jurídico)
+                    </label>
                     <input
                       type="password"
                       value={zapsignKey}
@@ -228,14 +257,20 @@ const SystemSettings: React.FC = () => {
                       placeholder="Token de acesso ZapSign"
                       className="input-premium w-full text-indigo-600 font-mono"
                     />
-                    <p className="text-[10px] text-slate-400">Para envio de contratos e assinaturas digitais via WhatsApp.</p>
+                    <p className="text-[10px] text-slate-400">
+                      Para envio de contratos e assinaturas digitais via
+                      WhatsApp.
+                    </p>
                   </div>
                 </div>
 
                 <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-3">
                   <Info size={16} className="text-emerald-600 mt-0.5" />
                   <p className="text-xs text-emerald-800 leading-relaxed">
-                    <strong>Dica Premium:</strong> Recomendamos o uso da <strong>Gemini (1.5 Flash)</strong> para custos otimizados e maior velocidade de resposta em atendimentos de chat e descrições técnicas.
+                    <strong>Dica Premium:</strong> Recomendamos o uso da{' '}
+                    <strong>Gemini (1.5 Flash)</strong> para custos otimizados e
+                    maior velocidade de resposta em atendimentos de chat e
+                    descrições técnicas.
                   </p>
                 </div>
               </div>
@@ -248,11 +283,18 @@ const SystemSettings: React.FC = () => {
                     <Shield size={24} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#0F172A]">Segurança & Criptografia</h3>
-                    <p className="text-[10px] text-[#64748B]">Suas chaves são armazenadas com criptografia de ponta a ponta.</p>
+                    <h3 className="text-sm font-bold text-[#0F172A]">
+                      Segurança & Criptografia
+                    </h3>
+                    <p className="text-[10px] text-[#64748B]">
+                      Suas chaves são armazenadas com criptografia de ponta a
+                      ponta.
+                    </p>
                   </div>
                 </div>
-                <button className="text-xs font-bold text-blue-600 hover:underline">Ver Termos</button>
+                <button className="text-xs font-bold text-blue-600 hover:underline">
+                  Ver Termos
+                </button>
               </div>
             </div>
           </div>

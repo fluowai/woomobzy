@@ -999,9 +999,7 @@ export const BLOCK_METADATA: Record<BlockType, BlockMetadata> = {
     icon: '📅',
     category: 'content',
     defaultConfig: {
-      events: [
-        { date: '2024', title: 'Evento 1', description: 'Descrição' },
-      ],
+      events: [{ date: '2024', title: 'Evento 1', description: 'Descrição' }],
     } as any,
     defaultStyles: {
       padding: '60px 20px',

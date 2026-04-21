@@ -73,5 +73,13 @@ export function useLeads({ companyId, status }: UseLeadsOptions) {
     setLeads((prev) => prev.filter((l) => l.id !== id));
   };
 
-  return { leads, loading, error, refetch: fetchLeads, createLead, updateLead, deleteLead };
+  return {
+    leads,
+    loading,
+    error,
+    refetch: fetchLeads,
+    createLead,
+    updateLead,
+    deleteLead,
+  };
 }

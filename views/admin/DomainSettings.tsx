@@ -125,7 +125,7 @@ const DomainSettings: React.FC = () => {
       }
     } catch (e) {
       console.error('Error verifying:', e);
-      setCurrentDomain(prev =>
+      setCurrentDomain((prev) =>
         prev ? { ...prev, status: 'pending' } : null
       );
     } finally {
@@ -135,7 +135,8 @@ const DomainSettings: React.FC = () => {
 
   const handleAddDomain = async () => {
     if (!domain) return;
-    const domainRegex = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/;
+    const domainRegex =
+      /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/;
     if (!domainRegex.test(domain)) {
       setError('Domínio inválido. Ex: www.meusite.com.br');
       return;
@@ -145,14 +146,11 @@ const DomainSettings: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        getApiUrl('/api/domains'),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain, organizationId }),
-        }
-      );
+      const res = await fetch(getApiUrl('/api/domains'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, organizationId }),
+      });
 
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -185,14 +183,11 @@ const DomainSettings: React.FC = () => {
       return;
     setLoading(true);
     try {
-      const res = await fetch(
-        getApiUrl('/api/domains'),
-        {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain: currentDomain?.name, organizationId }),
-        }
-      );
+      const res = await fetch(getApiUrl('/api/domains'), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: currentDomain?.name, organizationId }),
+      });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
@@ -217,7 +212,9 @@ const DomainSettings: React.FC = () => {
             <Globe size={20} />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-800">Domínio Personalizado</h2>
+            <h2 className="font-semibold text-gray-800">
+              Domínio Personalizado
+            </h2>
             <p className="text-xs text-gray-500">
               Conecte seu próprio domínio (ex: www.suaimobiliaria.com.br)
             </p>
@@ -260,7 +257,8 @@ const DomainSettings: React.FC = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500">
-                Recomendamos usar <b>www</b>.meusite.com.br para melhor compatibilidade.
+                Recomendamos usar <b>www</b>.meusite.com.br para melhor
+                compatibilidade.
               </p>
             </div>
           ) : (
@@ -302,8 +300,13 @@ const DomainSettings: React.FC = () => {
                           disabled={verifyingDomain}
                           className="text-xs text-indigo-600 hover:underline flex items-center gap-1 disabled:opacity-50"
                         >
-                          <RefreshCw size={10} className={verifyingDomain ? 'animate-spin' : ''} />
-                          {verifyingDomain ? 'Verificando...' : 'Verificar Agora'}
+                          <RefreshCw
+                            size={10}
+                            className={verifyingDomain ? 'animate-spin' : ''}
+                          />
+                          {verifyingDomain
+                            ? 'Verificando...'
+                            : 'Verificar Agora'}
                         </button>
                       )}
                     </div>
@@ -323,7 +326,8 @@ const DomainSettings: React.FC = () => {
                     <Info size={16} /> Verificação DNS Pendente
                   </h4>
                   <p className="text-blue-700 mb-4">
-                    Configure o DNS do seu domínio para que possamos verificar a propriedade:
+                    Configure o DNS do seu domínio para que possamos verificar a
+                    propriedade:
                   </p>
 
                   {currentDomain.dnsRecords && (
@@ -338,7 +342,9 @@ const DomainSettings: React.FC = () => {
                               {currentDomain.dnsRecords.type}
                             </code>
                             <button
-                              onClick={() => copyToClipboard(currentDomain.dnsRecords!.type)}
+                              onClick={() =>
+                                copyToClipboard(currentDomain.dnsRecords!.type)
+                              }
                               className="text-gray-400 hover:text-gray-600"
                             >
                               <Copy size={14} />
@@ -355,7 +361,9 @@ const DomainSettings: React.FC = () => {
                               {currentDomain.dnsRecords.name}
                             </code>
                             <button
-                              onClick={() => copyToClipboard(currentDomain.dnsRecords!.name)}
+                              onClick={() =>
+                                copyToClipboard(currentDomain.dnsRecords!.name)
+                              }
                               className="text-gray-400 hover:text-gray-600"
                             >
                               <Copy size={14} />
@@ -372,7 +380,9 @@ const DomainSettings: React.FC = () => {
                               {currentDomain.dnsRecords.value}
                             </code>
                             <button
-                              onClick={() => copyToClipboard(currentDomain.dnsRecords!.value)}
+                              onClick={() =>
+                                copyToClipboard(currentDomain.dnsRecords!.value)
+                              }
                               className="text-indigo-600 hover:text-indigo-700 flex-shrink-0 ml-2"
                             >
                               <Copy size={14} />
@@ -402,9 +412,12 @@ const DomainSettings: React.FC = () => {
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-sm flex items-center gap-3">
                   <CheckCircle className="text-green-600" size={20} />
                   <div>
-                    <h4 className="font-bold text-green-800">Domínio Verificado!</h4>
+                    <h4 className="font-bold text-green-800">
+                      Domínio Verificado!
+                    </h4>
                     <p className="text-green-700 text-xs">
-                      Seu domínio está ativo e funcionando. SSL será ativado em breve.
+                      Seu domínio está ativo e funcionando. SSL será ativado em
+                      breve.
                     </p>
                   </div>
                 </div>
@@ -419,7 +432,9 @@ const DomainSettings: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6 flex items-center justify-between">
-              <h3 className="text-lg font-bold">📋 Instruções para Configurar DNS</h3>
+              <h3 className="text-lg font-bold">
+                📋 Instruções para Configurar DNS
+              </h3>
               <button
                 onClick={() => setShowDnsModal(false)}
                 className="text-white/80 hover:text-white"
@@ -437,25 +452,38 @@ const DomainSettings: React.FC = () => {
               </div>
 
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h5 className="font-bold text-blue-800 mb-2">📌 Passo a Passo:</h5>
+                <h5 className="font-bold text-blue-800 mb-2">
+                  📌 Passo a Passo:
+                </h5>
                 <ol className="space-y-2 text-blue-700 text-sm">
-                  {currentDomain.dnsRecords.instructions?.pt?.map((instruction, idx) => (
-                    <li key={idx} className="flex gap-3">
-                      <span className="font-bold flex-shrink-0">{idx + 1}.</span>
-                      <span>{instruction}</span>
-                    </li>
-                  )) || [
+                  {currentDomain.dnsRecords.instructions?.pt?.map(
+                    (instruction, idx) => (
+                      <li key={idx} className="flex gap-3">
+                        <span className="font-bold flex-shrink-0">
+                          {idx + 1}.
+                        </span>
+                        <span>{instruction}</span>
+                      </li>
+                    )
+                  ) || [
                     <li key="1" className="flex gap-3">
                       <span className="font-bold">1.</span>
-                      <span>Abra o painel de configurações da sua empresa de domínios</span>
+                      <span>
+                        Abra o painel de configurações da sua empresa de
+                        domínios
+                      </span>
                     </li>,
                     <li key="2" className="flex gap-3">
                       <span className="font-bold">2.</span>
-                      <span>Procure pela seção "DNS Records" ou "Registros de DNS"</span>
+                      <span>
+                        Procure pela seção "DNS Records" ou "Registros de DNS"
+                      </span>
                     </li>,
                     <li key="3" className="flex gap-3">
                       <span className="font-bold">3.</span>
-                      <span>Clique em "Adicionar Registro" ou "Add Record"</span>
+                      <span>
+                        Clique em "Adicionar Registro" ou "Add Record"
+                      </span>
                     </li>,
                     <li key="4" className="flex gap-3">
                       <span className="font-bold">4.</span>
@@ -466,34 +494,48 @@ const DomainSettings: React.FC = () => {
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h5 className="font-bold text-gray-800 mb-3">Registro DNS a Criar:</h5>
+                <h5 className="font-bold text-gray-800 mb-3">
+                  Registro DNS a Criar:
+                </h5>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                     <span className="text-gray-600">Tipo:</span>
-                    <span className="font-mono font-bold">{currentDomain.dnsRecords.type}</span>
+                    <span className="font-mono font-bold">
+                      {currentDomain.dnsRecords.type}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                     <span className="text-gray-600">Nome:</span>
-                    <span className="font-mono font-bold">{currentDomain.dnsRecords.name}</span>
+                    <span className="font-mono font-bold">
+                      {currentDomain.dnsRecords.name}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                     <span className="text-gray-600">Valor:</span>
-                    <span className="font-mono font-bold text-indigo-600">{currentDomain.dnsRecords.value}</span>
+                    <span className="font-mono font-bold text-indigo-600">
+                      {currentDomain.dnsRecords.value}
+                    </span>
                   </div>
                   {currentDomain.dnsRecords.ttl && (
                     <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                       <span className="text-gray-600">TTL:</span>
-                      <span className="font-mono">{currentDomain.dnsRecords.ttl}</span>
+                      <span className="font-mono">
+                        {currentDomain.dnsRecords.ttl}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-sm">
-                <h5 className="font-bold text-yellow-800 mb-2">⏳ Tempo de Propagação</h5>
+                <h5 className="font-bold text-yellow-800 mb-2">
+                  ⏳ Tempo de Propagação
+                </h5>
                 <p className="text-yellow-700">
-                  As alterações de DNS podem levar <strong>5 a 15 minutos</strong> para se propagarem.
-                  Não se preocupe se a verificação não funcionar imediatamente. Clique no botão "Verificar Agora" após alguns minutos.
+                  As alterações de DNS podem levar{' '}
+                  <strong>5 a 15 minutos</strong> para se propagarem. Não se
+                  preocupe se a verificação não funcionar imediatamente. Clique
+                  no botão "Verificar Agora" após alguns minutos.
                 </p>
               </div>
 

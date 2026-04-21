@@ -1,6 +1,6 @@
 /**
  * services/pagination.ts
- * 
+ *
  * Helper central para lidar com paginação no frontend IMOBZY.
  */
 
@@ -19,12 +19,16 @@ export interface PaginatedResult<T> {
 /**
  * Hook ou Helper simples para gerenciar estado de paginação
  */
-export const createPagination = (total: number, page: number, limit: number): Pagination => {
+export const createPagination = (
+  total: number,
+  page: number,
+  limit: number
+): Pagination => {
   return {
     total,
     page,
     limit,
-    pages: Math.ceil(total / limit)
+    pages: Math.ceil(total / limit),
   };
 };
 

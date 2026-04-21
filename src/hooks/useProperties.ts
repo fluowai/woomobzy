@@ -9,7 +9,12 @@ interface UsePropertiesOptions {
   limit?: number;
 }
 
-export function useProperties({ companyId, status, category, limit = 50 }: UsePropertiesOptions) {
+export function useProperties({
+  companyId,
+  status,
+  category,
+  limit = 50,
+}: UsePropertiesOptions) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);

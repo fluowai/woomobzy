@@ -90,7 +90,10 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
           })
           .catch((e) => {
             // Silently ignore background refresh errors (e.g. JWT expired)
-            console.warn('⚠️ [TextsContext] Background refresh failed:', e?.message || e);
+            console.warn(
+              '⚠️ [TextsContext] Background refresh failed:',
+              e?.message || e
+            );
           });
 
         return;
@@ -104,8 +107,9 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
       localStorage.setItem('site_texts', JSON.stringify(freshTexts));
       localStorage.setItem('site_texts_cache_time', Date.now().toString());
     } catch (err: any) {
-      const isAuthError = err?.message?.includes('JWT expired') || err?.code === 'PGRST303';
-      
+      const isAuthError =
+        err?.message?.includes('JWT expired') || err?.code === 'PGRST303';
+
       if (isAuthError) {
         // JWT expired — fall back to stale cache if available, don't show error
         console.warn('⚠️ [TextsContext] JWT expired, using cached texts');

@@ -12,8 +12,20 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const location = useLocation();
   const [isSystemPath] = useState(() => {
     const path = window.location.pathname;
-    const systemRoutes = ['/login', '/register', '/onboarding', '/admin', '/rural', '/urban', '/superadmin', '/impersonate', '/lp/', '/site/', '/embreve'];
-    return systemRoutes.some(r => path.startsWith(r)) || path === '/';
+    const systemRoutes = [
+      '/login',
+      '/register',
+      '/onboarding',
+      '/admin',
+      '/rural',
+      '/urban',
+      '/superadmin',
+      '/impersonate',
+      '/lp/',
+      '/site/',
+      '/embreve',
+    ];
+    return systemRoutes.some((r) => path.startsWith(r)) || path === '/';
   });
 
   const [isPublicSite, setIsPublicSite] = useState(false);
@@ -137,10 +149,10 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           '/ai-assistant',
           '/contracts',
           '/test-messages',
-          '/error'
+          '/error',
         ];
-        const isSystemRoute = systemRoutes.some((r) => 
-          path === r || path.startsWith(r + '/') || path.startsWith(r)
+        const isSystemRoute = systemRoutes.some(
+          (r) => path === r || path.startsWith(r + '/') || path.startsWith(r)
         );
 
         if (isSystemRoute || path === '/') {
@@ -162,7 +174,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
               .single();
 
             if (data && !error) {
-              log(`✅ [Router] Tenant Found: ${(data as any).name} (${(data as any).slug})`);
+              log(
+                `✅ [Router] Tenant Found: ${(data as any).name} (${(data as any).slug})`
+              );
               setResolvedSlug((data as any).slug);
               setIsPublicSite(true);
               setLoading(false);

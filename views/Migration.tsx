@@ -5,6 +5,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Play,
+  RefreshCw,
+  BarChart3,
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -68,7 +70,10 @@ const Migration: React.FC = () => {
       const response = await fetch('http://localhost:3002/api/migrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startUrl: url, organizationId: profile?.organization_id }),
+        body: JSON.stringify({
+          startUrl: url,
+          organizationId: profile?.organization_id,
+        }),
       });
 
       const text = await response.text();

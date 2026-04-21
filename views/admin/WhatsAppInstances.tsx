@@ -560,10 +560,9 @@ const WhatsAppInstances: React.FC = () => {
                       onClick={() => connectInstance(instance)}
                       disabled={
                         isConnecting ||
-                        [
-                          'connecting',
-                          'authenticated',
-                        ].includes(instance.status)
+                        ['connecting', 'authenticated'].includes(
+                          instance.status
+                        )
                       }
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                     >

@@ -7,7 +7,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error(
     '❌ ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas!'
   );
-  
+
   if (typeof window !== 'undefined') {
     const errorDiv = document.createElement('div');
     errorDiv.style.cssText =
@@ -45,8 +45,8 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-key',
   {
     global: {
-      headers: getHeaders()
-    }
+      headers: getHeaders(),
+    },
   }
 );
 
@@ -55,7 +55,7 @@ export const supabase = createClient(
  * (Ex: logout de suporte)
  */
 export const refreshSupabaseHeaders = () => {
-  // Como o client do Supabase é um singleton, em alguns casos é necessário 
+  // Como o client do Supabase é um singleton, em alguns casos é necessário
   // que o app recarregue ou que as chamadas individuais injetem os headers.
   // No IMOBZY, o reload é o padrão após troca de tenant de suporte.
   window.location.reload();

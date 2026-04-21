@@ -160,7 +160,7 @@ RETORNE APENAS O JSON. SEM MARKDOWN. SEM EXPLICAÇÕES.
 
   try {
     let text = '{}';
-    
+
     // Choose Provider with fallback
     if (config?.openaiKey) {
       console.log('🤖 Using OpenAI for landing page generation...');
@@ -173,12 +173,17 @@ RETORNE APENAS O JSON. SEM MARKDOWN. SEM EXPLICAÇÕES.
       text = await groqService.generateText(prompt, config.groqKey);
     } else {
       // Default to env key if available (Gemini)
-      console.log('🤖 Using Default Gemini (Env) for landing page generation...');
+      console.log(
+        '🤖 Using Default Gemini (Env) for landing page generation...'
+      );
       text = await geminiService.generateText(prompt);
     }
 
     // Clean JSON string if returned with ```json
-    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const cleanJson = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
     const parsed = JSON.parse(cleanJson);
 
     // Post-process to ensure IDs and types match our system

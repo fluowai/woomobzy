@@ -89,11 +89,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setUser(session.user);
 
         // Skip redundant events (SIGNED_IN or TOKEN_REFRESHED) if profile is already loaded for this user
-        const isRedundant = (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') && 
-                            profileRef.current?.id === session.user.id;
+        const isRedundant =
+          (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') &&
+          profileRef.current?.id === session.user.id;
 
         if (isRedundant) {
-          console.log(`[AuthContext] Skipping redundant ${_event}, profile already loaded.`);
+          console.log(
+            `[AuthContext] Skipping redundant ${_event}, profile already loaded.`
+          );
           return;
         }
 
@@ -138,8 +141,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         .eq('id', userId)
         .single();
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Profile query timeout')), 10000) // 10s timeout
+      const timeoutPromise = new Promise(
+        (_, reject) =>
+          setTimeout(() => reject(new Error('Profile query timeout')), 10000) // 10s timeout
       );
 
       const { data: profileData, error: profileError } = (await Promise.race([
@@ -211,14 +215,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setProfile((prev) => (prev && prev.id === userId ? prev : null));
       }
     } catch (err: any) {
-      console.error('❌ [AuthContext] Critical exception in loadProfile:', err.message);
-      
+      console.error(
+        '❌ [AuthContext] Critical exception in loadProfile:',
+        err.message
+      );
+
       // AUTO-RETRY LOGIC: If it's a timeout or network error, and we haven't hit max retries
       if (retryCount.current < 2) {
         retryCount.current += 1;
         const delay = retryCount.current * 2000;
-        console.log(`🔄 [AuthContext] Retrying profile fetch in ${delay}ms (Attempt ${retryCount.current}/2)...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        console.log(
+          `🔄 [AuthContext] Retrying profile fetch in ${delay}ms (Attempt ${retryCount.current}/2)...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
         fetchInProgress.current = null; // Reset to allow retry
         return loadProfile(userId);
       }

@@ -31,7 +31,10 @@ export const openaiService = {
 
       return response.data.choices[0].message.content || '{}';
     } catch (error: any) {
-      console.error('Error generating text with OpenAI:', error.response?.data || error.message);
+      console.error(
+        'Error generating text with OpenAI:',
+        error.response?.data || error.message
+      );
       return '{}';
     }
   },

@@ -794,7 +794,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       // AI Generation
       setGenerationStage('Escrevendo copy persuasiva com IA...');
       console.log('Calling generateLandingPageFromProperty with keys...');
-      
+
       const config = {
         openaiKey: settings.integrations?.openai?.apiKey,
         geminiKey: settings.integrations?.gemini?.apiKey,

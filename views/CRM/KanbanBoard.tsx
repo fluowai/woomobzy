@@ -26,7 +26,6 @@ import { useAuth } from '../../context/AuthContext';
 import { Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-
 interface NewLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,13 +33,18 @@ interface NewLeadModalProps {
   orgId?: string;
 }
 
-const NewLeadModal: React.FC<NewLeadModalProps> = ({ isOpen, onClose, onSuccess, orgId }) => {
+const NewLeadModal: React.FC<NewLeadModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  orgId,
+}) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    source: 'Manual / CRM'
+    source: 'Manual / CRM',
   });
 
   if (!isOpen) return null;
@@ -51,7 +55,7 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({ isOpen, onClose, onSuccess,
     try {
       await leadService.create({
         ...formData,
-        organization_id: orgId
+        organization_id: orgId,
       } as any);
       onSuccess();
       onClose();
@@ -61,7 +65,6 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({ isOpen, onClose, onSuccess,
     } finally {
       setLoading(false);
     }
-
   };
 
   return (
@@ -70,41 +73,60 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({ isOpen, onClose, onSuccess,
         <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white">
           <div className="flex items-center gap-3">
             <Plus size={24} />
-            <h3 className="text-xl font-black uppercase italic tracking-tighter">Cadastrar Novo Lead</h3>
+            <h3 className="text-xl font-black uppercase italic tracking-tighter">
+              Cadastrar Novo Lead
+            </h3>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg"><X size={20} /></button>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg"
+          >
+            <X size={20} />
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Nome Completo</label>
-            <input 
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+              Nome Completo
+            </label>
+            <input
               required
               className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
               value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">WhatsApp</label>
-              <input 
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                WhatsApp
+              </label>
+              <input
                 required
                 className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                 value={formData.phone}
-                onChange={e => setFormData({...formData, phone: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">E-mail</label>
-              <input 
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                E-mail
+              </label>
+              <input
                 type="email"
                 className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                 value={formData.email}
-                onChange={e => setFormData({...formData, email: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
               />
             </div>
           </div>
-          <button 
+          <button
             disabled={loading}
             className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-all disabled:opacity-50"
           >
@@ -247,7 +269,7 @@ const KanbanBoard: React.FC = () => {
           />
         </div>
 
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
           className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20"
         >
@@ -256,9 +278,9 @@ const KanbanBoard: React.FC = () => {
         </button>
       </div>
 
-      <NewLeadModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <NewLeadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         onSuccess={() => loadLeads()}
         orgId={targetOrgId}
       />
@@ -302,10 +324,7 @@ const KanbanBoard: React.FC = () => {
                       {/* Cards */}
                       <div className="flex-1 overflow-y-auto p-3 space-y-3">
                         {stageLeads.map((lead, index) => (
-                          <Draggable
-                            draggableId={lead.id}
-                            index={index}
-                          >
+                          <Draggable draggableId={lead.id} index={index}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
@@ -318,25 +337,33 @@ const KanbanBoard: React.FC = () => {
                                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
                                       {lead.name.slice(0, 2)}
                                     </div>
-                                      <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <h4 className="font-bold text-slate-800 text-sm leading-tight">
-                                            {lead.name}
-                                          </h4>
-                                          {lead.classification && (
-                                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${
-                                              lead.classification.includes('Alta') ? 'bg-orange-100 text-orange-600' : 
-                                              lead.classification.includes('Interessado') ? 'bg-emerald-100 text-emerald-600' :
-                                              'bg-slate-100 text-slate-500'
-                                            }`}>
-                                              {lead.classification}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span className="text-[10px] text-slate-400 font-medium">
-                                          Via {lead.source}
-                                        </span>
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="font-bold text-slate-800 text-sm leading-tight">
+                                          {lead.name}
+                                        </h4>
+                                        {lead.classification && (
+                                          <span
+                                            className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${
+                                              lead.classification.includes(
+                                                'Alta'
+                                              )
+                                                ? 'bg-orange-100 text-orange-600'
+                                                : lead.classification.includes(
+                                                      'Interessado'
+                                                    )
+                                                  ? 'bg-emerald-100 text-emerald-600'
+                                                  : 'bg-slate-100 text-slate-500'
+                                            }`}
+                                          >
+                                            {lead.classification}
+                                          </span>
+                                        )}
                                       </div>
+                                      <span className="text-[10px] text-slate-400 font-medium">
+                                        Via {lead.source}
+                                      </span>
+                                    </div>
                                   </div>
                                   <button
                                     onClick={(e) => {

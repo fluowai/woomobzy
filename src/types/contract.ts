@@ -1,4 +1,4 @@
-export type ContractType = 
+export type ContractType =
   | 'PURCHASE'
   | 'SALE'
   | 'RENTAL'
@@ -6,7 +6,7 @@ export type ContractType =
   | 'PARTNERSHIP'
   | 'MANDATE';
 
-export type ContractStatus = 
+export type ContractStatus =
   | 'DRAFT'
   | 'PENDING_SIGNATURES'
   | 'ACTIVE'

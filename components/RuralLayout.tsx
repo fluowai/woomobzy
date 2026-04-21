@@ -25,7 +25,7 @@ import {
   Menu,
   X,
   CreditCard,
-  Clock3
+  Clock3,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -42,7 +42,11 @@ const RuralLayout: React.FC = () => {
       title: 'VISÃO GERAL',
       items: [
         { icon: Sparkles, label: 'Painel 360 ✨', path: '/rural/360' },
-        { icon: LayoutDashboard, label: 'Dashboard Operacional', path: '/rural' },
+        {
+          icon: LayoutDashboard,
+          label: 'Dashboard Operacional',
+          path: '/rural',
+        },
         { icon: PieChart, label: 'BI & Relatórios', path: '/rural/reports' },
       ],
     },
@@ -51,21 +55,37 @@ const RuralLayout: React.FC = () => {
       items: [
         { icon: Users, label: 'Leads & CRM', path: '/rural/crm' },
         { icon: MessageSquare, label: 'Mensagens', path: '/rural/chat' },
-        { icon: Share2, label: 'Conexões WhatsApp', path: '/rural/whatsapp-instances' },
+        {
+          icon: Share2,
+          label: 'Conexões WhatsApp',
+          path: '/rural/whatsapp-instances',
+        },
       ],
     },
     {
       title: 'IMÓVEIS',
       items: [
         { icon: Home, label: 'Fazendas & Imóveis', path: '/rural/properties' },
-        { icon: Database, label: 'Cadastro Técnico', path: '/rural/cadastro-tecnico' },
-        { icon: MapIcon, label: 'Geointeligência', path: '/rural/geointeligencia' },
+        {
+          icon: Database,
+          label: 'Cadastro Técnico',
+          path: '/rural/cadastro-tecnico',
+        },
+        {
+          icon: MapIcon,
+          label: 'Geointeligência',
+          path: '/rural/geointeligencia',
+        },
       ],
     },
     {
       title: 'NEGÓCIOS',
       items: [
-        { icon: ShieldCheck, label: 'Due Diligence', path: '/rural/due-diligence' },
+        {
+          icon: ShieldCheck,
+          label: 'Due Diligence',
+          path: '/rural/due-diligence',
+        },
         { icon: FolderOpen, label: 'Data Room', path: '/rural/dataroom' },
         { icon: FileText, label: 'Contratos', path: '/rural/contracts' },
       ],
@@ -75,15 +95,27 @@ const RuralLayout: React.FC = () => {
       items: [
         { icon: Globe, label: 'Landing Pages', path: '/rural/landing-pages' },
         { icon: Clock3, label: 'Lista de Espera', path: '/rural/waitlist' },
-        { icon: UserCheck, label: 'Portal Comprador', path: '/rural/portal-comprador' },
-        { icon: Users, label: 'Portal Proprietário', path: '/rural/portal-proprietario' },
+        {
+          icon: UserCheck,
+          label: 'Portal Comprador',
+          path: '/rural/portal-comprador',
+        },
+        {
+          icon: Users,
+          label: 'Portal Proprietário',
+          path: '/rural/portal-proprietario',
+        },
       ],
     },
     {
       title: 'SISTEMA',
       items: [
         { icon: Sparkles, label: 'IA Studio', path: '/rural/ai-assistant' },
-        { icon: Eye, label: 'Editor Visual de Site', path: '/rural/visual-editor' },
+        {
+          icon: Eye,
+          label: 'Editor Visual de Site',
+          path: '/rural/visual-editor',
+        },
         { icon: Settings, label: 'Configurações', path: '/rural/settings' },
       ],
     },
@@ -106,7 +138,7 @@ const RuralLayout: React.FC = () => {
             : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'
         }`
       }
-      style={({ isActive }) => 
+      style={({ isActive }) =>
         isActive ? { borderLeft: '3px solid #22C55E' } : {}
       }
     >
@@ -132,8 +164,8 @@ const RuralLayout: React.FC = () => {
             </span>
           </div>
         </Link>
-        
-        <Link 
+
+        <Link
           to={`/site/${(profile?.organization as any)?.slug || ''}`}
           target="_blank"
           className="mt-8 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all text-xs font-bold uppercase tracking-widest"
@@ -163,12 +195,18 @@ const RuralLayout: React.FC = () => {
             {profile?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-100 truncate">{profile?.name || 'Usuário'}</p>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">Plano Agro Pro</p>
+            <p className="text-sm font-semibold text-slate-100 truncate">
+              {profile?.name || 'Usuário'}
+            </p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
+              Plano Agro Pro
+            </p>
           </div>
         </div>
-        <button 
-          onClick={() => signOut().then(() => window.location.href = '/login')}
+        <button
+          onClick={() =>
+            signOut().then(() => (window.location.href = '/login'))
+          }
           className="flex items-center gap-2 text-slate-500 hover:text-white text-xs font-bold transition-colors w-full p-2"
         >
           <LogOut size={16} /> SAIR DA CONTA
@@ -189,14 +227,20 @@ const RuralLayout: React.FC = () => {
         {/* Top Header */}
         <header className="h-[80px] bg-white border-b border-slate-200 px-8 flex items-center justify-between z-20 shrink-0">
           <div className="flex items-center gap-4 flex-1">
-            <button className="lg:hidden p-2 text-slate-600" onClick={() => setIsMobileMenuOpen(true)}>
+            <button
+              className="lg:hidden p-2 text-slate-600"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
               <Menu size={24} />
             </button>
             <div className="relative max-w-lg w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Buscar fazendas, investidores..." 
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Buscar fazendas, investidores..."
                 className="w-full bg-[#F1F5F9] border-none rounded-2xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none"
               />
             </div>
@@ -204,15 +248,22 @@ const RuralLayout: React.FC = () => {
 
           <div className="flex items-center gap-8">
             <div className="hidden xl:flex flex-col text-right">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">VALOR DA CARTEIRA</span>
-              <span className="text-base font-bold text-[#22C55E]">R$ 142.500.000</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                VALOR DA CARTEIRA
+              </span>
+              <span className="text-base font-bold text-[#22C55E]">
+                R$ 142.500.000
+              </span>
             </div>
-            
-            <Link 
-              to="/rural/properties/new" 
+
+            <Link
+              to="/rural/properties/new"
               className="bg-[#22C55E] text-white px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-[#16A34A] transition-all font-bold text-sm shadow-lg shadow-emerald-500/20 group"
             >
-              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              <Plus
+                size={18}
+                className="group-hover:rotate-90 transition-transform duration-300"
+              />
               NOVA PROPRIEDADE
             </Link>
           </div>
@@ -229,10 +280,16 @@ const RuralLayout: React.FC = () => {
       {/* Mobile Sidebar */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0F172A] shadow-2xl animate-in slide-in-from-left duration-300">
             {sidebarContent}
-            <button className="absolute top-4 right-[-48px] text-white" onClick={() => setIsMobileMenuOpen(false)}>
+            <button
+              className="absolute top-4 right-[-48px] text-white"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
               <X size={32} />
             </button>
           </aside>

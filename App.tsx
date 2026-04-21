@@ -5,7 +5,6 @@ import {
   Route,
   Navigate,
   useLocation,
-  Outlet,
 } from 'react-router-dom';
 
 // Impersonation Components
@@ -33,7 +32,6 @@ import UrbanDashboard from './views/UrbanDashboard';
 // Shared Views (used by both Rural and Urban)
 import PropertyManagement from './views/PropertyManagement';
 import PropertyEditor from './views/PropertyEditor';
-import LandingPageManager from './views/LandingPageManager';
 import LandingPageEditor from './views/LandingPageEditor';
 import VisualSiteEditor from './views/VisualSiteEditor';
 import SiteSetupWizard from './views/SiteSetupWizard';
@@ -106,12 +104,9 @@ interface EBState {
 }
 
 class ErrorBoundary extends React.Component<EBProps, EBState> {
-  // @ts-ignore
   state: EBState = { hasError: false, error: null };
 
-  // @ts-ignore
   constructor(props: EBProps) {
-    // @ts-ignore
     super(props);
   }
 
@@ -150,7 +145,7 @@ class ErrorBoundary extends React.Component<EBProps, EBState> {
       );
     }
 
-    // @ts-ignore
+    // @ts-expect-error - returning children
     return this.props.children;
   }
 }
@@ -227,7 +222,6 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
 // ==========================================
 const AppContent: React.FC = () => {
   const { loading } = useSettings();
-  const location = useLocation();
 
   React.useEffect(() => {
     // 1. Redirecionamento do Domínio Principal (Painel)

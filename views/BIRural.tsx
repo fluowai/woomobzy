@@ -54,9 +54,11 @@ const BIRural: React.FC = () => {
         'get_bi_stats',
         { org_id: settings.id }
       );
-      
+
       if (statsError) {
-        console.warn('⚠️ RPC get_bi_stats não encontrada ou falhou. Usando fallback local.');
+        console.warn(
+          '⚠️ RPC get_bi_stats não encontrada ou falhou. Usando fallback local.'
+        );
       } else {
         setBiStats(stats);
       }
@@ -66,7 +68,7 @@ const BIRural: React.FC = () => {
         'get_bi_lead_sources',
         { org_id: settings.id }
       );
-      
+
       if (sourcesError) {
         console.warn('⚠️ RPC get_bi_lead_sources não encontrada ou falhou.');
         setLeadSources([]);

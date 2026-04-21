@@ -1,4 +1,4 @@
-export type PropertyType = 
+export type PropertyType =
   | 'FAZENDA'
   | 'SITIO'
   | 'CHACARA'
@@ -19,7 +19,12 @@ export type PropertyType =
   | 'FLAT'
   | 'KITNET';
 
-export type PropertyStatus = 'DRAFT' | 'ACTIVE' | 'SOLD' | 'SUSPENDED' | 'ARCHIVED';
+export type PropertyStatus =
+  | 'DRAFT'
+  | 'ACTIVE'
+  | 'SOLD'
+  | 'SUSPENDED'
+  | 'ARCHIVED';
 
 export type PropertyCategory = 'RURAL' | 'URBAN';
 

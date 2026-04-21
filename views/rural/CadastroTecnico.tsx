@@ -38,10 +38,12 @@ const CadastroTecnico: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       if (!profile?.organization_id) return;
-      
+
       const { data } = await supabase
         .from('properties')
-        .select('id, title, area_total_ha, location_city, location_state, status')
+        .select(
+          'id, title, area_total_ha, location_city, location_state, status'
+        )
         .eq('organization_id', profile?.organization_id)
         .in('property_type', ['Rural', 'Fazenda'])
         .order('created_at', { ascending: false });

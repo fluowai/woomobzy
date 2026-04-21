@@ -19,11 +19,17 @@ interface Instance {
 
 const TestMessages: React.FC = () => {
   const [instances, setInstances] = useState<Instance[]>([]);
-  const [selectedInstance, setSelectedInstance] = useState<Instance | null>(null);
+  const [selectedInstance, setSelectedInstance] = useState<Instance | null>(
+    null
+  );
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; messageId?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,8 +58,10 @@ const TestMessages: React.FC = () => {
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 2) return numbers;
-    if (numbers.length <= 6) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-    if (numbers.length <= 10) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+    if (numbers.length <= 6)
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    if (numbers.length <= 10)
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
   };
 
@@ -77,7 +85,7 @@ const TestMessages: React.FC = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setResult({ success: true, messageId: data.messageId });
         setPhone('');
@@ -113,9 +121,12 @@ const TestMessages: React.FC = () => {
       <div className="p-6">
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <MessageSquare className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-600 mb-2">Nenhuma instância conectada</h3>
+          <h3 className="text-lg font-medium text-gray-600 mb-2">
+            Nenhuma instância conectada
+          </h3>
           <p className="text-gray-500 mb-4">
-            Conecte uma instância WhatsApp primeiro para enviar mensagens de teste
+            Conecte uma instância WhatsApp primeiro para enviar mensagens de
+            teste
           </p>
           <a
             href="/whatsapp-instances"
@@ -132,7 +143,9 @@ const TestMessages: React.FC = () => {
     <div className="p-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Send className="w-8 h-8 text-green-600" />
-        <h1 className="text-2xl font-bold text-gray-800">Enviar Mensagem de Teste</h1>
+        <h1 className="text-2xl font-bold text-gray-800">
+          Enviar Mensagem de Teste
+        </h1>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -142,7 +155,11 @@ const TestMessages: React.FC = () => {
           </label>
           <select
             value={selectedInstance?.id || ''}
-            onChange={(e) => setSelectedInstance(instances.find(i => i.id === e.target.value) || null)}
+            onChange={(e) =>
+              setSelectedInstance(
+                instances.find((i) => i.id === e.target.value) || null
+              )
+            }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
           >
             {instances.map((inst) => (
@@ -221,7 +238,9 @@ const TestMessages: React.FC = () => {
         </button>
 
         {result && (
-          <div className={`mt-4 p-4 rounded-lg ${result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+          <div
+            className={`mt-4 p-4 rounded-lg ${result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}
+          >
             <div className="flex items-start gap-3">
               {result.success ? (
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
@@ -229,8 +248,12 @@ const TestMessages: React.FC = () => {
                 <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
               )}
               <div>
-                <p className={`font-medium ${result.success ? 'text-green-800' : 'text-red-800'}`}>
-                  {result.success ? 'Mensagem enviada com sucesso!' : 'Erro ao enviar mensagem'}
+                <p
+                  className={`font-medium ${result.success ? 'text-green-800' : 'text-red-800'}`}
+                >
+                  {result.success
+                    ? 'Mensagem enviada com sucesso!'
+                    : 'Erro ao enviar mensagem'}
                 </p>
                 {result.success && result.messageId && (
                   <p className="text-sm text-green-600 mt-1">
@@ -254,8 +277,13 @@ const TestMessages: React.FC = () => {
             <ul className="text-sm text-blue-700 mt-1 list-disc list-inside space-y-1">
               <li>Certifique-se de que o número está correto com DDD</li>
               <li>O número deve ter WhatsApp instalado</li>
-              <li>Mensagens são enviadas apenas para números brasileiros (55)</li>
-              <li>Use a função de teste para verificar se sua instância está funcionando</li>
+              <li>
+                Mensagens são enviadas apenas para números brasileiros (55)
+              </li>
+              <li>
+                Use a função de teste para verificar se sua instância está
+                funcionando
+              </li>
             </ul>
           </div>
         </div>

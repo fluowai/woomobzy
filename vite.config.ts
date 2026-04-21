@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       host: true,
       watch: {
-        ignored: ['**/.sessions/**']
+        ignored: ['**/.sessions/**'],
       },
       proxy: {
         '/api': {

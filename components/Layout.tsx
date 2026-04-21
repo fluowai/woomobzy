@@ -101,9 +101,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           className="flex items-center gap-3"
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          {settings.logoUrl || window.location.hostname === 'imobzy.consultio.com.br' ? (
+          {settings.logoUrl ||
+          window.location.hostname === 'imobzy.consultio.com.br' ? (
             <img
-              src={window.location.hostname === 'imobzy.consultio.com.br' ? '/logo-imobzy.png' : settings.logoUrl}
+              src={
+                window.location.hostname === 'imobzy.consultio.com.br'
+                  ? '/logo-imobzy.png'
+                  : settings.logoUrl
+              }
               alt="Logo"
               className="h-10 md:h-12 w-auto object-contain max-w-[160px]"
             />

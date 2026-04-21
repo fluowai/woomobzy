@@ -71,10 +71,12 @@ const TenantManager: React.FC = () => {
 
   // Helper para pegar o token JWT do Supabase
   const getAuthHeaders = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.access_token}`,
+      Authorization: `Bearer ${session?.access_token}`,
     };
   };
 
@@ -138,12 +140,14 @@ const TenantManager: React.FC = () => {
       let res: Response;
       if (editingId) {
         res = await fetch(`/api/admin/organizations/${editingId}`, {
-          method: 'PUT', headers,
+          method: 'PUT',
+          headers,
           body: JSON.stringify(payload),
         });
       } else {
         res = await fetch('/api/admin/organizations', {
-          method: 'POST', headers,
+          method: 'POST',
+          headers,
           body: JSON.stringify(payload),
         });
       }
@@ -155,7 +159,9 @@ const TenantManager: React.FC = () => {
       fetchTenants();
     } catch (error: any) {
       console.error('Error saving:', error);
-      alert(`Erro ao salvar imobiliária: ${error.message || 'Erro desconhecido'}`);
+      alert(
+        `Erro ao salvar imobiliária: ${error.message || 'Erro desconhecido'}`
+      );
     } finally {
       setFormLoading(false);
     }
@@ -181,8 +187,14 @@ const TenantManager: React.FC = () => {
   };
 
   const deleteTenant = async (id: string, name: string) => {
-    if (!confirm(`⚠️ Tem certeza que deseja EXCLUIR a imobiliária "${name}"?\n\nEssa ação é IRREVERSÍVEL e vai remover todos os dados associados.`)) return;
-    if (!confirm(`Última confirmação: Excluir "${name}" permanentemente?`)) return;
+    if (
+      !confirm(
+        `⚠️ Tem certeza que deseja EXCLUIR a imobiliária "${name}"?\n\nEssa ação é IRREVERSÍVEL e vai remover todos os dados associados.`
+      )
+    )
+      return;
+    if (!confirm(`Última confirmação: Excluir "${name}" permanentemente?`))
+      return;
 
     try {
       const headers = await getAuthHeaders();
@@ -453,7 +465,10 @@ const TenantManager: React.FC = () => {
                   placeholder="ex: imobiliaria.com.br"
                   value={formData.custom_domain}
                   onChange={(e) =>
-                    setFormData({ ...formData, custom_domain: e.target.value.toLowerCase().trim() })
+                    setFormData({
+                      ...formData,
+                      custom_domain: e.target.value.toLowerCase().trim(),
+                    })
                   }
                 />
                 <p className="text-xs text-gray-500 mt-1">

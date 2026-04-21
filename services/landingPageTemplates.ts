@@ -1139,7 +1139,11 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           color: '#4b5563',
           alignment: 'left',
         },
-        styles: { padding: '80px 20px', maxWidth: '800px', margin: '0 auto' } as any,
+        styles: {
+          padding: '80px 20px',
+          maxWidth: '800px',
+          margin: '0 auto',
+        } as any,
         containerWidth: 'md',
       },
       {
@@ -1504,7 +1508,7 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       },
     ],
   },
-  
+
   // ============================================
   // TEMPLATES URBANOS (IMOBILIÁRIAS TRADICIONAIS)
   // ============================================
@@ -1524,20 +1528,39 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       fontFamily: 'Playfair Display',
       borderRadius: '0px',
       spacing: { xs: '1rem', sm: '2rem', md: '3rem', lg: '4rem', xl: '6rem' },
-      fontSize: { base: '1.125rem', heading1: '4rem', heading2: '3rem', heading3: '2rem' },
+      fontSize: {
+        base: '1.125rem',
+        heading1: '4rem',
+        heading2: '3rem',
+        heading3: '2rem',
+      },
     },
     blocks: [
       {
-        type: BlockType.HEADER, order: 0, visible: true,
-        config: { brandName: 'Premium Estate', showWhatsApp: true, sticky: true, transparent: true, textColor: '#ffffff' } as any,
-        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+        type: BlockType.HEADER,
+        order: 0,
+        visible: true,
+        config: {
+          brandName: 'Premium Estate',
+          showWhatsApp: true,
+          sticky: true,
+          transparent: true,
+          textColor: '#ffffff',
+        } as any,
+        styles: { padding: '0' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.HERO, order: 1, visible: true,
+        type: BlockType.HERO,
+        order: 1,
+        visible: true,
         config: {
           title: 'Exclusividade em Cada Detalhe',
-          subtitle: 'Os melhores endereços para o seu estilo de vida sofisticado',
-          backgroundImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80',
+          subtitle:
+            'Os melhores endereços para o seu estilo de vida sofisticado',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80',
           overlayOpacity: 0.6,
           ctaText: 'Ver Portfólio Exclusivo',
           ctaLink: '#imoveis',
@@ -1545,33 +1568,50 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           alignment: 'center',
           textColor: '#d4af37',
         },
-        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+        styles: { padding: '0' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.PROPERTY_GRID, order: 2, visible: true,
-        config: { columns: 2, gap: 40, showFilters: false, maxItems: 4, sortBy: 'price', cardStyle: 'modern' },
-        styles: { padding: '100px 20px', backgroundColor: '#ffffff' }, responsive: {}
+        type: BlockType.PROPERTY_GRID,
+        order: 2,
+        visible: true,
+        config: {
+          columns: 2,
+          gap: 40,
+          showFilters: false,
+          maxItems: 4,
+          sortBy: 'price',
+          cardStyle: 'modern',
+        },
+        styles: { padding: '100px 20px', backgroundColor: '#ffffff' },
+        responsive: {},
       },
       {
-        type: BlockType.CTA, order: 3, visible: true,
+        type: BlockType.CTA,
+        order: 3,
+        visible: true,
         config: {
           title: 'Atendimento Personalizado VIP',
-          description: 'Nossos Private Brokers estão prontos para encontrar o imóvel perfeito para você.',
+          description:
+            'Nossos Private Brokers estão prontos para encontrar o imóvel perfeito para você.',
           buttonText: 'Falar com um Concierge',
           buttonLink: 'https://wa.me/5544900000000',
           backgroundColor: '#0a0a0a',
           textColor: '#d4af37',
         },
-        styles: { padding: '120px 20px' }, responsive: {}
-      }
+        styles: { padding: '120px 20px' },
+        responsive: {},
+      },
     ],
   },
-  
+
   // 2. LAR DOCE LAR
   {
     id: 'lar-doce-lar',
     name: 'Lar Doce Lar',
-    description: 'Cores vibrantes focadas em famílias que buscam financiamento e o primeiro imóvel.',
+    description:
+      'Cores vibrantes focadas em famílias que buscam financiamento e o primeiro imóvel.',
     thumbnail: '🏡',
     category: 'Urban',
     themeConfig: {
@@ -1581,21 +1621,46 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#334155',
       fontFamily: 'Inter',
       borderRadius: '0.75rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '2.5rem', heading2: '2rem', heading3: '1.5rem' },
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '2.5rem',
+        heading2: '2rem',
+        heading3: '1.5rem',
+      },
     },
     blocks: [
       {
-        type: BlockType.HEADER, order: 0, visible: true,
-        config: { brandName: 'Lar Imóveis', showWhatsApp: true, sticky: true, transparent: false, textColor: '#0f172a' } as any,
-        styles: { padding: '0', backgroundColor: '#ffffff' }, responsive: {}, containerWidth: 'full'
+        type: BlockType.HEADER,
+        order: 0,
+        visible: true,
+        config: {
+          brandName: 'Lar Imóveis',
+          showWhatsApp: true,
+          sticky: true,
+          transparent: false,
+          textColor: '#0f172a',
+        } as any,
+        styles: { padding: '0', backgroundColor: '#ffffff' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.HERO, order: 1, visible: true,
+        type: BlockType.HERO,
+        order: 1,
+        visible: true,
         config: {
           title: 'Conquiste a Casa Própria Hoje!',
-          subtitle: 'Imóveis com Financiamento Facilitado para você e sua família',
-          backgroundImage: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1920&q=80',
+          subtitle:
+            'Imóveis com Financiamento Facilitado para você e sua família',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1920&q=80',
           overlayOpacity: 0.4,
           ctaText: 'Faça uma Simulação',
           ctaLink: '#simulacao',
@@ -1603,24 +1668,52 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           alignment: 'left',
           textColor: '#ffffff',
         },
-        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+        styles: { padding: '0' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.FEATURES, order: 2, visible: true,
+        type: BlockType.FEATURES,
+        order: 2,
+        visible: true,
         config: {
           features: [
-            { title: 'Aprovação Rápida', description: 'Parceria com todos os bancos', icon: '⚡' },
-            { title: 'Use seu FGTS', description: 'Você pode usar o saldo na entrada', icon: '💰' },
-            { title: 'Taxas Reduzidas', description: 'As melhores condições do mercado', icon: '📉' }
-          ], columns: 3
+            {
+              title: 'Aprovação Rápida',
+              description: 'Parceria com todos os bancos',
+              icon: '⚡',
+            },
+            {
+              title: 'Use seu FGTS',
+              description: 'Você pode usar o saldo na entrada',
+              icon: '💰',
+            },
+            {
+              title: 'Taxas Reduzidas',
+              description: 'As melhores condições do mercado',
+              icon: '📉',
+            },
+          ],
+          columns: 3,
         },
-        styles: { padding: '60px 20px', backgroundColor: '#ffffff' }, responsive: {}
+        styles: { padding: '60px 20px', backgroundColor: '#ffffff' },
+        responsive: {},
       },
       {
-        type: BlockType.PROPERTY_GRID, order: 3, visible: true,
-        config: { columns: 3, gap: 24, showFilters: true, maxItems: 6, sortBy: 'date', cardStyle: 'modern' },
-        styles: { padding: '40px 20px' }, responsive: {}
-      }
+        type: BlockType.PROPERTY_GRID,
+        order: 3,
+        visible: true,
+        config: {
+          columns: 3,
+          gap: 24,
+          showFilters: true,
+          maxItems: 6,
+          sortBy: 'date',
+          cardStyle: 'modern',
+        },
+        styles: { padding: '40px 20px' },
+        responsive: {},
+      },
     ],
   },
 
@@ -1628,7 +1721,8 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
   {
     id: 'metropole-smart',
     name: 'Metrópole Smart',
-    description: 'Design jovem voltado a studios, moradia compacta e investidores tech.',
+    description:
+      'Design jovem voltado a studios, moradia compacta e investidores tech.',
     thumbnail: '🏢',
     category: 'Urban',
     themeConfig: {
@@ -1638,21 +1732,45 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Roboto',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.5rem', heading3: '2rem' },
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.5rem',
+        heading3: '2rem',
+      },
     },
     blocks: [
       {
-        type: BlockType.HEADER, order: 0, visible: true,
-        config: { brandName: 'NeoStudios', showWhatsApp: true, sticky: true, transparent: false, textColor: '#1f2937' } as any,
-        styles: { padding: '0', backgroundColor: '#ffffff' }, responsive: {}, containerWidth: 'full'
+        type: BlockType.HEADER,
+        order: 0,
+        visible: true,
+        config: {
+          brandName: 'NeoStudios',
+          showWhatsApp: true,
+          sticky: true,
+          transparent: false,
+          textColor: '#1f2937',
+        } as any,
+        styles: { padding: '0', backgroundColor: '#ffffff' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.HERO, order: 1, visible: true,
+        type: BlockType.HERO,
+        order: 1,
+        visible: true,
         config: {
           title: 'O Futuro é Smart',
           subtitle: 'Studios e Apartamentos Compactos perto de tudo.',
-          backgroundImage: 'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=1920&q=80',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=1920&q=80',
           overlayOpacity: 0.6,
           ctaText: 'Ver Mapa de Studios',
           ctaLink: '#properties',
@@ -1660,24 +1778,44 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           alignment: 'center',
           textColor: '#ffffff',
         },
-        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+        styles: { padding: '0' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.STATS, order: 2, visible: true,
+        type: BlockType.STATS,
+        order: 2,
+        visible: true,
         config: {
           stats: [
             { icon: '📈', value: '1.2%', label: 'Rentabilidade Mensal' },
             { icon: '🚉', value: '5 min', label: 'do Metrô' },
             { icon: '🔒', value: '24h', label: 'Segurança Inteligente' },
-          ], columns: 3
+          ],
+          columns: 3,
         } as any,
-        styles: { padding: '60px 20px', backgroundColor: '#8b5cf6', color: '#ffffff' }, responsive: {}
+        styles: {
+          padding: '60px 20px',
+          backgroundColor: '#8b5cf6',
+          textColor: '#ffffff',
+        },
+        responsive: {},
       },
       {
-        type: BlockType.PROPERTY_GRID, order: 3, visible: true,
-        config: { columns: 3, gap: 16, showFilters: true, maxItems: 6, sortBy: 'price', cardStyle: 'modern' },
-        styles: { padding: '80px 20px' }, responsive: {}
-      }
+        type: BlockType.PROPERTY_GRID,
+        order: 3,
+        visible: true,
+        config: {
+          columns: 3,
+          gap: 16,
+          showFilters: true,
+          maxItems: 6,
+          sortBy: 'price',
+          cardStyle: 'modern',
+        },
+        styles: { padding: '80px 20px' },
+        responsive: {},
+      },
     ],
   },
 
@@ -1696,20 +1834,39 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       fontFamily: 'Lora',
       borderRadius: '0.25rem',
       spacing: { xs: '0.5rem', sm: '1rem', md: '2rem', lg: '3rem', xl: '4rem' },
-      fontSize: { base: '1rem', heading1: '2.5rem', heading2: '1.875rem', heading3: '1.5rem' },
+      fontSize: {
+        base: '1rem',
+        heading1: '2.5rem',
+        heading2: '1.875rem',
+        heading3: '1.5rem',
+      },
     },
     blocks: [
       {
-        type: BlockType.HEADER, order: 0, visible: true,
-        config: { brandName: 'Tradição Imóveis', showWhatsApp: true, sticky: true, transparent: false, textColor: '#ffffff' } as any,
-        styles: { padding: '0', backgroundColor: '#1e3a8a' }, responsive: {}, containerWidth: 'full'
+        type: BlockType.HEADER,
+        order: 0,
+        visible: true,
+        config: {
+          brandName: 'Tradição Imóveis',
+          showWhatsApp: true,
+          sticky: true,
+          transparent: false,
+          textColor: '#ffffff',
+        } as any,
+        styles: { padding: '0', backgroundColor: '#1e3a8a' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.HERO, order: 1, visible: true,
+        type: BlockType.HERO,
+        order: 1,
+        visible: true,
         config: {
           title: 'Encontre o Imóvel Perfeito na Região Central',
-          subtitle: 'Tradição e Confiança desde 1990 gerando negócios imobiliários.',
-          backgroundImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=80',
+          subtitle:
+            'Tradição e Confiança desde 1990 gerando negócios imobiliários.',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=80',
           overlayOpacity: 0.5,
           ctaText: 'Ver Nossos Imóveis',
           ctaLink: '#imoveis',
@@ -1717,29 +1874,44 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           alignment: 'center',
           textColor: '#ffffff',
         },
-        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+        styles: { padding: '0' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.PROPERTY_GRID, order: 2, visible: true,
-        config: { columns: 3, gap: 30, showFilters: true, maxItems: 9, sortBy: 'date', cardStyle: 'modern' },
-        styles: { padding: '80px 20px' }, responsive: {}
+        type: BlockType.PROPERTY_GRID,
+        order: 2,
+        visible: true,
+        config: {
+          columns: 3,
+          gap: 30,
+          showFilters: true,
+          maxItems: 9,
+          sortBy: 'date',
+          cardStyle: 'modern',
+        },
+        styles: { padding: '80px 20px' },
+        responsive: {},
       },
       {
-        type: BlockType.FORM, order: 3, visible: true,
+        type: BlockType.FORM,
+        order: 3,
+        visible: true,
         config: {
           title: 'Quer Avaliar Seu Imóvel?',
           fields: [
             { name: 'name', type: 'text', label: 'Nome', required: true },
-            { name: 'phone', type: 'tel', label: 'Celular', required: true }
+            { name: 'phone', type: 'tel', label: 'Celular', required: true },
           ],
           submitText: 'Solicitar Avaliação',
-          successMessage: 'Obrigado. Um corretor fará contato logo!'
+          successMessage: 'Obrigado. Um corretor fará contato logo!',
         },
-        styles: { padding: '60px 20px', backgroundColor: '#f1f5f9' }, responsive: {}
-      }
+        styles: { padding: '60px 20px', backgroundColor: '#f1f5f9' },
+        responsive: {},
+      },
     ],
   },
-  
+
   // 5. MODERN MINIMALIST
   {
     id: 'modern-minimalist',
@@ -1755,20 +1927,38 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       fontFamily: 'Inter',
       borderRadius: '0px',
       spacing: { xs: '1rem', sm: '2rem', md: '4rem', lg: '6rem', xl: '8rem' },
-      fontSize: { base: '1rem', heading1: '4.5rem', heading2: '3rem', heading3: '2rem' },
+      fontSize: {
+        base: '1rem',
+        heading1: '4.5rem',
+        heading2: '3rem',
+        heading3: '2rem',
+      },
     },
     blocks: [
       {
-        type: BlockType.HEADER, order: 0, visible: true,
-        config: { brandName: 'ArqEstate', showWhatsApp: false, sticky: true, transparent: true, textColor: '#171717' } as any,
-        styles: { padding: '0', backgroundColor: 'transparent' }, responsive: {}, containerWidth: 'full'
+        type: BlockType.HEADER,
+        order: 0,
+        visible: true,
+        config: {
+          brandName: 'ArqEstate',
+          showWhatsApp: false,
+          sticky: true,
+          transparent: true,
+          textColor: '#171717',
+        } as any,
+        styles: { padding: '0', backgroundColor: 'transparent' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.HERO, order: 1, visible: true,
+        type: BlockType.HERO,
+        order: 1,
+        visible: true,
         config: {
           title: 'Curadoria de Imóveis Especiais',
           subtitle: '',
-          backgroundImage: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1920&q=80',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1920&q=80',
           overlayOpacity: 0.1,
           ctaText: 'Explore o Acervo',
           ctaLink: '#imoveis',
@@ -1776,23 +1966,41 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           alignment: 'center',
           textColor: '#ffffff',
         },
-        styles: { padding: '0' }, responsive: {}, containerWidth: 'full'
+        styles: { padding: '0' },
+        responsive: {},
+        containerWidth: 'full',
       },
       {
-        type: BlockType.TEXT, order: 2, visible: true,
+        type: BlockType.TEXT,
+        order: 2,
+        visible: true,
         config: {
-          content: '<h2 style="font-weight:300; font-size:2.5rem; text-align:center;">Para nós, a beleza está no vazio perfeito.</h2>',
-          fontSize: 24, fontWeight: 300, color: '#171717', alignment: 'center'
+          content:
+            '<h2 style="font-weight:300; font-size:2.5rem; text-align:center;">Para nós, a beleza está no vazio perfeito.</h2>',
+          fontSize: 24,
+          fontWeight: 300,
+          color: '#171717',
+          alignment: 'center',
         },
-        styles: { padding: '120px 20px' }, responsive: {}
+        styles: { padding: '120px 20px' },
+        responsive: {},
       },
       {
-        type: BlockType.PROPERTY_CAROUSEL, order: 3, visible: true,
-        config: { images: [], autoplay: true, autoplayDelay: 4000, showThumbnails: false, showDots: true } as any,
-        styles: { padding: '0 20px 100px 20px' }, responsive: {}
-      }
+        type: BlockType.PROPERTY_CAROUSEL,
+        order: 3,
+        visible: true,
+        config: {
+          images: [],
+          autoplay: true,
+          autoplayDelay: 4000,
+          showThumbnails: false,
+          showDots: true,
+        } as any,
+        styles: { padding: '0 20px 100px 20px' },
+        responsive: {},
+      },
     ],
-  }
+  },
 ];
 
 // Helper para buscar template por ID

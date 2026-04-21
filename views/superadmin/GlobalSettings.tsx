@@ -86,8 +86,9 @@ const GlobalSettings: React.FC = () => {
             <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3" />
             <div>
               <p className="text-sm text-yellow-700">
-                Estas chaves são compartilhadas entre todas as organizações. 
-                Cada organização pode configurar suas próprias chaves nas configurações do site.
+                Estas chaves são compartilhadas entre todas as organizações.
+                Cada organização pode configurar suas próprias chaves nas
+                configurações do site.
               </p>
             </div>
           </div>
@@ -106,7 +107,10 @@ const GlobalSettings: React.FC = () => {
                 type="password"
                 value={settings.global_openai_key || ''}
                 onChange={(e) =>
-                  setSettings({ ...settings, global_openai_key: e.target.value })
+                  setSettings({
+                    ...settings,
+                    global_openai_key: e.target.value,
+                  })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
               />
@@ -119,7 +123,10 @@ const GlobalSettings: React.FC = () => {
                 type="password"
                 value={settings.global_gemini_key || ''}
                 onChange={(e) =>
-                  setSettings({ ...settings, global_gemini_key: e.target.value })
+                  setSettings({
+                    ...settings,
+                    global_gemini_key: e.target.value,
+                  })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
               />
@@ -132,7 +139,10 @@ const GlobalSettings: React.FC = () => {
                 type="password"
                 value={(settings as any).global_groq_key || ''}
                 onChange={(e) =>
-                  setSettings({ ...settings, global_groq_key: e.target.value } as any)
+                  setSettings({
+                    ...settings,
+                    global_groq_key: e.target.value,
+                  } as any)
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
               />

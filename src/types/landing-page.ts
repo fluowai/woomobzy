@@ -1,4 +1,4 @@
-export type BlockType = 
+export type BlockType =
   | 'hero'
   | 'heroWithForm'
   | 'text'

@@ -1,4 +1,10 @@
-import { Property } from '../types';
+import {
+  Property,
+  PropertyType,
+  PropertyPurpose,
+  PropertyAptitude,
+  PropertyStatus,
+} from '../types';
 import { callApi } from '../src/lib/api';
 
 export const propertyService = {
@@ -18,7 +24,7 @@ export const propertyService = {
   async create(property: Partial<Property>) {
     const data = await callApi('/api/properties', {
       method: 'POST',
-      body: JSON.stringify(property)
+      body: JSON.stringify(property),
     });
     return mapToModel(data.property);
   },
@@ -27,7 +33,7 @@ export const propertyService = {
   async update(id: string, property: Partial<Property>) {
     const data = await callApi(`/api/properties/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(property)
+      body: JSON.stringify(property),
     });
     return mapToModel(data.property);
   },
@@ -35,11 +41,19 @@ export const propertyService = {
   // Excluir Imóvel
   async delete(id: string) {
     await callApi(`/api/properties/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     });
   },
-};
 
+  // Submeter novo imóvel (para landing pages)
+  async submit(property: Partial<Property>) {
+    const data = await callApi('/api/properties', {
+      method: 'POST',
+      body: JSON.stringify(property),
+    });
+    return mapToModel(data.property);
+  },
+};
 
 // Mappers para converter entre Banco de Dados (snake_case/flat) e Modelo da Aplicação (CamelCase/Nested)
 const mapToModel = (dbItem: any): Property => ({

@@ -15,12 +15,13 @@ export const groqService = {
           messages: [
             {
               role: 'system',
-              content: 'Você é um especialista em marketing imobiliário rural e urbano.',
+              content:
+                'Você é um especialista em marketing imobiliário rural e urbano.',
             },
             { role: 'user', content: prompt },
           ],
           temperature: 0.2,
-          response_format: { type: 'json_object' }
+          response_format: { type: 'json_object' },
         },
         {
           headers: {
@@ -32,7 +33,10 @@ export const groqService = {
 
       return response.data.choices[0].message.content || '{}';
     } catch (error: any) {
-      console.error('Error generating text with Groq:', error.response?.data || error.message);
+      console.error(
+        'Error generating text with Groq:',
+        error.response?.data || error.message
+      );
       return '{}';
     }
   },

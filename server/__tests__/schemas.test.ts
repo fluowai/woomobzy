@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  propertySchema, 
-  leadSchema, 
-  contactSchema, 
-  landingPageSchema 
+import {
+  propertySchema,
+  leadSchema,
+  contactSchema,
+  landingPageSchema,
 } from '../schemas/index.js';
 
 describe('Property Schema', () => {
@@ -17,7 +17,7 @@ describe('Property Schema', () => {
       city: 'Campinas',
       price_total: 500000,
     };
-    
+
     const result = propertySchema.safeParse(property);
     expect(result.success).toBe(true);
   });
@@ -31,7 +31,7 @@ describe('Property Schema', () => {
       city: 'Campinas',
       price_total: 500000,
     };
-    
+
     const result = propertySchema.safeParse(property);
     expect(result.success).toBe(false);
   });
@@ -46,7 +46,7 @@ describe('Property Schema', () => {
       city: 'Campinas',
       price_total: 500000,
     };
-    
+
     const result = propertySchema.safeParse(property);
     expect(result.success).toBe(false);
   });
@@ -58,7 +58,7 @@ describe('Lead Schema', () => {
       name: 'João Silva',
       phone: '11999999999',
     };
-    
+
     const result = leadSchema.safeParse(lead);
     expect(result.success).toBe(true);
   });
@@ -70,7 +70,7 @@ describe('Lead Schema', () => {
       phone: '11999999999',
       source: 'WEBSITE',
     };
-    
+
     const result = leadSchema.safeParse(lead);
     expect(result.success).toBe(true);
   });
@@ -79,7 +79,7 @@ describe('Lead Schema', () => {
     const lead = {
       phone: '11999999999',
     };
-    
+
     const result = leadSchema.safeParse(lead);
     expect(result.success).toBe(false);
   });
@@ -90,7 +90,7 @@ describe('Lead Schema', () => {
       email: 'invalid-email',
       phone: '11999999999',
     };
-    
+
     const result = leadSchema.safeParse(lead);
     expect(result.success).toBe(false);
   });
@@ -103,7 +103,7 @@ describe('Contact Schema', () => {
       phone: '11988887777',
       message: 'Gostaria de mais informações sobre o imóvel.',
     };
-    
+
     const result = contactSchema.safeParse(contact);
     expect(result.success).toBe(true);
   });
@@ -114,7 +114,7 @@ describe('Contact Schema', () => {
       phone: '11988887777',
       message: 'Olá',
     };
-    
+
     const result = contactSchema.safeParse(contact);
     expect(result.success).toBe(false);
   });
@@ -126,7 +126,7 @@ describe('Landing Page Schema', () => {
       name: 'Minha Landing Page',
       slug: 'minha-landing-page',
     };
-    
+
     const result = landingPageSchema.safeParse(page);
     expect(result.success).toBe(true);
   });
@@ -136,7 +136,7 @@ describe('Landing Page Schema', () => {
       name: 'Minha Landing Page',
       slug: 'Slug Invalido',
     };
-    
+
     const result = landingPageSchema.safeParse(page);
     expect(result.success).toBe(false);
   });

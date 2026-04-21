@@ -127,7 +127,10 @@ export const MOCK_LEADS: Lead[] = [
     source: 'Portal Fazendas Brasil',
     status: 'Proposta',
     budget: 50000000,
-    preferences: { type: PropertyType.TERRENO_RURAL, neighborhood: 'Mato Grosso' },
+    preferences: {
+      type: PropertyType.TERRENO_RURAL,
+      neighborhood: 'Mato Grosso',
+    },
     createdAt: '2024-05-22',
   },
   {

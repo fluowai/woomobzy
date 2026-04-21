@@ -82,9 +82,9 @@ const Login: React.FC = () => {
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <img 
-              src="/logo-imobzy.png" 
-              alt="IMOBZY" 
+            <img
+              src="/logo-imobzy.png"
+              alt="IMOBZY"
               className="h-16 w-auto mx-auto mb-4"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';

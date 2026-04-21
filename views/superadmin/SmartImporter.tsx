@@ -18,6 +18,14 @@ import {
   Crown,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+const MOCK_IDENTITY = {
+  palette: ['#1e293b', '#3b82f6', '#f8fafc', '#64748b', '#0f172a'],
+  fonts: ['Inter', 'system-ui'],
+  primaryColor: '#1e293b',
+  secondaryColor: '#3b82f6',
+  suggestedTheme: 'modern',
+};
 import { supabase } from '../../services/supabase';
 import {
   ImportMode,
@@ -32,13 +40,19 @@ import PropertyReviewTable from '../../components/importer/PropertyReviewTable';
 const SmartImporter: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [url, setUrl] = useState(() => sessionStorage.getItem('importer_url') || '');
+  const [url, setUrl] = useState(
+    () => sessionStorage.getItem('importer_url') || ''
+  );
   const [authorized, setAuthorized] = useState(false);
   const [mode, setMode] = useState<ImportMode>('migration');
   const [status, setStatus] = useState<ImportStatus>('idle');
   const [organizations, setOrganizations] = useState<any[]>([]);
-  const [selectedOrgId, setSelectedOrgId] = useState(() => sessionStorage.getItem('importer_org_id') || '');
-  const [capturedProperties, setCapturedProperties] = useState<CapturedProperty[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState(
+    () => sessionStorage.getItem('importer_org_id') || ''
+  );
+  const [capturedProperties, setCapturedProperties] = useState<
+    CapturedProperty[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   // Persistence effects
@@ -57,13 +71,14 @@ const SmartImporter: React.FC = () => {
         const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
         const response = await fetch(`${apiUrl}/api/admin/organizations`, {
           headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-          }
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
         });
         const data = await response.json();
         if (data.success) {
           setOrganizations(data.organizations);
-          if (data.organizations.length > 0) setSelectedOrgId(data.organizations[0].id);
+          if (data.organizations.length > 0)
+            setSelectedOrgId(data.organizations[0].id);
         }
       } catch (err) {
         console.error('Failed to fetch organizations:', err);
@@ -86,11 +101,11 @@ const SmartImporter: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
-        body: JSON.stringify({ url, organizationId: selectedOrgId })
+        body: JSON.stringify({ url, organizationId: selectedOrgId }),
       });
-      
+
       const data = await response.json();
       if (data.success) {
         setCapturedProperties(data.properties);
@@ -114,12 +129,12 @@ const SmartImporter: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
-        body: JSON.stringify({ 
-          properties: capturedProperties, 
-          organizationId: selectedOrgId 
-        })
+        body: JSON.stringify({
+          properties: capturedProperties,
+          organizationId: selectedOrgId,
+        }),
       });
 
       const data = await response.json();

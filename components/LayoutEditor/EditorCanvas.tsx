@@ -92,10 +92,7 @@ export const EditorCanvas: React.FC = () => {
                 className={`space-y-4 ${snapshot.isDraggingOver ? 'bg-indigo-50/50' : ''}`}
               >
                 {blocks.map((block, index) => (
-                  <Draggable
-                    draggableId={block.id}
-                    index={index}
-                  >
+                  <Draggable draggableId={block.id} index={index}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}

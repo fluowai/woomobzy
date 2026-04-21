@@ -1,4 +1,4 @@
-export type LeadStatus = 
+export type LeadStatus =
   | 'NEW'
   | 'CONTACTED'
   | 'QUALIFIED'
@@ -7,7 +7,7 @@ export type LeadStatus =
   | 'CLOSED_WON'
   | 'CLOSED_LOST';
 
-export type LeadSource = 
+export type LeadSource =
   | 'WEBSITE'
   | 'WHATSAPP'
   | 'PHONE'

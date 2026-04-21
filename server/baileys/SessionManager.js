@@ -177,16 +177,54 @@ export class SessionManager extends EventEmitter {
         this.emit('disconnected', { instanceId, statusCode });
 
         console.log(
-          `[SessionManager] 🔌 Conexão fechada: ${instanceId} (Code: ${statusCode}). Reconecta? ${shouldReconnect}`
+          `[SessionManager] 🔌 Conexão fechada: ${instanceId} (Code: ${statusCode}). shouldReconnect: ${shouldReconnect}, isShuttingDown: ${session.isShuttingDown}`
         );
 
+        // Contador de tentativas de reconexão
+        if (!session.reconnectAttempts) session.reconnectAttempts = 0;
+
+        // Backoff exponencial: 2s, 4s, 8s, 16s, 30s, 60s
+        const delays = [2000, 4000, 8000, 16000, 30000, 60000];
+        const delay =
+          delays[Math.min(session.reconnectAttempts, delays.length - 1)] ||
+          5000;
+
         if (shouldReconnect && !session.isShuttingDown) {
-          // Lógica simples e direta de reconexão do "Código Prisma"
+          // Limita tentativas de reconexão
+          if (session.reconnectAttempts >= 6) {
+            console.log(
+              `[SessionManager] ❌ Max tentativas (6) atingidas para ${instanceId}. Limpando sessão.`
+            );
+            await this.persistence.clearSession(instanceId);
+            this.sessions.delete(instanceId);
+            session.reconnectAttempts = 0;
+            return;
+          }
+
+          console.log(
+            `[SessionManager] ⏳ Tentativa ${session.reconnectAttempts + 1}/6 em ${delay}ms para ${instanceId}`
+          );
+          session.reconnectAttempts++;
+
           setTimeout(async () => {
-            if (this.sessions.get(instanceId) === session) {
-              await this.startSession(instanceId, organizationId);
+            if (
+              this.sessions.get(instanceId) === session &&
+              !session.isShuttingDown
+            ) {
+              try {
+                await this.startSession(instanceId, organizationId);
+                session.reconnectAttempts = 0; // Reset após sucesso
+                console.log(
+                  `[SessionManager] ✅ Reconexão bem-sucedida para ${instanceId}`
+                );
+              } catch (err) {
+                console.error(
+                  `[SessionManager] ❌ Falha na reconexão:`,
+                  err.message
+                );
+              }
             }
-          }, 5000);
+          }, delay);
         } else if (!shouldReconnect) {
           // Clear session entirely
           await this.persistence.clearSession(instanceId);

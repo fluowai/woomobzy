@@ -48,6 +48,7 @@ import WhatsAppInstances from './views/admin/WhatsAppInstances';
 import Chat from './views/admin/Chat';
 import TestMessages from './views/admin/TestMessages';
 import WaitlistLeads from './views/admin/WaitlistLeads';
+import Dashboard360 from './views/admin/Dashboard360';
 
 // Rural-Specific Views
 import CadastroTecnico from './views/rural/CadastroTecnico';
@@ -280,6 +281,7 @@ const AppContent: React.FC = () => {
             }
           >
             <Route index element={<RuralDashboard />} />
+            <Route path="360" element={<Dashboard360 />} />
             <Route path="cadastro-tecnico" element={<CadastroTecnico />} />
             <Route path="properties" element={<PropertyManagement />} />
             <Route path="properties/new" element={<PropertyEditor />} />
@@ -313,6 +315,7 @@ const AppContent: React.FC = () => {
             }
           >
             <Route index element={<UrbanDashboard />} />
+            <Route path="360" element={<Dashboard360 />} />
             <Route path="properties" element={<PropertyManagement />} />
             <Route path="properties/new" element={<PropertyEditor />} />
             <Route path="properties/:id" element={<PropertyEditor />} />

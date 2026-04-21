@@ -41,7 +41,8 @@ const RuralLayout: React.FC = () => {
     {
       title: 'VISÃO GERAL',
       items: [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
+        { icon: Sparkles, label: 'Painel 360 ✨', path: '/rural/360' },
+        { icon: LayoutDashboard, label: 'Dashboard Operacional', path: '/rural' },
         { icon: PieChart, label: 'BI & Relatórios', path: '/rural/reports' },
       ],
     },

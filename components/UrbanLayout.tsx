@@ -64,7 +64,8 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
     {
       title: 'Painel & Análises',
       items: [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
+        { icon: Sparkles, label: 'Painel 360 ✨', path: '/urban/360' },
+        { icon: LayoutDashboard, label: 'Dashboard Operacional', path: '/urban' },
         { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
       ],
     },

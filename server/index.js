@@ -22,6 +22,7 @@ import crmRoutes from './api/crm/index.js';
 import propertyRoutes from './api/properties/index.js';
 import tenantHandler from './api/tenant/index.js';
 import ruralRoutes from './api/rural/index.js';
+import urbanRoutes from './api/urban/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

@@ -23,6 +23,8 @@ const SystemSettings: React.FC = () => {
   const [openaiKey, setOpenaiKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
+  const [asaasKey, setAsaasKey] = useState('');
+  const [zapsignKey, setZapsignKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
@@ -38,6 +40,12 @@ const SystemSettings: React.FC = () => {
     }
     if (settings?.integrations?.gemini?.apiKey) {
       setGeminiKey(settings.integrations.gemini.apiKey);
+    }
+    if (settings?.integrations?.asaas?.apiKey) {
+      setAsaasKey(settings.integrations.asaas.apiKey);
+    }
+    if (settings?.integrations?.zapsign?.apiKey) {
+      setZapsignKey(settings.integrations.zapsign.apiKey);
     }
   }, [settings]);
 
@@ -58,6 +66,13 @@ const SystemSettings: React.FC = () => {
           },
           gemini: {
             apiKey: geminiKey,
+          },
+          asaas: {
+            apiKey: asaasKey,
+            environment: 'production'
+          },
+          zapsign: {
+            apiKey: zapsignKey
           },
         },
       });
@@ -82,7 +97,7 @@ const SystemSettings: React.FC = () => {
     { id: 'appearance', label: 'Aparência', icon: Palette },
     { id: 'users', label: 'Membros & Acesso', icon: Users },
     { id: 'domains', label: 'Domínios', icon: Globe },
-    { id: 'ai', label: 'IA & Chaves', icon: Brain },
+    { id: 'ai', label: 'Integrações 360', icon: Brain },
     { id: 'tracking', label: 'Tracking', icon: Activity },
   ];
 
@@ -143,8 +158,8 @@ const SystemSettings: React.FC = () => {
                   <Key size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#0F172A]">API & Inteligência Artificial</h3>
-                  <p className="text-xs text-[#64748B]">Configure as chaves secretas para alimentar o IA Studio e automações.</p>
+                  <h3 className="text-lg font-bold text-[#0F172A]">Centro de Integrações 360</h3>
+                  <p className="text-xs text-[#64748B]">Configure as chaves secretas para unificar Financeiro, Jurídico e IA em um só painel.</p>
                 </div>
               </div>
 
@@ -184,6 +199,36 @@ const SystemSettings: React.FC = () => {
                       className="input-premium w-full"
                     />
                     <p className="text-[10px] text-slate-400">Gerações ultrarrápidas de baixo custo.</p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-slate-100 my-8" />
+                
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Módulos de Negócio (360)</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Asaas API Key (Financeiro)</label>
+                    <input
+                      type="password"
+                      value={asaasKey}
+                      onChange={(e) => setAsaasKey(e.target.value)}
+                      placeholder="$... (API Key de Produção)"
+                      className="input-premium w-full text-blue-600 font-mono"
+                    />
+                    <p className="text-[10px] text-slate-400">Para automação de boletos, PIX e gestão de aluguéis.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">ZapSign API Token (Jurídico)</label>
+                    <input
+                      type="password"
+                      value={zapsignKey}
+                      onChange={(e) => setZapsignKey(e.target.value)}
+                      placeholder="Token de acesso ZapSign"
+                      className="input-premium w-full text-indigo-600 font-mono"
+                    />
+                    <p className="text-[10px] text-slate-400">Para envio de contratos e assinaturas digitais via WhatsApp.</p>
                   </div>
                 </div>
 

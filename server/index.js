@@ -23,6 +23,7 @@ import propertyRoutes from './api/properties/index.js';
 import tenantHandler from './api/tenant/index.js';
 import ruralRoutes from './api/rural/index.js';
 import urbanRoutes from './api/urban/index.js';
+import locacaoRoutes from './api/locacao/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -128,6 +129,7 @@ app.use('/api/crm', crmRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/rural', ruralRoutes);
 app.use('/api/urban', urbanRoutes);
+app.use('/api/locacao', locacaoRoutes);
 
 // Tenant Resolution
 

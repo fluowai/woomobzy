@@ -175,7 +175,7 @@ const RuralLayout: React.FC = () => {
       <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-8 custom-scrollbar">
         {menuGroups.map((group) => (
           <div key={group.title}>
-            <h3 className="px-4 text-[11px] font-bold text-slate-500 uppercase tracking-[.15em] mb-3">
+            <h3 className="px-3 text-[10px] font-bold text-tertiary uppercase tracking-wider mb-3">
               {group.title}
             </h3>
             <div className="space-y-1">
@@ -186,9 +186,9 @@ const RuralLayout: React.FC = () => {
       </nav>
 
       {/* Profile & Logout */}
-      <div className="p-6 border-t border-slate-800 bg-slate-900/50">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-100 font-bold border border-slate-700">
+      <div className="p-4 border-t border-subtle bg-bg-hover">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold border border-brand/30">
             {profile?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">

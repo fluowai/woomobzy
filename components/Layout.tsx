@@ -212,8 +212,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div
-      className="flex h-screen bg-slate-50 overflow-hidden"
-      style={{ fontFamily: '"Poppins", sans-serif', fontSize: '16px' }}
+      className="flex h-screen bg-bg-primary overflow-hidden"
+      style={{ fontFamily: '"Inter", sans-serif', fontSize: '16px' }}
     >
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
@@ -224,11 +224,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             onClick={() => setIsMobileMenuOpen(false)}
           />
           {/* Sidebar Drawer */}
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#000000] text-white flex flex-col animate-in slide-in-from-left duration-300">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-bg-card text-text-primary flex flex-col animate-in slide-in-from-left duration-300">
             {/* Close Button */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-bg-hover flex items-center justify-center text-secondary hover:text-text-primary transition-all"
             >
               <X size={20} />
             </button>
@@ -242,73 +242,59 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="bg-red-600 text-white text-center py-2 px-4 shadow-lg z-50 flex items-center justify-center gap-4">
           <span className="font-bold flex items-center gap-2">
             <ShieldAlert size={18} />
-            ACESSANDO COMO: IMOBILIÁRIA (Modo Super Admin)
+            ACESSANDO COMO: MODO SUPER ADMIN
           </span>
           <button
             onClick={stopImpersonation}
             className="bg-white text-red-600 px-3 py-1 rounded text-xs font-bold uppercase hover:bg-red-50"
           >
-            Sair do Acesso
+            Sair
           </button>
         </div>
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="w-68 bg-[#000000] text-white flex-col hidden md:flex transition-all">
+      <aside className="w-64 bg-bg-card text-text-primary flex-col hidden md:flex transition-all border-r border-subtle">
         <SidebarContent />
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-10 shadow-sm z-10 gap-3">
+        <header className="h-16 bg-bg-card border-b border-subtle flex items-center justify-between px-6 z-10 gap-3">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all"
+            className="md:hidden p-2 text-secondary hover:text-text-primary"
           >
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
 
           {/* Search - Hidden on small mobile, visible on md+ */}
           <div className="relative flex-1 max-w-md hidden sm:block">
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"
+              size={16}
             />
             <input
               type="text"
-              placeholder="Pesquisar..."
-              className="w-full pl-11 pr-4 py-2.5 md:py-3 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+              placeholder="Buscar..."
+              className="w-full pl-10 pr-4 py-2 bg-bg-input border border-subtle rounded-lg text-sm focus:ring-2 focus:ring-brand/20 outline-none transition-all"
             />
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-2 md:gap-5">
-            {/* Saldo - Hidden on mobile */}
-            <div className="hidden lg:flex flex-col text-right mr-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Saldo do Mês
-              </span>
-              <span className="text-sm font-black text-emerald-600">
-                R$ 142.500,00
-              </span>
-            </div>
-
-            {/* Novo Imóvel Button - Responsive */}
-            <Link
-              to="/admin/properties/new"
-              className="flex items-center gap-2 text-white px-3 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-xs md:text-sm font-black uppercase tracking-wider transition-all shadow-lg hover:brightness-110 active:scale-95"
-              style={{ backgroundColor: settings.primaryColor }}
-            >
-              <PlusCircle size={18} />
-              <span className="hidden sm:inline">Novo Imóvel</span>
+          <div className="flex items-center gap-4">
+            {/* Novo Imóvel Button */}
+            <Link to="/admin/properties/new" className="btn-primary">
+              <PlusCircle size={16} />
+              Novo Imóvel
             </Link>
           </div>
         </header>
 
-        {/* View Content - Responsive padding */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 bg-slate-50/50">
+        {/* View Content */}
+        <div className="flex-1 overflow-y-auto p-6 bg-bg-primary">
           {children}
         </div>
       </main>

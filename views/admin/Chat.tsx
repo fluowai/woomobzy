@@ -574,12 +574,8 @@ const Chat: React.FC = () => {
                   <p className="text-[10px] font-medium text-tertiary uppercase mb-0.5">
                     E-mail
                   </p>
-                  <p className="text-sm font-medium text-slate-200">
-                    {selectedChat.lead_info?.email || 'un@invest.com'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">
+                  <p className="text-sm font-medium text-text-primary"></p>
+                  <p className="text-[10px] font-bold text-tertiary uppercase mb-1">
                     Origem
                   </p>
                   <p className="text-sm font-medium text-slate-200">
@@ -591,48 +587,40 @@ const Chat: React.FC = () => {
 
             {/* Histórico Section */}
             <section>
-              <div className="flex items-center gap-2 mb-4">
-                <History size={16} className="text-emerald-500" />
-                <h5 className="text-xs font-black uppercase tracking-widest text-white">
-                  Histórico e Score
+              <div className="flex items-center gap-2 mb-3">
+                <History size={14} className="text-brand" />
+                <h5 className="text-xs font-bold uppercase tracking-wide text-text-primary">
+                  Histórico
                 </h5>
               </div>
-              <div className="bg-slate-900/50 rounded-3xl border border-slate-800 p-6 space-y-4">
+              <div className="bg-bg-hover rounded-xl border border-subtle p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">
+                  <span className="text-[10px] font-medium text-tertiary uppercase">
                     Interações
                   </span>
-                  <span className="text-xs font-black text-emerald-500">
-                    14 total
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">
-                    Tempo de Resp.
-                  </span>
-                  <span className="text-xs font-black text-white">2.4 min</span>
+                  <span className="text-xs font-bold text-brand">0</span>
                 </div>
               </div>
             </section>
 
             {/* Tags Section */}
             <section>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Tag size={16} className="text-emerald-500" />
-                  <h5 className="text-xs font-black uppercase tracking-widest text-white">
+                  <Tag size={14} className="text-brand" />
+                  <h5 className="text-xs font-bold uppercase tracking-wide text-text-primary">
                     Marcadores
                   </h5>
                 </div>
-                <button className="text-emerald-500 hover:rotate-90 transition-transform">
-                  <Plus size={16} />
+                <button className="text-brand hover:rotate-90 transition-transform">
+                  <Plus size={14} />
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {['Mato Grosso', 'Gado Corte', 'Investidor', 'MT'].map((t) => (
+                {['Tag1', 'Tag2'].map((t) => (
                   <span
                     key={t}
-                    className="px-3 py-1 bg-slate-800 rounded-lg text-[10px] font-bold text-slate-400 border border-slate-700"
+                    className="px-2 py-1 bg-bg-hover rounded-md text-[10px] font-medium text-secondary border border-subtle"
                   >
                     {t}
                   </span>
@@ -642,12 +630,12 @@ const Chat: React.FC = () => {
 
             {/* Notas Rápidas */}
             <section>
-              <h5 className="text-xs font-black uppercase tracking-widest text-white mb-4">
-                Notas do Consultor
+              <h5 className="text-xs font-bold uppercase tracking-wide text-text-primary mb-3">
+                Notas
               </h5>
               <textarea
-                placeholder="Adicione uma nota estratégica sobre este interessado..."
-                className="w-full h-32 bg-slate-900/50 border border-slate-800 rounded-3xl p-4 text-sm font-medium text-slate-300 resize-none focus:border-emerald-500/40 outline-none transition-all placeholder:text-slate-700"
+                placeholder="Adicione uma nota..."
+                className="w-full h-28 bg-bg-input border border-subtle rounded-xl p-3 text-sm font-medium text-text-primary resize-none focus:border-brand/40 outline-none transition-all placeholder:text-tertiary"
               />
             </section>
           </div>
@@ -658,10 +646,6 @@ const Chat: React.FC = () => {
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 20px; }
-        .pattern-dots {
-          background-image: radial-gradient(#1E293B 1px, transparent 1px);
-          background-size: 24px 24px;
-        }
       `}</style>
     </div>
   );

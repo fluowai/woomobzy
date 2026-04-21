@@ -347,6 +347,48 @@ router.delete('/messages/:id', verifyAdmin, async (req, res) => {
   }
 });
 
+/** DELETE /api/whatsapp/messages/bulk — Deletar múltiplas mensagens */
+router.delete('/messages/bulk', verifyAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'Lista de IDs inválida' });
+    }
+
+    // Verifica se as mensagens pertencem à organização
+    const { data: validMsgs, error: fetchErr } = await supabase
+      .from('whatsapp_messages')
+      .select(`
+        id,
+        whatsapp_instances!inner(organization_id)
+      `)
+      .in('id', ids);
+
+    if (fetchErr) throw fetchErr;
+
+    // Filtra apenas IDs que pertencem à organização do usuário
+    const authorizedIds = (validMsgs || [])
+      .filter(m => m.whatsapp_instances.organization_id === req.orgId)
+      .map(m => m.id);
+
+    if (authorizedIds.length === 0) {
+      return res.status(403).json({ error: 'Nenhuma mensagem autorizada para exclusão' });
+    }
+
+    const { error: delErr } = await supabase
+      .from('whatsapp_messages')
+      .delete()
+      .in('id', authorizedIds);
+
+    if (delErr) throw delErr;
+
+    res.json({ success: true, deletedCount: authorizedIds.length });
+  } catch (e) {
+    console.error('[WhatsApp API] Erro ao deletar mensagens em lote:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 /** DELETE /api/whatsapp/chats/:chatId/messages — Limpar todo o histórico de um chat */
 router.delete('/chats/:chatId/messages', verifyAdmin, async (req, res) => {
   try {

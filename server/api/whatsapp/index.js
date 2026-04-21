@@ -450,12 +450,12 @@ router.post('/instances/:id/send', verifyAdmin, async (req, res) => {
     // ── Verificação de socket DIRETA ────────────────────────────────────────
     const session = sessionManager.getSession(instanceId);
     
-    if (!session || session.status !== 'conectado') {
-      console.warn(`[WhatsApp API] ❌ /send bloqueado: instância não está conectada. Status atual: ${session?.status}`);
+    if (!session) {
+      console.warn(`[WhatsApp API] ❌ /send bloqueado: sessão não encontrada para ${instanceId}`);
       return res.status(400).json({
-        error: 'Instância offline ou desconectada. Por favor, aguarde a reconexão.',
+        error: 'Instância offline ou não inicializada. Por favor, aguarde.',
         socket_alive: false,
-        state: session?.status || 'desconectado'
+        state: 'desconectado'
       });
     }
 

@@ -179,8 +179,8 @@ export class SessionManager extends EventEmitter {
 
   async sendMessage(instanceId, jid, text) {
     const session = this.sessions.get(instanceId);
-    if (!session || !session.sock || session.status !== 'conectado') {
-      throw new Error("Instância não conectada.");
+    if (!session || !session.sock) {
+      throw new Error("Instância não inicializada ou sem conexão ativa.");
     }
     const result = await session.sock.sendMessage(jid, { text });
     await this._saveMessage(session, result);

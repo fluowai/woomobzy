@@ -117,8 +117,8 @@ const Chat: React.FC = () => {
             console.log(
               `   - Verificando: ${i.name} (Status: ${i.status}, Alive: ${i.socket_alive})`
             );
-            // Se status = connected E socket_alive nao e explicitamente falso, aceita
-            return i.status === 'connected' && i.socket_alive !== false;
+            // Se status = connected OU em conexão E socket_alive nao e explicitamente falso, aceita
+            return (i.status === 'connected' || i.status === 'connecting') && i.socket_alive !== false;
           });
           if (firstConnected) {
             console.log(

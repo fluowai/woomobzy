@@ -13,7 +13,6 @@ import ImpersonateCallback from './views/ImpersonateCallback';
 import ImpersonationBanner from './components/ImpersonationBanner';
 import { Toaster } from 'sonner';
 
-
 // Layouts
 import RuralLayout from './components/RuralLayout';
 import UrbanLayout from './components/UrbanLayout';
@@ -59,6 +58,7 @@ import DueDiligence from './views/rural/DueDiligence';
 import Empreendimentos from './views/urban/Empreendimentos';
 import Locacao from './views/urban/Locacao';
 import ComplianceUrbano from './views/urban/ComplianceUrbano';
+import Cobranca from './views/urban/Cobranca';
 import ExportadorPortais from './views/urban/ExportadorPortais';
 
 // Super Admin
@@ -180,7 +180,11 @@ const NicheRedirect: React.FC = () => {
   }
 
   // If user has no organization AND is not an admin, redirect to onboarding
-  if (!profile?.organization_id && profile?.role !== 'admin' && profile?.role !== 'superadmin') {
+  if (
+    !profile?.organization_id &&
+    profile?.role !== 'admin' &&
+    profile?.role !== 'superadmin'
+  ) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -241,14 +245,16 @@ const AppContent: React.FC = () => {
       <Toaster richColors closeButton position="top-right" />
       <ImpersonationBanner />
       <SuperAdminGuard>
-
         <Routes>
           {/* ====== PUBLIC ROUTES ====== */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/embreve" element={<PublicLandingPage forceComingSoon={true} />} />
+          <Route
+            path="/embreve"
+            element={<PublicLandingPage forceComingSoon={true} />}
+          />
           <Route path="/register" element={<Register />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/site/:slug/*" element={<PublicLandingPage />} />
@@ -294,7 +300,10 @@ const AppContent: React.FC = () => {
             <Route path="whatsapp-instances" element={<WhatsAppInstances />} />
             <Route path="test-messages" element={<TestMessages />} />
             <Route path="reports" element={<BIRural />} />
-            <Route path="portal-proprietario" element={<PortalProprietarioRural />} />
+            <Route
+              path="portal-proprietario"
+              element={<PortalProprietarioRural />}
+            />
             <Route path="portal-comprador" element={<PortalCompradorRural />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
@@ -322,14 +331,21 @@ const AppContent: React.FC = () => {
             <Route path="empreendimentos" element={<Empreendimentos />} />
             <Route path="locacao" element={<Locacao />} />
             <Route path="compliance" element={<ComplianceUrbano />} />
+            <Route path="cobranca" element={<Cobranca />} />
             <Route path="exportador" element={<ExportadorPortais />} />
             <Route path="crm" element={<KanbanBoard />} />
             <Route path="chat" element={<Chat />} />
             <Route path="whatsapp-instances" element={<WhatsAppInstances />} />
             <Route path="test-messages" element={<TestMessages />} />
             <Route path="reports" element={<BIRural />} />
-            <Route path="portal-proprietario" element={<PortalProprietarioUrbano />} />
-            <Route path="portal-comprador" element={<PortalCompradorUrbano />} />
+            <Route
+              path="portal-proprietario"
+              element={<PortalProprietarioUrbano />}
+            />
+            <Route
+              path="portal-comprador"
+              element={<PortalCompradorUrbano />}
+            />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
             <Route path="site-setup" element={<SiteSetupWizard />} />

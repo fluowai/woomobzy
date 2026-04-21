@@ -26,7 +26,8 @@ import {
   LifeBuoy,
   ChevronDown,
   ChevronRight,
-  Clock
+  Clock,
+  DollarSign,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -65,7 +66,11 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
       title: 'Painel & Análises',
       items: [
         { icon: Sparkles, label: 'Painel 360 ✨', path: '/urban/360' },
-        { icon: LayoutDashboard, label: 'Dashboard Operacional', path: '/urban' },
+        {
+          icon: LayoutDashboard,
+          label: 'Dashboard Operacional',
+          path: '/urban',
+        },
         { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
       ],
     },
@@ -73,32 +78,53 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
       title: 'Gestão de Imóveis',
       items: [
         { icon: Home, label: 'Imóveis', path: '/urban/properties' },
-        { icon: Building2, label: 'Empreendimentos', path: '/urban/empreendimentos' },
+        {
+          icon: Building2,
+          label: 'Empreendimentos',
+          path: '/urban/empreendimentos',
+        },
         { icon: Key, label: 'Locação & Administração', path: '/urban/locacao' },
       ],
     },
     {
-      title: 'Negócios & Gestão',
+      title: 'Negícios & Gestão',
       items: [
-        { icon: ClipboardCheck, label: 'Compliance', path: '/urban/compliance' },
-        { icon: Upload, label: 'Exportador Portais', path: '/urban/exportador' },
+        {
+          icon: ClipboardCheck,
+          label: 'Compliance',
+          path: '/urban/compliance',
+        },
+        {
+          icon: DollarSign,
+          label: 'Cobranças & Boletos',
+          path: '/urban/cobranca',
+        },
+        {
+          icon: Upload,
+          label: 'Exportador Portais',
+          path: '/urban/exportador',
+        },
         { icon: FileText, label: 'Contratos', path: '/urban/contracts' },
-      ],
-    },
-    {
-      title: 'Comercial & CRM',
-      items: [
-        { icon: Users, label: 'Leads & CRM', path: '/urban/crm' },
-        { icon: Phone, label: 'Mensagens', path: '/urban/chat' },
-        { icon: Settings, label: 'Conexões WhatsApp', path: '/urban/whatsapp-instances' },
       ],
     },
     {
       title: 'Portais & Captação',
       items: [
-        { icon: Eye, label: 'Portal Proprietário', path: '/urban/portal-proprietario' },
-        { icon: Heart, label: 'Portal Comprador', path: '/urban/portal-comprador' },
-        { icon: LayoutTemplate, label: 'Landing Pages', path: '/urban/landing-pages' },
+        {
+          icon: Eye,
+          label: 'Portal Proprietário',
+          path: '/urban/portal-proprietario',
+        },
+        {
+          icon: Heart,
+          label: 'Portal Comprador',
+          path: '/urban/portal-comprador',
+        },
+        {
+          icon: LayoutTemplate,
+          label: 'Landing Pages',
+          path: '/urban/landing-pages',
+        },
         { icon: Clock, label: 'Lista de Espera', path: '/urban/waitlist' },
         { icon: Sparkles, label: 'Site Express ✨', path: '/urban/site-setup' },
       ],
@@ -107,7 +133,11 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
       title: 'Ferramentas & Setup',
       items: [
         { icon: Sparkles, label: 'IA Studio', path: '/urban/ai-assistant' },
-        { icon: Eye, label: 'Editor Visual de Site', path: '/urban/visual-editor' },
+        {
+          icon: Eye,
+          label: 'Editor Visual de Site',
+          path: '/urban/visual-editor',
+        },
         { icon: Settings, label: 'Configurações', path: '/urban/settings' },
       ],
     },
@@ -121,8 +151,8 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
           icon: ShieldAlert,
           label: 'Super Admin',
           path: '/superadmin',
-        }
-      ]
+        },
+      ],
     });
   }
 
@@ -131,23 +161,22 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
   // Expandir automaticamente o grupo que contém a rota atual
   useEffect(() => {
-    const currentGroup = menuGroups.find(group => 
-      group.items.some(item => 
-        (item.path === '/urban' && pathname === '/urban') ||
-        (item.path !== '/urban' && pathname.startsWith(item.path))
+    const currentGroup = menuGroups.find((group) =>
+      group.items.some(
+        (item) =>
+          (item.path === '/urban' && pathname === '/urban') ||
+          (item.path !== '/urban' && pathname.startsWith(item.path))
       )
     );
     if (currentGroup && !openGroups.includes(currentGroup.title)) {
-      setOpenGroups(prev => [...prev, currentGroup.title]);
+      setOpenGroups((prev) => [...prev, currentGroup.title]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   const toggleGroup = (title: string) => {
-    setOpenGroups(prev => 
-      prev.includes(title) 
-        ? prev.filter(t => t !== title)
-        : [...prev, title]
+    setOpenGroups((prev) =>
+      prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]
     );
   };
 
@@ -196,7 +225,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
       <nav className="flex-1 p-3 md:p-4 overflow-y-auto space-y-4">
         {menuGroups.map((group) => {
           const isOpen = openGroups.includes(group.title);
-          
+
           return (
             <div key={group.title} className="flex flex-col">
               <button
@@ -207,12 +236,18 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
                   {group.title}
                 </span>
                 {isOpen ? (
-                  <ChevronDown size={14} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <ChevronDown
+                    size={14}
+                    className="opacity-50 group-hover:opacity-100 transition-opacity"
+                  />
                 ) : (
-                  <ChevronRight size={14} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight
+                    size={14}
+                    className="opacity-50 group-hover:opacity-100 transition-opacity"
+                  />
                 )}
               </button>
-              
+
               <div
                 className={`flex-col space-y-1 transition-all overflow-hidden ${
                   isOpen ? 'flex' : 'hidden'
@@ -232,16 +267,22 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
                       }`
                     }
                     style={({ isActive }) =>
-                      isActive ? { borderLeft: '3px solid #2563eb' } : { borderLeft: '3px solid transparent' }
+                      isActive
+                        ? { borderLeft: '3px solid #2563eb' }
+                        : { borderLeft: '3px solid transparent' }
                     }
                   >
                     {({ isActive }) => (
                       <>
                         <item.icon
                           size={18}
-                          className={isActive ? 'text-blue-400' : 'text-white/50'}
+                          className={
+                            isActive ? 'text-blue-400' : 'text-white/50'
+                          }
                         />
-                        <span className="font-semibold text-sm">{item.label}</span>
+                        <span className="font-semibold text-sm">
+                          {item.label}
+                        </span>
                       </>
                     )}
                   </NavLink>

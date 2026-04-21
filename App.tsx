@@ -59,6 +59,7 @@ import Empreendimentos from './views/urban/Empreendimentos';
 import Locacao from './views/urban/Locacao';
 import ComplianceUrbano from './views/urban/ComplianceUrbano';
 import Cobranca from './views/urban/Cobranca';
+import PortalLocatario from './views/urban/PortalLocatario';
 import ExportadorPortais from './views/urban/ExportadorPortais';
 
 // Super Admin
@@ -256,6 +257,7 @@ const AppContent: React.FC = () => {
             element={<PublicLandingPage forceComingSoon={true} />}
           />
           <Route path="/register" element={<Register />} />
+          <Route path="/portal-locatario" element={<PortalLocatario />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/site/:slug/*" element={<PublicLandingPage />} />
 
@@ -346,6 +348,7 @@ const AppContent: React.FC = () => {
               path="portal-comprador"
               element={<PortalCompradorUrbano />}
             />
+            <Route path="portal-locatario" element={<PortalLocatario />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
             <Route path="site-setup" element={<SiteSetupWizard />} />

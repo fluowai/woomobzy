@@ -48,6 +48,50 @@
   --color-wa-received: #1e222b;
   --color-wa-hover: rgba(255, 255, 255, 0.05);
 
+  /* ============================================
+     MAPEAMENTO DE CORES PADRÃO DO TAILWIND
+     Substitui todas as cores antigas
+  ============================================ */
+
+  /* Substitui emerald (verde antigo) */
+  --color-emerald-50: rgba(0, 120, 80, 0.05);
+  --color-emerald-100: rgba(0, 120, 80, 0.1);
+  --color-emerald-200: rgba(0, 120, 80, 0.2);
+  --color-emerald-300: rgba(0, 120, 80, 0.3);
+  --color-emerald-400: rgba(0, 120, 80, 0.4);
+  --color-emerald-500: #007850;
+  --color-emerald-600: #005f3d;
+  --color-emerald-700: #004d32;
+  --color-emerald-800: #003d27;
+  --color-emerald-900: #002d1c;
+  --color-emerald-950: #001d11;
+
+  /* Substitui slate (cinza escuro) */
+  --color-slate-50: #eaeaea;
+  --color-slate-100: #d4d4d4;
+  --color-slate-200: #a0a4ab;
+  --color-slate-300: #7a8ca5;
+  --color-slate-400: #6b7280;
+  --color-slate-500: #5a6270;
+  --color-slate-600: #4a5260;
+  --color-slate-700: #3a4250;
+  --color-slate-800: #2a3240;
+  --color-slate-900: #1a1d24;
+  --color-slate-950: #0f1115;
+
+  /* Substitui gray (cores de texto) */
+  --color-gray-50: #eaeaea;
+  --color-gray-100: #d4d4d4;
+  --color-gray-200: #a0a4ab;
+  --color-gray-300: #7a8ca5;
+  --color-gray-400: #6b7280;
+  --color-gray-500: #5a6270;
+  --color-gray-600: #4a5260;
+  --color-gray-700: #3a4250;
+  --color-gray-800: #2a3240;
+  --color-gray-900: #1a1d24;
+  --color-gray-950: #0f1115;
+
   /* Sombras */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);

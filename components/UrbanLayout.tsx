@@ -368,53 +368,41 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
         </div>
       )}
 
-      {/* Desktop Sidebar — Blue Theme */}
-      <aside className="w-68 bg-[#0a0a0a] text-white flex-col hidden md:flex transition-all">
+      {/* Desktop Sidebar */}
+      <aside className="w-64 bg-bg-card text-text-primary flex-col hidden md:flex transition-all border-r border-subtle">
         {renderSidebarContent()}
       </aside>
 
       <main className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-10 shadow-sm z-10 gap-3">
+        <header className="h-16 bg-bg-card border-b border-subtle flex items-center justify-between px-6 z-10 gap-3">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all"
+            className="md:hidden p-2 text-secondary hover:text-text-primary"
           >
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
 
           <div className="relative flex-1 max-w-md hidden sm:block">
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"
+              size={16}
             />
             <input
               type="text"
-              placeholder="Pesquisar imóveis, clientes..."
-              className="w-full pl-11 pr-4 py-2.5 md:py-3 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+              placeholder="Buscar imóveis..."
+              className="w-full pl-10 pr-4 py-2 bg-bg-input border border-subtle rounded-lg text-sm focus:ring-2 focus:ring-brand/20 outline-none transition-all"
             />
           </div>
 
-          <div className="flex items-center gap-2 md:gap-5">
-            <div className="hidden lg:flex flex-col text-right mr-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                VGV Ativo
-              </span>
-              <span className="text-sm font-black text-blue-600">
-                R$ 24.800.000
-              </span>
-            </div>
-
-            <Link
-              to="/urban/properties/new"
-              className="flex items-center gap-2 text-white px-3 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-xs md:text-sm font-black uppercase tracking-wider transition-all shadow-lg hover:brightness-110 active:scale-95 bg-blue-700 hover:bg-blue-600"
-            >
-              <PlusCircle size={18} />
-              <span className="hidden sm:inline">Novo Imóvel</span>
+          <div className="flex items-center gap-4">
+            <Link to="/urban/properties/new" className="btn-primary">
+              <PlusCircle size={16} />
+              Novo Imóvel
             </Link>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 bg-slate-50/50">
+        <div className="flex-1 overflow-y-auto p-6 bg-bg-primary">
           <Outlet />
         </div>
       </main>

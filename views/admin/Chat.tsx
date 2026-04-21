@@ -237,58 +237,58 @@ const Chat: React.FC = () => {
 
   if (loading)
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-[#0F172A]">
-        <Loader2 className="w-10 h-10 animate-spin text-emerald-500 mb-4" />
-        <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">
-          Iniciando Painel Rural...
+      <div className="flex flex-col items-center justify-center h-full bg-brand">
+        <Loader2 className="w-10 h-10 animate-spin text-brand mb-4" />
+        <p className="text-secondary font-bold uppercase tracking-[0.2em] text-[10px]">
+          Carregando mensagens...
         </p>
       </div>
     );
 
   return (
-    <div className="flex h-full bg-[#0F172A] text-slate-100 overflow-hidden font-sans">
-      {/* ────────────────────────────────────────────────────────────────
-          1. SIDEBAR (CHATS) — Estilo HubSpot Dark
-          ──────────────────────────────────────────────────────────────── */}
+    <div className="flex h-full bg-brand text-text-primary overflow-hidden font-sans">
+      {/* ============================================
+          1. SIDEBAR (CHATS) — Estilo WhatsApp Web
+      ============================================ */}
       <div
-        className={`${selectedChat ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-[400px] bg-[#1E293B]/40 border-r border-slate-800 shrink-0`}
+        className={`${selectedChat ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-[400px] bg-wa-sidebar border-r border-subtle shrink-0`}
       >
         {/* Search & Header */}
-        <div className="p-6 pb-2">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-black italic tracking-tighter uppercase italic text-white flex items-center gap-2">
-              <MessageSquare className="text-emerald-500" size={24} />
+        <div className="p-4 pb-2">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl font-bold uppercase tracking-tight text-text-primary flex items-center gap-2">
+              <MessageSquare className="text-brand" size={24} />
               Conversas
             </h1>
-            <div className="bg-emerald-500/10 text-emerald-400 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-500/20">
+            <div className="bg-brand/10 text-brand text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest border border-brand/20">
               {selectedInstance?.name || 'OFFLINE'}
             </div>
           </div>
 
-          <div className="relative mb-6">
+          <div className="relative mb-4">
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"
+              size={16}
             />
             <input
               type="text"
-              placeholder="Buscar investidores ou chats..."
+              placeholder="Buscar conversas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl pl-12 pr-4 py-3.5 text-sm focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none text-slate-300 placeholder:text-slate-600"
+              className="w-full bg-bg-input border border-subtle rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-brand/20 transition-all outline-none text-text-primary placeholder:text-tertiary"
             />
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-slate-900/50 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-1 p-1 bg-bg-card rounded-lg border border-subtle">
             {['todos', 'ativos', 'automacao', 'arquivados'].map((tab: any) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${
+                className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all ${
                   activeTab === tab
-                    ? 'bg-emerald-500 text-white shadow-lg'
-                    : 'text-slate-500 hover:text-slate-300'
+                    ? 'bg-brand text-white'
+                    : 'text-tertiary hover:text-text-primary'
                 }`}
               >
                 {tab}
@@ -298,19 +298,19 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Chat List */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0">
           {filteredChats.map((chat) => (
             <button
               key={chat.id}
               onClick={() => setSelectedChat(chat)}
-              className={`w-full flex items-center gap-4 p-4 rounded-[28px] transition-all group relative border ${
+              className={`w-full flex items-center gap-3 p-3 transition-all group border-b border-subtle ${
                 selectedChat?.id === chat.id
-                  ? 'bg-emerald-500/10 border-emerald-500/20 shadow-lg'
-                  : 'bg-transparent border-transparent hover:bg-slate-800/40'
+                  ? 'bg-brand/10 border-l-2 border-l-brand'
+                  : 'hover:bg-brand/5'
               }`}
             >
               <div className="relative shrink-0">
-                <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-300 font-black text-xl border border-slate-700 shadow-xl overflow-hidden group-hover:scale-105 transition-transform">
+                <div className="w-12 h-12 rounded-full bg-bg-hover flex items-center justify-center text-text-primary font-bold text-lg border border-subtle overflow-hidden group-hover:scale-105 transition-transform">
                   {chat.profile_photo_url ? (
                     <img
                       src={chat.profile_photo_url}
@@ -320,40 +320,38 @@ const Chat: React.FC = () => {
                     chat.name.charAt(0).toUpperCase()
                   )}
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-[#1E293B] rounded-full shadow-lg" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-brand border-2 border-wa-sidebar rounded-full" />
               </div>
 
               <div className="flex-1 text-left min-w-0">
-                <div className="flex justify-between items-start mb-1">
+                <div className="flex justify-between items-start mb-0.5">
                   <h3
-                    className={`font-bold truncate text-sm tracking-tight ${selectedChat?.id === chat.id ? 'text-emerald-400' : 'text-slate-100'}`}
+                    className={`font-semibold truncate text-sm ${selectedChat?.id === chat.id ? 'text-brand' : 'text-text-primary'}`}
                   >
                     {chat.name || formatJid(chat.jid)}
                   </h3>
-                  <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap ml-2">
+                  <span className="text-[10px] font-medium text-tertiary whitespace-nowrap ml-2">
                     {chat.last_message_at
                       ? formatTime(chat.last_message_at)
                       : ''}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2">
                   <span
-                    className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700`}
+                    className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-bg-hover text-tertiary border border-subtle`}
                   >
                     {chat.lead_info?.classification || 'Lead'}
                   </span>
-                  <p className="text-xs text-slate-500 truncate font-medium">
-                    {chat.jid.endsWith('@g.us')
-                      ? 'Grupo Ativo'
-                      : 'Atendimento Direto'}
+                  <p className="text-xs text-tertiary truncate font-medium">
+                    {chat.jid.endsWith('@g.us') ? 'Grupo' : 'Direto'}
                   </p>
                 </div>
               </div>
 
               {chat.unread_count > 0 && (
-                <div className="absolute top-4 right-4 w-5 h-5 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                  <span className="text-[10px] font-black text-white">
+                <div className="absolute top-3 right-3 min-w-[18px] h-[18px] bg-brand rounded-full flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-white px-1">
                     {chat.unread_count}
                   </span>
                 </div>
@@ -363,87 +361,89 @@ const Chat: React.FC = () => {
         </div>
       </div>
 
-      {/* ────────────────────────────────────────────────────────────────
-          2. ÁREA CENTRAL (CHAT) — Estilo Premium Intercom
-          ──────────────────────────────────────────────────────────────── */}
+      {/* ============================================
+          2. ÁREA CENTRAL (CHAT) — Estilo WhatsApp
+      ============================================ */}
       <div
-        className={`${!selectedChat ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-slate-900 relative`}
+        className={`${!selectedChat ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-wa-bg relative`}
       >
         {selectedChat ? (
           <>
             {/* Header */}
-            <header className="h-[90px] px-8 flex items-center justify-between border-b border-slate-800/50 bg-[#0F172A]/80 backdrop-blur-md z-10 shrink-0">
-              <div className="flex items-center gap-4">
+            <header className="h-16 px-4 flex items-center justify-between border-b border-subtle bg-bg-card z-10 shrink-0">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSelectedChat(null)}
-                  className="lg:hidden p-2 text-slate-400"
+                  className="lg:hidden p-2 text-secondary"
                 >
                   <ArrowLeft size={20} />
                 </button>
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                    <User className="text-emerald-500" size={24} />
+                  <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center border border-brand/20">
+                    <User className="text-brand" size={20} />
                   </div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900" />
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand rounded-full border-2 border-bg-card" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-white italic uppercase tracking-tight leading-none mb-1">
+                  <h2 className="text-base font-bold text-text-primary leading-tight mb-0.5">
                     {selectedChat.name || formatJid(selectedChat.jid)}
                   </h2>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      Ativo Agora
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
+                    <span className="text-[10px] font-medium text-tertiary uppercase tracking-wide">
+                      Online
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button className="p-3 bg-slate-800 text-slate-400 hover:bg-emerald-500 hover:text-white rounded-2xl transition-all shadow-xl">
-                  <Phone size={20} />
+              <div className="flex items-center gap-1">
+                <button className="p-2.5 bg-bg-hover text-secondary hover:text-brand rounded-lg transition-all">
+                  <Phone size={18} />
                 </button>
                 <button
                   onClick={() => setShowCRM(!showCRM)}
-                  className={`p-3 rounded-2xl transition-all shadow-xl ${showCRM ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400'}`}
+                  className={`p-2.5 rounded-lg transition-all ${showCRM ? 'bg-brand text-white' : 'bg-bg-hover text-secondary hover:text-brand'}`}
                 >
-                  <Info size={20} />
+                  <Info size={18} />
                 </button>
-                <button className="p-3 bg-slate-800 text-slate-400 hover:text-white rounded-2xl transition-all">
-                  <MoreVertical size={20} />
+                <button className="p-2.5 bg-bg-hover text-secondary hover:text-brand rounded-lg transition-all">
+                  <MoreVertical size={18} />
                 </button>
               </div>
             </header>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[#0F172A] pattern-dots">
-              <div className="max-w-4xl mx-auto space-y-8">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-wa-bg">
+              <div className="max-w-3xl mx-auto space-y-1">
                 {messages.map((msg, i) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.from_me ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}
+                    className={`flex ${msg.from_me ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-1 duration-200`}
                   >
                     <div
-                      className={`group relative max-w-[75%] px-6 py-4 rounded-[32px] shadow-2xl transition-all ${
+                      className={`group relative max-w-[70%] px-3 py-2 rounded-lg transition-all ${
                         msg.from_me
-                          ? 'bg-emerald-600 text-white rounded-tr-none'
-                          : 'bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700/50'
+                          ? 'message-sent rounded-tr-sm'
+                          : 'message-received rounded-tl-sm'
                       }`}
                     >
-                      <p className="text-[15px] font-medium leading-relaxed mb-2">
+                      <p className="text-[14px] font-normal leading-relaxed">
                         {msg.content}
                       </p>
                       <div
-                        className={`flex items-center gap-2 justify-end text-[9px] font-black uppercase tracking-widest ${msg.from_me ? 'text-emerald-200' : 'text-slate-500'}`}
+                        className={`flex items-center justify-end gap-1 text-[9px] font-medium mt-0.5 ${
+                          msg.from_me ? 'text-white/70' : 'text-tertiary'
+                        }`}
                       >
                         {formatTime(msg.timestamp)}
                         {msg.from_me && (
                           <CheckCheck
-                            size={12}
+                            size={10}
                             className={
                               msg.status === 'read'
-                                ? 'text-white'
-                                : 'opacity-40'
+                                ? 'text-brand'
+                                : 'text-white/40'
                             }
                           />
                         )}
@@ -456,38 +456,38 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Input */}
-            <div className="p-6 bg-[#0F172A] border-t border-slate-800/80">
-              <div className="max-w-4xl mx-auto flex items-center gap-3 bg-slate-800/50 p-2 rounded-[32px] border border-slate-700/50 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
-                <button className="p-3 text-slate-500 hover:text-emerald-500 transition-colors">
-                  <Paperclip size={20} />
+            <div className="p-3 bg-bg-card border-t border-subtle">
+              <div className="max-w-3xl mx-auto flex items-center gap-2 bg-bg-input p-1.5 rounded-xl border border-subtle focus-within:ring-2 focus-within:ring-brand/20 transition-all">
+                <button className="p-2 text-tertiary hover:text-brand transition-colors">
+                  <Paperclip size={18} />
                 </button>
-                <button className="p-3 text-slate-500 hover:text-emerald-500 transition-colors hidden sm:block">
-                  <Smile size={20} />
+                <button className="p-2 text-tertiary hover:text-brand transition-colors hidden sm:block">
+                  <Smile size={18} />
                 </button>
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder="Envie uma mensagem estratégica..."
-                  className="flex-1 bg-transparent px-4 py-2 outline-none text-sm font-medium text-slate-100 placeholder:text-slate-600"
+                  placeholder="Digite uma mensagem..."
+                  className="flex-1 bg-transparent px-3 py-2 outline-none text-sm font-normal text-text-primary placeholder:text-tertiary"
                 />
-                <button className="p-3 text-slate-500 hover:text-emerald-500 transition-colors hidden sm:block">
-                  <Mic size={20} />
+                <button className="p-2 text-tertiary hover:text-brand transition-colors hidden sm:block">
+                  <Mic size={18} />
                 </button>
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || sending}
-                  className={`p-4 rounded-full transition-all shadow-xl shadow-emerald-500/20 ${
+                  className={`p-2.5 rounded-lg transition-all ${
                     newMessage.trim() && !sending
-                      ? 'bg-emerald-500 text-white hover:scale-105'
-                      : 'bg-slate-700 text-slate-500'
+                      ? 'bg-brand text-white hover:scale-105'
+                      : 'bg-bg-hover text-tertiary'
                   }`}
                 >
                   {sending ? (
-                    <Loader2 className="animate-spin" size={20} />
+                    <Loader2 className="animate-spin" size={18} />
                   ) : (
-                    <Send size={20} />
+                    <Send size={18} />
                   )}
                 </button>
               </div>
@@ -495,83 +495,83 @@ const Chat: React.FC = () => {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-40">
-            <div className="w-32 h-32 bg-slate-800 rounded-[48px] flex items-center justify-center mb-8 border border-slate-700">
-              <MessageSquare size={48} className="text-emerald-500" />
+            <div className="w-24 h-24 bg-bg-hover rounded-full flex items-center justify-center mb-6 border border-subtle">
+              <MessageSquare size={40} className="text-brand" />
             </div>
-            <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4">
-              Painel de Negócios
+            <h2 className="text-2xl font-bold uppercase tracking-tight mb-4">
+              Mensagens
             </h2>
-            <p className="max-w-xs text-sm font-bold uppercase tracking-widest leading-loose">
-              Selecione uma oportunidade à esquerda para iniciar o atendimento
+            <p className="max-w-xs text-sm font-medium text-secondary">
+              Selecione uma conversa para iniciar o atendimento
             </p>
           </div>
         )}
       </div>
 
-      {/* ────────────────────────────────────────────────────────────────
-          3. PAINEL CRM (DIREITA) — Premium Intelligence
-          ──────────────────────────────────────────────────────────────── */}
+      {/* ============================================
+          3. PAINEL CRM (DIREITA)
+      ============================================ */}
       {selectedChat && showCRM && (
-        <div className="hidden xl:flex flex-col w-[400px] bg-[#1E293B]/60 border-l border-slate-800 p-8 overflow-y-auto custom-scrollbar">
-          <div className="flex flex-col items-center text-center mb-10">
-            <div className="relative mb-6">
-              <div className="w-28 h-28 rounded-[40px] bg-emerald-500/10 flex items-center justify-center border-2 border-emerald-500/20 shadow-2xl">
-                <User size={48} className="text-emerald-500" />
+        <div className="hidden xl:flex flex-col w-[360px] bg-bg-card border-l border-subtle p-6 overflow-y-auto custom-scrollbar">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="relative mb-5">
+              <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center border-2 border-brand/20">
+                <User size={36} className="text-brand" />
               </div>
-              <div className="absolute -bottom-2 -right-2 bg-slate-900 border border-slate-700 p-2 rounded-2xl text-emerald-500 shadow-xl">
-                <TrendingUp size={20} />
+              <div className="absolute -bottom-1 -right-1 bg-bg-card border border-subtle p-1.5 rounded-full text-brand">
+                <TrendingUp size={16} />
               </div>
             </div>
-            <h4 className="text-xl font-black italic uppercase italic text-white mb-1">
-              {selectedChat.name || 'Investidor Rural'}
+            <h4 className="text-lg font-bold text-text-primary mb-0.5">
+              {selectedChat.name || 'Contato'}
             </h4>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-6">
+            <p className="text-xs font-medium text-tertiary uppercase tracking-wide mb-5">
               {formatJid(selectedChat.jid)}
             </p>
 
             <div className="flex flex-wrap justify-center gap-2">
-              <span className="px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase border border-emerald-500/20 tracking-widest">
-                Lead Quente
+              <span className="px-3 py-1 rounded-full bg-brand/15 text-brand text-[10px] font-bold uppercase tracking-wide border border-brand/20">
+                Lead
               </span>
-              <span className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-400 text-[10px] font-black uppercase border border-slate-700 tracking-widest">
-                Tráfego Pago
+              <span className="px-3 py-1 rounded-full bg-bg-hover text-secondary text-[10px] font-bold uppercase tracking-wide border border-subtle">
+                Ativo
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-10">
-            <button className="flex flex-col items-center gap-2 p-4 bg-slate-900/50 rounded-3xl border border-slate-800 hover:border-emerald-500/40 transition-all group">
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <button className="flex flex-col items-center gap-2 p-4 bg-bg-hover rounded-xl border border-subtle hover:border-brand/40 transition-all group">
               <Edit3
-                size={18}
-                className="text-slate-500 group-hover:text-emerald-500"
+                size={16}
+                className="text-tertiary group-hover:text-brand"
               />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Ver Ficha
+              <span className="text-[10px] font-bold uppercase tracking-wide text-secondary">
+                Ficha
               </span>
             </button>
-            <button className="flex flex-col items-center gap-2 p-4 bg-slate-900/50 rounded-3xl border border-slate-800 hover:border-emerald-500/40 transition-all group">
+            <button className="flex flex-col items-center gap-2 p-4 bg-bg-hover rounded-xl border border-subtle hover:border-brand/40 transition-all group">
               <ExternalLink
-                size={18}
-                className="text-slate-500 group-hover:text-emerald-500"
+                size={16}
+                className="text-tertiary group-hover:text-brand"
               />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-secondary">
                 Pipeline
               </span>
             </button>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Informações Section */}
             <section>
-              <div className="flex items-center gap-2 mb-4">
-                <Info size={16} className="text-emerald-500" />
-                <h5 className="text-xs font-black uppercase tracking-widest text-white">
-                  Informações Base
+              <div className="flex items-center gap-2 mb-3">
+                <Info size={14} className="text-brand" />
+                <h5 className="text-xs font-bold uppercase tracking-wide text-text-primary">
+                  Informações
                 </h5>
               </div>
-              <div className="bg-slate-900/50 rounded-3xl border border-slate-800 p-6 space-y-4">
+              <div className="bg-bg-hover rounded-xl border border-subtle p-4 space-y-3">
                 <div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">
+                  <p className="text-[10px] font-medium text-tertiary uppercase mb-0.5">
                     E-mail
                   </p>
                   <p className="text-sm font-medium text-slate-200">

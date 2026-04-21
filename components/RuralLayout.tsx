@@ -132,14 +132,11 @@ const RuralLayout: React.FC = () => {
       end={item.path === '/rural'}
       onClick={() => setIsMobileMenuOpen(false)}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group ${
+        `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group ${
           isActive
-            ? 'bg-emerald-500/10 text-emerald-400'
-            : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'
+            ? 'bg-brand/15 text-brand border-l-2 border-brand'
+            : 'text-secondary hover:bg-bg-hover hover:text-text-primary'
         }`
-      }
-      style={({ isActive }) =>
-        isActive ? { borderLeft: '3px solid #22C55E' } : {}
       }
     >
       <item.icon size={18} strokeWidth={2} />
@@ -150,17 +147,17 @@ const RuralLayout: React.FC = () => {
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Brand Logo */}
-      <div className="p-8 pb-4">
+      <div className="p-6 pb-4">
         <Link to="/rural" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <Database className="text-white" size={24} />
+          <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center">
+            <Database className="text-white" size={22} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white tracking-tight leading-none italic">
-              PAINEL <span className="text-emerald-500">RURAL</span>
+            <h1 className="text-base font-bold text-text-primary tracking-tight leading-none">
+              IMOBZY <span className="text-brand">Rural</span>
             </h1>
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 block">
-              Enterprise Suite
+            <span className="text-[10px] text-tertiary font-bold uppercase tracking-widest mt-0.5 block">
+              Painel Rural
             </span>
           </div>
         </Link>
@@ -168,9 +165,9 @@ const RuralLayout: React.FC = () => {
         <Link
           to={`/site/${(profile?.organization as any)?.slug || ''}`}
           target="_blank"
-          className="mt-8 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all text-xs font-bold uppercase tracking-widest"
+          className="mt-6 flex items-center justify-center gap-2 w-full py-2 rounded-lg border border-subtle text-secondary hover:text-text-primary hover:border-brand transition-all text-xs font-medium uppercase tracking-wide"
         >
-          <Globe size={14} /> Visualizar Site
+          <Globe size={14} /> Ver Site
         </Link>
       </div>
 
@@ -195,11 +192,11 @@ const RuralLayout: React.FC = () => {
             {profile?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-100 truncate">
+            <p className="text-sm font-semibold text-text-primary truncate">
               {profile?.name || 'Usuário'}
             </p>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
-              Plano Agro Pro
+            <p className="text-[10px] text-tertiary font-medium uppercase tracking-wide truncate">
+              Plano Pro
             </p>
           </div>
         </div>
@@ -207,70 +204,62 @@ const RuralLayout: React.FC = () => {
           onClick={() =>
             signOut().then(() => (window.location.href = '/login'))
           }
-          className="flex items-center gap-2 text-slate-500 hover:text-white text-xs font-bold transition-colors w-full p-2"
+          className="flex items-center gap-2 text-tertiary hover:text-text-primary text-xs font-medium transition-colors w-full p-2"
         >
-          <LogOut size={16} /> SAIR DA CONTA
+          <LogOut size={14} /> Sair
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="flex h-screen bg-bg-primary overflow-hidden selection:bg-brand/20 selection:text-brand">
       {/* Sidebar - Desktop */}
-      <aside className="w-[280px] bg-[#0F172A] text-white hidden lg:flex flex-col shrink-0">
+      <aside className="w-64 bg-bg-card border-r border-subtle text-text-primary hidden lg:flex flex-col shrink-0">
         {sidebarContent}
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Top Header */}
-        <header className="h-[80px] bg-white border-b border-slate-200 px-8 flex items-center justify-between z-20 shrink-0">
+        <header className="h-16 bg-bg-card border-b border-subtle px-6 flex items-center justify-between z-20 shrink-0">
           <div className="flex items-center gap-4 flex-1">
             <button
-              className="lg:hidden p-2 text-slate-600"
+              className="lg:hidden p-2 text-secondary hover:text-text-primary"
               onClick={() => setIsMobileMenuOpen(true)}
             >
-              <Menu size={24} />
+              <Menu size={22} />
             </button>
             <div className="relative max-w-lg w-full">
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"
+                size={16}
               />
               <input
                 type="text"
-                placeholder="Buscar fazendas, investidores..."
-                className="w-full bg-[#F1F5F9] border-none rounded-2xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none"
+                placeholder="Buscar imóveis, leads..."
+                className="w-full bg-bg-input border border-subtle rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-brand/20 transition-all outline-none"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             <div className="hidden xl:flex flex-col text-right">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                VALOR DA CARTEIRA
+              <span className="text-[10px] font-medium text-tertiary uppercase tracking-wide">
+                Carteira
               </span>
-              <span className="text-base font-bold text-[#22C55E]">
-                R$ 142.500.000
-              </span>
+              <span className="text-base font-bold text-brand">R$ 0</span>
             </div>
 
-            <Link
-              to="/rural/properties/new"
-              className="bg-[#22C55E] text-white px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-[#16A34A] transition-all font-bold text-sm shadow-lg shadow-emerald-500/20 group"
-            >
-              <Plus
-                size={18}
-                className="group-hover:rotate-90 transition-transform duration-300"
-              />
-              NOVA PROPRIEDADE
+            <Link to="/rural/properties/new" className="btn-primary">
+              <Plus size={16} className="transition-transform duration-300" />
+              Novo Imóvel
             </Link>
           </div>
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-10 bg-[#F8FAFC] custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 bg-bg-primary custom-scrollbar">
           <div className="max-w-[1600px] mx-auto">
             <Outlet />
           </div>
@@ -281,16 +270,16 @@ const RuralLayout: React.FC = () => {
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0F172A] shadow-2xl animate-in slide-in-from-left duration-300">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-bg-card shadow-2xl animate-in slide-in-from-left duration-300">
             {sidebarContent}
             <button
-              className="absolute top-4 right-[-48px] text-white"
+              className="absolute top-4 right-[-48px] text-text-primary"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <X size={32} />
+              <X size={28} />
             </button>
           </aside>
         </div>

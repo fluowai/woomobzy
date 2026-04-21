@@ -65,8 +65,8 @@ const Chat: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'private' | 'groups'>(
-    'all'
+  const [filterType, setFilterType] = useState<'private' | 'groups'>(
+    'private'
   );
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
@@ -447,7 +447,7 @@ const Chat: React.FC = () => {
 
     if (filterType === 'private') return matchesSearch && !isGroup;
     if (filterType === 'groups') return matchesSearch && isGroup;
-    return matchesSearch;
+    return false;
   });
 
   const formatTime = (timestamp: string) => {
@@ -464,8 +464,13 @@ const Chat: React.FC = () => {
   };
 
   const getDisplayName = (chat: Chat) => {
-    if (chat.name && !chat.name.includes('@s.whatsapp.net')) return chat.name;
-    return formatJidToPhone(chat.jid);
+    // Se tem um nome amigavel (nao eh só numero ou JID de Whatsapp)
+    if (chat.name && !chat.name.includes('@s.whatsapp.net') && !chat.name.match(/^\+?\d+$/)) {
+      return chat.name;
+    }
+    // Caso contrario garanta o formato telefonico +55...
+    const number = chat.name?.match(/^\+?\d+$/) ? chat.name.replace('+', '') : chat.jid.split('@')[0].split(':')[0];
+    return `+${number}`;
   };
 
   const getStatusIcon = (status: string, fromMe: boolean) => {
@@ -572,16 +577,6 @@ const Chat: React.FC = () => {
         {/* Filtros de Tipo de Chat */}
         <div className="flex p-1 gap-1 bg-gray-100/50 mx-4 mb-4 rounded-xl border border-gray-100">
           <button
-            onClick={() => setFilterType('all')}
-            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
-              filterType === 'all'
-                ? 'bg-white text-green-600 shadow-sm'
-                : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
-            }`}
-          >
-            Todas
-          </button>
-          <button
             onClick={() => setFilterType('private')}
             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
               filterType === 'private'
@@ -625,14 +620,27 @@ const Chat: React.FC = () => {
                     : 'hover:bg-gray-50'
                 }`}
               >
+                {chat.profile_photo_url ? (
+                  <img
+                    src={chat.profile_photo_url}
+                    alt={chat.name}
+                    className="w-12 h-12 rounded-full flex-shrink-0 object-cover shadow-sm border border-gray-100"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
                 <div
                   className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-lg shadow-sm ${
+                    chat.profile_photo_url ? 'hidden' : ''
+                  } ${
                     chat.jid.endsWith('@g.us')
                       ? 'bg-indigo-500'
                       : 'bg-green-500'
                   }`}
                 >
-                  {chat.name.charAt(0).toUpperCase()}
+                  {chat.name?.charAt(0).toUpperCase() || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-0.5">
@@ -700,14 +708,27 @@ const Chat: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
+              {selectedChat.profile_photo_url ? (
+                <img
+                  src={selectedChat.profile_photo_url}
+                  alt={selectedChat.name}
+                  className="w-11 h-11 rounded-full flex-shrink-0 object-cover shadow-sm border border-gray-100"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
               <div
                 className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm ${
+                  selectedChat.profile_photo_url ? 'hidden' : ''
+                } ${
                   selectedChat.jid.endsWith('@g.us')
                     ? 'bg-indigo-500'
                     : 'bg-green-500'
                 }`}
               >
-                {selectedChat.name.charAt(0).toUpperCase()}
+                {selectedChat.name?.charAt(0).toUpperCase() || '?'}
               </div>
               <div className="flex-1">
                 <h2 className="font-extrabold text-gray-900 text-base leading-tight">

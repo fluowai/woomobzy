@@ -269,10 +269,17 @@ export class SessionManager extends EventEmitter {
 
       const { data: existingChat } = await supabase
         .from('whatsapp_chats')
-        .select('id, name')
+        .select('id, name, profile_photo_url')
         .eq('instance_id', instanceId)
         .eq('jid', contactJid)
         .maybeSingle();
+
+      let profilePhotoUrl = existingChat?.profile_photo_url || null;
+      if (!profilePhotoUrl && session?.sock) {
+        try {
+          profilePhotoUrl = await session.sock.profilePictureUrl(contactJid, 'image').catch(() => null);
+        } catch (e) {}
+      }
 
       let chatId;
       const timestamp = new Date((message.messageTimestamp || Date.now() / 1000) * 1000).toISOString();
@@ -281,12 +288,23 @@ export class SessionManager extends EventEmitter {
         const initialName = allowNameUpdate && message.pushName ? message.pushName : phoneNumber;
         const { data: newChat } = await supabase
           .from('whatsapp_chats')
-          .insert({ instance_id: instanceId, organization_id: organizationId, jid: contactJid, name: initialName, last_message_at: timestamp })
+          .insert({ 
+            instance_id: instanceId, 
+            organization_id: organizationId, 
+            jid: contactJid, 
+            name: initialName, 
+            last_message_at: timestamp,
+            profile_photo_url: profilePhotoUrl
+          })
           .select('id').single();
         chatId = newChat?.id;
       } else {
         chatId = existingChat.id;
-        const updates = { last_message_at: timestamp, organization_id: organizationId };
+        const updates = { 
+          last_message_at: timestamp, 
+          organization_id: organizationId,
+          profile_photo_url: profilePhotoUrl
+        };
         if (allowNameUpdate && message.pushName && !isGroup) updates.name = message.pushName;
         await supabase.from('whatsapp_chats').update(updates).eq('id', chatId);
       }
@@ -301,7 +319,7 @@ export class SessionManager extends EventEmitter {
         message_type: messageType,
         content,
         from_me: fromMe,
-        sender_name: message.pushName || null,
+        sender_name: message.pushName || (message.key.participant ? '+' + message.key.participant.split('@')[0] : phoneNumber),
         status: fromMe ? 'sent' : 'received',
         timestamp,
         media_url: mediaUrl,

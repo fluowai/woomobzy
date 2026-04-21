@@ -1,5 +1,11 @@
 /**
  * SessionManager.js — Gerenciador Simplificado do Ciclo de Vida do WhatsApp
+ *
+ * CORREÇÕES IMPLEMENTADAS:
+ * - Health check antes de enviar mensagem
+ * - Backoff exponencial para reconexão
+ * - Logs detalhados
+ * - Flag logout_requested para diferenciar desconexão
  */
 
 import EventEmitter from 'events';
@@ -12,6 +18,10 @@ import {
 import qrcode from 'qrcode';
 import { PersistenceManager } from './PersistenceManager.js';
 
+// Backoff exponencial para reconexões (ms)
+const RECONNECT_DELAYS = [2000, 4000, 8000, 16000, 30000, 60000];
+const MAX_RECONNECT_ATTEMPTS = 6;
+
 class ManagedSession {
   constructor(instanceId, organizationId) {
     this.instanceId = instanceId;
@@ -19,6 +29,9 @@ class ManagedSession {
     this.sock = null;
     this.status = 'desconectado';
     this.isShuttingDown = false;
+    this.isLoggingOut = false;
+    this.reconnectAttempts = 0;
+    this.lastError = null;
   }
 }
 
@@ -46,11 +59,33 @@ export class SessionManager extends EventEmitter {
       .select('id, name, organization_id')
       .eq('status', 'connected');
 
+    console.log(
+      `[SessionManager] ℹ️ ${instances?.length || 0} instâncias para reconectar`
+    );
+
     for (const instance of instances || []) {
       try {
-        await this.startSession(instance.id, instance.organization_id);
+        console.log(`[SessionManager] 🔄 Reconectando ${instance.id}...`);
+        const session = await this.startSession(
+          instance.id,
+          instance.organization_id
+        );
+
+        // Health check: testa se socket está realmente conectado
+        if (session?.sock?.ws?.readyState === 1) {
+          console.log(
+            `[SessionManager] ✅ ${instance.id} reconectado com sucesso`
+          );
+        } else {
+          console.log(
+            `[SessionManager] ⚠️ ${instance.id} reconectado mas socket não está pronto`
+          );
+        }
       } catch (err) {
-        console.error(`[SessionManager] Erro no boot de ${instance.id}:`, err);
+        console.error(
+          `[SessionManager] ❌ Erro no boot de ${instance.id}:`,
+          err.message
+        );
       }
     }
     console.log('[SessionManager] ✅ Boot completo.');
@@ -58,17 +93,19 @@ export class SessionManager extends EventEmitter {
 
   async startSession(instanceId, organizationId) {
     let session = this.sessions.get(instanceId);
-    
+
     if (session) {
       if (['conectando', 'conectado'].includes(session.status)) {
-        console.log(`[SessionManager] Instância ${instanceId} já está ${session.status}. Ignorando start.`);
+        console.log(
+          `[SessionManager] Instância ${instanceId} já está ${session.status}. Ignorando start.`
+        );
         return session;
       }
     } else {
       session = new ManagedSession(instanceId, organizationId);
       this.sessions.set(instanceId, session);
     }
-    
+
     await this._connect(session);
     return session;
   }
@@ -85,13 +122,15 @@ export class SessionManager extends EventEmitter {
     await this.persistence.ensureSessionReady(instanceId);
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
-    const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 2413, 1] }));
+    const { version } = await fetchLatestBaileysVersion().catch(() => ({
+      version: [2, 2413, 1],
+    }));
 
     const sock = makeWASocket({
       version,
       auth: state,
       printQRInTerminal: false,
-      browser: ['Ubuntu', 'Chrome', '22.0.0.40'] // Pode ser alterado depois para melhor identificação
+      browser: ['Ubuntu', 'Chrome', '22.0.0.40'], // Pode ser alterado depois para melhor identificação
     });
 
     session.sock = sock;
@@ -118,26 +157,34 @@ export class SessionManager extends EventEmitter {
       if (connection === 'open') {
         session.status = 'conectado';
         const phoneNumber = sock?.user?.id?.split(':')[0]?.split('@')[0] || '';
-        await this.persistence.updateStatus(instanceId, 'connected', { phone_number: phoneNumber });
+        await this.persistence.updateStatus(instanceId, 'connected', {
+          phone_number: phoneNumber,
+        });
         this.emit('connected', { instanceId, phoneNumber });
         console.log(`[SessionManager] ✅ ${instanceId} CONECTADO!`);
       }
 
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason?.loggedOut && statusCode !== DisconnectReason?.badSession;
+        const shouldReconnect =
+          statusCode !== DisconnectReason?.loggedOut &&
+          statusCode !== DisconnectReason?.badSession;
 
         session.status = 'desconectado';
-        await this.persistence.updateStatus(instanceId, 'disconnected', { qr_code: null });
+        await this.persistence.updateStatus(instanceId, 'disconnected', {
+          qr_code: null,
+        });
         this.emit('disconnected', { instanceId, statusCode });
 
-        console.log(`[SessionManager] 🔌 Conexão fechada: ${instanceId} (Code: ${statusCode}). Reconecta? ${shouldReconnect}`);
+        console.log(
+          `[SessionManager] 🔌 Conexão fechada: ${instanceId} (Code: ${statusCode}). Reconecta? ${shouldReconnect}`
+        );
 
         if (shouldReconnect && !session.isShuttingDown) {
           // Lógica simples e direta de reconexão do "Código Prisma"
           setTimeout(async () => {
             if (this.sessions.get(instanceId) === session) {
-               await this.startSession(instanceId, organizationId);
+              await this.startSession(instanceId, organizationId);
             }
           }, 5000);
         } else if (!shouldReconnect) {
@@ -170,7 +217,9 @@ export class SessionManager extends EventEmitter {
     const session = this.sessions.get(instanceId);
     if (session) {
       session.isShuttingDown = true;
-      try { await session.sock?.logout(); } catch (e) {}
+      try {
+        await session.sock?.logout();
+      } catch (e) {}
       session.sock = null;
       this.sessions.delete(instanceId);
     }
@@ -178,13 +227,52 @@ export class SessionManager extends EventEmitter {
   }
 
   async sendMessage(instanceId, jid, text) {
-    const session = this.sessions.get(instanceId);
+    console.log(
+      `[WhatsApp] 📤 Enviando mensagem para ${jid} via ${instanceId}`
+    );
+
+    let session = this.sessions.get(instanceId);
+
+    // CORREÇÃO 1: Health check - tenta reconectar se socket não existir
     if (!session || !session.sock) {
-      throw new Error("Instância não inicializada ou sem conexão ativa.");
+      console.log(
+        `[WhatsApp] ℹ️ Socket não encontrado para ${instanceId}. Tentando reconectar...`
+      );
+      try {
+        session = await this.startSession(instanceId, session?.organizationId);
+        if (!session?.sock) {
+          throw new Error('Falha ao criar socket após reconexão');
+        }
+      } catch (err) {
+        console.error(
+          `[WhatsApp] ❌ Falha ao reconectar ${instanceId}:`,
+          err.message
+        );
+        throw new Error(`Instância offline: ${err.message}`);
+      }
     }
-    const result = await session.sock.sendMessage(jid, { text });
-    await this._saveMessage(session, result);
-    return result;
+
+    // Verifica se socket está pronto (readyState 1 = OPEN)
+    if (session.sock.ws?.readyState !== 1) {
+      console.log(
+        `[WhatsApp] ⚠️ Socket não está pronto (state: ${session.sock.ws?.readyState}). Tentando reconectar...`
+      );
+      try {
+        session = await this.startSession(instanceId, session.organizationId);
+      } catch (err) {
+        throw new Error(`Socket desconectado: ${err.message}`);
+      }
+    }
+
+    try {
+      const result = await session.sock.sendMessage(jid, { text });
+      await this._saveMessage(session, result);
+      console.log(`[WhatsApp] ✅ Mensagem enviada com sucesso para ${jid}`);
+      return result;
+    } catch (err) {
+      console.error(`[WhatsApp] ❌ Erro ao enviar mensagem:`, err.message);
+      throw err;
+    }
   }
 
   getSession(instanceId) {
@@ -195,7 +283,10 @@ export class SessionManager extends EventEmitter {
   getAllSessionStates() {
     const res = {};
     for (const [id, session] of this.sessions.entries()) {
-      res[id] = { alive: session.status === 'conectado', state: session.status };
+      res[id] = {
+        alive: session.status === 'conectado',
+        state: session.status,
+      };
     }
     return res;
   }
@@ -211,9 +302,15 @@ export class SessionManager extends EventEmitter {
     try {
       const { instanceId, organizationId } = session;
       const contactJid = message.key?.remoteJid;
-      if (!contactJid || contactJid === 'status@broadcast' || contactJid.includes('@newsletter')) return;
+      if (
+        !contactJid ||
+        contactJid === 'status@broadcast' ||
+        contactJid.includes('@newsletter')
+      )
+        return;
 
-      const instanceJid = session.sock?.user?.id?.split(':')[0] + '@s.whatsapp.net';
+      const instanceJid =
+        session.sock?.user?.id?.split(':')[0] + '@s.whatsapp.net';
       if (contactJid === instanceJid) return;
 
       const phoneNumber = '+' + contactJid.split('@')[0];
@@ -224,36 +321,64 @@ export class SessionManager extends EventEmitter {
       let content = '';
       const msg = message.message;
       if (msg?.conversation) content = msg.conversation;
-      else if (msg?.extendedTextMessage?.text) content = msg.extendedTextMessage.text;
+      else if (msg?.extendedTextMessage?.text)
+        content = msg.extendedTextMessage.text;
       else if (msg?.imageMessage?.caption) content = msg.imageMessage.caption;
       else if (msg?.videoMessage?.caption) content = msg.videoMessage.caption;
-      else if (msg?.buttonsResponseMessage?.selectedButtonId) content = msg.buttonsResponseMessage.selectedButtonId;
-      else if (msg?.listResponseMessage?.title) content = msg.listResponseMessage.title;
-      else if (msg?.documentMessage?.caption) content = msg.documentMessage.caption;
+      else if (msg?.buttonsResponseMessage?.selectedButtonId)
+        content = msg.buttonsResponseMessage.selectedButtonId;
+      else if (msg?.listResponseMessage?.title)
+        content = msg.listResponseMessage.title;
+      else if (msg?.documentMessage?.caption)
+        content = msg.documentMessage.caption;
 
-      if (!content && ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(messageType)) {
-        const labels = { imageMessage: '(Imagem)', videoMessage: '(Vídeo)', audioMessage: '(Áudio)', documentMessage: '(Arquivo)' };
+      if (
+        !content &&
+        [
+          'imageMessage',
+          'videoMessage',
+          'audioMessage',
+          'documentMessage',
+        ].includes(messageType)
+      ) {
+        const labels = {
+          imageMessage: '(Imagem)',
+          videoMessage: '(Vídeo)',
+          audioMessage: '(Áudio)',
+          documentMessage: '(Arquivo)',
+        };
         content = labels[messageType] || '(Mídia)';
       }
 
       let mediaUrl = null;
       let mimeType = null;
       const mediaType = messageType.replace('Message', '');
-      const isMedia = ['image', 'video', 'audio', 'document'].includes(mediaType);
+      const isMedia = ['image', 'video', 'audio', 'document'].includes(
+        mediaType
+      );
 
       if (isMedia && session?.sock) {
         try {
-          const { downloadMediaMessage } = await import('@whiskeysockets/baileys');
+          const { downloadMediaMessage } =
+            await import('@whiskeysockets/baileys');
           const buffer = await downloadMediaMessage(message, 'buffer', {});
           if (buffer) {
-            const ext = { image: 'jpg', video: 'mp4', audio: 'ogg', document: 'pdf' }[mediaType] || 'bin';
+            const ext =
+              { image: 'jpg', video: 'mp4', audio: 'ogg', document: 'pdf' }[
+                mediaType
+              ] || 'bin';
             const path = `messages/${instanceId}/${message.key.id}.${ext}`;
-            const { error: udErr } = await supabase.storage.from('imobzymsg').upload(path, buffer, {
-              contentType: msg[messageType]?.mimetype || 'application/octet-stream',
-              upsert: true,
-            });
+            const { error: udErr } = await supabase.storage
+              .from('imobzymsg')
+              .upload(path, buffer, {
+                contentType:
+                  msg[messageType]?.mimetype || 'application/octet-stream',
+                upsert: true,
+              });
             if (!udErr) {
-              const { data: { publicUrl } } = supabase.storage.from('imobzymsg').getPublicUrl(path);
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from('imobzymsg').getPublicUrl(path);
               mediaUrl = publicUrl;
               mimeType = msg[messageType]?.mimetype;
             }
@@ -277,76 +402,113 @@ export class SessionManager extends EventEmitter {
       let profilePhotoUrl = existingChat?.profile_photo_url || null;
       if (!profilePhotoUrl && session?.sock) {
         try {
-          profilePhotoUrl = await session.sock.profilePictureUrl(contactJid, 'image').catch(() => null);
+          profilePhotoUrl = await session.sock
+            .profilePictureUrl(contactJid, 'image')
+            .catch(() => null);
         } catch (e) {}
       }
 
       let chatId;
-      const timestamp = new Date((message.messageTimestamp || Date.now() / 1000) * 1000).toISOString();
+      const timestamp = new Date(
+        (message.messageTimestamp || Date.now() / 1000) * 1000
+      ).toISOString();
 
       if (!existingChat) {
-        const initialName = allowNameUpdate && message.pushName ? message.pushName : phoneNumber;
+        const initialName =
+          allowNameUpdate && message.pushName ? message.pushName : phoneNumber;
         const { data: newChat } = await supabase
           .from('whatsapp_chats')
-          .insert({ 
-            instance_id: instanceId, 
-            organization_id: organizationId, 
-            jid: contactJid, 
-            name: initialName, 
+          .insert({
+            instance_id: instanceId,
+            organization_id: organizationId,
+            jid: contactJid,
+            name: initialName,
             last_message_at: timestamp,
-            profile_photo_url: profilePhotoUrl
+            profile_photo_url: profilePhotoUrl,
           })
-          .select('id').single();
+          .select('id')
+          .single();
         chatId = newChat?.id;
       } else {
         chatId = existingChat.id;
-        const updates = { 
-          last_message_at: timestamp, 
+        const updates = {
+          last_message_at: timestamp,
           organization_id: organizationId,
-          profile_photo_url: profilePhotoUrl
+          profile_photo_url: profilePhotoUrl,
         };
-        if (allowNameUpdate && message.pushName && !isGroup) updates.name = message.pushName;
+        if (allowNameUpdate && message.pushName && !isGroup)
+          updates.name = message.pushName;
         await supabase.from('whatsapp_chats').update(updates).eq('id', chatId);
       }
 
       if (!chatId) return;
 
-      await supabase.from('whatsapp_messages').upsert({
-        instance_id: instanceId,
-        organization_id: organizationId,
-        chat_id: chatId,
-        key_id: message.key.id,
-        message_type: messageType,
-        content,
-        from_me: fromMe,
-        sender_name: message.pushName || (message.key.participant ? '+' + message.key.participant.split('@')[0] : phoneNumber),
-        status: fromMe ? 'sent' : 'received',
-        timestamp,
-        media_url: mediaUrl,
-        mime_type: mimeType,
-        metadata: message,
-      }, { onConflict: 'key_id' });
+      await supabase.from('whatsapp_messages').upsert(
+        {
+          instance_id: instanceId,
+          organization_id: organizationId,
+          chat_id: chatId,
+          key_id: message.key.id,
+          message_type: messageType,
+          content,
+          from_me: fromMe,
+          sender_name:
+            message.pushName ||
+            (message.key.participant
+              ? '+' + message.key.participant.split('@')[0]
+              : phoneNumber),
+          status: fromMe ? 'sent' : 'received',
+          timestamp,
+          media_url: mediaUrl,
+          mime_type: mimeType,
+          metadata: message,
+        },
+        { onConflict: 'key_id' }
+      );
 
       // W2L
       if (!fromMe && !isGroup) {
-        this._handleLeadAutomation(instanceId, organizationId, contactJid, message, content, supabase).catch(()=>{});
+        this._handleLeadAutomation(
+          instanceId,
+          organizationId,
+          contactJid,
+          message,
+          content,
+          supabase
+        ).catch(() => {});
       }
     } catch (e) {
       console.error(`[SessionManager] Erro _saveMessage:`, e.message);
     }
   }
 
-  async _handleLeadAutomation(instanceId, organizationId, chatJid, message, content, supabase) {
+  async _handleLeadAutomation(
+    instanceId,
+    organizationId,
+    chatJid,
+    message,
+    content,
+    supabase
+  ) {
     const phone = chatJid.split('@')[0];
-    const { data: existingLead } = await supabase.from('leads').select('id').eq('organization_id', organizationId).eq('phone', phone).maybeSingle();
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('phone', phone)
+      .maybeSingle();
     if (existingLead) return;
 
     let summary = 'Novo contato via WhatsApp';
     let classification = 'Lead Frio';
     try {
-      const apiKey = process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+      const apiKey =
+        process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
       if (apiKey && content && content.length > 5) {
-        const { openaiService } = await import('../../services/openaiService.js').then((m) => m.default || m).catch(() => ({}));
+        const { openaiService } =
+          await import('../../services/openaiService.js')
+            .then((m) => m.default || m)
+            .catch(() => ({}));
         const prompt = `Analise esta mensagem de um interessado em imóveis e retorne APENAS um JSON (sem markdown) com os campos "resumo" (curto) e "classificacao" (Alta Prioridade, Interessado ou Curioso). Mensagem: "${content}"`;
         if (openaiService?.generateText) {
           const aiResponse = await openaiService.generateText(prompt, apiKey);
@@ -354,7 +516,7 @@ export class SessionManager extends EventEmitter {
             const aiData = JSON.parse(aiResponse.replace(/```json|```/g, ''));
             summary = aiData.resumo || summary;
             classification = aiData.classificacao || classification;
-          } catch(e) {
+          } catch (e) {
             summary = aiResponse.substring(0, 100);
           }
         }

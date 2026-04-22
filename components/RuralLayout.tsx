@@ -139,8 +139,12 @@ const RuralLayout: React.FC = () => {
         }`
       }
     >
-      <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'animate-pulse-subtle' : ''} />
-      <span className="text-sm">{item.label}</span>
+      {({ isActive }) => (
+        <>
+          <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'animate-pulse-subtle' : ''} />
+          <span className="text-sm">{item.label}</span>
+        </>
+      )}
     </NavLink>
   );
 

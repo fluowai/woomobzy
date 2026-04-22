@@ -29,6 +29,7 @@ import {
   ChevronRight,
   TrendingUp,
   Circle,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl } from '../../src/lib/api';

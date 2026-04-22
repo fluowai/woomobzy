@@ -3,17 +3,13 @@ import {
   TrendingUp,
   Users as UsersIcon,
   ShieldCheck,
-  FileText,
-  Search,
-  Plus,
   ArrowUpRight,
   Wheat,
   Activity,
-  Map as MapIcon,
   Target,
   Briefcase,
+  MapPin,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import {
@@ -61,36 +57,36 @@ const RuralDashboard: React.FC = () => {
 
   const kpis = [
     {
-      label: 'PROPRIEDADES',
-      value: String(propertyCount),
+      label: 'Propriedades',
+      value: loading ? '—' : String(propertyCount),
       change: '+12%',
       icon: Wheat,
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-50',
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10 border-primary/20',
     },
     {
-      label: 'INVESTIDORES',
-      value: String(leadCount),
+      label: 'Investidores',
+      value: loading ? '—' : String(leadCount),
       change: '+5%',
       icon: UsersIcon,
-      color: 'text-blue-500',
-      bg: 'bg-blue-50',
+      iconColor: 'text-purple-400',
+      iconBg: 'bg-purple-500/10 border-purple-500/20',
     },
     {
-      label: 'DUE DILIGENCE',
+      label: 'Due Diligence',
       value: '18',
       change: '+8%',
       icon: ShieldCheck,
-      color: 'text-amber-500',
-      bg: 'bg-amber-50',
+      iconColor: 'text-amber-400',
+      iconBg: 'bg-amber-500/10 border-amber-500/20',
     },
     {
-      label: 'NEGÓCIOS (MÊS)',
+      label: 'Negócios (Mês)',
       value: 'R$ 8.2M',
       change: '+24%',
       icon: TrendingUp,
-      color: 'text-purple-500',
-      bg: 'bg-purple-50',
+      iconColor: 'text-teal-400',
+      iconBg: 'bg-teal-500/10 border-teal-500/20',
     },
   ];
 
@@ -103,53 +99,93 @@ const RuralDashboard: React.FC = () => {
     { name: 'Jun', valor: 67 },
   ];
 
+  const tooltipStyle = {
+    backgroundColor: 'var(--color-bg-card)',
+    borderRadius: 'var(--radius-md)',
+    border: '1px solid var(--color-border)',
+    boxShadow: 'var(--shadow-premium)',
+    color: 'var(--color-text-primary)',
+    fontSize: '12px',
+  };
+
+  const quickActions = [
+    {
+      icon: Activity,
+      label: 'Análise Fundiária',
+      desc: 'Sincronizar dados do CAR/SIGEF',
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10 border-primary/20',
+    },
+    {
+      icon: Target,
+      label: 'Inteligência Comercial',
+      desc: 'Mapa de calor de investidores',
+      iconColor: 'text-purple-400',
+      iconBg: 'bg-purple-500/10 border-purple-500/20',
+    },
+    {
+      icon: Briefcase,
+      label: 'Novo Prospecto',
+      desc: 'Criar apresentação personalizada',
+      iconColor: 'text-amber-400',
+      iconBg: 'bg-amber-500/10 border-amber-500/20',
+    },
+  ];
+
   return (
-    <div className="space-y-10">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#0F172A] mb-1">Visão Geral</h1>
-        <p className="text-sm text-[#64748B]">
+    <div className="space-y-8">
+      <div className="animate-fade-in">
+        <h1 className="h1 flex items-center gap-3">
+          <span className="p-2 bg-primary/5 rounded-xl border border-primary/10">
+            <MapPin className="text-primary" size={24} />
+          </span>
+          Dashboard Rural
+        </h1>
+        <p className="body text-text-secondary mt-2 ml-1">
           Gerenciamento de ativos e performance comercial.
         </p>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpis.map((kpi, idx) => (
-          <div key={idx} className="card-premium flex flex-col justify-between">
+          <div
+            key={idx}
+            className="card card-hover animate-slide-up"
+            style={{ animationDelay: `${idx * 100}ms` }}
+          >
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-2.5 rounded-xl ${kpi.bg}`}>
-                <kpi.icon size={20} className={kpi.color} />
+              <div className={`p-3 rounded-xl border ${kpi.iconBg}`}>
+                <kpi.icon size={20} className={kpi.iconColor} />
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full">
                 {kpi.change}
-                <ArrowUpRight size={14} />
+                <ArrowUpRight size={13} />
               </div>
             </div>
-            <div>
-              <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-[0.1em] mb-1">
-                {kpi.label}
-              </p>
-              <h2 className="text-2xl font-bold text-[#0F172A]">{kpi.value}</h2>
-            </div>
+            <p className="text-tiny font-medium text-text-tertiary uppercase tracking-widest mb-1">
+              {kpi.label}
+            </p>
+            <h2 className="h2 text-3xl font-bold text-text-primary tracking-tight mb-0">
+              {kpi.value}
+            </h2>
           </div>
         ))}
       </div>
 
-      {/* Main Grid Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Chart */}
-        <div className="lg:col-span-2 card-premium">
+        <div className="lg:col-span-2 card p-6 animate-slide-up" style={{ animationDelay: '400ms' }}>
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-lg font-bold text-[#0F172A]">
+              <h3 className="h3 mb-1">
                 Volume de Negociações
               </h3>
-              <p className="text-xs text-[#64748B]">
+              <p className="text-small text-text-tertiary">
                 Variação mensal de captação em milhões (R$)
               </p>
             </div>
-            <select className="text-xs font-bold text-[#64748B] bg-[#F8FAFC] border-none rounded-lg px-3 py-2 outline-none cursor-pointer hover:bg-slate-100 transition-colors">
+            <select className="select-field w-auto min-w-[160px]">
               <option>Últimos 6 meses</option>
               <option>Este ano</option>
             </select>
@@ -158,116 +194,87 @@ const RuralDashboard: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22C55E" stopOpacity={0.1} />
-                    <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+                  <linearGradient id="colorValRural" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#F1F5F9"
-                />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-subtle)" />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#94A3B8', fontSize: 11, fontWeight: 500 }}
-                  dy={10}
+                  tick={{ fill: 'var(--color-text-tertiary)', fontSize: 12 }}
+                  dy={12}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#94A3B8', fontSize: 11, fontWeight: 500 }}
+                  tick={{ fill: 'var(--color-text-tertiary)', fontSize: 12 }}
                 />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    borderRadius: '12px',
-                    border: '1px solid #E2E8F0',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    fontSize: '12px',
-                  }}
-                />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Area
                   type="monotone"
                   dataKey="valor"
-                  stroke="#22C55E"
+                  name="Negócios (M)"
+                  stroke="var(--color-primary)"
                   strokeWidth={3}
                   fillOpacity={1}
-                  fill="url(#colorVal)"
+                  fill="url(#colorValRural)"
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Quick Actions & Tasks */}
-        <div className="space-y-6">
-          <div className="card-premium">
-            <h3 className="text-sm font-bold text-[#0F172A] mb-4 uppercase tracking-wider">
+        {/* Quick Actions + Goal */}
+        <div className="space-y-5">
+          {/* Quick Actions */}
+          <div className="bg-bg-card p-5 rounded-2xl border border-border-subtle">
+            <h3 className="text-xs font-semibold text-text-tertiary mb-4 uppercase tracking-widest">
               Ações Estratégicas
             </h3>
             <div className="space-y-2">
-              <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-50 transition-all group text-left border border-transparent hover:border-slate-100">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                  <Activity size={16} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#0F172A]">
-                    Análise Fundiária
-                  </p>
-                  <p className="text-[10px] text-[#64748B]">
-                    Sincronizar dados do CAR/SIGEF
-                  </p>
-                </div>
-              </button>
-              <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-50 transition-all group text-left border border-transparent hover:border-slate-100">
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                  <Target size={16} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#0F172A]">
-                    Inteligência Comercial
-                  </p>
-                  <p className="text-[10px] text-[#64748B]">
-                    Mapa de calor de investidores
-                  </p>
-                </div>
-              </button>
-              <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-50 transition-all group text-left border border-transparent hover:border-slate-100">
-                <div className="p-2 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-500 group-hover:text-white transition-colors">
-                  <Briefcase size={16} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#0F172A]">
-                    Novo Prospecto
-                  </p>
-                  <p className="text-[10px] text-[#64748B]">
-                    Criar apresentação personalizada
-                  </p>
-                </div>
-              </button>
+              {quickActions.map((action, idx) => (
+                <button
+                  key={idx}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-bg-hover transition-all group text-left border border-transparent hover:border-border-subtle"
+                >
+                  <div className={`p-2 rounded-lg border ${action.iconBg} transition-all`}>
+                    <action.icon size={16} className={action.iconColor} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-text-primary">
+                      {action.label}
+                    </p>
+                    <p className="text-[11px] text-text-tertiary">
+                      {action.desc}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="card-premium bg-[#0F172A] border-none text-white">
-            <h3 className="text-xs font-bold text-slate-400 mb-4 uppercase tracking-[0.15em]">
+          {/* Goal Card */}
+          <div className="bg-primary/10 border border-primary/20 p-5 rounded-2xl">
+            <h3 className="text-xs font-semibold text-text-tertiary mb-4 uppercase tracking-widest">
               Meta de Captação
             </h3>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold">R$ 12.5M / R$ 15M</span>
-              <span className="text-xs font-bold text-emerald-400">82%</span>
+              <span className="text-sm font-semibold text-text-primary">
+                R$ 12.5M / R$ 15M
+              </span>
+              <span className="text-xs font-bold text-primary">82%</span>
             </div>
-            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-bg-hover rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-500 rounded-full"
+                className="h-full bg-primary rounded-full transition-all duration-1000"
                 style={{ width: '82%' }}
               />
             </div>
-            <p className="mt-4 text-[10px] text-slate-400 leading-relaxed font-medium">
-              Você está a apenas R$ 2.5M da meta trimestral. Mantenha o foco em
-              grandes ativos.
+            <p className="mt-4 text-[11px] text-text-secondary leading-relaxed">
+              Você está a apenas <strong className="text-primary">R$ 2.5M</strong> da meta trimestral. Mantenha o foco em grandes ativos.
             </p>
           </div>
         </div>

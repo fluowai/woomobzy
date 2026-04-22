@@ -60,12 +60,20 @@ const Login: React.FC = () => {
     try {
       console.log('🚀 [Login] Starting signIn for:', email);
       await signIn(email, password);
-      // Do NOT manually fetch profile here. AuthContext.onAuthStateChange will handle it.
-      // Just flag that we signed in so the useEffect above handles the redirect.
       setJustSignedIn(true);
       console.log(
         '✅ [Login] signIn successful. Waiting for AuthContext to load profile...'
       );
+      
+      // Failsafe: if profile doesn't load in 8 seconds, allow retry
+      setTimeout(() => {
+        if (loading) {
+          console.warn('⚠️ [Login] Profile loading timed out.');
+          setLoading(false);
+          setJustSignedIn(false);
+          setError('O carregamento do perfil está demorando mais que o esperado. Tente novamente.');
+        }
+      }, 8000);
     } catch (err: any) {
       console.error('Login error:', err);
       setError(
@@ -77,53 +85,56 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-bg-primary relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px] animate-pulse-subtle" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
+
+      <div className="w-full max-w-md px-6 relative z-10 animate-slide-up">
         {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-block">
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-block hover-lift">
             <img
               src="/logo-imobzy.png"
               alt="IMOBZY"
-              className="h-16 w-auto mx-auto mb-4"
+              className="h-20 w-auto mx-auto mb-6"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
+                e.currentTarget.src =
+                  'https://imobzy.com.br/wp-content/uploads/2023/05/logo-imobzy-white.png';
               }}
             />
           </Link>
-          <h1 className="text-4xl font-black text-orange-600 uppercase italic tracking-tighter mb-2">
-            {settings.agencyName || 'IMOBZY'}
+          <h1 className="h1 text-text-primary tracking-tight mb-2">
+            Bem-vindo ao <span className="text-primary">{settings.agencyName || 'IMOBZY'}</span>
           </h1>
-          <p className="text-black/60 font-medium">Acesso Administrativo</p>
+          <p className="body text-text-secondary font-medium">
+            Gerencie sua imobiliária com inteligência
+          </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-[2rem] shadow-2xl p-8 border border-slate-100">
-          <div className="flex items-center justify-center mb-6">
-            <div className="p-4 bg-black rounded-2xl">
-              <Lock size={32} className="text-white" />
+        <div className="glass-card p-8 md:p-10">
+          <div className="flex items-center justify-center mb-8">
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+              <Lock size={32} className="text-primary" />
             </div>
           </div>
 
-          <h2 className="text-2xl font-black text-black text-center mb-8">
-            Login
-          </h2>
-
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-              <AlertCircle size={20} className="text-red-600 mt-0.5" />
-              <p className="text-sm text-red-800 font-medium">{error}</p>
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+              <AlertCircle size={20} className="text-red-500 mt-0.5" />
+              <p className="text-sm text-red-200 font-medium">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-xs font-black uppercase text-black/40 tracking-[0.2em] mb-2 ml-4">
-                Email
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase text-text-tertiary tracking-widest ml-1">
+                E-mail de Acesso
               </label>
-              <div className="relative">
+              <div className="relative group">
                 <Mail
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"
                   size={20}
                 />
                 <input
@@ -131,19 +142,27 @@ const Login: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:border-black/10 outline-none font-bold text-sm transition-all"
+                  className="input-field pl-12"
                   placeholder="seu@email.com"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-black uppercase text-black/40 tracking-[0.2em] mb-2 ml-4">
-                Senha
-              </label>
-              <div className="relative">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between ml-1">
+                <label className="block text-xs font-semibold uppercase text-text-tertiary tracking-widest">
+                  Senha
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  Esqueceu a senha?
+                </Link>
+              </div>
+              <div className="relative group">
                 <Lock
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-black/20"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"
                   size={20}
                 />
                 <input
@@ -151,7 +170,7 @@ const Login: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:border-black/10 outline-none font-bold text-sm transition-all"
+                  className="input-field pl-12"
                   placeholder="••••••••"
                 />
               </div>
@@ -160,33 +179,39 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading || justSignedIn}
-              style={{ backgroundColor: settings.primaryColor }}
-              className="w-full py-4 text-white rounded-2xl font-black uppercase text-sm tracking-[0.3em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-primary w-full text-sm uppercase tracking-widest py-4 h-14"
             >
-              {loading || justSignedIn ? 'Entrando...' : 'Entrar'}
+              {loading || justSignedIn ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Entrando...
+                </div>
+              ) : (
+                'Entrar no Painel'
+              )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-black/60">
-              Não tem uma conta?{' '}
+          <div className="mt-8 pt-8 border-t border-border-subtle text-center">
+            <p className="text-sm text-text-secondary">
+              Ainda não tem uma conta?{' '}
               <Link
                 to="/register"
-                className="font-black text-black hover:underline"
+                className="font-bold text-primary hover:text-primary-light transition-colors"
               >
-                Criar conta
+                Cadastre-se agora
               </Link>
             </p>
           </div>
         </div>
 
         {/* Back to Site */}
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <Link
             to="/"
-            className="text-sm text-black/40 hover:text-black font-bold transition"
+            className="text-sm text-text-tertiary hover:text-white font-medium transition-colors inline-flex items-center gap-2"
           >
-            ← Voltar para o site
+            ← Voltar para o site institucional
           </Link>
         </div>
       </div>

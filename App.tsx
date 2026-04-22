@@ -121,22 +121,25 @@ class ErrorBoundary extends React.Component<EBProps, EBState> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-bg-primary p-8 text-center">
-          <div className="bg-bg-card p-8 rounded-2xl shadow-2xl border border-subtle max-w-2xl w-full">
-            <h1 className="text-2xl font-bold text-text-primary mb-4 uppercase tracking-tight">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-bg-primary p-8 text-center animate-fade-in">
+          <div className="card-premium p-10 max-w-2xl w-full">
+            <div className="mb-6 inline-flex p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+              <AlertCircle size={48} className="text-red-500" />
+            </div>
+            <h1 className="h1 text-text-primary mb-4 uppercase tracking-tight">
               Ops! Algo deu errado.
             </h1>
-            <p className="text-secondary mb-6 font-medium">
+            <p className="body text-text-secondary mb-8">
               Ocorreu um erro inesperado na renderização do sistema.
             </p>
-            <div className="bg-bg-hover text-left p-4 rounded-xl mb-6 overflow-auto max-h-48 border border-subtle">
+            <div className="bg-bg-hover text-left p-6 rounded-xl mb-8 overflow-auto max-h-48 border border-border">
               <code className="text-accent text-xs font-mono">
                 {this.state.error?.toString()}
               </code>
             </div>
             <button
               onClick={() => window.location.reload()}
-              className="btn-primary"
+              className="btn btn-primary btn-lg px-8"
             >
               Recarregar Sistema
             </button>
@@ -154,10 +157,10 @@ class ErrorBoundary extends React.Component<EBProps, EBState> {
 // LOADING SPINNER (reusable)
 // ==========================================
 const FullScreenSpinner: React.FC = () => (
-  <div className="min-h-screen flex items-center justify-center bg-bg-primary">
+  <div className="min-h-screen flex items-center justify-center bg-bg-primary animate-fade-in">
     <div className="text-center">
-      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
-      <p className="mt-4 text-secondary font-medium">Carregando...</p>
+      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <p className="mt-4 text-text-secondary font-medium tracking-wide">Carregando...</p>
     </div>
   </div>
 );

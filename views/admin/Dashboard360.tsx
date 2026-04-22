@@ -17,6 +17,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
+import WelcomeTour from '../../components/WelcomeTour';
 
 const Dashboard360: React.FC = () => {
   const { profile } = useAuth();
@@ -51,6 +52,7 @@ const Dashboard360: React.FC = () => {
 
   return (
     <div className="min-h-full space-y-8 animate-in fade-in duration-700">
+      <WelcomeTour />
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-bg-card p-8 rounded-2xl border border-subtle">
         <div>
@@ -142,29 +144,41 @@ const Dashboard360: React.FC = () => {
               </Link>
             </div>
 
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
+            <div className="space-y-4">
+              {[
+                { name: 'Ricardo Santos', time: 'Há 5 min', msg: 'Interessado na Fazenda Sol Nascente (MT)' },
+                { name: 'Ana Carolina', time: 'Há 15 min', msg: 'Solicitou vídeo do Haras Tatuí' },
+                { name: 'Grupo InvestAgro', time: 'Há 1 hora', msg: 'Nova proposta para a Gleba A' },
+              ].map((chat, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-4 bg-bg-hover rounded-xl hover:bg-bg-hover/70 transition-all border border-subtle group"
+                  className="flex items-center justify-between p-5 bg-bg-hover rounded-2xl hover:bg-bg-hover/80 transition-all border border-subtle group cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center text-brand font-bold">
-                      {i}
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand/20 to-brand/5 border border-brand/20 flex items-center justify-center text-brand font-bold text-lg shadow-inner">
+                      {chat.name.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-semibold text-text-primary text-sm">
-                        Interessado no Apt. {i}01
-                      </p>
-                      <p className="text-xs text-secondary font-medium truncate max-w-[200px]">
-                        Lead enviou uma nova foto de comprovante...
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="font-bold text-text-primary text-sm">
+                          {chat.name}
+                        </p>
+                        <span className="text-[10px] text-tertiary bg-bg-primary px-2 py-0.5 rounded-full border border-subtle">
+                          {chat.time}
+                        </span>
+                      </div>
+                      <p className="text-xs text-secondary font-medium truncate max-w-[250px]">
+                        {chat.msg}
                       </p>
                     </div>
                   </div>
-                  <ArrowUpRight
-                    className="text-tertiary group-hover:text-brand transition-colors"
-                    size={18}
-                  />
+                  <div className="flex items-center gap-2">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-brand uppercase tracking-widest">Responder</span>
+                    <ArrowUpRight
+                      className="text-tertiary group-hover:text-brand transition-all transform group-hover:translate-x-1 group-hover:-translate-y-1"
+                      size={20}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

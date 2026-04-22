@@ -80,63 +80,63 @@ const PropertyManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin text-indigo-600" size={32} />
+      <div className="flex items-center justify-center h-64 animate-fade-in">
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 animate-fade-in">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter">
+          <h1 className="h1 mb-2">
             Gerenciamento de Imóveis
           </h1>
-          <p className="text-black/60 font-medium">
-            Gerencie todos os seus anúncios públicos e privados.
+          <p className="body text-text-secondary">
+            Gerencie todos os seus anúncios públicos e privados com facilidade.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-white border border-slate-200 rounded-lg p-1">
+        <div className="flex items-center gap-4">
+          <div className="flex bg-bg-card border border-border-subtle rounded-xl p-1 shadow-inner">
             <button
               onClick={() => setViewType('grid')}
-              className={`p-2 rounded-md transition-all ${viewType === 'grid' ? 'bg-slate-100 text-indigo-600' : 'text-black/40 hover:text-slate-600'}`}
+              className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
             >
-              <Grid size={18} />
+              <Grid size={20} />
             </button>
             <button
               onClick={() => setViewType('list')}
-              className={`p-2 rounded-md transition-all ${viewType === 'list' ? 'bg-slate-100 text-indigo-600' : 'text-black/40 hover:text-slate-600'}`}
+              className={`p-2 rounded-lg transition-all ${viewType === 'list' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
             >
-              <List size={18} />
+              <List size={20} />
             </button>
           </div>
           <button
-            onClick={() => navigate('/admin/properties/new')}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-bold transition-all shadow-md"
+            onClick={() => navigate('new')}
+            className="btn btn-primary h-12 px-6 shadow-lg shadow-primary-alpha-20"
           >
-            <Plus size={18} />
+            <Plus size={20} />
             Cadastrar Imóvel
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-100">
+      <div className="flex border-b border-border-subtle">
         <button
           onClick={() => setActiveTab('all')}
-          className={`px-8 py-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'all' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-black/40 hover:text-slate-600'}`}
+          className={`px-8 py-4 text-sm font-bold border-b-2 transition-all tracking-wide ${activeTab === 'all' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
         >
-          Meus Imoveis
+          Meus Imóveis
         </button>
         <button
           onClick={() => setActiveTab('pending')}
-          className={`px-8 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'pending' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-black/40 hover:text-slate-600'}`}
+          className={`px-8 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-3 tracking-wide ${activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
         >
           Solicitações Externas
           {properties.filter((p) => p.status === 'Pendente').length > 0 && (
-            <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full animate-pulse">
+            <span className="bg-accent text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg shadow-accent/20">
               {properties.filter((p) => p.status === 'Pendente').length}
             </span>
           )}
@@ -144,41 +144,41 @@ const PropertyManagement: React.FC = () => {
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
+      <div className="card p-4 flex flex-col lg:flex-row gap-4 items-center bg-bg-card/50 backdrop-blur-md">
+        <div className="flex-1 relative w-full group">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"
             size={18}
           />
           <input
             type="text"
             placeholder="Buscar por título, bairro ou ID..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="input-field pl-12"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-            Tipo <ChevronDown size={16} />
+        <div className="flex items-center gap-3 w-full lg:w-auto">
+          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+            Tipo <ChevronDown size={14} />
           </button>
-          <button className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-            Status <ChevronDown size={16} />
+          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+            Status <ChevronDown size={14} />
           </button>
-          <button className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-            <Filter size={16} />
+          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+            <Filter size={14} />
             Filtros
           </button>
         </div>
       </div>
 
       {filteredProperties.length === 0 ? (
-        <div className="text-center py-20 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-          <h3 className="text-lg font-bold text-slate-500">
+        <div className="text-center py-24 card border-dashed border-border-subtle bg-transparent">
+          <h3 className="h3 text-text-tertiary mb-2">
             Nenhum imóvel encontrado
           </h3>
-          <p className="text-sm text-black/40">
+          <p className="body text-text-tertiary max-w-md mx-auto">
             {activeTab === 'pending'
-              ? 'Não há solicitações pendentes no momento.'
-              : 'Comece cadastrando seu primeiro imóvel.'}
+              ? 'Não há solicitações pendentes no momento. Continue o bom trabalho!'
+              : 'Comece sua jornada cadastrando seu primeiro imóvel no sistema imobzy.'}
           </p>
         </div>
       ) : (
@@ -189,91 +189,92 @@ const PropertyManagement: React.FC = () => {
               {filteredProperties.map((property) => (
                 <div
                   key={property.id}
-                  className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all"
+                  className="card card-hover overflow-hidden group animate-slide-up"
                 >
-                  <div className="relative h-48">
+                  <div className="relative h-56 -mx-6 -mt-6 mb-6 overflow-hidden">
                     <img
                       src={
                         property.images?.[0] ||
-                        'https://via.placeholder.com/400x300?text=Sem+Foto'
+                        'https://images.unsplash.com/photo-1500382017468-9049fee74a62?auto=format&fit=crop&q=80&w=800'
                       }
                       alt={property.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div
-                      className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg ${
                         property.status === 'Disponível'
                           ? 'bg-emerald-500 text-white'
                           : property.status === 'Pendente'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-slate-500 text-white'
+                            ? 'bg-accent text-black'
+                            : 'bg-text-tertiary text-white'
                       }`}
                     >
                       {property.status}
                     </div>
                   </div>
                   <div className="p-5">
-                    <div className="mb-4">
-                      <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                  <div className="space-y-4">
+                    <div>
+                      <span className="badge badge-primary mb-2">
                         {property.type}
                       </span>
-                      <h3 className="text-lg font-bold text-slate-900 truncate">
+                      <h3 className="text-lg font-bold text-text-primary truncate mb-1">
                         {property.title}
                       </h3>
-                      <p className="text-sm text-slate-500 truncate">
-                        {property.location.neighborhood},{' '}
+                      <p className="text-sm text-text-tertiary truncate flex items-center gap-1">
+                        <MapPin size={12} /> {property.location.neighborhood},{' '}
                         {property.location.city}
                       </p>
                     </div>
-                    <div className="flex items-center justify-between mb-6">
-                      <span className="text-xl font-extrabold text-slate-900">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl font-black text-primary">
                         {property.price.toLocaleString('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
                         })}
                       </span>
-                      <div className="flex items-center gap-1 text-black/40 text-sm">
+                      <div className="flex items-center gap-2 text-text-tertiary text-xs font-bold uppercase tracking-wider">
                         <span>{property.features.areaHectares} ha</span>
-                        <span>•</span>
+                        <span className="w-1 h-1 bg-text-tertiary rounded-full" />
                         <span>{property.features.tipoSolo}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 border-t border-slate-50 pt-4">
+                    <div className="flex items-center gap-3 border-t border-border-subtle pt-6 mt-2">
                       {property.status === 'Pendente' ? (
                         <>
                           <button
                             onClick={() => handleApprove(property.id)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-sm font-bold transition-colors"
+                            className="btn-primary flex-1 h-10 text-xs uppercase tracking-widest"
                           >
-                            <Check size={16} /> Aprovar
+                            <Check size={14} /> Aprovar
                           </button>
                           <button
                             onClick={() => handleDelete(property.id!)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-bold transition-colors"
+                            className="btn-secondary flex-1 h-10 text-xs uppercase tracking-widest text-red-400 hover:text-red-500"
                           >
-                            <XCircle size={16} /> Recusar
+                            <Trash2 size={14} /> Recusar
                           </button>
                         </>
                       ) : (
                         <>
                           <button
                             onClick={() =>
-                              navigate(`/admin/properties/${property.id}`)
+                              navigate(`${property.id}`)
                             }
-                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-semibold transition-colors"
+                            className="btn btn-secondary flex-1 h-10 text-xs uppercase tracking-widest font-bold"
                           >
-                            <Edit3 size={16} /> Editar
+                            <Edit3 size={14} /> Editar
                           </button>
                           <button
                             onClick={() => navigate(`/property/${property.id}`)}
-                            className="p-2 text-black/40 hover:text-indigo-600 transition-colors"
+                            className="p-2 text-text-tertiary hover:text-primary transition-colors bg-bg-hover rounded-lg"
                             title="Ver página pública"
                           >
                             <Eye size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(property.id!)}
-                            className="p-2 text-black/40 hover:text-red-500 transition-colors"
+                            className="p-2 text-text-tertiary hover:text-red-500 transition-colors bg-bg-hover rounded-lg"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -282,8 +283,9 @@ const PropertyManagement: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           ) : (
             /* List View (Simplified) */
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm overflow-x-auto">

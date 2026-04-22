@@ -123,6 +123,34 @@ export const SettingsProvider: React.FC<{
     };
   }, [propsOrgId, profileOrgId, authLoading]);
 
+  // Apply settings to CSS variables whenever settings change
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const hexToRgb = (hex: string): string | null => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      if (!result) return null;
+      return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+    };
+
+    if (settings.primaryColor) {
+      root.style.setProperty('--color-primary', settings.primaryColor);
+      const rgb = hexToRgb(settings.primaryColor);
+      if (rgb) {
+        root.style.setProperty('--color-primary-alpha-10', `rgba(${rgb}, 0.1)`);
+        root.style.setProperty('--color-primary-alpha-15', `rgba(${rgb}, 0.15)`);
+        root.style.setProperty('--color-primary-alpha-20', `rgba(${rgb}, 0.2)`);
+      }
+    }
+    if (settings.secondaryColor) {
+      root.style.setProperty('--color-accent', settings.secondaryColor);
+    }
+    if (settings.fontFamily) {
+      root.style.setProperty('--font-sans', `'${settings.fontFamily}', system-ui, sans-serif`);
+    }
+  }, [settings]);
+
+
   const updateSettings = async (newSettings: SiteSettings) => {
     setSettings(newSettings);
 

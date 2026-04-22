@@ -668,7 +668,7 @@ const SiteSetupWizard: React.FC = () => {
                           if (!profile?.organization_id) return;
                           try {
                             await fetch(
-                              'http://localhost:3002/api/import/finalize',
+                              getApiUrl('/api/import/finalize'),
                               {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },

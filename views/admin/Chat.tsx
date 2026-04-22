@@ -215,6 +215,25 @@ const Chat: React.FC = () => {
       setSending(false);
     }
   };
+  const handleDeleteChat = async () => {
+    if (!selectedChat) return;
+    if (!window.confirm('Excluir permanentemente esta conversa de forma irreversível?')) return;
+
+    try {
+      // Delete from DB directly (requires RLS permit or public schema)
+      await supabase.from('whatsapp_messages').delete().eq('chat_id', selectedChat.id);
+      const { error } = await supabase.from('whatsapp_chats').delete().eq('id', selectedChat.id);
+      
+      if (error) throw error;
+
+      // Local state update
+      setChats((prev) => prev.filter((c) => c.id !== selectedChat.id));
+      setSelectedChat(null);
+    } catch (err) {
+      console.error('Erro ao deletar chat', err);
+      alert('Falha ao excluir a conversa. Verifique as permissões.');
+    }
+  };
 
   // ──────────────────────────────────────────────
   // UI Helpers
@@ -395,6 +414,13 @@ const Chat: React.FC = () => {
               <div className="flex items-center gap-4">
                 <button className="p-2 text-tertiary hover:text-text-primary transition-all">
                   <Search size={20} />
+                </button>
+                <button 
+                  onClick={handleDeleteChat} 
+                  className="p-2 text-tertiary hover:text-red-500 transition-all"
+                  title="Apagar conversa"
+                >
+                  <Trash2 size={20} />
                 </button>
                 <button className="p-2 text-tertiary hover:text-text-primary transition-all">
                   <MoreVertical size={20} />

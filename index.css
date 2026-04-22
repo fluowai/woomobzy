@@ -18,20 +18,20 @@
   /* Alias para compatibilidade com componentes legados */
   --color-brand: var(--color-primary);
 
-  /* Fundos (Modo Escuro Ultra-Premium) */
-  --color-bg-primary: #0a0c10;
-  --color-bg-card: #12151c;
-  --color-bg-hover: #1a1e26;
-  --color-bg-input: #0f1115;
+  /* Fundos (Modo Claro/Clean) */
+  --color-bg-primary: #f8fafc;
+  --color-bg-card: #ffffff;
+  --color-bg-hover: #f1f5f9;
+  --color-bg-input: #ffffff;
 
   /* Texto */
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #94a3b8;
 
   /* Bordas & Divisores */
-  --color-border: #1e293b;
-  --color-border-subtle: #161e2b;
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
 
   /* Transparências da Primária */
   --color-primary-alpha-10: rgba(0, 120, 80, 0.1);
@@ -71,17 +71,17 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* WhatsApp Web Aesthetics */
-  --color-wa-bg: #0b141a;
-  --color-wa-sidebar: #111b21;
-  --color-wa-bubble-sent: #005c4b;
-  --color-wa-bubble-received: #202c33;
-  --color-wa-msg-received: #374045;
+  /* WhatsApp Web Aesthetics (Light Mode) */
+  --color-wa-bg: #efeae2;
+  --color-wa-sidebar: #ffffff;
+  --color-wa-bubble-sent: #d9fdd3;
+  --color-wa-bubble-received: #ffffff;
+  --color-wa-msg-received: #111b21;
   --color-wa-check-read: #53bdeb;
   --color-wa-check-delivered: #8696a0;
   --color-wa-check-sent: #8696a0;
-  --color-wa-time-sent: rgba(255, 255, 255, 0.6);
-  --color-wa-time-received: #8696a0;
+  --color-wa-time-sent: rgba(0, 0, 0, 0.45);
+  --color-wa-time-received: #667781;
 
   /* Alias for backward compatibility */
   --font-sans: var(--font-primary);

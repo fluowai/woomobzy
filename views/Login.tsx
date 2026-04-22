@@ -99,6 +99,7 @@ const Login: React.FC = () => {
               alt="IMOBZY"
               className="h-20 w-auto mx-auto mb-6"
               onError={(e) => {
+                e.currentTarget.onerror = null;
                 e.currentTarget.src =
                   'https://imobzy.com.br/wp-content/uploads/2023/05/logo-imobzy-white.png';
               }}

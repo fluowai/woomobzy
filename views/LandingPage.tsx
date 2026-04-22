@@ -722,6 +722,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                       onError={(e) => {
                         // Fallback on error to Logo or Placeholder
                         const target = e.target as HTMLImageElement;
+                        target.onerror = null; // Prevent infinite loops
                         if (settings.logoUrl) {
                           target.src = settings.logoUrl;
                           target.classList.add(

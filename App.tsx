@@ -11,6 +11,7 @@ import {
 import ImpersonateCallback from './views/ImpersonateCallback';
 import ImpersonationBanner from './components/ImpersonationBanner';
 import { Toaster } from 'sonner';
+import { AlertCircle } from 'lucide-react';
 
 // Layouts
 import RuralLayout from './components/RuralLayout';

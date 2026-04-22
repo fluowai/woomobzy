@@ -406,8 +406,8 @@ const Chat: React.FC = () => {
               className="flex-1 overflow-y-auto p-4 custom-scrollbar" 
               style={{ 
                 backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
-                backgroundOpacity: 0.1,
-                backgroundBlendMode: 'overlay',
+                backgroundSize: '400px',
+                backgroundRepeat: 'repeat',
                 backgroundColor: 'var(--color-wa-bg)'
               }}
             >

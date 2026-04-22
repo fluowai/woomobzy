@@ -6,7 +6,6 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "vite --port 3006 --strictPort",
-    "tunnel": "npx lt --port 3006",
     "server": "node --env-file=.env server/index.js",
     "build": "vite build",
     "preview": "vite preview",

@@ -1,18 +1,54 @@
 /**
  * Locação API - Gestão de Aluguéis, Contratos e Cobranças
  * Operações completas para imobiliárias tradicionais
+ *
+ * SEGURANÇA:
+ * - Todas as rotas exigem autenticação via verifyAuth
+ * - Tenant isolation via requireTenant
+ * - Validação de input com Zod
+ * - Verificação de propriedade do contrato
  */
 
 import { Router } from 'express';
+import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { verifyAuth } from '../../middleware/auth.js';
+import { requireTenant } from '../../middleware/tenant.js';
 
 const router = Router();
 
+function isValidUUID(id) {
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
+const contractSchema = z.object({
+  property_id: z.string().uuid().optional(),
+  tenant_name: z.string().min(3).max(200),
+  tenant_email: z.string().email().optional(),
+  tenant_phone: z.string().min(10).max(20),
+  tenant_cpf: z
+    .string()
+    .regex(/^\d{11}$|^\d{14}$/, 'CPF/CNPJ inválido')
+    .optional(),
+  tenant_rg: z.string().max(20).optional(),
+  start_date: z.string().datetime(),
+  end_date: z.string().datetime(),
+  monthly_rent: z.number().positive().optional(),
+  adjustment_index: z
+    .enum(['IGPM', 'IPCA', 'INCC', 'ICV', 'POUPANCA'])
+    .optional(),
+  guarantee_type: z.enum(['fiador', 'seguro', 'deposito', 'sem']).optional(),
+  guarantee_document: z.string().optional(),
+  observation: z.string().optional(),
+});
+
 /**
  * GET /api/locacao
- * Lista todos os contratos de locação
+ * Lista todos os contratos de locação do tenant
  */
-router.get('/', async (req, res) => {
+router.get('/', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { status, payment_status, property_id } = req.query;
 
@@ -20,6 +56,7 @@ router.get('/', async (req, res) => {
     let query = supabase
       .from('rental_contracts')
       .select('*')
+      .eq('organization_id', req.orgId)
       .order('created_at', { ascending: false });
 
     if (status) query = query.eq('status', status);
@@ -40,8 +77,16 @@ router.get('/', async (req, res) => {
  * POST /api/locacao
  * Cria novo contrato de locação
  */
-router.post('/', async (req, res) => {
+router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
+    const validation = contractSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: validation.error.issues,
+      });
+    }
+
     const {
       property_id,
       tenant_name,
@@ -56,25 +101,14 @@ router.post('/', async (req, res) => {
       guarantee_type,
       guarantee_document,
       observation,
-    } = req.body;
-
-    if (!tenant_name || !start_date || !end_date) {
-      return res.status(400).json({ error: 'Dados obrigatórios faltando' });
-    }
+    } = validation.data;
 
     const supabase = getSupabaseServer();
-
-    // Get organization from tenant context or auth
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .limit(1)
-      .single();
 
     const { data, error } = await supabase
       .from('rental_contracts')
       .insert({
-        organization_id: profile?.organization_id,
+        organization_id: req.orgId,
         property_id,
         tenant_name,
         tenant_email,
@@ -107,9 +141,13 @@ router.post('/', async (req, res) => {
  * GET /api/locacao/:id
  * Detalhes de um contrato
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'ID de contrato inválido' });
+    }
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
@@ -121,10 +159,10 @@ router.get('/:id', async (req, res) => {
       `
       )
       .eq('id', id)
+      .eq('organization_id', req.orgId)
       .single();
 
-    if (error) throw error;
-    if (!data)
+    if (error || !data)
       return res.status(404).json({ error: 'Contrato não encontrado' });
 
     // Calcula informações do contrato
@@ -163,9 +201,14 @@ router.get('/:id', async (req, res) => {
  * PUT /api/locacao/:id
  * Atualiza contrato
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'ID de contrato inválido' });
+    }
+
     const {
       tenant_name,
       tenant_email,
@@ -198,10 +241,13 @@ router.put('/:id', async (req, res) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('organization_id', req.orgId)
       .select()
       .single();
 
     if (error) throw error;
+    if (!data)
+      return res.status(404).json({ error: 'Contrato não encontrado' });
 
     res.json({ success: true, data });
   } catch (error) {
@@ -214,15 +260,20 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/locacao/:id
  * Remove contrato
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'ID de contrato inválido' });
+    }
 
     const supabase = getSupabaseServer();
     const { error } = await supabase
       .from('rental_contracts')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', req.orgId);
 
     if (error) throw error;
 
@@ -237,13 +288,14 @@ router.delete('/:id', async (req, res) => {
  * GET /api/locacao/dashboard/resumo
  * Dashboard de resumo de locações
  */
-router.get('/dashboard/resumo', async (req, res) => {
+router.get('/dashboard/resumo', verifyAuth, requireTenant, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
 
     const { data: contracts } = await supabase
       .from('rental_contracts')
-      .select('*');
+      .select('*')
+      .eq('organization_id', req.orgId);
 
     if (!contracts) {
       return res.json({
@@ -321,85 +373,103 @@ router.get('/dashboard/resumo', async (req, res) => {
 
 /**
  * GET /api/locacao/calculo/reajuste/:id
- * Calcula valor do reajustee based on index
+ * Calcula valor do rejustee based on index
  */
-router.get('/calculo/reajuste/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { novo_indice } = req.query;
+router.get(
+  '/calculo/reajuste/:id',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    const supabase = getSupabaseServer();
-    const { data: contract } = await supabase
-      .from('rental_contracts')
-      .select('*')
-      .eq('id', id)
-      .single();
+      if (!isValidUUID(id)) {
+        return res.status(400).json({ error: 'ID de contrato inválido' });
+      }
 
-    if (!contract) {
-      return res.status(404).json({ error: 'Contrato não encontrado' });
+      const { novo_indice } = req.query;
+
+      const supabase = getSupabaseServer();
+      const { data: contract } = await supabase
+        .from('rental_contracts')
+        .select('*')
+        .eq('id', id)
+        .eq('organization_id', req.orgId)
+        .single();
+
+      if (!contract) {
+        return res.status(404).json({ error: 'Contrato não encontrado' });
+      }
+
+      // Taxas de correção simuladas (em produção, buscar da API do Banco Central)
+      const indices = {
+        IGPM: 0.0465, // 4,65% acumulado 12 meses
+        IPCA: 0.0412, // 4,12%
+        INCC: 0.0578, // 5,78%
+        ICV: 0.0432, // 4,32%
+        POUPANCA: 0.035, // 3,5%
+      };
+
+      const taxa = indices[novo_indice || contract.adjustment_index] || 0;
+      const valorAtual = contract.monthly_rent || 0;
+      const valorReajustado = valorAtual * (1 + taxa);
+
+      const novoIndice = novo_indice || contract.adjustment_index;
+      const nomeIndice =
+        {
+          IGPM: 'Índice Geral de Preços do Mercado',
+          IPCA: 'Índice de Preços ao Consumidor Amplo',
+          INCC: 'Índice Nacional de Custo de Construção',
+          ICV: 'Índice de Custo de Vida',
+          POUPANCA: 'Poupança',
+        }[novoIndice] || novoIndice;
+
+      res.json({
+        success: true,
+        data: {
+          contrato_id: id,
+          valor_atual: valorAtual,
+          indice_aplicado: novoIndice,
+          nome_indice: nomeIndice,
+          taxa_percentual: (taxa * 100).toFixed(2),
+          valor_reajustado: Math.round(valorReajustado * 100) / 100,
+          diferenca_mensal:
+            Math.round((valorReajustado - valorAtual) * 100) / 100,
+          diferenca_anual:
+            Math.round((valorReajustado - valorAtual) * 12 * 100) / 100,
+          data_proximo_reajuste: new Date(
+            Date.now() + 365 * 24 * 60 * 60 * 1000
+          )
+            .toISOString()
+            .split('T')[0],
+        },
+      });
+    } catch (error) {
+      console.error('Reajuste error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    // Taxas de correção simuladas (em produção, buscar da API do Banco Central)
-    const indices = {
-      IGPM: 0.0465, // 4,65% acumulado 12 meses
-      IPCA: 0.0412, // 4,12%
-      INCC: 0.0578, // 5,78%
-      ICV: 0.0432, // 4,32%
-      POUPANCA: 0.035, // 3,5%
-    };
-
-    const taxa = indices[novo_indice || contract.adjustment_index] || 0;
-    const valorAtual = contract.monthly_rent || 0;
-    const valorReajustado = valorAtual * (1 + taxa);
-
-    const novoIndice = novo_indice || contract.adjustment_index;
-    const nomeIndice =
-      {
-        IGPM: 'Índice Geral de Preços do Mercado',
-        IPCA: 'Índice de Preços ao Consumidor Amplo',
-        INCC: 'Índice Nacional de Custo de Construção',
-        ICV: 'Índice de Custo de Vida',
-        POUPANCA: 'Poupança',
-      }[novoIndice] || novoIndice;
-
-    res.json({
-      success: true,
-      data: {
-        contrato_id: id,
-        valor_atual: valorAtual,
-        indice_aplicado: novoIndice,
-        nome_indice: nomeIndice,
-        taxa_percentual: (taxa * 100).toFixed(2),
-        valor_reajustado: Math.round(valorReajustado * 100) / 100,
-        diferenca_mensal:
-          Math.round((valorReajustado - valorAtual) * 100) / 100,
-        diferenca_anual:
-          Math.round((valorReajustado - valorAtual) * 12 * 100) / 100,
-        data_proximo_reajuste: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-      },
-    });
-  } catch (error) {
-    console.error('Reajuste error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 /**
  * POST /api/locacao/:id/renovar
  * Renova contrato com rejustee
  */
-router.post('/:id/renovar', async (req, res) => {
+router.post('/:id/renovar', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
     const { nova_data_fim, novo_aluguel, novo_indice } = req.body;
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'ID de contrato inválido' });
+    }
 
     const supabase = getSupabaseServer();
     const { data: contract } = await supabase
       .from('rental_contracts')
       .select('*')
       .eq('id', id)
+      .eq('organization_id', req.orgId)
       .single();
 
     if (!contract) {
@@ -461,10 +531,14 @@ router.post('/:id/renovar', async (req, res) => {
  * PUT /api/locacao/:id/pagamento
  * Registra pagamento
  */
-router.put('/:id/pagamento', async (req, res) => {
+router.put('/:id/pagamento', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
     const { data_pagamento, valor_pago, status } = req.body;
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'ID de contrato inválido' });
+    }
 
     const supabase = getSupabaseServer();
 
@@ -476,14 +550,18 @@ router.put('/:id/pagamento', async (req, res) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('organization_id', req.orgId)
       .select()
       .single();
 
     if (error) throw error;
+    if (!data)
+      return res.status(404).json({ error: 'Contrato não encontrado' });
 
     // Registra histórico de pagamento
     await supabase.from('payment_history').insert({
       contract_id: id,
+      organization_id: req.orgId,
       payment_date: data_pagamento,
       amount_paid: valor_pago,
       status: status || 'pago',

@@ -56,12 +56,16 @@ app.use(
   })
 );
 
+// SEGURANÇA CORS: Lista explícita de origens permitidas
+// NUNCA permita todos os domínios HTTPS em produção
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
   : [
       'http://localhost:3005',
       'http://localhost:3006',
       'https://consultio.com.br',
+      'https://imobzy.consultio.com.br',
+      'https://www.consultio.com.br',
     ];
 
 app.use(
@@ -77,18 +81,14 @@ app.use(
         origin === 'https://consultio.com.br' ||
         origin.endsWith('.consultio.com.br');
 
-      // 2. Permitir domínios locais e oficiais
+      // 2. Permitir APENAS domínios da lista explícita
       if (isLocal || isMainDomain || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // 3. SaaS Multi-tenant: Permitir qualquer domínio HTTPS legítimo para rotas públicas
-      // Em produção real, você validaria isso contra o banco de dados 'domains',
-      // mas para o fluxo de 'Em Breve' e Leads, permitimos para garantir recepção.
-      if (origin.startsWith('https://')) {
-        return callback(null, true);
-      }
-
+      // 3. BLOCK: Não permitir domínios HTTPS arbitrários em produção
+      // Isso era um VULNERABILIDADE CRÍTICA que permitia ataques CSRF
+      console.warn(`[CORS] Bloqueando origem não permitida: ${origin}`);
       callback(new Error(`CORS: Origem não permitida - ${origin}`));
     },
     credentials: true,

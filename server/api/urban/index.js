@@ -1,25 +1,76 @@
 /**
  * Urban Legal Validation API
  * Integrações com IPTU, SINTER, Certidões para imóveis urbanos
+ *
+ * SEGURANÇA:
+ * - Todas as rotas exigem autenticação via verifyAuth
+ * - Tenant isolation via requireTenant
+ * - Validação de input com Zod
+ * - Sanitização de parâmetros contra injeção
  */
 
 import { Router } from 'express';
+import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { verifyAuth } from '../../middleware/auth.js';
+import { requireTenant } from '../../middleware/tenant.js';
 
 const router = Router();
+
+const SNCR_API_BASE =
+  'https://apigateway.conectagov.estaleiro.serpro.gov.br/api-sncr/v2';
+const ITR_API_BASE = 'https://servicos.receita.fazenda.gov.br';
+
+function sanitizeInput(input, maxLength = 50) {
+  if (typeof input !== 'string') return '';
+  return input.replace(/[^\w\-.]/g, '').slice(0, maxLength);
+}
+
+function isValidUUID(id) {
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
+const cpfCnpjSchema = z
+  .string()
+  .min(11)
+  .max(18)
+  .refine(
+    (val) =>
+      val.replace(/\D/g, '').length >= 11 &&
+      val.replace(/\D/g, '').length <= 14,
+    { message: 'CPF ou CNPJ inválido' }
+  );
+
+const inscricaoSchema = z.string().min(1).max(30).transform(sanitizeInput);
+const cepSchema = z
+  .string()
+  .regex(/^\d{5}-?\d{3}$/, 'CEP inválido')
+  .transform(sanitizeInput);
+
+function validateCPF_CNPJ(cpfCnpj) {
+  const cleaned = String(cpfCnpj).replace(/\D/g, '');
+  return cleaned.length >= 11 && cleaned.length <= 14;
+}
 
 /**
  * GET /api/urban/iptu/:inscricao
  * Consulta dados de IPTU (simulado - integrar com IPTU API ou InfoSimples)
+ * SEGURANÇA: Exige autenticação + tenant + validação
  */
-router.get('/iptu/:inscricao', async (req, res) => {
+router.get('/iptu/:inscricao', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { inscricao } = req.params;
+    const inscricao = sanitizeInput(req.params.inscricao, 30);
+    if (!inscricao) {
+      return res.status(400).json({ error: 'Inscrição municipal inválida' });
+    }
 
     const supabase = getSupabaseServer();
     const { data: property } = await supabase
       .from('properties')
       .select('*')
+      .eq('organization_id', req.orgId)
       .eq('features->urban->iptuNumber', inscricao)
       .single();
 
@@ -61,15 +112,20 @@ router.get('/iptu/:inscricao', async (req, res) => {
 /**
  * GET /api/urban/endereco/:cep
  * Consulta dados pelo CEP (simulado)
+ * SEGURANÇA: Exige autenticação + tenant + validação CEP
  */
-router.get('/endereco/:cep', async (req, res) => {
+router.get('/endereco/:cep', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { cep } = req.params;
+    const cep = req.params.cep.replace(/\D/g, '');
+    if (cep.length < 8 || cep.length > 9) {
+      return res.status(400).json({ error: 'CEP inválido' });
+    }
 
     const supabase = getSupabaseServer();
     const { data: properties } = await supabase
       .from('properties')
       .select('id, title, address, features')
+      .eq('organization_id', req.orgId)
       .like('features->location->zip', `%${cep}%`)
       .limit(5);
 
@@ -92,39 +148,52 @@ router.get('/endereco/:cep', async (req, res) => {
 /**
  * GET /api/urban/zoneamento/:municipio
  * Consulta zoneamento via SINTER (simulado)
+ * SEGURANÇA: Exige autenticação + tenant + validação
  */
-router.get('/zoneamento/:municipio', async (req, res) => {
-  try {
-    const { municipio } = req.params;
+router.get(
+  '/zoneamento/:municipio',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const municipio = sanitizeInput(req.params.municipio, 100);
+      if (!municipio || municipio.length < 2) {
+        return res.status(400).json({ error: 'Município inválido' });
+      }
 
-    res.json({
-      success: true,
-      data: {
-        municipio,
-        zonaPrincipal: 'Zona Residencial 1 - ZR1',
-        coeffAproveitamento: 2.0,
-        taxaOcupacao: 0.6,
-        testadaMinima: 5,
-        recuoFrontal: 0,
-        recuoLaterais: 1.5,
-        alturamaxima: 12,
-        usoPermitido: ['Residencial', 'Comercial de baixo impacto'],
-        obs: 'Consulte a lei de uso e ocupação do solo municipal',
-      },
-    });
-  } catch (error) {
-    console.error('Zoneamento error:', error);
-    res.status(500).json({ error: error.message });
+      res.json({
+        success: true,
+        data: {
+          municipio,
+          zonaPrincipal: 'Zona Residencial 1 - ZR1',
+          coeffAproveitamento: 2.0,
+          taxaOcupacao: 0.6,
+          testadaMinima: 5,
+          recuoFrontal: 0,
+          recuoLaterais: 1.5,
+          alturamaxima: 12,
+          usoPermitido: ['Residencial', 'Comercial de baixo impacto'],
+          obs: 'Consulte a lei de uso e ocupação do solo municipal',
+        },
+      });
+    } catch (error) {
+      console.error('Zoneamento error:', error);
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 /**
  * GET /api/urban/cnd/pessoa/:cpf
  * Consulta certidão negativa de pessoa física (Receita Federal)
+ * SEGURANÇA: Exige autenticação + tenant + validação CPF
  */
-router.get('/cnd/pessoa/:cpf', async (req, res) => {
+router.get('/cnd/pessoa/:cpf', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { cpf } = req.params;
+    const cpf = req.params.cpf.replace(/\D/g, '');
+    if (cpf.length !== 11) {
+      return res.status(400).json({ error: 'CPF inválido' });
+    }
 
     res.json({
       success: true,
@@ -146,91 +215,123 @@ router.get('/cnd/pessoa/:cpf', async (req, res) => {
 /**
  * GET /api/urban/validar/:propertyId
  * Validação completa de documentação urbana
+ * SEGURANÇA: Exige autenticação + tenant + validação UUID
  */
-router.get('/validar/:propertyId', async (req, res) => {
-  try {
-    const { propertyId } = req.params;
+router.get(
+  '/validar/:propertyId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { propertyId } = req.params;
 
-    const supabase = getSupabaseServer();
-    const { data: property } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('id', propertyId)
-      .single();
+      if (!isValidUUID(propertyId)) {
+        return res.status(400).json({ error: 'ID de propriedade inválido' });
+      }
 
-    if (!property) {
-      return res.status(404).json({ error: 'Propriedade não encontrada' });
-    }
+      const supabase = getSupabaseServer();
+      const { data: property } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', propertyId)
+        .eq('organization_id', req.orgId)
+        .single();
 
-    const urban = property.features?.urban || {};
-    const location = property.features?.location || {};
+      if (!property) {
+        return res.status(404).json({ error: 'Propriedade não encontrada' });
+      }
 
-    const validations = [];
+      const urban = property.features?.urban || {};
+      const location = property.features?.location || {};
 
-    if (urban.iptuNumber) {
+      const validations = [];
+
+      if (urban.iptuNumber) {
+        validations.push({
+          source: 'IPTU',
+          success: true,
+          data: {
+            inscricao: urban.iptuNumber,
+            status: urban.iptuStatus || 'REGULAR',
+          },
+        });
+      } else {
+        validations.push({
+          source: 'IPTU',
+          success: false,
+          data: {
+            inscricao: '',
+            status: 'NÃO CADASTRADO',
+          },
+        });
+      }
+
+      if (property.address) {
+        validations.push({
+          source: 'ENDERECO',
+          success: true,
+          data: { endereco: property.address, cep: location.zip },
+        });
+      } else {
+        validations.push({
+          source: 'ENDERECO',
+          success: false,
+          data: { endereco: '', cep: '' },
+        });
+      }
+
       validations.push({
-        source: 'IPTU',
-        success: true,
+        source: 'ZONEAMENTO',
+        success: !!urban.zonaUso,
         data: {
-          inscricao: urban.iptuNumber,
-          status: urban.iptuStatus || 'REGULAR',
+          zona: urban.zonaUso || 'NÃO DEFINIDO',
+          verificado: !!urban.zonaUso,
         },
       });
-    }
 
-    if (property.address) {
-      validations.push({
-        source: 'ENDERECO',
+      let riskScore = 100;
+      for (const v of validations) {
+        if (!v.success) riskScore -= 25;
+        else if (v.data?.status === 'INADIMPLENTE') riskScore -= 20;
+      }
+
+      res.json({
         success: true,
-        data: { endereco: property.address, cep: location.zip },
+        propertyId,
+        propertyTitle: property.title,
+        address: property.address,
+        location: `${location.city}/${location.state}`,
+        validations,
+        riskScore: Math.max(0, riskScore),
+        riskLevel:
+          riskScore >= 80 ? 'BAIXO' : riskScore >= 50 ? 'MEDIO' : 'ALTO',
       });
+    } catch (error) {
+      console.error('Validar error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    validations.push({
-      source: 'ZONEAMENTO',
-      success: true,
-      data: { zona: urban.zonaUso || 'ZR1', verificado: !!urban.zonaUso },
-    });
-
-    let riskScore = 100;
-    for (const v of validations) {
-      if (!v.success) riskScore -= 25;
-      else if (v.data?.status === 'INADIMPLENTE') riskScore -= 20;
-    }
-
-    res.json({
-      success: true,
-      propertyId,
-      propertyTitle: property.title,
-      address: property.address,
-      location: `${location.city}/${location.state}`,
-      validations,
-      riskScore: Math.max(0, riskScore),
-      riskLevel: riskScore >= 80 ? 'BAIXO' : riskScore >= 50 ? 'MEDIO' : 'ALTO',
-    });
-  } catch (error) {
-    console.error('Validar error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 /**
  * GET /api/urban/buscar?cpfCnpj=XXX
  * Busca imóveis urbanos por CPF/CNPJ do proprietário
+ * SEGURANÇA: Exige autenticação + tenant + validação CPF/CNPJ
  */
-router.get('/buscar', async (req, res) => {
+router.get('/buscar', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { cpfCnpj } = req.query;
-    if (!cpfCnpj) {
-      return res.status(400).json({ error: 'Parâmetro cpfCnpj é obrigatório' });
+    const validation = cpfCnpjSchema.safeParse(req.query.cpfCnpj);
+    if (!validation.success) {
+      return res.status(400).json({ error: 'Parâmetro cpfCnpj inválido' });
     }
 
-    const cpfCnpjClean = String(cpfCnpj).replace(/\D/g, '');
+    const cpfCnpjClean = String(req.query.cpfCnpj).replace(/\D/g, '');
 
     const supabase = getSupabaseServer();
     const { data: properties } = await supabase
       .from('properties')
       .select('id, title, address, features')
+      .eq('organization_id', req.orgId)
       .not('property_type', 'in', '("Rural","Fazenda")')
       .order('title');
 
@@ -259,16 +360,22 @@ router.get('/buscar', async (req, res) => {
 /**
  * GET /api/urban/imovel/:codigo
  * Consulta detalhes de imóvel urbano
+ * SEGURANÇA: Exige autenticação + tenant + validação UUID
  */
-router.get('/imovel/:codigo', async (req, res) => {
+router.get('/imovel/:codigo', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { codigo } = req.params;
+
+    if (!isValidUUID(codigo)) {
+      return res.status(400).json({ error: 'Código de imóvel inválido' });
+    }
 
     const supabase = getSupabaseServer();
     const { data: property } = await supabase
       .from('properties')
       .select('*')
       .eq('id', codigo)
+      .eq('organization_id', req.orgId)
       .single();
 
     if (!property) {

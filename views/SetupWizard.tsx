@@ -263,9 +263,10 @@ const SetupWizard: React.FC = () => {
                           alt="Preview"
                           className="max-h-full max-w-full object-contain"
                           onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src =
-                              'https://via.placeholder.com/150?text=Erro+Load';
+                            const target = e.currentTarget;
+                            if (target.dataset.hasError) return;
+                            target.dataset.hasError = 'true';
+                            target.src = 'https://via.placeholder.com/150?text=Erro+Load';
                           }}
                         />
                       </div>

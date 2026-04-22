@@ -720,10 +720,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                       alt={property.title}
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                       onError={(e) => {
-                        // Fallback on error to Logo or Placeholder
                         const target = e.target as HTMLImageElement;
-                        target.onerror = null; // Prevent infinite loops
-                        if (settings.logoUrl) {
+                        if (target.dataset.hasError) return;
+                        target.dataset.hasError = 'true';
+
+                        if (settings.logoUrl && target.src !== settings.logoUrl) {
                           target.src = settings.logoUrl;
                           target.classList.add(
                             'object-contain',
@@ -733,7 +734,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                           target.classList.remove('object-cover');
                         } else {
                           target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden'); // Show generic fallback specific div if needed, but for now we rely on the component below logic
+                          target.nextElementSibling?.classList.remove('hidden');
                         }
                       }}
                     />

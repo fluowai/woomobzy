@@ -130,7 +130,11 @@ export class SessionManager extends EventEmitter {
       version,
       auth: state,
       printQRInTerminal: false,
-      browser: ['Ubuntu', 'Chrome', '22.0.0.40'], // Pode ser alterado depois para melhor identificação
+      browser: ['IMOBZY 360', 'Chrome', '1.0.0'],
+      keepAliveIntervalMs: 60000, // Previne queda por inatividade NAT
+      generateHighQualityLinkPreview: true,
+      syncFullHistory: false, // Evita sobrecarga inicial
+      markOnlineOnConnect: true,
     });
 
     session.sock = sock;
@@ -170,8 +174,9 @@ export class SessionManager extends EventEmitter {
           statusCode !== DisconnectReason?.loggedOut &&
           statusCode !== DisconnectReason?.badSession;
 
-        session.status = 'desconectado';
-        await this.persistence.updateStatus(instanceId, 'disconnected', {
+        session.status = shouldReconnect ? 'reconectando' : 'desconectado';
+        
+        await this.persistence.updateStatus(instanceId, shouldReconnect ? 'reconnecting' : 'disconnected', {
           qr_code: null,
         });
         this.emit('disconnected', { instanceId, statusCode });
@@ -351,7 +356,12 @@ export class SessionManager extends EventEmitter {
         session.sock?.user?.id?.split(':')[0] + '@s.whatsapp.net';
       if (contactJid === instanceJid) return;
 
-      const phoneNumber = '+' + contactJid.split('@')[0];
+      const rawNumber = contactJid.split('@')[0];
+      // Normalização: remove caracteres não numéricos e garante o prefixo 55 se tiver 10 ou 11 dígitos
+      let cleanNumber = rawNumber.replace(/\D/g, '');
+      if (cleanNumber.length === 10 || cleanNumber.length === 11) cleanNumber = '55' + cleanNumber;
+      const phoneNumber = '+' + cleanNumber;
+
       const supabase = await this.persistence.getSupabaseClient();
       const fromMe = message.key?.fromMe ?? false;
       const messageType = Object.keys(message.message || {})[0] || 'unknown';
@@ -448,7 +458,7 @@ export class SessionManager extends EventEmitter {
 
       let chatId;
       const timestamp = new Date(
-        (message.messageTimestamp || Date.now() / 1000) * 1000
+        (Number(message.messageTimestamp) || Date.now() / 1000) * 1000
       ).toISOString();
 
       if (!existingChat) {
@@ -492,9 +502,9 @@ export class SessionManager extends EventEmitter {
           from_me: fromMe,
           sender_name:
             message.pushName ||
-            (message.key.participant
-              ? '+' + message.key.participant.split('@')[0]
-              : phoneNumber),
+            (message.key.participant || message.participant
+              ? '+' + (message.key.participant || message.participant).split('@')[0].replace(/\D/g, '')
+              : cleanNumber),
           status: fromMe ? 'sent' : 'received',
           timestamp,
           media_url: mediaUrl,

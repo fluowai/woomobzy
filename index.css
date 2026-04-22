@@ -71,6 +71,18 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
+  /* WhatsApp Web Aesthetics */
+  --color-wa-bg: #0b141a;
+  --color-wa-sidebar: #111b21;
+  --color-wa-bubble-sent: #005c4b;
+  --color-wa-bubble-received: #202c33;
+  --color-wa-msg-received: #374045;
+  --color-wa-check-read: #53bdeb;
+  --color-wa-check-delivered: #8696a0;
+  --color-wa-check-sent: #8696a0;
+  --color-wa-time-sent: rgba(255, 255, 255, 0.6);
+  --color-wa-time-received: #8696a0;
+
   /* Alias for backward compatibility */
   --font-sans: var(--font-primary);
 }

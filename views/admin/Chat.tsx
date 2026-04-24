@@ -273,7 +273,7 @@ const Chat: React.FC = () => {
     
     // Detecção de LID (15+ dígitos)
     if (num.length >= 15 || jid.includes('@lid')) {
-      return 'Membro'; // Ou retornar o num bruto se preferir, mas 'Membro' é mais limpo
+      return num; // Retorna o identificador bruto em vez de 'Membro'
     }
 
     if (num.length >= 11) {

@@ -449,15 +449,32 @@ export class SessionManager extends EventEmitter {
 
       // Resolve nome do REMETENTE via ContactStore (cascata inteligente)
       let senderName = null;
-      if (senderJid) {
-        senderName = this.contactStore.resolveName(instanceId, senderJid, message.pushName);
+      let finalSenderJid = senderJid;
+
+      // Tenta extrair o Telefone Real (PN) caso o remetente seja um LID
+      if (senderJid && senderJid.includes('@lid')) {
+        // O Baileys às vezes fornece o PN (Phone Number) vinculado ao LID
+        const pnJid = message.metadata?.pnJid || message.pnJid;
+        if (pnJid) {
+          finalSenderJid = pnJid;
+          // Salva esse mapeamento no ContactStore para o futuro
+          this.contactStore.set(instanceId, senderJid, { verifiedName: pnJid.split('@')[0] });
+        }
       }
 
-      // Fallback final: se ainda for nulo, tenta pushName ou 'Membro'
+      if (finalSenderJid) {
+        senderName = this.contactStore.resolveName(instanceId, finalSenderJid, message.pushName);
+      }
+
+      // Fallback final: prioriza PushName, senão ID Bruto
       if (!senderName) {
-        senderName = message.pushName && message.pushName !== '~' 
-          ? message.pushName 
-          : (senderJid ? this.contactStore.formatNumber(senderJid) : null) || 'Membro';
+        if (message.pushName && message.pushName !== '~') {
+          senderName = message.pushName;
+        } else {
+          // Se não tem nome, mostra o ID original (sem + se for LID)
+          const raw = finalSenderJid?.split('@')[0] || 'Desconhecido';
+          senderName = raw.length >= 15 ? raw : `+${raw}`;
+        }
       }
 
       // ── Extração de Menções (contextInfo) ──────────────────────

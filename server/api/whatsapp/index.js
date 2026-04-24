@@ -528,6 +528,8 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
             } else {
               resolvedSenderName = `+${num}`;
             }
+          } else {
+            resolvedSenderName = num; // Retorna o ID bruto do LID
           }
         }
       }

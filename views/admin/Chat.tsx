@@ -215,13 +215,35 @@ const Chat: React.FC = () => {
       setSending(false);
     }
   };
-  const handleDeleteChat = async () => {
+  const handleClearMessages = async () => {
     if (!selectedChat) return;
-    if (!window.confirm('Excluir permanentemente esta conversa de forma irreversível?')) return;
+    if (!window.confirm('Deseja limpar todas as mensagens desta conversa? O contato continuará na lista.')) return;
 
     try {
-      // Delete from DB directly (requires RLS permit or public schema)
+      const { error } = await supabase
+        .from('whatsapp_messages')
+        .delete()
+        .eq('chat_id', selectedChat.id);
+      
+      if (error) throw error;
+
+      setMessages([]);
+      console.log(`[Chat] 🧹 Mensagens limpas para o chat ${selectedChat.id}`);
+    } catch (err) {
+      console.error('Erro ao limpar mensagens', err);
+      alert('Falha ao limpar as mensagens.');
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!selectedChat) return;
+    if (!window.confirm('EXCLUIR CONVERSA: Isso removerá permanentemente o contato e todas as mensagens do seu painel. Confirmar?')) return;
+
+    try {
+      // 1. Delete messages first
       await supabase.from('whatsapp_messages').delete().eq('chat_id', selectedChat.id);
+      
+      // 2. Delete the chat entry
       const { error } = await supabase.from('whatsapp_chats').delete().eq('id', selectedChat.id);
       
       if (error) throw error;
@@ -229,6 +251,7 @@ const Chat: React.FC = () => {
       // Local state update
       setChats((prev) => prev.filter((c) => c.id !== selectedChat.id));
       setSelectedChat(null);
+      setMessages([]);
     } catch (err) {
       console.error('Erro ao deletar chat', err);
       alert('Falha ao excluir a conversa. Verifique as permissões.');
@@ -416,9 +439,16 @@ const Chat: React.FC = () => {
                   <Search size={20} />
                 </button>
                 <button 
+                  onClick={handleClearMessages} 
+                  className="p-2 text-tertiary hover:text-brand transition-all"
+                  title="Limpar histórico"
+                >
+                  <History size={20} />
+                </button>
+                <button 
                   onClick={handleDeleteChat} 
-                  className="p-2 text-tertiary hover:text-red-500 transition-all"
-                  title="Apagar conversa"
+                  className="p-2 text-tertiary hover:text-red-500 transition-all ml-1"
+                  title="Excluir conversa"
                 >
                   <Trash2 size={20} />
                 </button>

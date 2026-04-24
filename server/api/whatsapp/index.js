@@ -456,16 +456,42 @@ router.get('/instances/:id/chats', verifyAdmin, async (req, res) => {
 /** GET /api/whatsapp/instances/:id/chats/:chatId/messages */
 router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    // 1. Busca as mensagens
+    const { data: messages, error } = await supabase
       .from('whatsapp_messages')
       .select('*')
       .eq('instance_id', req.params.id)
       .eq('chat_id', req.params.chatId)
       .order('timestamp', { ascending: true })
-      .limit(200);
+      .limit(300);
 
     if (error) throw error;
-    res.json({ success: true, messages: data || [] });
+
+    // 2. Busca leads para resolver nomes de participantes (Inteligência Cross-Data)
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('name, phone')
+      .eq('organization_id', req.orgId);
+
+    const enrichedMessages = (messages || []).map(msg => {
+      // Tenta resolver o nome caso esteja com número ou nulo
+      let resolvedName = msg.sender_name;
+      const participantJid = msg.metadata?.key?.participant || msg.metadata?.participant;
+      const participantNumber = participantJid?.split('@')[0] || '';
+
+      if (!resolvedName || resolvedName.startsWith('+')) {
+        const lead = (leads || []).find(l => l.phone === participantNumber);
+        if (lead) resolvedName = lead.name;
+        else if (msg.metadata?.pushName && msg.metadata.pushName !== '~') resolvedName = msg.metadata.pushName;
+      }
+
+      return {
+        ...msg,
+        sender_name: resolvedName
+      };
+    });
+
+    res.json({ success: true, messages: enrichedMessages });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

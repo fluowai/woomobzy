@@ -151,6 +151,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         timeoutPromise,
       ])) as any;
 
+      if (profileError) {
+        if (profileError.code === '401' || profileError.status === 401) {
+          console.warn('[AuthContext] 401 detected, retrying after potential token refresh...');
+          // Give Supabase a moment to handle token lifecycle
+          await new Promise(r => setTimeout(r, 1000));
+          fetchInProgress.current = null;
+          return loadProfile(userId);
+        }
+        throw profileError;
+      }
+
       console.log(
         '📡 [AuthContext] Profile query resolved. Data:',
         !!profileData,
@@ -158,7 +169,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         profileError?.message
       );
 
-      if (profileError) {
         console.error('❌ [AuthContext] Error loading profile:', profileError);
         setProfile((prev) => (prev && prev.id === userId ? prev : null));
         if (!profile) setIsImpersonating(false);

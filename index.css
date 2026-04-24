@@ -25,7 +25,7 @@
   --color-bg-input: #ffffff;
 
   /* Texto */
-  --color-text-primary: #0f172a;
+  --color-text-primary: #111111; /* Máxima legibilidade */
   --color-text-secondary: #475569;
   --color-text-tertiary: #94a3b8;
 

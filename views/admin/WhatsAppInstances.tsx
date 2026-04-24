@@ -393,8 +393,26 @@ const WhatsAppInstances: React.FC = () => {
   };
 
   // ──────────────────────────────────────────────
-  // Excluir Instância
+  // Limpar Todas as Mensagens da Instância
   // ──────────────────────────────────────────────
+  const clearAllMessages = async (instanceId: string) => {
+    if (!confirm('Deseja limpar ABSOLUTAMENTE TODAS as mensagens salvas nesta instância? Esta ação é irreversível.')) return;
+    
+    try {
+      // Deleta diretamente via Supabase client (aproveitando RLS)
+      const { error } = await supabase
+        .from('whatsapp_messages')
+        .delete()
+        .eq('instance_id', instanceId);
+
+      if (error) throw error;
+      alert('Todas as mensagens da instância foram removidas com sucesso.');
+    } catch (error: any) {
+      console.error('[WhatsAppInstances] Erro ao limpar mensagens:', error);
+      alert('Erro ao limpar mensagens: ' + error.message);
+    }
+  };
+
   const deleteInstance = async (id: string) => {
     if (!confirm('Tem certeza? Esta ação não pode ser desfeita.')) return;
     try {

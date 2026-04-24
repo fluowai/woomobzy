@@ -332,7 +332,7 @@ const Chat: React.FC = () => {
     );
 
   return (
-    <div className="flex h-full bg-brand text-text-primary overflow-hidden font-sans">
+    <div className="flex h-full bg-white text-text-primary overflow-hidden font-sans">
       {/* ============================================
           1. SIDEBAR (CHATS) — Estilo WhatsApp Web
       ============================================ */}
@@ -529,12 +529,12 @@ const Chat: React.FC = () => {
                         }`}
                       >
                         {showSender && (
-                          <p className="text-[11px] font-bold text-brand mb-1 truncate">
+                          <p className="text-[11px] font-bold text-brand mb-1 truncate px-1">
                             {msg.sender_name && !msg.sender_name.startsWith('+') 
                                 ? msg.sender_name 
                                 : (msg.metadata?.pushName && msg.metadata.pushName !== '~' 
                                     ? msg.metadata.pushName 
-                                    : (msg.sender_name || 'Membro'))}
+                                    : (msg.sender_name || formatDisplayJid(msg.metadata?.key?.participant || '')))}
                           </p>
                         )}
                         

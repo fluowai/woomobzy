@@ -166,6 +166,9 @@ export class SessionManager extends EventEmitter {
         });
         this.emit('connected', { instanceId, phoneNumber });
         console.log(`[SessionManager] ✅ ${instanceId} CONECTADO!`);
+        
+        // Sincroniza metadados dos grupos em background
+        this._syncAllGroups(session).catch(e => console.warn('[SessionManager] Erro sync grupos:', e.message));
       }
 
       if (connection === 'close') {
@@ -605,5 +608,50 @@ export class SessionManager extends EventEmitter {
       classification: classification,
       chat_jid: chatJid,
     });
+  }
+  async _syncAllGroups(session) {
+    const { sock, instanceId } = session;
+    if (!sock) return;
+
+    try {
+      const supabase = await this.persistence.getSupabaseClient();
+      const { data: chats } = await supabase
+        .from('whatsapp_chats')
+        .select('id, jid, name')
+        .eq('instance_id', instanceId);
+
+      if (!chats) return;
+
+      for (const chat of chats) {
+        if (chat.jid.endsWith('@g.us')) {
+          try {
+            const metadata = await sock.groupMetadata(chat.jid).catch(() => null);
+            let photoUrl = null;
+            try {
+              photoUrl = await sock.profilePictureUrl(chat.jid, 'image').catch(() => null);
+            } catch (e) {}
+
+            const updates = {};
+            if (metadata?.subject && chat.name !== metadata.subject)
+              updates.name = metadata.subject;
+            if (photoUrl) updates.profile_photo_url = photoUrl;
+
+            if (Object.keys(updates).length > 0) {
+              await supabase
+                .from('whatsapp_chats')
+                .update(updates)
+                .eq('id', chat.id);
+            }
+          } catch (e) {
+            console.warn(
+              `[SessionManager] Falha ao sincronizar grupo ${chat.jid}:`,
+              e.message
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[SessionManager] Erro no _syncAllGroups:', err);
+    }
   }
 }

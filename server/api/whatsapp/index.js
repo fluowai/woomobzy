@@ -513,17 +513,21 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
         if (!resolvedSenderName && msg.metadata?.pushName && msg.metadata.pushName !== '~') {
           resolvedSenderName = msg.metadata.pushName;
         }
-        // Último fallback: formatar número
+        // Último fallback: formatar número (apenas se for PN real, não LID)
         if (!resolvedSenderName && senderJid) {
           const num = senderJid.split('@')[0].split(':')[0];
-          if (num.startsWith('55') && (num.length === 12 || num.length === 13)) {
-            const ddd = num.slice(2, 4);
-            const rest = num.slice(4);
-            resolvedSenderName = rest.length === 9
-              ? `+55 (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
-              : `+55 (${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
-          } else {
-            resolvedSenderName = `+${num}`;
+          const isLid = senderJid.includes('@lid') || num.length >= 15;
+          
+          if (!isLid) {
+            if (num.startsWith('55') && (num.length === 12 || num.length === 13)) {
+              const ddd = num.slice(2, 4);
+              const rest = num.slice(4);
+              resolvedSenderName = rest.length === 9
+                ? `+55 (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
+                : `+55 (${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
+            } else {
+              resolvedSenderName = `+${num}`;
+            }
           }
         }
       }

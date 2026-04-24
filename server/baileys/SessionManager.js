@@ -448,13 +448,17 @@ export class SessionManager extends EventEmitter {
       const chatPhoneNumber = '+' + chatCleanNumber;
 
       // Resolve nome do REMETENTE via ContactStore (cascata inteligente)
-      const senderName = senderJid
-        ? this.contactStore.resolveName(
-            instanceId,
-            senderJid,
-            message.pushName
-          )
-        : message.pushName || chatPhoneNumber;
+      let senderName = null;
+      if (senderJid) {
+        senderName = this.contactStore.resolveName(instanceId, senderJid, message.pushName);
+      }
+
+      // Fallback final: se ainda for nulo, tenta pushName ou 'Membro'
+      if (!senderName) {
+        senderName = message.pushName && message.pushName !== '~' 
+          ? message.pushName 
+          : (senderJid ? this.contactStore.formatNumber(senderJid) : null) || 'Membro';
+      }
 
       // ── Extração de Menções (contextInfo) ──────────────────────
       const contextInfo =

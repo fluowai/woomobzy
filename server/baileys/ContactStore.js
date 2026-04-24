@@ -57,7 +57,7 @@ export class ContactStore {
 
   /**
    * Resolve o melhor nome disponível para um JID
-   * Cascata: verifiedName → pushName → notify → shortName → número formatado
+   * Cascata: verifiedName → pushName → notify → shortName → null (para permitir fallback superior)
    */
   resolveName(instanceId, jid, fallbackPushName = null) {
     const contact = this.get(instanceId, jid);
@@ -76,7 +76,12 @@ export class ContactStore {
       return name;
     }
 
-    // Último recurso: formatar número
+    // Se for um LID (15 dígitos), não retornamos o número como nome
+    // para que a API/UI possa usar um fallback como "Membro" ou buscar no Lead
+    const isLid = jid.includes('@lid') || (jid.split('@')[0].length >= 15 && !jid.includes('@g.us'));
+    if (isLid) return null;
+
+    // Último recurso para PNs reais: formatar número
     return this.formatNumber(jid);
   }
 
@@ -95,13 +100,18 @@ export class ContactStore {
 
   /**
    * Formata JID como número de telefone legível
-   * Ex: 5548988003260@s.whatsapp.net → +55 (48) 98800-3260
    */
   formatNumber(jid) {
     if (!jid) return 'Desconhecido';
     
-    const raw = jid.split('@')[0].split(':')[0].replace(/\D/g, '');
+    const parts = jid.split('@')[0].split(':');
+    const raw = parts[0].replace(/\D/g, '');
     
+    // Detecção de LID (15 dígitos) ou JID de sistema
+    if (jid.includes('@lid') || raw.length >= 15) {
+      return null; // Indica que não é um número de telefone formatável
+    }
+
     if (!raw || raw.length < 8) return `+${raw || '?'}`;
 
     // Formato brasileiro: 55 + DDD(2) + número(8-9)

@@ -270,9 +270,18 @@ const Chat: React.FC = () => {
 
   const formatDisplayJid = (jid: string) => {
     const num = jid.split('@')[0].split(':')[0];
-    if (num.length >= 12) {
+    
+    // Detecção de LID (15+ dígitos)
+    if (num.length >= 15 || jid.includes('@lid')) {
+      return 'Membro'; // Ou retornar o num bruto se preferir, mas 'Membro' é mais limpo
+    }
+
+    if (num.length >= 11) {
       // Formato Brasil aproximado: +55 (XX) XXXXX-XXXX
-      return `+${num.slice(0, 2)} (${num.slice(2, 4)}) ${num.slice(4, 9)}-${num.slice(9)}`;
+      if (num.startsWith('55')) {
+          return `+55 (${num.slice(2, 4)}) ${num.slice(4, 9)}-${num.slice(9)}`;
+      }
+      return `+${num}`;
     }
     return `+${num}`;
   };
@@ -299,21 +308,24 @@ const Chat: React.FC = () => {
 
   const renderMessageContent = (content: string) => {
     if (!content) return content;
-    // Regex captura menções no formato @número (10-15 dígitos)
-    const mentionRegex = /@(\d{10,15})/g;
+    // Regex captura menções no formato @número ou @+número (10-15 dígitos)
+    const mentionRegex = /@(\+?\d{10,15})/g;
     const parts = content.split(mentionRegex);
 
     if (parts.length === 1) return content; // Sem menções
 
     return parts.map((part, i) => {
       if (i % 2 === 1) {
-        const resolvedName = mentionMap.get(part);
+        // Remove + para buscar no mapa caso o mapa use apenas números
+        const cleanPart = part.startsWith('+') ? part.slice(1) : part;
+        const resolvedName = mentionMap.get(cleanPart);
+        
         return (
           <span
             key={i}
             className="text-brand font-bold bg-brand/10 px-1 py-0.5 rounded-md text-[13px]"
           >
-            @{resolvedName || formatDisplayJid(part + '@s.whatsapp.net')}
+            @{resolvedName || formatDisplayJid(cleanPart + '@s.whatsapp.net')}
           </span>
         );
       }

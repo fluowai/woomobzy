@@ -453,45 +453,117 @@ router.get('/instances/:id/chats', verifyAdmin, async (req, res) => {
   }
 });
 
-/** GET /api/whatsapp/instances/:id/chats/:chatId/messages */
+/** GET /api/whatsapp/instances/:id/chats/:chatId/messages — Com Resolução de Nomes */
 router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res) => {
   try {
+    const instanceId = req.params.id;
+
     // 1. Busca as mensagens
     const { data: messages, error } = await supabase
       .from('whatsapp_messages')
       .select('*')
-      .eq('instance_id', req.params.id)
+      .eq('instance_id', instanceId)
       .eq('chat_id', req.params.chatId)
       .order('timestamp', { ascending: true })
       .limit(300);
 
     if (error) throw error;
 
-    // 2. Busca leads para resolver nomes de participantes (Inteligência Cross-Data)
+    // 2. Busca contatos do ContactStore para resolver nomes
+    const { data: contacts } = await supabase
+      .from('whatsapp_contacts')
+      .select('jid, push_name, verified_name, notify')
+      .eq('instance_id', instanceId);
+
+    // 3. Busca leads para enriquecer identidades
     const { data: leads } = await supabase
       .from('leads')
       .select('name, phone')
       .eq('organization_id', req.orgId);
 
-    const enrichedMessages = (messages || []).map(msg => {
-      // Tenta resolver o nome caso esteja com número ou nulo
-      let resolvedName = msg.sender_name;
-      const participantJid = msg.metadata?.key?.participant || msg.metadata?.participant;
-      const participantNumber = participantJid?.split('@')[0] || '';
+    // Mapa de resolução: JID → melhor nome
+    const nameMap = new Map();
 
-      if (!resolvedName || resolvedName.startsWith('+')) {
-        const lead = (leads || []).find(l => l.phone === participantNumber);
-        if (lead) resolvedName = lead.name;
-        else if (msg.metadata?.pushName && msg.metadata.pushName !== '~') resolvedName = msg.metadata.pushName;
+    // Prioridade 1: Contatos do WhatsApp (ContactStore)
+    for (const c of (contacts || [])) {
+      const name = c.verified_name || c.push_name || c.notify;
+      if (name && name !== '~') {
+        nameMap.set(c.jid, name);
+      }
+    }
+
+    // Prioridade 2: Leads do CRM (sobrescreve se existir)
+    for (const l of (leads || [])) {
+      if (l.phone && l.name) {
+        nameMap.set(`${l.phone}@s.whatsapp.net`, l.name);
+      }
+    }
+
+    // 4. Enriquece cada mensagem
+    const enrichedMessages = (messages || []).map(msg => {
+      let resolvedSenderName = msg.sender_name;
+      const senderJid = msg.sender_jid || msg.metadata?.key?.participant || msg.metadata?.participant;
+
+      // Se sender_name está com número ou nulo, tenta resolver
+      if (!resolvedSenderName || resolvedSenderName.startsWith('+') || /^\d+$/.test(resolvedSenderName)) {
+        if (senderJid) {
+          resolvedSenderName = nameMap.get(senderJid) || null;
+        }
+        // Fallback: pushName do metadata
+        if (!resolvedSenderName && msg.metadata?.pushName && msg.metadata.pushName !== '~') {
+          resolvedSenderName = msg.metadata.pushName;
+        }
+        // Último fallback: formatar número
+        if (!resolvedSenderName && senderJid) {
+          const num = senderJid.split('@')[0].split(':')[0];
+          if (num.startsWith('55') && (num.length === 12 || num.length === 13)) {
+            const ddd = num.slice(2, 4);
+            const rest = num.slice(4);
+            resolvedSenderName = rest.length === 9
+              ? `+55 (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
+              : `+55 (${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
+          } else {
+            resolvedSenderName = `+${num}`;
+          }
+        }
+      }
+
+      // Resolve nomes das menções
+      let resolvedMentions = [];
+      const mentionedJids = msg.mentioned_jids || [];
+      if (mentionedJids.length > 0) {
+        resolvedMentions = mentionedJids.map(jid => ({
+          jid,
+          number: jid.split('@')[0],
+          name: nameMap.get(jid) || null,
+        }));
       }
 
       return {
         ...msg,
-        sender_name: resolvedName
+        sender_name: resolvedSenderName || msg.sender_name,
+        resolved_mentions: resolvedMentions,
       };
     });
 
     res.json({ success: true, messages: enrichedMessages });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** GET /api/whatsapp/instances/:id/contacts — Listar contatos da instância */
+router.get('/instances/:id/contacts', verifyAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('whatsapp_contacts')
+      .select('jid, push_name, verified_name, notify, profile_photo_url, updated_at')
+      .eq('instance_id', req.params.id)
+      .order('updated_at', { ascending: false })
+      .limit(500);
+
+    if (error) throw error;
+    res.json({ success: true, contacts: data || [] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

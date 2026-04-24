@@ -277,33 +277,43 @@ const Chat: React.FC = () => {
     return `+${num}`;
   };
 
-  const jidToName = React.useMemo(() => {
+  // Mapa de menções resolvidas pelo servidor (JID → nome)
+  const mentionMap = React.useMemo(() => {
     const map = new Map<string, string>();
-    messages.forEach((m) => {
-      const name = m.sender_name && !m.sender_name.startsWith('+') 
-        ? m.sender_name 
-        : (m.metadata?.pushName && m.metadata.pushName !== '~' ? m.metadata.pushName : null);
-      
-      const fullJid = m.metadata?.key?.participant || m.metadata?.participant || m.metadata?.key?.remoteJid;
-      if (name && fullJid) {
-        const cleanNum = fullJid.split('@')[0].split(':')[0];
-        map.set(cleanNum, name);
+    messages.forEach((m: any) => {
+      if (m.resolved_mentions && Array.isArray(m.resolved_mentions)) {
+        for (const mention of m.resolved_mentions) {
+          if (mention.name) {
+            map.set(mention.number, mention.name);
+          }
+        }
+      }
+      // Também monta mapa de sender para resolução de menções por número
+      if (m.sender_name && !m.sender_name.startsWith('+') && m.sender_jid) {
+        const num = m.sender_jid.split('@')[0].split(':')[0];
+        map.set(num, m.sender_name);
       }
     });
     return map;
   }, [messages]);
 
   const renderMessageContent = (content: string) => {
-    if (!content) return '';
+    if (!content) return content;
+    // Regex captura menções no formato @número (10-15 dígitos)
     const mentionRegex = /@(\d{10,15})/g;
     const parts = content.split(mentionRegex);
-    
+
+    if (parts.length === 1) return content; // Sem menções
+
     return parts.map((part, i) => {
       if (i % 2 === 1) {
-        const name = jidToName.get(part);
+        const resolvedName = mentionMap.get(part);
         return (
-          <span key={i} className="text-brand font-bold bg-brand/5 px-1 rounded-sm">
-            @{name || part}
+          <span
+            key={i}
+            className="text-brand font-bold bg-brand/10 px-1 py-0.5 rounded-md text-[13px]"
+          >
+            @{resolvedName || formatDisplayJid(part + '@s.whatsapp.net')}
           </span>
         );
       }
@@ -530,11 +540,7 @@ const Chat: React.FC = () => {
                       >
                         {showSender && (
                           <p className="text-[11px] font-bold text-brand mb-1 truncate px-1">
-                            {msg.sender_name && !msg.sender_name.startsWith('+') 
-                                ? msg.sender_name 
-                                : (msg.metadata?.pushName && msg.metadata.pushName !== '~' 
-                                    ? msg.metadata.pushName 
-                                    : (msg.sender_name || formatDisplayJid(msg.metadata?.key?.participant || '')))}
+                            {msg.sender_name || 'Membro'}
                           </p>
                         )}
                         

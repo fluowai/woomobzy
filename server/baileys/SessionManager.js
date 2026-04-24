@@ -1,11 +1,14 @@
 /**
- * SessionManager.js — Gerenciador Simplificado do Ciclo de Vida do WhatsApp
+ * SessionManager.js — Gerenciador Completo do Ciclo de Vida do WhatsApp
  *
- * CORREÇÕES IMPLEMENTADAS:
+ * ARQUITETURA v2:
+ * - ContactStore integrado (cache em memória + persistência)
+ * - Coleta de contatos via contacts.upsert / contacts.update
+ * - Resolução de pushName com cascata inteligente
+ * - Processamento de menções via contextInfo.mentionedJid
+ * - Sincronização de metadados de grupos
  * - Health check antes de enviar mensagem
  * - Backoff exponencial para reconexão
- * - Logs detalhados
- * - Flag logout_requested para diferenciar desconexão
  */
 
 import EventEmitter from 'events';
@@ -17,6 +20,7 @@ import {
 } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode';
 import { PersistenceManager } from './PersistenceManager.js';
+import { ContactStore } from './ContactStore.js';
 
 // Backoff exponencial para reconexões (ms)
 const RECONNECT_DELAYS = [2000, 4000, 8000, 16000, 30000, 60000];
@@ -41,13 +45,14 @@ export class SessionManager extends EventEmitter {
     this.setMaxListeners(100);
     this.sessions = new Map();
     this.persistence = new PersistenceManager(sessionsDir);
+    this.contactStore = new ContactStore();
   }
 
   async boot() {
-    console.log('[SessionManager] 🚀 Iniciando boot (Modo Simples)...');
+    console.log('[SessionManager] 🚀 Iniciando boot...');
     const supabase = await this.persistence.getSupabaseClient();
 
-    // Reseta instâncias presas (tudo que não for 'connected' ou 'disconnected' vira 'disconnected')
+    // Reseta instâncias presas
     await supabase
       .from('whatsapp_instances')
       .update({ status: 'disconnected', updated_at: new Date().toISOString() })
@@ -66,12 +71,15 @@ export class SessionManager extends EventEmitter {
     for (const instance of instances || []) {
       try {
         console.log(`[SessionManager] 🔄 Reconectando ${instance.id}...`);
+
+        // Carrega contatos do DB para o cache antes de conectar
+        await this.contactStore.loadFromDB(instance.id, supabase);
+
         const session = await this.startSession(
           instance.id,
           instance.organization_id
         );
 
-        // Health check: testa se socket está realmente conectado
         if (session?.sock?.ws?.readyState === 1) {
           console.log(
             `[SessionManager] ✅ ${instance.id} reconectado com sucesso`
@@ -131,19 +139,25 @@ export class SessionManager extends EventEmitter {
       auth: state,
       printQRInTerminal: false,
       browser: ['IMOBZY 360', 'Chrome', '1.0.0'],
-      keepAliveIntervalMs: 60000, // Previne queda por inatividade NAT
+      keepAliveIntervalMs: 60000,
       generateHighQualityLinkPreview: true,
-      syncFullHistory: false, // Evita sobrecarga inicial
+      syncFullHistory: false,
       markOnlineOnConnect: true,
     });
 
     session.sock = sock;
 
+    // ──────────────────────────────────────────
+    // EVENTO: Credenciais
+    // ──────────────────────────────────────────
     sock.ev.on('creds.update', async () => {
       await saveCreds();
       this.persistence.scheduleDBSync(instanceId);
     });
 
+    // ──────────────────────────────────────────
+    // EVENTO: Conexão
+    // ──────────────────────────────────────────
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
@@ -160,15 +174,18 @@ export class SessionManager extends EventEmitter {
 
       if (connection === 'open') {
         session.status = 'conectado';
+        session.reconnectAttempts = 0;
         const phoneNumber = sock?.user?.id?.split(':')[0]?.split('@')[0] || '';
         await this.persistence.updateStatus(instanceId, 'connected', {
           phone_number: phoneNumber,
         });
         this.emit('connected', { instanceId, phoneNumber });
         console.log(`[SessionManager] ✅ ${instanceId} CONECTADO!`);
-        
-        // Sincroniza metadados dos grupos em background
-        this._syncAllGroups(session).catch(e => console.warn('[SessionManager] Erro sync grupos:', e.message));
+
+        // Sincroniza metadados dos grupos + contatos dos participantes em background
+        this._syncAllGroups(session).catch((e) =>
+          console.warn('[SessionManager] Erro sync grupos:', e.message)
+        );
       }
 
       if (connection === 'close') {
@@ -178,39 +195,39 @@ export class SessionManager extends EventEmitter {
           statusCode !== DisconnectReason?.badSession;
 
         session.status = shouldReconnect ? 'reconectando' : 'desconectado';
-        
-        await this.persistence.updateStatus(instanceId, shouldReconnect ? 'reconnecting' : 'disconnected', {
-          qr_code: null,
-        });
+
+        await this.persistence.updateStatus(
+          instanceId,
+          shouldReconnect ? 'reconnecting' : 'disconnected',
+          { qr_code: null }
+        );
         this.emit('disconnected', { instanceId, statusCode });
 
         console.log(
-          `[SessionManager] 🔌 Conexão fechada: ${instanceId} (Code: ${statusCode}). shouldReconnect: ${shouldReconnect}, isShuttingDown: ${session.isShuttingDown}`
+          `[SessionManager] 🔌 Conexão fechada: ${instanceId} (Code: ${statusCode}). Reconnect: ${shouldReconnect}`
         );
 
-        // Contador de tentativas de reconexão
         if (!session.reconnectAttempts) session.reconnectAttempts = 0;
 
-        // Backoff exponencial: 2s, 4s, 8s, 16s, 30s, 60s
-        const delays = [2000, 4000, 8000, 16000, 30000, 60000];
         const delay =
-          delays[Math.min(session.reconnectAttempts, delays.length - 1)] ||
-          5000;
+          RECONNECT_DELAYS[
+            Math.min(session.reconnectAttempts, RECONNECT_DELAYS.length - 1)
+          ] || 5000;
 
         if (shouldReconnect && !session.isShuttingDown) {
-          // Limita tentativas de reconexão
-          if (session.reconnectAttempts >= 6) {
+          if (session.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             console.log(
-              `[SessionManager] ❌ Max tentativas (6) atingidas para ${instanceId}. Limpando sessão.`
+              `[SessionManager] ❌ Max tentativas (${MAX_RECONNECT_ATTEMPTS}) para ${instanceId}. Limpando.`
             );
             await this.persistence.clearSession(instanceId);
             this.sessions.delete(instanceId);
+            this.contactStore.clear(instanceId);
             session.reconnectAttempts = 0;
             return;
           }
 
           console.log(
-            `[SessionManager] ⏳ Tentativa ${session.reconnectAttempts + 1}/6 em ${delay}ms para ${instanceId}`
+            `[SessionManager] ⏳ Tentativa ${session.reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS} em ${delay}ms`
           );
           session.reconnectAttempts++;
 
@@ -221,7 +238,6 @@ export class SessionManager extends EventEmitter {
             ) {
               try {
                 await this.startSession(instanceId, organizationId);
-                session.reconnectAttempts = 0; // Reset após sucesso
                 console.log(
                   `[SessionManager] ✅ Reconexão bem-sucedida para ${instanceId}`
                 );
@@ -234,25 +250,74 @@ export class SessionManager extends EventEmitter {
             }
           }, delay);
         } else if (!shouldReconnect) {
-          // Clear session entirely
           await this.persistence.clearSession(instanceId);
           this.sessions.delete(instanceId);
+          this.contactStore.clear(instanceId);
         }
       }
     });
 
+    // ──────────────────────────────────────────
+    // EVENTO: Contatos (NOVO — CR#1)
+    // ──────────────────────────────────────────
+    sock.ev.on('contacts.upsert', async (contacts) => {
+      console.log(
+        `[SessionManager] 📇 contacts.upsert: ${contacts.length} contatos recebidos para ${instanceId}`
+      );
+      const batch = this.contactStore.processBatch(instanceId, contacts);
+      if (batch.length > 0) {
+        const supabase = await this.persistence.getSupabaseClient();
+        await this.contactStore.persistToDB(instanceId, batch, supabase);
+      }
+    });
+
+    sock.ev.on('contacts.update', async (updates) => {
+      console.log(
+        `[SessionManager] 📇 contacts.update: ${updates.length} atualizações para ${instanceId}`
+      );
+      const batch = this.contactStore.processBatch(instanceId, updates);
+      if (batch.length > 0) {
+        const supabase = await this.persistence.getSupabaseClient();
+        await this.contactStore.persistToDB(instanceId, batch, supabase);
+      }
+    });
+
+    // ──────────────────────────────────────────
+    // EVENTO: Mensagens em Tempo Real
+    // ──────────────────────────────────────────
     sock.ev.on('messages.upsert', async (m) => {
       for (const message of m.messages) {
         if (message?.key?.remoteJid) {
+          // Coleta pushName do remetente para o ContactStore
+          if (message.pushName && message.key.participant) {
+            this.contactStore.set(instanceId, message.key.participant, {
+              pushName: message.pushName,
+            });
+          } else if (message.pushName && !message.key.fromMe) {
+            this.contactStore.set(instanceId, message.key.remoteJid, {
+              pushName: message.pushName,
+            });
+          }
+
           await this._saveMessage(session, message);
           this.emit('message', { instanceId, message });
         }
       }
     });
 
+    // ──────────────────────────────────────────
+    // EVENTO: Histórico de Mensagens
+    // ──────────────────────────────────────────
     sock.ev.on('messaging-history.set', async ({ messages }) => {
       for (const message of messages) {
         if (message?.key?.remoteJid) {
+          // Coleta pushName do histórico se disponível
+          if (message.pushName) {
+            const jid = message.key.participant || message.key.remoteJid;
+            this.contactStore.set(instanceId, jid, {
+              pushName: message.pushName,
+            });
+          }
           await this._saveMessage(session, message);
         }
       }
@@ -269,6 +334,7 @@ export class SessionManager extends EventEmitter {
       session.sock = null;
       this.sessions.delete(instanceId);
     }
+    this.contactStore.clear(instanceId);
     await this.persistence.clearSession(instanceId);
   }
 
@@ -279,7 +345,6 @@ export class SessionManager extends EventEmitter {
 
     let session = this.sessions.get(instanceId);
 
-    // CORREÇÃO 1: Health check - tenta reconectar se socket não existir
     if (!session || !session.sock) {
       console.log(
         `[WhatsApp] ℹ️ Socket não encontrado para ${instanceId}. Tentando reconectar...`
@@ -298,10 +363,9 @@ export class SessionManager extends EventEmitter {
       }
     }
 
-    // Verifica se socket está pronto (readyState 1 = OPEN)
     if (session.sock.ws?.readyState !== 1) {
       console.log(
-        `[WhatsApp] ⚠️ Socket não está pronto (state: ${session.sock.ws?.readyState}). Tentando reconectar...`
+        `[WhatsApp] ⚠️ Socket não pronto (state: ${session.sock.ws?.readyState}). Reconectando...`
       );
       try {
         session = await this.startSession(instanceId, session.organizationId);
@@ -325,25 +389,30 @@ export class SessionManager extends EventEmitter {
     return this.sessions.get(instanceId) || null;
   }
 
-  // Permite compatibilidade com scripts antigos
   getAllSessionStates() {
     const res = {};
     for (const [id, session] of this.sessions.entries()) {
+      const contactStats = this.contactStore.getStats(id);
       res[id] = {
         alive: session.status === 'conectado',
         state: session.status,
+        contacts: contactStats,
       };
     }
     return res;
   }
+
   isSessionAlive(instanceId) {
     return this.sessions.get(instanceId)?.status === 'conectado';
   }
+
   getSessionState(instanceId) {
     return this.sessions.get(instanceId)?.status || 'desconectado';
   }
 
-  // Lógica de Persistência e Processamento das Mensagens (Upsert e File Storage) e W2L (WhatsApp to Lead)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // _saveMessage — Processamento e Persistência de Mensagens
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   async _saveMessage(session, message) {
     try {
       const { instanceId, organizationId } = session;
@@ -359,16 +428,47 @@ export class SessionManager extends EventEmitter {
         session.sock?.user?.id?.split(':')[0] + '@s.whatsapp.net';
       if (contactJid === instanceJid) return;
 
-      const rawNumber = contactJid.split('@')[0];
-      // Normalização: remove caracteres não numéricos e garante o prefixo 55 se tiver 10 ou 11 dígitos
-      let cleanNumber = rawNumber.replace(/\D/g, '');
-      if (cleanNumber.length === 10 || cleanNumber.length === 11) cleanNumber = '55' + cleanNumber;
-      const phoneNumber = '+' + cleanNumber;
+      const isGroup = contactJid.endsWith('@g.us');
+      const fromMe = message.key?.fromMe ?? false;
+
+      // ── Identificação do Remetente ──────────────────────────────
+      // Em grupos: key.participant é o JID do remetente
+      // Em PV: remoteJid é o JID do remetente
+      const senderJid = isGroup
+        ? message.key?.participant || message.participant || null
+        : fromMe
+          ? instanceJid
+          : contactJid;
+
+      // Resolve número do CHAT (para whatsapp_chats)
+      const chatRawNumber = contactJid.split('@')[0];
+      let chatCleanNumber = chatRawNumber.replace(/\D/g, '');
+      if (chatCleanNumber.length === 10 || chatCleanNumber.length === 11)
+        chatCleanNumber = '55' + chatCleanNumber;
+      const chatPhoneNumber = '+' + chatCleanNumber;
+
+      // Resolve nome do REMETENTE via ContactStore (cascata inteligente)
+      const senderName = senderJid
+        ? this.contactStore.resolveName(
+            instanceId,
+            senderJid,
+            message.pushName
+          )
+        : message.pushName || chatPhoneNumber;
+
+      // ── Extração de Menções (contextInfo) ──────────────────────
+      const contextInfo =
+        message.message?.extendedTextMessage?.contextInfo ||
+        message.message?.imageMessage?.contextInfo ||
+        message.message?.videoMessage?.contextInfo ||
+        null;
+
+      const mentionedJids = contextInfo?.mentionedJid || [];
 
       const supabase = await this.persistence.getSupabaseClient();
-      const fromMe = message.key?.fromMe ?? false;
       const messageType = Object.keys(message.message || {})[0] || 'unknown';
 
+      // ── Extração de Conteúdo ───────────────────────────────────
       let content = '';
       const msg = message.message;
       if (msg?.conversation) content = msg.conversation;
@@ -385,12 +485,7 @@ export class SessionManager extends EventEmitter {
 
       if (
         !content &&
-        [
-          'imageMessage',
-          'videoMessage',
-          'audioMessage',
-          'documentMessage',
-        ].includes(messageType)
+        ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(messageType)
       ) {
         const labels = {
           imageMessage: '(Imagem)',
@@ -401,6 +496,7 @@ export class SessionManager extends EventEmitter {
         content = labels[messageType] || '(Mídia)';
       }
 
+      // ── Download de Mídia ──────────────────────────────────────
       let mediaUrl = null;
       let mimeType = null;
       const mediaType = messageType.replace('Message', '');
@@ -439,23 +535,22 @@ export class SessionManager extends EventEmitter {
         }
       }
 
+      // ── Resolução do Nome do Grupo ─────────────────────────────
       let groupName = null;
-      const isGroup = contactJid.endsWith('@g.us');
-
-      // Resolve Group Subject if needed (only for groups)
       if (isGroup && session?.sock) {
         try {
-          // Tenta pegar do cache do sock ou faz query se necessário
-          const metadata = await session.sock.groupMetadata(contactJid).catch(() => null);
+          const metadata = await session.sock
+            .groupMetadata(contactJid)
+            .catch(() => null);
           if (metadata?.subject) groupName = metadata.subject;
         } catch (e) {
-          console.warn(`[SessionManager] Falha ao obter metadata do grupo ${contactJid}`);
+          console.warn(
+            `[SessionManager] Falha metadata grupo ${contactJid}`
+          );
         }
       }
 
-      let allowNameUpdate = !fromMe;
-      if (isGroup) allowNameUpdate = false;
-
+      // ── Upsert do Chat ─────────────────────────────────────────
       const { data: existingChat } = await supabase
         .from('whatsapp_chats')
         .select('id, name, profile_photo_url')
@@ -478,11 +573,12 @@ export class SessionManager extends EventEmitter {
       ).toISOString();
 
       if (!existingChat) {
-        // Para grupos, prioriza o nome real do grupo (Group Subject). 
-        // Para PV, usa pushName ou número formatado.
-        const initialName = isGroup 
-          ? (groupName || phoneNumber)
-          : (message.pushName && message.pushName !== '~' ? message.pushName : phoneNumber);
+        // Nome do chat: grupo usa subject, PV usa pushName ou número
+        const chatDisplayName = isGroup
+          ? groupName || contactJid.split('@')[0]
+          : message.pushName && message.pushName !== '~'
+            ? message.pushName
+            : chatPhoneNumber;
 
         const { data: newChat } = await supabase
           .from('whatsapp_chats')
@@ -490,7 +586,7 @@ export class SessionManager extends EventEmitter {
             instance_id: instanceId,
             organization_id: organizationId,
             jid: contactJid,
-            name: initialName,
+            name: chatDisplayName,
             last_message_at: timestamp,
             profile_photo_url: profilePhotoUrl,
           })
@@ -502,13 +598,20 @@ export class SessionManager extends EventEmitter {
         const updates = {
           last_message_at: timestamp,
           organization_id: organizationId,
-          profile_photo_url: profilePhotoUrl,
         };
+        if (profilePhotoUrl) updates.profile_photo_url = profilePhotoUrl;
 
-        // Se for grupo e não tínhamos o nome, atualiza agora
-        if (isGroup && !existingChat.name && groupName) {
+        // Atualiza nome do grupo se veio
+        if (isGroup && groupName && existingChat.name !== groupName) {
           updates.name = groupName;
-        } else if (!isGroup && allowNameUpdate && message.pushName && message.pushName !== '~') {
+        }
+        // Atualiza nome do PV se não é grupo e tem pushName válido
+        if (
+          !isGroup &&
+          !fromMe &&
+          message.pushName &&
+          message.pushName !== '~'
+        ) {
           updates.name = message.pushName;
         }
 
@@ -517,6 +620,7 @@ export class SessionManager extends EventEmitter {
 
       if (!chatId) return;
 
+      // ── Upsert da Mensagem (com sender_jid e mentioned_jids) ──
       await supabase.from('whatsapp_messages').upsert(
         {
           instance_id: instanceId,
@@ -526,12 +630,9 @@ export class SessionManager extends EventEmitter {
           message_type: messageType,
           content,
           from_me: fromMe,
-          sender_name:
-            message.pushName && message.pushName !== '~'
-              ? message.pushName
-              : (message.key.participant || message.participant
-                ? '+' + (message.key.participant || message.participant).split('@')[0].replace(/\D/g, '')
-                : cleanNumber),
+          sender_name: senderName,
+          sender_jid: senderJid,
+          mentioned_jids: mentionedJids.length > 0 ? mentionedJids : [],
           status: fromMe ? 'sent' : 'received',
           timestamp,
           media_url: mediaUrl,
@@ -541,7 +642,7 @@ export class SessionManager extends EventEmitter {
         { onConflict: 'key_id' }
       );
 
-      // W2L
+      // W2L — Automação de Leads (só PV)
       if (!fromMe && !isGroup) {
         this._handleLeadAutomation(
           instanceId,
@@ -557,6 +658,9 @@ export class SessionManager extends EventEmitter {
     }
   }
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // W2L — WhatsApp to Lead
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   async _handleLeadAutomation(
     instanceId,
     organizationId,
@@ -580,15 +684,18 @@ export class SessionManager extends EventEmitter {
       const apiKey =
         process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
       if (apiKey && content && content.length > 5) {
-        const { openaiService } =
-          await import('../../services/openaiService.js')
-            .then((m) => m.default || m)
-            .catch(() => ({}));
+        const { openaiService } = await import(
+          '../../services/openaiService.js'
+        )
+          .then((m) => m.default || m)
+          .catch(() => ({}));
         const prompt = `Analise esta mensagem de um interessado em imóveis e retorne APENAS um JSON (sem markdown) com os campos "resumo" (curto) e "classificacao" (Alta Prioridade, Interessado ou Curioso). Mensagem: "${content}"`;
         if (openaiService?.generateText) {
           const aiResponse = await openaiService.generateText(prompt, apiKey);
           try {
-            const aiData = JSON.parse(aiResponse.replace(/```json|```/g, ''));
+            const aiData = JSON.parse(
+              aiResponse.replace(/```json|```/g, '')
+            );
             summary = aiData.resumo || summary;
             classification = aiData.classificacao || classification;
           } catch (e) {
@@ -600,7 +707,9 @@ export class SessionManager extends EventEmitter {
 
     await supabase.from('leads').insert({
       organization_id: organizationId,
-      name: message.pushName || `Lead ${phone.substring(phone.length - 4)}`,
+      name:
+        this.contactStore.resolveName(instanceId, chatJid, message.pushName) ||
+        `Lead ${phone.substring(phone.length - 4)}`,
       phone: phone,
       source: 'WhatsApp',
       status: 'Novo',
@@ -609,6 +718,10 @@ export class SessionManager extends EventEmitter {
       chat_jid: chatJid,
     });
   }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Sync de Grupos — Carrega metadados e participantes
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   async _syncAllGroups(session) {
     const { sock, instanceId } = session;
     if (!sock) return;
@@ -622,36 +735,74 @@ export class SessionManager extends EventEmitter {
 
       if (!chats) return;
 
+      const contactBatch = [];
+
       for (const chat of chats) {
-        if (chat.jid.endsWith('@g.us')) {
+        if (!chat.jid.endsWith('@g.us')) continue;
+
+        try {
+          const metadata = await sock
+            .groupMetadata(chat.jid)
+            .catch(() => null);
+          if (!metadata) continue;
+
+          // Atualiza nome do grupo
+          const updates = {};
+          if (metadata.subject && chat.name !== metadata.subject)
+            updates.name = metadata.subject;
+
+          let photoUrl = null;
           try {
-            const metadata = await sock.groupMetadata(chat.jid).catch(() => null);
-            let photoUrl = null;
-            try {
-              photoUrl = await sock.profilePictureUrl(chat.jid, 'image').catch(() => null);
-            } catch (e) {}
+            photoUrl = await sock
+              .profilePictureUrl(chat.jid, 'image')
+              .catch(() => null);
+          } catch (e) {}
+          if (photoUrl) updates.profile_photo_url = photoUrl;
 
-            const updates = {};
-            if (metadata?.subject && chat.name !== metadata.subject)
-              updates.name = metadata.subject;
-            if (photoUrl) updates.profile_photo_url = photoUrl;
-
-            if (Object.keys(updates).length > 0) {
-              await supabase
-                .from('whatsapp_chats')
-                .update(updates)
-                .eq('id', chat.id);
-            }
-          } catch (e) {
-            console.warn(
-              `[SessionManager] Falha ao sincronizar grupo ${chat.jid}:`,
-              e.message
-            );
+          if (Object.keys(updates).length > 0) {
+            await supabase
+              .from('whatsapp_chats')
+              .update(updates)
+              .eq('id', chat.id);
           }
+
+          // Coleta os nomes de todos os participantes do grupo
+          if (metadata.participants) {
+            for (const p of metadata.participants) {
+              if (p.id) {
+                this.contactStore.set(instanceId, p.id, {
+                  pushName: p.name || p.notify || null,
+                  verifiedName: p.verifiedName || null,
+                });
+
+                contactBatch.push({
+                  instance_id: instanceId,
+                  jid: p.id,
+                  push_name: p.name || p.notify || null,
+                  verified_name: p.verifiedName || null,
+                  notify: p.notify || null,
+                  updated_at: new Date().toISOString(),
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(
+            `[SessionManager] Falha sync grupo ${chat.jid}:`,
+            e.message
+          );
         }
       }
+
+      // Persiste contatos de todos os grupos de uma vez
+      if (contactBatch.length > 0) {
+        await this.contactStore.persistToDB(instanceId, contactBatch, supabase);
+        console.log(
+          `[SessionManager] 📇 ${contactBatch.length} contatos de grupos sincronizados`
+        );
+      }
     } catch (err) {
-      console.error('[SessionManager] Erro no _syncAllGroups:', err);
+      console.error('[SessionManager] Erro no _syncAllGroups:', err.message);
     }
   }
 }

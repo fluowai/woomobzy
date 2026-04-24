@@ -489,15 +489,26 @@ router.post('/instances/:id/send', verifyAdmin, async (req, res) => {
 
     if (error || !instance) return res.status(404).json({ error: 'Instância não encontrada' });
 
-    // ── Verificação de socket DIRETA ────────────────────────────────────────
-    const session = sessionManager.getSession(instanceId);
+    // ── Verificação de socket DIRETA com Recuperação Automática ────────────
+    let session = sessionManager.getSession(instanceId);
     
-    if (!session) {
-      console.warn(`[WhatsApp API] ❌ /send bloqueado: sessão não encontrada para ${instanceId}`);
+    if (!session && instance.status === 'connected') {
+      console.log(`[WhatsApp API] 🔄 Tentando despertar sessão para /send: ${instanceId}`);
+      try {
+        session = await sessionManager.startSession(instanceId, req.orgId);
+        // Pequena pausa para o socket inicializar
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (err) {
+        console.error(`[WhatsApp API] ❌ Falha ao despertar sessão:`, err.message);
+      }
+    }
+
+    if (!session || !session.sock) {
+      console.warn(`[WhatsApp API] ❌ /send bloqueado: instância não inicializada para ${instanceId}`);
       return res.status(400).json({
-        error: 'Instância offline ou não inicializada. Por favor, aguarde.',
+        error: 'Instância em processo de inicialização. Por favor, aguarde 5 segundos e tente novamente.',
         socket_alive: false,
-        state: 'desconectado'
+        recovering: true
       });
     }
 

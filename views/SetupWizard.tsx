@@ -41,9 +41,12 @@ const SetupWizard: React.FC = () => {
         setFormData((prev) => ({ ...prev, logoUrl: publicUrl }));
 
         // Smart Color Detection 🎨
+        const res = await fetch(publicUrl);
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        
         const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.src = publicUrl;
+        img.src = objectUrl;
 
         // Tenta extrair as cores
         try {

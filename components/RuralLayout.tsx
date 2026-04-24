@@ -153,17 +153,28 @@ const RuralLayout: React.FC = () => {
       {/* Brand Logo */}
       <div className="p-6 pb-6">
         <Link to="/rural" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary-alpha-20 transition-transform group-hover:scale-105">
-            <Database className="text-white" size={22} />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-text-primary tracking-tight leading-none">
-              IMOBZY <span className="text-primary">Rural</span>
-            </h1>
-            <span className="text-[10px] text-text-tertiary font-bold uppercase tracking-widest mt-1 block">
-              Painel Rural
-            </span>
-          </div>
+          {settings?.logoUrl ? (
+            <img 
+              src={settings.logoUrl} 
+              alt={settings.agencyName || "Logo"} 
+              style={{ maxHeight: '42px', maxWidth: '100%', objectFit: 'contain' }}
+              className="transition-transform group-hover:scale-105"
+            />
+          ) : (
+            <>
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary-alpha-20 transition-transform group-hover:scale-105">
+                <Database className="text-white" size={22} />
+              </div>
+              <div>
+                <h1 className="text-base font-bold text-text-primary tracking-tight leading-none">
+                  {settings?.agencyName ? settings.agencyName.substring(0, 15) : 'IMOBZY'} <span className="text-primary">Rural</span>
+                </h1>
+                <span className="text-[10px] text-text-tertiary font-bold uppercase tracking-widest mt-1 block">
+                  Painel Rural
+                </span>
+              </div>
+            </>
+          )}
         </Link>
 
         <Link

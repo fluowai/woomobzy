@@ -82,9 +82,13 @@ const AppearanceSettings: React.FC = () => {
 
       // Auto-detect colors from the uploaded logo
       try {
+        // Fetch as blob to prevent Canvas Tainted Errors (CORS) from Supabase Storage
+        const res = await fetch(publicUrl);
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        
         const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.src = publicUrl;
+        img.src = objectUrl;
 
         const colors = await extractColorsFromImage(img);
 

@@ -95,9 +95,9 @@ const Login: React.FC = () => {
         <div className="text-center mb-10">
           <Link to="/" className="inline-block hover-lift">
             <img
-              src="/logo-imobzy.png"
-              alt="IMOBZY"
-              className="h-20 w-auto mx-auto mb-6"
+              src={settings.logoUrl || '/logo-imobzy.png'}
+              alt={settings.agencyName || 'IMOBZY'}
+              className="h-20 w-auto mx-auto mb-6 object-contain"
               onError={(e) => {
                 const target = e.currentTarget;
                 if (target.dataset.hasError) return;

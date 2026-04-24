@@ -436,8 +436,21 @@ export class SessionManager extends EventEmitter {
         }
       }
 
-      let allowNameUpdate = !fromMe;
+      let groupName = null;
       const isGroup = contactJid.endsWith('@g.us');
+
+      // Resolve Group Subject if needed (only for groups)
+      if (isGroup && session?.sock) {
+        try {
+          // Tenta pegar do cache do sock ou faz query se necessário
+          const metadata = await session.sock.groupMetadata(contactJid).catch(() => null);
+          if (metadata?.subject) groupName = metadata.subject;
+        } catch (e) {
+          console.warn(`[SessionManager] Falha ao obter metadata do grupo ${contactJid}`);
+        }
+      }
+
+      let allowNameUpdate = !fromMe;
       if (isGroup) allowNameUpdate = false;
 
       const { data: existingChat } = await supabase
@@ -462,8 +475,12 @@ export class SessionManager extends EventEmitter {
       ).toISOString();
 
       if (!existingChat) {
-        const initialName =
-          allowNameUpdate && message.pushName ? message.pushName : phoneNumber;
+        // Para grupos, prioriza o nome real do grupo (Group Subject). 
+        // Para PV, usa pushName ou número formatado.
+        const initialName = isGroup 
+          ? (groupName || phoneNumber)
+          : (message.pushName && message.pushName !== '~' ? message.pushName : phoneNumber);
+
         const { data: newChat } = await supabase
           .from('whatsapp_chats')
           .insert({
@@ -484,8 +501,14 @@ export class SessionManager extends EventEmitter {
           organization_id: organizationId,
           profile_photo_url: profilePhotoUrl,
         };
-        if (allowNameUpdate && message.pushName && !isGroup)
+
+        // Se for grupo e não tínhamos o nome, atualiza agora
+        if (isGroup && !existingChat.name && groupName) {
+          updates.name = groupName;
+        } else if (!isGroup && allowNameUpdate && message.pushName && message.pushName !== '~') {
           updates.name = message.pushName;
+        }
+
         await supabase.from('whatsapp_chats').update(updates).eq('id', chatId);
       }
 
@@ -501,10 +524,11 @@ export class SessionManager extends EventEmitter {
           content,
           from_me: fromMe,
           sender_name:
-            message.pushName ||
-            (message.key.participant || message.participant
-              ? '+' + (message.key.participant || message.participant).split('@')[0].replace(/\D/g, '')
-              : cleanNumber),
+            message.pushName && message.pushName !== '~'
+              ? message.pushName
+              : (message.key.participant || message.participant
+                ? '+' + (message.key.participant || message.participant).split('@')[0].replace(/\D/g, '')
+                : cleanNumber),
           status: fromMe ? 'sent' : 'received',
           timestamp,
           media_url: mediaUrl,

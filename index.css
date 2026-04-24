@@ -72,12 +72,12 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* WhatsApp Web Aesthetics (Light Mode) */
+  /* WhatsApp Web Aesthetics (Light Mode Premium) */
   --color-wa-bg: #efeae2;
   --color-wa-sidebar: #ffffff;
   --color-wa-bubble-sent: #d9fdd3;
   --color-wa-bubble-received: #ffffff;
-  --color-wa-msg-received: #111b21;
+  --color-wa-msg-received: #f0f2f5; /* Light gray for active/received states */
   --color-wa-check-read: #53bdeb;
   --color-wa-check-delivered: #8696a0;
   --color-wa-check-sent: #8696a0;

@@ -268,6 +268,32 @@ const Chat: React.FC = () => {
     });
   const formatJid = (jid: string) => `+${jid.split('@')[0].split(':')[0]}`;
 
+  const formatDisplayJid = (jid: string) => {
+    const num = jid.split('@')[0].split(':')[0];
+    if (num.length >= 12) {
+      // Formato Brasil aproximado: +55 (XX) XXXXX-XXXX
+      return `+${num.slice(0, 2)} (${num.slice(2, 4)}) ${num.slice(4, 9)}-${num.slice(9)}`;
+    }
+    return `+${num}`;
+  };
+
+  const renderMessageContent = (content: string) => {
+    if (!content) return '';
+    const mentionRegex = /@(\d{10,15})/g;
+    const parts = content.split(mentionRegex);
+    
+    return parts.map((part, i) => {
+      if (i % 2 === 1) {
+        return (
+          <span key={i} className="text-brand font-bold bg-brand/5 px-1 rounded-sm">
+            @{part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   const filteredChats = chats.filter((chat) => {
     const matchesSearch = chat.name
       .toLowerCase()
@@ -368,7 +394,7 @@ const Chat: React.FC = () => {
               <div className="flex-1 text-left min-w-0 py-1">
                 <div className="flex justify-between items-start mb-1">
                   <h3 className="font-medium truncate text-[16px] text-text-primary">
-                    {chat.name || formatJid(chat.jid)}
+                    {chat.name || formatDisplayJid(chat.jid)}
                   </h3>
                   <span className={`text-[12px] font-normal whitespace-nowrap ml-2 ${chat.unread_count > 0 ? 'text-brand' : 'text-tertiary'}`}>
                     {chat.last_message_at ? formatTime(chat.last_message_at) : ''}
@@ -425,11 +451,11 @@ const Chat: React.FC = () => {
                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-brand rounded-full border-2 border-wa-sidebar shadow-sm" />
                 </div>
                 <div>
-                  <h2 className="text-[16px] font-medium text-text-primary leading-tight">
-                    {selectedChat.name || formatJid(selectedChat.jid)}
-                  </h2>
-                  <p className="text-[11px] text-tertiary font-normal">
-                    {selectedChat.jid.endsWith('@g.us') ? 'Em grupo' : 'Online'}
+                  <h3 className="font-bold text-text-primary leading-tight">
+                    {selectedChat.name || formatDisplayJid(selectedChat.jid)}
+                  </h3>
+                  <p className="text-[11px] font-bold text-brand uppercase tracking-widest mt-0.5">
+                    {selectedChat.jid.endsWith('@g.us') ? 'Em grupo' : 'Chat Individual'}
                   </p>
                 </div>
               </div>
@@ -523,7 +549,7 @@ const Chat: React.FC = () => {
                         )}
 
                         <p className="text-[14px] font-normal leading-snug break-words whitespace-pre-wrap">
-                          {msg.content}
+                          {renderMessageContent(msg.content)}
                         </p>
 
                         <div
@@ -624,7 +650,7 @@ const Chat: React.FC = () => {
               {selectedChat.name || 'Contato'}
             </h4>
             <p className="text-xs font-medium text-tertiary uppercase tracking-wide mb-5">
-              {formatJid(selectedChat.jid)}
+              {formatDisplayJid(selectedChat.jid)}
             </p>
 
             <div className="flex flex-wrap justify-center gap-2">

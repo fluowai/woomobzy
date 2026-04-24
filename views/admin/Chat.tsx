@@ -552,7 +552,15 @@ const Chat: React.FC = () => {
                       >
                         {showSender && (
                           <p className="text-[11px] font-bold text-brand mb-1 truncate px-1">
-                            {msg.sender_name || 'Membro'}
+                            {(() => {
+                                const name = msg.sender_name;
+                                // Se for número gigante, tenta buscar no metadata do objeto
+                                if (!name || /^\d{15,}$/.test(name)) {
+                                    const metaPush = msg.metadata?.pushName || msg.metadata?.push_name;
+                                    if (metaPush && metaPush !== '~') return metaPush;
+                                }
+                                return name || 'Membro';
+                            })()}
                           </p>
                         )}
                         

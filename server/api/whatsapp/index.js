@@ -504,17 +504,24 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
       let resolvedSenderName = msg.sender_name;
       const senderJid = msg.sender_jid || msg.metadata?.key?.participant || msg.metadata?.participant;
 
-      // Se sender_name está com número ou nulo, tenta resolver
-      if (!resolvedSenderName || resolvedSenderName.startsWith('+') || /^\d+$/.test(resolvedSenderName)) {
-        if (senderJid) {
-          resolvedSenderName = nameMap.get(senderJid) || null;
+      // Se sender_name está com número, LID ou nulo, tenta resolver
+      const needsResolution = !resolvedSenderName || 
+                             resolvedSenderName.startsWith('+') || 
+                             /^\d{15,}$/.test(resolvedSenderName) ||
+                             resolvedSenderName === 'Membro';
+
+      if (needsResolution && senderJid) {
+        // Tenta resolver pelo mapa de contatos (ContactStore/Leads)
+        resolvedSenderName = nameMap.get(senderJid) || null;
+        
+        // Fallback 1: pushName direto do metadata (objeto bruto do Baileys)
+        if (!resolvedSenderName) {
+           const metaPush = msg.metadata?.pushName || msg.metadata?.push_name;
+           if (metaPush && metaPush !== '~') resolvedSenderName = metaPush;
         }
-        // Fallback: pushName do metadata
-        if (!resolvedSenderName && msg.metadata?.pushName && msg.metadata.pushName !== '~') {
-          resolvedSenderName = msg.metadata.pushName;
-        }
-        // Último fallback: formatar número (apenas se for PN real, não LID)
-        if (!resolvedSenderName && senderJid) {
+
+        // Fallback 2: formatar número (apenas se for PN real, não LID)
+        if (!resolvedSenderName) {
           const num = senderJid.split('@')[0].split(':')[0];
           const isLid = senderJid.includes('@lid') || num.length >= 15;
           
@@ -529,7 +536,7 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
               resolvedSenderName = `+${num}`;
             }
           } else {
-            resolvedSenderName = num; // Retorna o ID bruto do LID
+            resolvedSenderName = num; // ID bruto se for LID e nada resolver
           }
         }
       }

@@ -477,14 +477,28 @@ export class SessionManager extends EventEmitter {
         }
       }
 
-      // 4. Fallback final: PushName da mensagem ou ID Bruto
+      // 4. Fallback: Requisição direta ao WhatsApp caso não tenhamos nome
       if (!senderName) {
         if (message.pushName && message.pushName !== '~') {
           senderName = message.pushName;
-        } else {
-          const raw = finalSenderJid?.split('@')[0] || 'Desconhecido';
-          senderName = raw.length >= 15 ? raw : `+${raw}`;
+        } else if (session.sock && finalSenderJid) {
+            try {
+                // Última tentativa: força o Baileys a buscar o perfil ativo do usuário agora
+                const directContact = await session.sock.getContact(finalSenderJid).catch(() => null);
+                if (directContact && (directContact.name || directContact.notify)) {
+                    senderName = directContact.name || directContact.notify;
+                    this.contactStore.set(instanceId, finalSenderJid, { pushName: senderName });
+                }
+            } catch (e) {
+                // Ignore
+            }
         }
+      }
+
+      // 5. Fallback Final Irrecuperável: ID Bruto
+      if (!senderName) {
+           const raw = finalSenderJid?.split('@')[0] || 'Desconhecido';
+           senderName = raw.length >= 15 ? raw : `+${raw}`;
       }
 
       // ── Extração de Menções (contextInfo) ──────────────────────

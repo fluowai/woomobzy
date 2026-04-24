@@ -507,7 +507,7 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
       // Se sender_name está com número, LID ou nulo, tenta resolver
       const needsResolution = !resolvedSenderName || 
                              resolvedSenderName.startsWith('+') || 
-                             /^\d{15,}$/.test(resolvedSenderName) ||
+                             /^\d{12,}$/.test(resolvedSenderName) ||
                              resolvedSenderName === 'Membro';
 
       if (needsResolution && senderJid) {

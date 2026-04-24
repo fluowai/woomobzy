@@ -554,10 +554,22 @@ const Chat: React.FC = () => {
                           <p className="text-[11px] font-bold text-brand mb-1 truncate px-1">
                             {(() => {
                                 const name = msg.sender_name;
-                                // Se for número gigante, tenta buscar no metadata do objeto
-                                if (!name || /^\d{15,}$/.test(name)) {
+                                // Se for número (12+ dígitos), tenta buscar no metadata do objeto
+                                if (!name || /^\d{12,}$/.test(name) || name.startsWith('+55')) {
                                     const metaPush = msg.metadata?.pushName || msg.metadata?.push_name;
                                     if (metaPush && metaPush !== '~') return metaPush;
+                                    // Fallback: formatar número brasileiro
+                                    const num = (msg.sender_jid || '').split('@')[0].replace(/\D/g, '');
+                                    if (num.length >= 10) {
+                                        if (num.startsWith('55') && num.length >= 12) {
+                                            const ddd = num.slice(2, 4);
+                                            const rest = num.slice(4);
+                                            return rest.length === 9 
+                                                ? `+55 (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
+                                                : `+55 (${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
+                                        }
+                                        return `+${num}`;
+                                    }
                                 }
                                 return name || 'Membro';
                             })()}

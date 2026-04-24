@@ -74,24 +74,42 @@ export class PersistenceManager {
   }
 
   /**
-   * Lê e valida as credenciais do filesystem.
+   * Lê todas as credenciais do diretório de sessão.
+   * Agrupa no formato: { "creds.json": {}, "pre-key-xxx.json": {}, ... }
    * @param {string} instanceId
    * @returns {object|null}
    */
-  readCredsFromFS(instanceId) {
+  readFullSessionFromFS(instanceId) {
+    const sessionPath = this.getSessionPath(instanceId);
     const credsPath = this.getCredsPath(instanceId);
-    if (!fs.existsSync(credsPath)) return null;
+
+    if (!fs.existsSync(sessionPath) || !fs.existsSync(credsPath)) return null;
+
+    const sessionData = {};
+    let hasCreds = false;
+
     try {
-      const raw = fs.readFileSync(credsPath, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (!this.validateCreds(parsed)) {
-        console.warn(`[PersistenceManager] ❌ creds.json inválido para ${instanceId}. Deletando.`);
+      const files = fs.readdirSync(sessionPath);
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        try {
+          const raw = fs.readFileSync(path.join(sessionPath, file), 'utf8');
+          sessionData[file] = JSON.parse(raw);
+          if (file === 'creds.json') hasCreds = true;
+        } catch (e) {
+          console.warn(`[PersistenceManager] Ignorando arquivo ilegível ${file}:`, e.message);
+        }
+      }
+
+      if (!hasCreds || !this.validateCreds(sessionData['creds.json'])) {
+        console.warn(`[PersistenceManager] ❌ creds.json ausente/inválido para ${instanceId}. Limpando...`);
         this.deleteSessionFiles(instanceId);
         return null;
       }
-      return parsed;
-    } catch (e) {
-      console.error(`[PersistenceManager] ❌ Erro ao ler creds.json de ${instanceId}:`, e.message);
+
+      return sessionData;
+    } catch (err) {
+      console.error(`[PersistenceManager] ❌ Erro massivo ao ler diretório de ${instanceId}:`, err.message);
       this.deleteSessionFiles(instanceId);
       return null;
     }
@@ -154,21 +172,21 @@ export class PersistenceManager {
     const timer = setTimeout(async () => {
       this._debounceTimers.delete(instanceId);
       await this.withLock(instanceId, async () => {
-        const creds = this.readCredsFromFS(instanceId);
-        if (!creds) {
-          console.warn(`[PersistenceManager] ⚠️ Sync cancelado: creds inválidas para ${instanceId}`);
+        const fullSession = this.readFullSessionFromFS(instanceId);
+        if (!fullSession) {
+          console.warn(`[PersistenceManager] ⚠️ Sync cancelado: Sessão incompleta/inválida para ${instanceId}`);
           return;
         }
         try {
           const { error } = await getSupabase()
             .from('whatsapp_instances')
-            .update({ session_data: creds, updated_at: new Date().toISOString() })
+            .update({ session_data: fullSession, updated_at: new Date().toISOString() })
             .eq('id', instanceId);
 
           if (error) {
             console.error(`[PersistenceManager] ❌ Falha ao sincronizar DB para ${instanceId}:`, error.message);
           } else {
-            console.log(`[PersistenceManager] ✅ Credenciais sincronizadas com DB para ${instanceId}`);
+            console.log(`[PersistenceManager] ✅ Keys sincronizadas com DB para ${instanceId}`);
           }
         } catch (e) {
           console.error(`[PersistenceManager] ❌ Exceção no sync DB:`, e.message);
@@ -194,14 +212,11 @@ export class PersistenceManager {
     const sessionPath = this.getSessionPath(instanceId);
     const credsPath = this.getCredsPath(instanceId);
 
-    // 1. Verificar se já existe no FS
-    if (fs.existsSync(credsPath)) {
-      const creds = this.readCredsFromFS(instanceId); // valida ao ler
-      if (creds) {
-        console.log(`[PersistenceManager] ✅ Credenciais encontradas no FS para ${instanceId}`);
-        return true;
-      }
-      // Inválidas → vai tentar DB
+    // 1. Verificar se já existe no FS (Está completo?)
+    const fullSession = this.readFullSessionFromFS(instanceId);
+    if (fullSession) {
+      console.log(`[PersistenceManager] ✅ Sessão completa intacta no FS para ${instanceId}`);
+      return true;
     }
 
     // 2. Tentar recuperar do banco
@@ -218,10 +233,13 @@ export class PersistenceManager {
         return false;
       }
 
-      // Valida o que veio do banco antes de usar
-      if (!this.validateCreds(data.session_data)) {
+      // Identifica se está no formato antigo (só creds) ou novo (todas as chaves)
+      const isLegacy = !!data.session_data.noiseKey;
+      const credsInfo = isLegacy ? data.session_data : data.session_data['creds.json'];
+
+      // Valida o creds antes de usar
+      if (!credsInfo || !this.validateCreds(credsInfo)) {
         console.warn(`[PersistenceManager] ❌ session_data do DB inválido para ${instanceId}. QR necessário.`);
-        // Limpa o banco também para não tentar novamente
         await getSupabase()
           .from('whatsapp_instances')
           .update({ session_data: null })
@@ -229,12 +247,20 @@ export class PersistenceManager {
         return false;
       }
 
-      // Escreve no FS de forma atômica
       if (!fs.existsSync(sessionPath)) {
         fs.mkdirSync(sessionPath, { recursive: true });
       }
-      this.writeAtomic(credsPath, data.session_data);
-      console.log(`[PersistenceManager] ♻️ Sessão restaurada do DB para o FS: ${instanceId}`);
+
+      // Restaura pro disco atômicamente
+      if (isLegacy) {
+        this.writeAtomic(credsPath, credsInfo);
+        console.log(`[PersistenceManager] ♻️ Apenas creds restauradas (Legacy) para: ${instanceId}`);
+      } else {
+        for (const [filename, content] of Object.entries(data.session_data)) {
+          this.writeAtomic(path.join(sessionPath, filename), content);
+        }
+        console.log(`[PersistenceManager] ♻️ Sessão inteira restaurada do DB: ${instanceId}`);
+      }
       return true;
     } catch (e) {
       console.error(`[PersistenceManager] ❌ Erro ao recuperar sessão do DB:`, e.message);

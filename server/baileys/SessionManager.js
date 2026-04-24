@@ -797,23 +797,47 @@ export class SessionManager extends EventEmitter {
               .eq('id', chat.id);
           }
 
-          // Coleta os nomes de todos os participantes do grupo
+          // Coleta os nomes e mapeamentos de LIDs de todos os participantes do grupo
           if (metadata.participants) {
             for (const p of metadata.participants) {
-              if (p.id) {
-                this.contactStore.set(instanceId, p.id, {
-                  pushName: p.name || p.notify || null,
+              const jid = p.id;
+              const lid = p.lid; // Baileys fornece o LID separadamente se disponível
+
+              if (jid) {
+                const name = p.name || p.notify || null;
+                
+                // Salva o JID principal (PN)
+                this.contactStore.set(instanceId, jid, {
+                  pushName: name,
                   verifiedName: p.verifiedName || null,
+                  linkedJid: lid || null
                 });
 
                 contactBatch.push({
                   instance_id: instanceId,
-                  jid: p.id,
-                  push_name: p.name || p.notify || null,
+                  jid: jid,
+                  push_name: name,
                   verified_name: p.verifiedName || null,
                   notify: p.notify || null,
+                  linked_jid: lid || null,
                   updated_at: new Date().toISOString(),
                 });
+
+                // Se temos um LID, salvamos a entrada do LID apontando para o PN
+                if (lid && lid !== jid) {
+                  this.contactStore.set(instanceId, lid, {
+                    pushName: name,
+                    linkedJid: jid
+                  });
+                  
+                   contactBatch.push({
+                     instance_id: instanceId,
+                     jid: lid,
+                     push_name: name,
+                     linked_jid: jid,
+                     updated_at: new Date().toISOString(),
+                   });
+                }
               }
             }
           }

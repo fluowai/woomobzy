@@ -469,10 +469,10 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
 
     if (error) throw error;
 
-    // 2. Busca contatos do ContactStore para resolver nomes
+    // 2. Busca contatos do ContactStore para mapeamento e nomes
     const { data: contacts } = await supabase
       .from('whatsapp_contacts')
-      .select('jid, push_name, verified_name, notify')
+      .select('jid, push_name, verified_name, notify, linked_jid')
       .eq('instance_id', instanceId);
 
     // 3. Busca leads para enriquecer identidades
@@ -481,8 +481,9 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
       .select('name, phone')
       .eq('organization_id', req.orgId);
 
-    // Mapa de resolução: JID → melhor nome
-    const nameMap = new Map();
+    // Mapas de resolução
+    const nameMap = new Map();      // Chave: JID (PN ou LID) -> Nome
+    const lidMapping = new Map();   // Chave: LID -> PN
 
     // Prioridade 1: Contatos do WhatsApp (ContactStore)
     for (const c of (contacts || [])) {
@@ -490,37 +491,51 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
       if (name && name !== '~') {
         nameMap.set(c.jid, name);
       }
-    }
-
-    // Prioridade 2: Leads do CRM (sobrescreve se existir)
-    for (const l of (leads || [])) {
-      if (l.phone && l.name) {
-        nameMap.set(`${l.phone}@s.whatsapp.net`, l.name);
+      // Se for um mapeamento LID <-> PN
+      if (c.linked_jid) {
+        if (c.jid.includes('@lid')) lidMapping.set(c.jid, c.linked_jid);
+        else if (c.linked_jid.includes('@lid')) lidMapping.set(c.linked_jid, c.jid);
       }
     }
 
-    // 4. Enriquece cada mensagem
+    // Prioridade 2: Leads do CRM (mapeia apenas para PNs)
+    for (const l of (leads || [])) {
+      if (l.phone && l.name) {
+        const pnJid = `${l.phone}@s.whatsapp.net`;
+        nameMap.set(pnJid, l.name);
+      }
+    }
+
+    // 4. Enriquece cada mensagem com inteligência cruzada
     const enrichedMessages = (messages || []).map(msg => {
       let resolvedSenderName = msg.sender_name;
       const senderJid = msg.sender_jid || msg.metadata?.key?.participant || msg.metadata?.participant;
 
-      // Se sender_name está com número, LID ou nulo, tenta resolver
-      const needsResolution = !resolvedSenderName || 
-                             resolvedSenderName.startsWith('+') || 
-                             /^\d{12,}$/.test(resolvedSenderName) ||
-                             resolvedSenderName === 'Membro';
+      // Se sender_name está com número, LID ou nulo, tenta resolução triangular
+      const looksLikeId = !resolvedSenderName || 
+                         resolvedSenderName.startsWith('+') || 
+                         /^\d{12,}$/.test(resolvedSenderName) ||
+                         resolvedSenderName === 'Membro';
 
-      if (needsResolution && senderJid) {
-        // Tenta resolver pelo mapa de contatos (ContactStore/Leads)
+      if (looksLikeId && senderJid) {
+        // Tenta resolver direto (se já mapeamos o nome pro JID enviado)
         resolvedSenderName = nameMap.get(senderJid) || null;
+
+        // Se falhou e for um LID, tenta resolver via PN mapeado
+        if (!resolvedSenderName && (senderJid.includes('@lid') || senderJid.split('@')[0].length >= 15)) {
+           const pn = lidMapping.get(senderJid);
+           if (pn) {
+             resolvedSenderName = nameMap.get(pn);
+           }
+        }
         
-        // Fallback 1: pushName direto do metadata (objeto bruto do Baileys)
+        // Fallback: pushName do metadata bruto do Baileys
         if (!resolvedSenderName) {
            const metaPush = msg.metadata?.pushName || msg.metadata?.push_name;
            if (metaPush && metaPush !== '~') resolvedSenderName = metaPush;
         }
 
-        // Fallback 2: formatar número (apenas se for PN real, não LID)
+        // Último fallback: formatar número (se for PN real)
         if (!resolvedSenderName) {
           const num = senderJid.split('@')[0].split(':')[0];
           const isLid = senderJid.includes('@lid') || num.length >= 15;

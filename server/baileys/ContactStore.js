@@ -40,9 +40,16 @@ export class ContactStore {
       short_name: data.shortName || data.short_name || existing.short_name || null,
       profile_photo_url: data.profilePictureUrl || data.profile_photo_url || existing.profile_photo_url || null,
       is_business: data.isBusiness ?? existing.is_business ?? false,
+      // NOVO: Link entre LID e PN para resolução cross-data
+      linked_jid: data.linkedJid || data.linked_jid || existing.linked_jid || null,
       updated_at: new Date().toISOString(),
     };
     
+    // Se recebemos um mapeamento explícito (ex: JID é LID e temos o PN), salvamos cruzado
+    if (data.linkedJid && data.linkedJid !== jid) {
+       // Opcional: Criar entrada para o JID espelho também para garantir resolução nos dois sentidos
+    }
+
     store.set(jid, merged);
     return merged;
   }

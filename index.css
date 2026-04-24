@@ -7,12 +7,12 @@
   ============================================ */
 
   /* Cor Principal da Marca (Sincronizada com constants.tsx) */
-  --color-primary: #FF6B00; /* vibrant orange */
+  --color-primary: #ff6b00; /* vibrant orange */
   --color-primary-hover: #e66000;
-  --color-primary-light: #FF8533;
+  --color-primary-light: #ff8533;
 
   /* Cor de Destaque / Accent (Sincronizada com constants.tsx) */
-  --color-accent: #1E293B; /* slate 800 */
+  --color-accent: #1e293b; /* slate 800 */
   --color-accent-hover: #0f172a;
 
   /* Alias para compatibilidade com componentes legados */
@@ -33,15 +33,16 @@
   --color-border: #e2e8f0;
   --color-border-subtle: #f1f5f9;
 
-  /* Transparências da Primária */
-  --color-primary-alpha-10: rgba(0, 120, 80, 0.1);
-  --color-primary-alpha-15: rgba(0, 120, 80, 0.15);
-  --color-primary-alpha-20: rgba(0, 120, 80, 0.2);
+  /* Transparências da Primária (Sincronizadas com o Orange FF6B00) */
+  --color-primary-alpha-10: rgba(255, 107, 0, 0.1);
+  --color-primary-alpha-15: rgba(255, 107, 0, 0.15);
+  --color-primary-alpha-20: rgba(255, 107, 0, 0.2);
 
-  /* Sombras */
-  --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  --shadow-card: 0 4px 20px -5px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  /* Sombras (Refinadas para serem mais sutis e modernas) */
+  --shadow-premium: 0 10px 40px -12px rgba(0, 0, 0, 0.15);
+  --shadow-card: 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  --shadow-lg:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
   /* Border Radius */
   --radius-sm: 8px;
@@ -52,15 +53,15 @@
 
   /* Typography Scale */
   --font-primary: 'Inter', 'Outfit', system-ui, sans-serif;
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;    /* 20px */
-  --font-size-2xl: 1.5rem;    /* 24px */
-  --font-size-3xl: 2rem;      /* 32px */
-  --font-size-4xl: 2.5rem;    /* 40px */
-  
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 2rem; /* 32px */
+  --font-size-4xl: 2.5rem; /* 40px */
+
   --line-height-tight: 1.2;
   --line-height-snug: 1.4;
   --line-height-base: 1.6;
@@ -114,17 +115,21 @@
      Sobrescreve estilos legados para manter o visual premium, 
      mas evita o uso indiscriminado de !important onde possível.
   ============================================ */
-  
+
   /* Seção de Containers e Fundos */
   .layout-container {
     background-color: var(--color-bg-primary);
     min-height: 100vh;
   }
-  
+
   /* Ajustes de Contraste para legibilidade */
-  .text-secondary { color: var(--color-text-secondary); }
-  .text-tertiary { color: var(--color-text-tertiary); }
-  
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+  .text-tertiary {
+    color: var(--color-text-tertiary);
+  }
+
   /* Escopo Dark (Opcional: use em wrappers para forçar o tema) */
   .dark-mode-force {
     --color-bg-card: #12151c;
@@ -137,12 +142,16 @@
     width: 6px;
     height: 6px;
   }
-  ::-webkit-scrollbar-track { background: var(--color-bg-primary); }
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg-primary);
+  }
   ::-webkit-scrollbar-thumb {
     background: var(--color-border);
     border-radius: var(--radius-full);
   }
-  ::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-tertiary);
+  }
 
   /* Seleção */
   ::selection {
@@ -157,7 +166,8 @@
   }
 
   /* Tipografia Base */
-  h1, .h1 {
+  h1,
+  .h1 {
     font-size: var(--font-size-3xl);
     font-weight: var(--font-weight-bold);
     line-height: var(--line-height-tight);
@@ -165,7 +175,8 @@
     margin-bottom: 1.5rem;
   }
 
-  h2, .h2 {
+  h2,
+  .h2 {
     font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-bold);
     line-height: var(--line-height-snug);
@@ -173,14 +184,16 @@
     margin-bottom: 1.25rem;
   }
 
-  h3, .h3 {
+  h3,
+  .h3 {
     font-size: var(--font-size-xl);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-snug);
     margin-bottom: 1rem;
   }
 
-  p, .body {
+  p,
+  .body {
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-normal);
     line-height: var(--line-height-base);
@@ -222,7 +235,11 @@
   }
 
   .card-premium {
-    background: linear-gradient(145deg, var(--color-bg-card), var(--color-bg-hover));
+    background: linear-gradient(
+      145deg,
+      var(--color-bg-card),
+      var(--color-bg-hover)
+    );
     border: 1px solid var(--color-border);
     box-shadow: var(--shadow-card);
   }
@@ -315,7 +332,9 @@
   }
 
   /* INPUTS */
-  .input-field, .select-field, .textarea-field {
+  .input-field,
+  .select-field,
+  .textarea-field {
     width: 100%;
     padding: 0.75rem 1rem;
     font-size: var(--font-size-sm);
@@ -332,7 +351,9 @@
     color: var(--color-text-tertiary);
   }
 
-  .input-field:focus, .select-field:focus, .textarea-field:focus {
+  .input-field:focus,
+  .select-field:focus,
+  .textarea-field:focus {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-alpha-15);
     background-color: var(--color-bg-card);
@@ -387,24 +408,47 @@
     animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-  .animate-slide-up { animation: slideUp 0.5s ease-out; }
-  .animate-pulse-subtle { animation: pulse-subtle 3s infinite; }
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  .animate-pulse-subtle {
+    animation: pulse-subtle 3s infinite;
+  }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.02); }
-}
+  @keyframes pulse-subtle {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+  }
 
   /* ============================================
      WHATSAPP CHAT STYLE
@@ -417,8 +461,12 @@
     transition: background-color 150ms ease;
     border-bottom: 1px solid var(--color-border-subtle);
   }
-  .chat-list-item:hover { background-color: rgba(255,255,255,0.04); }
-  .chat-list-item.active { background-color: var(--color-primary-alpha-15); }
+  .chat-list-item:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+  .chat-list-item.active {
+    background-color: var(--color-primary-alpha-15);
+  }
 
   .message-sent {
     background-color: var(--color-primary);
@@ -442,39 +490,77 @@
 @layer utilities {
   /* Hover lift */
   .hover-lift {
-    transition: transform 300ms ease, box-shadow 300ms ease;
+    transition:
+      transform 300ms ease,
+      box-shadow 300ms ease;
   }
-  .hover-lift:hover { transform: translateY(-3px); }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+  }
 
   /* Text gradient */
   .text-gradient-primary {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    background: linear-gradient(
+      135deg,
+      var(--color-primary),
+      var(--color-primary-light)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   /* Utility aliases */
-  .bg-primary { background-color: var(--color-primary); }
-  .bg-card { background-color: var(--color-bg-card); }
-  .bg-hover { background-color: var(--color-bg-hover); }
-  .bg-brand { background-color: var(--color-primary); }
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+  .bg-card {
+    background-color: var(--color-bg-card);
+  }
+  .bg-hover {
+    background-color: var(--color-bg-hover);
+  }
+  .bg-brand {
+    background-color: var(--color-primary);
+  }
 
-  .text-primary { color: var(--color-text-primary); }
-  .text-secondary { color: var(--color-text-secondary); }
-  .text-tertiary { color: var(--color-text-tertiary); }
-  .text-brand { color: var(--color-primary); }
-  .text-accent { color: var(--color-accent); }
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+  .text-tertiary {
+    color: var(--color-text-tertiary);
+  }
+  .text-brand {
+    color: var(--color-primary);
+  }
+  .text-accent {
+    color: var(--color-accent);
+  }
 
-  .border-subtle { border-color: var(--color-border-subtle); }
+  .border-subtle {
+    border-color: var(--color-border-subtle);
+  }
 
   @keyframes pulse-subtle-util {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
   }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }

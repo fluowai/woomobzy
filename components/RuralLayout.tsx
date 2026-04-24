@@ -42,11 +42,6 @@ const RuralLayout: React.FC = () => {
       title: 'VISÃO GERAL',
       items: [
         { icon: Sparkles, label: 'Painel 360 ✨', path: '/rural/360' },
-        {
-          icon: LayoutDashboard,
-          label: 'Dashboard Operacional',
-          path: '/rural',
-        },
         { icon: PieChart, label: 'BI & Relatórios', path: '/rural/reports' },
       ],
     },
@@ -54,7 +49,7 @@ const RuralLayout: React.FC = () => {
       title: 'COMERCIAL',
       items: [
         { icon: Users, label: 'Leads & CRM', path: '/rural/crm' },
-        { icon: MessageSquare, label: 'Mensagens', path: '/rural/chat' },
+        { icon: MessageSquare, label: 'Atendimento Chat', path: '/rural/chat' },
         {
           icon: Share2,
           label: 'Conexões WhatsApp',
@@ -71,11 +66,6 @@ const RuralLayout: React.FC = () => {
           label: 'Cadastro Técnico',
           path: '/rural/cadastro-tecnico',
         },
-        {
-          icon: MapIcon,
-          label: 'Geointeligência',
-          path: '/rural/geointeligencia',
-        },
       ],
     },
     {
@@ -91,29 +81,12 @@ const RuralLayout: React.FC = () => {
       ],
     },
     {
-      title: 'CAPTAÇÃO',
-      items: [
-        { icon: Globe, label: 'Landing Pages', path: '/rural/landing-pages' },
-        { icon: Clock3, label: 'Lista de Espera', path: '/rural/waitlist' },
-        {
-          icon: UserCheck,
-          label: 'Portal Comprador',
-          path: '/rural/portal-comprador',
-        },
-        {
-          icon: Users,
-          label: 'Portal Proprietário',
-          path: '/rural/portal-proprietario',
-        },
-      ],
-    },
-    {
       title: 'SISTEMA',
       items: [
-        { icon: Sparkles, label: 'IA Studio', path: '/rural/ai-assistant' },
+        { icon: Globe, label: 'Landing Pages', path: '/rural/landing-pages' },
         {
           icon: Eye,
-          label: 'Editor Visual de Site',
+          label: 'Editor Visual',
           path: '/rural/visual-editor',
         },
         { icon: Settings, label: 'Configurações', path: '/rural/settings' },

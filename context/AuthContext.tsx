@@ -143,7 +143,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       const timeoutPromise = new Promise(
         (_, reject) =>
-          setTimeout(() => reject(new Error('Profile query timeout')), 10000) // 10s timeout
+          setTimeout(() => reject(new Error('Profile query timeout')), 30000) // 30s timeout
       );
 
       const { data: profileData, error: profileError } = (await Promise.race([

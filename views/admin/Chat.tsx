@@ -558,8 +558,14 @@ const Chat: React.FC = () => {
                                 if (!name || /^\d{12,}$/.test(name) || name.startsWith('+55')) {
                                     const metaPush = msg.metadata?.pushName || msg.metadata?.push_name;
                                     if (metaPush && metaPush !== '~') return metaPush;
-                                    // Fallback: formatar número brasileiro
-                                    const num = (msg.sender_jid || '').split('@')[0].replace(/\D/g, '');
+                                    // Fallback: formatar número brasileiro ou exibir ID técnico
+                                    const rawJid = msg.sender_jid || '';
+                                    const num = rawJid.split('@')[0].replace(/\D/g, '');
+                                    
+                                    if (rawJid.includes('@lid') || num.length >= 15) {
+                                      return `ID: ${num}`; // Mostra claramente que é um ID e não tem '+'
+                                    }
+
                                     if (num.length >= 10) {
                                         if (num.startsWith('55') && num.length >= 12) {
                                             const ddd = num.slice(2, 4);

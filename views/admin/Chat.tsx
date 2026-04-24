@@ -277,6 +277,22 @@ const Chat: React.FC = () => {
     return `+${num}`;
   };
 
+  const jidToName = React.useMemo(() => {
+    const map = new Map<string, string>();
+    messages.forEach((m) => {
+      const name = m.sender_name && !m.sender_name.startsWith('+') 
+        ? m.sender_name 
+        : (m.metadata?.pushName && m.metadata.pushName !== '~' ? m.metadata.pushName : null);
+      
+      const fullJid = m.metadata?.key?.participant || m.metadata?.participant || m.metadata?.key?.remoteJid;
+      if (name && fullJid) {
+        const cleanNum = fullJid.split('@')[0].split(':')[0];
+        map.set(cleanNum, name);
+      }
+    });
+    return map;
+  }, [messages]);
+
   const renderMessageContent = (content: string) => {
     if (!content) return '';
     const mentionRegex = /@(\d{10,15})/g;
@@ -284,9 +300,10 @@ const Chat: React.FC = () => {
     
     return parts.map((part, i) => {
       if (i % 2 === 1) {
+        const name = jidToName.get(part);
         return (
           <span key={i} className="text-brand font-bold bg-brand/5 px-1 rounded-sm">
-            @{part}
+            @{name || part}
           </span>
         );
       }
@@ -513,7 +530,11 @@ const Chat: React.FC = () => {
                       >
                         {showSender && (
                           <p className="text-[11px] font-bold text-brand mb-1 truncate">
-                            {msg.sender_name || 'Membro'}
+                            {msg.sender_name && !msg.sender_name.startsWith('+') 
+                                ? msg.sender_name 
+                                : (msg.metadata?.pushName && msg.metadata.pushName !== '~' 
+                                    ? msg.metadata.pushName 
+                                    : (msg.sender_name || 'Membro'))}
                           </p>
                         )}
                         

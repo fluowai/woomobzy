@@ -451,27 +451,37 @@ export class SessionManager extends EventEmitter {
       let senderName = null;
       let finalSenderJid = senderJid;
 
-      // Tenta extrair o Telefone Real (PN) caso o remetente seja um LID
+      // 1. Tenta extrair Telefone Real (PN) do LID
       if (senderJid && senderJid.includes('@lid')) {
-        // O Baileys às vezes fornece o PN (Phone Number) vinculado ao LID
         const pnJid = message.metadata?.pnJid || message.pnJid;
         if (pnJid) {
           finalSenderJid = pnJid;
-          // Salva esse mapeamento no ContactStore para o futuro
           this.contactStore.set(instanceId, senderJid, { verifiedName: pnJid.split('@')[0] });
         }
       }
 
+      // 2. Busca no ContactStore
       if (finalSenderJid) {
         senderName = this.contactStore.resolveName(instanceId, finalSenderJid, message.pushName);
       }
 
-      // Fallback final: prioriza PushName, senão ID Bruto
+      // 3. AGRESSIVO: Se ainda é número/LID, busca na memória do socket do Baileys
+      if (!senderName || /^\d+$/.test(senderName) || senderName.length >= 15) {
+        const sockContact = session.sock?.contacts?.[finalSenderJid] || session.sock?.contacts?.[senderJid];
+        if (sockContact) {
+          senderName = sockContact.name || sockContact.notify || sockContact.verifiedName || null;
+          if (senderName) {
+            // Atualiza o store com o que achamos na memória do socket
+            this.contactStore.set(instanceId, finalSenderJid, { pushName: senderName });
+          }
+        }
+      }
+
+      // 4. Fallback final: PushName da mensagem ou ID Bruto
       if (!senderName) {
         if (message.pushName && message.pushName !== '~') {
           senderName = message.pushName;
         } else {
-          // Se não tem nome, mostra o ID original (sem + se for LID)
           const raw = finalSenderJid?.split('@')[0] || 'Desconhecido';
           senderName = raw.length >= 15 ? raw : `+${raw}`;
         }

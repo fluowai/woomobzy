@@ -18,6 +18,8 @@ import {
   DollarSign,
   Headset,
   Briefcase,
+  Search,
+  Plus,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';

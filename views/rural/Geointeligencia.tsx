@@ -12,10 +12,9 @@ import {
   Mountain,
 } from 'lucide-react';
 import {
-  MapContainer,
-  TileLayer,
   LayersControl,
   WMSTileLayer,
+  FeatureGroup,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -272,22 +271,24 @@ const Geointeligencia: React.FC = () => {
               </LayersControl.BaseLayer>
             </LayersControl>
             
-            <EditControl
-              position="topleft"
-              onCreated={handleCreated}
-              draw={{
-                rectangle: false,
-                circle: false,
-                circlemarker: false,
-                marker: true,
-                polyline: true,
-                polygon: {
-                  allowIntersection: false,
-                  drawError: { color: '#e1e100', message: 'Assinatura inválida!' },
-                  shapeOptions: { color: '#10b981' }
-                }
-              }}
-            />
+            <FeatureGroup>
+              <EditControl
+                position="topleft"
+                onCreated={handleCreated}
+                draw={{
+                  rectangle: false,
+                  circle: false,
+                  circlemarker: false,
+                  marker: true,
+                  polyline: true,
+                  polygon: {
+                    allowIntersection: false,
+                    drawError: { color: '#e1e100', message: 'Assinatura inválida!' },
+                    shapeOptions: { color: '#10b981' }
+                  }
+                }}
+              />
+            </FeatureGroup>
 
             {layers.filter(l => l.active && l.url).map(layer => (
               <WMSTileLayer

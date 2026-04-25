@@ -56,6 +56,10 @@ router.post('/leads', contactLimiter, async (req, res) => {
         email,
         phone,
         source: source || 'Public / Landing Page',
+        ad_reference: req.body.ad_reference,
+        organic_channel: req.body.organic_channel,
+        campaign: req.body.campaign,
+        notes: req.body.notes,
         status: 'Novo'
       }])
       .select().single();

@@ -21,6 +21,10 @@ export const leadService = {
         email: lead.email,
         property_id: lead.propertyId,
         source: lead.source,
+        ad_reference: lead.ad_reference,
+        organic_channel: lead.organic_channel,
+        campaign: lead.campaign,
+        notes: lead.notes,
       }),
     });
 
@@ -59,6 +63,10 @@ const mapToModel = (dbItem: any): Lead => ({
   chat_jid: dbItem.chat_jid,
   createdAt: dbItem.created_at,
   propertyId: dbItem.property_id,
+  ad_reference: dbItem.ad_reference,
+  organic_channel: dbItem.organic_channel,
+  campaign: dbItem.campaign,
+  last_contacted_at: dbItem.last_contacted_at,
   property: dbItem.properties
     ? {
         title: dbItem.properties.title,

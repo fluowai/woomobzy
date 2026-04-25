@@ -282,6 +282,10 @@ export interface Lead {
     price: number;
     image: string;
   };
+  ad_reference?: string;
+  organic_channel?: string;
+  last_contacted_at?: string;
+  campaign?: string;
 }
 
 export interface User {

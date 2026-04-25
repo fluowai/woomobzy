@@ -45,6 +45,10 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
     email: '',
     phone: '',
     source: 'Manual / CRM',
+    ad_reference: '',
+    organic_channel: '',
+    campaign: '',
+    notes: '',
   });
 
   if (!isOpen) return null;
@@ -101,30 +105,56 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                WhatsApp
+                Origem do Lead
               </label>
-              <input
-                required
+              <select
                 className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-              />
+                value={formData.source}
+                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+              >
+                <option value="Manual / CRM">Manual / CRM</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Facebook">Facebook</option>
+                <option value="Google Ads">Google Ads</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Site / Landing Page">Site / Landing Page</option>
+                <option value="Portal Imobiliário">Portal Imobiliário</option>
+              </select>
             </div>
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                E-mail
+                Ref. Anúncio
               </label>
               <input
-                type="email"
+                placeholder="Ex: Fazenda MS-120"
                 className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                value={formData.ad_reference}
+                onChange={(e) => setFormData({ ...formData, ad_reference: e.target.value })}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+              Canal Orgânico / Campanha
+            </label>
+            <input
+              placeholder="Ex: Bio Instagram / Lançamento Verão"
+              className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+              value={formData.organic_channel}
+              onChange={(e) => setFormData({ ...formData, organic_channel: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+              Notas Iniciais
+            </label>
+            <textarea
+              className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold min-h-[100px]"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            />
           </div>
           <button
             disabled={loading}
@@ -138,7 +168,129 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
   );
 };
 
-const PIPELINE_STAGES = [
+const LeadDetailsModal: React.FC<{
+  lead: Lead | null;
+  isOpen: boolean;
+  onClose: () => void;
+}> = ({ lead, isOpen, onClose }) => {
+  if (!isOpen || !lead) return null;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100">
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center font-black text-xl">
+              {lead.name.charAt(0)}
+            </div>
+            <div>
+              <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-tight">
+                {lead.name}
+              </h3>
+              <p className="text-white/60 text-xs font-bold uppercase tracking-widest">
+                Detalhes do Lead
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-3 hover:bg-white/10 rounded-full transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            <div className="space-y-6">
+               <section>
+                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Informações de Contato</h5>
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><Phone size={14} /></div>
+                      <span className="font-bold text-slate-700">{lead.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><User size={14} /></div>
+                      <span className="font-bold text-slate-700">{lead.email || 'Não informado'}</span>
+                    </div>
+                 </div>
+               </section>
+
+               <section>
+                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Linha do Tempo</h5>
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center"><Clock3 size={14} /></div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Entrou em contato</span>
+                        <span className="font-bold text-slate-700">{new Date(lead.createdAt).toLocaleString('pt-BR')}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center"><Clock3 size={14} /></div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Última Interação</span>
+                        <span className="font-bold text-slate-700">{lead.last_contacted_at ? new Date(lead.last_contacted_at).toLocaleString('pt-BR') : 'Sem registro'}</span>
+                      </div>
+                    </div>
+                 </div>
+               </section>
+            </div>
+
+            <div className="space-y-6">
+               <section className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Origem & Marketing</h5>
+                 <div className="space-y-5">
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Cadeia de Origem</span>
+                      <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold">{lead.source}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Canal / Campanha</span>
+                      <span className="font-bold text-slate-700 text-sm">{lead.organic_channel || 'Direto / Desconhecido'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Anúncio de Referência</span>
+                      <span className="font-bold text-indigo-600 text-sm">{lead.ad_reference || 'Nenhum anúncio identificado'}</span>
+                    </div>
+                 </div>
+               </section>
+
+               {lead.property && (
+                 <section>
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Imóvel de Interesse</h5>
+                    <div className="bg-white border border-slate-100 p-3 rounded-2xl flex items-center gap-3 shadow-sm">
+                       <img src={lead.property.image} className="w-12 h-12 rounded-xl object-cover" />
+                       <div className="min-w-0">
+                         <p className="text-xs font-bold text-slate-900 truncate">{lead.property.title}</p>
+                         <p className="text-[11px] font-bold text-emerald-600">{lead.property.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
+                       </div>
+                    </div>
+                 </section>
+               )}
+            </div>
+          </div>
+
+          <section>
+            <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Anotações e Histórico</h5>
+            <div className="bg-amber-50/50 border border-amber-100 p-6 rounded-3xl min-h-[120px]">
+               <p className="text-slate-800 font-medium italic whitespace-pre-wrap">
+                 {lead.notes || 'Nenhuma nota registrada para este lead.'}
+               </p>
+            </div>
+          </section>
+        </div>
+
+        <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-4">
+           <button onClick={onClose} className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-colors">
+              Fechar
+           </button>
+           <button className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-700 transition-shadow shadow-lg shadow-indigo-500/20">
+              Editar Lead
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
   {
     id: 'Novo',
     label: 'Novos',
@@ -183,6 +335,8 @@ const KanbanBoard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const { profile } = useAuth();
   const isImpersonating = !!localStorage.getItem('impersonatedOrgId');
@@ -249,10 +403,10 @@ const KanbanBoard: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900">
-            Pipeline de Vendas
+          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">
+            PROCESSO DE VENDAS (KANBAN)
           </h1>
-          <p className="text-slate-500">Gerencie seus leads e oportunidades</p>
+          <p className="text-slate-500 font-medium">Gestão inteligente de funil e leads.</p>
         </div>
 
         <div className="relative">
@@ -283,6 +437,15 @@ const KanbanBoard: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => loadLeads()}
         orgId={targetOrgId}
+      />
+
+      <LeadDetailsModal
+        lead={selectedLead}
+        isOpen={isDetailsOpen}
+        onClose={() => {
+          setIsDetailsOpen(false);
+          setSelectedLead(null);
+        }}
       />
 
       <div className="flex-1 overflow-x-auto pb-4">
@@ -330,7 +493,11 @@ const KanbanBoard: React.FC = () => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group ${snapshot.isDragging ? 'rotate-2 shadow-xl ring-2 ring-indigo-500/20' : ''}`}
+                                onClick={() => {
+                                  setSelectedLead(lead);
+                                  setIsDetailsOpen(true);
+                                }}
+                                className={`bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group cursor-pointer ${snapshot.isDragging ? 'rotate-2 shadow-xl ring-2 ring-indigo-500/20' : ''}`}
                               >
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex items-center gap-2">

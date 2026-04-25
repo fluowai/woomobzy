@@ -44,7 +44,7 @@ const RuralLayout: React.FC = () => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
     { icon: MessageSquare, label: 'Central de Atendimento', path: '/rural/chat' },
-    { icon: Users, label: 'Leads & CRM', path: '/rural/crm' },
+    { icon: Users, label: 'Kanban', path: '/rural/crm' },
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Mapas & Georreferenciamento', path: '/rural/maps' },
     { icon: FileCheck, label: 'Documentação Rural', path: '/rural/due-diligence' },

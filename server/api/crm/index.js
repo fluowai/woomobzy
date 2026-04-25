@@ -57,12 +57,16 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
     const { data, error } = await supabase
       .from('leads')
       .insert({
-        organization_id: req.orgId, // FORÇADO PELO BACKEND
+        organization_id: req.orgId, 
         name,
         phone,
         email,
         property_id,
         source: source || 'CRM / Manual',
+        ad_reference: req.body.ad_reference,
+        organic_channel: req.body.organic_channel,
+        campaign: req.body.campaign,
+        notes: req.body.notes,
         status: 'Novo'
       })
       .select()

@@ -466,6 +466,7 @@ const Chat: React.FC = () => {
                   <p className="text-[11px] font-bold text-brand uppercase tracking-widest mt-0.5">{selectedChat.jid.endsWith('@g.us') ? 'Em grupo' : 'Chat Individual'}</p>
                 </div>
               </div>
+              <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setIsSelectionMode(!isSelectionMode)}
                   className={`p-2 rounded-full transition-all ${isSelectionMode ? 'bg-brand text-white shadow-lg' : 'text-tertiary hover:text-brand'}`}

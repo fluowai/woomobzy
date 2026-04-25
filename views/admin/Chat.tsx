@@ -490,7 +490,7 @@ const Chat: React.FC = () => {
                 backgroundColor: 'var(--color-wa-bg)'
               }}
             >
-              <div className="max-w-6xl mx-auto space-y-2 lg:px-10">
+              <div className="flex flex-col space-y-1">
                 {messages.map((msg, i) => {
                   const isGroup = selectedChat?.jid.endsWith('@g.us');
                   const showSender = isGroup && !msg.from_me;
@@ -516,14 +516,25 @@ const Chat: React.FC = () => {
                         </div>
                       )}
                       <div className={`flex-1 flex flex-col ${msg.from_me ? 'items-end' : 'items-start'}`}>
-                        <div className={`group relative max-w-[85%] sm:max-w-[70%] px-3 py-1.5 rounded-xl shadow-sm transition-all ${msg.from_me ? 'bg-wa-bubble-sent text-text-primary rounded-tr-none' : 'bg-wa-bubble-received text-text-primary rounded-tl-none'}`}>
+                        <div className={`group relative max-w-[85%] sm:max-w-[70%] px-2.5 py-1.5 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] transition-all ${
+                          msg.from_me 
+                            ? 'bg-[#d9fdd3] text-[#111b21] rounded-l-lg rounded-br-lg rounded-tr-none' 
+                            : 'bg-white text-[#111b21] rounded-r-lg rounded-bl-lg rounded-tl-none'
+                        }`}>
+                          {/* Rabicho (Tail) simplificado via pseudo-elementos ou SVG seria melhor, mas vamos usar classes de borda */}
+                          <div className={`absolute top-0 w-2 h-3 ${
+                            msg.from_me 
+                              ? '-right-2 bg-[#d9fdd3] [clip-path:polygon(0_0,0_100%,100%_0)]' 
+                              : '-left-2 bg-white [clip-path:polygon(100%_0,100%_100%,0_0)]'
+                          }`} />
+
                           {showSender && (
-                            <p className="text-[11px] font-bold text-brand mb-1 truncate px-1">
+                            <p className="text-[12.5px] font-semibold text-brand mb-0.5 truncate px-1">
                               {msg.sender_name || formatDisplayJid(msg.sender_jid || '')}
                             </p>
                           )}
                           {msg.media_url && (
-                            <div className="mb-2 rounded-lg overflow-hidden border border-black/5 bg-black/5">
+                            <div className="mb-1 rounded-md overflow-hidden border border-black/5 bg-black/5">
                               {msg.message_type === 'imageMessage' ? (
                                 <img src={msg.media_url} alt="Mídia" className="max-w-full max-h-[300px] object-contain hover:scale-[1.02] transition-transform cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')} />
                               ) : msg.message_type === 'audioMessage' ? (
@@ -536,12 +547,14 @@ const Chat: React.FC = () => {
                               )}
                             </div>
                           )}
-                          <p className="text-[14px] font-normal leading-snug break-words whitespace-pre-wrap">{renderMessageContent(msg.content)}</p>
-                          <div className={`flex items-center justify-end gap-1 text-[9px] font-medium mt-1 -mr-1 ${msg.from_me ? 'text-wa-time-sent' : 'text-wa-time-received'}`}>
+                          <p className="text-[14.2px] font-normal leading-relaxed break-words whitespace-pre-wrap">
+                            {renderMessageContent(msg.content)}
+                          </p>
+                          <div className={`flex items-center justify-end gap-1 text-[11px] mt-1 -mb-0.5 opacity-70 ${msg.from_me ? 'text-[#667781]' : 'text-[#667781]'}`}>
                             {formatTime(msg.timestamp)}
                             {msg.from_me && (
                               <div className="ml-1">
-                                {msg.status === 'read' ? <CheckCheck size={12} className="text-wa-check-read" /> : msg.status === 'delivered' ? <CheckCheck size={12} className="text-wa-check-delivered" /> : <Check size={12} className="text-wa-check-sent" />}
+                                {msg.status === 'read' ? <CheckCheck size={14} className="text-[#53bdeb]" /> : msg.status === 'delivered' ? <CheckCheck size={14} /> : <Check size={14} />}
                               </div>
                             )}
                           </div>
@@ -603,7 +616,7 @@ const Chat: React.FC = () => {
                     <Paperclip size={24} />
                   </button>
                 </div>
-                                <div className="flex-1 bg-wa-msg-received rounded-lg px-4 py-2 border border-white/5 focus-within:border-white/10 transition-all">
+                                <div className="flex-1 bg-white rounded-lg px-4 py-2.5 border border-white/5 shadow-sm transition-all">
                   <input
                     type="text"
                     value={newMessage}

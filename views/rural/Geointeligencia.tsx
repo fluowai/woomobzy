@@ -59,8 +59,8 @@ const Geointeligencia: React.FC = () => {
     },
     {
       name: 'CAR (Cadastro Ambiental)',
-      url: 'https://geoservicos.mma.gov.br/geoserver/wms',
-      layer: 'mma:car_imoveis',
+      url: 'https://servicos.sfb.gov.br/geoserver/wms',
+      layer: 'sfb:car_imovel',
       active: false,
       icon: TreePine,
       color: 'text-green-600',
@@ -89,6 +89,7 @@ const Geointeligencia: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<[number, number] | null>(null);
+  const [searchBounds, setSearchBounds] = useState<[[number, number], [number, number]] | null>(null);
 
   const toggleLayer = (idx: number) => {
     setLayers((prev) =>
@@ -168,11 +169,22 @@ const Geointeligencia: React.FC = () => {
 
     setIsSearching(true);
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
       const data = await response.json();
       if (data && data.length > 0) {
-        const { lat, lon, display_name } = data[0];
-        setSearchResult([parseFloat(lat), parseFloat(lon)]);
+        const { lat, lon, display_name, boundingbox } = data[0];
+        const latFloat = parseFloat(lat);
+        const lonFloat = parseFloat(lon);
+        
+        setSearchResult([latFloat, lonFloat]);
+        
+        if (boundingbox) {
+          setSearchBounds([
+            [parseFloat(boundingbox[0]), parseFloat(boundingbox[2])],
+            [parseFloat(boundingbox[1]), parseFloat(boundingbox[3])]
+          ]);
+        }
+        
         console.log('Search found:', display_name, [lat, lon]);
       } else {
         alert('Localização não encontrada. Tente termos menos específicos.');
@@ -200,10 +212,12 @@ const Geointeligencia: React.FC = () => {
     }, [geometries, map]);
 
     useEffect(() => {
-      if (searchResult) {
-        map.setView(searchResult, 15);
+      if (searchBounds) {
+        map.fitBounds(searchBounds, { padding: [20, 20] });
+      } else if (searchResult) {
+        map.setView(searchResult, 16);
       }
-    }, [searchResult, map]);
+    }, [searchResult, searchBounds, map]);
 
     return null;
   };
@@ -388,10 +402,13 @@ const Geointeligencia: React.FC = () => {
             </FeatureGroup>
 
             {searchResult && (
-              <Marker position={searchResult}>
-                <Popup>
-                  <div className="font-bold text-emerald-900 italic">LOCAL LOCALIZADO</div>
-                  <div className="text-xs text-slate-600">{searchQuery}</div>
+              <Marker position={searchResult} zIndexOffset={1000}>
+                <Popup className="custom-popup">
+                  <div className="p-1">
+                    <div className="font-bold text-emerald-900 uppercase text-[10px] tracking-widest mb-1 italic">Local Identificado</div>
+                    <div className="text-sm font-medium text-slate-800 leading-tight">{searchQuery}</div>
+                    <div className="mt-2 text-[9px] text-slate-400 font-mono">{searchResult[0].toFixed(5)}, {searchResult[1].toFixed(5)}</div>
+                  </div>
                 </Popup>
               </Marker>
             )}

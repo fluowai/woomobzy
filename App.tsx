@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,89 +7,83 @@ import {
   useLocation,
 } from 'react-router-dom';
 
-// Impersonation Components
-import ImpersonateCallback from './views/ImpersonateCallback';
-import ImpersonationBanner from './components/ImpersonationBanner';
-import { Toaster } from 'sonner';
-import { AlertCircle } from 'lucide-react';
-
-// Layouts
+// Layouts & Guards (Keep static for faster initial shell)
 import RuralLayout from './components/RuralLayout';
 import UrbanLayout from './components/UrbanLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import TrackingPixels from './components/TrackingPixels';
-
-// Public Views
-import LandingPage from './views/LandingPage';
-import Login from './views/Login';
-import Register from './views/Register';
-import PublicLandingPage from './views/PublicLandingPage';
-import Onboarding from './views/Onboarding';
-
-// Dashboards (Niche-aware)
-import RuralDashboard from './views/RuralDashboard';
-import UrbanDashboard from './views/UrbanDashboard';
-
-// Shared Views (used by both Rural and Urban)
-import PropertyManagement from './views/PropertyManagement';
-import PropertyEditor from './views/PropertyEditor';
-import LandingPageEditor from './views/LandingPageEditor';
-import VisualSiteEditor from './views/VisualSiteEditor';
-import SiteSetupWizard from './views/SiteSetupWizard';
-import AIAssistant from './views/AIAssistant';
-import SystemSettings from './views/SystemSettings';
-import DataRoom from './views/DataRoom';
-import LegalContracts from './views/LegalContracts';
-import BIRural from './views/BIRural';
-import KanbanBoard from './views/CRM/KanbanBoard';
-import WhatsAppInstances from './views/admin/WhatsAppInstances';
-import Chat from './views/admin/Chat';
-import TestMessages from './views/admin/TestMessages';
-import WaitlistLeads from './views/admin/WaitlistLeads';
-import Dashboard360 from './views/admin/Dashboard360';
-
-// Rural-Specific Views
-import CadastroTecnico from './views/rural/CadastroTecnico';
-import Geointeligencia from './views/rural/Geointeligencia';
-import DueDiligence from './views/rural/DueDiligence';
-
-// Urban-Specific Views
-import Empreendimentos from './views/urban/Empreendimentos';
-import Locacao from './views/urban/Locacao';
-import ComplianceUrbano from './views/urban/ComplianceUrbano';
-import Cobranca from './views/urban/Cobranca';
-import PortalLocatario from './views/urban/PortalLocatario';
-import ExportadorPortais from './views/urban/ExportadorPortais';
-
-// Super Admin
-import SuperAdminLayout from './views/superadmin/SuperAdminLayout';
-import SuperAdminDashboard from './views/superadmin/Dashboard';
-import TenantManager from './views/superadmin/TenantManager';
-import GlobalSettings from './views/superadmin/GlobalSettings';
-import DomainManager from './views/superadmin/DomainManager';
-import PlanManager from './views/superadmin/PlanManager';
-import BillingManager from './views/superadmin/BillingManager';
-import FeatureFlags from './views/superadmin/FeatureFlags';
-import AuditLog from './views/superadmin/AuditLog';
-import TemplateManager from './views/superadmin/TemplateManager';
-import PlatformMonitoring from './views/superadmin/PlatformMonitoring';
-import AnalyticsDashboard from './views/superadmin/AnalyticsDashboard';
-import SupportManager from './views/superadmin/SupportManager';
-import TeamManager from './views/superadmin/TeamManager';
-import SmartImporter from './views/superadmin/SmartImporter';
-
-// Portals
-import PortalProprietarioRural from './views/rural/PortalProprietarioRural';
-import PortalCompradorRural from './views/rural/PortalCompradorRural';
-import PortalProprietarioUrbano from './views/urban/PortalProprietarioUrbano';
-import PortalCompradorUrbano from './views/urban/PortalCompradorUrbano';
+import DomainRouter from './components/DomainRouter';
+import ImpersonationBanner from './components/ImpersonationBanner';
+import { Toaster } from 'sonner';
+import { AlertCircle } from 'lucide-react';
 
 // Context
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
-import DomainRouter from './components/DomainRouter';
+
+// Public Views (Static for SEO/Initial Load)
+import LandingPage from './views/LandingPage';
+import Login from './views/Login';
+import Onboarding from './views/Onboarding';
+
+// Lazy Loaded Views
+const Register = lazy(() => import('./views/Register'));
+const ImpersonateCallback = lazy(() => import('./views/ImpersonateCallback'));
+const PublicLandingPage = lazy(() => import('./views/PublicLandingPage'));
+const RuralDashboard = lazy(() => import('./views/RuralDashboard'));
+const UrbanDashboard = lazy(() => import('./views/UrbanDashboard'));
+const PropertyManagement = lazy(() => import('./views/PropertyManagement'));
+const PropertyEditor = lazy(() => import('./views/PropertyEditor'));
+const LandingPageEditor = lazy(() => import('./views/LandingPageEditor'));
+const VisualSiteEditor = lazy(() => import('./views/VisualSiteEditor'));
+const SiteSetupWizard = lazy(() => import('./views/SiteSetupWizard'));
+const AIAssistant = lazy(() => import('./views/AIAssistant'));
+const SystemSettings = lazy(() => import('./views/SystemSettings'));
+const DataRoom = lazy(() => import('./views/DataRoom'));
+const LegalContracts = lazy(() => import('./views/LegalContracts'));
+const BIRural = lazy(() => import('./views/BIRural'));
+const KanbanBoard = lazy(() => import('./views/CRM/KanbanBoard'));
+const WhatsAppInstances = lazy(() => import('./views/admin/WhatsAppInstances'));
+const Chat = lazy(() => import('./views/admin/Chat'));
+const TestMessages = lazy(() => import('./views/admin/TestMessages'));
+const WaitlistLeads = lazy(() => import('./views/admin/WaitlistLeads'));
+const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
+
+// Rural-Specific
+const CadastroTecnico = lazy(() => import('./views/rural/CadastroTecnico'));
+const Geointeligencia = lazy(() => import('./views/rural/Geointeligencia'));
+const DueDiligence = lazy(() => import('./views/rural/DueDiligence'));
+const PortalProprietarioRural = lazy(() => import('./views/rural/PortalProprietarioRural'));
+const PortalCompradorRural = lazy(() => import('./views/rural/PortalCompradorRural'));
+
+// Urban-Specific
+const Empreendimentos = lazy(() => import('./views/urban/Empreendimentos'));
+const Locacao = lazy(() => import('./views/urban/Locacao'));
+const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
+const Cobranca = lazy(() => import('./views/urban/Cobranca'));
+const PortalLocatario = lazy(() => import('./views/urban/PortalLocatario'));
+const ExportadorPortais = lazy(() => import('./views/urban/ExportadorPortais'));
+const PortalProprietarioUrbano = lazy(() => import('./views/urban/PortalProprietarioUrbano'));
+const PortalCompradorUrbano = lazy(() => import('./views/urban/PortalCompradorUrbano'));
+
+// Super Admin
+const SuperAdminLayout = lazy(() => import('./views/superadmin/SuperAdminLayout'));
+const SuperAdminDashboard = lazy(() => import('./views/superadmin/Dashboard'));
+const TenantManager = lazy(() => import('./views/superadmin/TenantManager'));
+const GlobalSettings = lazy(() => import('./views/superadmin/GlobalSettings'));
+const DomainManager = lazy(() => import('./views/superadmin/DomainManager'));
+const PlanManager = lazy(() => import('./views/superadmin/PlanManager'));
+const BillingManager = lazy(() => import('./views/superadmin/BillingManager'));
+const FeatureFlags = lazy(() => import('./views/superadmin/FeatureFlags'));
+const AuditLog = lazy(() => import('./views/superadmin/AuditLog'));
+const TemplateManager = lazy(() => import('./views/superadmin/TemplateManager'));
+const PlatformMonitoring = lazy(() => import('./views/superadmin/PlatformMonitoring'));
+const AnalyticsDashboard = lazy(() => import('./views/superadmin/AnalyticsDashboard'));
+const SupportManager = lazy(() => import('./views/superadmin/SupportManager'));
+const TeamManager = lazy(() => import('./views/superadmin/TeamManager'));
+const SmartImporter = lazy(() => import('./views/superadmin/SmartImporter'));
 
 // console.log('App.tsx: Multi-Panel Architecture Active');
 
@@ -169,7 +163,7 @@ const FullScreenSpinner: React.FC = () => (
 // ==========================================
 // NICHE REDIRECT — sends /admin/* users to the correct panel
 // ==========================================
-const NicheRedirect: React.FC = () => {
+  const NicheRedirect: React.FC = () => {
   const { profile, isImpersonating, loading } = useAuth();
 
   if (loading) return <FullScreenSpinner />;
@@ -179,18 +173,22 @@ const NicheRedirect: React.FC = () => {
     return <Navigate to="/superadmin" replace />;
   }
 
-  // If user has no organization AND is not an admin, redirect to onboarding
+  // If user has no organization AND is not an admin/superadmin/broker, redirect to onboarding
   if (
     !profile?.organization_id &&
     profile?.role !== 'admin' &&
-    profile?.role !== 'superadmin'
+    profile?.role !== 'superadmin' &&
+    profile?.role !== 'broker'
   ) {
+    console.log('🔄 No organization found for user. Redirecting to onboarding.');
     return <Navigate to="/onboarding" replace />;
   }
 
   // Determine niche: check organization.niche, fallback to 'rural'
-  const niche = (profile.organization as any)?.niche || 'rural';
+  const niche = (profile?.organization as any)?.niche || 'rural';
   const target = niche === 'rural' || niche === 'hybrid' ? '/rural' : '/urban';
+  
+  console.log(`🚀 NicheRedirect: Sending ${profile?.email} to ${target} (Niche: ${niche})`);
   return <Navigate to={target} replace />;
 };
 
@@ -240,7 +238,7 @@ const AppContent: React.FC = () => {
   if (loading) return <FullScreenSpinner />;
 
   return (
-    <>
+    <Suspense fallback={<FullScreenSpinner />}>
       <Toaster richColors closeButton position="top-right" />
       <ImpersonationBanner />
       <SuperAdminGuard>
@@ -385,7 +383,7 @@ const AppContent: React.FC = () => {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </SuperAdminGuard>
-    </>
+    </Suspense>
   );
 };
 

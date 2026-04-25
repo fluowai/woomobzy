@@ -46,7 +46,7 @@ const Login: React.FC = () => {
     if (profile.role === 'superadmin') {
       return <Navigate to="/superadmin" replace />;
     }
-    if (!profile.organization_id) {
+    if (!profile.organization_id && (profile.role === 'user' || !profile.role)) {
       return <Navigate to="/onboarding" replace />;
     }
     return <Navigate to="/admin" replace />;

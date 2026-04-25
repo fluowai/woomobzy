@@ -11,9 +11,10 @@ import {
   List,
   ChevronDown,
   Loader2,
-  Check,
-  XCircle,
+  Circle,
   Clock,
+  MapPin,
+  Map,
 } from 'lucide-react';
 import { propertyService } from '../services/properties';
 import { Property } from '../types';
@@ -90,9 +91,7 @@ const PropertyManagement: React.FC = () => {
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="h1 mb-2">
-            Gerenciamento de Imóveis
-          </h1>
+          <h1 className="h1 mb-2">Gerenciamento de Imóveis</h1>
           <p className="body text-text-secondary">
             Gerencie todos os seus anúncios públicos e privados com facilidade.
           </p>
@@ -213,79 +212,79 @@ const PropertyManagement: React.FC = () => {
                     </div>
                   </div>
                   <div className="p-5">
-                  <div className="space-y-4">
-                    <div>
-                      <span className="badge badge-primary mb-2">
-                        {property.type}
-                      </span>
-                      <h3 className="text-lg font-bold text-text-primary truncate mb-1">
-                        {property.title}
-                      </h3>
-                      <p className="text-sm text-text-tertiary truncate flex items-center gap-1">
-                        <MapPin size={12} /> {property.location.neighborhood},{' '}
-                        {property.location.city}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl font-black text-primary">
-                        {property.price.toLocaleString('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        })}
-                      </span>
-                      <div className="flex items-center gap-2 text-text-tertiary text-xs font-bold uppercase tracking-wider">
-                        <span>{property.features.areaHectares} ha</span>
-                        <span className="w-1 h-1 bg-text-tertiary rounded-full" />
-                        <span>{property.features.tipoSolo}</span>
+                    <div className="space-y-4">
+                      <div>
+                        <span className="badge badge-primary mb-2">
+                          {property.type}
+                        </span>
+                        <h3 className="text-lg font-bold text-text-primary truncate mb-1">
+                          {property.title}
+                        </h3>
+                        <p className="text-sm text-text-tertiary truncate flex items-center gap-1">
+                          <MapPin size={12} /> {property.location.neighborhood},{' '}
+                          {property.location.city}
+                        </p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 border-t border-border-subtle pt-6 mt-2">
-                      {property.status === 'Pendente' ? (
-                        <>
-                          <button
-                            onClick={() => handleApprove(property.id)}
-                            className="btn-primary flex-1 h-10 text-xs uppercase tracking-widest"
-                          >
-                            <Check size={14} /> Aprovar
-                          </button>
-                          <button
-                            onClick={() => handleDelete(property.id!)}
-                            className="btn-secondary flex-1 h-10 text-xs uppercase tracking-widest text-red-400 hover:text-red-500"
-                          >
-                            <Trash2 size={14} /> Recusar
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() =>
-                              navigate(`${property.id}`)
-                            }
-                            className="btn btn-secondary flex-1 h-10 text-xs uppercase tracking-widest font-bold"
-                          >
-                            <Edit3 size={14} /> Editar
-                          </button>
-                          <button
-                            onClick={() => navigate(`/property/${property.id}`)}
-                            className="p-2 text-text-tertiary hover:text-primary transition-colors bg-bg-hover rounded-lg"
-                            title="Ver página pública"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(property.id!)}
-                            className="p-2 text-text-tertiary hover:text-red-500 transition-colors bg-bg-hover rounded-lg"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </>
-                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl font-black text-primary">
+                          {property.price.toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          })}
+                        </span>
+                        <div className="flex items-center gap-2 text-text-tertiary text-xs font-bold uppercase tracking-wider">
+                          <span>{property.features.areaHectares} ha</span>
+                          <span className="w-1 h-1 bg-text-tertiary rounded-full" />
+                          <span>{property.features.tipoSolo}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 border-t border-border-subtle pt-6 mt-2">
+                        {property.status === 'Pendente' ? (
+                          <>
+                            <button
+                              onClick={() => handleApprove(property.id)}
+                              className="btn-primary flex-1 h-10 text-xs uppercase tracking-widest"
+                            >
+                              <Check size={14} /> Aprovar
+                            </button>
+                            <button
+                              onClick={() => handleDelete(property.id!)}
+                              className="btn-secondary flex-1 h-10 text-xs uppercase tracking-widest text-red-400 hover:text-red-500"
+                            >
+                              <Trash2 size={14} /> Recusar
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => navigate(`${property.id}`)}
+                              className="btn btn-secondary flex-1 h-10 text-xs uppercase tracking-widest font-bold"
+                            >
+                              <Edit3 size={14} /> Editar
+                            </button>
+                            <button
+                              onClick={() =>
+                                navigate(`/property/${property.id}`)
+                              }
+                              className="p-2 text-text-tertiary hover:text-primary transition-colors bg-bg-hover rounded-lg"
+                              title="Ver página pública"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(property.id!)}
+                              className="p-2 text-text-tertiary hover:text-red-500 transition-colors bg-bg-hover rounded-lg"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           ) : (
             /* List View (Simplified) */
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm overflow-x-auto">
@@ -361,7 +360,7 @@ const PropertyManagement: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() =>
-                              navigate(`/admin/properties/${property.id}`)
+                              navigate(`${property.id}`)
                             }
                             className="p-1.5 text-black/40 hover:text-indigo-600 transition-colors"
                           >

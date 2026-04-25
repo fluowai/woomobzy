@@ -257,7 +257,7 @@ const Dashboard360: React.FC = () => {
         <ActionCard
           icon={CheckCircle2}
           label="Garantias Locatícias"
-          desc="Análise de crédito CrepPago"
+          desc="Análise de crédito CredPago"
         />
       </div>
     </div>

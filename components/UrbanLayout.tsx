@@ -28,6 +28,8 @@ import {
   ChevronRight,
   Clock,
   DollarSign,
+  Map as MapIcon,
+  Headset,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -61,98 +63,25 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
     }
   };
 
-  const menuGroups = [
-    {
-      title: 'Painel & Análises',
-      items: [
-        { icon: Sparkles, label: 'Painel 360 ✨', path: '/urban/360' },
-        {
-          icon: LayoutDashboard,
-          label: 'Dashboard Operacional',
-          path: '/urban',
-        },
-        { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
-      ],
-    },
-    {
-      title: 'Gestão de Imóveis',
-      items: [
-        { icon: Home, label: 'Imóveis', path: '/urban/properties' },
-        {
-          icon: Building2,
-          label: 'Empreendimentos',
-          path: '/urban/empreendimentos',
-        },
-        { icon: Key, label: 'Locação & Administração', path: '/urban/locacao' },
-      ],
-    },
-    {
-      title: 'Negícios & Gestão',
-      items: [
-        {
-          icon: ClipboardCheck,
-          label: 'Compliance',
-          path: '/urban/compliance',
-        },
-        {
-          icon: DollarSign,
-          label: 'Cobranças & Boletos',
-          path: '/urban/cobranca',
-        },
-        {
-          icon: Upload,
-          label: 'Exportador Portais',
-          path: '/urban/exportador',
-        },
-        { icon: FileText, label: 'Contratos', path: '/urban/contracts' },
-      ],
-    },
-    {
-      title: 'Portais & Captação',
-      items: [
-        {
-          icon: Eye,
-          label: 'Portal Proprietário',
-          path: '/urban/portal-proprietario',
-        },
-        {
-          icon: Heart,
-          label: 'Portal Comprador',
-          path: '/urban/portal-comprador',
-        },
-        {
-          icon: LayoutTemplate,
-          label: 'Landing Pages',
-          path: '/urban/landing-pages',
-        },
-        { icon: Clock, label: 'Lista de Espera', path: '/urban/waitlist' },
-        { icon: Sparkles, label: 'Site Express ✨', path: '/urban/site-setup' },
-      ],
-    },
-    {
-      title: 'Ferramentas & Setup',
-      items: [
-        { icon: Sparkles, label: 'IA Studio', path: '/urban/ai-assistant' },
-        {
-          icon: Eye,
-          label: 'Editor Visual de Site',
-          path: '/urban/visual-editor',
-        },
-        { icon: Settings, label: 'Configurações', path: '/urban/settings' },
-      ],
-    },
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
+    { icon: MessageSquare, label: 'Central de Atendimento', path: '/urban/chat' },
+    { icon: Users, label: 'Leads & CRM', path: '/urban/crm' },
+    { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
+    { icon: Key, label: 'Locação', path: '/urban/locacao' },
+    { icon: Building2, label: 'Lançamentos', path: '/urban/empreendimentos' },
+    { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
+    { icon: LayoutTemplate, label: 'Site & Landing Pages', path: '/urban/landing-pages' },
+    { icon: DollarSign, label: 'Financeiro', path: '/urban/cobranca' },
+    { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
+    { icon: Settings, label: 'Configurações', path: '/urban/settings' },
   ];
 
   if (profile?.role === 'superadmin') {
-    menuGroups.push({
-      title: 'Administração',
-      items: [
-        {
-          icon: ShieldAlert,
-          label: 'Super Admin',
-          path: '/superadmin',
-        },
-      ],
+    menuItems.push({
+      icon: ShieldAlert,
+      label: 'Super Admin',
+      path: '/superadmin',
     });
   }
 
@@ -161,16 +90,12 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
   // Expandir automaticamente o grupo que contém a rota atual
   useEffect(() => {
-    const currentGroup = menuGroups.find((group) =>
-      group.items.some(
-        (item) =>
-          (item.path === '/urban' && pathname === '/urban') ||
-          (item.path !== '/urban' && pathname.startsWith(item.path))
-      )
+    const currentItem = menuItems.find(
+      (item) =>
+        (item.path === '/urban' && pathname === '/urban') ||
+        (item.path !== '/urban' && pathname.startsWith(item.path))
     );
-    if (currentGroup && !openGroups.includes(currentGroup.title)) {
-      setOpenGroups((prev) => [...prev, currentGroup.title]);
-    }
+    // No need for openGroups anymore as it's a linear menu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
@@ -198,100 +123,76 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
             />
           ) : (
             <>
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary-alpha-20 transition-transform group-hover:scale-105">
-                <Building2 className="text-white" size={22} />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-base font-bold text-text-primary tracking-tight leading-none">
-                  IMOBZY <span className="text-primary">Urbano</span>
-                </h1>
-                <span className="text-[10px] text-text-tertiary font-bold uppercase tracking-widest mt-1 block">
-                  Painel Urbano
-                </span>
-              </div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
+                    <Home className="text-white" size={22} />
+                  </div>
+                  <div className="flex flex-col">
+                    <h1 className="text-xl font-extrabold text-white tracking-tighter leading-none">
+                      Imobi<span className="text-blue-400">CRM</span>
+                    </h1>
+                  </div>
             </>
           )}
         </Link>
-        <a
-          href={`/site/${(profile?.organization as any)?.slug || ''}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-6 flex items-center justify-center gap-2 w-full border border-border text-text-secondary hover:text-primary hover:border-primary py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all bg-bg-input"
-        >
-          <Globe size={14} /> Visualizar Site
-        </a>
       </div>
 
-      <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-8 custom-scrollbar">
-        {menuGroups.map((group) => {
-          const isOpen = openGroups.includes(group.title);
-
-          return (
-            <div key={group.title}>
-              <button
-                onClick={() => toggleGroup(group.title)}
-                className="flex items-center justify-between w-full px-3 mb-3 text-text-tertiary hover:text-text-secondary transition-colors group"
-              >
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70">
-                  {group.title}
-                </h3>
-                <div className="p-1 rounded-md bg-bg-hover/50 opacity-60 group-hover:opacity-100 transition-opacity">
-                  {isOpen ? (
-                    <ChevronDown size={12} />
-                  ) : (
-                    <ChevronRight size={12} />
-                  )}
+      <nav className="flex-1 px-4 py-8 overflow-y-auto space-y-1 custom-scrollbar">
+        {menuItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === '/urban'}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `flex items-center justify-between px-5 py-4 rounded-xl transition-all duration-300 group ${
+                isActive
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg shadow-blue-900/20'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <div className="flex items-center gap-4">
+                  <item.icon
+                    size={22}
+                    className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}
+                  />
+                  <span className="text-sm font-bold tracking-tight">{item.label}</span>
                 </div>
-              </button>
+                {item.path !== '/urban' && <ChevronRight size={14} className={isActive ? 'text-white/80' : 'text-gray-600 group-hover:text-white'} />}
+              </>
+            )}
+          </NavLink>
+        ))}
 
-              <div className={`space-y-1 ${isOpen ? 'block' : 'hidden'}`}>
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.path === '/urban'}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group ${
-                        isActive
-                          ? 'bg-primary-alpha-10 text-primary font-bold shadow-sm'
-                          : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <item.icon
-                          size={18}
-                          strokeWidth={2}
-                          className={isActive ? 'text-brand' : ''}
-                        />
-                        <span className="text-sm font-medium">{item.label}</span>
-                      </>
-                    )}
-                  </NavLink>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        {/* Support & Gear items as seen in image */}
+        <button
+          onClick={() => setIsSupportOpen(true)}
+          className="flex items-center justify-between w-full px-4 py-3.5 rounded-xl transition-all duration-300 group text-gray-400 hover:bg-white/5 hover:text-white"
+        >
+          <div className="flex items-center gap-4">
+            <Headset size={22} className="text-gray-400 group-hover:text-white" />
+            <span className="text-sm font-semibold tracking-tight">Suporte</span>
+          </div>
+        </button>
       </nav>
 
-      <div className="p-4 border-t border-border-subtle bg-bg-hover/50 backdrop-blur-md">
-        <div className="flex items-center gap-3 mb-4 p-2 rounded-xl border border-transparent hover:border-border transition-colors">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shadow-inner">
+      <div className="p-4 border-t border-white/5 bg-black/20">
+        <div className="flex items-center gap-3 mb-4 p-2 rounded-xl border border-white/5 bg-white/5">
+          <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-bold border border-blue-500/20 shadow-inner">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-text-primary truncate">
+            <p className="text-sm font-bold text-white truncate">
               {profile?.full_name || profile?.name || 'Carregando...'}
             </p>
             {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest rounded">
+              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-600/20 text-blue-400 text-[9px] font-bold uppercase tracking-widest rounded">
                 SUPER ADMIN
               </span>
             ) : (
-              <p className="text-[10px] text-text-tertiary font-bold uppercase tracking-wide truncate">
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate">
                 {profile?.role === 'admin' ? 'Admin Imobiliária' : loading ? '...' : profile?.role || 'Corretor'}
               </p>
             )}
@@ -299,16 +200,8 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
         </div>
 
         <button
-          onClick={() => setIsSupportOpen(true)}
-          className="w-full flex items-center gap-2 text-text-tertiary hover:text-primary text-xs font-bold transition-all p-2 rounded-lg hover:bg-primary/5 mb-1"
-        >
-          <LifeBuoy size={14} />
-          <span>Suporte Imobzy</span>
-        </button>
-
-        <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-text-tertiary hover:text-text-primary text-xs font-bold transition-all w-full p-2 rounded-lg hover:bg-bg-card"
+          className="flex items-center gap-2 text-gray-400 hover:text-white text-xs font-bold transition-all w-full p-2 rounded-lg hover:bg-white/5"
         >
           <LogOut size={14} /> Sair
         </button>
@@ -328,7 +221,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-bg-card text-text-primary flex flex-col animate-in slide-in-from-left duration-300 border-r border-subtle">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0a192f] text-white flex flex-col animate-in slide-in-from-left duration-300 border-r border-white/5">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all z-50"
@@ -341,7 +234,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="w-64 bg-bg-card border-r border-subtle text-text-primary hidden md:flex flex-col shrink-0">
+      <aside className="w-66 bg-gradient-to-b from-[#0a192f] to-[#040c18] border-r border-white/5 text-white hidden md:flex flex-col shrink-0 overflow-hidden shadow-2xl">
         {renderSidebarContent()}
       </aside>
 

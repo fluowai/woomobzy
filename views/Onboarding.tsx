@@ -740,7 +740,7 @@ const Onboarding: React.FC = () => {
   );
 
   // Superadmin & Admin Bypass UI
-  if (profile?.role === 'superadmin' || profile?.role === 'admin') {
+  if (profile?.role === 'superadmin' || profile?.role === 'admin' || profile?.role === 'broker') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 text-center shadow-2xl">

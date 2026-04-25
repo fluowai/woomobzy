@@ -45,10 +45,25 @@ router.post('/', authLimiter, async (req, res) => {
     const { count: profilesCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     const isFirstUser = (profilesCount || 0) === 0;
 
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    let { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email, password, email_confirm: true, user_metadata: { name, agencyName },
     });
-    if (authError) return res.status(400).json({ error: authError.message });
+
+    if (authError) {
+      if (authError.message.includes('already registered')) {
+        // Fetch existing user if already recorded
+        const { data: searchData, error: searchError } = await supabase.auth.admin.listUsers();
+        const existing = searchData?.users?.find(u => u.email === email);
+        if (existing) {
+          authData = { user: existing };
+          authError = null;
+        } else {
+          return res.status(400).json({ error: 'Usuário já existe mas não pôde ser recuperado.' });
+        }
+      } else {
+        return res.status(400).json({ error: authError.message });
+      }
+    }
 
     const userId = authData.user.id;
     let organization = null;

@@ -291,6 +291,8 @@ const LeadDetailsModal: React.FC<{
     </div>
   );
 };
+
+const PIPELINE_STAGES = [
   {
     id: 'Novo',
     label: 'Novos',

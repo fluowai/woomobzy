@@ -290,7 +290,7 @@ const AppContent: React.FC = () => {
             <Route path="properties" element={<PropertyManagement />} />
             <Route path="properties/new" element={<PropertyEditor />} />
             <Route path="properties/:id" element={<PropertyEditor />} />
-            <Route path="geointeligencia" element={<Geointeligencia />} />
+            <Route path="maps" element={<Geointeligencia />} />
             <Route path="due-diligence" element={<DueDiligence />} />
             <Route path="dataroom" element={<DataRoom />} />
             <Route path="crm" element={<KanbanBoard />} />

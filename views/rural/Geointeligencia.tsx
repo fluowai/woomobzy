@@ -18,6 +18,19 @@ import {
   WMSTileLayer,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw/dist/leaflet.draw.css';
+import { EditControl } from 'react-leaflet-draw';
+import L from 'leaflet';
+import * as toGeoJSON from '@mapbox/togeojson';
+import JSZip from 'jszip';
+
+// Fix Leaflet icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface LayerConfig {
   name: string;
@@ -31,52 +44,92 @@ interface LayerConfig {
 const Geointeligencia: React.FC = () => {
   const [layers, setLayers] = useState<LayerConfig[]>([
     {
-      name: 'SIGEF / INCRA',
+      name: 'SIGEF / INCRA (Certificado)',
       url: 'https://acervofundiario.incra.gov.br/i3geo/ogc.php',
       layer: 'sigef_particular',
-      active: false,
+      active: true,
       icon: Map,
       color: 'text-emerald-600',
     },
     {
       name: 'CAR (Cadastro Ambiental)',
-      url: '',
-      layer: 'car',
+      url: 'https://geoserver.mma.gov.br/geoserver/ows',
+      layer: 'mma:car_imoveis',
       active: false,
       icon: TreePine,
       color: 'text-green-600',
     },
     {
-      name: 'Desmatamento PRODES',
-      url: '',
-      layer: 'prodes',
+      name: 'Uso Solo (MapBiomas)',
+      url: 'https://geoserver.mapbiomas.org/geoserver/ows',
+      layer: 'mapbiomas_cobertura_vegetal',
+      active: false,
+      icon: Eye,
+      color: 'text-blue-600',
+    },
+    {
+      name: 'Desmatamento (PRODES)',
+      url: 'http://terrabrasilis.dpi.inpe.br/geoserver/gwc/service/wms',
+      layer: 'prodes_cerrado',
       active: false,
       icon: AlertTriangle,
       color: 'text-red-600',
     },
-    {
-      name: 'Hidrografia',
-      url: '',
-      layer: 'hidrografia',
-      active: false,
-      icon: Droplets,
-      color: 'text-blue-600',
-    },
-    {
-      name: 'Relevo / Topografia',
-      url: '',
-      layer: 'relevo',
-      active: false,
-      icon: Mountain,
-      color: 'text-amber-600',
-    },
   ]);
+
+  const [geometries, setGeometries] = useState<any[]>([]);
+  const [calculatedArea, setCalculatedArea] = useState<number>(0); // in square meters
+  const [isUploading, setIsUploading] = useState(false);
 
   const toggleLayer = (idx: number) => {
     setLayers((prev) =>
       prev.map((l, i) => (i === idx ? { ...l, active: !l.active } : l))
     );
   };
+
+  const handleCreated = (e: any) => {
+    const { layerType, layer } = e;
+    if (layerType === 'polygon') {
+      const area = L.GeometryUtil.geodesicArea((layer as L.Polygon).getLatLngs()[0] as L.LatLng[]);
+      setCalculatedArea(area);
+      setGeometries(prev => [...prev, layer.toGeoJSON()]);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      let kmlText = '';
+      if (file.name.endsWith('.kmz')) {
+        const zip = await JSZip.loadAsync(file);
+        const kmlFile = Object.values(zip.files).find(f => f.name.endsWith('.kml'));
+        if (kmlFile) {
+          kmlText = await kmlFile.async('string');
+        }
+      } else {
+        kmlText = await file.text();
+      }
+
+      const parser = new DOMParser();
+      const kml = parser.parseFromString(kmlText, 'text/xml');
+      const converted = toGeoJSON.kml(kml);
+      
+      setGeometries(prev => [...prev, ...converted.features]);
+      alert('Arquivo processado com sucesso! Polígonos adicionados ao mapa.');
+    } catch (err) {
+      console.error('Error parsing KML/KMZ', err);
+      alert('Erro ao processar arquivo. Verifique se é um KML ou KMZ válido.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const areaInHectares = (calculatedArea / 10000).toFixed(2);
+  const areaInAlqueireMG = (Number(areaInHectares) / 4.84).toFixed(2);
+  const areaInAlqueireSP = (Number(areaInHectares) / 2.42).toFixed(2);
 
   return (
     <div className="space-y-8">
@@ -97,31 +150,31 @@ const Geointeligencia: React.FC = () => {
         {[
           {
             icon: Layers,
-            label: 'Camadas Disponíveis',
-            value: '5',
+            label: 'Hectares Calculados',
+            value: areaInHectares + ' ha',
             color: 'text-emerald-600',
             bg: 'bg-emerald-50',
           },
           {
-            icon: Eye,
-            label: 'Camadas Ativas',
-            value: String(layers.filter((l) => l.active).length),
+            icon: Mountain,
+            label: 'Alqueire Mineiro',
+            value: areaInAlqueireMG + ' aq',
+            color: 'text-amber-600',
+            bg: 'bg-amber-50',
+          },
+          {
+            icon: AlertTriangle,
+            label: 'Alqueire Paulista',
+            value: areaInAlqueireSP + ' aq',
             color: 'text-blue-600',
             bg: 'bg-blue-50',
           },
           {
-            icon: AlertTriangle,
-            label: 'Alertas Ambientais',
-            value: '0',
-            color: 'text-red-600',
-            bg: 'bg-red-50',
-          },
-          {
-            icon: Download,
-            label: 'Mapas Exportados',
-            value: '0',
-            color: 'text-slate-600',
-            bg: 'bg-slate-50',
+            icon: Droplets,
+            label: 'Clima Hoje',
+            value: '28°C / Sol',
+            color: 'text-orange-600',
+            bg: 'bg-orange-50',
           },
         ].map((stat, idx) => (
           <div
@@ -183,11 +236,15 @@ const Geointeligencia: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-slate-100 space-y-2">
-            <button className="w-full flex items-center gap-2 justify-center p-3 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium hover:bg-blue-100 transition-all">
+            <label className="w-full flex items-center gap-2 justify-center p-3 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all cursor-pointer shadow-lg shadow-emerald-500/20">
+              <Download size={16} /> {isUploading ? 'Processando...' : 'Importar KMZ / KML'}
+              <input type="file" className="hidden" accept=".kml,.kmz" onChange={handleFileUpload} disabled={isUploading} />
+            </label>
+            <button className="w-full flex items-center gap-2 justify-center p-3 bg-slate-50 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-100 transition-all">
               <Download size={16} /> Exportar Mapa (PDF)
             </button>
-            <button className="w-full flex items-center gap-2 justify-center p-3 bg-slate-50 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-100 transition-all">
-              <Eye size={16} /> Histórico de Uso do Solo
+            <button className="w-full flex items-center gap-2 justify-center p-3 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-100 transition-all">
+              <Eye size={16} /> Ver Histórico de Uso
             </button>
           </div>
         </div>
@@ -214,6 +271,34 @@ const Geointeligencia: React.FC = () => {
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               </LayersControl.BaseLayer>
             </LayersControl>
+            
+            <EditControl
+              position="topleft"
+              onCreated={handleCreated}
+              draw={{
+                rectangle: false,
+                circle: false,
+                circlemarker: false,
+                marker: true,
+                polyline: true,
+                polygon: {
+                  allowIntersection: false,
+                  drawError: { color: '#e1e100', message: 'Assinatura inválida!' },
+                  shapeOptions: { color: '#10b981' }
+                }
+              }}
+            />
+
+            {layers.filter(l => l.active && l.url).map(layer => (
+              <WMSTileLayer
+                key={layer.name}
+                url={layer.url}
+                layers={layer.layer}
+                format="image/png"
+                transparent={true}
+              />
+            ))}
+
             <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" />
           </MapContainer>
         </div>

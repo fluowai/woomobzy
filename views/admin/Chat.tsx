@@ -91,7 +91,7 @@ const Chat: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<
-    'todos' | 'ativos' | 'automacao' | 'arquivados'
+    'todos' | 'contatos' | 'grupos' | 'arquivados'
   >('todos');
   const [showCRM, setShowCRM] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -347,8 +347,9 @@ const Chat: React.FC = () => {
     const matchesSearch = chat.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    if (activeTab === 'ativos') return matchesSearch && chat.unread_count > 0;
-    if (activeTab === 'automacao') return matchesSearch && chat.jid.includes('bot');
+    if (activeTab === 'contatos') return matchesSearch && !chat.jid.endsWith('@g.us');
+    if (activeTab === 'grupos') return matchesSearch && chat.jid.endsWith('@g.us');
+    if (activeTab === 'arquivados') return false; // Por enquanto
     return matchesSearch;
   });
 
@@ -363,8 +364,8 @@ const Chat: React.FC = () => {
     );
 
   return (
-    <div className="flex h-full bg-white text-text-primary overflow-hidden font-sans">
-      <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[350px] lg:w-[400px] bg-wa-sidebar border-r border-subtle shrink-0`}>
+    <div className="flex h-full bg-wa-bg text-text-primary overflow-hidden font-sans border-t border-subtle">
+      <div className={`${selectedChat ? 'hidden lg:flex' : 'flex'} flex-col w-full md:w-[350px] lg:w-[380px] bg-white border-r border-subtle shrink-0 shadow-sm z-10`}>
         <div className="p-4 pb-2">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-bold uppercase tracking-tight text-text-primary flex items-center gap-2">
@@ -385,13 +386,13 @@ const Chat: React.FC = () => {
               className="w-full bg-bg-input border border-subtle rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-brand/20 transition-all outline-none text-text-primary placeholder:text-tertiary"
             />
           </div>
-          <div className="flex items-center gap-1 p-1 bg-bg-card rounded-lg border border-subtle">
-            {['todos', 'ativos', 'automacao', 'arquivados'].map((tab: any) => (
+          <div className="flex items-center gap-1 p-1 bg-wa-msg-received rounded-lg border border-subtle">
+            {['todos', 'contatos', 'grupos'].map((tab: any) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all ${
-                  activeTab === tab ? 'bg-brand text-white' : 'text-tertiary hover:text-text-primary'
+                  activeTab === tab ? 'bg-brand text-white shadow-md' : 'text-tertiary hover:text-text-primary'
                 }`}
               >
                 {tab}
@@ -442,7 +443,7 @@ const Chat: React.FC = () => {
         </div>
       </div>
 
-      <div className={`${!selectedChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-wa-bg relative`}>
+      <div className={`${!selectedChat ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-wa-bg relative`}>
         {selectedChat ? (
           <>
             <header className="h-16 px-4 flex items-center justify-between border-b border-white/5 bg-wa-sidebar z-10 shrink-0">

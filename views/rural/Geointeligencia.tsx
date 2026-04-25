@@ -12,6 +12,8 @@ import {
   Mountain,
 } from 'lucide-react';
 import {
+  MapContainer,
+  TileLayer,
   LayersControl,
   WMSTileLayer,
   FeatureGroup,

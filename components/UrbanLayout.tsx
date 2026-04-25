@@ -128,8 +128,8 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
                     <Home className="text-white" size={22} />
                   </div>
                   <div className="flex flex-col">
-                    <h1 className="text-xl font-extrabold text-white tracking-tighter leading-none">
-                      Imobi<span className="text-blue-400">CRM</span>
+                    <h1 className="text-xl font-extrabold text-slate-900 tracking-tighter leading-none">
+                      Imobi<span className="text-blue-600">CRM</span>
                     </h1>
                   </div>
             </>
@@ -145,10 +145,10 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
             end={item.path === '/urban'}
             onClick={() => setIsMobileMenuOpen(false)}
             className={({ isActive }) =>
-              `flex items-center justify-between px-5 py-4 rounded-xl transition-all duration-300 group ${
+              `flex items-center justify-between px-5 py-3.5 rounded-xl transition-all duration-300 group ${
                 isActive
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg shadow-blue-900/20'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30'
+                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600'
               }`
             }
           >
@@ -157,11 +157,11 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
                 <div className="flex items-center gap-4">
                   <item.icon
                     size={22}
-                    className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}
+                    className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}
                   />
                   <span className="text-sm font-bold tracking-tight">{item.label}</span>
                 </div>
-                {item.path !== '/urban' && <ChevronRight size={14} className={isActive ? 'text-white/80' : 'text-gray-600 group-hover:text-white'} />}
+                {item.path !== '/urban' && <ChevronRight size={14} className={isActive ? 'text-white/80' : 'text-slate-300 group-hover:text-blue-600'} />}
               </>
             )}
           </NavLink>
@@ -170,30 +170,30 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
         {/* Support & Gear items as seen in image */}
         <button
           onClick={() => setIsSupportOpen(true)}
-          className="flex items-center justify-between w-full px-4 py-3.5 rounded-xl transition-all duration-300 group text-gray-400 hover:bg-white/5 hover:text-white"
+          className="flex items-center justify-between w-full px-5 py-3.5 rounded-xl transition-all duration-300 group text-slate-500 hover:bg-blue-50 hover:text-blue-600"
         >
           <div className="flex items-center gap-4">
-            <Headset size={22} className="text-gray-400 group-hover:text-white" />
-            <span className="text-sm font-semibold tracking-tight">Suporte</span>
+            <Headset size={22} className="text-slate-400 group-hover:text-blue-600" />
+            <span className="text-sm font-bold tracking-tight">Suporte</span>
           </div>
         </button>
       </nav>
 
-      <div className="p-4 border-t border-white/5 bg-black/20">
-        <div className="flex items-center gap-3 mb-4 p-2 rounded-xl border border-white/5 bg-white/5">
-          <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-bold border border-blue-500/20 shadow-inner">
+      <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center gap-3 mb-4 p-2 rounded-xl border border-slate-200 bg-white">
+          <div className="w-10 h-10 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold border border-blue-500/20 shadow-inner">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white truncate">
+            <p className="text-sm font-bold text-slate-900 truncate">
               {profile?.full_name || profile?.name || 'Carregando...'}
             </p>
             {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-600/20 text-blue-400 text-[9px] font-bold uppercase tracking-widest rounded">
+              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-600/10 text-blue-600 text-[9px] font-bold uppercase tracking-widest rounded">
                 SUPER ADMIN
               </span>
             ) : (
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide truncate">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide truncate">
                 {profile?.role === 'admin' ? 'Admin Imobiliária' : loading ? '...' : profile?.role || 'Corretor'}
               </p>
             )}
@@ -202,7 +202,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-gray-400 hover:text-white text-xs font-bold transition-all w-full p-2 rounded-lg hover:bg-white/5"
+          className="flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-bold transition-all w-full p-2 rounded-lg hover:bg-red-50"
         >
           <LogOut size={14} /> Sair
         </button>
@@ -222,10 +222,10 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0a192f] text-white flex flex-col animate-in slide-in-from-left duration-300 border-r border-white/5">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white text-slate-900 flex flex-col animate-in slide-in-from-left duration-300 border-r border-slate-200">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all z-50"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all z-50"
             >
               <X size={20} />
             </button>
@@ -235,7 +235,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="w-66 bg-gradient-to-b from-[#0a192f] to-[#040c18] border-r border-white/5 text-white hidden md:flex flex-col shrink-0 overflow-hidden shadow-2xl">
+      <aside className="w-66 bg-white border-r border-slate-200 text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden shadow-sm">
         {renderSidebarContent()}
       </aside>
 

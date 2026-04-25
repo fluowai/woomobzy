@@ -306,6 +306,11 @@ export class SessionManager extends EventEmitter {
 
           await this._saveMessage(session, message);
           this.emit('message', { instanceId, message });
+
+          // Auto-cura: Se for grupo e não tivermos o nome do remetente resolvido, força um pequeno sync
+          if (message.key.remoteJid.endsWith('@g.us') && !message.fromMe && message.pushName === undefined) {
+             this._syncSingleGroup(session, message.key.remoteJid).catch(() => {});
+          }
         }
       }
     });
@@ -500,7 +505,34 @@ export class SessionManager extends EventEmitter {
         }
       }
 
-      // 5. Fallback Final Irrecuperável: Formatação Brasileira Padrão
+      // 5. AGRESSIVO+: Se ainda é número/LID e é um grupo, busca nos participantes do grupo
+      if (isGroup && (!senderName || /^\d+$/.test(senderName) || senderName.length >= 15)) {
+        try {
+          const metadata = await session.sock.groupMetadata(contactJid).catch(() => null);
+          if (metadata && metadata.participants) {
+            const participant = metadata.participants.find(p => p.id === senderJid || p.lid === senderJid);
+            if (participant && (participant.name || participant.notify)) {
+              senderName = participant.name || participant.notify;
+              // Salva para o futuro
+              this.contactStore.set(instanceId, senderJid, { 
+                pushName: senderName,
+                linkedJid: participant.lid || participant.id 
+              });
+              const batch = this.contactStore.processBatch(instanceId, [{
+                id: senderJid,
+                name: senderName,
+                notify: participant.notify,
+                lid: participant.lid
+              }]);
+              this.contactStore.persistToDB(instanceId, batch, supabase).catch(() => {});
+            }
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+
+      // 6. Fallback Final Irrecuperável: Formatação Brasileira Padrão
       if (!senderName) {
            senderName = this.contactStore.formatNumber(finalSenderJid || senderJid, 'display');
       }
@@ -766,6 +798,60 @@ export class SessionManager extends EventEmitter {
       classification: classification,
       chat_jid: chatJid,
     });
+  }
+
+  /**
+   * Sincroniza um único grupo (usado para auto-cura)
+   */
+  async _syncSingleGroup(session, groupJid) {
+    const { sock, instanceId } = session;
+    if (!sock) return;
+
+    try {
+      const metadata = await sock.groupMetadata(groupJid).catch(() => null);
+      if (!metadata || !metadata.participants) return;
+
+      const supabase = await this.persistence.getSupabaseClient();
+      const contactBatch = [];
+
+      for (const p of metadata.participants) {
+        const jid = p.id;
+        const lid = p.lid;
+        const name = p.name || p.notify || null;
+
+        if (jid) {
+          const { merged } = this.contactStore.set(instanceId, jid, {
+            pushName: name,
+            verifiedName: p.verifiedName || null,
+            linkedJid: lid || null
+          });
+
+          contactBatch.push({
+            instance_id: instanceId,
+            ...merged,
+            updated_at: new Date().toISOString(),
+          });
+
+          if (lid && lid !== jid) {
+            const { merged: lidMerged } = this.contactStore.set(instanceId, lid, {
+              pushName: name,
+              linkedJid: jid
+            });
+            contactBatch.push({
+              instance_id: instanceId,
+              ...lidMerged,
+              updated_at: new Date().toISOString(),
+            });
+          }
+        }
+      }
+
+      if (contactBatch.length > 0) {
+        await this.contactStore.persistToDB(instanceId, contactBatch, supabase);
+      }
+    } catch (e) {
+       console.warn(`[SessionManager] Falha auto-cura grupo ${groupJid}:`, e.message);
+    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -701,4 +701,28 @@ router.get('/health', verifyAdmin, async (req, res) => {
   }
 });
 
+/** POST /api/whatsapp/instances/:id/sync — Forçar sincronização de grupos e participantes */
+router.post('/instances/:id/sync', verifyAdmin, async (req, res) => {
+  try {
+    const instanceId = req.params.id;
+    const session = sessionManager.getSession(instanceId);
+
+    if (!session || !session.sock) {
+      return res.status(400).json({ error: 'Instância não inicializada ou offline' });
+    }
+
+    // Dispara sync em background
+    sessionManager._syncAllGroups(session).catch(e => {
+        console.error(`[WhatsApp API] Erro no sync forçado de ${instanceId}:`, e.message);
+    });
+
+    res.json({ 
+        success: true, 
+        message: 'Sincronização de grupos e contatos iniciada em segundo plano. Os nomes aparecerão gradualmente.' 
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

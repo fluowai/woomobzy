@@ -482,15 +482,13 @@ const Chat: React.FC = () => {
             </header>
 
             <div 
-              className="flex-1 overflow-y-auto p-4 custom-scrollbar" 
+              className="flex-1 overflow-y-auto p-6 custom-scrollbar" 
               style={{ 
-                backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
-                backgroundSize: '400px',
-                backgroundRepeat: 'repeat',
-                backgroundColor: 'var(--color-wa-bg)'
+                backgroundColor: '#f4f7f9', // Cor de fundo estilo Chatwoot
+                backgroundBlendMode: 'soft-light'
               }}
             >
-              <div className="flex flex-col space-y-1">
+              <div className="flex flex-col space-y-4 max-w-5xl mx-auto">
                 {messages.map((msg, i) => {
                   const isGroup = selectedChat?.jid.endsWith('@g.us');
                   const showSender = isGroup && !msg.from_me;
@@ -515,38 +513,40 @@ const Chat: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      <div className={`flex-1 flex flex-col ${msg.from_me ? 'items-end' : 'items-start'} max-w-full`}>
-                        <div className={`group relative transition-all w-full md:max-w-[90%] py-2 px-4 ${
-                          msg.from_me ? 'text-right' : 'text-left'
+                      <div className={`flex-1 flex flex-col ${msg.from_me ? 'items-end' : 'items-start'}`}>
+                        {showSender && (
+                          <span className="text-[11px] font-bold text-text-secondary mb-1 ml-1 uppercase tracking-tight">
+                            {msg.sender_name || formatDisplayJid(msg.sender_jid || '')}
+                          </span>
+                        )}
+                        <div className={`group relative transition-all px-4 py-2.5 shadow-sm border ${
+                          msg.from_me 
+                            ? 'bg-brand text-white border-brand rounded-2xl rounded-tr-none' 
+                            : 'bg-white text-text-primary border-[#e1e4e8] rounded-2xl rounded-tl-none'
                         }`}>
-                          {showSender && (
-                            <p className="text-[11px] font-bold text-brand mb-0.5 uppercase tracking-wider">
-                              {msg.sender_name || formatDisplayJid(msg.sender_jid || '')}
-                            </p>
-                          )}
                           {msg.media_url && (
-                            <div className={`mb-2 inline-block rounded-lg overflow-hidden border border-black/5 bg-black/5`}>
+                            <div className={`mb-2 rounded-lg overflow-hidden ${msg.from_me ? 'bg-white/10' : 'bg-bg-hover'}`}>
                               {msg.message_type === 'imageMessage' ? (
-                                <img src={msg.media_url} alt="Mídia" className="max-w-full max-h-[400px] object-contain hover:grayscale-0 grayscale-[0.2] transition-all cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')} />
+                                <img src={msg.media_url} alt="Mídia" className="max-w-full max-h-[350px] object-contain cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')} />
                               ) : msg.message_type === 'audioMessage' ? (
-                                <audio controls className="w-[300px] h-8 scale-90 -ml-4"><source src={msg.media_url} type={msg.mime_type || 'audio/ogg'} /></audio>
+                                <audio controls className={`w-[260px] h-8 ${msg.from_me ? 'invert' : ''}`}><source src={msg.media_url} type={msg.mime_type || 'audio/ogg'} /></audio>
                               ) : (
-                                <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-black/5" onClick={() => window.open(msg.media_url, '_blank')}>
-                                  <div className="p-2 bg-wa-msg-received rounded-lg"><File size={20} className="text-brand" /></div>
-                                  <div className="flex-1 min-w-0"><p className="text-xs font-bold truncate">Arquivo {msg.mime_type?.split('/')[1]?.toUpperCase()}</p><p className="text-[10px] text-tertiary">Clique para baixar</p></div>
+                                <div className="flex items-center gap-3 p-3 cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')}>
+                                  <div className={`p-2 rounded-lg ${msg.from_me ? 'bg-white/20 text-white' : 'bg-brand/10 text-brand'}`}><File size={20} /></div>
+                                  <div className="flex-1 min-w-0"><p className="text-xs font-bold truncate">Arquivo</p><p className="text-[10px] opacity-70">Clique para abrir</p></div>
                                 </div>
                               )}
                             </div>
                           )}
-                          <div className={`flex flex-col ${msg.from_me ? 'items-end' : 'items-start'}`}>
-                            <p className="text-[15px] font-medium leading-relaxed text-[#111b21] drop-shadow-sm">
+                          <div className="flex flex-col">
+                            <p className="text-[14px] leading-relaxed whitespace-pre-wrap font-medium">
                               {renderMessageContent(msg.content)}
                             </p>
-                            <div className={`flex items-center gap-1.5 text-[10px] mt-1 font-bold ${msg.from_me ? 'text-brand/70' : 'text-tertiary'}`}>
+                            <div className={`flex items-center gap-1.5 text-[10px] mt-1.5 font-medium ${msg.from_me ? 'text-white/80' : 'text-tertiary'}`}>
                               {formatTime(msg.timestamp)}
                               {msg.from_me && (
                                 <div className="flex items-center">
-                                  {msg.status === 'read' ? <CheckCheck size={14} className="text-[#53bdeb]" /> : msg.status === 'delivered' ? <CheckCheck size={14} /> : <Check size={14} />}
+                                  {msg.status === 'read' ? <CheckCheck size={14} className="text-white" /> : msg.status === 'delivered' ? <CheckCheck size={14} /> : <Check size={14} />}
                                 </div>
                               )}
                             </div>

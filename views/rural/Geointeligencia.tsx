@@ -20,6 +20,8 @@ import {
   FeatureGroup,
   GeoJSON,
   useMap,
+  Marker,
+  Popup,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -57,7 +59,7 @@ const Geointeligencia: React.FC = () => {
     },
     {
       name: 'CAR (Cadastro Ambiental)',
-      url: 'https://geoservicos.mma.gov.br/geoserver/mma/wms',
+      url: 'https://geoservicos.mma.gov.br/geoserver/wms',
       layer: 'mma:car_imoveis',
       active: false,
       icon: TreePine,
@@ -65,7 +67,7 @@ const Geointeligencia: React.FC = () => {
     },
     {
       name: 'Uso Solo (MapBiomas)',
-      url: 'https://geoserver.mapbiomas.org/geoserver/mapbiomas-brazil/wms',
+      url: 'https://geoscenes.mapbiomas.org/geoserver/wms',
       layer: 'mapbiomas-brazil:mapbiomas_cobertura_vegetal',
       active: false,
       icon: Eye,
@@ -124,9 +126,34 @@ const Geointeligencia: React.FC = () => {
       const kml = parser.parseFromString(kmlText, 'text/xml');
       const converted = toGeoJSON.kml(kml);
       
-      setGeometries(prev => [...prev, ...converted.features]);
-      console.log('Imported geometries:', converted.features);
-      alert(`Sucesso! ${converted.features.length} elementos importados.`);
+      if (converted.features.length > 0) {
+        setGeometries(prev => [...prev, ...converted.features]);
+        
+        // Calculate area for imported polygons
+        let totalArea = 0;
+        converted.features.forEach((feature: any) => {
+          if (feature.geometry.type === 'Polygon') {
+            const area = L.GeometryUtil.geodesicArea(
+              feature.geometry.coordinates[0].map((c: any) => L.latLng(c[1], c[0]))
+            );
+            totalArea += area;
+          } else if (feature.geometry.type === 'MultiPolygon') {
+            feature.geometry.coordinates.forEach((poly: any) => {
+              const area = L.GeometryUtil.geodesicArea(
+                poly[0].map((c: any) => L.latLng(c[1], c[0]))
+              );
+              totalArea += area;
+            });
+          }
+        });
+        
+        if (totalArea > 0) setCalculatedArea(totalArea);
+        
+        console.log('Imported geometries:', converted.features);
+        alert(`Sucesso! ${converted.features.length} elementos importados.`);
+      } else {
+        alert('Nenhum elemento geográfico encontrado no arquivo.');
+      }
     } catch (err) {
       console.error('Error parsing KML/KMZ', err);
       alert('Erro ao processar arquivo. Verifique se é um KML ou KMZ válido.');
@@ -144,8 +171,9 @@ const Geointeligencia: React.FC = () => {
       const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
       const data = await response.json();
       if (data && data.length > 0) {
-        const { lat, lon } = data[0];
+        const { lat, lon, display_name } = data[0];
         setSearchResult([parseFloat(lat), parseFloat(lon)]);
+        console.log('Search found:', display_name, [lat, lon]);
       } else {
         alert('Localização não encontrada. Tente termos menos específicos.');
       }
@@ -358,6 +386,15 @@ const Geointeligencia: React.FC = () => {
                 }}
               />
             </FeatureGroup>
+
+            {searchResult && (
+              <Marker position={searchResult}>
+                <Popup>
+                  <div className="font-bold text-emerald-900 italic">LOCAL LOCALIZADO</div>
+                  <div className="text-xs text-slate-600">{searchQuery}</div>
+                </Popup>
+              </Marker>
+            )}
 
             {layers.filter(l => l.active && l.url).map(layer => (
               <WMSTileLayer

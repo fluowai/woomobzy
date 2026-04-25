@@ -359,7 +359,7 @@ const Chat: React.FC = () => {
           1. SIDEBAR (CHATS) — Estilo WhatsApp Web
       ============================================ */}
       <div
-        className={`${selectedChat ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-[400px] bg-wa-sidebar border-r border-subtle shrink-0`}
+        className={`${selectedChat ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[350px] lg:w-[400px] bg-wa-sidebar border-r border-subtle shrink-0`}
       >
         {/* Search & Header */}
         <div className="p-4 pb-2">
@@ -466,7 +466,7 @@ const Chat: React.FC = () => {
           2. ÁREA CENTRAL (CHAT) — Estilo WhatsApp
       ============================================ */}
       <div
-        className={`${!selectedChat ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-wa-bg relative`}
+        className={`${!selectedChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-wa-bg relative`}
       >
         {selectedChat ? (
           <>
@@ -533,7 +533,7 @@ const Chat: React.FC = () => {
                 backgroundColor: 'var(--color-wa-bg)'
               }}
             >
-              <div className="max-w-4xl mx-auto space-y-2">
+              <div className="max-w-6xl mx-auto space-y-2 lg:px-10">
                 {messages.map((msg, i) => {
                   const isGroup = selectedChat?.jid.endsWith('@g.us');
                   const showSender = isGroup && !msg.from_me;
@@ -635,7 +635,7 @@ const Chat: React.FC = () => {
 
             {/* Input */}
             <div className="p-2 bg-wa-sidebar border-t border-white/5">
-              <div className="max-w-4xl mx-auto flex items-center gap-2">
+              <div className="max-w-6xl mx-auto flex items-center gap-2 lg:px-10">
                 <div className="flex items-center gap-1">
                   <button className="p-2.5 text-tertiary hover:text-text-primary transition-all">
                     <Smile size={24} />

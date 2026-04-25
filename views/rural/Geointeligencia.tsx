@@ -17,6 +17,8 @@ import {
   LayersControl,
   WMSTileLayer,
   FeatureGroup,
+  GeoJSON,
+  useMap,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -119,7 +121,8 @@ const Geointeligencia: React.FC = () => {
       const converted = toGeoJSON.kml(kml);
       
       setGeometries(prev => [...prev, ...converted.features]);
-      alert('Arquivo processado com sucesso! Polígonos adicionados ao mapa.');
+      console.log('Imported geometries:', converted.features);
+      alert(`Sucesso! ${converted.features.length} elementos importados.`);
     } catch (err) {
       console.error('Error parsing KML/KMZ', err);
       alert('Erro ao processar arquivo. Verifique se é um KML ou KMZ válido.');
@@ -131,6 +134,19 @@ const Geointeligencia: React.FC = () => {
   const areaInHectares = (calculatedArea / 10000).toFixed(2);
   const areaInAlqueireMG = (Number(areaInHectares) / 4.84).toFixed(2);
   const areaInAlqueireSP = (Number(areaInHectares) / 2.42).toFixed(2);
+
+  const MapUpdater = () => {
+    const map = useMap();
+    useEffect(() => {
+      if (geometries.length > 0) {
+        const bounds = L.geoJSON({ type: 'FeatureCollection', features: geometries } as any).getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+      }
+    }, [geometries, map]);
+    return null;
+  };
 
   return (
     <div className="space-y-8">
@@ -261,6 +277,7 @@ const Geointeligencia: React.FC = () => {
             style={{ height: '600px', width: '100%' }}
             scrollWheelZoom={true}
           >
+            <MapUpdater />
             <LayersControl position="topright">
               <LayersControl.BaseLayer checked name="Satélite">
                 <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
@@ -301,6 +318,13 @@ const Geointeligencia: React.FC = () => {
                 transparent={true}
               />
             ))}
+
+            {geometries.length > 0 && (
+              <GeoJSON 
+                data={{ type: 'FeatureCollection', features: geometries } as any}
+                style={{ color: '#10b981', weight: 3, fillOpacity: 0.2 }}
+              />
+            )}
 
             <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" />
           </MapContainer>

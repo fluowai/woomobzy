@@ -515,30 +515,21 @@ const Chat: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      <div className={`flex-1 flex flex-col ${msg.from_me ? 'items-end' : 'items-start'}`}>
-                        <div className={`group relative max-w-[85%] sm:max-w-[70%] px-2.5 py-1.5 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] transition-all ${
-                          msg.from_me 
-                            ? 'bg-[#d9fdd3] text-[#111b21] rounded-l-lg rounded-br-lg rounded-tr-none' 
-                            : 'bg-white text-[#111b21] rounded-r-lg rounded-bl-lg rounded-tl-none'
+                      <div className={`flex-1 flex flex-col ${msg.from_me ? 'items-end' : 'items-start'} max-w-full`}>
+                        <div className={`group relative transition-all w-full md:max-w-[90%] py-2 px-4 ${
+                          msg.from_me ? 'text-right' : 'text-left'
                         }`}>
-                          {/* Rabicho (Tail) simplificado via pseudo-elementos ou SVG seria melhor, mas vamos usar classes de borda */}
-                          <div className={`absolute top-0 w-2 h-3 ${
-                            msg.from_me 
-                              ? '-right-2 bg-[#d9fdd3] [clip-path:polygon(0_0,0_100%,100%_0)]' 
-                              : '-left-2 bg-white [clip-path:polygon(100%_0,100%_100%,0_0)]'
-                          }`} />
-
                           {showSender && (
-                            <p className="text-[12.5px] font-semibold text-brand mb-0.5 truncate px-1">
+                            <p className="text-[11px] font-bold text-brand mb-0.5 uppercase tracking-wider">
                               {msg.sender_name || formatDisplayJid(msg.sender_jid || '')}
                             </p>
                           )}
                           {msg.media_url && (
-                            <div className="mb-1 rounded-md overflow-hidden border border-black/5 bg-black/5">
+                            <div className={`mb-2 inline-block rounded-lg overflow-hidden border border-black/5 bg-black/5`}>
                               {msg.message_type === 'imageMessage' ? (
-                                <img src={msg.media_url} alt="Mídia" className="max-w-full max-h-[300px] object-contain hover:scale-[1.02] transition-transform cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')} />
+                                <img src={msg.media_url} alt="Mídia" className="max-w-full max-h-[400px] object-contain hover:grayscale-0 grayscale-[0.2] transition-all cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')} />
                               ) : msg.message_type === 'audioMessage' ? (
-                                <audio controls className="w-full h-8 scale-90 -ml-4"><source src={msg.media_url} type={msg.mime_type || 'audio/ogg'} /></audio>
+                                <audio controls className="w-[300px] h-8 scale-90 -ml-4"><source src={msg.media_url} type={msg.mime_type || 'audio/ogg'} /></audio>
                               ) : (
                                 <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-black/5" onClick={() => window.open(msg.media_url, '_blank')}>
                                   <div className="p-2 bg-wa-msg-received rounded-lg"><File size={20} className="text-brand" /></div>
@@ -547,16 +538,18 @@ const Chat: React.FC = () => {
                               )}
                             </div>
                           )}
-                          <p className="text-[14.2px] font-normal leading-relaxed break-words whitespace-pre-wrap">
-                            {renderMessageContent(msg.content)}
-                          </p>
-                          <div className={`flex items-center justify-end gap-1 text-[11px] mt-1 -mb-0.5 opacity-70 ${msg.from_me ? 'text-[#667781]' : 'text-[#667781]'}`}>
-                            {formatTime(msg.timestamp)}
-                            {msg.from_me && (
-                              <div className="ml-1">
-                                {msg.status === 'read' ? <CheckCheck size={14} className="text-[#53bdeb]" /> : msg.status === 'delivered' ? <CheckCheck size={14} /> : <Check size={14} />}
-                              </div>
-                            )}
+                          <div className={`flex flex-col ${msg.from_me ? 'items-end' : 'items-start'}`}>
+                            <p className="text-[15px] font-medium leading-relaxed text-[#111b21] drop-shadow-sm">
+                              {renderMessageContent(msg.content)}
+                            </p>
+                            <div className={`flex items-center gap-1.5 text-[10px] mt-1 font-bold ${msg.from_me ? 'text-brand/70' : 'text-tertiary'}`}>
+                              {formatTime(msg.timestamp)}
+                              {msg.from_me && (
+                                <div className="flex items-center">
+                                  {msg.status === 'read' ? <CheckCheck size={14} className="text-[#53bdeb]" /> : msg.status === 'delivered' ? <CheckCheck size={14} /> : <Check size={14} />}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

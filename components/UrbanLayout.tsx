@@ -261,7 +261,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            <Link to="/urban/properties/new" className="btn btn-primary h-11 px-6 shadow-lg shadow-primary-alpha-20">
+            <Link to="/urban/properties/new" className="btn bg-blue-600 hover:bg-blue-700 text-white h-11 px-6 shadow-lg shadow-blue-900/20">
               <PlusCircle size={18} />
               <span className="hidden sm:inline">Novo Imóvel</span>
             </Link>

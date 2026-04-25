@@ -97,8 +97,18 @@ const Chat: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { profile } = useAuth();
+  const { pathname } = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const subscriptionRef = useRef<any>(null);
+
+  // Niche configuration for Chatwoot styling
+  const isRural = pathname.startsWith('/rural');
+  const nicheColor = isRural ? 'emerald' : 'blue';
+  const nicheHex = isRural ? '#10b981' : '#2563eb';
+  const nicheBg = isRural ? 'bg-emerald-600' : 'bg-blue-600';
+  const nicheText = isRural ? 'text-emerald-500' : 'text-blue-500';
+  const nicheAlpha = isRural ? 'bg-emerald-500/10' : 'bg-blue-500/10';
+  const nicheBorder = isRural ? 'border-emerald-500/20' : 'border-blue-500/20';
 
   // ──────────────────────────────────────────────
   // Fetching Logic
@@ -334,7 +344,7 @@ const Chat: React.FC = () => {
         const cleanPart = part.startsWith('+') ? part.slice(1) : part;
         const resolvedName = mentionMap.get(cleanPart);
         return (
-          <span key={i} className="text-brand font-bold bg-brand/10 px-1 py-0.5 rounded-md text-[13px]">
+          <span key={i} className={`${nicheText} font-bold ${nicheAlpha} px-1 py-0.5 rounded-md text-[13px]`}>
             @{resolvedName || formatDisplayJid(cleanPart + '@s.whatsapp.net')}
           </span>
         );
@@ -355,9 +365,9 @@ const Chat: React.FC = () => {
 
   if (loading)
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-brand">
-        <Loader2 className="w-10 h-10 animate-spin text-brand mb-4" />
-        <p className="text-secondary font-bold uppercase tracking-[0.2em] text-[10px]">
+      <div className={`flex flex-col items-center justify-center h-full ${nicheAlpha}`}>
+        <Loader2 className={`w-10 h-10 animate-spin ${nicheText} mb-4`} />
+        <p className={`${nicheText} font-bold uppercase tracking-[0.2em] text-[10px]`}>
           Carregando mensagens...
         </p>
       </div>
@@ -368,11 +378,11 @@ const Chat: React.FC = () => {
       <div className={`${selectedChat ? 'hidden lg:flex' : 'flex'} flex-col w-full md:w-[350px] lg:w-[380px] bg-white border-r border-subtle shrink-0 shadow-sm z-10`}>
         <div className="p-4 pb-2">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold uppercase tracking-tight text-text-primary flex items-center gap-2">
-              <MessageSquare className="text-brand" size={24} />
+            <h1 className="text-sm font-black uppercase tracking-[0.2em] text-text-primary flex items-center gap-3">
+              <MessageSquare className={nicheText} size={18} />
               Conversas
             </h1>
-            <div className="bg-brand/10 text-brand text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest border border-brand/20">
+            <div className={`${nicheAlpha} ${nicheText} text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest border ${nicheBorder}`}>
               {selectedInstance?.name || 'OFFLINE'}
             </div>
           </div>
@@ -392,7 +402,7 @@ const Chat: React.FC = () => {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all ${
-                  activeTab === tab ? 'bg-brand text-white shadow-md' : 'text-tertiary hover:text-text-primary'
+                  activeTab === tab ? `${nicheBg} text-white shadow-md` : 'text-tertiary hover:text-text-primary'
                 }`}
               >
                 {tab}
@@ -423,7 +433,7 @@ const Chat: React.FC = () => {
                   <h3 className="font-medium truncate text-[16px] text-text-primary">
                     {chat.name || formatDisplayJid(chat.jid)}
                   </h3>
-                  <span className={`text-[12px] font-normal whitespace-nowrap ml-2 ${chat.unread_count > 0 ? 'text-brand' : 'text-tertiary'}`}>
+                  <span className={`text-[12px] font-normal whitespace-nowrap ml-2 ${chat.unread_count > 0 ? nicheText : 'text-tertiary'}`}>
                     {chat.last_message_at ? formatTime(chat.last_message_at) : ''}
                   </span>
                 </div>
@@ -432,7 +442,7 @@ const Chat: React.FC = () => {
                     {chat.jid.endsWith('@g.us') ? <span className="flex items-center gap-1"><Users size={12} /> Grupo</span> : 'Clique para ver a conversa'}
                   </p>
                   {chat.unread_count > 0 && (
-                    <div className="min-w-[20px] h-[20px] bg-brand rounded-full flex items-center justify-center shadow-lg">
+                    <div className={`min-w-[20px] h-[20px] ${nicheBg} rounded-full flex items-center justify-center shadow-lg`}>
                       <span className="text-[11px] font-bold text-white px-1">{chat.unread_count}</span>
                     </div>
                   )}
@@ -459,11 +469,11 @@ const Chat: React.FC = () => {
                       <User size={20} className="text-tertiary" />
                     )}
                   </div>
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-brand rounded-full border-2 border-wa-sidebar shadow-sm" />
+                  <div className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
                 </div>
                 <div>
                   <h3 className="font-bold text-text-primary leading-tight">{selectedChat.name || formatDisplayJid(selectedChat.jid)}</h3>
-                  <p className="text-[11px] font-bold text-brand uppercase tracking-widest mt-0.5">{selectedChat.jid.endsWith('@g.us') ? 'Em grupo' : 'Chat Individual'}</p>
+                  <p className={`text-[11px] font-bold ${nicheText} uppercase tracking-widest mt-0.5`}>{selectedChat.jid.endsWith('@g.us') ? 'Em grupo' : 'Chat Individual'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -519,10 +529,10 @@ const Chat: React.FC = () => {
                             {msg.sender_name || formatDisplayJid(msg.sender_jid || '')}
                           </span>
                         )}
-                        <div className={`group relative transition-all px-4 py-2.5 shadow-sm border ${
+                        <div className={`group relative transition-all px-4 py-2 shadow-sm border ${
                           msg.from_me 
-                            ? 'bg-brand text-white border-brand rounded-2xl rounded-tr-none' 
-                            : 'bg-white text-text-primary border-[#e1e4e8] rounded-2xl rounded-tl-none'
+                            ? `${nicheBg} text-white ${nicheBorder.replace('border-', 'border-')} rounded-xl rounded-tr-none shadow-md` 
+                            : 'bg-white text-text-primary border-[#e1e4e8] rounded-xl rounded-tl-none'
                         }`}>
                           {msg.media_url && (
                             <div className={`mb-2 rounded-lg overflow-hidden ${msg.from_me ? 'bg-white/10' : 'bg-bg-hover'}`}>
@@ -562,8 +572,8 @@ const Chat: React.FC = () => {
 
             {/* Input Bar */}
             <div className="p-2 bg-wa-sidebar border-t border-white/5 relative">
-              {/* Overlay de Seleção em Massa */}
-              {isSelectionMode && (
+               {/* Overlay de Seleção em Massa */}
+               {isSelectionMode && (
                 <div className="absolute inset-0 bg-wa-sidebar z-20 flex items-center px-6 animate-slide-up border-t border-brand/20">
                   <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -583,7 +593,7 @@ const Chat: React.FC = () => {
                     <div className="flex items-center gap-2">
                        <button 
                          onClick={() => setSelectedMessageIds(messages.map(m => m.id))}
-                         className="text-xs font-bold text-brand hover:underline px-3 py-2"
+                         className={`text-xs font-bold ${nicheText} hover:underline px-3 py-2`}
                        >
                          Selecionar Tudo
                        </button>
@@ -628,7 +638,7 @@ const Chat: React.FC = () => {
                   {sending ? (
                     <Loader2 className="animate-spin" size={24} />
                   ) : newMessage.trim() ? (
-                    <Send size={24} className="text-brand" />
+                    <Send size={24} className={nicheText} />
                   ) : (
                     <Mic size={24} />
                   )}
@@ -638,8 +648,8 @@ const Chat: React.FC = () => {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-40">
-            <div className="w-24 h-24 bg-bg-hover rounded-full flex items-center justify-center mb-6 border border-subtle">
-              <MessageSquare size={40} className="text-brand" />
+            <div className={`w-24 h-24 bg-bg-hover rounded-full flex items-center justify-center mb-6 border border-subtle`}>
+              <MessageSquare size={40} className={nicheText} />
             </div>
             <h2 className="text-2xl font-bold uppercase tracking-tight mb-4">
               Mensagens
@@ -658,10 +668,10 @@ const Chat: React.FC = () => {
         <div className="hidden xl:flex flex-col w-[360px] bg-bg-card border-l border-subtle p-6 overflow-y-auto custom-scrollbar">
           <div className="flex flex-col items-center text-center mb-8">
             <div className="relative mb-5">
-              <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center border-2 border-brand/20">
-                <User size={36} className="text-brand" />
+              <div className={`w-20 h-20 rounded-full ${nicheAlpha} flex items-center justify-center border-2 ${nicheBorder}`}>
+                <User size={36} className={nicheText} />
               </div>
-              <div className="absolute -bottom-1 -right-1 bg-bg-card border border-subtle p-1.5 rounded-full text-brand">
+              <div className={`absolute -bottom-1 -right-1 bg-bg-card border border-subtle p-1.5 rounded-full ${nicheText}`}>
                 <TrendingUp size={16} />
               </div>
             </div>
@@ -673,7 +683,7 @@ const Chat: React.FC = () => {
             </p>
 
             <div className="flex flex-wrap justify-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-brand/15 text-brand text-[10px] font-bold uppercase tracking-wide border border-brand/20">
+              <span className={`px-3 py-1 rounded-full ${nicheAlpha} ${nicheText} text-[10px] font-bold uppercase tracking-wide border ${nicheBorder}`}>
                 Lead
               </span>
               <span className="px-3 py-1 rounded-full bg-bg-hover text-secondary text-[10px] font-bold uppercase tracking-wide border border-subtle">
@@ -707,7 +717,7 @@ const Chat: React.FC = () => {
             {/* Informações Section */}
             <section>
               <div className="flex items-center gap-2 mb-3">
-                <Info size={14} className="text-brand" />
+                <Info size={14} className={nicheText} />
                 <h5 className="text-xs font-bold uppercase tracking-wide text-text-primary">
                   Informações
                 </h5>
@@ -731,7 +741,7 @@ const Chat: React.FC = () => {
             {/* Histórico Section */}
             <section>
               <div className="flex items-center gap-2 mb-3">
-                <History size={14} className="text-brand" />
+                <History size={14} className={nicheText} />
                 <h5 className="text-xs font-bold uppercase tracking-wide text-text-primary">
                   Histórico
                 </h5>
@@ -741,7 +751,7 @@ const Chat: React.FC = () => {
                   <span className="text-[10px] font-medium text-tertiary uppercase">
                     Interações
                   </span>
-                  <span className="text-xs font-bold text-brand">0</span>
+                  <span className={`text-xs font-bold ${nicheText}`}>0</span>
                 </div>
               </div>
             </section>
@@ -750,12 +760,12 @@ const Chat: React.FC = () => {
             <section>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Tag size={14} className="text-brand" />
+                  <Tag size={14} className={nicheText} />
                   <h5 className="text-xs font-bold uppercase tracking-wide text-text-primary">
                     Marcadores
                   </h5>
                 </div>
-                <button className="text-brand hover:rotate-90 transition-transform">
+                <button className={`${nicheText} hover:rotate-90 transition-transform`}>
                   <Plus size={14} />
                 </button>
               </div>
@@ -788,8 +798,8 @@ const Chat: React.FC = () => {
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a2e38; border-radius: 20px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #007850; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
       `}</style>
     </div>
   );

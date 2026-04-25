@@ -269,20 +269,20 @@ const Chat: React.FC = () => {
   const formatJid = (jid: string) => `+${jid.split('@')[0].split(':')[0]}`;
 
   const formatDisplayJid = (jid: string) => {
+    if (!jid) return '';
     const num = jid.split('@')[0].split(':')[0];
     
-    // Detecção de LID (15+ dígitos)
+    // Detecção de LID (15+ dígitos ou jid @lid)
     if (num.length >= 15 || jid.includes('@lid')) {
-      return num; // Retorna o identificador bruto em vez de 'Membro'
+      return num; 
     }
 
-    if (num.length >= 11) {
-      // Formato Brasil aproximado: +55 (XX) XXXXX-XXXX
-      if (num.startsWith('55')) {
-          return `+55 (${num.slice(2, 4)}) ${num.slice(4, 9)}-${num.slice(9)}`;
-      }
-      return `+${num}`;
+    if (num.startsWith('55') && num.length >= 10) {
+      const ddd = num.slice(2, 4);
+      const rest = num.slice(4);
+      return `+55 (${ddd}) ${rest.length === 9 ? rest.slice(0, 5) : rest.slice(0, 4)}-${rest.length === 9 ? rest.slice(5) : rest.slice(4)}`;
     }
+    
     return `+${num}`;
   };
 
@@ -554,30 +554,20 @@ const Chat: React.FC = () => {
                           <p className="text-[11px] font-bold text-brand mb-1 truncate px-1">
                             {(() => {
                                 const name = msg.sender_name;
-                                // Se for número (12+ dígitos), tenta buscar no metadata do objeto
-                                if (!name || /^\d{12,}$/.test(name) || name.startsWith('+55')) {
-                                    const metaPush = msg.metadata?.pushName || msg.metadata?.push_name;
-                                    if (metaPush && metaPush !== '~') return metaPush;
-                                    // Fallback: formatar número brasileiro ou exibir ID técnico
-                                    const rawJid = msg.sender_jid || '';
-                                    const num = rawJid.split('@')[0].replace(/\D/g, '');
-                                    
-                                    if (rawJid.includes('@lid') || num.length >= 15) {
-                                      return `ID: ${num}`; // Mostra claramente que é um ID e não tem '+'
-                                    }
-
-                                    if (num.length >= 10) {
-                                        if (num.startsWith('55') && num.length >= 12) {
-                                            const ddd = num.slice(2, 4);
-                                            const rest = num.slice(4);
-                                            return rest.length === 9 
-                                                ? `+55 (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
-                                                : `+55 (${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
-                                        }
-                                        return `+${num}`;
-                                    }
+                                const metaPush = msg.metadata?.pushName || msg.metadata?.push_name;
+                                
+                                // Se o servidor enviou um nome resolvido que NÃO é apenas o número
+                                if (name && !name.startsWith('+') && !/^\d{12,}$/.test(name)) {
+                                    return name;
                                 }
-                                return name || 'Membro';
+
+                                // Fallback para pushName do metadados se disponível
+                                if (metaPush && metaPush !== '~' && !/^\d{12,}$/.test(metaPush)) {
+                                    return metaPush;
+                                }
+
+                                // Fallback Final: Formatação Display
+                                return formatDisplayJid(msg.sender_jid || '');
                             })()}
                           </p>
                         )}

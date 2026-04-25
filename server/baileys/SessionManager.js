@@ -289,14 +289,19 @@ export class SessionManager extends EventEmitter {
       for (const message of m.messages) {
         if (message?.key?.remoteJid) {
           // Coleta pushName do remetente para o ContactStore
-          if (message.pushName && message.key.participant) {
-            this.contactStore.set(instanceId, message.key.participant, {
+          let targetJid = null;
+          if (message.pushName && message.key.participant) targetJid = message.key.participant;
+          else if (message.pushName && !message.key.fromMe) targetJid = message.key.remoteJid;
+
+          if (targetJid && message.pushName) {
+            const { merged, hasNewName } = this.contactStore.set(instanceId, targetJid, {
               pushName: message.pushName,
             });
-          } else if (message.pushName && !message.key.fromMe) {
-            this.contactStore.set(instanceId, message.key.remoteJid, {
-              pushName: message.pushName,
-            });
+            // Se o nome é novo/mudou, persiste no banco imediatamente para não perder no reboot
+            if (hasNewName) {
+              const supabase = await this.persistence.getSupabaseClient();
+              this.contactStore.persistToDB(instanceId, [{ instance_id: instanceId, ...merged }], supabase).catch(() => {});
+            }
           }
 
           await this._saveMessage(session, message);
@@ -314,9 +319,13 @@ export class SessionManager extends EventEmitter {
           // Coleta pushName do histórico se disponível
           if (message.pushName) {
             const jid = message.key.participant || message.key.remoteJid;
-            this.contactStore.set(instanceId, jid, {
+            const { merged, hasNewName } = this.contactStore.set(instanceId, jid, {
               pushName: message.pushName,
             });
+            if (hasNewName) {
+              const supabase = await this.persistence.getSupabaseClient();
+              this.contactStore.persistToDB(instanceId, [{ instance_id: instanceId, ...merged }], supabase).catch(() => {});
+            }
           }
           await this._saveMessage(session, message);
         }
@@ -440,12 +449,8 @@ export class SessionManager extends EventEmitter {
           ? instanceJid
           : contactJid;
 
-      // Resolve número do CHAT (para whatsapp_chats)
-      const chatRawNumber = contactJid.split('@')[0];
-      let chatCleanNumber = chatRawNumber.replace(/\D/g, '');
-      if (chatCleanNumber.length === 10 || chatCleanNumber.length === 11)
-        chatCleanNumber = '55' + chatCleanNumber;
-      const chatPhoneNumber = '+' + chatCleanNumber;
+      // Resolve número do CHAT (para whatsapp_chats) com normalização brasileira
+      const chatPhoneNumber = this.contactStore.formatNumber(contactJid, 'clean');
 
       // Resolve nome do REMETENTE via ContactStore (cascata inteligente)
       let senderName = null;
@@ -495,10 +500,9 @@ export class SessionManager extends EventEmitter {
         }
       }
 
-      // 5. Fallback Final Irrecuperável: ID Bruto
+      // 5. Fallback Final Irrecuperável: Formatação Brasileira Padrão
       if (!senderName) {
-           const raw = finalSenderJid?.split('@')[0] || 'Desconhecido';
-           senderName = raw.length >= 15 ? raw : `+${raw}`;
+           senderName = this.contactStore.formatNumber(finalSenderJid || senderJid, 'display');
       }
 
       // ── Extração de Menções (contextInfo) ──────────────────────

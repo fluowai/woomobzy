@@ -439,7 +439,19 @@ router.get('/instances/:id/chats', verifyAdmin, async (req, res) => {
 
     // 3. Mapeia leads para os chats (Vínculo de Inteligência)
     const enrichedChats = (chats || []).map(chat => {
-      const lead = (leads || []).find(l => l.chat_jid === chat.jid);
+      // Tenta match por JID direto
+      let lead = (leads || []).find(l => l.chat_jid === chat.jid);
+      
+      // Fallback: match por telefone normalizado (ex: 5511999999999)
+      if (!lead) {
+          const chatClean = sessionManager.contactStore.formatNumber(chat.jid, 'clean');
+          lead = (leads || []).find(l => {
+              if (!l.phone) return false;
+              const leadClean = sessionManager.contactStore.formatNumber(l.phone, 'clean');
+              return leadClean === chatClean;
+          });
+      }
+
       return {
         ...chat,
         name: lead?.name || chat.name, // Prioriza o nome do Lead se existir
@@ -498,11 +510,15 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
       }
     }
 
-    // Prioridade 2: Leads do CRM (mapeia apenas para PNs)
+    // Prioridade 2: Leads do CRM (mapeia usando normalização brasileira)
     for (const l of (leads || [])) {
       if (l.phone && l.name) {
-        const pnJid = `${l.phone}@s.whatsapp.net`;
-        nameMap.set(pnJid, l.name);
+        // Normaliza o telefone do lead para o formato padrão do WhatsApp (55...)
+        const cleanPhone = sessionManager.contactStore.formatNumber(l.phone, 'clean');
+        if (cleanPhone) {
+            const pnJid = `${cleanPhone}@s.whatsapp.net`;
+            nameMap.set(pnJid, l.name);
+        }
       }
     }
 
@@ -518,7 +534,7 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
                          resolvedSenderName === 'Membro';
 
       if (looksLikeId && senderJid) {
-        // Tenta resolver direto (se já mapeamos o nome pro JID enviado)
+        // Tenta resolver direto
         resolvedSenderName = nameMap.get(senderJid) || null;
 
         // Se falhou e for um LID, tenta resolver via PN mapeado
@@ -535,24 +551,9 @@ router.get('/instances/:id/chats/:chatId/messages', verifyAdmin, async (req, res
            if (metaPush && metaPush !== '~') resolvedSenderName = metaPush;
         }
 
-        // Último fallback: formatar número (se for PN real)
+        // Último fallback: formatar número usando ContactStore (Normalização Brasileira)
         if (!resolvedSenderName) {
-          const num = senderJid.split('@')[0].split(':')[0];
-          const isLid = senderJid.includes('@lid') || num.length >= 15;
-          
-          if (!isLid) {
-            if (num.startsWith('55') && (num.length === 12 || num.length === 13)) {
-              const ddd = num.slice(2, 4);
-              const rest = num.slice(4);
-              resolvedSenderName = rest.length === 9
-                ? `+55 (${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
-                : `+55 (${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
-            } else {
-              resolvedSenderName = `+${num}`;
-            }
-          } else {
-            resolvedSenderName = num; // ID bruto se for LID e nada resolver
-          }
+           resolvedSenderName = sessionManager.contactStore.formatNumber(senderJid, 'display');
         }
       }
 

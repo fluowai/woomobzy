@@ -31,27 +31,33 @@ export class ContactStore {
     const store = this._ensureInstance(instanceId);
     const existing = store.get(jid) || {};
     
-    // Merge inteligente: só sobrescreve se o valor novo não for nulo/vazio
+    // Anti-overwrite de nomes válidos por valores puros de JID ou vazios
+    if (data.pushName === jid.split('@')[0] || data.pushName === '~') {
+       data.pushName = null;
+    }
+
+    // Só permite update se o valor novo for "melhor" que o anterior
     const merged = {
       jid,
-      push_name: data.pushName || data.push_name || existing.push_name || null,
+      push_name: (data.pushName || data.push_name) && (data.pushName || data.push_name) !== '~' 
+                 ? (data.pushName || data.push_name) 
+                 : existing.push_name || null,
       verified_name: data.verifiedName || data.verified_name || existing.verified_name || null,
       notify: data.notify || existing.notify || null,
       short_name: data.shortName || data.short_name || existing.short_name || null,
       profile_photo_url: data.profilePictureUrl || data.profile_photo_url || existing.profile_photo_url || null,
       is_business: data.isBusiness ?? existing.is_business ?? false,
-      // NOVO: Link entre LID e PN para resolução cross-data
       linked_jid: data.linkedJid || data.linked_jid || existing.linked_jid || null,
       updated_at: new Date().toISOString(),
     };
-    
-    // Se recebemos um mapeamento explícito (ex: JID é LID e temos o PN), salvamos cruzado
-    if (data.linkedJid && data.linkedJid !== jid) {
-       // Opcional: Criar entrada para o JID espelho também para garantir resolução nos dois sentidos
-    }
+
+    // Flag para indicar se houve mudança significativa que justifica persistência imediata
+    const hasNewName = (merged.push_name && merged.push_name !== existing.push_name) ||
+                       (merged.verified_name && merged.verified_name !== existing.verified_name) ||
+                       (merged.linked_jid && merged.linked_jid !== existing.linked_jid);
 
     store.set(jid, merged);
-    return merged;
+    return { merged, hasNewName };
   }
 
   /**
@@ -106,33 +112,51 @@ export class ContactStore {
   }
 
   /**
-   * Formata JID como número de telefone legível
+   * Formata JID como número de telefone legível ou normalizado para banco
    */
-  formatNumber(jid) {
-    if (!jid) return 'Desconhecido';
+  formatNumber(jid, mode = 'display') {
+    if (!jid) return mode === 'display' ? 'Desconhecido' : '';
     
     const parts = jid.split('@')[0].split(':');
     const raw = parts[0].replace(/\D/g, '');
     
     // Detecção de LID (15 dígitos) ou JID de sistema
     if (jid.includes('@lid') || raw.length >= 15) {
-      return null; // Indica que não é um número de telefone formatável
+      return null; 
     }
 
-    if (!raw || raw.length < 8) return `+${raw || '?'}`;
+    if (!raw || raw.length < 8) return mode === 'display' ? `+${raw || '?'}` : raw;
 
-    // Formato brasileiro: 55 + DDD(2) + número(8-9)
-    if (raw.startsWith('55') && (raw.length === 12 || raw.length === 13)) {
-      const ddd = raw.slice(2, 4);
-      const number = raw.slice(4);
-      if (number.length === 9) {
-        return `+55 (${ddd}) ${number.slice(0, 5)}-${number.slice(5)}`;
+    // Normalização brasileira
+    let ddd, number;
+    let normalized = raw;
+
+    if (raw.startsWith('55') && raw.length >= 10) {
+      ddd = raw.slice(2, 4);
+      number = raw.slice(4);
+    } else if (raw.length === 10 || raw.length === 11) {
+      ddd = raw.slice(0, 2);
+      number = raw.slice(2);
+      normalized = `55${raw}`;
+    }
+
+    if (ddd && number) {
+      // Regra do 9º dígito brasileiro (Celulares DDD 11-99)
+      // Se tem 8 dígitos e o DDD é de celular, adiciona o 9
+      if (number.length === 8 && parseInt(ddd) <= 99) {
+        // Simples verificação se o primeiro dígito do número de 8 posições é entre 6 e 9 (comum para celular antigo)
+        // ou apenas força o 9 para garantir compatibilidade com o CRM
+        number = `9${number}`;
+        normalized = `55${ddd}${number}`;
       }
-      return `+55 (${ddd}) ${number.slice(0, 4)}-${number.slice(4)}`;
+
+      if (mode === 'display') {
+        return `+55 (${ddd}) ${number.length === 9 ? number.slice(0, 5) : number.slice(0, 4)}-${number.length === 9 ? number.slice(5) : number.slice(4)}`;
+      }
+      return normalized;
     }
 
-    // Formato genérico internacional
-    return `+${raw}`;
+    return mode === 'display' ? `+${raw}` : raw;
   }
 
   /**
@@ -146,7 +170,7 @@ export class ContactStore {
       const jid = contact.id || contact.jid;
       if (!jid || jid === 'status@broadcast' || jid.includes('@newsletter')) continue;
 
-      const merged = this.set(instanceId, jid, {
+      const { merged, hasNewName } = this.set(instanceId, jid, {
         pushName: contact.name || contact.pushName,
         verifiedName: contact.verifiedName,
         notify: contact.notify,

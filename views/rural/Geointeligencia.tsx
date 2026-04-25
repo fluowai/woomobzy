@@ -10,6 +10,7 @@ import {
   TreePine,
   Droplets,
   Mountain,
+  Search,
 } from 'lucide-react';
 import {
   MapContainer,
@@ -56,7 +57,7 @@ const Geointeligencia: React.FC = () => {
     },
     {
       name: 'CAR (Cadastro Ambiental)',
-      url: 'https://geoserver.mma.gov.br/geoserver/ows',
+      url: 'https://geoservicos.mma.gov.br/geoserver/mma/wms',
       layer: 'mma:car_imoveis',
       active: false,
       icon: TreePine,
@@ -64,8 +65,8 @@ const Geointeligencia: React.FC = () => {
     },
     {
       name: 'Uso Solo (MapBiomas)',
-      url: 'https://geoserver.mapbiomas.org/geoserver/ows',
-      layer: 'mapbiomas_cobertura_vegetal',
+      url: 'https://geoserver.mapbiomas.org/geoserver/mapbiomas-brazil/wms',
+      layer: 'mapbiomas-brazil:mapbiomas_cobertura_vegetal',
       active: false,
       icon: Eye,
       color: 'text-blue-600',
@@ -81,8 +82,11 @@ const Geointeligencia: React.FC = () => {
   ]);
 
   const [geometries, setGeometries] = useState<any[]>([]);
-  const [calculatedArea, setCalculatedArea] = useState<number>(0); // in square meters
+  const [calculatedArea, setCalculatedArea] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState<[number, number] | null>(null);
 
   const toggleLayer = (idx: number) => {
     setLayers((prev) =>
@@ -131,6 +135,27 @@ const Geointeligencia: React.FC = () => {
     }
   };
 
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery) return;
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        setSearchResult([parseFloat(lat), parseFloat(lon)]);
+      } else {
+        alert('Localização não encontrada. Tente termos menos específicos.');
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const areaInHectares = (calculatedArea / 10000).toFixed(2);
   const areaInAlqueireMG = (Number(areaInHectares) / 4.84).toFixed(2);
   const areaInAlqueireSP = (Number(areaInHectares) / 2.42).toFixed(2);
@@ -145,21 +170,46 @@ const Geointeligencia: React.FC = () => {
         }
       }
     }, [geometries, map]);
+
+    useEffect(() => {
+      if (searchResult) {
+        map.setView(searchResult, 15);
+      }
+    }, [searchResult, map]);
+
     return null;
   };
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
-          <Layers className="text-emerald-600" size={32} />
-          Geointeligência
-        </h1>
-        <p className="text-black/60 font-medium">
-          Camadas WMS/WFS, sobreposição ambiental, histórico de uso do solo e
-          alertas.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
+            <Layers className="text-emerald-600" size={32} />
+            Geointeligência
+          </h1>
+          <p className="text-black/60 font-medium">
+            Camadas GIS, sobreposição ambiental e histórico de uso do solo.
+          </p>
+        </div>
+
+        <form onSubmit={handleSearch} className="relative group w-full md:w-96">
+          <input
+            type="text"
+            placeholder="Buscar fazenda, cidade ou coordenadas..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl text-sm focus:border-emerald-500 outline-none transition-all shadow-sm group-hover:shadow-md"
+          />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <button 
+            disabled={isSearching}
+            className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors"
+          >
+            {isSearching ? '...' : 'Buscar'}
+          </button>
+        </form>
       </div>
 
       {/* Quick Stats */}

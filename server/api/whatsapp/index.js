@@ -649,6 +649,42 @@ router.post('/instances/:id/send', verifyAdmin, async (req, res) => {
   }
 });
 
+/** DELETE /api/whatsapp/instances/:id/messages/bulk — Excluir mensagens em massa */
+router.delete('/instances/:id/messages/bulk', verifyAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    const instanceId = req.params.id;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'IDs das mensagens são obrigatórios' });
+    }
+
+    // Verificar ownership da instância
+    const { data: instance, error: instError } = await supabase
+      .from('whatsapp_instances')
+      .select('id')
+      .eq('id', instanceId)
+      .eq('organization_id', req.orgId)
+      .single();
+
+    if (instError || !instance) {
+      return res.status(404).json({ error: 'Instância não encontrada ou acesso negado' });
+    }
+
+    const { error, count } = await supabase
+      .from('whatsapp_messages')
+      .delete()
+      .in('id', ids)
+      .eq('instance_id', instanceId);
+
+    if (error) throw error;
+
+    res.json({ success: true, deleted_count: ids.length, message: 'Mensagens excluídas com sucesso do banco de dados.' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Diagnóstico
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

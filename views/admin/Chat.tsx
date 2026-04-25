@@ -30,6 +30,8 @@ import {
   TrendingUp,
   Circle,
   Users,
+  CheckSquare,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl } from '../../src/lib/api';
@@ -61,6 +63,7 @@ interface Message {
   media_url?: string;
   mime_type?: string;
   metadata?: any;
+  sender_jid?: string;
 }
 
 interface Instance {
@@ -79,6 +82,10 @@ const Chat: React.FC = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -105,6 +112,37 @@ const Chat: React.FC = () => {
       'Content-Type': 'application/json',
     };
   }, []);
+
+  const handleDeleteBulk = async () => {
+    if (!selectedChat || selectedMessageIds.length === 0 || !selectedInstance) return;
+    if (!confirm(`Deseja excluir permanentemente estas ${selectedMessageIds.length} mensagens?`)) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`${getApiUrl()}/api/whatsapp/instances/${selectedInstance.id}/messages/bulk`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({ ids: selectedMessageIds }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setMessages(prev => prev.filter(m => !selectedMessageIds.includes(m.id)));
+        setSelectedMessageIds([]);
+        setIsSelectionMode(false);
+      } else {
+        alert(data.error || 'Erro ao excluir mensagens');
+      }
+    } catch (err) {
+      console.error('Erro ao excluir mensagens:', err);
+      alert('Erro de conexão ao excluir mensagens');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -182,7 +220,6 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (selectedInstance) {
       fetchChats(selectedInstance.id);
-      // Supabase Realtime setup here...
     }
   }, [selectedInstance]);
 
@@ -240,15 +277,11 @@ const Chat: React.FC = () => {
     if (!window.confirm('EXCLUIR CONVERSA: Isso removerá permanentemente o contato e todas as mensagens do seu painel. Confirmar?')) return;
 
     try {
-      // 1. Delete messages first
       await supabase.from('whatsapp_messages').delete().eq('chat_id', selectedChat.id);
-      
-      // 2. Delete the chat entry
       const { error } = await supabase.from('whatsapp_chats').delete().eq('id', selectedChat.id);
       
       if (error) throw error;
 
-      // Local state update
       setChats((prev) => prev.filter((c) => c.id !== selectedChat.id));
       setSelectedChat(null);
       setMessages([]);
@@ -258,46 +291,31 @@ const Chat: React.FC = () => {
     }
   };
 
-  // ──────────────────────────────────────────────
-  // UI Helpers
-  // ──────────────────────────────────────────────
   const formatTime = (ts: string) =>
     new Date(ts).toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
     });
-  const formatJid = (jid: string) => `+${jid.split('@')[0].split(':')[0]}`;
-
   const formatDisplayJid = (jid: string) => {
     if (!jid) return '';
     const num = jid.split('@')[0].split(':')[0];
-    
-    // Detecção de LID (15+ dígitos ou jid @lid)
-    if (num.length >= 15 || jid.includes('@lid')) {
-      return num; 
-    }
-
+    if (num.length >= 15 || jid.includes('@lid')) return num; 
     if (num.startsWith('55') && num.length >= 10) {
       const ddd = num.slice(2, 4);
       const rest = num.slice(4);
       return `+55 (${ddd}) ${rest.length === 9 ? rest.slice(0, 5) : rest.slice(0, 4)}-${rest.length === 9 ? rest.slice(5) : rest.slice(4)}`;
     }
-    
     return `+${num}`;
   };
 
-  // Mapa de menções resolvidas pelo servidor (JID → nome)
   const mentionMap = React.useMemo(() => {
     const map = new Map<string, string>();
     messages.forEach((m: any) => {
       if (m.resolved_mentions && Array.isArray(m.resolved_mentions)) {
         for (const mention of m.resolved_mentions) {
-          if (mention.name) {
-            map.set(mention.number, mention.name);
-          }
+          if (mention.name) map.set(mention.number, mention.name);
         }
       }
-      // Também monta mapa de sender para resolução de menções por número
       if (m.sender_name && !m.sender_name.startsWith('+') && m.sender_jid) {
         const num = m.sender_jid.split('@')[0].split(':')[0];
         map.set(num, m.sender_name);
@@ -308,23 +326,15 @@ const Chat: React.FC = () => {
 
   const renderMessageContent = (content: string) => {
     if (!content) return content;
-    // Regex captura menções no formato @número ou @+número (10-15 dígitos)
     const mentionRegex = /@(\+?\d{10,15})/g;
     const parts = content.split(mentionRegex);
-
-    if (parts.length === 1) return content; // Sem menções
-
+    if (parts.length === 1) return content;
     return parts.map((part, i) => {
       if (i % 2 === 1) {
-        // Remove + para buscar no mapa caso o mapa use apenas números
         const cleanPart = part.startsWith('+') ? part.slice(1) : part;
         const resolvedName = mentionMap.get(cleanPart);
-        
         return (
-          <span
-            key={i}
-            className="text-brand font-bold bg-brand/10 px-1 py-0.5 rounded-md text-[13px]"
-          >
+          <span key={i} className="text-brand font-bold bg-brand/10 px-1 py-0.5 rounded-md text-[13px]">
             @{resolvedName || formatDisplayJid(cleanPart + '@s.whatsapp.net')}
           </span>
         );
@@ -338,8 +348,7 @@ const Chat: React.FC = () => {
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     if (activeTab === 'ativos') return matchesSearch && chat.unread_count > 0;
-    if (activeTab === 'automacao')
-      return matchesSearch && chat.jid.includes('bot'); // Simplificado
+    if (activeTab === 'automacao') return matchesSearch && chat.jid.includes('bot');
     return matchesSearch;
   });
 
@@ -355,13 +364,7 @@ const Chat: React.FC = () => {
 
   return (
     <div className="flex h-full bg-white text-text-primary overflow-hidden font-sans">
-      {/* ============================================
-          1. SIDEBAR (CHATS) — Estilo WhatsApp Web
-      ============================================ */}
-      <div
-        className={`${selectedChat ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[350px] lg:w-[400px] bg-wa-sidebar border-r border-subtle shrink-0`}
-      >
-        {/* Search & Header */}
+      <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[350px] lg:w-[400px] bg-wa-sidebar border-r border-subtle shrink-0`}>
         <div className="p-4 pb-2">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-bold uppercase tracking-tight text-text-primary flex items-center gap-2">
@@ -372,12 +375,8 @@ const Chat: React.FC = () => {
               {selectedInstance?.name || 'OFFLINE'}
             </div>
           </div>
-
           <div className="relative mb-4">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"
-              size={16}
-            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary" size={16} />
             <input
               type="text"
               placeholder="Buscar conversas..."
@@ -386,17 +385,13 @@ const Chat: React.FC = () => {
               className="w-full bg-bg-input border border-subtle rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-brand/20 transition-all outline-none text-text-primary placeholder:text-tertiary"
             />
           </div>
-
-          {/* Tabs */}
           <div className="flex items-center gap-1 p-1 bg-bg-card rounded-lg border border-subtle">
             {['todos', 'ativos', 'automacao', 'arquivados'].map((tab: any) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all ${
-                  activeTab === tab
-                    ? 'bg-brand text-white'
-                    : 'text-tertiary hover:text-text-primary'
+                  activeTab === tab ? 'bg-brand text-white' : 'text-tertiary hover:text-text-primary'
                 }`}
               >
                 {tab}
@@ -404,32 +399,24 @@ const Chat: React.FC = () => {
             ))}
           </div>
         </div>
-
-        {/* Chat List */}
         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0 bg-wa-sidebar">
           {filteredChats.map((chat) => (
             <button
               key={chat.id}
               onClick={() => setSelectedChat(chat)}
               className={`w-full flex items-center gap-3 px-4 py-3 transition-all group border-b border-white/5 relative ${
-                selectedChat?.id === chat.id
-                  ? 'bg-wa-msg-received'
-                  : 'hover:bg-bg-hover'
+                selectedChat?.id === chat.id ? 'bg-wa-msg-received' : 'hover:bg-bg-hover'
               }`}
             >
               <div className="relative shrink-0">
                 <div className="w-12 h-12 rounded-full bg-wa-msg-received flex items-center justify-center text-text-primary font-bold text-lg overflow-hidden group-hover:scale-105 transition-transform border border-white/5">
                   {chat.profile_photo_url ? (
-                    <img
-                      src={chat.profile_photo_url}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={chat.profile_photo_url} className="w-full h-full object-cover" />
                   ) : (
                     <User size={24} className="text-tertiary" />
                   )}
                 </div>
               </div>
-
               <div className="flex-1 text-left min-w-0 py-1">
                 <div className="flex justify-between items-start mb-1">
                   <h3 className="font-medium truncate text-[16px] text-text-primary">
@@ -439,20 +426,13 @@ const Chat: React.FC = () => {
                     {chat.last_message_at ? formatTime(chat.last_message_at) : ''}
                   </span>
                 </div>
-
                 <div className="flex items-center justify-between">
                   <p className="text-[13px] text-tertiary truncate font-normal leading-tight pr-4">
-                    {chat.jid.endsWith('@g.us') ? (
-                      <span className="flex items-center gap-1"><Users size={12} /> Grupo</span>
-                    ) : (
-                      'Clique para ver a conversa'
-                    )}
+                    {chat.jid.endsWith('@g.us') ? <span className="flex items-center gap-1"><Users size={12} /> Grupo</span> : 'Clique para ver a conversa'}
                   </p>
                   {chat.unread_count > 0 && (
                     <div className="min-w-[20px] h-[20px] bg-brand rounded-full flex items-center justify-center shadow-lg">
-                      <span className="text-[11px] font-bold text-white px-1">
-                        {chat.unread_count}
-                      </span>
+                      <span className="text-[11px] font-bold text-white px-1">{chat.unread_count}</span>
                     </div>
                   )}
                 </div>
@@ -462,21 +442,12 @@ const Chat: React.FC = () => {
         </div>
       </div>
 
-      {/* ============================================
-          2. ÁREA CENTRAL (CHAT) — Estilo WhatsApp
-      ============================================ */}
-      <div
-        className={`${!selectedChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-wa-bg relative`}
-      >
+      <div className={`${!selectedChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-wa-bg relative`}>
         {selectedChat ? (
           <>
-            {/* Header */}
             <header className="h-16 px-4 flex items-center justify-between border-b border-white/5 bg-wa-sidebar z-10 shrink-0">
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSelectedChat(null)}
-                  className="lg:hidden p-2 text-secondary"
-                >
+                <button onClick={() => setSelectedChat(null)} className="lg:hidden p-2 text-secondary">
                   <ArrowLeft size={20} />
                 </button>
                 <div className="relative">
@@ -490,40 +461,24 @@ const Chat: React.FC = () => {
                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-brand rounded-full border-2 border-wa-sidebar shadow-sm" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-text-primary leading-tight">
-                    {selectedChat.name || formatDisplayJid(selectedChat.jid)}
-                  </h3>
-                  <p className="text-[11px] font-bold text-brand uppercase tracking-widest mt-0.5">
-                    {selectedChat.jid.endsWith('@g.us') ? 'Em grupo' : 'Chat Individual'}
-                  </p>
+                  <h3 className="font-bold text-text-primary leading-tight">{selectedChat.name || formatDisplayJid(selectedChat.jid)}</h3>
+                  <p className="text-[11px] font-bold text-brand uppercase tracking-widest mt-0.5">{selectedChat.jid.endsWith('@g.us') ? 'Em grupo' : 'Chat Individual'}</p>
                 </div>
               </div>
-
-              <div className="flex items-center gap-4">
-                <button className="p-2 text-tertiary hover:text-text-primary transition-all">
-                  <Search size={20} />
-                </button>
                 <button 
-                  onClick={handleClearMessages} 
-                  className="p-2 text-tertiary hover:text-brand transition-all"
-                  title="Limpar histórico"
+                  onClick={() => setIsSelectionMode(!isSelectionMode)}
+                  className={`p-2 rounded-full transition-all ${isSelectionMode ? 'bg-brand text-white shadow-lg' : 'text-tertiary hover:text-brand'}`}
+                  title="Selecionar mensagens"
                 >
-                  <History size={20} />
+                  <CheckSquare size={20} />
                 </button>
-                <button 
-                  onClick={handleDeleteChat} 
-                  className="p-2 text-tertiary hover:text-red-500 transition-all ml-1"
-                  title="Excluir conversa"
-                >
-                  <Trash2 size={20} />
-                </button>
-                <button className="p-2 text-tertiary hover:text-text-primary transition-all">
-                  <MoreVertical size={20} />
-                </button>
+                <button className="p-2 text-tertiary hover:text-text-primary transition-all"><Search size={20} /></button>
+                <button onClick={handleClearMessages} className="p-2 text-tertiary hover:text-brand transition-all" title="Limpar histórico"><History size={20} /></button>
+                <button onClick={handleDeleteChat} className="p-2 text-tertiary hover:text-red-500 transition-all ml-1" title="Excluir conversa"><Trash2 size={20} /></button>
+                <button className="p-2 text-tertiary hover:text-text-primary transition-all"><MoreVertical size={20} /></button>
               </div>
             </header>
 
-            {/* Messages */}
             <div 
               className="flex-1 overflow-y-auto p-4 custom-scrollbar" 
               style={{ 
@@ -537,93 +492,57 @@ const Chat: React.FC = () => {
                 {messages.map((msg, i) => {
                   const isGroup = selectedChat?.jid.endsWith('@g.us');
                   const showSender = isGroup && !msg.from_me;
-                  
+                  const isSelected = selectedMessageIds.includes(msg.id);
+
                   return (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.from_me ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-1 duration-200`}
+                    <div 
+                      key={msg.id} 
+                      className={`flex items-start gap-3 group/msg ${isSelectionMode ? 'cursor-pointer hover:bg-black/[0.02]' : ''}`}
+                      onClick={() => {
+                        if (isSelectionMode) {
+                          setSelectedMessageIds(prev => 
+                            prev.includes(msg.id) ? prev.filter(id => id !== msg.id) : [...prev, msg.id]
+                          );
+                        }
+                      }}
                     >
-                      <div
-                        className={`group relative max-w-[85%] sm:max-w-[70%] px-3 py-1.5 rounded-xl shadow-sm transition-all ${
-                          msg.from_me
-                            ? 'bg-wa-bubble-sent text-text-primary rounded-tr-none'
-                            : 'bg-wa-bubble-received text-text-primary rounded-tl-none'
-                        }`}
-                      >
-                        {showSender && (
-                          <p className="text-[11px] font-bold text-brand mb-1 truncate px-1">
-                            {(() => {
-                                const name = msg.sender_name;
-                                const metaPush = msg.metadata?.pushName || msg.metadata?.push_name;
-                                
-                                // Se o servidor enviou um nome resolvido que NÃO é apenas o número
-                                if (name && !name.startsWith('+') && !/^\d{12,}$/.test(name)) {
-                                    return name;
-                                }
-
-                                // Fallback para pushName do metadados se disponível
-                                if (metaPush && metaPush !== '~' && !/^\d{12,}$/.test(metaPush)) {
-                                    return metaPush;
-                                }
-
-                                // Fallback Final: Formatação Display
-                                return formatDisplayJid(msg.sender_jid || '');
-                            })()}
-                          </p>
-                        )}
-                        
-                        {/* Media Content */}
-                        {msg.media_url && (
-                          <div className="mb-2 rounded-lg overflow-hidden border border-black/5 bg-black/5">
-                            {msg.message_type === 'imageMessage' ? (
-                              <img 
-                                src={msg.media_url} 
-                                alt="Mídia" 
-                                className="max-w-full max-h-[300px] object-contain hover:scale-[1.02] transition-transform cursor-pointer"
-                                onClick={() => window.open(msg.media_url, '_blank')}
-                              />
-                            ) : msg.message_type === 'audioMessage' ? (
-                              <audio controls className="w-full h-8 scale-90 -ml-4">
-                                <source src={msg.media_url} type={msg.mime_type || 'audio/ogg'} />
-                              </audio>
-                            ) : (
-                              <div 
-                                className="flex items-center gap-3 p-3 cursor-pointer hover:bg-black/5"
-                                onClick={() => window.open(msg.media_url, '_blank')}
-                              >
-                                <div className="p-2 bg-wa-msg-received rounded-lg">
-                                  <File size={20} className="text-brand" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold truncate">Arquivo {msg.mime_type?.split('/')[1]?.toUpperCase()}</p>
-                                  <p className="text-[10px] text-tertiary">Clique para baixar</p>
-                                </div>
-                              </div>
-                            )}
+                      {isSelectionMode && (
+                        <div className="pt-2">
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-brand border-brand' : 'border-gray-300'}`}>
+                            {isSelected && <Check size={14} className="text-white" />}
                           </div>
-                        )}
-
-                        <p className="text-[14px] font-normal leading-snug break-words whitespace-pre-wrap">
-                          {renderMessageContent(msg.content)}
-                        </p>
-
-                        <div
-                          className={`flex items-center justify-end gap-1 text-[9px] font-medium mt-1 -mr-1 ${
-                            msg.from_me ? 'text-wa-time-sent' : 'text-wa-time-received'
-                          }`}
-                        >
-                          {formatTime(msg.timestamp)}
-                          {msg.from_me && (
-                            <div className="ml-1">
-                              {msg.status === 'read' ? (
-                                <CheckCheck size={12} className="text-wa-check-read" />
-                              ) : msg.status === 'delivered' ? (
-                                <CheckCheck size={12} className="text-wa-check-delivered" />
+                        </div>
+                      )}
+                      <div className={`flex-1 flex flex-col ${msg.from_me ? 'items-end' : 'items-start'}`}>
+                        <div className={`group relative max-w-[85%] sm:max-w-[70%] px-3 py-1.5 rounded-xl shadow-sm transition-all ${msg.from_me ? 'bg-wa-bubble-sent text-text-primary rounded-tr-none' : 'bg-wa-bubble-received text-text-primary rounded-tl-none'}`}>
+                          {showSender && (
+                            <p className="text-[11px] font-bold text-brand mb-1 truncate px-1">
+                              {msg.sender_name || formatDisplayJid(msg.sender_jid || '')}
+                            </p>
+                          )}
+                          {msg.media_url && (
+                            <div className="mb-2 rounded-lg overflow-hidden border border-black/5 bg-black/5">
+                              {msg.message_type === 'imageMessage' ? (
+                                <img src={msg.media_url} alt="Mídia" className="max-w-full max-h-[300px] object-contain hover:scale-[1.02] transition-transform cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')} />
+                              ) : msg.message_type === 'audioMessage' ? (
+                                <audio controls className="w-full h-8 scale-90 -ml-4"><source src={msg.media_url} type={msg.mime_type || 'audio/ogg'} /></audio>
                               ) : (
-                                <Check size={12} className="text-wa-check-sent" />
+                                <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-black/5" onClick={() => window.open(msg.media_url, '_blank')}>
+                                  <div className="p-2 bg-wa-msg-received rounded-lg"><File size={20} className="text-brand" /></div>
+                                  <div className="flex-1 min-w-0"><p className="text-xs font-bold truncate">Arquivo {msg.mime_type?.split('/')[1]?.toUpperCase()}</p><p className="text-[10px] text-tertiary">Clique para baixar</p></div>
+                                </div>
                               )}
                             </div>
                           )}
+                          <p className="text-[14px] font-normal leading-snug break-words whitespace-pre-wrap">{renderMessageContent(msg.content)}</p>
+                          <div className={`flex items-center justify-end gap-1 text-[9px] font-medium mt-1 -mr-1 ${msg.from_me ? 'text-wa-time-sent' : 'text-wa-time-received'}`}>
+                            {formatTime(msg.timestamp)}
+                            {msg.from_me && (
+                              <div className="ml-1">
+                                {msg.status === 'read' ? <CheckCheck size={12} className="text-wa-check-read" /> : msg.status === 'delivered' ? <CheckCheck size={12} className="text-wa-check-delivered" /> : <Check size={12} className="text-wa-check-sent" />}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -633,8 +552,46 @@ const Chat: React.FC = () => {
               </div>
             </div>
 
-            {/* Input */}
-            <div className="p-2 bg-wa-sidebar border-t border-white/5">
+            {/* Input Bar */}
+            <div className="p-2 bg-wa-sidebar border-t border-white/5 relative">
+              {/* Overlay de Seleção em Massa */}
+              {isSelectionMode && (
+                <div className="absolute inset-0 bg-wa-sidebar z-20 flex items-center px-6 animate-slide-up border-t border-brand/20">
+                  <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={() => {
+                          setIsSelectionMode(false);
+                          setSelectedMessageIds([]);
+                        }}
+                        className="p-2 text-text-secondary hover:bg-bg-hover rounded-full transition-colors"
+                      >
+                        <X size={20} />
+                      </button>
+                      <span className="text-sm font-semibold text-text-primary">
+                        {selectedMessageIds.length} selecionadas
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <button 
+                         onClick={() => setSelectedMessageIds(messages.map(m => m.id))}
+                         className="text-xs font-bold text-brand hover:underline px-3 py-2"
+                       >
+                         Selecionar Tudo
+                       </button>
+                       <button 
+                         onClick={handleDeleteBulk}
+                         disabled={selectedMessageIds.length === 0 || isDeleting}
+                         className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50 shadow-lg"
+                       >
+                         {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                         Excluir
+                       </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="max-w-6xl mx-auto flex items-center gap-2 lg:px-10">
                 <div className="flex items-center gap-1">
                   <button className="p-2.5 text-tertiary hover:text-text-primary transition-all">
@@ -644,8 +601,7 @@ const Chat: React.FC = () => {
                     <Paperclip size={24} />
                   </button>
                 </div>
-                
-                <div className="flex-1 bg-wa-msg-received rounded-lg px-4 py-2 border border-white/5 focus-within:border-white/10 transition-all">
+                                <div className="flex-1 bg-wa-msg-received rounded-lg px-4 py-2 border border-white/5 focus-within:border-white/10 transition-all">
                   <input
                     type="text"
                     value={newMessage}

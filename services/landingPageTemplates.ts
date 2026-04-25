@@ -11,7 +11,6 @@ export interface LandingPageTemplate {
   blocks: Omit<Block, 'id'>[];
 }
 
-// Helper para gerar blocos com IDs únicos
 export const generateBlocksFromTemplate = (
   templateBlocks: Omit<Block, 'id'>[]
 ): Block[] => {
@@ -22,1998 +21,787 @@ export const generateBlocksFromTemplate = (
   }));
 };
 
-export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
-  // ============================================
-  // TEMPLATE 1: SONHO RURAL PREMIUM
-  // ============================================
-  {
-    id: 'sonho-rural-premium',
-    name: 'Sonho Rural Premium',
-    description:
-      'Hero impactante com formulário em destaque e badges de benefícios',
-    thumbnail: '🏔️',
-    category: 'Fazendas',
-    themeConfig: {
-      primaryColor: '#1e40af',
-      secondaryColor: '#fbbf24',
-      backgroundColor: '#ffffff',
-      textColor: '#1f2937',
-      fontFamily: 'Montserrat',
-      borderRadius: '0.5rem',
-      spacing: {
-        xs: '0.5rem',
-        sm: '1rem',
-        md: '1.5rem',
-        lg: '2rem',
-        xl: '3rem',
-      },
-      fontSize: {
-        base: '1rem',
-        heading1: '3rem',
-        heading2: '2.25rem',
-        heading3: '1.875rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HERO,
-        order: 0,
-        visible: true,
-        config: {
-          title: 'Encontre a Fazenda dos Seus Sonhos!',
-          subtitle: 'Propriedades Rurais a Venda com as Melhores Oportunidades',
-          backgroundImage: '',
-          overlayOpacity: 0.4,
-          ctaText: 'Agende uma Visita Hoje!',
-          ctaLink: '#contato',
-          height: 600,
-          alignment: 'left',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-      },
-      {
-        type: BlockType.STATS,
-        order: 1,
-        visible: true,
-        config: {
-          stats: [
-            { icon: '🌾', value: '500+', label: 'Hectares Disponíveis' },
-            { icon: '📍', value: '15+', label: 'Regiões Premium' },
-            { icon: '🌳', value: '100%', label: 'Natureza Preservada' },
-          ],
-          columns: 3,
-        } as any,
-        styles: { padding: '60px 20px', backgroundColor: '#f9fafb' },
-        responsive: {},
-      },
-      {
-        type: BlockType.TEXT,
-        order: 2,
-        visible: true,
-        config: {
-          content: `<p style="font-size: 1.125rem; line-height: 1.75;">Imagine acordar todos os dias com a vista do <strong>verde infinito</strong>, o som dos pássaros e a sensação de paz que só o campo pode proporcionar.</p>
-                    <p style="font-size: 1.125rem; line-height: 1.75;">Nossas fazendas são cuidadosamente selecionadas para oferecer o melhor em <strong>qualidade de vida</strong>, <strong>potencial produtivo</strong> e <strong>valorização</strong>.</p>
-                    <p style="font-size: 1.125rem; line-height: 1.75;">Seja para investimento, lazer ou produção, encontre aqui a propriedade ideal para realizar seus sonhos.</p>`,
-          fontSize: 18,
-          fontWeight: 400,
-          color: '#374151',
-          alignment: 'center',
-        },
-        styles: { padding: '60px 40px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.PROPERTY_GRID,
-        order: 3,
-        visible: true,
-        config: {
-          columns: 3,
-          gap: 24,
-          showFilters: false,
-          maxItems: 6,
-          sortBy: 'price',
-          cardStyle: 'modern',
-        },
-        styles: { padding: '60px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.CTA,
-        order: 4,
-        visible: true,
-        config: {
-          title: 'Pronto para Conhecer Sua Próxima Propriedade?',
-          description:
-            'Agende uma visita exclusiva e veja pessoalmente o potencial do seu futuro investimento',
-          buttonText: 'Falar com Especialista Agora',
-          buttonLink: 'https://wa.me/5544997223030',
-          backgroundColor: '#1e40af',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '80px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.FORM,
-        order: 5,
-        visible: true,
-        config: {
-          title: 'Agende Sua Visita',
-          fields: [
-            {
-              name: 'name',
-              type: 'text',
-              label: 'Nome Completo',
-              required: true,
-              placeholder: 'Como prefere ser chamado?',
-            },
-            {
-              name: 'phone',
-              type: 'tel',
-              label: 'WhatsApp',
-              required: true,
-              placeholder: '(00) 00000-0000',
-            },
-            {
-              name: 'email',
-              type: 'email',
-              label: 'E-mail',
-              required: false,
-              placeholder: 'seu@email.com',
-            },
-            {
-              name: 'message',
-              type: 'textarea',
-              label: 'Quando gostaria de visitar?',
-              required: false,
-              placeholder: 'Conte-nos sobre suas expectativas...',
-            },
-          ],
-          submitText: 'Confirmar Agendamento',
-          successMessage:
-            'Recebemos seu interesse! Entraremos em contato em até 2 horas.',
-        },
-        styles: { padding: '60px 20px', backgroundColor: '#f9fafb' },
-        responsive: {},
-      },
-    ],
-  },
-
-  // ============================================
-  // TEMPLATE 2: REFÚGIO RURAL MODERNO
-  // ============================================
-  {
-    id: 'refugio-rural-moderno',
-    name: 'Refúgio Rural Moderno',
-    description: 'Design com overlay e grid de propriedades em destaque',
-    thumbnail: '🏡',
-    category: 'Fazendas',
-    themeConfig: {
-      primaryColor: '#15803d',
-      secondaryColor: '#ea580c',
-      backgroundColor: '#ffffff',
-      textColor: '#1f2937',
-      fontFamily: 'Poppins',
-      borderRadius: '0.75rem',
-      spacing: {
-        xs: '0.5rem',
-        sm: '1rem',
-        md: '1.5rem',
-        lg: '2rem',
-        xl: '3rem',
-      },
-      fontSize: {
-        base: '1rem',
-        heading1: '2.75rem',
-        heading2: '2.25rem',
-        heading3: '1.875rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HERO,
-        order: 0,
-        visible: true,
-        config: {
-          title: 'Fazendas à Venda',
-          subtitle:
-            'Invista no Seu Refúgio Rural com Segurança e Rentabilidade',
-          backgroundImage: '',
-          overlayOpacity: 0.5,
-          ctaText: 'Ver Propriedades Disponíveis',
-          ctaLink: '#propriedades',
-          height: 650,
-          alignment: 'center',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-      },
-      {
-        type: BlockType.FEATURES,
-        order: 1,
-        visible: true,
-        config: {
-          features: [
-            {
-              title: 'Áreas de Cultivo Preparadas',
-              description: 'Solo fértil pronto para produção',
-              icon: '🌾',
-            },
-            {
-              title: 'Criação de Gado Premium',
-              description: 'Pastagens de alta qualidade',
-              icon: '🐄',
-            },
-            {
-              title: 'Lagos e Mata Nativa',
-              description: 'Água abundante e natureza preservada',
-              icon: '🌳',
-            },
-          ],
-          columns: 3,
-        },
-        styles: { padding: '60px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.TEXT,
-        order: 2,
-        visible: true,
-        config: {
-          content: `<h2 style="font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem;">Conheça Nossas Melhores Ofertas</h2>
-                    <p style="font-size: 1.125rem; line-height: 1.75;">Cada propriedade é uma <strong>oportunidade única</strong> de investimento. Selecionadas criteriosamente, nossas fazendas oferecem infraestrutura completa, localização estratégica e potencial de valorização garantido.</p>`,
-          fontSize: 18,
-          fontWeight: 400,
-          color: '#374151',
-          alignment: 'center',
-        },
-        styles: { padding: '40px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.PROPERTY_GRID,
-        order: 3,
-        visible: true,
-        config: {
-          columns: 3,
-          gap: 32,
-          showFilters: false,
-          maxItems: 3,
-          sortBy: 'price',
-          cardStyle: 'modern',
-        },
-        styles: { padding: '40px 20px', backgroundColor: '#f9fafb' },
-        responsive: {},
-      },
-      {
-        type: BlockType.STATS,
-        order: 4,
-        visible: true,
-        config: {
-          stats: [
-            { icon: '✓', value: '200+', label: 'Propriedades Vendidas' },
-            { icon: '★', value: '98%', label: 'Clientes Satisfeitos' },
-            { icon: '⚡', value: '15', label: 'Anos de Experiência' },
-          ],
-          columns: 3,
-        } as any,
-        styles: { padding: '80px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.FORM,
-        order: 5,
-        visible: true,
-        config: {
-          title: 'Solicite Mais Informações',
-          fields: [
-            {
-              name: 'name',
-              type: 'text',
-              label: 'Nome',
-              required: true,
-              placeholder: 'Seu nome',
-            },
-            {
-              name: 'phone',
-              type: 'tel',
-              label: 'Telefone',
-              required: true,
-              placeholder: '(00) 00000-0000',
-            },
-            {
-              name: 'email',
-              type: 'email',
-              label: 'E-mail',
-              required: true,
-              placeholder: 'seu@email.com',
-            },
-          ],
-          submitText: 'Enviar Solicitação',
-          successMessage: 'Obrigado! Entraremos em contato em breve.',
-        },
-        styles: {
-          padding: '60px 20px',
-          backgroundColor: '#15803d',
-          color: '#ffffff',
-        } as any,
-        responsive: {},
-      },
-    ],
-  },
-
-  // ============================================
-  // TEMPLATE 3: SONHO DOURADO
-  // ============================================
-  {
-    id: 'sonho-dourado',
-    name: 'Sonho Dourado',
-    description:
-      'Layout split com destaque para benefícios e formulário dourado',
-    thumbnail: '⭐',
-    category: 'Fazendas',
-    themeConfig: {
-      primaryColor: '#16a34a',
-      secondaryColor: '#eab308',
-      backgroundColor: '#fef3c7',
-      textColor: '#1f2937',
-      fontFamily: 'Raleway',
-      borderRadius: '1rem',
-      spacing: {
-        xs: '0.5rem',
-        sm: '1rem',
-        md: '1.5rem',
-        lg: '2rem',
-        xl: '3rem',
-      },
-      fontSize: {
-        base: '1rem',
-        heading1: '2.5rem',
-        heading2: '2rem',
-        heading3: '1.75rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HERO,
-        order: 0,
-        visible: true,
-        config: {
-          title: 'Realize Seu Sonho de Ter uma Fazenda!',
-          subtitle: 'Fazendas à Venda com Condições Imperdíveis',
-          backgroundImage: '',
-          overlayOpacity: 0.3,
-          ctaText: 'Peça Mais Informações',
-          ctaLink: '#form',
-          height: 550,
-          alignment: 'left',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-      },
-      {
-        type: BlockType.FEATURES,
-        order: 1,
-        visible: true,
-        config: {
-          features: [
-            {
-              title: 'Propriedades Agrícolas',
-              description: 'Terras produtivas de alta qualidade',
-              icon: '✓',
-            },
-            {
-              title: 'Ideal para Pecuária',
-              description: 'Pastagens preparadas e infraestrutura',
-              icon: '✓',
-            },
-            {
-              title: 'Áreas de Lazer e Lagoas',
-              description: 'Espaços de convivência e relaxamento',
-              icon: '✓',
-            },
-            {
-              title: 'Documentação Regularizada',
-              description: 'Segurança jurídica total',
-              icon: '✓',
-            },
-          ],
-          columns: 2,
-        },
-        styles: { padding: '60px 20px', backgroundColor: '#ffffff' },
-        responsive: {},
-      },
-      {
-        type: BlockType.PROPERTY_CAROUSEL,
-        order: 2,
-        visible: true,
-        config: {
-          images: [],
-          autoplay: true,
-          autoplayDelay: 5000,
-          showThumbnails: true,
-          showDots: true,
-        } as any,
-        styles: { padding: '60px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.FORM,
-        order: 3,
-        visible: true,
-        config: {
-          title: 'Fale Conosco Agora!',
-          fields: [
-            {
-              name: 'name',
-              type: 'text',
-              label: 'Seu Nome',
-              required: true,
-              placeholder: 'Nome completo',
-            },
-            {
-              name: 'email',
-              type: 'email',
-              label: 'Seu E-mail',
-              required: true,
-              placeholder: 'seu@email.com',
-            },
-            {
-              name: 'phone',
-              type: 'tel',
-              label: 'Telefone',
-              required: true,
-              placeholder: '(00) 00000-0000',
-            },
-          ],
-          submitText: 'Envie Agora',
-          successMessage: 'Mensagem enviada! Retornaremos em breve.',
-        },
-        styles: {
-          padding: '60px 40px',
-          backgroundColor: '#eab308',
-          color: '#1f2937',
-        } as any,
-        responsive: {},
-      },
-      {
-        type: BlockType.CTA,
-        order: 4,
-        visible: true,
-        config: {
-          title: 'Oportunidade Limitada!',
-          description:
-            'Propriedades exclusivas com preços especiais por tempo limitado',
-          buttonText: 'WhatsApp: Falar com Corretor',
-          buttonLink: 'https://wa.me/5544997223030',
-          backgroundColor: '#16a34a',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '80px 20px' },
-        responsive: {},
-      },
-    ],
-  },
-
-  // ============================================
-  // TEMPLATE 4: ESSÊNCIA DO CAMPO
-  // ============================================
-  {
-    id: 'essencia-do-campo',
-    name: 'Essência do Campo',
-    description: 'Design minimalista e clean com foco em storytelling',
-    thumbnail: '🌾',
-    category: 'Fazendas',
-    themeConfig: {
-      primaryColor: '#059669',
-      secondaryColor: '#0891b2',
-      backgroundColor: '#ffffff',
-      textColor: '#1f2937',
-      fontFamily: 'Inter',
-      borderRadius: '0.5rem',
-      spacing: {
-        xs: '0.5rem',
-        sm: '1rem',
-        md: '1.5rem',
-        lg: '2rem',
-        xl: '3rem',
-      },
-      fontSize: {
-        base: '1rem',
-        heading1: '2.5rem',
-        heading2: '2rem',
-        heading3: '1.75rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HERO,
-        order: 0,
-        visible: true,
-        config: {
-          title: 'Viva a Essência do Campo',
-          subtitle: 'Descubra propriedades que transformam sonhos em realidade',
-          backgroundImage: '',
-          overlayOpacity: 0.35,
-          ctaText: 'Conhecer Propriedades',
-          ctaLink: '#propriedades',
-          height: 700,
-          alignment: 'center',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-      },
-      {
-        type: BlockType.STATS,
-        order: 1,
-        visible: true,
-        config: {
-          stats: [
-            { icon: '🏆', value: '1000+', label: 'Hectares Comercializados' },
-            { icon: '👥', value: '500+', label: 'Famílias Realizadas' },
-            { icon: '🌟', value: '25', label: 'Anos de Tradição' },
-            { icon: '💚', value: '100%', label: 'Compromisso com Você' },
-          ],
-          columns: 4,
-        } as any,
-        styles: { padding: '80px 20px', backgroundColor: '#f0fdfa' },
-        responsive: {},
-      },
-      {
-        type: BlockType.TEXT,
-        order: 2,
-        visible: true,
-        config: {
-          content: `<h2 style="font-size: 2.25rem; font-weight: bold; margin-bottom: 1.5rem; text-align: center;">Uma Nova Vida Espera por Você</h2>
-                    <p style="font-size: 1.25rem; line-height: 1.8; margin-bottom: 1rem;">Há algo especial em <strong>possuir um pedaço de terra</strong>. Não é apenas sobre metros quadrados ou investimento financeiro — é sobre criar raízes, construir legado e viver com propósito.</p>
-                    <p style="font-size: 1.25rem; line-height: 1.8; margin-bottom: 1rem;">Nossas propriedades são cuidadosamente selecionadas para oferecer não apenas <strong>potencial econômico</strong>, mas também <strong>qualidade de vida incomparável</strong>.</p>
-                    <p style="font-size: 1.25rem; line-height: 1.8;">Seja você um investidor experiente ou alguém buscando uma mudança de vida, temos a propriedade perfeita esperando por você.</p>`,
-          fontSize: 20,
-          fontWeight: 400,
-          color: '#374151',
-          alignment: 'left',
-        },
-        styles: { padding: '80px 60px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.PROPERTY_CAROUSEL,
-        order: 3,
-        visible: true,
-        config: {
-          images: [],
-          autoplay: false,
-          autoplayDelay: 4000,
-          showThumbnails: true,
-          showDots: true,
-        } as any,
-        styles: { padding: '60px 20px', backgroundColor: '#f9fafb' },
-        responsive: {},
-      },
-      {
-        type: BlockType.FEATURES,
-        order: 4,
-        visible: true,
-        config: {
-          features: [
-            {
-              title: 'Infraestrutura Completa',
-              description: 'Energia, água, acesso pavimentado',
-              icon: '⚡',
-            },
-            {
-              title: 'Áreas Produtivas',
-              description: 'Solo preparado para agricultura',
-              icon: '🌱',
-            },
-            {
-              title: 'Sustentabilidade',
-              description: 'Preservação ambiental certificada',
-              icon: '🌍',
-            },
-            {
-              title: 'Suporte Total',
-              description: 'Acompanhamento jurídico e técnico',
-              icon: '🤝',
-            },
-          ],
-          columns: 2,
-        },
-        styles: { padding: '80px 40px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.CTA,
-        order: 5,
-        visible: true,
-        config: {
-          title: 'Pronto para Começar?',
-          description:
-            'Entre em contato e descubra como podemos ajudar você a realizar esse sonho',
-          buttonText: 'Falar com Especialista',
-          buttonLink: 'https://wa.me/5544997223030',
-          backgroundColor: '#059669',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '100px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.FORM,
-        order: 6,
-        visible: true,
-        config: {
-          title: 'Receba Nossa Consultoria Gratuita',
-          fields: [
-            {
-              name: 'name',
-              type: 'text',
-              label: 'Nome',
-              required: true,
-              placeholder: 'Seu nome completo',
-            },
-            {
-              name: 'email',
-              type: 'email',
-              label: 'E-mail',
-              required: true,
-              placeholder: 'seu@email.com',
-            },
-            {
-              name: 'phone',
-              type: 'tel',
-              label: 'Telefone',
-              required: true,
-              placeholder: '(00) 00000-0000',
-            },
-            {
-              name: 'message',
-              type: 'textarea',
-              label: 'Conte-nos sobre seus objetivos',
-              required: false,
-              placeholder: 'O que você busca em uma propriedade rural?',
-            },
-          ],
-          submitText: 'Solicitar Consultoria',
-          successMessage: 'Obrigado! Nossa equipe entrará em contato em breve.',
-        },
-        styles: { padding: '80px 40px', backgroundColor: '#f0fdfa' },
-        responsive: {},
-      },
-    ],
-  },
-
-  // ============================================
-  // TEMPLATE 5: VISTA PANORÂMICA (NOVO)
-  // ============================================
-  {
-    id: 'vista-panoramica',
-    name: 'Vista Panorâmica',
-    description:
-      'Layout imersivo com hero full-screen, timeline visual e mapa integrado',
-    thumbnail: '🌄',
-    category: 'Fazendas',
-    themeConfig: {
-      primaryColor: '#2d5016',
-      secondaryColor: '#e8dcc4',
-      backgroundColor: '#ffffff',
-      textColor: '#1f2937',
-      fontFamily: 'Montserrat',
-      borderRadius: '0px',
-      spacing: { xs: '1rem', sm: '2rem', md: '3rem', lg: '4rem', xl: '5rem' },
-      fontSize: {
-        base: '1rem',
-        heading1: '3.5rem',
-        heading2: '2.5rem',
-        heading3: '2rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'Fazendas Brasil',
-          showWhatsApp: true,
-          whatsappNumber: '5544997223030',
-          sticky: true,
-          transparent: true,
-          textColor: '#ffffff',
-        } as any,
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'Seu Refúgio Particular',
-          subtitle: '6.110m² de natureza em Morretes, PR',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.3,
-          ctaText: 'Agendar Visita Presencial',
-          ctaLink: '#contato',
-          height: 800,
-          alignment: 'center',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.STATS,
-        order: 2,
-        visible: true,
-        config: {
-          stats: [
-            { icon: '🌳', value: '6.110m²', label: 'Área Total' },
-            { icon: '🏠', value: '02', label: 'Casas' },
-            { icon: '🐟', value: '03', label: 'Tanques de Peixe' },
-          ],
-          columns: 3,
-        } as any,
-        styles: {
-          padding: '60px 20px',
-          backgroundColor: '#ffffff',
-          marginTop: '-100px',
-          position: 'relative',
-          zIndex: 10,
-          borderRadius: '20px 20px 0 0',
-          maxWidth: '1200px',
-          margin: '-100px auto 0',
-        } as any,
-        containerWidth: 'xl',
-      },
-      {
-        type: BlockType.TEXT,
-        order: 3,
-        visible: true,
-        config: {
-          content: `<p style="font-size: 1.25rem; line-height: 1.8; text-align: center; max-width: 800px; margin: 0 auto;">Imagine acordar todos os dias com o canto dos pássaros e adormecer com o som do silêncio. Esta chácara em Morretes, PR, é o seu refúgio particular, onde você pode viver o sonho rural.</p>
-                    <p style="font-size: 1.25rem; line-height: 1.8; text-align: center; max-width: 800px; margin: 20px auto;">A propriedade conta com 6.110m² de área total, 02 casas, 03 tanques de peixe e muito mais. É o local perfeito para você e sua família se conectar com a natureza e viver momentos inesquecíveis.</p>
-                    <p style="font-size: 1.25rem; line-height: 1.8; text-align: center; max-width: 800px; margin: 20px auto;">Não perca a oportunidade de fazer deste sonho uma realidade. Agende uma visita presencial e descubra o que esta chácara pode oferecer para você.</p>`,
-          fontSize: 18,
-          fontWeight: 400,
-          color: '#374151',
-          alignment: 'center',
-        },
-        styles: { padding: '80px 20px' },
-        containerWidth: 'md',
-      },
-      {
-        type: BlockType.PROPERTY_CAROUSEL,
-        order: 4,
-        visible: true,
-        config: {
-          images: [],
-          autoplay: true,
-          autoplayDelay: 4000,
-          showThumbnails: true,
-          showDots: true,
-        } as any,
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.TIMELINE,
-        order: 5,
-        visible: true,
-        config: {
-          title: 'Conheça a Propriedade',
-          items: [
-            {
-              title: 'Entrada Privativa',
-              description: 'Porteira fechada com acesso exclusivo e seguro.',
-              time: 'Chegada',
-            },
-            {
-              title: 'Casa Principal',
-              description: 'Ampla varanda, 3 quartos e sala integrada.',
-              time: 'Conforto',
-            },
-            {
-              title: 'Área de Lazer',
-              description: 'Churrasqueira, piscina natural e pomar.',
-              time: 'Diversão',
-            },
-            {
-              title: 'Tanques de Peixe',
-              description: '3 lagos prontos para piscicultura ou lazer.',
-              time: 'Natureza',
-            },
-          ],
-        },
-        styles: { padding: '80px 20px', backgroundColor: '#f9fafb' },
-        containerWidth: 'lg',
-      },
-      {
-        type: BlockType.MAP,
-        order: 6,
-        visible: true,
-        config: {
-          address: 'Morretes, Paraná, Brasil',
-          title: 'Localização Privilegiada',
-          description: 'Fácil acesso, próximo à natureza e à cidade.',
-          zoom: 13,
-          height: 450,
-          showCard: true,
-        } as any,
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.CTA,
-        order: 7,
-        visible: true,
-        config: {
-          title: 'Seu Sonho Começa Aqui',
-          description: 'Entre em contato agora mesmo e agende sua visita.',
-          buttonText: 'Chamar no WhatsApp',
-          buttonLink: 'https://wa.me/5544997223030',
-          backgroundColor: '#2d5016',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '100px 20px' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.FOOTER,
-        order: 8,
-        visible: true,
-        config: {
-          companyName: 'Fazendas Brasil',
-          description: 'Especialistas em realizar sonhos rurais.',
-          phone: '(44) 3030-3030',
-          whatsapp: '5544997223030',
-          email: 'contato@fazendasbrasil.com.br',
-          address: 'Av. Brasil, 1234 - Maringá, PR',
-          copyrightText:
-            '© 2024 Fazendas Brasil. Todos os direitos reservados.',
-        } as any,
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-    ],
-  },
-
-  // ============================================
-  // TEMPLATE 6: LUXO NO CAMPO (NOVO)
-  // ============================================
-  {
-    id: 'luxo-no-campo',
-    name: 'Luxo no Campo',
-    description:
-      'Design sofisticado com cores escuras e toques dourados para propriedades de alto padrão',
-    thumbnail: '✨',
-    category: 'Fazendas',
-    themeConfig: {
-      primaryColor: '#c9a961',
-      secondaryColor: '#1a1a1a',
-      backgroundColor: '#111111',
-      textColor: '#f3f4f6',
-      fontFamily: 'Playfair Display',
-      borderRadius: '0px',
-      spacing: {
-        xs: '1.5rem',
-        sm: '2.5rem',
-        md: '3.5rem',
-        lg: '5rem',
-        xl: '6rem',
-      },
-      fontSize: {
-        base: '1.1rem',
-        heading1: '4rem',
-        heading2: '3rem',
-        heading3: '2.5rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'IMPERIAL REALTY',
-          showWhatsApp: false,
-          sticky: true,
-          transparent: true,
-          textColor: '#ffffff',
-        } as any,
-        styles: {
-          padding: '0',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-        } as any,
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'Exclusividade e Natureza',
-          subtitle: 'Uma propriedade única para quem exige o extraordinário.',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.5,
-          ctaText: 'Solicitar Dossiê Privado',
-          ctaLink: '#contato',
-          height: 900,
-          alignment: 'center',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.TEXT,
-        order: 2,
-        visible: true,
-        config: {
-          content: `<h2 style="text-align: center; color: #c9a961; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 3px; font-size: 1.5rem;">A Propriedade</h2>
-                    <p style="font-size: 1.5rem; line-height: 1.8; text-align: center; max-width: 900px; margin: 0 auto; color: #d1d5db;">Localizada no coração de uma região preservada, esta fazenda representa o ápice do luxo rural. Cada detalhe foi pensado para oferecer uma experiência de vida inigualável, unindo o conforto moderno à serenidade do campo.</p>`,
-          fontSize: 24,
-          fontWeight: 300,
-          color: '#d1d5db',
-          alignment: 'center',
-        },
-        styles: { padding: '120px 20px', backgroundColor: '#111111' },
-        containerWidth: 'lg',
-      },
-      {
-        type: BlockType.STATS,
-        order: 3,
-        visible: true,
-        config: {
-          stats: [
-            { icon: '💎', value: '1.200ha', label: 'Área Total' },
-            { icon: '🚁', value: 'Heliporto', label: 'Privativo' },
-            { icon: '🍷', value: 'Adega', label: 'Subterrânea' },
-            { icon: '🏇', value: 'Haras', label: 'Completo' },
-          ],
-          columns: 4,
-        } as any,
-        styles: {
-          padding: '80px 20px',
-          backgroundColor: '#1a1a1a',
-          borderTop: '1px solid #333',
-          borderBottom: '1px solid #333',
-        } as any,
-        containerWidth: 'xl',
-      },
-      {
-        type: BlockType.PROPERTY_CAROUSEL,
-        order: 4,
-        visible: true,
-        config: {
-          images: [],
-          autoplay: false,
-          showThumbnails: true,
-          showDots: false,
-        } as any,
-        styles: { padding: '120px 0', backgroundColor: '#111111' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.TIMELINE,
-        order: 5,
-        visible: true,
-        config: {
-          title: 'História e Legado',
-          color: '#c9a961',
-          items: [
-            {
-              title: 'Fundação',
-              description:
-                'Estabelecida em 1950, mantendo a arquitetura colonial original.',
-              time: '1950',
-            },
-            {
-              title: 'Restauração',
-              description:
-                'Restauro completo da casa sede premiado internacionalmente.',
-              time: '2018',
-            },
-            {
-              title: 'Modernização',
-              description:
-                'Implementação de sistemas sustentáveis e automação.',
-              time: '2022',
-            },
-          ],
-        },
-        styles: { padding: '100px 20px', backgroundColor: '#1a1a1a' },
-        containerWidth: 'lg',
-      },
-      {
-        type: BlockType.CTA,
-        order: 6,
-        visible: true,
-        config: {
-          title: 'Atendimento Personalizado',
-          description:
-            'Nossa equipe de concierge está à disposição para agendar sua visita.',
-          buttonText: 'Contatar Concierge',
-          buttonLink: 'https://wa.me/5544997223030',
-          backgroundColor: '#c9a961',
-          textColor: '#000000',
-        },
-        styles: { padding: '120px 20px', backgroundColor: '#111111' },
-        containerWidth: 'md',
-      },
-      {
-        type: BlockType.FOOTER,
-        order: 7,
-        visible: true,
-        config: {
-          companyName: 'IMPERIAL REALTY',
-          description: 'Curadoria de propriedades extraordinárias.',
-          phone: '+55 (44) 3030-3030',
-          email: 'private@imperial.com',
-          copyrightText: '© 2024 Imperial Realty. Exclusive Rights.',
-          backgroundColor: '#000000',
-          textColor: '#6b7280',
-        } as any,
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-    ],
-  },
-
-  // ============================================
-  // TEMPLATE 7: VIDA RURAL AUTÊNTICA (NOVO)
-  // ============================================
-  {
-    id: 'vida-rural',
-    name: 'Vida Rural Autêntica',
-    description:
-      'Estilo editorial tipo blog/revista para contar a história da propriedade',
-    thumbnail: '🏡',
-    category: 'Sítios',
-    themeConfig: {
-      primaryColor: '#8b4513',
-      secondaryColor: '#6b8e23',
-      backgroundColor: '#fffbeb',
-      textColor: '#4b5563',
-      fontFamily: 'Merriweather',
-      borderRadius: '8px',
-      spacing: { xs: '1rem', sm: '1.5rem', md: '2rem', lg: '3rem', xl: '4rem' },
-      fontSize: {
-        base: '1.125rem',
-        heading1: '3rem',
-        heading2: '2.25rem',
-        heading3: '1.5rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'Vida no Campo',
-          sticky: false,
-          backgroundColor: '#fffbeb',
-          textColor: '#4b5563',
-        } as any,
-        styles: { padding: '0', borderBottom: '1px solid #e5e7eb' } as any,
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'Onde o Tempo Passa Mais Devagar',
-          subtitle:
-            'Uma jornada para reencontrar suas raízes e viver com propósito',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1464226184884-fa280b87c399?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.2,
-          ctaText: 'Ler a História',
-          ctaLink: '#historia',
-          height: 600,
-          alignment: 'center',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.TEXT,
-        order: 2,
-        visible: true,
-        config: {
-          content: `<p style="font-family: Merriweather; font-size: 1.25rem; line-height: 2; margin-bottom: 2rem;">Era uma manhã de neblina quando visitamos este lugar pela primeira vez. O ar fresco da serra, o cheiro de terra molhada e o silêncio quebrado apenas pelo canto dos pássaros nos conquistaram imediatamente.</p>
-                    <p style="font-family: Merriweather; font-size: 1.25rem; line-height: 2; margin-bottom: 2rem;">Esta propriedade não é apenas um pedaço de terra; é um convite para desacelerar. Aqui, os dias são marcados pelo nascer e pôr do sol, não pelo relógio. As árvores frutíferas contam histórias de estações passadas, e o riacho que corta o terreno traz a melodia constante da natureza.</p>
-                    <blockquote style="border-left: 4px solid #8b4513; padding-left: 20px; font-style: italic; color: #8b4513; margin: 40px 0; font-size: 1.5rem;">"Viver aqui é redescobrir o que realmente importa na vida."</blockquote>`,
-          fontSize: 20,
-          fontWeight: 400,
-          color: '#4b5563',
-          alignment: 'left',
-        },
-        styles: {
-          padding: '80px 20px',
-          maxWidth: '800px',
-          margin: '0 auto',
-        } as any,
-        containerWidth: 'md',
-      },
-      {
-        type: BlockType.PROPERTY_CAROUSEL,
-        order: 3,
-        visible: true,
-        config: {
-          images: [],
-          autoplay: false,
-          showThumbnails: false,
-          showDots: true,
-        } as any,
-        styles: { padding: '40px 0' },
-        containerWidth: 'lg',
-      },
-      {
-        type: BlockType.TIMELINE,
-        order: 4,
-        visible: true,
-        config: {
-          title: 'Um Dia no Sítio',
-          color: '#6b8e23',
-          items: [
-            {
-              title: '06:00 - O Despertar',
-              description: 'Café da manhã na varanda vendo o nascer do sol.',
-              time: 'Manhã',
-            },
-            {
-              title: '09:00 - Horta e Jardim',
-              description: 'Colheita de vegetais frescos para o almoço.',
-              time: 'Manhã',
-            },
-            {
-              title: '14:00 - Pesca e Leitura',
-              description: 'Tarde tranquila à beira do lago.',
-              time: 'Tarde',
-            },
-            {
-              title: '19:00 - Fogueira',
-              description:
-                'Fim de dia reunido ao redor do fogo sob as estrelas.',
-              time: 'Noite',
-            },
-          ],
-        },
-        styles: { padding: '80px 20px', backgroundColor: '#f3f4f6' },
-        containerWidth: 'lg',
-      },
-      {
-        type: BlockType.MAP,
-        order: 5,
-        visible: true,
-        config: {
-          address: 'Serra da Mantiqueira, Brasil',
-          title: 'Escondido nas Montanhas',
-          zoom: 12,
-          height: 500,
-        } as any,
-        styles: { padding: '60px 0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.FORM,
-        order: 6,
-        visible: true,
-        config: {
-          title: 'Escreva um Novo Capítulo',
-          submitText: 'Enviar Mensagem',
-          successMessage: 'Mensagem enviada com carinho!',
-          fields: [
-            {
-              name: 'name',
-              type: 'text',
-              label: 'Nome',
-              required: true,
-              placeholder: '',
-            },
-            {
-              name: 'message',
-              type: 'textarea',
-              label: 'Mensagem',
-              required: true,
-              placeholder: 'Conte-nos o que você busca...',
-            },
-          ],
-        },
-        styles: { padding: '80px 20px', backgroundColor: '#fffbeb' },
-        containerWidth: 'sm',
-      },
-      {
-        type: BlockType.FOOTER,
-        order: 7,
-        visible: true,
-        config: {
-          companyName: 'Vida no Campo Imóveis',
-          copyrightText: '© 2024. Feito com amor.',
-          backgroundColor: '#8b4513',
-          textColor: '#ffffff',
-        } as any,
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-    ],
-  },
-
-  // ============================================
-  // TEMPLATE 8: INVESTIMENTO GARANTIDO (NOVO)
-  // ============================================
-  {
-    id: 'investimento-garantido',
-    name: 'Investimento Garantido',
-    description:
-      'Focado em dados, ROI e segurança para investidores do agronegócio',
-    thumbnail: '💰',
-    category: 'Investimento',
-    themeConfig: {
-      primaryColor: '#1e3a8a',
-      secondaryColor: '#64748b',
-      backgroundColor: '#f8fafc',
-      textColor: '#0f172a',
-      fontFamily: 'Inter',
-      borderRadius: '4px',
-      spacing: { xs: '1rem', sm: '2rem', md: '3rem', lg: '4rem', xl: '5rem' },
-      fontSize: {
-        base: '1rem',
-        heading1: '3rem',
-        heading2: '2.25rem',
-        heading3: '1.5rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'AGRO INVEST',
-          showPhone: true,
-          phoneNumber: '0800 123 4567',
-          sticky: true,
-          backgroundColor: '#1e3a8a',
-          textColor: '#ffffff',
-        } as any,
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'Oportunidade de Alto Retorno',
-          subtitle: 'Fazenda Produtiva com ROI Estimado de 12% a.a.',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1625246333195-58197b3c4895?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.6,
-          ctaText: 'Baixar Prospecto',
-          ctaLink: '#download',
-          height: 600,
-          alignment: 'left',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.STATS,
-        order: 2,
-        visible: true,
-        config: {
-          stats: [
-            { icon: '📈', value: '12%', label: 'Retorno Anual' },
-            { icon: '💰', value: 'R$ 15M', label: 'Valor de Mercado' },
-            { icon: '🚜', value: '100%', label: 'Maquinário Incluso' },
-            { icon: '📜', value: '100%', label: 'Documentação OK' },
-          ],
-          columns: 4,
-        } as any,
-        styles: {
-          padding: '60px 20px',
-          backgroundColor: '#ffffff',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        },
-        containerWidth: 'xl',
-      },
-      {
-        type: BlockType.TEXT,
-        order: 3,
-        visible: true,
-        config: {
-          content: `<h2 style="color: #1e3a8a; font-weight: 700; margin-bottom: 2rem;">Análise de Viabilidade</h2>
-                    <p>Esta propriedade está situada no eixo logístico estratégico da região, facilitando o escoamento da safra. Com solo corrigido e altos índices de produtividade nos últimos 5 anos, representa uma aquisição segura e rentável.</p>
-                    <ul>
-                      <li>✔ Análise de solo recente disponível</li>
-                      <li>✔ Histórico de produtividade auditado</li>
-                      <li>✔ Sem passivos ambientais ou trabalhistas</li>
-                    </ul>`,
-          fontSize: 18,
-          fontWeight: 400,
-          color: '#334155',
-          alignment: 'left',
-        },
-        styles: { padding: '80px 20px' },
-        containerWidth: 'lg',
-      },
-      {
-        type: BlockType.PROPERTY_GRID,
-        order: 4,
-        visible: true,
-        config: {
-          columns: 2,
-          gap: 24,
-          showFilters: false,
-          maxItems: 4,
-          sortBy: 'price',
-          cardStyle: 'modern',
-        },
-        styles: { padding: '60px 20px', backgroundColor: '#f1f5f9' },
-        containerWidth: 'xl',
-      },
-      {
-        type: BlockType.CTA,
-        order: 5,
-        visible: true,
-        config: {
-          title: 'Receba o Valuation Completo',
-          description:
-            'Acesse o relatório detalhado com fluxo de caixa projetado e análise de mercado.',
-          buttonText: 'Solicitar Acesso',
-          buttonLink: '#cadastro',
-          backgroundColor: '#1e3a8a',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '100px 20px' },
-        containerWidth: 'md',
-      },
-      {
-        type: BlockType.FOOTER,
-        order: 6,
-        visible: true,
-        config: {
-          companyName: 'Agro Invest Capital',
-          copyrightText: '© 2024 Agro Invest. Todos os direitos reservados.',
-          backgroundColor: '#0f172a',
-          textColor: '#94a3b8',
-        } as any,
-        styles: { padding: '0' },
-        containerWidth: 'full',
-      },
-    ],
-  },
-  // ============================================
-  // TEMPLATE 7: FAZENDA DOS SONHOS (NOVO)
-  // ============================================
-  {
-    id: 'fazenda-dos-sonhos',
-    name: 'Fazenda dos Sonhos',
-    description:
-      'Réplica exata do modelo rural premium com captura de leads lateral',
-    thumbnail: '🚜',
-    category: 'Fazendas',
-    themeConfig: {
-      primaryColor: '#4a5d23',
-      secondaryColor: '#8b9c7a',
-      backgroundColor: '#fdfbf7',
-      textColor: '#333333',
-      fontFamily: 'Inter',
-      headingFontFamily: 'Lora',
-      borderRadius: '4px',
-      spacing: { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '32px' },
-      fontSize: {
-        base: '16px',
-        heading1: '56px',
-        heading2: '36px',
-        heading3: '24px',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HERO_WITH_FORM,
-        order: 0,
-        visible: true,
-        config: {
-          title: 'Encontre sua Fazenda dos Sonhos',
-          subtitle:
-            'Assine para receber ofertas exclusivas e novidades sobre os melhores imóveis rurais.',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.2,
-          formTitle: 'Receba novas oportunidades em imóveis rurais!',
-          formSubtitle:
-            'Cadastre-se para receber ofertas e novidades de imóveis rurais. Prometemos não enviar spam.',
-          submitText: 'Quero Receber Ofertas Exclusivas',
-          fields: [
-            {
-              name: 'name',
-              type: 'text',
-              label: 'Nome completo',
-              required: true,
-              placeholder: 'Nome completo',
-            },
-            {
-              name: 'email',
-              type: 'email',
-              label: 'Seu e-mail',
-              required: true,
-              placeholder: 'Seu e-mail',
-            },
-            {
-              name: 'phone',
-              type: 'tel',
-              label: 'Telefone (WhatsApp)',
-              required: true,
-              placeholder: 'Telefone (WhatsApp)',
-            },
-            {
-              name: 'region',
-              type: 'select',
-              label: 'Região de Interesse',
-              required: false,
-              options: ['Norte', 'Sul', 'Centro-Oeste', 'Sudeste', 'Nordeste'],
-            },
-          ],
-          height: 700,
-          textColor: '#ffffff',
-          showBadges: true,
-          badges: [
-            {
-              icon: 'shield',
-              title: 'Cadastro 100% seguro',
-              description: 'Seus dados protegidos.',
-            },
-            {
-              icon: 'star',
-              title: 'Ofertas exclusivas',
-              description: 'Receba propriedades selecionadas.',
-            },
-            {
-              icon: 'clock',
-              title: 'Primeiro a saber',
-              description: 'Acesse novas oportunidades antes de todos.',
-            },
-          ],
-        },
-        styles: { padding: '0' },
-        responsive: {},
-      },
-      {
-        type: BlockType.PROPERTY_GRID,
-        order: 1,
-        visible: true,
-        config: {
-          columns: 3,
-          gap: 24,
-          maxItems: 6,
-          sortBy: 'price',
-          cardStyle: 'modern',
-        } as any,
-        styles: { padding: '60px 20px', backgroundColor: '#f5f2eb' },
-        responsive: {},
-      },
-    ],
-  },
-
-  // ============================================
-  // TEMPLATES URBANOS (IMOBILIÁRIAS TRADICIONAIS)
-  // ============================================
-
-  // 1. URBAN ELEGANCE
-  {
-    id: 'urban-elegance',
-    name: 'Urban Elegance',
-    description: 'Design sofisticado em preto e dourado para imóveis de luxo.',
-    thumbnail: '🏙️',
-    category: 'Urban',
-    themeConfig: {
-      primaryColor: '#0a0a0a',
-      secondaryColor: '#d4af37',
-      backgroundColor: '#ffffff',
-      textColor: '#1a1a1a',
-      fontFamily: 'Playfair Display',
-      borderRadius: '0px',
-      spacing: { xs: '1rem', sm: '2rem', md: '3rem', lg: '4rem', xl: '6rem' },
-      fontSize: {
-        base: '1.125rem',
-        heading1: '4rem',
-        heading2: '3rem',
-        heading3: '2rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'Premium Estate',
-          showWhatsApp: true,
-          sticky: true,
-          transparent: true,
-          textColor: '#ffffff',
-        } as any,
-        styles: { padding: '0' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'Exclusividade em Cada Detalhe',
-          subtitle:
-            'Os melhores endereços para o seu estilo de vida sofisticado',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.6,
-          ctaText: 'Ver Portfólio Exclusivo',
-          ctaLink: '#imoveis',
-          height: 800,
-          alignment: 'center',
-          textColor: '#d4af37',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.PROPERTY_GRID,
-        order: 2,
-        visible: true,
-        config: {
-          columns: 2,
-          gap: 40,
-          showFilters: false,
-          maxItems: 4,
-          sortBy: 'price',
-          cardStyle: 'modern',
-        },
-        styles: { padding: '100px 20px', backgroundColor: '#ffffff' },
-        responsive: {},
-      },
-      {
-        type: BlockType.CTA,
-        order: 3,
-        visible: true,
-        config: {
-          title: 'Atendimento Personalizado VIP',
-          description:
-            'Nossos Private Brokers estão prontos para encontrar o imóvel perfeito para você.',
-          buttonText: 'Falar com um Concierge',
-          buttonLink: 'https://wa.me/5544900000000',
-          backgroundColor: '#0a0a0a',
-          textColor: '#d4af37',
-        },
-        styles: { padding: '120px 20px' },
-        responsive: {},
-      },
-    ],
-  },
-
-  // 2. LAR DOCE LAR
-  {
-    id: 'lar-doce-lar',
-    name: 'Lar Doce Lar',
-    description:
-      'Cores vibrantes focadas em famílias que buscam financiamento e o primeiro imóvel.',
-    thumbnail: '🏡',
-    category: 'Urban',
-    themeConfig: {
-      primaryColor: '#f97316',
-      secondaryColor: '#3b82f6',
-      backgroundColor: '#f8fafc',
-      textColor: '#334155',
-      fontFamily: 'Inter',
-      borderRadius: '0.75rem',
-      spacing: {
-        xs: '0.5rem',
-        sm: '1rem',
-        md: '1.5rem',
-        lg: '2rem',
-        xl: '3rem',
-      },
-      fontSize: {
-        base: '1rem',
-        heading1: '2.5rem',
-        heading2: '2rem',
-        heading3: '1.5rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'Lar Imóveis',
-          showWhatsApp: true,
-          sticky: true,
-          transparent: false,
-          textColor: '#0f172a',
-        } as any,
-        styles: { padding: '0', backgroundColor: '#ffffff' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'Conquiste a Casa Própria Hoje!',
-          subtitle:
-            'Imóveis com Financiamento Facilitado para você e sua família',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.4,
-          ctaText: 'Faça uma Simulação',
-          ctaLink: '#simulacao',
-          height: 600,
-          alignment: 'left',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.FEATURES,
-        order: 2,
-        visible: true,
-        config: {
-          features: [
-            {
-              title: 'Aprovação Rápida',
-              description: 'Parceria com todos os bancos',
-              icon: '⚡',
-            },
-            {
-              title: 'Use seu FGTS',
-              description: 'Você pode usar o saldo na entrada',
-              icon: '💰',
-            },
-            {
-              title: 'Taxas Reduzidas',
-              description: 'As melhores condições do mercado',
-              icon: '📉',
-            },
-          ],
-          columns: 3,
-        },
-        styles: { padding: '60px 20px', backgroundColor: '#ffffff' },
-        responsive: {},
-      },
-      {
-        type: BlockType.PROPERTY_GRID,
-        order: 3,
-        visible: true,
-        config: {
-          columns: 3,
-          gap: 24,
-          showFilters: true,
-          maxItems: 6,
-          sortBy: 'date',
-          cardStyle: 'modern',
-        },
-        styles: { padding: '40px 20px' },
-        responsive: {},
-      },
-    ],
-  },
-
-  // 3. METRÓPOLE SMART
-  {
-    id: 'metropole-smart',
-    name: 'Metrópole Smart',
-    description:
-      'Design jovem voltado a studios, moradia compacta e investidores tech.',
-    thumbnail: '🏢',
-    category: 'Urban',
-    themeConfig: {
-      primaryColor: '#8b5cf6',
-      secondaryColor: '#10b981',
-      backgroundColor: '#ffffff',
-      textColor: '#1f2937',
-      fontFamily: 'Roboto',
-      borderRadius: '0.5rem',
-      spacing: {
-        xs: '0.5rem',
-        sm: '1rem',
-        md: '1.5rem',
-        lg: '2rem',
-        xl: '3rem',
-      },
-      fontSize: {
-        base: '1rem',
-        heading1: '3rem',
-        heading2: '2.5rem',
-        heading3: '2rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'NeoStudios',
-          showWhatsApp: true,
-          sticky: true,
-          transparent: false,
-          textColor: '#1f2937',
-        } as any,
-        styles: { padding: '0', backgroundColor: '#ffffff' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'O Futuro é Smart',
-          subtitle: 'Studios e Apartamentos Compactos perto de tudo.',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.6,
-          ctaText: 'Ver Mapa de Studios',
-          ctaLink: '#properties',
-          height: 650,
-          alignment: 'center',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.STATS,
-        order: 2,
-        visible: true,
-        config: {
-          stats: [
-            { icon: '📈', value: '1.2%', label: 'Rentabilidade Mensal' },
-            { icon: '🚉', value: '5 min', label: 'do Metrô' },
-            { icon: '🔒', value: '24h', label: 'Segurança Inteligente' },
-          ],
-          columns: 3,
-        } as any,
-        styles: {
-          padding: '60px 20px',
-          backgroundColor: '#8b5cf6',
-          textColor: '#ffffff',
-        },
-        responsive: {},
-      },
-      {
-        type: BlockType.PROPERTY_GRID,
-        order: 3,
-        visible: true,
-        config: {
-          columns: 3,
-          gap: 16,
-          showFilters: true,
-          maxItems: 6,
-          sortBy: 'price',
-          cardStyle: 'modern',
-        },
-        styles: { padding: '80px 20px' },
-        responsive: {},
-      },
-    ],
-  },
-
-  // 4. CLASSIC REAL ESTATE
-  {
-    id: 'classic-real-estate',
-    name: 'Classic Real Estate',
-    description: 'Imobiliária de bairro, confiável, segurança jurídica.',
-    thumbnail: '🏛️',
-    category: 'Urban',
-    themeConfig: {
-      primaryColor: '#1e3a8a',
-      secondaryColor: '#f1f5f9',
-      backgroundColor: '#ffffff',
-      textColor: '#334155',
-      fontFamily: 'Lora',
-      borderRadius: '0.25rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '2rem', lg: '3rem', xl: '4rem' },
-      fontSize: {
-        base: '1rem',
-        heading1: '2.5rem',
-        heading2: '1.875rem',
-        heading3: '1.5rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'Tradição Imóveis',
-          showWhatsApp: true,
-          sticky: true,
-          transparent: false,
-          textColor: '#ffffff',
-        } as any,
-        styles: { padding: '0', backgroundColor: '#1e3a8a' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'Encontre o Imóvel Perfeito na Região Central',
-          subtitle:
-            'Tradição e Confiança desde 1990 gerando negócios imobiliários.',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.5,
-          ctaText: 'Ver Nossos Imóveis',
-          ctaLink: '#imoveis',
-          height: 500,
-          alignment: 'center',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.PROPERTY_GRID,
-        order: 2,
-        visible: true,
-        config: {
-          columns: 3,
-          gap: 30,
-          showFilters: true,
-          maxItems: 9,
-          sortBy: 'date',
-          cardStyle: 'modern',
-        },
-        styles: { padding: '80px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.FORM,
-        order: 3,
-        visible: true,
-        config: {
-          title: 'Quer Avaliar Seu Imóvel?',
-          fields: [
-            { name: 'name', type: 'text', label: 'Nome', required: true },
-            { name: 'phone', type: 'tel', label: 'Celular', required: true },
-          ],
-          submitText: 'Solicitar Avaliação',
-          successMessage: 'Obrigado. Um corretor fará contato logo!',
-        },
-        styles: { padding: '60px 20px', backgroundColor: '#f1f5f9' },
-        responsive: {},
-      },
-    ],
-  },
-
-  // 5. MODERN MINIMALIST
-  {
-    id: 'modern-minimalist',
-    name: 'Modern Minimalist',
-    description: 'Estilo clean, focado na arquitetura e design da propriedade.',
-    thumbnail: '🖼️',
-    category: 'Urban',
-    themeConfig: {
-      primaryColor: '#171717',
-      secondaryColor: '#f5f5f5',
-      backgroundColor: '#ffffff',
-      textColor: '#262626',
-      fontFamily: 'Inter',
-      borderRadius: '0px',
-      spacing: { xs: '1rem', sm: '2rem', md: '4rem', lg: '6rem', xl: '8rem' },
-      fontSize: {
-        base: '1rem',
-        heading1: '4.5rem',
-        heading2: '3rem',
-        heading3: '2rem',
-      },
-    },
-    blocks: [
-      {
-        type: BlockType.HEADER,
-        order: 0,
-        visible: true,
-        config: {
-          brandName: 'ArqEstate',
-          showWhatsApp: false,
-          sticky: true,
-          transparent: true,
-          textColor: '#171717',
-        } as any,
-        styles: { padding: '0', backgroundColor: 'transparent' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.HERO,
-        order: 1,
-        visible: true,
-        config: {
-          title: 'Curadoria de Imóveis Especiais',
-          subtitle: '',
-          backgroundImage:
-            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1920&q=80',
-          overlayOpacity: 0.1,
-          ctaText: 'Explore o Acervo',
-          ctaLink: '#imoveis',
-          height: 900,
-          alignment: 'center',
-          textColor: '#ffffff',
-        },
-        styles: { padding: '0' },
-        responsive: {},
-        containerWidth: 'full',
-      },
-      {
-        type: BlockType.TEXT,
-        order: 2,
-        visible: true,
-        config: {
-          content:
-            '<h2 style="font-weight:300; font-size:2.5rem; text-align:center;">Para nós, a beleza está no vazio perfeito.</h2>',
-          fontSize: 24,
-          fontWeight: 300,
-          color: '#171717',
-          alignment: 'center',
-        },
-        styles: { padding: '120px 20px' },
-        responsive: {},
-      },
-      {
-        type: BlockType.PROPERTY_CAROUSEL,
-        order: 3,
-        visible: true,
-        config: {
-          images: [],
-          autoplay: true,
-          autoplayDelay: 4000,
-          showThumbnails: false,
-          showDots: true,
-        } as any,
-        styles: { padding: '0 20px 100px 20px' },
-        responsive: {},
-      },
-    ],
-  },
-];
-
-// Helper para buscar template por ID
-export const getTemplateById = (
-  id: string
-): LandingPageTemplate | undefined => {
+export const getTemplateById = (id: string): LandingPageTemplate | undefined => {
   return LANDING_PAGE_TEMPLATES.find((t) => t.id === id);
 };
 
-// Helper para filtrar templates por categoria
-export const getTemplatesByCategory = (
-  category: string
-): LandingPageTemplate[] => {
-  if (category === 'all') return LANDING_PAGE_TEMPLATES;
-  return LANDING_PAGE_TEMPLATES.filter((t) => t.category === category);
-};
+export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
+  {
+    id: 'investment-rural',
+    name: 'Investimento em Terra',
+    description: 'Focalizado em investidores e rentabilidade agrícola.',
+    thumbnail: '/templates/template_investment.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#064e3b',
+      secondaryColor: '#d4af37',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Invista em Terra: Segurança e Alta Rentabilidade',
+          subtitle: 'Oportunidades exclusivas em áreas de expansão agrícola com alto potencial de valorização.',
+          backgroundImage: '/templates/template_investment.png',
+          overlayOpacity: 0.5,
+          ctaText: 'Falar com Especialista',
+          ctaLink: '#contato',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      },
+      {
+        type: BlockType.STATS,
+        order: 1,
+        visible: true,
+        config: {
+          stats: [
+            { label: 'Hectares Disponíveis', value: '50.000+', icon: 'Map' },
+            { label: 'Valorização Média aa', value: '15%', icon: 'TrendingUp' },
+            { label: 'Anos de Mercado', value: '25', icon: 'Shield' }
+          ],
+          columns: 3
+        } as any,
+        styles: { padding: '80px 20px', backgroundColor: '#f9fafb' },
+        responsive: {}
+      },
+      {
+        type: BlockType.PROPERTY_GRID,
+        order: 2,
+        visible: true,
+        config: { columns: 3, gap: 24, maxItems: 6, sortBy: 'price', cardStyle: 'modern' },
+        styles: { padding: '60px 20px' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'production-ready',
+    name: 'Fazenda Pronta para Produzir',
+    description: 'Ideal para operação imediata e infraestrutura completa.',
+    thumbnail: '/templates/template_production.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#15803d',
+      secondaryColor: '#f59e0b',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Fazenda Pronta para Produzir',
+          subtitle: 'Infraestrutura completa para soja, milho e algodão. Sede moderna e silos de alta capacidade.',
+          backgroundImage: '/templates/template_production.png',
+          overlayOpacity: 0.4,
+          ctaText: 'Ver Instalações',
+          ctaLink: '#detalhes',
+          height: 600,
+          alignment: 'left',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      },
+      {
+        type: BlockType.FEATURES,
+        order: 1,
+        visible: true,
+        config: {
+          features: [
+            { title: 'Solo Fértil', description: 'Alta safra garantida', icon: '🌱' },
+            { title: 'Silos Modernos', description: 'Armazenamento seguro', icon: '🏗️' },
+            { title: 'Acesso Fácil', description: 'Logística otimizada', icon: '🚚' }
+          ],
+          columns: 3
+        },
+        styles: { padding: '80px 20px' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'livestock-focus',
+    name: 'Pecuária Lucrativa',
+    description: 'Especializado em gado de corte e recria.',
+    thumbnail: '/templates/template_livestock.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#0f172a',
+      secondaryColor: '#f1f5f9',
+      backgroundColor: '#ffffff',
+      textColor: '#1e293b',
+      fontFamily: 'Inter',
+      borderRadius: '0.25rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Ideal para Pecuária Lucrativa',
+          subtitle: 'Capacidade para 1.000+ cabeças, pastagens rotacionadas e currais de ponta.',
+          backgroundImage: '/templates/template_livestock.png',
+          overlayOpacity: 0.3,
+          ctaText: 'Receber Proposta',
+          ctaLink: '#contato',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'opportunity-sale',
+    name: 'Oportunidade Única à Vista',
+    description: 'Focado em ofertas de ocasião e alta liquidez.',
+    thumbnail: '/templates/template_opportunity.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#b91c1c',
+      secondaryColor: '#fcd34d',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Oportunidade Única à Vista',
+          subtitle: 'Desconto exclusivo para pagamento imediato. Oferta imperdível!',
+          backgroundImage: '/templates/template_opportunity.png',
+          overlayOpacity: 0.5,
+          ctaText: 'Ver Detalhes Agora',
+          ctaLink: '#info',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'lifestyle-rural',
+    name: 'Pronta para Morar e Produzir',
+    description: 'Estilo de vida no campo com produtividade.',
+    thumbnail: '/templates/template_lifestyle.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#064e3b',
+      secondaryColor: '#d4af37',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Pronta para Morar e Produzir',
+          subtitle: 'Casa sede completa, curral, energia e água em abundância.',
+          backgroundImage: '/templates/template_lifestyle.png',
+          overlayOpacity: 0.3,
+          ctaText: 'Agendar Visita',
+          ctaLink: '#visita',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'location-strategic',
+    name: 'Localização que Valoriza',
+    description: 'Proximidade estratégica e logística rural.',
+    thumbnail: '/templates/template_location_val.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#0f172a',
+      secondaryColor: '#3b82f6',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Localização que Valoriza seu Investimento',
+          subtitle: 'A apenas 30 min da cidade e 2h do aeroporto internacional.',
+          backgroundImage: '/templates/template_location_val.png',
+          overlayOpacity: 0.4,
+          ctaText: 'Saiba Mais',
+          ctaLink: '#mapa',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'high-productivity',
+    name: 'Terra de Alta Produtividade',
+    description: 'Focado em agricultura de precisão e safra.',
+    thumbnail: '/templates/template_tractor_soil.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#422006',
+      secondaryColor: '#facc15',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Terra de Alta Produtividade',
+          subtitle: 'Solo fértil preparado para a próxima safra recorde.',
+          backgroundImage: '/templates/template_tractor_soil.png',
+          overlayOpacity: 0.4,
+          ctaText: 'Receber Proposta',
+          ctaLink: '#form',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'last-units-scarcity',
+    name: 'Últimas Unidades Disponíveis!',
+    description: 'Campanha de escassez e urgência de venda.',
+    thumbnail: '/templates/template_last_units.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#7c2d12',
+      secondaryColor: '#ea580c',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Últimas Unidades Disponíveis!',
+          subtitle: 'Compra à vista com condições exclusivas por tempo limitado.',
+          backgroundImage: '/templates/template_last_units.png',
+          overlayOpacity: 0.6,
+          ctaText: 'Garantir Agora',
+          ctaLink: '#urgente',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'inflation-protection',
+    name: 'Proteção contra Inflação',
+    description: 'Investimento seguro em ativos reais rurais.',
+    thumbnail: '/templates/template_inflation_hedge.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#064e3b',
+      secondaryColor: '#059669',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Invista em Terra: Proteção contra Inflação',
+          subtitle: 'Ativos reais que garantem seu patrimônio para o futuro.',
+          backgroundImage: '/templates/template_inflation_hedge.png',
+          overlayOpacity: 0.4,
+          ctaText: 'Ver Áreas',
+          ctaLink: '#areas',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'heritage-legacy',
+    name: 'O Legado e Herança',
+    description: 'Tradição e patrimônio para as próximas gerações.',
+    thumbnail: '/templates/template_broker_legacy.png',
+    category: 'Rural',
+    themeConfig: {
+      primaryColor: '#334155',
+      secondaryColor: '#ca8a04',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Montserrat',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'O Legado que sua Família Merece',
+          subtitle: 'Construa um patrimônio sólido em terras férteis.',
+          backgroundImage: '/templates/template_broker_legacy.png',
+          overlayOpacity: 0.4,
+          ctaText: 'Falar no WhatsApp',
+          ctaLink: '#contato',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-luxury-living',
+    name: 'Luxo no Coração da Cidade',
+    description: 'Hero impactante com skyline e foco em apartamentos de alto padrão.',
+    thumbnail: '/templates/urban/urban_apartment_center.png',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#0f172a',
+      secondaryColor: '#f59e0b',
+      backgroundColor: '#ffffff',
+      textColor: '#1e293b',
+      fontFamily: 'Inter',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3.5rem', heading2: '2.5rem', heading3: '1.75rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Seu Novo Apartamento no Coração da Cidade',
+          subtitle: 'Viva onde tudo acontece. Conforto, sofisticação e a melhor vista urbana.',
+          backgroundImage: '/templates/urban/urban_apartment_center.png',
+          overlayOpacity: 0.4,
+          ctaText: 'Ver Unidades Disponíveis',
+          ctaLink: '#imoveis',
+          height: 700,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-exclusive-launch',
+    name: 'Lançamento Exclusivo',
+    description: 'Campanha para novos empreendimentos com design moderno.',
+    thumbnail: '/templates/urban/urban_exclusive_launch.png',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#1e40af',
+      secondaryColor: '#60a5fa',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Inter',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Lançamento Exclusivo na Região!',
+          subtitle: 'Preços e condições especiais para investidores. Antecipe-se ao lançamento.',
+          backgroundImage: '/templates/urban/urban_exclusive_launch.png',
+          overlayOpacity: 0.5,
+          ctaText: 'Quero Saber Mais',
+          ctaLink: '#contato',
+          height: 600,
+          alignment: 'left',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-land-allotment',
+    name: 'Terrenos e Loteamentos',
+    description: 'Focado em venda de lotes urbanos e expansão.',
+    thumbnail: '/templates/urban/urban_land_sale.png',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#15803d',
+      secondaryColor: '#facc15',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Inter',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Atenção, Terrenos à Venda!',
+          subtitle: 'Financiamento direto com a incorporadora. Construa seu sonho hoje.',
+          backgroundImage: '/templates/urban/urban_land_sale.png',
+          overlayOpacity: 0.3,
+          ctaText: 'Consultar Disponibilidade',
+          ctaLink: '#mapa',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-luxury-pool-lifestyle',
+    name: 'Alto Padrão com Piscina',
+    description: 'Foco no estilo de vida de luxo e lazer privativo.',
+    thumbnail: '/templates/urban/urban_luxury_pool.png',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#0c4a6e',
+      secondaryColor: '#38bdf8',
+      backgroundColor: '#ffffff',
+      textColor: '#0f172a',
+      fontFamily: 'Inter',
+      borderRadius: '0px',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '4rem', heading2: '3rem', heading3: '2rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Lançamento de Luxo em Localização Privilegiada',
+          subtitle: 'Aprovamos seu cadastro na hora. Conheça o novo ícone do skyline.',
+          backgroundImage: '/templates/urban/urban_luxury_pool.png',
+          overlayOpacity: 0.2,
+          ctaText: 'Agendar Visita',
+          ctaLink: '#visita',
+          height: 800,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-sea-view-apartments',
+    name: 'Vista para o Mar',
+    description: 'Imóveis litorâneos com foco na paisagem.',
+    thumbnail: '/templates/urban/urban_sea_view.png',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#0369a1',
+      secondaryColor: '#f1f5f9',
+      backgroundColor: '#ffffff',
+      textColor: '#1e293b',
+      fontFamily: 'Inter',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Apartamento com Vista para o Mar',
+          subtitle: 'Sinta a brisa e a exclusividade de morar de frente para o azul.',
+          backgroundImage: '/templates/urban/urban_sea_view.png',
+          overlayOpacity: 0.1,
+          ctaText: 'Ver Preço e Planta',
+          ctaLink: '#plantas',
+          height: 600,
+          alignment: 'left',
+          textColor: '#1e3a8a'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-ready-to-move-in',
+    name: 'Pronto para Morar',
+    description: 'Foco em imobilidade imediata e interiores mobiliados.',
+    thumbnail: '/templates/urban/urban_ready_move.png',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#4b5563',
+      secondaryColor: '#10b981',
+      backgroundColor: '#ffffff',
+      textColor: '#111827',
+      fontFamily: 'Inter',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Apartamentos Prontos para Morar',
+          subtitle: 'Mude-se hoje mesmo. Preços especiais para pagamento à vista.',
+          backgroundImage: '/templates/urban/urban_ready_move.png',
+          overlayOpacity: 0.3,
+          ctaText: 'Ver Apartamentos',
+          ctaLink: '#lista',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-gated-complex',
+    name: 'Condomínio Fechado Urban',
+    description: 'Segurança e infraestrutura para a família.',
+    thumbnail: '/templates/urban/urban_gated_community.png',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#166534',
+      secondaryColor: '#fde047',
+      backgroundColor: '#ffffff',
+      textColor: '#111827',
+      fontFamily: 'Inter',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Seu Lote em Condomínio Fechado',
+          subtitle: 'Segurança 24h e lazer completo para sua família.',
+          backgroundImage: '/templates/urban/urban_gated_community.png',
+          overlayOpacity: 0.4,
+          ctaText: 'Ver Lotes Disponíveis',
+          ctaLink: '#lotes',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-rental-lifestyle',
+    name: 'Aluguel Sem Complicação',
+    description: 'Foco no mercado de locação e agilidade no processo.',
+    thumbnail: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1920&auto=format&fit=crop',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#4338ca',
+      secondaryColor: '#818cf8',
+      backgroundColor: '#ffffff',
+      textColor: '#1e293b',
+      fontFamily: 'Inter',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Aluguel de Casas e Apartamentos',
+          subtitle: 'Alugue rápido e sem complicação. Seu novo lar está aqui.',
+          backgroundImage: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1920&auto=format&fit=crop',
+          overlayOpacity: 0.5,
+          ctaText: 'Conhecer Empreendimentos',
+          ctaLink: '#alugue',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-smart-invest',
+    name: 'Investimento em Terrenos',
+    description: 'Focado em quem busca valorização em terrenos urbanos.',
+    thumbnail: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#1e293b',
+      secondaryColor: '#cbd5e1',
+      backgroundColor: '#ffffff',
+      textColor: '#0f172a',
+      fontFamily: 'Inter',
+      borderRadius: '0px',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.5rem', heading3: '1.75rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Seu Terreno Privativo na Cidade',
+          subtitle: 'Áreas estratégicas com alto potencial de valorização futura.',
+          backgroundImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop',
+          overlayOpacity: 0.6,
+          ctaText: 'Falar com Consultor',
+          ctaLink: '#contato',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  },
+  {
+    id: 'urban-incorporatora-credibility',
+    name: 'Incorporadora de Credibilidade',
+    description: 'Institucional para empresas que buscam transmitir confiança.',
+    thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1920&auto=format&fit=crop',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#0f172a',
+      secondaryColor: '#f8fafc',
+      backgroundColor: '#ffffff',
+      textColor: '#1e293b',
+      fontFamily: 'Inter',
+      borderRadius: '0.5rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
+      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'Incorporadora de Credibilidade',
+          subtitle: 'Construindo o futuro com solidez e transparência.',
+          backgroundImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1920&auto=format&fit=crop',
+          overlayOpacity: 0.4,
+          ctaText: 'Nossos Empreendimentos',
+          ctaLink: '#portfolio',
+          height: 600,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      }
+    ]
+  }
+];

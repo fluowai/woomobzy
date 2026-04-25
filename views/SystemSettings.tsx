@@ -23,6 +23,7 @@ const SystemSettings: React.FC = () => {
   const [openaiKey, setOpenaiKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
+  const [namoBanaKey, setNamoBanaKey] = useState('');
   const [asaasKey, setAsaasKey] = useState('');
   const [zapsignKey, setZapsignKey] = useState('');
   const [saving, setSaving] = useState(false);
@@ -35,6 +36,7 @@ const SystemSettings: React.FC = () => {
     if (settings?.integrations?.openai?.apiKey) setOpenaiKey(settings.integrations.openai.apiKey);
     if (settings?.integrations?.groq?.apiKey) setGroqKey(settings.integrations.groq.apiKey);
     if (settings?.integrations?.gemini?.apiKey) setGeminiKey(settings.integrations.gemini.apiKey);
+    if (settings?.integrations?.namoBana?.apiKey) setNamoBanaKey(settings.integrations.namoBana.apiKey);
     if (settings?.integrations?.asaas?.apiKey) setAsaasKey(settings.integrations.asaas.apiKey);
     if (settings?.integrations?.zapsign?.apiKey) setZapsignKey(settings.integrations.zapsign.apiKey);
   }, [settings]);
@@ -49,6 +51,7 @@ const SystemSettings: React.FC = () => {
           openai: { apiKey: openaiKey, model: 'gpt-4o' },
           groq: { apiKey: groqKey, model: 'llama-3.3-70b-versatile' },
           gemini: { apiKey: geminiKey },
+          namoBana: { apiKey: namoBanaKey },
           asaas: { apiKey: asaasKey, environment: 'production' },
           zapsign: { apiKey: zapsignKey },
         },
@@ -158,6 +161,7 @@ const SystemSettings: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {[
                     { label: 'OpenAI API Key (GPT-4o)', value: openaiKey, setter: setOpenaiKey, placeholder: 'sk-...', desc: 'Usado para gerações complexas e análise de dossiês.' },
+                    { label: 'Namo Bana AI Key', value: namoBanaKey, setter: setNamoBanaKey, placeholder: 'Chave do cliente...', desc: 'Chave personalizada do cliente para criação assistida por IA.' },
                     { label: 'Gemini API Key (Google)', value: geminiKey, setter: setGeminiKey, placeholder: 'AIzaSy...', desc: 'Obtenha sua chave gratuita no Google AI Studio.' },
                     { label: 'Groq API Key (Llama 3)', value: groqKey, setter: setGroqKey, placeholder: 'gsk_...', desc: 'Gerações ultrarrápidas de baixo custo.' },
                   ].map((field) => (

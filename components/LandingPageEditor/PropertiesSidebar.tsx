@@ -8,6 +8,7 @@ import TextBlockSettings from '../LandingPageBlocks/Settings/TextBlockSettings';
 import FormBlockSettings from '../LandingPageBlocks/Settings/FormBlockSettings';
 import CTABlockSettings from '../LandingPageBlocks/Settings/CTABlockSettings';
 import SpacerBlockSettings from '../LandingPageBlocks/Settings/SpacerBlockSettings';
+import CustomHTMLBlockSettings from '../LandingPageBlocks/Settings/CustomHTMLBlockSettings';
 import BlockStylesEditor from './BlockStylesEditor';
 
 interface PropertiesSidebarProps {
@@ -133,6 +134,11 @@ function renderBlockSettings(
     case 'spacer':
       return (
         <SpacerBlockSettings config={block.config} onUpdate={updateConfig} />
+      );
+
+    case 'custom_html':
+      return (
+        <CustomHTMLBlockSettings config={block.config as any} onUpdate={updateConfig} />
       );
 
     default:

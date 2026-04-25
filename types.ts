@@ -530,6 +530,20 @@ export interface SiteSettings {
     gemini?: {
       apiKey: string;
     };
+    openai?: {
+      apiKey: string;
+      model?: string;
+    };
+    namoBana?: {
+      apiKey: string;
+    };
+    asaas?: {
+      apiKey: string;
+      environment?: 'sandbox' | 'production';
+    };
+    zapsign?: {
+      apiKey: string;
+    };
   };
   // Visual Layout Editor
   layout_config?: LayoutConfig;

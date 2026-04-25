@@ -124,10 +124,16 @@ export interface BlockStyles {
   backgroundImage?: string;
   textColor?: string;
   borderRadius?: string;
+  borderWidth?: string;
+  borderStyle?: string;
+  borderColor?: string;
   boxShadow?: string;
   width?: string;
   height?: string;
   textAlign?: 'left' | 'center' | 'right' | 'justify';
+  opacity?: number;
+  zIndex?: number;
+  customCss?: string;
 }
 
 export interface ResponsiveStyles {

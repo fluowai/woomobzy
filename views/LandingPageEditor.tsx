@@ -34,6 +34,7 @@ import PropertiesSidebar from '../components/LandingPageEditor/PropertiesSidebar
 import ThemeCustomizer from '../components/LandingPageEditor/ThemeCustomizer';
 import SEOSettings from '../components/LandingPageEditor/SEOSettings';
 import AICloneModal from '../components/LandingPageEditor/AICloneModal';
+import AIGenerationModal from '../components/LandingPageEditor/AIGenerationModal';
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';
 
@@ -51,6 +52,7 @@ const LandingPageEditor: React.FC = () => {
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
   const [showSEOSettings, setShowSEOSettings] = useState(false);
   const [showAICloneModal, setShowAICloneModal] = useState(false);
+  const [showAIGenModal, setShowAIGenModal] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
@@ -389,15 +391,24 @@ const LandingPageEditor: React.FC = () => {
             </button>
           </div>
 
-          {/* AI Clone Button */}
-          <button
-            onClick={() => setShowAICloneModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all"
-            title="Clonar Site com IA"
-          >
-            <Wand2 size={18} />
-            <span className="hidden md:inline font-medium">Magic Clone</span>
-          </button>
+          {/* AI Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAIGenModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all shadow-indigo-200"
+              title="Criar com Namo Bana IA"
+            >
+              <Sparkles size={18} />
+              <span className="hidden md:inline font-bold">Namo Bana</span>
+            </button>
+            <button
+              onClick={() => setShowAICloneModal(true)}
+              className="p-2 text-indigo-600 hover:bg-indigo-50 border border-indigo-100 rounded-lg transition-colors"
+              title="Clonar Site com IA"
+            >
+              <Wand2 size={20} />
+            </button>
+          </div>
 
           {/* Actions */}
           <button
@@ -549,6 +560,14 @@ const LandingPageEditor: React.FC = () => {
         <AICloneModal
           onClone={handleAICloneApply}
           onClose={() => setShowAICloneModal(false)}
+        />
+      )}
+
+      {/* AI Generation Modal (Namo Bana) */}
+      {showAIGenModal && (
+        <AIGenerationModal
+          onGenerate={handleAICloneApply} // Reusing the same handler as it updates the whole page object
+          onClose={() => setShowAIGenModal(false)}
         />
       )}
     </div>

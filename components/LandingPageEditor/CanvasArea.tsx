@@ -29,6 +29,7 @@ import VideoBlock from '../LandingPageBlocks/VideoBlock';
 import TestimonialsBlock from '../LandingPageBlocks/TestimonialsBlock';
 import BrokerCardBlock from '../LandingPageBlocks/BrokerCardBlock';
 import DividerBlock from '../LandingPageBlocks/DividerBlock';
+import CustomHTMLBlock from '../LandingPageBlocks/CustomHTMLBlock';
 import { useSettings } from '../../context/SettingsContext';
 
 interface CanvasAreaProps {
@@ -190,8 +191,13 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
         </div>
 
         {/* Block Content */}
-        <div style={block.styles}>
-          {renderBlock(block, themeConfig, viewMode, settings)}
+        <div style={block.styles as any}>
+          {block.styles.customCss && (
+            <style>{`.block-${block.id} { ${block.styles.customCss} }`}</style>
+          )}
+          <div className={`block-${block.id}`}>
+            {renderBlock(block, themeConfig, viewMode, settings)}
+          </div>
         </div>
       </div>
     </div>
@@ -278,6 +284,9 @@ function renderBlock(
 
     case BlockType.SPACER:
       return <SpacerBlock config={block.config} />;
+
+    case BlockType.CUSTOM_HTML:
+      return <CustomHTMLBlock config={block.config as any} />;
 
     default:
       return (

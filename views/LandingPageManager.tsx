@@ -289,13 +289,27 @@ const LandingPageManager: React.FC = () => {
               className="bg-white rounded-lg shadow hover:shadow-xl transition-shadow overflow-hidden"
             >
               {/* Preview Image */}
-              <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600 relative">
-                <div className="absolute inset-0 flex items-center justify-center text-white">
-                  <div className="text-center">
-                    <Globe size={48} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-sm opacity-75">Preview não disponível</p>
-                  </div>
-                </div>
+              <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600 relative overflow-hidden group">
+                {(() => {
+                  const template = LANDING_PAGE_TEMPLATES.find(t => t.id === page.templateId);
+                  if (template?.thumbnail) {
+                    return (
+                      <img 
+                        src={template.thumbnail} 
+                        alt={page.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    );
+                  }
+                  return (
+                    <div className="absolute inset-0 flex items-center justify-center text-white">
+                      <div className="text-center">
+                        <Globe size={48} className="mx-auto mb-2 opacity-50" />
+                        <p className="text-sm opacity-75">Preview não disponível</p>
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* Status Badge */}
                 <div className="absolute top-4 right-4">
                   {getStatusBadge(page.status)}

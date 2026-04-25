@@ -96,13 +96,71 @@ const BlockStylesEditor: React.FC<BlockStylesEditorProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Border Radius
         </label>
-        <input
-          type="text"
-          value={styles.borderRadius || ''}
-          onChange={(e) => updateStyle('borderRadius', e.target.value)}
-          placeholder="Ex: 8px"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
+        <div className="flex gap-2 items-center">
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={parseInt(styles.borderRadius || '0')}
+            onChange={(e) => updateStyle('borderRadius', `${e.target.value}px`)}
+            className="flex-1"
+          />
+          <input
+            type="text"
+            value={styles.borderRadius || ''}
+            onChange={(e) => updateStyle('borderRadius', e.target.value)}
+            placeholder="Ex: 8px"
+            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Border */}
+      <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Borda</p>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className="block text-[10px] text-gray-500 mb-1">Espessura</label>
+            <input
+              type="text"
+              value={styles.borderWidth || ''}
+              onChange={(e) => updateStyle('borderWidth', e.target.value)}
+              placeholder="1px"
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-[10px] text-gray-500 mb-1">Estilo</label>
+            <select
+              value={styles.borderStyle || 'none'}
+              onChange={(e) => updateStyle('borderStyle', e.target.value)}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+            >
+              <option value="none">Nenhum</option>
+              <option value="solid">Sólido</option>
+              <option value="dashed">Tracejado</option>
+              <option value="dotted">Pontilhado</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] text-gray-500 mb-1">Cor da Borda</label>
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={styles.borderColor || '#000000'}
+              onChange={(e) => updateStyle('borderColor', e.target.value)}
+              className="h-8 w-12 rounded border border-gray-300"
+            />
+            <input
+              type="text"
+              value={styles.borderColor || ''}
+              onChange={(e) => updateStyle('borderColor', e.target.value)}
+              placeholder="#000000"
+              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Box Shadow */}
@@ -170,6 +228,20 @@ const BlockStylesEditor: React.FC<BlockStylesEditorProps> = ({
           onChange={(e) => updateStyle('height', e.target.value)}
           placeholder="Ex: auto ou 400px"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      {/* Advanced CSS */}
+      <div className="pt-4 border-t border-gray-200">
+        <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+          CSS Personalizado
+        </label>
+        <textarea
+          value={styles.customCss || ''}
+          onChange={(e) => updateStyle('customCss', e.target.value)}
+          placeholder="Ex: filter: grayscale(1); z-index: 10;"
+          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
     </div>

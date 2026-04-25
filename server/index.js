@@ -25,6 +25,7 @@ import ruralRoutes from './api/rural/index.js';
 import urbanRoutes from './api/urban/index.js';
 import locacaoRoutes from './api/locacao/index.js';
 import cobrancaRoutes from './api/cobranca/index.js';
+import aiRoutes from './api/ai/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -132,6 +133,7 @@ app.use('/api/rural', ruralRoutes);
 app.use('/api/urban', urbanRoutes);
 app.use('/api/locacao', locacaoRoutes);
 app.use('/api/cobranca', cobrancaRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Tenant Resolution
 

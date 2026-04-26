@@ -15,6 +15,8 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { callApi } from '../../src/lib/api';
+import { useAuth } from '../../context/AuthContext';
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Tipos
@@ -145,7 +147,8 @@ const WhatsAppInstances: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [profile?.organization_id, getAuthHeaders]);
+  }, [profile?.organization_id]);
+
 
   // ──────────────────────────────────────────────
   // Realtime: ouvir mudanças de status nas instâncias

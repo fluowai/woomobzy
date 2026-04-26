@@ -34,6 +34,8 @@ import {
   X,
 } from 'lucide-react';
 import { callApi } from '../../src/lib/api';
+import { useAuth } from '../../context/AuthContext';
+
 
 interface Chat {
   id: string;

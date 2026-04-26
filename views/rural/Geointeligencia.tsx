@@ -11,7 +11,11 @@ import {
   Droplets,
   Mountain,
   Search,
+  ShieldCheck,
+  FileCheck,
+  ShieldAlert,
 } from 'lucide-react';
+import 'leaflet-geometryutil';
 import {
   MapContainer,
   TileLayer,
@@ -51,8 +55,8 @@ const Geointeligencia: React.FC = () => {
   const [layers, setLayers] = useState<LayerConfig[]>([
     {
       name: 'SIGEF / INCRA (Certificado)',
-      url: 'https://acervofundiario.incra.gov.br/i3geo/ogc.php',
-      layer: 'sigef_particular',
+      url: 'https://geoinfo.incra.gov.br/geoserver/wms',
+      layer: 'incra:certificada_sigef_particular',
       active: true,
       icon: Map,
       color: 'text-emerald-600',
@@ -373,6 +377,33 @@ const Geointeligencia: React.FC = () => {
             <button className="w-full flex items-center gap-2 justify-center p-3 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-100 transition-all">
               <Eye size={16} /> Ver Histórico de Uso
             </button>
+          </div>
+
+          <div className="pt-6 border-t border-slate-100">
+            <h3 className="font-bold text-black flex items-center gap-2 mb-4">
+              <ShieldCheck size={18} className="text-emerald-600" />
+              Validação de Dados
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <a 
+                href="https://acesso.car.gov.br/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:bg-emerald-50 hover:border-emerald-200 transition-all text-center group"
+              >
+                <FileCheck size={20} className="text-slate-400 group-hover:text-emerald-600 mb-1" />
+                <span className="text-[10px] font-bold text-slate-600 leading-tight">Consultar CAR</span>
+              </a>
+              <a 
+                href="https://sigef.incra.gov.br/consultar/parcelas/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:bg-emerald-50 hover:border-emerald-200 transition-all text-center group"
+              >
+                <ShieldAlert size={20} className="text-slate-400 group-hover:text-emerald-600 mb-1" />
+                <span className="text-[10px] font-bold text-slate-600 leading-tight">Validar SIGEF</span>
+              </a>
+            </div>
           </div>
         </div>
 

@@ -47,6 +47,7 @@
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
+    "leaflet-geometryutil": "^0.10.3",
     "lucide-react": "^0.473.0",
     "nodemailer": "^7.0.12",
     "pg": "^8.20.0",

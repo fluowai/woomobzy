@@ -16,10 +16,24 @@ import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import multer from 'multer';
 import { AnalysisController } from './analysis/controller.js';
+import { AgroIntelligenceService } from '../../services/AgroIntelligence.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 const router = Router();
+
+/**
+ * GET /api/rural/market/prices
+ * Retorna preços atualizados do CEPEA via Microserviço Python
+ */
+router.get('/market/prices', verifyAuth, async (req, res) => {
+  try {
+    const data = await AgroIntelligenceService.getLatestPrices();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 const SNCR_API_BASE =
   'https://apigateway.conectagov.estaleiro.serpro.gov.br/api-sncr/v2';
@@ -432,6 +446,26 @@ router.post(
   requireTenant,
   upload.single('file'),
   AnalysisController.uploadKMZ
+);
+
+/**
+ * Consulta status da análise
+ */
+router.get(
+  '/analysis/status/:analysisId',
+  verifyAuth,
+  requireTenant,
+  AnalysisController.checkStatus
+);
+
+/**
+ * Download do Relatório em PDF
+ */
+router.get(
+  '/analysis/report/:analysisId/pdf',
+  verifyAuth,
+  requireTenant,
+  AnalysisController.downloadPDF
 );
 
 export default router;

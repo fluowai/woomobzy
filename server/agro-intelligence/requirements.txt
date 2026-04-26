@@ -1,0 +1,5 @@
+agrobr
+fastapi
+uvicorn
+pandas
+httpx

@@ -4,6 +4,7 @@ import { db } from '../../../lib/pg.js';
 import { CARConnector } from './integrations/car-connector.js';
 import { RuralRepository } from './repository.js';
 import * as turf from '@turf/turf';
+import { AgroIntelligenceService } from '../../../services/AgroIntelligence.js';
 
 const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379');
 
@@ -18,6 +19,9 @@ export const analysisWorker = new Worker('rural-analysis', async (job) => {
 
     // 2. Fetch External Data (CAR)
     const carData = await CARConnector.fetchByBbox(bbox);
+    
+    // 3. Environmental Analysis (agrobr/INPE)
+    const envAnalysis = await AgroIntelligenceService.performEnvironmentalAnalysis(geometry);
     
     // 3. Spatial Cross-Analysis in PostGIS
     // We'll compare the input geometry with the fetched CAR features
@@ -43,7 +47,11 @@ export const analysisWorker = new Worker('rural-analysis', async (job) => {
     // 4. Score Calculation
     let score = 0;
     if (carFound) score += 40;
-    // ... add more logic for SIGEF, desmatamento etc.
+    if (envAnalysis.success && envAnalysis.risk_score === 0) score += 40; // Bonus for clean area
+    if (envAnalysis.risk_score >= 70) score -= 50; // Penalty for critical alerts
+    
+    // Normalize score to 0-100
+    score = Math.max(0, Math.min(100, score));
     
     // Determine Risk Level
     const riskLevel = score >= 80 ? 'baixo' : score >= 50 ? 'medio' : 'alto';
@@ -57,6 +65,11 @@ export const analysisWorker = new Worker('rural-analysis', async (job) => {
         features_count: carData.features?.length || 0
       },
       sigef: { certificado: true, sobreposicao: false }, // Placeholder for now
+      ambiental: {
+        score_risco: envAnalysis.risk_score || 0,
+        status: envAnalysis.status || 'OFFLINE',
+        findings: envAnalysis.findings || []
+      },
       score,
       riskLevel
     };

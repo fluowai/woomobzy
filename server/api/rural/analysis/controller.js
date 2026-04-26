@@ -31,10 +31,36 @@ export class AnalysisController {
   }
 
   /**
-   * GET /api/rural/analysis/status/:jobId
+   * GET /api/rural/analysis/status/:analysisId
    */
   static async checkStatus(req, res) {
-    // Implement Status Check logic fetching from rural_analysis table
-    res.json({ status: 'feature_pending' });
+    try {
+      const { analysisId } = req.params;
+      const analysis = await AnalysisService.getAnalysisStatus(analysisId);
+      
+      if (!analysis) {
+        return res.status(404).json({ error: 'Análise não encontrada.' });
+      }
+
+      res.json(analysis);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * GET /api/rural/analysis/report/:analysisId/pdf
+   */
+  static async downloadPDF(req, res) {
+    try {
+      const { analysisId } = req.params;
+      const pdfBuffer = await AnalysisService.generatePDFReport(analysisId);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=relatorio_rural_${analysisId}.pdf`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
 }

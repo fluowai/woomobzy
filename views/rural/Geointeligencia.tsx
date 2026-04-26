@@ -78,6 +78,22 @@ const Geointeligencia: React.FC = () => {
   const [carInput, setCarInput] = useState('');
   const [sigefInput, setSigefInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
+  const [marketPrices, setMarketPrices] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      try {
+        const response = await fetch('/api/rural/market/prices', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}` }
+        });
+        const result = await response.json();
+        if (result.success) setMarketPrices(result.data);
+      } catch (err) {
+        console.error('Market data fetch error:', err);
+      }
+    };
+    fetchMarketData();
+  }, []);
 
   const toggleLayer = (idx: number) => {
     setLayers((prev) => prev.map((l, i) => (i === idx ? { ...l, active: !l.active } : l)));
@@ -242,6 +258,28 @@ const Geointeligencia: React.FC = () => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
         </form>
       </div>
+
+      {marketPrices && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-6 overflow-x-auto no-scrollbar shadow-2xl">
+          <div className="flex items-center gap-2 border-r border-slate-700 pr-6 shrink-0">
+            <div className="p-1.5 bg-emerald-500/20 rounded-lg">
+              <Zap size={14} className="text-emerald-400" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Indicators / CEPEA</span>
+          </div>
+          <div className="flex gap-8 items-center">
+            {Object.entries(marketPrices).map(([key, val]: [string, any]) => (
+              <div key={key} className="flex flex-col">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{key.replace('_', ' ')}</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xs font-black text-white">R$ {val.valor}</span>
+                  <span className="text-[9px] text-slate-500 font-medium">/{val.unidade}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[

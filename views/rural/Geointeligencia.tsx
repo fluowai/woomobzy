@@ -59,8 +59,8 @@ const Geointeligencia: React.FC = () => {
     },
     {
       name: 'CAR (Cadastro Ambiental)',
-      url: 'https://servicos.sfb.gov.br/geoserver/wms',
-      layer: 'sfb:car_imovel',
+      url: 'https://geoserver.car.gov.br/geoserver/wms',
+      layer: 'car_imoveis',
       active: false,
       icon: TreePine,
       color: 'text-green-600',
@@ -167,9 +167,22 @@ const Geointeligencia: React.FC = () => {
     e.preventDefault();
     if (!searchQuery) return;
 
+    // Check if query is Lat,Lng coordinates
+    const coordRegExp = /^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/;
+    const match = searchQuery.match(coordRegExp);
+    
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[3]);
+      setSearchResult([lat, lng]);
+      setSearchBounds(null);
+      setIsSearching(false);
+      return;
+    }
+
     setIsSearching(true);
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&addressdetails=1`);
       const data = await response.json();
       if (data && data.length > 0) {
         const { lat, lon, display_name, boundingbox } = data[0];
@@ -206,7 +219,12 @@ const Geointeligencia: React.FC = () => {
       if (geometries.length > 0) {
         const bounds = L.geoJSON({ type: 'FeatureCollection', features: geometries } as any).getBounds();
         if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [50, 50] });
+          // If bounds are too small (point-like), use a fixed zoom
+          if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
+            map.setView(bounds.getCenter(), 16);
+          } else {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+          }
         }
       }
     }, [geometries, map]);
@@ -430,7 +448,19 @@ const Geointeligencia: React.FC = () => {
               />
             )}
 
-            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" />
+            <TileLayer 
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" 
+              zIndex={100}
+            />
+
+            {/* Map Crosshair for Precision */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[500] pointer-events-none opacity-50">
+              <div className="relative">
+                <div className="w-8 h-0.5 bg-white shadow-sm"></div>
+                <div className="w-0.5 h-8 bg-white shadow-sm absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                <div className="w-2 h-2 rounded-full border border-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+              </div>
+            </div>
           </MapContainer>
         </div>
       </div>

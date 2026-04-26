@@ -186,11 +186,14 @@ const FullScreenSpinner: React.FC = () => (
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Determine niche: check organization.niche, fallback to 'rural'
-  const niche = (profile?.organization as any)?.niche || 'rural';
-  const target = niche === 'rural' || niche === 'hybrid' ? '/rural' : '/urban';
+  // Determine niche: check organization.niche
+  // 'rural' or 'hybrid' → Rural Panel
+  // 'traditional', undefined, null, or anything else → Urban Panel (default seguro)
+  const rawNiche = (profile?.organization as any)?.niche;
+  const isRural = rawNiche === 'rural' || rawNiche === 'hybrid';
+  const target = isRural ? '/rural' : '/urban';
   
-  console.log(`🚀 NicheRedirect: Sending ${profile?.email} to ${target} (Niche: ${niche})`);
+  console.log(`🚀 NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${isRural})`);
   return <Navigate to={target} replace />;
 };
 

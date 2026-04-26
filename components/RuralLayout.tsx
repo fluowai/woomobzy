@@ -50,7 +50,6 @@ const RuralLayout: React.FC = () => {
     { icon: MapIcon, label: 'Mapas & Georreferenciamento', path: '/rural/maps' },
     { icon: FileCheck, label: 'Documentação Rural', path: '/rural/due-diligence' },
     { icon: DollarSign, label: 'Financeiro', path: '/rural/financial' },
-    { icon: Shield, label: 'Conexão WhatsApp', path: '/rural/whatsapp-instances' },
     { icon: Globe, label: 'Site & Landing Pages', path: '/rural/landing-pages' },
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
     { icon: Settings, label: 'Configurações', path: '/rural/settings' },

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { callApi } from '../../src/lib/api';
 import {
   Check,
   X,
@@ -105,34 +106,10 @@ const UserManagement: React.FC = () => {
 
     setProcessing(selectedUser.id);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) throw new Error('No session');
-
-      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/admin/users/${selectedUser.id}/password`;
-
-      const res = await fetch(apiUrl, {
+      await callApi(`/api/admin/users/${selectedUser.id}/password`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
         body: JSON.stringify({ password: newPassword }),
       });
-
-      const text = await res.text();
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error(
-          `Servidor retornou erro inesperado (Status ${res.status})`
-        );
-      }
-
-      if (data.error) throw new Error(data.error);
 
       alert('Senha atualizada com sucesso!');
       setShowPasswordModal(false);
@@ -156,24 +133,9 @@ const UserManagement: React.FC = () => {
 
     setProcessing(user.id);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) throw new Error('No session');
-
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/admin/users/${user.id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      await callApi(`/api/admin/users/${user.id}`, {
+        method: 'DELETE',
+      });
 
       // Remove from list
       setUsers(users.filter((u) => u.id !== user.id));

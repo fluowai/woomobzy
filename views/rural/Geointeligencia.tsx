@@ -31,6 +31,7 @@ import {
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
+import { callApi } from '../../src/lib/api';
 import { EditControl } from 'react-leaflet-draw';
 import L from 'leaflet';
 import * as toGeoJSON from '@mapbox/togeojson';
@@ -83,11 +84,7 @@ const Geointeligencia: React.FC = () => {
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const response = await fetch('/api/rural/market/prices', {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
-        const result = await response.json();
+        const result = await callApi('/api/rural/market/prices');
         if (result.success) setMarketPrices(result.data);
       } catch (err) {
         console.error('Market data fetch error:', err);
@@ -181,17 +178,16 @@ const Geointeligencia: React.FC = () => {
 
   const consultCARapi = async () => {
     if (!carInput) return;
-    setIsValidating(true);
     try {
-      const response = await fetch(`/api/rural/car/consultar/${encodeURIComponent(carInput)}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}` }
-      });
-      const result = await response.json();
-      if (result.success && result.data?.features?.length > 0) {
-        setGeometries(prev => [...prev, ...result.data.features]);
+      setIsValidating(true);
+      const result = await callApi(`/api/rural/car/consultar/${encodeURIComponent(carInput)}`);
+      if (result.success) {
+        setSearchResult(result.coords);
+        setSearchBounds(result.bounds);
       }
     } catch (err) {
-      console.error(err);
+      console.error('CAR Validation error:', err);
+      alert('Erro ao consultar CAR');
     } finally {
       setIsValidating(false);
     }
@@ -199,17 +195,16 @@ const Geointeligencia: React.FC = () => {
 
   const consultSIGEFapi = async () => {
     if (!sigefInput) return;
-    setIsValidating(true);
     try {
-      const response = await fetch(`/api/rural/sigef/consultar/${encodeURIComponent(sigefInput)}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}` }
-      });
-      const result = await response.json();
-      if (result.success && result.data?.features?.length > 0) {
-        setGeometries(prev => [...prev, ...result.data.features]);
+      setIsValidating(true);
+      const result = await callApi(`/api/rural/sigef/consultar/${encodeURIComponent(sigefInput)}`);
+      if (result.success) {
+        setSearchResult(result.coords);
+        setSearchBounds(result.bounds);
       }
     } catch (err) {
-      console.error(err);
+      console.error('SIGEF Validation error:', err);
+      alert('Erro ao consultar SIGEF');
     } finally {
       setIsValidating(false);
     }

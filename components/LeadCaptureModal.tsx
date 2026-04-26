@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, MessageCircle, Loader2 } from 'lucide-react';
 import { leadService } from '../services/leads';
 import { useSettings } from '../context/SettingsContext';
+import { callApi } from '../src/lib/api';
 
 interface LeadCaptureModalProps {
   isOpen: boolean;
@@ -44,9 +45,8 @@ const LeadCaptureModal: React.FC<LeadCaptureModalProps> = ({
 
       // 2. Trigger WhatsApp Automation (Serverless)
       try {
-        await fetch('/api/send-welcome', {
+        await callApi('/api/send-welcome', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name,
             phone,

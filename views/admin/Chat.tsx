@@ -33,8 +33,7 @@ import {
   CheckSquare,
   X,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { getApiUrl } from '../../src/lib/api';
+import { callApi } from '../../src/lib/api';
 
 interface Chat {
   id: string;
@@ -111,17 +110,8 @@ const Chat: React.FC = () => {
   const nicheBorder = isRural ? 'border-emerald-500/20' : 'border-blue-500/20';
 
   // ──────────────────────────────────────────────
-  // Fetching Logic
+  // Fetching Logic (Unified with callApi)
   // ──────────────────────────────────────────────
-  const getAuthHeaders = useCallback(async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return {
-      Authorization: `Bearer ${session?.access_token}`,
-      'Content-Type': 'application/json',
-    };
-  }, []);
 
   const handleDeleteBulk = async () => {
     if (!selectedChat || selectedMessageIds.length === 0 || !selectedInstance) return;
@@ -129,16 +119,11 @@ const Chat: React.FC = () => {
 
     setIsDeleting(true);
     try {
-      const res = await fetch(`${getApiUrl()}/api/whatsapp/instances/${selectedInstance.id}/messages/bulk`, {
+      const data = await callApi(`/api/whatsapp/instances/${selectedInstance.id}/messages/bulk`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
         body: JSON.stringify({ ids: selectedMessageIds }),
       });
 
-      const data = await res.json();
       if (data.success) {
         setMessages(prev => prev.filter(m => !selectedMessageIds.includes(m.id)));
         setSelectedMessageIds([]);
@@ -160,12 +145,7 @@ const Chat: React.FC = () => {
 
   const fetchInstances = useCallback(async () => {
     try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(
-        getApiUrl(`/api/whatsapp/instances?t=${Date.now()}`),
-        { headers }
-      );
-      const data = await response.json();
+      const data = await callApi(`/api/whatsapp/instances?t=${Date.now()}`);
       if (data.success) {
         setInstances(data.instances || []);
         if (!selectedInstance && data.instances?.length > 0) {
@@ -182,36 +162,26 @@ const Chat: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders, selectedInstance]);
+  }, [selectedInstance]);
 
   const fetchChats = useCallback(
     async (instanceId: string) => {
       try {
-        const headers = await getAuthHeaders();
-        const response = await fetch(
-          getApiUrl(`/api/whatsapp/instances/${instanceId}/chats`),
-          { headers }
-        );
-        const data = await response.json();
+        const data = await callApi(`/api/whatsapp/instances/${instanceId}/chats`);
         if (data.success) setChats(data.chats || []);
       } catch (err) {
         console.error(err);
       }
     },
-    [getAuthHeaders]
+    []
   );
 
   const fetchMessages = useCallback(
     async (instanceId: string, chatId: string) => {
       try {
-        const headers = await getAuthHeaders();
-        const response = await fetch(
-          getApiUrl(
-            `/api/whatsapp/instances/${instanceId}/chats/${chatId}/messages`
-          ),
-          { headers }
+        const data = await callApi(
+          `/api/whatsapp/instances/${instanceId}/chats/${chatId}/messages`
         );
-        const data = await response.json();
         if (data.success) {
           setMessages(data.messages || []);
           setTimeout(() => scrollToBottom('auto'), 100);
@@ -220,7 +190,7 @@ const Chat: React.FC = () => {
         console.error(err);
       }
     },
-    [getAuthHeaders]
+    []
   );
 
   useEffect(() => {
@@ -243,19 +213,14 @@ const Chat: React.FC = () => {
       return;
     setSending(true);
     try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(
-        getApiUrl(`/api/whatsapp/instances/${selectedInstance.id}/send`),
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            jid: selectedChat.jid,
-            text: newMessage.trim(),
-          }),
-        }
-      );
-      if ((await response.json()).success) setNewMessage('');
+      const data = await callApi(`/api/whatsapp/instances/${selectedInstance.id}/send`, {
+        method: 'POST',
+        body: JSON.stringify({
+          jid: selectedChat.jid,
+          text: newMessage.trim(),
+        }),
+      });
+      if (data.success) setNewMessage('');
     } catch (err) {
       setError('Erro ao enviar');
     } finally {

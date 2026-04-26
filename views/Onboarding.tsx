@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../src/lib/api';
+import { callApi } from '../src/lib/api';
 import {
   Building2,
   Palette,
@@ -146,20 +146,8 @@ const Onboarding: React.FC = () => {
 
   const checkSystem = async () => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const res = await fetch(getApiUrl('/api/system-status'), {
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        console.warn('⚠️ Backend returned error:', res.status);
-        return;
-      }
-
-      const data = await res.json();
+      const data = await callApi('/api/system-status');
+      console.log('✅ Backend connected. Fresh system:', data.fresh);
       console.log('✅ Backend connected. Fresh system:', data.fresh);
       if (data.fresh) {
         setIsSystemSetup(true);
@@ -228,13 +216,10 @@ const Onboarding: React.FC = () => {
     setError('');
 
     try {
-      const res = await fetch(getApiUrl('/api/onboarding'), {
+      const data = await callApi('/api/onboarding', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
-      const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.error || 'Erro ao criar conta');

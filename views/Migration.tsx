@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
+import { callApi } from '../src/lib/api';
 
 const Migration: React.FC = () => {
   const { profile } = useAuth();
@@ -67,32 +68,15 @@ const Migration: React.FC = () => {
     addLog(`Iniciando solicitação de migração para: ${url}`);
 
     try {
-      const response = await fetch('http://localhost:3002/api/migrate', {
+      const data = await callApi('/api/migrate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           startUrl: url,
           organizationId: profile?.organization_id,
         }),
       });
 
-      const text = await response.text();
-      console.log('Server Response:', response.status, text);
-
-      if (!response.ok) {
-        setStatus('error');
-        addLog(
-          `Erro do servidor (${response.status}): ${text || response.statusText}`
-        );
-        return;
-      }
-
-      try {
-        const data = JSON.parse(text);
-        addLog(`Servidor aceitou o comando: ${data.message}`);
-      } catch (e) {
-        addLog(`Erro ao processar resposta JSON: ${text}`);
-      }
+      addLog(`Servidor aceitou o comando: ${data.message}`);
     } catch (error: any) {
       console.error('Fetch error:', error);
       setStatus('error');
@@ -155,8 +139,8 @@ const Migration: React.FC = () => {
             </div>
             <p className="mt-4 text-xs text-slate-400 flex items-center gap-2">
               <AlertTriangle size={12} className="text-amber-500" />
-              Certifique-se que o "npm run server" está rodando no terminal para
-              habilitar o robô.
+              O processo de migração é executado em segundo plano no servidor de
+              backend.
             </p>
           </div>
 
@@ -204,9 +188,9 @@ const Migration: React.FC = () => {
             </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-500">Servidor Local</span>
+                <span className="text-slate-500">Servidor API</span>
                 <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold uppercase">
-                  Online
+                  Conectado
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm">

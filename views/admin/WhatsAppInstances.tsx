@@ -14,8 +14,7 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { getApiUrl } from '../../src/lib/api';
+import { callApi } from '../../src/lib/api';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Tipos
@@ -114,40 +113,18 @@ const WhatsAppInstances: React.FC = () => {
   const instancesChannelRef = useRef<any>(null);
   const qrChannelRef = useRef<any>(null);
 
-  // ──────────────────────────────────────────────
-  // Token de auth helper
-  // ──────────────────────────────────────────────
-  const getAuthHeaders = useCallback(async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return { Authorization: `Bearer ${session?.access_token}` };
-  }, []);
 
   // ──────────────────────────────────────────────
   // Fetch Instâncias (via API — inclui socketAlive)
   // ──────────────────────────────────────────────
   const fetchInstances = useCallback(async () => {
     try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(
-        getApiUrl(`/api/whatsapp/instances?t=${Date.now()}`),
-        { headers }
-      );
-
-      if (response.status === 401 || response.status === 403) {
-        console.warn(
-          '[WhatsAppInstances] Acesso negado pela API. Parando tentativas.'
-        );
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
+      const data = await callApi(`/api/whatsapp/instances?t=${Date.now()}`);
       if (data.success) {
         setInstances(data.instances || []);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[WhatsAppInstances] Erro ao buscar instances:', error);
       console.error('[WhatsAppInstances] Erroao buscar instances:', error);
 
       // Fallback: busca direto no Supabase se API nao responder
@@ -304,13 +281,10 @@ const WhatsAppInstances: React.FC = () => {
     if (!newInstanceName.trim()) return;
     setCreating(true);
     try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(getApiUrl('/api/whatsapp/instances'), {
+      const data = await callApi('/api/whatsapp/instances', {
         method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newInstanceName.trim() }),
       });
-      const data = await response.json();
       if (!data.success)
         throw new Error(data.error || 'Erro ao criar instância');
       setShowNewModal(false);
@@ -337,15 +311,9 @@ const WhatsAppInstances: React.FC = () => {
     subscribeToQR(instance.id);
 
     try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(
-        getApiUrl(`/api/whatsapp/instances/${instance.id}/connect`),
-        {
-          method: 'POST',
-          headers,
-        }
-      );
-      const data = await response.json();
+      const data = await callApi(`/api/whatsapp/instances/${instance.id}/connect`, {
+        method: 'POST',
+      });
 
       if (!data.success) {
         throw new Error(data.error || 'Falha ao iniciar conexão');
@@ -378,14 +346,9 @@ const WhatsAppInstances: React.FC = () => {
   // ──────────────────────────────────────────────
   const disconnectInstance = async (instanceId: string) => {
     try {
-      const headers = await getAuthHeaders();
-      await fetch(
-        getApiUrl(`/api/whatsapp/instances/${instanceId}/disconnect`),
-        {
-          method: 'POST',
-          headers,
-        }
-      );
+      await callApi(`/api/whatsapp/instances/${instanceId}/disconnect`, {
+        method: 'POST',
+      });
       fetchInstances();
     } catch (error) {
       console.error('[WhatsAppInstances] Erro ao desconectar:', error);
@@ -416,10 +379,8 @@ const WhatsAppInstances: React.FC = () => {
   const deleteInstance = async (id: string) => {
     if (!confirm('Tem certeza? Esta ação não pode ser desfeita.')) return;
     try {
-      const headers = await getAuthHeaders();
-      await fetch(getApiUrl(`/api/whatsapp/instances/${id}`), {
+      await callApi(`/api/whatsapp/instances/${id}`, {
         method: 'DELETE',
-        headers,
       });
       setInstances((prev) => prev.filter((i) => i.id !== id));
     } catch (error) {

@@ -9,6 +9,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { callApi } from '../../src/lib/api';
 
 // Real Domain Interface
 interface DomainEntry {
@@ -89,21 +90,13 @@ const DomainManager: React.FC = () => {
 
     try {
       // Call Backend API
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/domains/add`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            domain: newDomain.toLowerCase().trim(),
-            organizationId: selectedOrgId,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.error) throw new Error(data.error);
+      await callApi('/api/domains/add', {
+        method: 'POST',
+        body: JSON.stringify({
+          domain: newDomain.toLowerCase().trim(),
+          organizationId: selectedOrgId,
+        }),
+      });
 
       alert(`✅ Domínio ${newDomain} adicionado com sucesso na Vercel!`);
       setNewDomain('');
@@ -126,17 +119,10 @@ const DomainManager: React.FC = () => {
       return;
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/domains/remove`,
-        {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain, organizationId: orgId }),
-        }
-      );
-
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      await callApi('/api/domains/remove', {
+        method: 'DELETE',
+        body: JSON.stringify({ domain, organizationId: orgId }),
+      });
 
       fetchData(); // Refresh
     } catch (e: any) {
@@ -147,10 +133,7 @@ const DomainManager: React.FC = () => {
   const verifyStatus = async (domain: string) => {
     setVerifying(domain);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/domains/verify/${domain}`
-      );
-      const data = await res.json();
+      const data = await callApi(`/api/domains/verify/${domain}`);
 
       if (data.verified) {
         alert(`✅ ${domain}: DNS Configurado Corretamente!`);

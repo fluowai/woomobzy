@@ -10,7 +10,7 @@ import {
 import { useSettings } from '../context/SettingsContext';
 import { useTexts } from '../context/TextsContext';
 import InlineEditable from './InlineEditable';
-import axios from 'axios';
+import { callApi } from '../src/lib/api';
 
 const ContactForm: React.FC = () => {
   const { settings } = useSettings();
@@ -49,12 +49,15 @@ const ContactForm: React.FC = () => {
       const trackingData = getTrackingData();
 
       // Enviar formulário com dados de tracking
-      const response = await axios.post('http://localhost:3002/api/contact', {
-        ...formData,
-        ...trackingData,
+      const data = await callApi('/api/contact', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...formData,
+          ...trackingData,
+        }),
       });
 
-      if (response.data.success) {
+      if (data.success) {
         setSubmitSuccess(true);
         setFormData({ name: '', email: '', phone: '', message: '' });
 

@@ -46,6 +46,14 @@ export const leadService = {
 
     return mapToModel(data.lead);
   },
+
+  // Send welcome message via WhatsApp (Backend Proxy)
+  async sendWelcome(id: string) {
+    const data = await callApi(`/api/crm/leads/${id}/welcome`, {
+      method: 'POST',
+    });
+    return data;
+  },
 };
 
 const mapToModel = (dbItem: any): Lead => ({

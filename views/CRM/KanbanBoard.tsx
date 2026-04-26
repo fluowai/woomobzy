@@ -569,67 +569,12 @@ const KanbanBoard: React.FC = () => {
                                       )
                                         return;
                                       try {
-                                        // Buscar configurações da Evolution API
-                                        const { data: settingsData } =
-                                          await supabase
-                                            .from('site_settings')
-                                            .select('integrations')
-                                            .single();
+                                        // Chama o backend para enviar a mensagem de forma segura
+                                        const result = await leadService.sendWelcome(lead.id);
 
-                                        if (
-                                          !settingsData?.integrations
-                                            ?.evolutionApi?.enabled
-                                        ) {
-                                          alert(
-                                            '⚠️ Evolution API não está configurada ou está desativada'
-                                          );
-                                          return;
-                                        }
-
-                                        const config =
-                                          settingsData.integrations
-                                            .evolutionApi;
-
-                                        // Formatar telefone
-                                        const cleanPhone = lead.phone.replace(
-                                          /\D/g,
-                                          ''
-                                        );
-                                        const formattedPhone =
-                                          cleanPhone.length <= 11
-                                            ? `55${cleanPhone}`
-                                            : cleanPhone;
-
-                                        // Mensagem
-                                        const propertyTitle =
-                                          lead.property?.title ||
-                                          'um de nossos imóveis';
-                                        const message = `Olá, ${lead.name}! 👋\n\nRecebemos seu interesse em *${propertyTitle}*.\n\nNosso especialista já foi notificado e entrará em contato em breve para tirar suas dúvidas.\n\nEnquanto isso, salve nosso contato!`;
-
-                                        // Enviar via Evolution API
-                                        const apiUrl = `${config.baseUrl}/message/sendText/${config.instanceName}`;
-
-                                        const res = await fetch(apiUrl, {
-                                          method: 'POST',
-                                          headers: {
-                                            apikey: config.token,
-                                            'Content-Type': 'application/json',
-                                          },
-                                          body: JSON.stringify({
-                                            number: formattedPhone,
-                                            text: message,
-                                          }),
-                                        });
-
-                                        if (res.ok) {
+                                        if (result.success) {
                                           alert(
                                             '✅ Mensagem enviada com sucesso! Movendo para "Em Atendimento"...'
-                                          );
-
-                                          // Atualiza no Banco
-                                          await leadService.updateStatus(
-                                            lead.id,
-                                            'Em Atendimento'
                                           );
 
                                           // Atualiza na UI (Move o card)
@@ -644,18 +589,20 @@ const KanbanBoard: React.FC = () => {
                                             )
                                           );
                                         } else {
-                                          const errorData = await res
-                                            .json()
-                                            .catch(() => ({}));
                                           alert(
-                                            '❌ Erro ao enviar: ' +
-                                              (errorData.message ||
-                                                res.statusText)
+                                            '⚠️ Erro ao enviar mensagem: ' +
+                                              (result.error ||
+                                                'Verifique se o WhatsApp está conectado.')
                                           );
                                         }
                                       } catch (err: any) {
-                                        console.error(err);
-                                        alert('❌ Erro: ' + err.message);
+                                        console.error(
+                                          'Erro ao enviar boas-vindas:',
+                                          err
+                                        );
+                                        alert(
+                                          '❌ Falha na comunicação com o servidor de WhatsApp.'
+                                        );
                                       }
                                     }}
                                     className="text-indigo-500 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors"

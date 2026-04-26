@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../src/lib/api';
+import { callApi } from '../src/lib/api';
 import { supabase } from '../services/supabase';
 import { geminiService } from '../services/geminiService';
 import { landingPageService } from '../services/landingPages';
@@ -150,32 +150,25 @@ const SiteSetupWizard: React.FC = () => {
     ]);
 
     try {
-      const response = await fetch(getApiUrl('/api/import/analyze'), {
+      const data = await callApi('/api/import/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: siteData.migrationUrl,
           organizationId: profile?.organization_id,
         }),
       });
 
-      if (!response.ok) {
-        setMigrationLogs((prev) => [
-          ...prev,
-          '❌ Erro: O servidor de extração não respondeu ou URL inválida.',
-        ]);
-      } else {
-        const data = await response.json();
-        updateData('extractedProperties', data.properties || []);
-        setMigrationLogs((prev) => [
-          ...prev,
-          `✅ Extração concluída! Mostrando ${data.properties?.length || 0} imóveis abaixo.`,
-        ]);
-      }
-    } catch (e) {
+      updateData('extractedProperties', data.properties || []);
       setMigrationLogs((prev) => [
         ...prev,
-        '❌ Falha severa (O robô local pode estar offline).',
+        `✅ Extração concluída! Mostrando ${data.properties?.length || 0} imóveis abaixo.`,
+      ]);
+    } catch (e: any) {
+      setMigrationLogs((prev) => [
+        ...prev,
+        e.message?.includes('404') || e.message?.includes('500')
+          ? '❌ Erro: O servidor de extração não respondeu ou URL inválida.'
+          : '❌ Falha severa (O robô local pode estar offline).',
       ]);
     } finally {
       // Deixa a barra carregar um pouquinho pro feedback ficar legal
@@ -250,9 +243,8 @@ const SiteSetupWizard: React.FC = () => {
         siteData.extractedProperties.length > 0
       ) {
         try {
-          await fetch(getApiUrl('/api/import/finalize'), {
+          await callApi('/api/import/finalize', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               properties: siteData.extractedProperties,
               organizationId: profile.organization_id,
@@ -667,17 +659,13 @@ const SiteSetupWizard: React.FC = () => {
                         onClick={async () => {
                           if (!profile?.organization_id) return;
                           try {
-                            await fetch(
-                              getApiUrl('/api/import/finalize'),
-                              {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  properties: siteData.extractedProperties,
-                                  organizationId: profile.organization_id,
-                                }),
-                              }
-                            );
+                            await callApi('/api/import/finalize', {
+                              method: 'POST',
+                              body: JSON.stringify({
+                                properties: siteData.extractedProperties,
+                                organizationId: profile.organization_id,
+                              }),
+                            });
                             alert(
                               '🎉 Todos os ' +
                                 siteData.extractedProperties.length +

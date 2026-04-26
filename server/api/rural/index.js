@@ -14,6 +14,10 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import multer from 'multer';
+import { AnalysisController } from './analysis/controller.js';
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = Router();
 
@@ -416,6 +420,18 @@ router.get(
       res.status(500).json({ error: error.message });
     }
   }
+);
+
+/**
+ * Motor de Análise Rural (MAR)
+ * POST /api/rural/analysis/kmz
+ */
+router.post(
+  '/analysis/kmz',
+  verifyAuth,
+  requireTenant,
+  upload.single('file'),
+  AnalysisController.uploadKMZ
 );
 
 export default router;

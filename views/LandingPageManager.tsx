@@ -347,9 +347,10 @@ const LandingPageManager: React.FC = () => {
                 {/* Actions */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() =>
-                      (window.location.href = `/admin/landing-pages/${page.id}`)
-                    }
+                    onClick={() => {
+                      const prefix = window.location.pathname.startsWith('/urban') ? '/urban' : '/rural';
+                      window.location.href = `${prefix}/landing-pages/${page.id}`;
+                    }}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <Edit2 size={16} />
@@ -591,8 +592,10 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
         status: LandingPageStatus.DRAFT,
       });
 
-      // Redirecionar para o editor
-      window.location.href = `/admin/landing-pages/${newPage.id}`;
+      // Redirecionar para o editor (detectando prefixo atual)
+      const currentPath = window.location.pathname;
+      const prefix = currentPath.startsWith('/urban') ? '/urban' : '/rural';
+      window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error) {
       console.error('Error creating landing page:', error);
       alert('Erro ao criar landing page');
@@ -867,7 +870,9 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       console.log('Page created:', newPage);
 
       // Redirect
-      window.location.href = `/admin/landing-pages/${newPage.id}`;
+      const currentPath = window.location.pathname;
+      const prefix = currentPath.startsWith('/urban') ? '/urban' : '/rural';
+      window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error: any) {
       console.error('AI Generation failed:', error);
       alert('Falha na geração: ' + error.message);

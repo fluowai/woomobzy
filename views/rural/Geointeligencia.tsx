@@ -55,8 +55,8 @@ const Geointeligencia: React.FC = () => {
   const [layers, setLayers] = useState<LayerConfig[]>([
     {
       name: 'SIGEF / INCRA (Certificado)',
-      url: 'https://geoinfo.incra.gov.br/geoserver/wms',
-      layer: 'incra:certificada_sigef_particular',
+      url: 'https://acervofundiario.incra.gov.br/i3geo/ogc.php',
+      layer: 'certificada_sigef_particular',
       active: true,
       icon: Map,
       color: 'text-emerald-600',
@@ -71,15 +71,15 @@ const Geointeligencia: React.FC = () => {
     },
     {
       name: 'Uso Solo (MapBiomas)',
-      url: 'https://geoscenes.mapbiomas.org/geoserver/wms',
-      layer: 'mapbiomas-brazil:mapbiomas_cobertura_vegetal',
+      url: 'https://workspace.mapbiomas.org/geoserver/wms',
+      layer: 'mapbiomas_cobertura_vegetal',
       active: false,
       icon: Eye,
       color: 'text-blue-600',
     },
     {
       name: 'Desmatamento (PRODES)',
-      url: 'http://terrabrasilis.dpi.inpe.br/geoserver/gwc/service/wms',
+      url: 'https://terrabrasilis.dpi.inpe.br/geoserver/wms',
       layer: 'prodes_cerrado',
       active: false,
       icon: AlertTriangle,
@@ -462,13 +462,15 @@ const Geointeligencia: React.FC = () => {
               </Marker>
             )}
 
-            {layers.filter(l => l.active && l.url).map(layer => (
+            {layers.filter(l => l.active && l.url).map((layer, idx) => (
               <WMSTileLayer
                 key={layer.name}
                 url={layer.url}
                 layers={layer.layer}
                 format="image/png"
                 transparent={true}
+                version="1.1.1"
+                zIndex={20 - idx}
               />
             ))}
 

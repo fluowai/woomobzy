@@ -14,6 +14,8 @@ import {
   ShieldCheck,
   FileCheck,
   ShieldAlert,
+  Zap,
+  Activity,
 } from 'lucide-react';
 import 'leaflet-geometryutil';
 import {
@@ -94,6 +96,9 @@ const Geointeligencia: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<[number, number] | null>(null);
   const [searchBounds, setSearchBounds] = useState<[[number, number], [number, number]] | null>(null);
+  const [carInput, setCarInput] = useState('');
+  const [sigefInput, setSigefInput] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
 
   const toggleLayer = (idx: number) => {
     setLayers((prev) =>
@@ -210,6 +215,50 @@ const Geointeligencia: React.FC = () => {
       console.error('Search error:', err);
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const consultCARapi = async () => {
+    if (!carInput) return;
+    setIsValidating(true);
+    try {
+      const response = await fetch(`/api/rural/car/consultar/${encodeURIComponent(carInput)}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}` }
+      });
+      const result = await response.json();
+      if (result.success && result.data.features?.length > 0) {
+        setGeometries(prev => [...prev, ...result.data.features]);
+        alert('Imóvel CAR importado com sucesso via API!');
+      } else {
+        alert('Nenhum imóvel encontrado no CAR com este código.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro na API do CAR. Tente novamente mais tarde.');
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const consultSIGEFapi = async () => {
+    if (!sigefInput) return;
+    setIsValidating(true);
+    try {
+      const response = await fetch(`/api/rural/sigef/consultar/${encodeURIComponent(sigefInput)}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}` }
+      });
+      const result = await response.json();
+      if (result.success && result.data.features?.length > 0) {
+        setGeometries(prev => [...prev, ...result.data.features]);
+        alert('Parcela SIGEF importada com sucesso via API!');
+      } else {
+        alert('Nenhuma parcela encontrada no SIGEF com este código.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro na API do SIGEF. O servidor pode estar offline.');
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -379,30 +428,69 @@ const Geointeligencia: React.FC = () => {
             </button>
           </div>
 
-          <div className="pt-6 border-t border-slate-100">
             <h3 className="font-bold text-black flex items-center gap-2 mb-4">
               <ShieldCheck size={18} className="text-emerald-600" />
-              Validação de Dados
+              Validação & API Live
             </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <a 
-                href="https://acesso.car.gov.br/" 
-                target="_blank" 
-                rel="noreferrer"
-                className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:bg-emerald-50 hover:border-emerald-200 transition-all text-center group"
-              >
-                <FileCheck size={20} className="text-slate-400 group-hover:text-emerald-600 mb-1" />
-                <span className="text-[10px] font-bold text-slate-600 leading-tight">Consultar CAR</span>
-              </a>
-              <a 
-                href="https://sigef.incra.gov.br/consultar/parcelas/" 
-                target="_blank" 
-                rel="noreferrer"
-                className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:bg-emerald-50 hover:border-emerald-200 transition-all text-center group"
-              >
-                <ShieldAlert size={20} className="text-slate-400 group-hover:text-emerald-600 mb-1" />
-                <span className="text-[10px] font-bold text-slate-600 leading-tight">Validar SIGEF</span>
-              </a>
+            
+            <div className="space-y-4">
+              {/* CAR API */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Código CAR (BR-XX-...)"
+                    value={carInput}
+                    onChange={(e) => setCarInput(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] focus:ring-1 focus:ring-emerald-500 outline-none"
+                  />
+                  <button 
+                    onClick={consultCARapi}
+                    disabled={isValidating}
+                    className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                    title="Consultar API CAR"
+                  >
+                    <Zap size={14} />
+                  </button>
+                </div>
+                <a 
+                  href="https://consultapublica.car.gov.br/publico/imoveis/index" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-[9px] font-bold text-slate-400 hover:text-emerald-600 transition-colors"
+                >
+                  <FileCheck size={12} /> Consultar no Portal Oficial
+                </a>
+              </div>
+
+              {/* SIGEF API */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Código SIGEF / CCIR"
+                    value={sigefInput}
+                    onChange={(e) => setSigefInput(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] focus:ring-1 focus:ring-emerald-500 outline-none"
+                  />
+                  <button 
+                    onClick={consultSIGEFapi}
+                    disabled={isValidating}
+                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    title="Consultar API SIGEF"
+                  >
+                    <Activity size={14} />
+                  </button>
+                </div>
+                <a 
+                  href="https://sigef.incra.gov.br/consultar/parcelas/" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-[9px] font-bold text-slate-400 hover:text-blue-600 transition-colors"
+                >
+                  <ShieldAlert size={12} /> Validar no Portal SIGEF
+                </a>
+              </div>
             </div>
           </div>
         </div>

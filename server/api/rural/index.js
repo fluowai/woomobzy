@@ -196,8 +196,48 @@ router.get(
 );
 
 /**
+ * GET /api/rural/car/consultar/:codigo
+ * Consulta live via WFS no servidor do CAR
+ */
+router.get('/car/consultar/:codigo', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { codigo } = req.params;
+    const wfsUrl = `https://geoserver.car.gov.br/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typeName=car_imoveis&outputFormat=application/json&cql_filter=cod_imovel='${codigo}'`;
+    
+    const response = await fetch(wfsUrl);
+    if (!response.ok) throw new Error('Falha ao consultar servidor do CAR');
+    
+    const data = await response.json();
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('CAR WFS error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/rural/sigef/consultar/:codigo
+ * Consulta live via WFS no servidor do SIGEF
+ */
+router.get('/sigef/consultar/:codigo', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { codigo } = req.params;
+    const wfsUrl = `https://geoinfo.incra.gov.br/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typeName=incra:certificada_sigef_particular&outputFormat=application/json&cql_filter=cod_imovel='${codigo}'`;
+    
+    const response = await fetch(wfsUrl);
+    if (!response.ok) throw new Error('Falha ao consultar servidor do SIGEF');
+    
+    const data = await response.json();
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('SIGEF WFS error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * GET /api/rural/car/:codigo
- * Consulta status do CAR no SICAR
+ * Consulta status do CAR no SICAR (via Banco de Dados local)
  * SEGURANÇA: Exige autenticação + tenant + validação
  */
 router.get('/car/:codigo', verifyAuth, requireTenant, async (req, res) => {
@@ -215,7 +255,7 @@ router.get('/car/:codigo', verifyAuth, requireTenant, async (req, res) => {
       .eq('features->legal->carNumber', codigo);
 
     if (!properties || properties.length === 0) {
-      return res.status(404).json({ error: 'CAR não encontrado' });
+      return res.status(404).json({ error: 'CAR não encontrado no sistema' });
     }
 
     const property = properties[0];

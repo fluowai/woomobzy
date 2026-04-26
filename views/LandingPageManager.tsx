@@ -7,6 +7,7 @@ import { generateLandingPageFromProperty } from '../services/ai';
 import {
   getTemplateById,
   generateBlocksFromTemplate,
+  LANDING_PAGE_TEMPLATES,
 } from '../services/landingPageTemplates';
 import { LandingPage, LandingPageStatus } from '../types/landingPage';
 import { Property } from '../types';

@@ -27,6 +27,7 @@ import {
   ArrowLeft,
   Loader,
   Wand2,
+  Sparkles,
 } from 'lucide-react';
 import BlocksSidebar from '../components/LandingPageEditor/BlocksSidebar';
 import CanvasArea from '../components/LandingPageEditor/CanvasArea';

@@ -17,6 +17,7 @@ import {
   Phone,
   ShieldAlert,
   Building2,
+  Shield,
   Key,
   ClipboardCheck,
   Upload,
@@ -74,6 +75,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
     { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
     { icon: LayoutTemplate, label: 'Site & Landing Pages', path: '/urban/landing-pages' },
     { icon: DollarSign, label: 'Financeiro', path: '/urban/cobranca' },
+    { icon: Shield, label: 'Conexão WhatsApp', path: '/urban/whatsapp-instances' },
     { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
     { icon: Settings, label: 'Configurações', path: '/urban/settings' },
   ];

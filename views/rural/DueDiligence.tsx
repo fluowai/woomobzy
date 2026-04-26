@@ -192,7 +192,7 @@ const DueDiligence: React.FC = () => {
       .from('properties')
       .select('id, title, features')
       .eq('organization_id', profile.organization_id)
-      .in('property_type', ['Rural', 'Fazenda'])
+      .in('type', ['Fazenda', 'Sítio', 'Chácara', 'Área Produtiva', 'Gleba'])
       .order('title');
     setProperties(data || []);
   }, [profile?.organization_id]);

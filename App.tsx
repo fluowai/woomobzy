@@ -23,6 +23,11 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
 
+// Import Finance/Portal Components (Missing in Rural)
+const Cobranca = lazy(() => import('./views/urban/Cobranca'));
+const Locacao = lazy(() => import('./views/urban/Locacao'));
+const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
+
 // Public Views (Static for SEO/Initial Load)
 import LandingPage from './views/LandingPage';
 import Login from './views/Login';
@@ -303,12 +308,15 @@ const AppContent: React.FC = () => {
               element={<PortalProprietarioRural />}
             />
             <Route path="portal-comprador" element={<PortalCompradorRural />} />
+            <Route path="landing-pages" element={<LandingPageManager />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
             <Route path="site-setup" element={<SiteSetupWizard />} />
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="contracts" element={<LegalContracts />} />
+            <Route path="financial" element={<Cobranca />} />
+            <Route path="financeiro-advanced" element={<Locacao />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 

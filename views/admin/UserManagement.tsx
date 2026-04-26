@@ -51,12 +51,13 @@ const UserManagement: React.FC = () => {
         .order('created_at', { ascending: false });
 
       // Filtragem por Organização (Privacidade)
-      // Se não for superadmin, vê apenas usuários da própria organização
       if (profile?.role !== 'superadmin') {
         if (profile?.organization_id) {
           query = query.eq('organization_id', profile.organization_id);
+          // Ocultar membros que são superadmins ou donos do sistema
+          query = query.neq('role', 'superadmin');
+          query = query.not('email', 'in', '("admin@imobzy.com","fluowai@gmail.com")');
         } else {
-          // Se não tem organização e não é superadmin, não deve ver nada ou apenas ele mesmo
           query = query.eq('id', profile?.id);
         }
       }

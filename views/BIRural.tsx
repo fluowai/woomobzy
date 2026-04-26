@@ -76,11 +76,10 @@ const BIRural: React.FC = () => {
         setLeadSources(sources || []);
       }
 
-      // Fetch real properties for other charts
       const { data: props, error: propsError } = await supabase
         .from('properties')
         .select('*')
-        .in('property_type', ['Rural', 'Fazenda'])
+        .in('type', ['Fazenda', 'Sítio', 'Chácara', 'Área Produtiva', 'Gleba'])
         .neq('status', 'Pendente');
 
       if (propsError) console.error('Error fetching properties:', propsError);

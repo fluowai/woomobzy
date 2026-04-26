@@ -83,8 +83,9 @@ const Geointeligencia: React.FC = () => {
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
         const response = await fetch('/api/rural/market/prices', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}` }
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
         const result = await response.json();
         if (result.success) setMarketPrices(result.data);

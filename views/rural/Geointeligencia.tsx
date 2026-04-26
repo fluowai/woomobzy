@@ -133,13 +133,12 @@ const Geointeligencia: React.FC = () => {
       }
 
       const parser = new DOMParser();
-      const kml = parser.parseFromString(kmlText, 'text/xml');
-      const converted = toGeoJSON.kml(kml);
+      const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
+      const converted = toGeoJSON.kml(kmlDoc);
       
       if (converted.features.length > 0) {
         setGeometries(prev => [...prev, ...converted.features]);
         
-        // Calculate area for imported polygons
         let totalArea = 0;
         converted.features.forEach((feature: any) => {
           if (feature.geometry.type === 'Polygon') {
@@ -158,8 +157,6 @@ const Geointeligencia: React.FC = () => {
         });
         
         if (totalArea > 0) setCalculatedArea(totalArea);
-        
-        console.log('Imported geometries:', converted.features);
         alert(`Sucesso! ${converted.features.length} elementos importados.`);
       } else {
         alert('Nenhum elemento geográfico encontrado no arquivo.');
@@ -176,17 +173,17 @@ const Geointeligencia: React.FC = () => {
     e.preventDefault();
     if (!searchQuery) return;
 
-    // Check if query is Lat,Lng coordinates
-    const coordRegExp = /^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/;
-    const match = searchQuery.match(coordRegExp);
-    
-    if (match) {
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[3]);
-      setSearchResult([lat, lng]);
-      setSearchBounds(null);
-      setIsSearching(false);
-      return;
+    // Use regular string matching for coords to avoid regex literal potential issues in some builders
+    if (searchQuery.includes(',') && searchQuery.split(',').length === 2) {
+      const parts = searchQuery.split(',');
+      const lat = parseFloat(parts[0].trim());
+      const lng = parseFloat(parts[1].trim());
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setSearchResult([lat, lng]);
+        setSearchBounds(null);
+        setIsSearching(false);
+        return;
+      }
     }
 
     setIsSearching(true);
@@ -197,19 +194,15 @@ const Geointeligencia: React.FC = () => {
         const { lat, lon, display_name, boundingbox } = data[0];
         const latFloat = parseFloat(lat);
         const lonFloat = parseFloat(lon);
-        
         setSearchResult([latFloat, lonFloat]);
-        
         if (boundingbox) {
           setSearchBounds([
             [parseFloat(boundingbox[0]), parseFloat(boundingbox[2])],
             [parseFloat(boundingbox[1]), parseFloat(boundingbox[3])]
           ]);
         }
-        
-        console.log('Search found:', display_name, [lat, lon]);
       } else {
-        alert('Localização não encontrada. Tente termos menos específicos.');
+        alert('Localização não encontrada.');
       }
     } catch (err) {
       console.error('Search error:', err);
@@ -226,15 +219,14 @@ const Geointeligencia: React.FC = () => {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}` }
       });
       const result = await response.json();
-      if (result.success && result.data.features?.length > 0) {
+      if (result.success && result.data?.features?.length > 0) {
         setGeometries(prev => [...prev, ...result.data.features]);
         alert('Imóvel CAR importado com sucesso via API!');
       } else {
         alert('Nenhum imóvel encontrado no CAR com este código.');
       }
     } catch (err) {
-      console.error(err);
-      alert('Erro na API do CAR. Tente novamente mais tarde.');
+      alert('Erro na API do CAR.');
     } finally {
       setIsValidating(false);
     }
@@ -248,15 +240,14 @@ const Geointeligencia: React.FC = () => {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}` }
       });
       const result = await response.json();
-      if (result.success && result.data.features?.length > 0) {
+      if (result.success && result.data?.features?.length > 0) {
         setGeometries(prev => [...prev, ...result.data.features]);
         alert('Parcela SIGEF importada com sucesso via API!');
       } else {
-        alert('Nenhuma parcela encontrada no SIGEF com este código.');
+        alert('Nenhuma parcela encontrada no SIGEF.');
       }
     } catch (err) {
-      console.error(err);
-      alert('Erro na API do SIGEF. O servidor pode estar offline.');
+      alert('Erro na API do SIGEF.');
     } finally {
       setIsValidating(false);
     }
@@ -272,7 +263,6 @@ const Geointeligencia: React.FC = () => {
       if (geometries.length > 0) {
         const bounds = L.geoJSON({ type: 'FeatureCollection', features: geometries } as any).getBounds();
         if (bounds.isValid()) {
-          // If bounds are too small (point-like), use a fixed zoom
           if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
             map.setView(bounds.getCenter(), 16);
           } else {
@@ -295,7 +285,6 @@ const Geointeligencia: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
@@ -325,60 +314,24 @@ const Geointeligencia: React.FC = () => {
         </form>
       </div>
 
-      {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          {
-            icon: Layers,
-            label: 'Hectares Calculados',
-            value: areaInHectares + ' ha',
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-50',
-          },
-          {
-            icon: Mountain,
-            label: 'Alqueire Mineiro',
-            value: areaInAlqueireMG + ' aq',
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
-          },
-          {
-            icon: AlertTriangle,
-            label: 'Alqueire Paulista',
-            value: areaInAlqueireSP + ' aq',
-            color: 'text-blue-600',
-            bg: 'bg-blue-50',
-          },
-          {
-            icon: Droplets,
-            label: 'Clima Hoje',
-            value: '28°C / Sol',
-            color: 'text-orange-600',
-            bg: 'bg-orange-50',
-          },
+          { icon: Layers, label: 'Hectares Calculados', value: areaInHectares + ' ha', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { icon: Mountain, label: 'Alqueire Mineiro', value: areaInAlqueireMG + ' aq', color: 'text-amber-600', bg: 'bg-amber-50' },
+          { icon: AlertTriangle, label: 'Alqueire Paulista', value: areaInAlqueireSP + ' aq', color: 'text-blue-600', bg: 'bg-blue-50' },
+          { icon: Droplets, label: 'Clima Hoje', value: '28°C / Sol', color: 'text-orange-600', bg: 'bg-orange-50' },
         ].map((stat, idx) => (
-          <div
-            key={idx}
-            className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"
-          >
-            <div
-              className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}
-            >
+          <div key={idx} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+            <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}>
               <stat.icon size={24} />
             </div>
-            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">
-              {stat.label}
-            </h3>
-            <p className="text-3xl font-black text-slate-900 italic tracking-tighter">
-              {stat.value}
-            </p>
+            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{stat.label}</h3>
+            <p className="text-3xl font-black text-slate-900 italic tracking-tighter">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Map + Layer Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Layer Controls */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
           <h3 className="font-bold text-black flex items-center gap-2">
             <Layers size={18} className="text-emerald-600" />
@@ -390,27 +343,14 @@ const Geointeligencia: React.FC = () => {
                 key={idx}
                 onClick={() => toggleLayer(idx)}
                 className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left ${
-                  layer.active
-                    ? 'bg-emerald-50 border border-emerald-200'
-                    : 'bg-slate-50 border border-slate-100 hover:bg-slate-100'
+                  layer.active ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50 border border-slate-100 hover:bg-slate-100'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <layer.icon
-                    size={18}
-                    className={layer.active ? layer.color : 'text-slate-400'}
-                  />
-                  <span
-                    className={`text-sm font-medium ${layer.active ? 'text-black' : 'text-slate-500'}`}
-                  >
-                    {layer.name}
-                  </span>
+                  <layer.icon size={18} className={layer.active ? layer.color : 'text-slate-400'} />
+                  <span className={`text-sm font-medium ${layer.active ? 'text-black' : 'text-slate-500'}`}>{layer.name}</span>
                 </div>
-                {layer.active ? (
-                  <ToggleRight size={22} className="text-emerald-600" />
-                ) : (
-                  <ToggleLeft size={22} className="text-slate-300" />
-                )}
+                {layer.active ? <ToggleRight size={22} className="text-emerald-600" /> : <ToggleLeft size={22} className="text-slate-300" />}
               </button>
             ))}
           </div>
@@ -423,89 +363,44 @@ const Geointeligencia: React.FC = () => {
             <button className="w-full flex items-center gap-2 justify-center p-3 bg-slate-50 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-100 transition-all">
               <Download size={16} /> Exportar Mapa (PDF)
             </button>
-            <button className="w-full flex items-center gap-2 justify-center p-3 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-100 transition-all">
-              <Eye size={16} /> Ver Histórico de Uso
-            </button>
           </div>
 
+          <div className="pt-6 border-t border-slate-100">
             <h3 className="font-bold text-black flex items-center gap-2 mb-4">
               <ShieldCheck size={18} className="text-emerald-600" />
               Validação & API Live
             </h3>
-            
             <div className="space-y-4">
-              {/* CAR API */}
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input 
                     type="text" 
-                    placeholder="Código CAR (BR-XX-...)"
-                    value={carInput}
-                    onChange={(e) => setCarInput(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] focus:ring-1 focus:ring-emerald-500 outline-none"
+                    placeholder="Código CAR" 
+                    value={carInput} 
+                    onChange={(e) => setCarInput(e.target.value)} 
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] focus:ring-1 focus:ring-emerald-500 outline-none" 
                   />
-                  <button 
-                    onClick={consultCARapi}
-                    disabled={isValidating}
-                    className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
-                    title="Consultar API CAR"
-                  >
-                    <Zap size={14} />
-                  </button>
+                  <button onClick={consultCARapi} disabled={isValidating} className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"><Zap size={14} /></button>
                 </div>
-                <a 
-                  href="https://consultapublica.car.gov.br/publico/imoveis/index" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="flex items-center gap-2 text-[9px] font-bold text-slate-400 hover:text-emerald-600 transition-colors"
-                >
-                  <FileCheck size={12} /> Consultar no Portal Oficial
-                </a>
               </div>
-
-              {/* SIGEF API */}
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input 
                     type="text" 
-                    placeholder="Código SIGEF / CCIR"
-                    value={sigefInput}
-                    onChange={(e) => setSigefInput(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] focus:ring-1 focus:ring-emerald-500 outline-none"
+                    placeholder="Código SIGEF" 
+                    value={sigefInput} 
+                    onChange={(e) => setSigefInput(e.target.value)} 
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] focus:ring-1 focus:ring-emerald-500 outline-none" 
                   />
-                  <button 
-                    onClick={consultSIGEFapi}
-                    disabled={isValidating}
-                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    title="Consultar API SIGEF"
-                  >
-                    <Activity size={14} />
-                  </button>
+                  <button onClick={consultSIGEFapi} disabled={isValidating} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"><Activity size={14} /></button>
                 </div>
-                <a 
-                  href="https://sigef.incra.gov.br/consultar/parcelas/" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="flex items-center gap-2 text-[9px] font-bold text-slate-400 hover:text-blue-600 transition-colors"
-                >
-                  <ShieldAlert size={12} /> Validar no Portal SIGEF
-                </a>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Map */}
-        <div
-          className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 overflow-hidden"
-          style={{ minHeight: '600px' }}
-        >
-          <MapContainer
-            center={[-14.235, -51.925]}
-            zoom={5}
-            style={{ height: '600px', width: '100%' }}
-            scrollWheelZoom={true}
-          >
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 overflow-hidden" style={{ minHeight: '600px' }}>
+          <MapContainer center={[-14.235, -51.925]} zoom={5} style={{ height: '600px', width: '100%' }} scrollWheelZoom={true}>
             <MapUpdater />
             <LayersControl position="topright">
               <LayersControl.BaseLayer checked name="Satélite">
@@ -514,67 +409,25 @@ const Geointeligencia: React.FC = () => {
               <LayersControl.BaseLayer name="Terreno">
                 <TileLayer url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" />
               </LayersControl.BaseLayer>
-              <LayersControl.BaseLayer name="Estrada">
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              </LayersControl.BaseLayer>
             </LayersControl>
-            
             <FeatureGroup>
-              <EditControl
-                position="topleft"
-                onCreated={handleCreated}
-                draw={{
-                  rectangle: false,
-                  circle: false,
-                  circlemarker: false,
-                  marker: true,
-                  polyline: true,
-                  polygon: {
-                    allowIntersection: false,
-                    drawError: { color: '#e1e100', message: 'Assinatura inválida!' },
-                    shapeOptions: { color: '#10b981' }
-                  }
-                }}
-              />
+              <EditControl position="topleft" onCreated={handleCreated} draw={{ rectangle: false, circle: false, circlemarker: false, marker: true, polyline: true, polygon: { allowIntersection: false, shapeOptions: { color: '#10b981' } } }} />
             </FeatureGroup>
-
             {searchResult && (
               <Marker position={searchResult} zIndexOffset={1000}>
                 <Popup className="custom-popup">
                   <div className="p-1">
-                    <div className="font-bold text-emerald-900 uppercase text-[10px] tracking-widest mb-1 italic">Local Identificado</div>
+                    <div className="font-bold text-emerald-900 uppercase text-[10px] mb-1 italic">Local Identificado</div>
                     <div className="text-sm font-medium text-slate-800 leading-tight">{searchQuery}</div>
-                    <div className="mt-2 text-[9px] text-slate-400 font-mono">{searchResult[0].toFixed(5)}, {searchResult[1].toFixed(5)}</div>
                   </div>
                 </Popup>
               </Marker>
             )}
-
             {layers.filter(l => l.active && l.url).map((layer, idx) => (
-              <WMSTileLayer
-                key={layer.name}
-                url={layer.url}
-                layers={layer.layer}
-                format="image/png"
-                transparent={true}
-                version="1.1.1"
-                zIndex={20 - idx}
-              />
+              <WMSTileLayer key={layer.name} url={layer.url} layers={layer.layer} format="image/png" transparent={true} version="1.1.1" zIndex={20 - idx} />
             ))}
-
-            {geometries.length > 0 && (
-              <GeoJSON 
-                data={{ type: 'FeatureCollection', features: geometries } as any}
-                style={{ color: '#10b981', weight: 3, fillOpacity: 0.2 }}
-              />
-            )}
-
-            <TileLayer 
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" 
-              zIndex={100}
-            />
-
-            {/* Map Crosshair for Precision */}
+            {geometries.length > 0 && <GeoJSON data={{ type: 'FeatureCollection', features: geometries } as any} style={{ color: '#10b981', weight: 3, fillOpacity: 0.2 }} />}
+            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" zIndex={100} />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[500] pointer-events-none opacity-50">
               <div className="relative">
                 <div className="w-8 h-0.5 bg-white shadow-sm"></div>

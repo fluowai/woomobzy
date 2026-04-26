@@ -100,7 +100,7 @@ const DomainSettings: React.FC = () => {
     setVerifyingDomain(true);
     try {
       const res = await fetch(
-        getApiUrl(`/api/domains/${domainName}/verify?retries=${retries}`)
+        getApiUrl(`/api/domains/verify/${domainName}?retries=${retries}`)
       );
       const data = await res.json();
 

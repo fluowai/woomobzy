@@ -170,7 +170,10 @@ export class SessionManager extends EventEmitter {
           const qrImage = await qrcode.toDataURL(qr);
           await this.persistence.saveQRCode(instanceId, qrImage);
           this.emit('qr', { instanceId, qrImage });
-          console.log(`[SessionManager] 📲 QR gerado para ${instanceId}`);
+          console.log(`[SessionManager] 📲 QR Code gerado para ${instanceId}`);
+          // Fallback: se 'qr_pending' falhar no banco (pela constraint), a conexão ainda continua.
+          await this.persistence.updateStatus(instanceId, 'qr_pending', { qr_code: qrImage })
+            .catch(e => console.error(`[SessionManager] ⚠️ Falha ao salvar status qr_pending (verificar migrations):`, e.message));
         } catch (e) {
           console.error('[SessionManager] Falha no QR:', e.message);
         }

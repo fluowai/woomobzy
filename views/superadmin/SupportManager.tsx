@@ -61,11 +61,7 @@ const SupportManager: React.FC = () => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      let query = supabase.from('support_tickets').select(`
-          *,
-          organization:organizations(name),
-          user_profile:profiles!support_tickets_user_id_fkey(full_name:name)
-        `);
+      let query = supabase.from('support_tickets').select('*');
 
       if (filter !== 'all') {
         query = query.eq('status', filter);
@@ -86,12 +82,7 @@ const SupportManager: React.FC = () => {
   const fetchMessages = async (ticketId: string) => {
     const { data } = await supabase
       .from('support_messages')
-      .select(
-        `
-        *,
-        user_profile:profiles(full_name:name)
-      `
-      )
+      .select('*')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true });
     setMessages((data as any) || []);
@@ -224,7 +215,7 @@ const SupportManager: React.FC = () => {
                 </h4>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <Building2 size={12} />
-                  <span>{ticket.organization?.name}</span>
+                  <span>{ticket.organization_id?.slice(0, 8) || 'N/A'}</span>
                 </div>
               </button>
             ))
@@ -257,11 +248,11 @@ const SupportManager: React.FC = () => {
               <p className="text-sm text-gray-500">
                 Aberto por{' '}
                 <span className="font-medium text-gray-700">
-                  {selectedTicket.user_profile?.full_name}
+                  {selectedTicket.user_id?.slice(0, 8) || 'Usuário'}
                 </span>{' '}
-                da{' '}
+                em{' '}
                 <span className="font-medium text-gray-700">
-                  {selectedTicket.organization?.name}
+                  {new Date(selectedTicket.created_at).toLocaleDateString('pt-BR')}
                 </span>
               </p>
             </div>
@@ -319,7 +310,7 @@ const SupportManager: React.FC = () => {
                   >
                     {msg.is_admin_reply
                       ? 'Você (Suporte)'
-                      : msg.user_profile?.full_name}{' '}
+                      : 'Cliente'}{' '}
                     •{' '}
                     {new Date(msg.created_at).toLocaleTimeString([], {
                       hour: '2-digit',

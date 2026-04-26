@@ -143,7 +143,11 @@ export class SessionManager extends EventEmitter {
       generateHighQualityLinkPreview: true,
       syncFullHistory: false,
       markOnlineOnConnect: true,
+    }).catch(err => {
+      console.error(`[SessionManager] 🧨 Erro fatal ao criar WASocket para ${instanceId}:`, err);
+      throw err;
     });
+
 
     session.sock = sock;
 
@@ -204,8 +208,10 @@ export class SessionManager extends EventEmitter {
         this.emit('disconnected', { instanceId, statusCode });
 
         console.log(
-          `[SessionManager] 🔌 Conexão fechada: ${instanceId} (Code: ${statusCode}). Reconnect: ${shouldReconnect}`
+          `[SessionManager] 🔌 Conexão fechada: ${instanceId} (Code: ${statusCode}). Reconnect: ${shouldReconnect}`,
+          lastDisconnect?.error || ''
         );
+
 
         if (!session.reconnectAttempts) session.reconnectAttempts = 0;
 

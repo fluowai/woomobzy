@@ -459,13 +459,14 @@ const Chat: React.FC = () => {
             </header>
 
             <div 
-              className="flex-1 overflow-y-auto p-6 custom-scrollbar" 
+              className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar bg-[#efeae2] dark:bg-[#0b141a] transition-colors"
               style={{ 
-                backgroundColor: '#f4f7f9', // Cor de fundo estilo Chatwoot
-                backgroundBlendMode: 'soft-light'
+                backgroundImage: 'url("https://w0.peakpx.com/wallpaper/580/650/WH-wallpaper-wa-whatsapp-dark-background-patterns-patterns.jpg")',
+                backgroundSize: '400px',
+                backgroundBlendMode: 'soft-light',
               }}
             >
-              <div className="flex flex-col space-y-4 max-w-5xl mx-auto">
+              <div className="flex flex-col space-y-2 max-w-4xl mx-auto">
                 {messages.map((msg, i) => {
                   const isGroup = selectedChat?.jid.endsWith('@g.us');
                   const showSender = isGroup && !msg.from_me;
@@ -474,7 +475,7 @@ const Chat: React.FC = () => {
                   return (
                     <div 
                       key={msg.id} 
-                      className={`flex items-start gap-3 group/msg ${isSelectionMode ? 'cursor-pointer hover:bg-black/[0.02]' : ''}`}
+                      className={`flex items-start gap-3 group/msg ${isSelectionMode ? 'cursor-pointer' : ''} ${msg.from_me ? 'flex-row-reverse' : 'flex-row'}`}
                       onClick={() => {
                         if (isSelectionMode) {
                           setSelectedMessageIds(prev => 
@@ -484,50 +485,77 @@ const Chat: React.FC = () => {
                       }}
                     >
                       {isSelectionMode && (
-                        <div className="pt-2">
+                        <div className="pt-2 shrink-0">
                           <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-brand border-brand' : 'border-gray-300'}`}>
                             {isSelected && <Check size={14} className="text-white" />}
                           </div>
                         </div>
                       )}
-                      <div className={`flex-1 flex flex-col ${msg.from_me ? 'items-end' : 'items-start'}`}>
+                      
+                      <div className={`max-w-[85%] lg:max-w-[70%] flex flex-col ${msg.from_me ? 'items-end' : 'items-start'}`}>
                         {showSender && (
-                          <span className="text-[11px] font-bold text-text-secondary mb-1 ml-1 uppercase tracking-tight">
+                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-0.5 ml-2">
                             {msg.sender_name || formatDisplayJid(msg.sender_jid || '')}
                           </span>
                         )}
-                        <div className={`group relative transition-all px-4 py-2 shadow-sm border ${
+                        
+                        <div className={`relative px-3 py-1.5 shadow-sm transition-all ${
                           msg.from_me 
-                            ? `${nicheBg} text-white ${nicheBorder.replace('border-', 'border-')} rounded-xl rounded-tr-none shadow-md` 
-                            : 'bg-white text-text-primary border-[#e1e4e8] rounded-xl rounded-tl-none'
+                            ? `${nicheBg} text-white rounded-lg rounded-tr-none` 
+                            : 'bg-white dark:bg-[#202c33] text-slate-800 dark:text-slate-100 rounded-lg rounded-tl-none border border-black/5 dark:border-white/5'
                         }`}>
                           {msg.media_url && (
-                            <div className={`mb-2 rounded-lg overflow-hidden ${msg.from_me ? 'bg-white/10' : 'bg-bg-hover'}`}>
+                            <div className="mb-1.5 rounded-md overflow-hidden bg-black/5 dark:bg-white/5">
                               {msg.message_type === 'imageMessage' ? (
-                                <img src={msg.media_url} alt="Mídia" className="max-w-full max-h-[350px] object-contain cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')} />
+                                <img 
+                                  src={msg.media_url} 
+                                  alt="Mídia" 
+                                  className="max-w-full max-h-[400px] object-contain rounded-md" 
+                                  onClick={(e) => { e.stopPropagation(); window.open(msg.media_url, '_blank'); }} 
+                                />
                               ) : msg.message_type === 'audioMessage' ? (
-                                <audio controls className={`w-[260px] h-8 ${msg.from_me ? 'invert' : ''}`}><source src={msg.media_url} type={msg.mime_type || 'audio/ogg'} /></audio>
+                                <div className="p-2 min-w-[240px]">
+                                  <audio controls className={`w-full h-8 ${msg.from_me ? 'brightness-150' : ''}`}>
+                                    <source src={msg.media_url} type={msg.mime_type || 'audio/ogg'} />
+                                  </audio>
+                                </div>
                               ) : (
-                                <div className="flex items-center gap-3 p-3 cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')}>
+                                <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-black/5 transition-colors" onClick={(e) => { e.stopPropagation(); window.open(msg.media_url, '_blank'); }}>
                                   <div className={`p-2 rounded-lg ${msg.from_me ? 'bg-white/20 text-white' : 'bg-brand/10 text-brand'}`}><File size={20} /></div>
-                                  <div className="flex-1 min-w-0"><p className="text-xs font-bold truncate">Arquivo</p><p className="text-[10px] opacity-70">Clique para abrir</p></div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold truncate">Arquivo</p>
+                                    <p className="text-[10px] opacity-70">Clique para abrir</p>
+                                  </div>
                                 </div>
                               )}
                             </div>
                           )}
-                          <div className="flex flex-col">
-                            <p className="text-[14px] leading-relaxed whitespace-pre-wrap font-medium">
+                          
+                          <div className="flex flex-col min-w-[60px]">
+                            <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap">
                               {renderMessageContent(msg.content)}
                             </p>
-                            <div className={`flex items-center gap-1.5 text-[10px] mt-1.5 font-medium ${msg.from_me ? 'text-white/80' : 'text-tertiary'}`}>
-                              {formatTime(msg.timestamp)}
+                            <div className="flex items-center justify-end gap-1 mt-0.5 ml-auto">
+                              <span className={`text-[10px] ${msg.from_me ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'}`}>
+                                {formatTime(msg.timestamp)}
+                              </span>
                               {msg.from_me && (
                                 <div className="flex items-center">
-                                  {msg.status === 'read' ? <CheckCheck size={14} className="text-white" /> : msg.status === 'delivered' ? <CheckCheck size={14} /> : <Check size={14} />}
+                                  {msg.status === 'read' 
+                                    ? <CheckCheck size={14} className="text-sky-300" /> 
+                                    : <Check size={14} className="text-white/60" />
+                                  }
                                 </div>
                               )}
                             </div>
                           </div>
+                          
+                          {/* Triangle tail */}
+                          <div className={`absolute top-0 w-2 h-2 ${
+                            msg.from_me 
+                              ? `-right-1.5 ${nicheBg} [clip-path:polygon(0_0,0_100%,100%_0)]` 
+                              : `-left-1.5 bg-white dark:bg-[#202c33] [clip-path:polygon(0_0,100%_0,100%_100%)]`
+                          }`} />
                         </div>
                       </div>
                     </div>
@@ -536,6 +564,7 @@ const Chat: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
             </div>
+
 
             {/* Input Bar */}
             <div className="p-2 bg-wa-sidebar border-t border-white/5 relative">

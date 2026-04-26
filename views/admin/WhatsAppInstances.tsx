@@ -638,43 +638,39 @@ const WhatsAppInstances: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-12 h-12 animate-spin text-green-600" />
-                  <p className="text-sm text-gray-500">Aguardando QR...</p>
+                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500">
+                    <X size={24} />
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium px-4">
+                    Estamos tendo dificuldade em gerar o QR Code. 
+                  </p>
+                  <button 
+                    onClick={() => connectInstance(qrModal.instance)}
+                    className="text-xs text-green-600 font-bold hover:underline"
+                  >
+                    Tentar Novamente
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Instruções */}
-            <div className="bg-gray-50 rounded-xl p-4 text-left mb-5">
-              <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">
-                Como conectar
-              </p>
-              <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+            <div className="bg-gray-50 rounded-xl p-5 text-left mb-6">
+              <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">Como Conectar</h4>
+              <ol className="text-xs text-gray-600 space-y-2.5 list-decimal list-inside leading-relaxed">
                 <li>Abra o WhatsApp no seu celular</li>
-                <li>
-                  Toque em <strong>Dispositivos conectados</strong>
-                </li>
-                <li>
-                  Toque em <strong>Conectar um dispositivo</strong>
-                </li>
+                <li>Toque em <span className="font-bold">Dispositivos conectados</span></li>
+                <li>Toque em <span className="font-bold">Conectar um dispositivo</span></li>
                 <li>Aponte a câmera para o QR Code acima</li>
               </ol>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={async () => {
-                  if (
-                    confirm(
-                      'Deseja resetar a tentativa atual e tentar gerar um novo QR?'
-                    )
-                  ) {
-                    setQrLoading(true);
-                    await disconnectInstance(qrModal.instance.id);
-                    setTimeout(() => connectInstance(qrModal.instance), 1000);
-                  }
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => {
+                   // Força reset do estado antes de tentar de novo
+                   callApi(`/api/whatsapp/instances/${qrModal.instance.id}/connect`, { method: 'POST' });
                 }}
-                className="w-full px-4 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-xl transition-colors border border-dashed border-amber-300"
+                className="text-[11px] text-amber-600 font-bold border border-amber-200 bg-amber-50 rounded-lg py-2 hover:bg-amber-100 transition-colors"
               >
                 Demorando muito? Clique aqui para tentar novamente
               </button>

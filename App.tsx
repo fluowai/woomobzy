@@ -23,9 +23,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
 
-// Import Finance/Portal Components (Missing in Rural)
-const Cobranca = lazy(() => import('./views/urban/Cobranca'));
-const Locacao = lazy(() => import('./views/urban/Locacao'));
 const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 
 // Public Views (Static for SEO/Initial Load)

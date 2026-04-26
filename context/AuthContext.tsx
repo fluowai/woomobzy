@@ -284,8 +284,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const signOut = async () => {
     sessionStorage.removeItem('impersonated_org_id');
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (err: any) {
+      console.warn('⚠️ [AuthContext] signOut error (ignored):', err.message);
+    }
+    // Always clear local state regardless of API result
+    setUser(null);
+    setProfile(null);
+    setIsImpersonating(false);
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {

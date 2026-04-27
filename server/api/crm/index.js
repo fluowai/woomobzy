@@ -113,4 +113,34 @@ router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) =>
   }
 });
 
+/**
+ * DELETE /api/crm/leads/:id
+ */
+router.delete('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar ownership
+    const { data: lead, error: findError } = await supabase
+      .from('leads')
+      .select('organization_id')
+      .eq('id', id)
+      .single();
+
+    if (findError || lead.organization_id !== req.orgId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const { error } = await supabase
+      .from('leads')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ success: true, message: 'Lead excluído com sucesso' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

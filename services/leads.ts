@@ -54,6 +54,14 @@ export const leadService = {
     });
     return data;
   },
+  
+  // Delete lead
+  async delete(id: string) {
+    const data = await callApi(`/api/crm/leads/${id}`, {
+      method: 'DELETE',
+    });
+    return data;
+  },
 };
 
 const mapToModel = (dbItem: any): Lead => ({

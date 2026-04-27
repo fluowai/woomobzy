@@ -8,16 +8,16 @@ import {
   Globe,
   Palette,
   Users,
-  Activity,
-  Shield,
   Key,
   Settings,
+  HelpCircle,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
 import AppearanceSettings from './admin/AppearanceSettings';
 import UserManagement from './admin/UserManagement';
 import WhatsAppInstances from './admin/WhatsAppInstances';
+import SupportPortal from './admin/SupportPortal';
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -30,7 +30,7 @@ const SystemSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'appearance' | 'users' | 'whatsapp' | 'ai' | 'tracking' | 'domains'
+    'appearance' | 'users' | 'whatsapp' | 'ai' | 'tracking' | 'domains' | 'support'
   >('appearance');
 
   useEffect(() => {
@@ -81,6 +81,7 @@ const SystemSettings: React.FC = () => {
     { id: 'domains', label: 'Domínios', icon: Globe },
     { id: 'ai', label: 'Integrações 360', icon: Brain },
     { id: 'tracking', label: 'Tracking', icon: Activity },
+    { id: 'support', label: 'Ajuda & Suporte', icon: HelpCircle },
   ];
 
   return (
@@ -141,6 +142,7 @@ const SystemSettings: React.FC = () => {
         {activeTab === 'whatsapp' && <WhatsAppInstances />}
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
+        {activeTab === 'support' && <SupportPortal />}
 
         {activeTab === 'ai' && (
           <div className="space-y-6">

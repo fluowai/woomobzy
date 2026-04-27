@@ -19,6 +19,7 @@ import {
   User,
   Home,
   Send,
+  Trash2,
 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
@@ -388,6 +389,18 @@ const KanbanBoard: React.FC = () => {
     }
   };
 
+  const handleDeleteLead = async (id: string, name: string) => {
+    if (!confirm(`Deseja realmente excluir o lead "${name}"? Esta ação não pode ser desfeita.`)) return;
+
+    try {
+      await leadService.delete(id);
+      setLeads(prev => prev.filter(l => l.id !== id));
+      toast.success('Lead excluído com sucesso');
+    } catch (error: any) {
+      toast.error('Erro ao excluir lead: ' + error.message);
+    }
+  };
+
   const getLeadsByStage = (stageId: string) => {
     return leads.filter(
       (lead) =>
@@ -559,57 +572,16 @@ const KanbanBoard: React.FC = () => {
                                       <Send size={16} />
                                     </button>
                                   )}
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      if (
-                                        !confirm(
-                                          `Enviar mensagem de boas-vindas para ${lead.name}?`
-                                        )
-                                      )
-                                        return;
-                                      try {
-                                        // Chama o backend para enviar a mensagem de forma segura
-                                        const result = await leadService.sendWelcome(lead.id);
-
-                                        if (result.success) {
-                                          alert(
-                                            '✅ Mensagem enviada com sucesso! Movendo para "Em Atendimento"...'
-                                          );
-
-                                          // Atualiza na UI (Move o card)
-                                          setLeads((prev) =>
-                                            prev.map((l) =>
-                                              l.id === lead.id
-                                                ? {
-                                                    ...l,
-                                                    status: 'Em Atendimento',
-                                                  }
-                                                : l
-                                            )
-                                          );
-                                        } else {
-                                          alert(
-                                            '⚠️ Erro ao enviar mensagem: ' +
-                                              (result.error ||
-                                                'Verifique se o WhatsApp está conectado.')
-                                          );
-                                        }
-                                      } catch (err: any) {
-                                        console.error(
-                                          'Erro ao enviar boas-vindas:',
-                                          err
-                                        );
-                                        alert(
-                                          '❌ Falha na comunicação com o servidor de WhatsApp.'
-                                        );
-                                      }
-                                    }}
-                                    className="text-indigo-500 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors"
-                                    title="Testar Envio Automático"
-                                  >
-                                    <Send size={16} />
-                                  </button>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        handleDeleteLead(lead.id, lead.name);
+                                      }}
+                                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors ml-auto opacity-0 group-hover:opacity-100"
+                                      title="Excluir Lead"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
                                 </div>
 
                                 {lead.notes && (

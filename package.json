@@ -38,6 +38,7 @@
     "cheerio": "^1.1.2",
     "colorthief": "^2.6.0",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "emoji-picker-react": "^4.16.1",
     "express": "^5.2.1",

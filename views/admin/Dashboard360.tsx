@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
 import WelcomeTour from '../../components/WelcomeTour';
+import AgroMarketWidget from '../../components/AgroMarketWidget';
 
 const Dashboard360: React.FC = () => {
   const { profile } = useAuth();
@@ -220,19 +221,7 @@ const Dashboard360: React.FC = () => {
             </div>
           </div>
 
-          {/* Slot: JURÍDICO */}
-          <div className="p-8 bg-bg-card rounded-2xl border-2 border-dashed border-subtle hover:border-brand/40 transition-all cursor-pointer group">
-            <div className="flex flex-col items-center justify-center py-4 text-center">
-              <div className="p-4 bg-brand/10 rounded-xl mb-4 group-hover:scale-110 transition-transform text-brand">
-                <ShieldCheck size={32} />
-              </div>
-              <h3 className="font-bold text-text-primary mb-1">Painel Jurídico</h3>
-              <p className="text-xs text-secondary font-medium px-4">
-                Envie contratos para assinatura digital com ZapSign sem sair do
-                IMOBZY.
-              </p>
-            </div>
-          </div>
+          <AgroMarketWidget />
         </div>
       </div>
 

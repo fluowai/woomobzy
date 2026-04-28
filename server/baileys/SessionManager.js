@@ -779,7 +779,7 @@ export class SessionManager extends EventEmitter {
       if (!lead) {
         // Fluxo para NOVO LEAD
         console.log(`[AIAutomation] Criando novo lead para ${phone}`);
-        const aiResult = await this.automationEngine.processIntent(messageParams);
+        const aiResult = await this.automationEngine.processIntent({ ...messageParams, organizationId });
         
         if (!aiResult) return;
 

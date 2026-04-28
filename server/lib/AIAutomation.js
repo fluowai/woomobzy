@@ -7,8 +7,29 @@ import { getSupabaseServer } from './supabase-server.js';
  */
 export class AIAutomationEngine {
   constructor(apiKey) {
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.defaultApiKey = apiKey;
+    this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+    this.model = this.genAI ? this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) : null;
+  }
+
+  async _ensureModel(organizationId) {
+    if (this.model && !organizationId) return this.model;
+
+    // Se temos organizationId, tentamos carregar a chave específica do banco
+    const supabase = getSupabaseServer();
+    const { data: settings } = await supabase
+      .from('site_settings')
+      .select('integrations')
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+
+    const dbKey = settings?.integrations?.gemini?.apiKey || settings?.integrations?.groq?.apiKey;
+    const finalKey = dbKey || this.defaultApiKey;
+
+    if (!finalKey) throw new Error('Nenhuma chave de API de IA configurada para esta organização.');
+
+    const genAI = new GoogleGenerativeAI(finalKey);
+    return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
   /**
@@ -17,11 +38,14 @@ export class AIAutomationEngine {
    * @param {string} params.content Text content or transcription
    * @param {Buffer} params.audioData Optional audio buffer
    * @param {string} params.mimeType Optional audio mime type
+   * @param {string} params.organizationId Optional for dynamic keys
    * @returns {Object} result { intent, suggestedStage, summary }
    */
-  async processIntent({ content, audioData, mimeType }) {
+  async processIntent({ content, audioData, mimeType, organizationId }) {
     try {
+      const model = await this._ensureModel(organizationId);
       const parts = [];
+
       
       if (audioData) {
         parts.push({
@@ -58,7 +82,7 @@ export class AIAutomationEngine {
 
       parts.push({ text: prompt });
 
-      const result = await this.model.generateContent(parts);
+      const result = await model.generateContent(parts);
       const response = await result.response;
       const text = response.text();
       
@@ -92,7 +116,7 @@ export class AIAutomationEngine {
     if (findError || !lead) return;
 
     // 2. Processar a intenção via IA
-    const aiResult = await this.processIntent(messageParams);
+    const aiResult = await this.processIntent({ ...messageParams, organizationId });
     
     if (!aiResult || !aiResult.suggestedStage) return;
 

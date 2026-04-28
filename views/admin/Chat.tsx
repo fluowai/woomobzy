@@ -86,7 +86,10 @@ const Chat: React.FC = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [isChatSelectionMode, setIsChatSelectionMode] = useState(false);
+  const [selectedChatIds, setSelectedChatIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -136,6 +139,36 @@ const Chat: React.FC = () => {
     } catch (err) {
       console.error('Erro ao excluir mensagens:', err);
       alert('Erro de conexão ao excluir mensagens');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteBulkChats = async () => {
+    if (selectedChatIds.length === 0 || !selectedInstance) return;
+    if (!confirm(`EXCLUIR CONVERSAS: Isso excluirá permanentemente ${selectedChatIds.length} conversa(s) e TODAS as suas mensagens. Deseja continuar?`)) return;
+
+    setIsDeleting(true);
+    try {
+      const data = await callApi(`/api/whatsapp/instances/${selectedInstance.id}/chats/bulk`, {
+        method: 'DELETE',
+        body: JSON.stringify({ ids: selectedChatIds }),
+      });
+
+      if (data.success) {
+        setChats(prev => prev.filter(c => !selectedChatIds.includes(c.id)));
+        if (selectedChat && selectedChatIds.includes(selectedChat.id)) {
+          setSelectedChat(null);
+          setMessages([]);
+        }
+        setSelectedChatIds([]);
+        setIsChatSelectionMode(false);
+      } else {
+        alert(data.error || 'Erro ao excluir conversas');
+      }
+    } catch (err) {
+      console.error('Erro ao excluir conversas:', err);
+      alert('Erro de conexão ao excluir conversas');
     } finally {
       setIsDeleting(false);
     }
@@ -352,6 +385,13 @@ const Chat: React.FC = () => {
             <div className={`${nicheAlpha} ${nicheText} text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest border ${nicheBorder}`}>
               {selectedInstance?.name || 'OFFLINE'}
             </div>
+            <button 
+              onClick={() => setIsChatSelectionMode(!isChatSelectionMode)}
+              className={`p-1.5 ml-2 rounded-md transition-all ${isChatSelectionMode ? 'bg-brand text-white shadow-md' : 'text-tertiary hover:text-brand bg-bg-hover'}`}
+              title="Selecionar várias conversas"
+            >
+              <CheckSquare size={16} />
+            </button>
           </div>
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary" size={16} />
@@ -377,16 +417,34 @@ const Chat: React.FC = () => {
             ))}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0 bg-wa-sidebar">
-          {filteredChats.map((chat) => (
+        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0 bg-wa-sidebar relative">
+          {filteredChats.map((chat) => {
+            const isSelected = selectedChatIds.includes(chat.id);
+            return (
             <button
               key={chat.id}
-              onClick={() => setSelectedChat(chat)}
+              onClick={() => {
+                if (isChatSelectionMode) {
+                  setSelectedChatIds(prev => 
+                    prev.includes(chat.id) ? prev.filter(id => id !== chat.id) : [...prev, chat.id]
+                  );
+                } else {
+                  setSelectedChat(chat);
+                }
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 transition-all group border-b border-white/5 relative ${
-                selectedChat?.id === chat.id ? 'bg-wa-msg-received' : 'hover:bg-bg-hover'
+                selectedChat?.id === chat.id || isSelected ? 'bg-wa-msg-received' : 'hover:bg-bg-hover'
               }`}
             >
+              {isChatSelectionMode && (
+                <div className="shrink-0 mr-1">
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-brand border-brand' : 'border-gray-300'}`}>
+                    {isSelected && <Check size={14} className="text-white" />}
+                  </div>
+                </div>
+              )}
               <div className="relative shrink-0">
+
                 <div className="w-12 h-12 rounded-full bg-wa-msg-received flex items-center justify-center text-text-primary font-bold text-lg overflow-hidden group-hover:scale-105 transition-transform border border-white/5">
                   {chat.profile_photo_url ? (
                     <img src={chat.profile_photo_url} className="w-full h-full object-cover" />
@@ -416,8 +474,36 @@ const Chat: React.FC = () => {
                 </div>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
+
+        {/* Chat Selection Overlay */}
+        {isChatSelectionMode && (
+          <div className="p-3 bg-wa-sidebar border-t border-brand/20 flex items-center justify-between z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-text-primary">
+                {selectedChatIds.length} selecionadas
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+               <button 
+                 onClick={() => setSelectedChatIds(filteredChats.map(c => c.id))}
+                 className={`text-[11px] font-bold ${nicheText} hover:underline px-2 py-1`}
+               >
+                 Tudo
+               </button>
+               <button 
+                 onClick={handleDeleteBulkChats}
+                 disabled={selectedChatIds.length === 0 || isDeleting}
+                 className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs transition-all disabled:opacity-50"
+               >
+                 {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                 Excluir
+               </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={`${!selectedChat ? 'hidden lg:flex' : 'flex'} flex-1 flex-col bg-wa-bg relative`}>

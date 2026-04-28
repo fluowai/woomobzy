@@ -685,6 +685,47 @@ router.delete('/instances/:id/messages/bulk', verifyAdmin, async (req, res) => {
   }
 });
 
+/** DELETE /api/whatsapp/instances/:id/chats/bulk — Excluir múltiplas conversas (chats) */
+router.delete('/instances/:id/chats/bulk', verifyAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    const instanceId = req.params.id;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'IDs das conversas são obrigatórios' });
+    }
+
+    // Verificar ownership da instância
+    const { data: instance, error: instError } = await supabase
+      .from('whatsapp_instances')
+      .select('id')
+      .eq('id', instanceId)
+      .eq('organization_id', req.orgId)
+      .single();
+
+    if (instError || !instance) {
+      return res.status(404).json({ error: 'Instância não encontrada ou acesso negado' });
+    }
+
+    // Para garantir exclusão em cascata completa, primeiro excluir as mensagens dos chats
+    await supabase.from('whatsapp_messages').delete().in('chat_id', ids);
+
+    // E então excluir os chats
+    const { error } = await supabase
+      .from('whatsapp_chats')
+      .delete()
+      .in('id', ids)
+      .eq('instance_id', instanceId);
+
+    if (error) throw error;
+
+    res.json({ success: true, deleted_count: ids.length, message: 'Conversas excluídas com sucesso.' });
+  } catch (e) {
+    console.error('[WhatsApp API] Erro ao deletar chats em lote:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Diagnóstico
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

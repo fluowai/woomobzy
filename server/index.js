@@ -10,6 +10,8 @@ import { spawn } from 'child_process';
 
 // --- Middlewares & Services ---
 import { getSupabaseServer } from './lib/supabase-server.js';
+import { verifyAuth } from './middleware/auth.js';
+import { requireTenant } from './middleware/tenant.js';
 
 // --- Modular Routes ---
 import adminRoutes from './routes/admin.js';
@@ -25,7 +27,7 @@ import urbanRoutes from './api/urban/index.js';
 import locacaoRoutes from './api/locacao/index.js';
 import cobrancaRoutes from './api/cobranca/index.js';
 import aiRoutes from './api/ai/index.js';
-import whatsappRoutes from './api/whatsapp/index.js';
+import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -136,7 +138,7 @@ app.use('/api/urban', urbanRoutes);
 app.use('/api/locacao', locacaoRoutes);
 app.use('/api/cobranca', cobrancaRoutes);
 app.use('/api/ai', aiRoutes);
-app.use('/api/whatsapp', whatsappRoutes);
+// app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 
 // Tenant Resolution
 
@@ -175,8 +177,11 @@ app.use((err, req, res, next) => {
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 3006;
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
   console.log(`✅ IMOBZY Server active on port ${PORT}`);
+
+  // Configura o Proxy de WhatsApp com Segurança SaaS (API + WebSockets)
+  setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
 
   // Iniciar o Serviço WhatsMeow (Go) como processo filho
   if (process.env.NODE_ENV !== 'test') {

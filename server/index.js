@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { spawn } from 'child_process';
 
 // --- Middlewares & Services ---
 import { getSupabaseServer } from './lib/supabase-server.js';
@@ -35,15 +36,18 @@ dotenv.config({ path: join(__dirname, '../.env') });
 // ── Validação de Variáveis de Ambiente Obrigatórias ───────────────────────
 const REQUIRED_ENV_VARS = ['VITE_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
+
+console.log('\n--- WhatsApp Check ---');
+console.log(`WhatsMeow URL: ${process.env.WHATSAPP_API_URL ? '✅ Configurada' : '❌ AUSENTE'}`);
+console.log('-------------------------\n');
+
 if (missingVars.length > 0) {
   console.error(
     '\n❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias não encontradas:'
   );
   missingVars.forEach((v) => console.error(`   ❗ ${v}`));
-  console.error('\n → Em produção (Railway): adicione em Settings → Variables');
+  console.error('\n → Em produção (Railway/Vercel): adicione em Settings → Variables');
   console.error(' → Em desenvolvimento: verifique o arquivo .env na raiz\n');
-  // Não encerra o processo — permite que o servidor suba mas retorna erros
-  // claros em cada requisição em vez de crashar no boot.
 }
 
 const app = express();
@@ -173,6 +177,26 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3006;
 app.listen(PORT, async () => {
   console.log(`✅ IMOBZY Server active on port ${PORT}`);
+
+  // Iniciar o Serviço WhatsMeow (Go) como processo filho
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('🚀 Starting internal WhatsMeow service...');
+    const whatsapp = spawn('go', ['run', 'cmd/server/main.go'], {
+      cwd: join(__dirname, '../whatsapp-service'),
+      env: { 
+        ...process.env, 
+        PORT: '8080',
+        GIN_MODE: 'release'
+      }
+    });
+
+    whatsapp.stdout.on('data', (data) => console.log(`[WhatsMeow] ${data}`));
+    whatsapp.stderr.on('data', (data) => console.error(`[WhatsMeow Error] ${data}`));
+    
+    whatsapp.on('close', (code) => {
+      console.log(`[WhatsMeow] Process exited with code ${code}`);
+    });
+  }
 });
 
 export default app;

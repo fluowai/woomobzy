@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["...", "go"]
+
+[phases.build]
+cmds = ["npm install", "cd whatsapp-service && go mod download"]
+
+[start]
+cmd = "npm start"

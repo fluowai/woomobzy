@@ -67,7 +67,6 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
-    { icon: MessageSquare, label: 'Central de Atendimento', path: '/urban/chat' },
     { icon: Users, label: 'Kanban', path: '/urban/crm' },
     { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
     { icon: Key, label: 'Locação', path: '/urban/locacao' },

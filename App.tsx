@@ -47,9 +47,6 @@ const DataRoom = lazy(() => import('./views/DataRoom'));
 const LegalContracts = lazy(() => import('./views/LegalContracts'));
 const BIRural = lazy(() => import('./views/BIRural'));
 const KanbanBoard = lazy(() => import('./views/CRM/KanbanBoard'));
-const WhatsAppInstances = lazy(() => import('./views/admin/WhatsAppInstances'));
-const Chat = lazy(() => import('./views/admin/Chat'));
-const TestMessages = lazy(() => import('./views/admin/TestMessages'));
 const WaitlistLeads = lazy(() => import('./views/admin/WaitlistLeads'));
 const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
 
@@ -299,9 +296,6 @@ const AppContent: React.FC = () => {
             <Route path="due-diligence" element={<DueDiligence />} />
             <Route path="dataroom" element={<DataRoom />} />
             <Route path="crm" element={<KanbanBoard />} />
-            <Route path="chat" element={<Chat />} />
-            <Route path="whatsapp-instances" element={<WhatsAppInstances />} />
-            <Route path="test-messages" element={<TestMessages />} />
             <Route path="reports" element={<BIRural />} />
             <Route
               path="portal-proprietario"
@@ -340,9 +334,6 @@ const AppContent: React.FC = () => {
             <Route path="cobranca" element={<Cobranca />} />
             <Route path="exportador" element={<ExportadorPortais />} />
             <Route path="crm" element={<KanbanBoard />} />
-            <Route path="chat" element={<Chat />} />
-            <Route path="whatsapp-instances" element={<WhatsAppInstances />} />
-            <Route path="test-messages" element={<TestMessages />} />
             <Route path="reports" element={<BIRural />} />
             <Route
               path="portal-proprietario"

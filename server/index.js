@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 // --- Middlewares & Services ---
-import { sessionManager } from './baileys/index.js';
 import { getSupabaseServer } from './lib/supabase-server.js';
 
 // --- Modular Routes ---
@@ -17,7 +16,6 @@ import importRoutes from './routes/import.js';
 import publicRoutes from './routes/public.js';
 import onboardingRoutes from './routes/onboarding.js';
 import domainRoutes from './routes/domains.js';
-import whatsappRoutes from './api/whatsapp/index.js';
 import crmRoutes from './api/crm/index.js';
 import propertyRoutes from './api/properties/index.js';
 import tenantHandler from './api/tenant/index.js';
@@ -126,7 +124,6 @@ app.use('/api/import', importRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/domains', domainRoutes);
-app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/rural', ruralRoutes);
@@ -174,14 +171,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3006;
 app.listen(PORT, async () => {
   console.log(`✅ IMOBZY Server active on port ${PORT}`);
-
-  // Boot seguro do sistema WhatsApp (reseta presas, restaura conectadas, inicia heartbeat)
-  try {
-    console.log('📱 Iniciando sistema WhatsApp (boot seguro)...');
-    await sessionManager.boot();
-  } catch (e) {
-    console.error('⚠️ WhatsApp boot falhou (não crítico):', e.message);
-  }
 });
 
 export default app;

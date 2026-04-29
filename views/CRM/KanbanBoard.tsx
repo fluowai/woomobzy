@@ -547,9 +547,10 @@ const KanbanBoard: React.FC = () => {
                                       </span>
                                     </div>
                                   </div>
+                                  {/* Botão de Link Direto (Independente do Baileys) */}
                                   <button
                                     onClick={(e) => {
-                                      e.stopPropagation(); // Evita abrir o card (se houvesse clique no card)
+                                      e.stopPropagation();
                                       window.open(
                                         `https://wa.me/${lead.phone.replace(/\D/g, '')}`,
                                         '_blank'
@@ -560,18 +561,6 @@ const KanbanBoard: React.FC = () => {
                                   >
                                     <MessageCircle size={16} />
                                   </button>
-                                  {lead.chat_jid && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.location.href = `/rural/chat?jid=${lead.chat_jid}`;
-                                      }}
-                                      className="text-indigo-500 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors"
-                                      title="Abrir Chat no IMOBZY"
-                                    >
-                                      <Send size={16} />
-                                    </button>
-                                  )}
                                     <button
                                       onClick={async (e) => {
                                         e.stopPropagation();

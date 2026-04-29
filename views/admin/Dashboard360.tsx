@@ -25,7 +25,6 @@ const Dashboard360: React.FC = () => {
   const [stats, setStats] = useState({
     leads: 0,
     properties: 0,
-    chats: 0,
     activeContracts: 0,
   });
 
@@ -37,14 +36,9 @@ const Dashboard360: React.FC = () => {
       const { count: propsCount } = await supabase
         .from('properties')
         .select('*', { count: 'exact', head: true });
-      const { count: chatsCount } = await supabase
-        .from('whatsapp_chats')
-        .select('*', { count: 'exact', head: true });
-
       setStats({
         leads: leadsCount || 0,
         properties: propsCount || 0,
-        chats: chatsCount || 0,
         activeContracts: 12,
       });
     };
@@ -97,10 +91,10 @@ const Dashboard360: React.FC = () => {
           variant="primary"
         />
         <StatCard
-          icon={MessageSquare}
-          label="Conversas WhatsApp"
-          value={stats.chats}
-          change="+5%"
+          icon={TrendingUp}
+          label="Taxa de Conversão"
+          value="4.2%"
+          change="+0.8%"
           variant="primary"
         />
         <StatCard
@@ -120,61 +114,60 @@ const Dashboard360: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Slot: COMUNICAÇÃO (WhatsApp Hub) */}
+        {/* Slot: LEADS RECENTES */}
         <div className="lg:col-span-2">
           <div className="h-full bg-bg-card p-8 rounded-2xl border border-subtle">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-primary-alpha-10 text-brand rounded-xl">
-                  <Smartphone size={24} />
+                  <Users size={24} />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-text-primary">
-                    Hub de Comunicação
+                    Leads Recentes
                   </h3>
                   <p className="text-sm text-secondary font-medium">
-                    As últimas interações dos seus leads.
+                    Acompanhe os últimos contatos interessados.
                   </p>
                 </div>
               </div>
               <Link
-                to="../chat"
+                to="../crm"
                 className="text-xs font-bold uppercase text-brand hover:text-primary-light transition-colors"
               >
-                Ver todas →
+                Ver Kanban →
               </Link>
             </div>
 
             <div className="space-y-4">
               {[
-                { name: 'Ricardo Santos', time: 'Há 5 min', msg: 'Interessado na Fazenda Sol Nascente (MT)' },
-                { name: 'Ana Carolina', time: 'Há 15 min', msg: 'Solicitou vídeo do Haras Tatuí' },
-                { name: 'Grupo InvestAgro', time: 'Há 1 hora', msg: 'Nova proposta para a Gleba A' },
-              ].map((chat, i) => (
+                { name: 'Ricardo Santos', time: 'Há 5 min', status: 'Novo Lead', location: 'Fazenda Sol Nascente (MT)' },
+                { name: 'Ana Carolina', time: 'Há 15 min', status: 'Em Qualificação', location: 'Haras Tatuí' },
+                { name: 'Carlos Eduardo', time: 'Há 1 hora', status: 'Proposta Enviada', location: 'Gleba A' },
+              ].map((lead, i) => (
                 <div
                   key={i}
                   className="flex items-center justify-between p-5 bg-bg-hover rounded-2xl hover:bg-bg-hover/80 transition-all border border-subtle group cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand/20 to-brand/5 border border-brand/20 flex items-center justify-center text-brand font-bold text-lg shadow-inner">
-                      {chat.name.charAt(0)}
+                      {lead.name.charAt(0)}
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
                         <p className="font-bold text-text-primary text-sm">
-                          {chat.name}
+                          {lead.name}
                         </p>
                         <span className="text-[10px] text-tertiary bg-bg-primary px-2 py-0.5 rounded-full border border-subtle">
-                          {chat.time}
+                          {lead.time}
                         </span>
                       </div>
                       <p className="text-xs text-secondary font-medium truncate max-w-[250px]">
-                        {chat.msg}
+                        Interesse: {lead.location} • <span className="text-brand font-bold">{lead.status}</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-brand uppercase tracking-widest">Responder</span>
                     <ArrowUpRight
                       className="text-tertiary group-hover:text-brand transition-all transform group-hover:translate-x-1 group-hover:-translate-y-1"
                       size={20}

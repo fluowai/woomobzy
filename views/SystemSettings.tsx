@@ -16,7 +16,6 @@ import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
 import AppearanceSettings from './admin/AppearanceSettings';
 import UserManagement from './admin/UserManagement';
-import WhatsAppInstances from './admin/WhatsAppInstances';
 import SupportPortal from './admin/SupportPortal';
 
 const SystemSettings: React.FC = () => {
@@ -30,7 +29,7 @@ const SystemSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'appearance' | 'users' | 'whatsapp' | 'ai' | 'tracking' | 'domains' | 'support'
+    'appearance' | 'users' | 'ai' | 'tracking' | 'domains' | 'support'
   >('appearance');
 
   useEffect(() => {
@@ -77,7 +76,6 @@ const SystemSettings: React.FC = () => {
   const tabs = [
     { id: 'appearance', label: 'Aparência', icon: Palette },
     { id: 'users', label: 'Membros & Acesso', icon: Users },
-    { id: 'whatsapp', label: 'WhatsApp', icon: Shield },
     { id: 'domains', label: 'Domínios', icon: Globe },
     { id: 'ai', label: 'Integrações 360', icon: Brain },
     { id: 'tracking', label: 'Tracking', icon: Activity },
@@ -139,7 +137,6 @@ const SystemSettings: React.FC = () => {
       <div className="min-h-[600px]">
         {activeTab === 'appearance' && <AppearanceSettings />}
         {activeTab === 'users' && <UserManagement />}
-        {activeTab === 'whatsapp' && <WhatsAppInstances />}
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
         {activeTab === 'support' && <SupportPortal />}

@@ -2,84 +2,70 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { Lock, Mail, AlertCircle, ArrowRight, Building2, BarChart3, Shield, Sparkles } from 'lucide-react';
+import { 
+  Lock, 
+  Mail, 
+  AlertCircle, 
+  Loader2, 
+  CheckCircle2, 
+  ShieldCheck, 
+  Zap, 
+  LayoutDashboard,
+  ArrowRight
+} from 'lucide-react';
 
 const Login: React.FC = () => {
-  const navigate = useNavigate();
-  const { signIn, user, profile, loading: authLoading } = useAuth();
-  const { settings } = useSettings();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [justSignedIn, setJustSignedIn] = useState(false);
-  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  const { signIn, user } = useAuth();
+  const { settings } = useSettings();
+  const navigate = useNavigate();
 
-  // A2: If already authenticated, redirect away from login
-  useEffect(() => {
-    if (authLoading || !justSignedIn) return;
-    if (!user || !profile) return;
-
-    console.log('✅ [Login] Profile loaded via AuthContext, redirecting...', {
-      role: profile.role,
-      org: profile.organization?.niche,
-    });
-
-    if (profile.role === 'superadmin') {
-      navigate('/superadmin', { replace: true });
-    } else if (profile.role === 'admin') {
-      navigate('/admin', { replace: true });
-    } else if (!profile.organization_id) {
-      navigate('/onboarding', { replace: true });
-    } else {
-      navigate('/admin', { replace: true });
-    }
-  }, [user, profile, authLoading, justSignedIn, navigate]);
-
-  // A2: If user navigates to /login while already authenticated
-  if (!authLoading && user && profile && !justSignedIn) {
-    console.log('🔄 [Login] Already authenticated, redirecting away from login page.');
-    if (profile.role === 'superadmin') {
-      return <Navigate to="/superadmin" replace />;
-    }
-    if (!profile.organization_id && (profile.role === 'user' || !profile.role)) {
-      return <Navigate to="/onboarding" replace />;
-    }
+  // Redirect if already logged in
+  if (user) {
     return <Navigate to="/admin" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setLoading(true);
 
     try {
-      console.log('🚀 [Login] Starting signIn for:', email);
       await signIn(email, password);
-      setJustSignedIn(true);
-      console.log('✅ [Login] signIn successful. Waiting for AuthContext to load profile...');
-      
-      setTimeout(() => {
-        if (loading) {
-          console.warn('⚠️ [Login] Profile loading timed out.');
-          setLoading(false);
-          setJustSignedIn(false);
-          setError('O carregamento do perfil está demorando mais que o esperado. Tente novamente.');
-        }
-      }, 8000);
+      setIsSuccess(true);
+      // O redirecionamento acontece via AuthContext/App.tsx
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
+      setError(err.message || 'Erro ao realizar login. Verifique suas credenciais.');
       setLoading(false);
     }
   };
 
   const features = [
-    { icon: Building2, title: 'Gestão de Imóveis', desc: 'Controle total do seu portfólio Rural e Urbano' },
-    { icon: BarChart3, title: 'Relatórios Inteligentes', desc: 'Dashboards com análises em tempo real' },
-    { icon: Shield, title: 'Segurança Total', desc: 'Dados protegidos com criptografia avançada' },
-    { icon: Sparkles, title: 'IA Integrada', desc: 'Inteligência artificial para decisões assertivas' },
+    {
+      icon: <LayoutDashboard className="w-5 h-5 text-emerald-600" />,
+      title: "Gestão 360º",
+      desc: "Controle total de imóveis rurais e urbanos em um só lugar."
+    },
+    {
+      icon: <Zap className="w-5 h-5 text-emerald-600" />,
+      title: "IA Integrada",
+      desc: "Automação inteligente de leads e respostas via WhatsApp."
+    },
+    {
+      icon: <ShieldCheck className="w-5 h-5 text-emerald-600" />,
+      title: "Segurança Total",
+      desc: "Dados protegidos com criptografia de ponta a ponta."
+    },
+    {
+      icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />,
+      title: "Multi-inquilino",
+      desc: "Configure suas próprias APIs do Google e Groq por empresa."
+    }
   ];
 
   return (
@@ -89,482 +75,207 @@ const Login: React.FC = () => {
       background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 25%, #f0fdfa 50%, #f5f3ff 75%, #fdf4ff 100%)',
       fontFamily: "'Inter', 'Outfit', system-ui, sans-serif",
       position: 'relative',
-      overflow: 'hidden',
+      overflow: 'hidden'
     }}>
-      {/* Animated Background Orbs */}
+      {/* Decorative Orbs */}
       <div style={{
-        position: 'absolute', top: '-20%', right: '-10%',
-        width: '600px', height: '600px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)',
-        animation: 'float 8s ease-in-out infinite',
-        pointerEvents: 'none',
+        position: 'absolute',
+        top: '-10%',
+        right: '-5%',
+        width: '40vw',
+        height: '40vw',
+        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0) 70%)',
+        borderRadius: '50%',
+        filter: 'blur(60px)',
+        zIndex: 0
       }} />
       <div style={{
-        position: 'absolute', bottom: '-15%', left: '-5%',
-        width: '500px', height: '500px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%)',
-        animation: 'float 10s ease-in-out infinite reverse',
-        pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', top: '40%', left: '30%',
-        width: '300px', height: '300px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(168, 85, 247, 0.04) 0%, transparent 70%)',
-        animation: 'float 12s ease-in-out infinite',
-        pointerEvents: 'none',
+        position: 'absolute',
+        bottom: '-10%',
+        left: '-5%',
+        width: '35vw',
+        height: '35vw',
+        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0) 70%)',
+        borderRadius: '50%',
+        filter: 'blur(60px)',
+        zIndex: 0
       }} />
 
-      {/* ═══════════ LEFT PANEL — BRANDING ═══════════ */}
-      <div style={{
-        flex: '1 1 55%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '60px 80px',
-        position: 'relative',
-        zIndex: 2,
-      }} className="hidden lg:flex">
-        {/* Logo */}
-        <div style={{ marginBottom: '48px', animation: 'slideInLeft 0.7s ease-out' }}>
-          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '16px', textDecoration: 'none' }}>
-            <img
-              src={settings.logoUrl || '/logo-imobzy.png'}
-              alt={settings.agencyName || 'IMOBZY'}
-              style={{
-                height: '56px',
-                width: 'auto',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.08))',
-              }}
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (target.dataset.hasError) return;
-                target.dataset.hasError = 'true';
-                target.style.display = 'none';
-              }}
-            />
-          </Link>
-        </div>
-
-        {/* Hero Text */}
-        <div style={{ animation: 'slideInLeft 0.8s ease-out', animationDelay: '0.1s', animationFillMode: 'both' }}>
-          <h1 style={{
-            fontSize: 'clamp(2rem, 3.5vw, 3.2rem)',
-            fontWeight: 800,
-            lineHeight: 1.15,
-            color: '#0f172a',
-            marginBottom: '20px',
-            letterSpacing: '-0.03em',
-          }}>
-            Gerencie sua<br />
-            imobiliária com<br />
-            <span style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #0d9488 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
-              inteligência.
-            </span>
-          </h1>
-          <p style={{
-            fontSize: '1.125rem',
-            color: '#64748b',
-            maxWidth: '480px',
-            lineHeight: 1.7,
-            fontWeight: 400,
-          }}>
-            A plataforma completa para corretores e imobiliárias que querem 
-            crescer com tecnologia, organização e resultados reais.
-          </p>
-        </div>
-
-        {/* Feature Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '20px',
-          marginTop: '48px',
-          maxWidth: '560px',
-          animation: 'slideInLeft 0.9s ease-out',
-          animationDelay: '0.3s',
-          animationFillMode: 'both',
-        }}>
-          {features.map((feature, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '14px',
-                padding: '20px',
-                borderRadius: '16px',
-                background: 'rgba(255,255,255,0.7)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(226, 232, 240, 0.6)',
-                transition: 'all 0.3s ease',
-                cursor: 'default',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 12px 32px -8px rgba(16, 185, 129, 0.12)';
-                e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.6)';
-              }}
-            >
-              <div style={{
-                width: '40px', height: '40px', borderRadius: '12px',
-                background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                <feature.icon size={20} style={{ color: '#059669' }} />
+      {/* Main Content Split Layout */}
+      <div className="flex w-full z-10">
+        
+        {/* Left Side: Branding & Features (Hidden on mobile) */}
+        <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-20 relative">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-3 mb-12">
+              <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
+                <img src="/logo-imobzy.png" alt="IMOBZY" className="w-8 h-8 object-contain brightness-0 invert" />
               </div>
-              <div>
-                <h3 style={{
-                  fontSize: '0.875rem', fontWeight: 700, color: '#1e293b',
-                  marginBottom: '4px', lineHeight: 1.3,
-                }}>
-                  {feature.title}
-                </h3>
-                <p style={{
-                  fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5,
-                  margin: 0,
-                }}>
-                  {feature.desc}
-                </p>
-              </div>
+              <span className="text-3xl font-bold tracking-tight text-slate-900">
+                IMOB<span className="text-emerald-600">ZY</span>
+              </span>
             </div>
-          ))}
-        </div>
 
-        {/* Trust Indicators */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '24px',
-          marginTop: '40px',
-          animation: 'slideInLeft 1s ease-out',
-          animationDelay: '0.5s',
-          animationFillMode: 'both',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '8px', height: '8px', borderRadius: '50%',
-              background: '#10b981', boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.2)',
-            }} />
-            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
-              Sistema Online 24/7
-            </span>
-          </div>
-          <div style={{
-            width: '1px', height: '16px', background: '#e2e8f0',
-          }} />
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
-            🔒 Dados criptografados
-          </span>
-          <div style={{
-            width: '1px', height: '16px', background: '#e2e8f0',
-          }} />
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
-            🇧🇷 100% Brasileiro
-          </span>
-        </div>
-      </div>
-
-      {/* ═══════════ RIGHT PANEL — LOGIN FORM ═══════════ */}
-      <div style={{
-        flex: '1 1 45%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '40px',
-        position: 'relative',
-        zIndex: 2,
-      }}>
-        <div
-          style={{
-            width: '100%',
-            maxWidth: '460px',
-            background: 'rgba(255, 255, 255, 0.85)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            borderRadius: '28px',
-            border: '1px solid rgba(226, 232, 240, 0.8)',
-            boxShadow: '0 32px 64px -16px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(255,255,255,0.6) inset',
-            padding: '48px 40px',
-            animation: 'slideInRight 0.7s ease-out',
-          }}
-        >
-          {/* Card Header */}
-          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-            <div style={{
-              width: '64px', height: '64px', borderRadius: '20px',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 20px',
-              boxShadow: '0 8px 24px -4px rgba(16, 185, 129, 0.3)',
-            }}>
-              <Lock size={28} style={{ color: 'white' }} />
-            </div>
-            <h2 style={{
-              fontSize: '1.5rem', fontWeight: 700, color: '#0f172a',
-              marginBottom: '8px', letterSpacing: '-0.02em',
-            }}>
-              Acesse sua conta
-            </h2>
-            <p style={{
-              fontSize: '0.9rem', color: '#94a3b8', margin: 0,
-            }}>
-              Entre com suas credenciais para continuar
+            <h1 className="text-5xl font-extrabold text-slate-900 leading-tight mb-6">
+              Gerencie sua imobiliária com <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">inteligência</span>
+            </h1>
+            
+            <p className="text-lg text-slate-600 mb-12 leading-relaxed">
+              A plataforma definitiva para corretores e gestores que buscam escala, automação e alta performance no mercado imobiliário.
             </p>
-          </div>
 
-          {/* Error Message */}
-          {error && (
-            <div style={{
-              marginBottom: '24px', padding: '14px 16px',
-              background: 'linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)',
-              border: '1px solid #fecaca',
-              borderRadius: '14px',
-              display: 'flex', alignItems: 'center', gap: '12px',
-              animation: 'slideUp 0.3s ease-out',
-            }}>
-              <AlertCircle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
-              <p style={{ fontSize: '0.85rem', color: '#dc2626', margin: 0, fontWeight: 500 }}>
-                {error}
-              </p>
+            <div className="grid grid-cols-2 gap-8 mb-12">
+              {features.map((f, i) => (
+                <div key={i} className="group p-4 rounded-2xl border border-white/50 bg-white/30 backdrop-blur-sm hover:bg-white/60 transition-all duration-300">
+                  <div className="mb-3 p-2 w-fit rounded-lg bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
+                    {f.icon}
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-1">{f.title}</h3>
+                  <p className="text-sm text-slate-500">{f.desc}</p>
+                </div>
+              ))}
             </div>
-          )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Email Field */}
-            <div>
-              <label style={{
-                display: 'block', fontSize: '0.8rem', fontWeight: 600,
-                color: '#475569', marginBottom: '8px', letterSpacing: '0.02em',
-              }}>
-                E-mail de acesso
-              </label>
-              <div style={{
-                position: 'relative',
-                borderRadius: '14px',
-                border: `2px solid ${focusedField === 'email' ? '#10b981' : '#e2e8f0'}`,
-                background: focusedField === 'email' ? '#ffffff' : '#f8fafc',
-                transition: 'all 0.25s ease',
-                boxShadow: focusedField === 'email' ? '0 0 0 4px rgba(16, 185, 129, 0.1)' : 'none',
-              }}>
-                <Mail
-                  size={18}
-                  style={{
-                    position: 'absolute', left: '16px', top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: focusedField === 'email' ? '#10b981' : '#94a3b8',
-                    transition: 'color 0.25s ease',
-                  }}
-                />
-                <input
-                  id="login-email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onFocus={() => setFocusedField('email')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="seu@email.com"
-                  style={{
-                    width: '100%', padding: '14px 16px 14px 48px',
-                    fontSize: '0.95rem', color: '#1e293b',
-                    background: 'transparent', border: 'none', outline: 'none',
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                />
+            <div className="flex items-center gap-4 text-sm font-medium text-slate-500">
+              <div className="flex -space-x-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shadow-sm">
+                    <img src={`https://i.pravatar.cc/100?u=${i + 10}`} alt="User" />
+                  </div>
+                ))}
               </div>
+              <span>+2.000 profissionais já utilizam</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Login Form */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12">
+          <div className="w-full max-w-md">
+            {/* Mobile Logo Only */}
+            <div className="lg:hidden flex flex-col items-center mb-10">
+              <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-200 mb-4">
+                <img src="/logo-imobzy.png" alt="IMOBZY" className="w-10 h-10 object-contain brightness-0 invert" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900">IMOBZY</h2>
             </div>
 
-            {/* Password Field */}
-            <div>
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                marginBottom: '8px',
-              }}>
-                <label style={{
-                  fontSize: '0.8rem', fontWeight: 600, color: '#475569',
-                  letterSpacing: '0.02em',
-                }}>
-                  Senha
-                </label>
-                <Link
-                  to="/forgot-password"
-                  style={{
-                    fontSize: '0.8rem', fontWeight: 600,
-                    color: '#10b981', textDecoration: 'none',
-                    transition: 'color 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#059669'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#10b981'}
+            <div className="bg-white/70 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-emerald-900/5 border border-white relative overflow-hidden">
+              {/* Success Overlay */}
+              {isSuccess && (
+                <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-8 text-center">
+                  <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                    <CheckCircle2 size={40} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Bem-vindo de volta!</h3>
+                  <p className="text-slate-500">Autenticação realizada com sucesso. Redirecionando...</p>
+                  <Loader2 className="mt-6 animate-spin text-emerald-600" size={24} />
+                </div>
+              )}
+
+              <div className="mb-10 text-center lg:text-left">
+                <h2 className="text-3xl font-extrabold text-slate-900 mb-3">Login</h2>
+                <p className="text-slate-500">Entre com suas credenciais para acessar o painel administrativo.</p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 ml-1">E-mail corporativo</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                      <Mail size={20} />
+                    </div>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="block w-full pl-11 pr-4 py-4 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
+                      placeholder="seu@email.com.br"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between ml-1">
+                    <label className="text-sm font-semibold text-slate-700">Senha</label>
+                    <Link to="/forgot-password" size="sm" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                      Esqueceu a senha?
+                    </Link>
+                  </div>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                      <Lock size={20} />
+                    </div>
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="block w-full pl-11 pr-4 py-4 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl animate-shake">
+                    <AlertCircle size={20} className="shrink-0" />
+                    <p className="text-sm font-medium">{error}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-emerald-200 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed group"
                 >
-                  Esqueceu a senha?
+                  {loading ? (
+                    <Loader2 className="animate-spin" size={24} />
+                  ) : (
+                    <>
+                      Acessar Sistema
+                      <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-10 pt-8 border-t border-slate-100 flex flex-col items-center gap-4">
+                <p className="text-sm text-slate-500">
+                  Ainda não tem uma conta?
+                </p>
+                <Link 
+                  to="/register" 
+                  className="inline-flex items-center justify-center px-6 py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                >
+                  Criar conta gratuita
                 </Link>
               </div>
-              <div style={{
-                position: 'relative',
-                borderRadius: '14px',
-                border: `2px solid ${focusedField === 'password' ? '#10b981' : '#e2e8f0'}`,
-                background: focusedField === 'password' ? '#ffffff' : '#f8fafc',
-                transition: 'all 0.25s ease',
-                boxShadow: focusedField === 'password' ? '0 0 0 4px rgba(16, 185, 129, 0.1)' : 'none',
-              }}>
-                <Lock
-                  size={18}
-                  style={{
-                    position: 'absolute', left: '16px', top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: focusedField === 'password' ? '#10b981' : '#94a3b8',
-                    transition: 'color 0.25s ease',
-                  }}
-                />
-                <input
-                  id="login-password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="••••••••"
-                  style={{
-                    width: '100%', padding: '14px 16px 14px 48px',
-                    fontSize: '0.95rem', color: '#1e293b',
-                    background: 'transparent', border: 'none', outline: 'none',
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                />
-              </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              id="login-submit"
-              type="submit"
-              disabled={loading || justSignedIn}
-              style={{
-                width: '100%', padding: '16px',
-                fontSize: '0.95rem', fontWeight: 700,
-                color: 'white', border: 'none', cursor: 'pointer',
-                borderRadius: '14px',
-                background: loading || justSignedIn
-                  ? 'linear-gradient(135deg, #86efac 0%, #6ee7b7 100%)'
-                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                boxShadow: loading || justSignedIn
-                  ? 'none'
-                  : '0 8px 24px -4px rgba(16, 185, 129, 0.35)',
-                transition: 'all 0.3s ease',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                fontFamily: "'Inter', sans-serif",
-                letterSpacing: '0.02em',
-                transform: 'translateY(0)',
-              }}
-              onMouseEnter={(e) => {
-                if (!loading && !justSignedIn) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 12px 32px -4px rgba(16, 185, 129, 0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = loading ? 'none' : '0 8px 24px -4px rgba(16, 185, 129, 0.35)';
-              }}
-            >
-              {loading || justSignedIn ? (
-                <>
-                  <div style={{
-                    width: '20px', height: '20px',
-                    border: '2.5px solid rgba(255,255,255,0.3)',
-                    borderTopColor: 'white',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite',
-                  }} />
-                  Entrando...
-                </>
-              ) : (
-                <>
-                  Entrar no Painel
-                  <ArrowRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '16px',
-            margin: '28px 0',
-          }}>
-            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, #e2e8f0, transparent)' }} />
-          </div>
-
-          {/* Register CTA */}
-          <div style={{ textAlign: 'center' }}>
-            <p style={{
-              fontSize: '0.9rem', color: '#64748b', margin: 0,
-            }}>
-              Ainda não tem uma conta?{' '}
-              <Link
-                to="/register"
-                style={{
-                  fontWeight: 700, color: '#10b981',
-                  textDecoration: 'none',
-                  transition: 'color 0.2s ease',
-                  borderBottom: '2px solid transparent',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#059669';
-                  e.currentTarget.style.borderBottomColor = '#059669';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#10b981';
-                  e.currentTarget.style.borderBottomColor = 'transparent';
-                }}
-              >
-                Cadastre-se grátis
-              </Link>
-            </p>
+            <div className="mt-8 text-center">
+              <p className="text-xs text-slate-400">
+                &copy; {new Date().getFullYear()} IMOBZY Technology. Todos os direitos reservados.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Inline Keyframe Animations */}
-      <style>{`
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-40px); }
-          to { opacity: 1; transform: translateX(0); }
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
         }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(40px); }
-          to { opacity: 1; transform: translateX(0); }
+        .animate-shake {
+          animation: shake 0.2s ease-in-out 0s 2;
         }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        .login-page-wrapper {
+          transition: background 0.5s ease;
         }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-20px); }
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 900px) {
-          .login-page-wrapper > div:first-child {
-            display: none !important;
-          }
-          .login-page-wrapper > div:last-child {
-            flex: 1 1 100% !important;
-          }
-        }
-      `}</style>
+      `}} />
     </div>
   );
 };

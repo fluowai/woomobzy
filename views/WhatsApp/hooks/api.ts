@@ -1,11 +1,16 @@
 const API_BASE = import.meta.env.VITE_WHATSAPP_API_URL || '/api/whatsapp';
 const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || `wss://${window.location.host}/api/whatsapp/ws`;
 
+import { supabase } from '@/lib/supabase';
+
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  const { data: { session } } = await supabase.auth.getSession();
   const url = `${API_BASE}${path}`;
+  
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': session ? `Bearer ${session.access_token}` : '',
       ...options?.headers,
     },
     ...options,

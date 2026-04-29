@@ -32,7 +32,7 @@ export default async function handler(req, res) {
             .select('contact_email, contact_whatsapp_template, integrations')
             .single();
         
-        const contactEmail = settingsData?.contact_email || 'contato@fazendasbrasil.com';
+        const contactEmail = settingsData?.contact_email || 'contato@imobiliaria.com';
         const whatsappTemplate = settingsData?.contact_whatsapp_template || 
             'Olá {name}! Recebemos seu contato através do formulário "Fale Conosco". Nossa equipe já está analisando sua mensagem e entrará em contato em breve. Obrigado!';
         

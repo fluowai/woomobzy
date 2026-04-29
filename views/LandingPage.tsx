@@ -1554,7 +1554,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                   <InlineEditable textKey="contact.email_value">
                     {t(
                       'contact.email_value',
-                      settings.contactEmail || 'contato@okaimoveis.com.br'
+                      settings.contactEmail || 'contato@imobiliaria.com'
                     )}
                   </InlineEditable>
                 </div>

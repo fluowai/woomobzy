@@ -97,6 +97,8 @@ export const SettingsProvider: React.FC<{
             headingFontSize: data.heading_font_size,
             footerText: data.footer_text,
             templateId: data.template_id,
+            contactEmail: data.contact_email || DEFAULT_SITE_SETTINGS.contactEmail,
+            contactPhone: data.contact_phone || data.whatsapp_number || DEFAULT_SITE_SETTINGS.contactPhone,
             socialLinks: {
               instagram: data.instagram_url,
               facebook: data.facebook_url,
@@ -174,6 +176,8 @@ export const SettingsProvider: React.FC<{
         is_live: newSettings.isLive,
         home_content: newSettings.homeContent,
         integrations: newSettings.integrations,
+        contact_email: newSettings.contactEmail,
+        contact_phone: newSettings.contactPhone,
         updated_at: new Date().toISOString(),
       };
 

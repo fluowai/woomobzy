@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { instanceApi, type Instance } from './hooks/api';
 import QRCodeModal from './QRCodeModal';
+import { usePlans } from '../../context/PlansContext';
 import {
   X, Plus, Smartphone, Trash2, Power, PowerOff, QrCode,
-  Wifi, WifiOff, Loader2, RefreshCw, AlertCircle
+  Wifi, WifiOff, Loader2, RefreshCw, AlertCircle, ShieldAlert
 } from 'lucide-react';
 
 interface InstanceManagerProps {
@@ -40,7 +41,16 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
     }
   };
 
+  const { checkLimit, currentPlan } = usePlans();
+  const maxInstances = currentPlan?.limits?.whatsapp_instances || 0;
+  const isLimitReached = instances.length >= maxInstances;
+
   const handleCreate = async () => {
+    if (isLimitReached) {
+      setError(`Limite de instâncias atingido (${maxInstances}). Faça upgrade do seu plano.`);
+      return;
+    }
+
     if (!newName.trim()) {
       setError('Nome da instância é obrigatório');
       return;
@@ -139,22 +149,30 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
           <div className="wa-create-instance">
             <input
               type="text"
-              placeholder="Nome da nova instância..."
+              placeholder={isLimitReached ? "Limite do plano atingido" : "Nome da nova instância..."}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              disabled={isLimitReached}
               className="wa-create-input"
               id="new-instance-name"
             />
             <button
               onClick={handleCreate}
-              disabled={creating || !newName.trim()}
-              className="wa-create-btn"
+              disabled={creating || !newName.trim() || isLimitReached}
+              className={`wa-create-btn ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
               {creating ? 'Criando...' : 'Criar'}
             </button>
           </div>
+
+          {isLimitReached && (
+            <div className="wa-limit-reached">
+              <ShieldAlert size={14} className="text-orange-500" />
+              <span>Você atingiu o limite de <strong>{maxInstances}</strong> instâncias do seu plano.</span>
+            </div>
+          )}
 
           {error && (
             <div className="wa-error">

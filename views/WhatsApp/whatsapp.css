@@ -594,6 +594,21 @@
   color: #ef4444;
   font-size: 0.8rem;
 }
+.wa-limit-reached {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 24px 16px;
+  padding: 10px 14px;
+  background: rgba(245,158,11,0.05);
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+.wa-limit-reached strong {
+  color: #f59e0b;
+}
 
 /* Instance List */
 .wa-instance-list { padding: 0 24px 16px; }

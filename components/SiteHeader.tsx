@@ -204,7 +204,7 @@ const SiteHeader: React.FC = () => {
                   <InlineEditable textKey="contact.email_value">
                     {t(
                       'contact.email_value',
-                      settings.contactEmail || 'contato@fazendasbrasil.com'
+                      settings.contactEmail || 'contato@imobiliaria.com'
                     )}
                   </InlineEditable>
                 </span>

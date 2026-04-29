@@ -75,6 +75,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
     { icon: LayoutTemplate, label: 'Site & Landing Pages', path: '/urban/landing-pages' },
     { icon: DollarSign, label: 'Financeiro', path: '/urban/cobranca' },
     { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
+    { icon: MessageSquare, label: 'Atendimento', path: '/urban/whatsapp' },
     { icon: Settings, label: 'Configurações', path: '/urban/settings' },
   ];
 

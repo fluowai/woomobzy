@@ -23,6 +23,8 @@ const AppearanceSettings: React.FC = () => {
     logoHeight: 80,
     fontFamily: 'Inter, sans-serif',
     isLive: false,
+    contactEmail: '',
+    contactPhone: '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -39,6 +41,8 @@ const AppearanceSettings: React.FC = () => {
         logoHeight: settings.logoHeight || 80,
         fontFamily: settings.fontFamily || 'Inter, sans-serif',
         isLive: settings.isLive ?? false,
+        contactEmail: settings.contactEmail || '',
+        contactPhone: settings.contactPhone || '',
       });
       setLogoPreview(settings.logoUrl || null);
     }
@@ -169,7 +173,7 @@ const AppearanceSettings: React.FC = () => {
         {/* Agency Settings */}
         <div>
           <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <Layout size={16} /> Identidade
+            <Layout size={16} /> Identidade & Contato
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -183,6 +187,34 @@ const AppearanceSettings: React.FC = () => {
                   setFormData({ ...formData, agencyName: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                E-mail de Contato
+              </label>
+              <input
+                type="email"
+                value={formData.contactEmail}
+                onChange={(e) =>
+                  setFormData({ ...formData, contactEmail: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="contato@empresa.com.br"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Telefone de Contato
+              </label>
+              <input
+                type="text"
+                value={formData.contactPhone}
+                onChange={(e) =>
+                  setFormData({ ...formData, contactPhone: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="(00) 00000-0000"
               />
             </div>
           </div>

@@ -84,6 +84,9 @@ const SupportManager = lazy(() => import('./views/superadmin/SupportManager'));
 const TeamManager = lazy(() => import('./views/superadmin/TeamManager'));
 const SmartImporter = lazy(() => import('./views/superadmin/SmartImporter'));
 
+// WhatsApp
+const WhatsAppDashboard = lazy(() => import('./views/WhatsApp/WhatsAppDashboard'));
+
 // console.log('App.tsx: Multi-Panel Architecture Active');
 
 // ==========================================
@@ -311,6 +314,7 @@ const AppContent: React.FC = () => {
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="financial" element={<Cobranca />} />
             <Route path="financeiro-advanced" element={<Locacao />} />
+            <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 
@@ -350,6 +354,7 @@ const AppContent: React.FC = () => {
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="contracts" element={<LegalContracts />} />
+            <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 

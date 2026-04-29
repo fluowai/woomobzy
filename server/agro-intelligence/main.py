@@ -4,12 +4,29 @@ import pandas as pd
 from typing import List, Optional
 import uvicorn
 from datetime import datetime
+from geoprocessor import GeoProcessor
 
 app = FastAPI(title="IMOBZY Agro-Intelligence Microservice")
 
 @app.get("/")
 async def root():
     return {"status": "online", "service": "agro-intelligence"}
+
+@app.post("/geoprocess")
+async def geoprocess_property(
+    lat: Optional[float] = None, 
+    lon: Optional[float] = None, 
+    code: Optional[str] = None, 
+    name: Optional[str] = None
+):
+    """
+    Processa um imóvel rural a partir de coordenadas, código ou nome.
+    Gera KML/KMZ e enriquece dados.
+    """
+    result = GeoProcessor.process(lat=lat, lon=lon, code=code, name=name)
+    if not result.get("success"):
+        raise HTTPException(status_code=404, detail=result.get("error"))
+    return result
 
 @app.get("/prices")
 async def get_latest_prices():

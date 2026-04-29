@@ -17,5 +17,16 @@ module.exports = {
     autorestart: true,
     max_restarts: 10,
     min_uptime: '10s'
+  },
+  {
+    name: 'agro-intelligence',
+    script: 'python3',
+    args: 'server/agro-intelligence/main.py',
+    interpreter: 'none',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      PORT: 8000
+    }
   }]
 };

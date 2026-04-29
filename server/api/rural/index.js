@@ -468,4 +468,32 @@ router.get(
   AnalysisController.downloadPDF
 );
 
+/**
+ * POST /api/rural/geoprocess
+ * Resolve imóvel e gera KML/KMZ via Microserviço Python
+ */
+router.post('/geoprocess', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { lat, lon, code, name } = req.body;
+    
+    if (!lat && !lon && !code && !name) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Forneça ao menos um critério de busca (coordenadas, código ou nome).' 
+      });
+    }
+
+    const result = await AgroIntelligenceService.geoprocessProperty({ lat, lon, code, name });
+    
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Geoprocess route error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

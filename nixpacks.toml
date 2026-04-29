@@ -1,8 +1,12 @@
 [phases.setup]
-nixPkgs = ["...", "go"]
+nixPkgs = ["...", "go", "python311"]
 
 [phases.build]
-cmds = ["npm install", "cd whatsapp-service && go mod download"]
+cmds = [
+  "npm install", 
+  "cd whatsapp-service && go mod download",
+  "python3 -m pip install -r server/agro-intelligence/requirements.txt"
+]
 
 [start]
 cmd = "npm start"

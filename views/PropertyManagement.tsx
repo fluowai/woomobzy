@@ -15,10 +15,12 @@ import {
   Clock,
   MapPin,
   Map,
+  Check,
 } from 'lucide-react';
 import { propertyService } from '../services/properties';
 import { Property } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'sonner';
 
 const PropertyManagement: React.FC = () => {
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
@@ -44,10 +46,11 @@ const PropertyManagement: React.FC = () => {
         );
         return;
       }
-      const data = await propertyService.list(profile.organization_id);
+      const data = await propertyService.list();
       setProperties(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar imóveis:', error);
+      toast.error('Erro ao carregar imóveis: ' + error.message);
     } finally {
       setLoading(false);
     }

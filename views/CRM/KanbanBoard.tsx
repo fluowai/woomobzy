@@ -356,10 +356,12 @@ const KanbanBoard: React.FC = () => {
 
   const loadLeads = async () => {
     try {
+      setLoading(true);
       const data = await leadService.list();
       setLeads(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load leads', error);
+      toast.error('Erro ao carregar leads: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -515,18 +517,18 @@ const KanbanBoard: React.FC = () => {
                                 className={`bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group cursor-pointer ${snapshot.isDragging ? 'rotate-2 shadow-xl ring-2 ring-indigo-500/20' : ''}`}
                               >
                                 <div className="flex items-start justify-between mb-3">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase shrink-0">
                                       {lead.name.slice(0, 2)}
                                     </div>
-                                    <div>
+                                    <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-bold text-slate-800 text-sm leading-tight">
+                                        <h4 className="font-bold text-slate-800 text-sm leading-tight truncate">
                                           {lead.name}
                                         </h4>
                                         {lead.classification && (
                                           <span
-                                            className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${
+                                            className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shrink-0 ${
                                               lead.classification.includes(
                                                 'Alta'
                                               )
@@ -547,30 +549,34 @@ const KanbanBoard: React.FC = () => {
                                       </span>
                                     </div>
                                   </div>
-                                  {/* Botão de Link Direto (Independente do Baileys) */}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      window.open(
-                                        `https://wa.me/${lead.phone.replace(/\D/g, '')}`,
-                                        '_blank'
-                                      );
-                                    }}
-                                    className="text-emerald-500 hover:bg-emerald-50 p-1.5 rounded-lg transition-colors"
-                                    title="Chamar no WhatsApp"
-                                  >
-                                    <MessageCircle size={16} />
-                                  </button>
+                                  {/* Botões de ação - sempre visíveis no mobile */}
+                                  <div className="flex items-center gap-1 shrink-0 ml-1">
                                     <button
-                                      onClick={async (e) => {
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(
+                                          `https://wa.me/${lead.phone.replace(/\D/g, '')}`,
+                                          '_blank'
+                                        );
+                                      }}
+                                      className="text-emerald-500 hover:bg-emerald-50 p-1.5 rounded-lg transition-colors"
+                                      title="Chamar no WhatsApp"
+                                    >
+                                      <MessageCircle size={16} />
+                                    </button>
+                                    <button
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onClick={(e) => {
                                         e.stopPropagation();
                                         handleDeleteLead(lead.id, lead.name);
                                       }}
-                                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors ml-auto opacity-0 group-hover:opacity-100"
+                                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
                                       title="Excluir Lead"
                                     >
                                       <Trash2 size={16} />
                                     </button>
+                                  </div>
                                 </div>
 
                                 {lead.notes && (

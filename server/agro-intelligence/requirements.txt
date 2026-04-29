@@ -3,3 +3,8 @@ fastapi
 uvicorn
 pandas
 httpx
+geopandas
+shapely
+simplekml
+requests
+python-multipart

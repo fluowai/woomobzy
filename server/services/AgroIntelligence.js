@@ -49,4 +49,20 @@ export class AgroIntelligenceService {
       };
     }
   }
+
+  /**
+   * Resolve property and generate KML/KMZ
+   */
+  static async geoprocessProperty(params) {
+    try {
+      const response = await axios.post(`${this.API_BASE}/geoprocess`, params);
+      return response.data;
+    } catch (error) {
+      console.error('[AgroIntelligence] Error in geoprocessing:', error.response?.data?.detail || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Falha ao processar dados geoespaciais.' 
+      };
+    }
+  }
 }

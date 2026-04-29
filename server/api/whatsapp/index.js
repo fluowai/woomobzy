@@ -15,9 +15,6 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     target,
     changeOrigin: true,
     ws: true,
-    pathRewrite: {
-      '^/api/whatsapp': '', // Remove o prefixo para o serviço Go
-    },
     onProxyReq: (proxyReq, req, res) => {
       // 1. Pega o OrgID injetado pelo middleware de autenticação do Node
       const orgId = req.orgId;

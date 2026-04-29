@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_WHATSAPP_API_URL || 'https://api.consultio.com.br';
+const API_BASE = import.meta.env.VITE_WHATSAPP_API_URL || '/api/whatsapp';
+const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || `wss://${window.location.host}/api/whatsapp/ws`;
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;

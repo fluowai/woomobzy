@@ -11,6 +11,8 @@ import {
   Key,
   Settings,
   HelpCircle,
+  Activity,
+  Shield,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';

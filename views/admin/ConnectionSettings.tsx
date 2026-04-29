@@ -14,6 +14,7 @@ import {
   RefreshCw,
   AlertCircle,
   ShieldAlert,
+  Link,
 } from 'lucide-react';
 
 const ConnectionSettings: React.FC = () => {
@@ -107,22 +108,31 @@ const ConnectionSettings: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              placeholder="Nome da conexão..."
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="input-premium py-2 px-4 w-full md:w-64"
-              disabled={isLimitReached}
-            />
+          <div className="flex-1 flex flex-col sm:flex-row items-center gap-3 w-full md:max-w-xl">
+            <div className="relative flex-1 w-full group">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-text-tertiary group-focus-within:text-primary transition-colors">
+                <Link size={16} />
+              </div>
+              <input
+                type="text"
+                placeholder={isLimitReached ? "Limite do plano atingido" : "Nome da conexão (ex: Comercial)"}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="input-premium py-3 pl-11 pr-4 w-full bg-bg-primary/50"
+                disabled={isLimitReached}
+              />
+            </div>
             <button
               onClick={handleCreate}
               disabled={creating || !newName.trim() || isLimitReached}
-              className="btn-primary whitespace-nowrap"
+              className="btn-primary py-3 px-6 h-[46px] shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all flex items-center justify-center gap-2 min-w-[160px]"
             >
-              {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-              Criar Conexão
+              {creating ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Plus size={18} strokeWidth={3} />
+              )}
+              <span className="font-bold tracking-tight">Criar Conexão</span>
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || 'ws://localhost:3100/ws';
+const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || 'wss://api.consultio.com.br/ws';
 
 interface WSEvent {
   event: string;

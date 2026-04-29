@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { spawn } from 'child_process';
 
 // --- Middlewares & Services ---
 import { getSupabaseServer } from './lib/supabase-server.js';
@@ -183,25 +182,7 @@ const server = app.listen(PORT, async () => {
   // Configura o Proxy de WhatsApp com Segurança SaaS (API + WebSockets)
   setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
 
-  // Iniciar o Serviço WhatsMeow (Go) como processo filho
-  if (process.env.NODE_ENV !== 'test') {
-    console.log('🚀 Starting internal WhatsMeow service...');
-    const whatsapp = spawn('go', ['run', 'cmd/server/main.go'], {
-      cwd: join(__dirname, '../whatsapp-service'),
-      env: { 
-        ...process.env, 
-        PORT: '8080',
-        GIN_MODE: 'release'
-      }
-    });
 
-    whatsapp.stdout.on('data', (data) => console.log(`[WhatsMeow] ${data}`));
-    whatsapp.stderr.on('data', (data) => console.error(`[WhatsMeow Error] ${data}`));
-    
-    whatsapp.on('close', (code) => {
-      console.log(`[WhatsMeow] Process exited with code ${code}`);
-    });
-  }
 });
 
 export default app;

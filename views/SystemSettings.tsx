@@ -13,12 +13,14 @@ import {
   HelpCircle,
   Activity,
   Shield,
+  Link,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
 import AppearanceSettings from './admin/AppearanceSettings';
 import UserManagement from './admin/UserManagement';
 import SupportPortal from './admin/SupportPortal';
+import ConnectionSettings from './admin/ConnectionSettings';
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -31,7 +33,7 @@ const SystemSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'appearance' | 'users' | 'ai' | 'tracking' | 'domains' | 'support'
+    'appearance' | 'users' | 'ai' | 'tracking' | 'domains' | 'support' | 'connections'
   >('appearance');
 
   useEffect(() => {
@@ -81,6 +83,7 @@ const SystemSettings: React.FC = () => {
     { id: 'domains', label: 'Domínios', icon: Globe },
     { id: 'ai', label: 'Integrações 360', icon: Brain },
     { id: 'tracking', label: 'Tracking', icon: Activity },
+    { id: 'connections', label: 'Conexões', icon: Link },
     { id: 'support', label: 'Ajuda & Suporte', icon: HelpCircle },
   ];
 
@@ -141,6 +144,7 @@ const SystemSettings: React.FC = () => {
         {activeTab === 'users' && <UserManagement />}
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
+        {activeTab === 'connections' && <ConnectionSettings />}
         {activeTab === 'support' && <SupportPortal />}
 
         {activeTab === 'ai' && (

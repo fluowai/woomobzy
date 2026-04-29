@@ -8,7 +8,7 @@ const EVOLUTION_URL = process.env.EVOLUTION_API_URL || 'https://evolution.consul
 const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY;
 
 // Middleware para repassar todas as chamadas para a Evolution API
-router.all('/*', async (req, res) => {
+router.all('*', async (req, res) => {
   try {
     const targetUrl = `${EVOLUTION_URL}${req.path}`;
     

@@ -276,7 +276,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 	// Determine chat name
 	chatName := ""
 	if isGroup {
-		groupInfo, err := c.waClient.GetGroupInfo(info.Chat)
+		groupInfo, err := c.waClient.GetGroupInfo(ctx, info.Chat)
 		if err == nil && groupInfo != nil {
 			chatName = groupInfo.Name
 		} else {

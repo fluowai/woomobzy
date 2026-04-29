@@ -65,7 +65,7 @@ func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message
 	}
 
 	// Download media from WhatsApp servers
-	data, err := c.waClient.Download(downloadable)
+	data, err := c.waClient.Download(ctx, downloadable)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to download media: %w", err)
 	}
@@ -163,7 +163,7 @@ func (c *Client) SendTextMessage(ctx context.Context, chatJID string, text strin
 	// Use whatsmeow to send
 	_, err = c.waClient.SendMessage(ctx, jid, &proto.Message{
 		Conversation: proto.String(text),
-	})
+	}, whatsmeow.SendRequestExtra{})
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}

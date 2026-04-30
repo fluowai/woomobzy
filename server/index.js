@@ -84,7 +84,8 @@ app.use(
         origin.startsWith('http://127.0.0.1');
       const isMainDomain =
         origin === 'https://consultio.com.br' ||
-        origin.endsWith('.consultio.com.br');
+        origin.endsWith('.consultio.com.br') ||
+        origin.endsWith('.vercel.app');
 
       // 2. Permitir APENAS domínios da lista explícita
       if (isLocal || isMainDomain || allowedOrigins.includes(origin)) {

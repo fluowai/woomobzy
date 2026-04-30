@@ -74,12 +74,12 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
-        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white">
+      <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+        <div className="p-5 sm:p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white shrink-0">
           <div className="flex items-center gap-3">
-            <Plus size={24} />
-            <h3 className="text-xl font-black uppercase italic tracking-tighter">
-              Cadastrar Novo Lead
+            <Plus size={20} className="sm:w-6 sm:h-6" />
+            <h3 className="text-lg sm:text-xl font-black uppercase italic tracking-tighter">
+              Novo Lead
             </h3>
           </div>
           <button
@@ -89,27 +89,59 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
             <X size={20} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Nome Completo
+              Nome Completo *
             </label>
             <input
               required
-              className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
+              placeholder="Nome do lead"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                Telefone *
+              </label>
+              <input
+                required
+                type="tel"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="email@exemplo.com"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
                 Origem do Lead
               </label>
               <select
-                className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
               >
@@ -128,7 +160,7 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
               </label>
               <input
                 placeholder="Ex: Fazenda MS-120"
-                className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
                 value={formData.ad_reference}
                 onChange={(e) => setFormData({ ...formData, ad_reference: e.target.value })}
               />
@@ -141,7 +173,7 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
             </label>
             <input
               placeholder="Ex: Bio Instagram / Lançamento Verão"
-              className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
               value={formData.organic_channel}
               onChange={(e) => setFormData({ ...formData, organic_channel: e.target.value })}
             />
@@ -152,14 +184,14 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
               Notas Iniciais
             </label>
             <textarea
-              className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold min-h-[100px]"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold min-h-[80px] text-sm"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
           </div>
           <button
             disabled={loading}
-            className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-all disabled:opacity-50"
+            className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-all disabled:opacity-50 text-sm"
           >
             {loading ? 'Salvando...' : 'Finalizar Cadastro'}
           </button>
@@ -178,28 +210,28 @@ const LeadDetailsModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100">
-        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center font-black text-xl">
+      <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100 max-h-[90vh] flex flex-col">
+        <div className="p-5 sm:p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-indigo-500 flex items-center justify-center font-black text-lg sm:text-xl shrink-0">
               {lead.name.charAt(0)}
             </div>
-            <div>
-              <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-tight">
+            <div className="min-w-0">
+              <h3 className="text-xl sm:text-2xl font-black uppercase italic tracking-tighter leading-tight truncate">
                 {lead.name}
               </h3>
-              <p className="text-white/60 text-xs font-bold uppercase tracking-widest">
+              <p className="text-white/60 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
                 Detalhes do Lead
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-white/10 rounded-full transition-colors">
-            <X size={24} />
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors shrink-0">
+            <X size={20} className="sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        <div className="p-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
-          <div className="grid grid-cols-2 gap-8 mb-8">
+        <div className="p-5 sm:p-8 overflow-y-auto flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
             <div className="space-y-6">
                <section>
                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Informações de Contato</h5>
@@ -280,14 +312,14 @@ const LeadDetailsModal: React.FC<{
           </section>
         </div>
 
-        <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-4">
-           <button onClick={onClose} className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-colors">
-              Fechar
-           </button>
-           <button className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-700 transition-shadow shadow-lg shadow-indigo-500/20">
-              Editar Lead
-           </button>
-        </div>
+        <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 shrink-0">
+            <button onClick={onClose} className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors">
+               Fechar
+            </button>
+            <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-shadow shadow-lg shadow-indigo-500/20">
+               Editar Lead
+            </button>
+         </div>
       </div>
     </div>
   );
@@ -418,35 +450,38 @@ const KanbanBoard: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">
-            PROCESSO DE VENDAS (KANBAN)
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase italic tracking-tighter">
+            Processo de Vendas
           </h1>
-          <p className="text-slate-500 font-medium">Gestão inteligente de funil e leads.</p>
+          <p className="text-slate-500 font-medium text-sm">Gestão inteligente de funil e leads.</p>
         </div>
 
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Buscar lead ou imóvel..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none w-64"
-          />
-        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Buscar lead..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none w-full sm:w-56 md:w-64 text-sm"
+            />
+          </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20"
-        >
-          <Plus size={18} />
-          NOVO LEAD
-        </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-indigo-600 text-white px-4 sm:px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">NOVO LEAD</span>
+            <span className="sm:hidden">NOVO</span>
+          </button>
+        </div>
       </div>
 
       <NewLeadModal
@@ -465,9 +500,9 @@ const KanbanBoard: React.FC = () => {
         }}
       />
 
-      <div className="flex-1 overflow-x-auto pb-4">
+      <div className="flex-1 overflow-x-auto pb-4 -mx-4 px-4">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex gap-4 h-full min-w-max">
+          <div className="flex gap-3 sm:gap-4 h-full pb-2">
             {PIPELINE_STAGES.map((stage) => {
               const stageLeads = getLeadsByStage(stage.id);
               return (
@@ -476,7 +511,7 @@ const KanbanBoard: React.FC = () => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`w-80 flex-shrink-0 flex flex-col rounded-2xl ${snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'} border border-slate-100 max-h-full`}
+                      className={`w-72 sm:w-80 flex-shrink-0 flex flex-col rounded-2xl ${snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'} border border-slate-100 max-h-full`}
                     >
                       {/* Header */}
                       <div className="p-4 border-b border-slate-100 bg-white/50 backdrop-blur rounded-t-2xl sticky top-0 z-10">
@@ -501,21 +536,21 @@ const KanbanBoard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Cards */}
-                      <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                        {stageLeads.map((lead, index) => (
-                          <Draggable draggableId={lead.id} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                onClick={() => {
-                                  setSelectedLead(lead);
-                                  setIsDetailsOpen(true);
-                                }}
-                                className={`bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group cursor-pointer ${snapshot.isDragging ? 'rotate-2 shadow-xl ring-2 ring-indigo-500/20' : ''}`}
-                              >
+                       {/* Cards */}
+                       <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3">
+                         {stageLeads.map((lead, index) => (
+                           <Draggable draggableId={lead.id} index={index}>
+                             {(provided, snapshot) => (
+                               <div
+                                 ref={provided.innerRef}
+                                 {...provided.draggableProps}
+                                 {...provided.dragHandleProps}
+                                 onClick={() => {
+                                   setSelectedLead(lead);
+                                   setIsDetailsOpen(true);
+                                 }}
+                                 className={`bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group cursor-pointer ${snapshot.isDragging ? 'rotate-2 shadow-xl ring-2 ring-indigo-500/20' : ''}`}
+                               >
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase shrink-0">

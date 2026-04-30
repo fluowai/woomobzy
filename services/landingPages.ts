@@ -252,7 +252,7 @@ export const landingPageService = {
       const filters = config.filters;
 
       if (filters.type && filters.type.length > 0) {
-        query = query.in('type', filters.type);
+        query = query.in('property_type', filters.type);
       }
       if (filters.purpose && filters.purpose.length > 0) {
         query = query.in('purpose', filters.purpose);

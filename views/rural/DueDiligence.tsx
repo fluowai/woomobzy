@@ -186,15 +186,42 @@ const DueDiligence: React.FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const loadProps = useCallback(async () => {
-    if (!profile?.organization_id) return;
+    if (!profile?.organization_id) {
+      console.warn('DueDiligence: organization_id não encontrado no perfil');
+      return;
+    }
 
-    const { data } = await supabase
-      .from('properties')
-      .select('id, title, features')
-      .eq('organization_id', profile.organization_id)
-      .in('property_type', ['Fazenda', 'Sítio', 'Chácara', 'Área Produtiva', 'Gleba'])
-      .order('title');
-    setProperties(data || []);
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('organization_id', profile.organization_id)
+        .in('property_type', [
+          'Fazenda',
+          'Sítio',
+          'Chácara',
+          'Área Produtiva',
+          'Gleba',
+          'Rural',
+          'Estância',
+          'Haras',
+          'Granja',
+          'Agropecuária',
+          'Terreno Rural',
+          'Lote Rural',
+        ])
+        .order('title');
+
+      if (error) {
+        console.error('Erro ao carregar propriedades rural:', error);
+        return;
+      }
+
+      console.log(`DueDiligence: ${data?.length || 0} propriedades carregadas`);
+      setProperties(data || []);
+    } catch (err) {
+      console.error('Erro inesperado ao carregar propriedades:', err);
+    }
   }, [profile?.organization_id]);
 
   useEffect(() => {

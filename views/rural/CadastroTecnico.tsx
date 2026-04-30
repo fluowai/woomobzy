@@ -45,7 +45,20 @@ const CadastroTecnico: React.FC = () => {
           'id, title, area_total_ha, location_city, location_state, status'
         )
         .eq('organization_id', profile?.organization_id)
-        .in('property_type', ['Rural', 'Fazenda'])
+        .in('property_type', [
+          'Fazenda',
+          'Sítio',
+          'Chácara',
+          'Área Produtiva',
+          'Gleba',
+          'Rural',
+          'Estância',
+          'Haras',
+          'Granja',
+          'Agropecuária',
+          'Terreno Rural',
+          'Lote Rural',
+        ])
         .order('created_at', { ascending: false });
       setProperties(data || []);
     };

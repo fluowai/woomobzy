@@ -57,23 +57,23 @@ const PropertyManagement: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este imóvel?')) {
-      try {
-        await propertyService.delete(id);
-        setProperties((prev) => prev.filter((p) => p.id !== id));
-      } catch (error) {
-        alert('Erro ao excluir imóvel');
-      }
+    if (!confirm('Tem certeza que deseja excluir este imóvel?')) return;
+    try {
+      await propertyService.delete(id);
+      setProperties((prev) => prev.filter((p) => p.id !== id));
+      toast.success('Imóvel excluído com sucesso');
+    } catch (error: any) {
+      toast.error('Erro ao excluir imóvel: ' + error.message);
     }
   };
 
   const handleApprove = async (id: string) => {
     try {
       await propertyService.update(id, { status: 'Disponível' as any });
-      alert('Imóvel aprovado com sucesso!');
+      toast.success('Imóvel aprovado com sucesso!');
       loadProperties();
-    } catch (error) {
-      alert('Erro ao aprovar imóvel');
+    } catch (error: any) {
+      toast.error('Erro ao aprovar imóvel: ' + error.message);
     }
   };
 
@@ -91,35 +91,36 @@ const PropertyManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="h1 mb-2">Gerenciamento de Imóveis</h1>
-          <p className="body text-text-secondary">
-            Gerencie todos os seus anúncios públicos e privados com facilidade.
+          <h1 className="text-2xl lg:text-3xl font-bold mb-1">Gerenciamento de Imóveis</h1>
+          <p className="text-sm text-slate-500">
+            Gerencie todos os seus anúncios públicos e privados.
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex bg-bg-card border border-border-subtle rounded-xl p-1 shadow-inner">
+        <div className="flex items-center gap-3">
+          <div className="flex bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
             <button
               onClick={() => setViewType('grid')}
-              className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
+              className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              <Grid size={20} />
+              <Grid size={18} />
             </button>
             <button
               onClick={() => setViewType('list')}
-              className={`p-2 rounded-lg transition-all ${viewType === 'list' ? 'bg-primary text-white shadow-lg' : 'text-text-tertiary hover:text-text-primary'}`}
+              className={`p-2 rounded-lg transition-all ${viewType === 'list' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              <List size={20} />
+              <List size={18} />
             </button>
           </div>
           <button
             onClick={() => navigate('new')}
-            className="btn btn-primary h-12 px-6 shadow-lg shadow-primary-alpha-20"
+            className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20"
           >
-            <Plus size={20} />
-            Cadastrar Imóvel
+            <Plus size={18} />
+            <span className="hidden sm:inline">Cadastrar Imóvel</span>
+            <span className="sm:hidden">Novo</span>
           </button>
         </div>
       </div>
@@ -172,22 +173,22 @@ const PropertyManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredProperties.length === 0 ? (
-        <div className="text-center py-24 card border-dashed border-border-subtle bg-transparent">
-          <h3 className="h3 text-text-tertiary mb-2">
+       {filteredProperties.length === 0 ? (
+        <div className="text-center py-16 sm:py-24 border-2 border-dashed border-slate-200 rounded-2xl">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-400 mb-2">
             Nenhum imóvel encontrado
           </h3>
-          <p className="body text-text-tertiary max-w-md mx-auto">
+          <p className="text-sm text-slate-400 max-w-md mx-auto px-4">
             {activeTab === 'pending'
-              ? 'Não há solicitações pendentes no momento. Continue o bom trabalho!'
-              : 'Comece sua jornada cadastrando seu primeiro imóvel no sistema imobzy.'}
+              ? 'Não há solicitações pendentes no momento.'
+              : 'Comece cadastrando seu primeiro imóvel.'}
           </p>
         </div>
       ) : (
         <>
           {/* Grid View */}
           {viewType === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {filteredProperties.map((property) => (
                 <div
                   key={property.id}
@@ -290,23 +291,23 @@ const PropertyManagement: React.FC = () => {
             </div>
           ) : (
             /* List View (Simplified) */
-            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm overflow-x-auto">
-              <table className="w-full text-left">
+            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto">
+              <table className="w-full text-left min-w-[640px]">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Imóvel
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Localização
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Valor
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
@@ -317,38 +318,38 @@ const PropertyManagement: React.FC = () => {
                       key={property.id}
                       className="hover:bg-slate-50/50 transition-colors"
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
                         <div className="flex items-center gap-3">
                           <img
                             src={
                               property.images?.[0] ||
                               'https://via.placeholder.com/400x300?text=Sem+Foto'
                             }
-                            className="w-12 h-12 rounded-lg object-cover"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover shrink-0"
                           />
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-900 truncate">
                               {property.title}
                             </p>
-                            <p className="text-xs text-black/40">
+                            <p className="text-xs text-slate-400">
                               ID: {property.id?.slice(0, 8)}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-slate-500 whitespace-nowrap">
                         {property.location.neighborhood},{' '}
                         {property.location.city}
                       </td>
-                      <td className="px-6 py-4 text-sm font-bold text-slate-900">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-bold text-slate-900 whitespace-nowrap">
                         {property.price.toLocaleString('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
                         })}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
                         <span
-                          className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase whitespace-nowrap ${
                             property.status === 'Disponível'
                               ? 'bg-emerald-100 text-emerald-700'
                               : property.status === 'Pendente'
@@ -359,19 +360,21 @@ const PropertyManagement: React.FC = () => {
                           {property.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <div className="flex items-center gap-1 sm:gap-2">
                           <button
                             onClick={() =>
                               navigate(`${property.id}`)
                             }
-                            className="p-1.5 text-black/40 hover:text-indigo-600 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"
+                            title="Editar"
                           >
                             <Edit3 size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(property.id!)}
-                            className="p-1.5 text-black/40 hover:text-red-500 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                            title="Excluir"
                           >
                             <Trash2 size={16} />
                           </button>

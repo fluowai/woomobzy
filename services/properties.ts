@@ -22,18 +22,20 @@ export const propertyService = {
 
   // Criar Imóvel
   async create(property: Partial<Property>) {
+    const payload = mapToDatabase(property);
     const data = await callApi('/api/properties', {
       method: 'POST',
-      body: JSON.stringify(property),
+      body: JSON.stringify(payload),
     });
     return mapToModel(data.property);
   },
 
   // Atualizar Imóvel
   async update(id: string, property: Partial<Property>) {
+    const payload = mapToDatabase(property);
     const data = await callApi(`/api/properties/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(property),
+      body: JSON.stringify(payload),
     });
     return mapToModel(data.property);
   },

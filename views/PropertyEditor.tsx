@@ -198,8 +198,8 @@ const PropertyEditor: React.FC = () => {
     loadProperty();
   }, [id, isNew, navigate]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
     if (!formData.title?.trim()) {
       alert('Por favor, informe o título do imóvel.');
@@ -207,23 +207,31 @@ const PropertyEditor: React.FC = () => {
     }
 
     setLoading(true);
+    console.log('💾 Iniciando salvamento do imóvel...', { isNew, id });
 
     try {
       const payload = {
         ...formData,
         organization_id: profile?.organization_id,
       };
+
+      console.log('📦 Payload de salvamento:', payload);
+
       if (isNew) {
-        await propertyService.create(payload);
+        const result = await propertyService.create(payload);
+        console.log('✅ Imóvel criado com sucesso:', result);
         alert('Imóvel criado com sucesso!');
       } else if (id) {
-        await propertyService.update(id, payload);
+        const result = await propertyService.update(id, payload);
+        console.log('✅ Imóvel atualizado com sucesso:', result);
         alert('Imóvel atualizado com sucesso!');
       }
       navigate(`/${niche}/properties`);
-    } catch (error) {
-      console.error('Erro ao salvar', error);
-      alert('Erro ao salvar imóvel. Tente novamente.');
+    } catch (error: any) {
+      console.error('❌ Erro detalhado ao salvar:', error);
+      alert(
+        `Erro ao salvar imóvel: ${error.message || 'Erro desconhecido'}. Verifique o console para mais detalhes.`
+      );
     } finally {
       setLoading(false);
     }

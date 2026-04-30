@@ -64,6 +64,31 @@ router.post('/', verifyAdmin, requireTenant, async (req, res) => {
 });
 
 /**
+ * PUT /api/properties/:id
+ */
+router.put('/:id', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const propertyData = req.body;
+
+    const { data, error } = await supabase
+      .from('properties')
+      .update(propertyData)
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Imóvel não encontrado' });
+
+    res.json({ success: true, property: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/properties/:id
  */
 router.get('/:id', verifyAuth, requireTenant, async (req, res) => {

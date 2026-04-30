@@ -372,6 +372,8 @@ const KanbanBoard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const { profile } = useAuth();
   const isImpersonating = !!localStorage.getItem('impersonatedOrgId');
@@ -429,10 +431,34 @@ const KanbanBoard: React.FC = () => {
     try {
       await leadService.delete(id);
       setLeads(prev => prev.filter(l => l.id !== id));
+      setSelectedLeadIds(prev => prev.filter(item => item !== id));
       toast.success('Lead excluído com sucesso');
     } catch (error: any) {
       toast.error('Erro ao excluir lead: ' + error.message);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedLeadIds.length) return;
+    if (!confirm(`Deseja realmente excluir ${selectedLeadIds.length} leads selecionados? Esta ação não pode ser desfeita.`)) return;
+
+    setIsBulkDeleting(true);
+    try {
+      await leadService.bulkDelete(selectedLeadIds);
+      setLeads(prev => prev.filter(l => !selectedLeadIds.includes(l.id)));
+      setSelectedLeadIds([]);
+      toast.success(`${selectedLeadIds.length} leads excluídos com sucesso`);
+    } catch (error: any) {
+      toast.error('Erro ao excluir leads em massa: ' + error.message);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const toggleLeadSelection = (id: string) => {
+    setSelectedLeadIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
   };
 
   const getLeadsByStage = (stageId: string) => {
@@ -549,8 +575,19 @@ const KanbanBoard: React.FC = () => {
                                    setSelectedLead(lead);
                                    setIsDetailsOpen(true);
                                  }}
-                                 className={`bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group cursor-pointer ${snapshot.isDragging ? 'rotate-2 shadow-xl ring-2 ring-indigo-500/20' : ''}`}
+                                 className={`bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group cursor-pointer relative ${snapshot.isDragging ? 'rotate-2 shadow-xl ring-2 ring-indigo-500/20' : ''} ${selectedLeadIds.includes(lead.id) ? 'ring-2 ring-indigo-500 bg-indigo-50/30' : ''}`}
                                >
+                                 <div 
+                                   className="absolute top-2 right-2 z-20"
+                                   onClick={(e) => e.stopPropagation()}
+                                 >
+                                   <input
+                                     type="checkbox"
+                                     checked={selectedLeadIds.includes(lead.id)}
+                                     onChange={() => toggleLeadSelection(lead.id)}
+                                     className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                                   />
+                                 </div>
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase shrink-0">
@@ -667,6 +704,37 @@ const KanbanBoard: React.FC = () => {
           </div>
         </DragDropContext>
       </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedLeadIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-8 duration-300 border border-white/10">
+          <div className="flex items-center gap-3 pr-6 border-r border-white/10">
+            <span className="bg-indigo-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-black">
+              {selectedLeadIds.length}
+            </span>
+            <span className="text-sm font-bold uppercase tracking-widest text-slate-300">
+              Leads Selecionados
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSelectedLeadIds([])}
+              className="text-xs font-bold uppercase tracking-widest hover:text-indigo-400 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-red-500/20 disabled:opacity-50"
+            >
+              <Trash2 size={14} />
+              {isBulkDeleting ? 'Excluindo...' : 'Excluir em Massa'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

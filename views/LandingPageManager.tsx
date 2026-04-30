@@ -487,6 +487,7 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
 
       const newPage = await landingPageService.create({
         userId: user.id,
+        organizationId: profile?.organization_id,
         name: template.name,
         slug: template.id + '-' + Date.now(),
         title: template.name,
@@ -517,8 +518,10 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
         status: LandingPageStatus.DRAFT,
       });
 
-      // Redirecionar para o editor
-      window.location.href = `/admin/landing-pages/${newPage.id}`;
+      // Redirecionar para o editor (detectando prefixo atual)
+      const currentPath = window.location.pathname;
+      const prefix = currentPath.startsWith('/urban') ? '/urban' : '/rural';
+      window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error) {
       console.error('Error creating from template:', error);
       alert('Erro ao criar landing page');
@@ -542,6 +545,7 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
 
       const newPage = await landingPageService.create({
         userId: user.id,
+        organizationId: profile?.organization_id,
         name,
         slug,
         title: name,

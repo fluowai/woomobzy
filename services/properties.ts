@@ -76,7 +76,7 @@ const mapToModel = (dbItem: any): Property => ({
   },
   features: {
     ...dbItem.features,
-    areaHectares: dbItem.area_total_ha || dbItem.features?.areaHectares || 0,
+    areaHectares: dbItem.total_area_ha || dbItem.features?.areaHectares || 0,
     // Garantir estrutura mínima para evitar erros de undefined
     infra: dbItem.features?.infra || {
       casaSede: false,
@@ -184,10 +184,8 @@ const mapToDatabase = (
     highlighted: model.highlighted,
     owner_info: model.ownerInfo,
     analysis: model.analysis,
-    // Novas colunas especializadas para filtros
-    area_total_ha: model.features?.areaHectares,
-    topography: model.features?.topography,
-    soil_texture: model.features?.soilTexture,
+    // Colunas especializadas para filtros (devem existir no banco)
+    total_area_ha: model.features?.areaHectares,
   };
 
   // Cálculo de densidade de valor se o preço e a área existirem

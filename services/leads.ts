@@ -62,6 +62,15 @@ export const leadService = {
     });
     return data;
   },
+  
+  // Bulk delete leads
+  async bulkDelete(ids: string[]) {
+    const data = await callApi('/api/crm/leads/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+    return data;
+  },
 };
 
 const mapToModel = (dbItem: any): Lead => ({

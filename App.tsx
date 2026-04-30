@@ -56,6 +56,7 @@ const Geointeligencia = lazy(() => import('./views/rural/Geointeligencia'));
 const DueDiligence = lazy(() => import('./views/rural/DueDiligence'));
 const PortalProprietarioRural = lazy(() => import('./views/rural/PortalProprietarioRural'));
 const PortalCompradorRural = lazy(() => import('./views/rural/PortalCompradorRural'));
+const FinanceiroRural = lazy(() => import('./views/rural/FinanceiroRural'));
 
 // Urban-Specific
 const Empreendimentos = lazy(() => import('./views/urban/Empreendimentos'));
@@ -312,7 +313,7 @@ const AppContent: React.FC = () => {
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="contracts" element={<LegalContracts />} />
-            <Route path="financial" element={<Cobranca />} />
+            <Route path="financial" element={<FinanceiroRural />} />
             <Route path="financeiro-advanced" element={<Locacao />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="settings" element={<SystemSettings />} />

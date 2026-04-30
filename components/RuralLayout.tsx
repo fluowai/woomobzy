@@ -21,6 +21,7 @@ import {
   Briefcase,
   Search,
   Plus,
+  Target,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -48,7 +49,7 @@ const RuralLayout: React.FC = () => {
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Mapas & Georreferenciamento', path: '/rural/maps' },
     { icon: FileCheck, label: 'Documentação Rural', path: '/rural/due-diligence' },
-    { icon: DollarSign, label: 'Financeiro', path: '/rural/financial' },
+    { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
     { icon: Globe, label: 'Site & Landing Pages', path: '/rural/landing-pages' },
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
     { icon: MessageSquare, label: 'Atendimento', path: '/rural/whatsapp' },

@@ -332,7 +332,7 @@ const PropertyManagement: React.FC = () => {
                               {property.title}
                             </p>
                             <p className="text-xs text-slate-400">
-                              ID: {property.id?.slice(0, 8)}
+                              ID: {property.id?.slice(0, 8)} • {property.features?.areaHectares || 0} ha
                             </p>
                           </div>
                         </div>

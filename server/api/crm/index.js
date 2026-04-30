@@ -143,4 +143,30 @@ router.delete('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/crm/leads/bulk-delete
+ * Exclui múltiplos leads da organização.
+ */
+router.post('/leads/bulk-delete', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'Lista de IDs inválida' });
+    }
+
+    // Excluir apenas os que pertencem à organização (filtro automático via eq)
+    const { error } = await supabase
+      .from('leads')
+      .delete()
+      .in('id', ids)
+      .eq('organization_id', req.orgId);
+
+    if (error) throw error;
+    res.json({ success: true, message: `${ids.length} leads excluídos com sucesso` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -118,7 +118,7 @@ const BIRural: React.FC = () => {
 
     const totalValue = properties.reduce((acc, p) => acc + (p.price || 0), 0);
     const totalArea = properties.reduce(
-      (acc, p) => acc + (p.area_total_ha || 0),
+      (acc, p) => acc + (p.total_area_ha || 0),
       0
     );
     const avgHectarePrice = totalArea > 0 ? totalValue / totalArea : 0;

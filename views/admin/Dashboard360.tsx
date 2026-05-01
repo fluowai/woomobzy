@@ -13,6 +13,9 @@ import {
   Smartphone,
   CheckCircle2,
   AlertCircle,
+  Zap,
+  Sparkles,
+  Target,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -49,40 +52,43 @@ const Dashboard360: React.FC = () => {
     <div className="min-h-full space-y-8 animate-in fade-in duration-700">
       <WelcomeTour />
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-bg-card p-8 rounded-2xl border border-subtle">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="badge badge-primary">
-              Sistema Operacional 360
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-black p-10 rounded-[3rem] border border-white/5 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand/10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="px-3 py-1 bg-brand/10 text-brand text-[10px] font-black uppercase tracking-widest rounded-full border border-brand/20">
+              Motor Operacional 360 v2.0
+            </span>
+            <span className="flex items-center gap-2 px-3 py-1 bg-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest rounded-full border border-white/5">
+              <div className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+              Sincronizado
             </span>
           </div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">
-            Bem-vindo à sua{' '}
-            <span className="text-brand">Máquina 360</span>,{' '}
-            {profile?.name?.split(' ')[0]}
+          <h1 className="text-4xl font-black text-white italic tracking-tighter leading-tight">
+            Sua <span className="text-brand">Máquina de Vendas</span> <br />
+            está em alta performance.
           </h1>
-          <p className="text-secondary font-medium mt-2">
-            Toda a sua operação imobiliária consolidada em um único painel de
-            comando.
+          <p className="text-white/40 font-medium italic mt-4 max-w-xl">
+            Bem-vindo de volta, {profile?.name?.split(' ')[0]}. Identificamos 12 novas oportunidades de match para sua carteira rural hoje.
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-[10px] font-bold text-tertiary uppercase tracking-widest mb-1">
-              Status da Operação
-            </p>
-            <div className="flex items-center gap-2 justify-end">
-              <div className="w-2 h-2 rounded-full bg-brand animate-pulse" />
-              <span className="text-sm font-bold text-text-primary">
-                100% Online
-              </span>
+        <div className="relative z-10 flex items-center gap-4">
+          <Link to="/admin/matchmaking" className="p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-brand/10 hover:border-brand/20 transition-all group">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-brand/10 text-brand rounded-xl">
+                <Target size={24} />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Inteligência Match</p>
+                <p className="text-lg font-black text-white">Ver Oportunidades →</p>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
 
       {/* Grid Principal - Big Numbers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <StatCard
           icon={Users}
           label="Total de Leads"
@@ -91,24 +97,24 @@ const Dashboard360: React.FC = () => {
           variant="primary"
         />
         <StatCard
-          icon={TrendingUp}
-          label="Taxa de Conversão"
-          value="4.2%"
-          change="+0.8%"
+          icon={Sparkles}
+          label="Matches Sugeridos"
+          value="12"
+          change="IA Ativa"
           variant="primary"
         />
         <StatCard
           icon={FileCheck}
-          label="Contratos Pendentes"
-          value={stats.activeContracts}
-          change="-2"
+          label="VGV Negociado"
+          value="R$ 1.8M"
+          change="+12%"
           variant="accent"
         />
         <StatCard
           icon={DollarSign}
-          label="VGV Provisionado"
-          value="R$ 1.2M"
-          change="+R$ 250k"
+          label="Comissão Prevista"
+          value="R$ 108k"
+          change="+R$ 15k"
           variant="support"
         />
       </div>

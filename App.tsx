@@ -53,11 +53,13 @@ const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
 // Rural-Specific
 const CadastroTecnico = lazy(() => import('./views/rural/CadastroTecnico'));
 const Geointeligencia = lazy(() => import('./views/rural/Geointeligencia'));
+const DossieInteligente = lazy(() => import('./views/rural/DossieInteligente'));
 const DueDiligence = lazy(() => import('./views/rural/DueDiligence'));
 const PortalProprietarioRural = lazy(() => import('./views/rural/PortalProprietarioRural'));
 const PortalCompradorRural = lazy(() => import('./views/rural/PortalCompradorRural'));
 const FinanceiroRural = lazy(() => import('./views/rural/FinanceiroRural'));
 const ConexoesRural = lazy(() => import('./views/rural/ConexoesRural'));
+const Matchmaking360 = lazy(() => import('./views/admin/Matchmaking360'));
 
 // Urban-Specific
 const Empreendimentos = lazy(() => import('./views/urban/Empreendimentos'));
@@ -299,8 +301,10 @@ const AppContent: React.FC = () => {
             <Route path="properties/:id" element={<PropertyEditor />} />
             <Route path="maps" element={<Geointeligencia />} />
             <Route path="due-diligence" element={<DueDiligence />} />
+            <Route path="dossie" element={<DossieInteligente />} />
             <Route path="dataroom" element={<DataRoom />} />
             <Route path="crm" element={<KanbanBoard />} />
+            <Route path="matchmaking" element={<Matchmaking360 />} />
             <Route path="reports" element={<BIRural />} />
             <Route
               path="portal-proprietario"

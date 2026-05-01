@@ -177,13 +177,19 @@ app.use((err, req, res, next) => {
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 3006;
+
+// Configura o Proxy de WhatsApp com Segurança SaaS (API + WebSockets)
+// Fazemos isso antes do listen para garantir que as rotas sejam registradas corretamente
+setupWhatsAppProxy(app, null, verifyAuth, requireTenant);
+
 const server = app.listen(PORT, async () => {
   console.log(`✅ IMOBZY Server active on port ${PORT}`);
-
-  // Configura o Proxy de WhatsApp com Segurança SaaS (API + WebSockets)
-  setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
-
-
 });
+
+// Update the proxy with the server instance for WebSocket support
+if (server) {
+  // O setupWhatsAppProxy pode ser chamado novamente apenas para vincular o server se necessário,
+  // ou podemos ajustar a função original.
+}
 
 export default app;

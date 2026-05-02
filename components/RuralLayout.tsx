@@ -22,6 +22,8 @@ import {
   Search,
   Plus,
   Target,
+  FileSearch,
+  Zap,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';

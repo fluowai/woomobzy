@@ -4,7 +4,7 @@ const IS_VERCEL = window.location.hostname.includes('vercel.app');
 const RAILWAY_URL = 'web-production-7c3f0.up.railway.app';
 
 const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || 
-  (IS_VERCEL ? `wss://${RAILWAY_URL}/api/whatsapp/ws` : `wss://${window.location.host}/api/whatsapp/ws`);
+  (IS_VERCEL ? `wss://${RAILWAY_URL}/ws` : `wss://${window.location.host}/api/whatsapp/ws`);
 
 interface WSEvent {
   event: string;

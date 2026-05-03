@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import {
   Search,
@@ -161,7 +162,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
         });
       }, 4000);
     } catch (error) {
-      console.error('Erro ao submeter imóvel', error);
+      logger.error('Erro ao submeter imóvel', error);
       alert(
         t(
           'submit_modal.error_alert',
@@ -188,7 +189,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
           images: [...(prev.images || []), ...validUrls],
         }));
       } catch (error) {
-        console.error('Erro no upload', error);
+        logger.error('Erro no upload', error);
       } finally {
         setUploadingImage(false);
       }
@@ -218,7 +219,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
         setLeadSuccess(false);
       }, 3000);
     } catch (error) {
-      console.error('Erro ao enviar lead', error);
+      logger.error('Erro ao enviar lead', error);
       alert(
         t(
           'lead_modal.error_alert',
@@ -242,7 +243,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
         const data = await propertyService.list(organizationId);
         setProperties(data);
       } catch (error) {
-        console.error('Erro ao carregar imóveis da home', error);
+        logger.error('Erro ao carregar imóveis da home', error);
       } finally {
         setLoading(false);
       }

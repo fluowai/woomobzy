@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   ShieldCheck,
@@ -187,7 +188,7 @@ const DueDiligence: React.FC = () => {
 
   const loadProps = useCallback(async () => {
     if (!profile?.organization_id) {
-      console.warn('DueDiligence: organization_id não encontrado no perfil');
+      logger.warn('DueDiligence: organization_id não encontrado no perfil');
       return;
     }
 
@@ -213,14 +214,14 @@ const DueDiligence: React.FC = () => {
         .order('title');
 
       if (error) {
-        console.error('Erro ao carregar propriedades rural:', error);
+        logger.error('Erro ao carregar propriedades rural:', error);
         return;
       }
 
-      console.log(`DueDiligence: ${data?.length || 0} propriedades carregadas`);
+      logger.info(`DueDiligence: ${data?.length || 0} propriedades carregadas`);
       setProperties(data || []);
     } catch (err) {
-      console.error('Erro inesperado ao carregar propriedades:', err);
+      logger.error('Erro inesperado ao carregar propriedades:', err);
     }
   }, [profile?.organization_id]);
 

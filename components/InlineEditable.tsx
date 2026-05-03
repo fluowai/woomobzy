@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useRef, useEffect } from 'react';
 import { useTexts } from '../context/TextsContext';
 import { Edit2, Check, X, Loader2 } from 'lucide-react';
@@ -69,7 +70,7 @@ const InlineEditable: React.FC<InlineEditableProps> = ({
       setIsEditing(false);
       setActiveKey(null);
     } catch (error) {
-      console.error('Failed to update text:', error);
+      logger.error('Failed to update text:', error);
       alert('Erro ao salvar texto');
     } finally {
       setIsSaving(false);

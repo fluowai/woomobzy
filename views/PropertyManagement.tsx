@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -41,7 +42,7 @@ const PropertyManagement: React.FC = () => {
     try {
       setLoading(true);
       if (!profile?.organization_id) {
-        console.warn(
+        logger.warn(
           '❌ Cannot load properties: No organization ID in profile'
         );
         return;
@@ -49,7 +50,7 @@ const PropertyManagement: React.FC = () => {
       const data = await propertyService.list();
       setProperties(data);
     } catch (error: any) {
-      console.error('Erro ao carregar imóveis:', error);
+      logger.error('Erro ao carregar imóveis:', error);
       toast.error('Erro ao carregar imóveis: ' + error.message);
     } finally {
       setLoading(false);

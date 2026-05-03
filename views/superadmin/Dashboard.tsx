@@ -1,9 +1,10 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { Users, Building2, Server, DollarSign, Activity } from 'lucide-react';
 
 const SuperAdminDashboard: React.FC = () => {
-  console.log('📊 [SuperAdminDashboard] Rendering...');
+  logger.info('📊 [SuperAdminDashboard] Rendering...');
   const [stats, setStats] = useState({
     totalTenants: 0,
     activeTenants: 0,
@@ -41,7 +42,7 @@ const SuperAdminDashboard: React.FC = () => {
       });
       setIsFresh((total || 0) === 0);
     } catch (error) {
-      console.error('Error fetching admin stats:', error);
+      logger.error('Error fetching admin stats:', error);
     } finally {
       setLoading(false);
     }

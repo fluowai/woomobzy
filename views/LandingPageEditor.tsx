@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
@@ -83,7 +84,7 @@ const LandingPageEditor: React.FC = () => {
         setPage(data);
       }
     } catch (error) {
-      console.error('Error loading page:', error);
+      logger.error('Error loading page:', error);
       alert('Erro ao carregar landing page');
       navigate('/landing-pages');
     } finally {
@@ -96,8 +97,8 @@ const LandingPageEditor: React.FC = () => {
 
     try {
       setSaving(true);
-      console.log('🔵 Salvando landing page...', page.id);
-      console.log('📝 Dados para salvar:', {
+      logger.info('🔵 Salvando landing page...', page.id);
+      logger.info('📝 Dados para salvar:', {
         name: page.name,
         title: page.title,
         blocksCount: page.blocks.length,
@@ -121,14 +122,14 @@ const LandingPageEditor: React.FC = () => {
         customHead: page.customHead,
       });
 
-      console.log('✅ Salvo com sucesso!');
+      logger.info('✅ Salvo com sucesso!');
       setLastSaved(new Date());
 
       if (!isAutoSave) {
         alert('Landing page salva com sucesso!');
       }
     } catch (error) {
-      console.error('❌ Erro ao salvar:', error);
+      logger.error('❌ Erro ao salvar:', error);
       if (!isAutoSave) {
         alert('Erro ao salvar landing page: ' + (error as Error).message);
       }
@@ -154,7 +155,7 @@ const LandingPageEditor: React.FC = () => {
       alert('Landing page publicada com sucesso!');
       await loadPage();
     } catch (error) {
-      console.error('Error publishing page:', error);
+      logger.error('Error publishing page:', error);
       alert('Erro ao publicar landing page');
     } finally {
       setSaving(false);

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useContext,
@@ -53,7 +54,7 @@ export const SettingsProvider: React.FC<{
         if (isMounted) setSettingsLoading(true);
 
         if (!activeOrgId) {
-          console.log(
+          logger.info(
             '📡 [SettingsContext] No organization ID available, using defaults.'
           );
           if (isMounted) {
@@ -62,7 +63,7 @@ export const SettingsProvider: React.FC<{
           return;
         }
 
-        console.log(
+        logger.info(
           `📡 [SettingsContext] Loading site settings for org: ${activeOrgId}...`
         );
 
@@ -74,9 +75,9 @@ export const SettingsProvider: React.FC<{
           .maybeSingle();
 
         if (error) {
-          console.warn('⚠️ [SettingsContext] Load Error:', error.message);
+          logger.warn('⚠️ [SettingsContext] Load Error:', error.message);
         } else if (data && isMounted) {
-          console.log(
+          logger.info(
             '✅ [SettingsContext] Settings loaded:',
             data.agency_name
           );
@@ -109,10 +110,10 @@ export const SettingsProvider: React.FC<{
           });
         }
       } catch (e) {
-        console.error('❌ [SettingsContext] Unexpected error:', e);
+        logger.error('❌ [SettingsContext] Unexpected error:', e);
       } finally {
         if (isMounted) {
-          console.log('🏁 [SettingsContext] finished loading cycle.');
+          logger.info('🏁 [SettingsContext] finished loading cycle.');
           setSettingsLoading(false);
         }
       }
@@ -205,7 +206,7 @@ export const SettingsProvider: React.FC<{
         setSettings((prev) => ({ ...prev, id: data.id }));
       }
     } catch (e: any) {
-      console.error('Erro ao salvar no Supabase:', e);
+      logger.error('Erro ao salvar no Supabase:', e);
       alert(`Erro ao salvar configurações: ${e.message || e}`);
     }
   };

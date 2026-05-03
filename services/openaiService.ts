@@ -1,9 +1,10 @@
+import { logger } from '@/utils/logger';
 import axios from 'axios';
 
 export const openaiService = {
   generateText: async (prompt: string, apiKey: string) => {
     if (!apiKey) {
-      console.warn('⚠️ OpenAI API Key não fornecida.');
+      logger.warn('⚠️ OpenAI API Key não fornecida.');
       return '{}';
     }
 
@@ -31,7 +32,7 @@ export const openaiService = {
 
       return response.data.choices[0].message.content || '{}';
     } catch (error: any) {
-      console.error(
+      logger.error(
         'Error generating text with OpenAI:',
         error.response?.data || error.message
       );

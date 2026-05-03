@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
@@ -58,7 +59,7 @@ const SetupWizard: React.FC = () => {
             secondaryColor: colors.secondary,
           }));
         } catch (colorError) {
-          console.warn(
+          logger.warn(
             'Não foi possível extrair cores automaticamente:',
             colorError
           );
@@ -96,7 +97,7 @@ const SetupWizard: React.FC = () => {
         navigate('/admin');
       }, 1500);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       alert('Erro ao salvar configurações inicial. Tente novamente.');
     } finally {
       setLoading(false);

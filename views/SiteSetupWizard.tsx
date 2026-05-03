@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { callApi } from '../src/lib/api';
@@ -102,7 +103,7 @@ const SiteSetupWizard: React.FC = () => {
       if (parsed.heroTitle) updateData('title', parsed.heroTitle);
       if (parsed.description) updateData('description', parsed.description);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
       alert('Erro ao gerar com IA, por favor digite manualmente.');
     } finally {
       setAiGenerating(false);
@@ -131,7 +132,7 @@ const SiteSetupWizard: React.FC = () => {
         updateData('primaryColor', colors.primaryColor);
         updateData('secondaryColor', colors.secondaryColor);
       } catch (err) {
-        console.error('Erro na extracao de cor', err);
+        logger.error('Erro na extracao de cor', err);
       } finally {
         setLogoUploading(false);
       }
@@ -250,9 +251,9 @@ const SiteSetupWizard: React.FC = () => {
               organizationId: profile.organization_id,
             }),
           });
-          console.log('✅ Imóveis importados salvos com sucesso.');
+          logger.info('✅ Imóveis importados salvos com sucesso.');
         } catch (e) {
-          console.error('❌ Erro ao salvar imóveis importados no banco.', e);
+          logger.error('❌ Erro ao salvar imóveis importados no banco.', e);
         }
       }
 
@@ -262,7 +263,7 @@ const SiteSetupWizard: React.FC = () => {
       const baseRoute = profile.role === 'rural_broker' ? 'rural' : 'urban';
       navigate(`/${baseRoute}/visual-editor`);
     } catch (error) {
-      console.error('Erro ao gerar site', error);
+      logger.error('Erro ao gerar site', error);
       alert(
         'Houve um pequeno problema ao finalizar a criação. Tente novamente.'
       );

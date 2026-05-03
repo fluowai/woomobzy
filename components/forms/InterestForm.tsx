@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, Loader2 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
@@ -27,7 +28,7 @@ const InterestForm: React.FC = () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // TODO: Integrar com serviço de Leads/CRM
-    console.log('Lead Capturado:', formData);
+    logger.info('Lead Capturado:', formData);
 
     setLoading(false);
     setSuccess(true);

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { X, MessageCircle, Loader2 } from 'lucide-react';
 import { leadService } from '../services/leads';
@@ -39,7 +40,7 @@ const LeadCaptureModal: React.FC<LeadCaptureModalProps> = ({
           status: 'Novo',
         });
       } catch (dbError) {
-        console.error('Failed to save lead to CRM:', dbError);
+        logger.error('Failed to save lead to CRM:', dbError);
         // Continue to redirect anyway
       }
 
@@ -54,7 +55,7 @@ const LeadCaptureModal: React.FC<LeadCaptureModalProps> = ({
           }),
         });
       } catch (apiError) {
-        console.error('Failed to trigger automation:', apiError);
+        logger.error('Failed to trigger automation:', apiError);
       }
 
       // 3. Redirect to WhatsApp (User Interface)
@@ -75,7 +76,7 @@ const LeadCaptureModal: React.FC<LeadCaptureModalProps> = ({
         onClose();
       }
     } catch (error) {
-      console.error('Unexpected error:', error);
+      logger.error('Unexpected error:', error);
       onClose();
     } finally {
       setLoading(false);

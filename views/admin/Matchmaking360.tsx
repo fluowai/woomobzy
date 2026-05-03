@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { 
   Zap, 
@@ -75,7 +76,7 @@ const Matchmaking360: React.FC = () => {
         setMatches(potentialMatches.sort((a, b) => b.score - a.score).slice(0, 10));
       }
     } catch (err) {
-      console.error('Error in matchmaking:', err);
+      logger.error('Error in matchmaking:', err);
     } finally {
       setLoading(false);
     }

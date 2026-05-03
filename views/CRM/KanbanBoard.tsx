@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import {
   DragDropContext,
@@ -394,7 +395,7 @@ const KanbanBoard: React.FC = () => {
       const data = await leadService.list();
       setLeads(data);
     } catch (error: any) {
-      console.error('Failed to load leads', error);
+      logger.error('Failed to load leads', error);
       toast.error('Erro ao carregar leads: ' + error.message);
     } finally {
       setLoading(false);
@@ -419,7 +420,7 @@ const KanbanBoard: React.FC = () => {
     try {
       await leadService.updateStatus(draggableId, destination.droppableId);
     } catch (error) {
-      console.error('Failed to update status', error);
+      logger.error('Failed to update status', error);
       // Revert on failure
       loadLeads();
     }

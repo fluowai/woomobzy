@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
@@ -76,9 +77,9 @@ const TrackingSettings: React.FC = () => {
 
       setTimeout(() => setSaveSuccess(false), 3000);
 
-      console.log('✅ Configurações de tracking salvas com sucesso');
+      logger.info('✅ Configurações de tracking salvas com sucesso');
     } catch (err: any) {
-      console.error('❌ Erro ao salvar configurações:', err);
+      logger.error('❌ Erro ao salvar configurações:', err);
       setError(err.message || 'Erro ao salvar configurações');
     } finally {
       setSaving(false);
@@ -86,7 +87,7 @@ const TrackingSettings: React.FC = () => {
   };
 
   const testPixel = (pixelType: string) => {
-    console.log(`🧪 Testando ${pixelType}...`);
+    logger.info(`🧪 Testando ${pixelType}...`);
 
     if (pixelType === 'facebook' && (window as any).fbq) {
       (window as any).fbq('track', 'PageView');

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   Database,
@@ -78,7 +79,7 @@ const Migration: React.FC = () => {
 
       addLog(`Servidor aceitou o comando: ${data.message}`);
     } catch (error: any) {
-      console.error('Fetch error:', error);
+      logger.error('Fetch error:', error);
       setStatus('error');
       addLog(
         `Falha de Conexão: ${error.message}. O servidor backend está rodando?`

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
@@ -41,7 +42,7 @@ const RuralLayout: React.FC = () => {
       await signOut();
       window.location.href = '/login';
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     }
   };
 

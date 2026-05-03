@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { Mail, Phone, User, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { leadService } from '../services/leads';
@@ -35,7 +36,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
       });
       setSuccess(true);
     } catch (err: any) {
-      console.error('Error saving lead:', err);
+      logger.error('Error saving lead:', err);
       setError('Ocorreu um erro ao salvar seus dados. Tente novamente.');
     } finally {
       setLoading(false);

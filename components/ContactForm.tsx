@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import {
   Mail,
@@ -75,7 +76,7 @@ const ContactForm: React.FC = () => {
           value: 0,
         });
 
-        console.log('✅ Lead criado com tracking data:', trackingData);
+        logger.info('✅ Lead criado com tracking data:', trackingData);
 
         // Reset success message after 5 seconds
         setTimeout(() => {
@@ -83,7 +84,7 @@ const ContactForm: React.FC = () => {
         }, 5000);
       }
     } catch (error: any) {
-      console.error('Error submitting contact form:', error);
+      logger.error('Error submitting contact form:', error);
       setSubmitError(
         error.response?.data?.error ||
           'Erro ao enviar mensagem. Por favor, tente novamente.'

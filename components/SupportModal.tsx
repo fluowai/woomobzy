@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -102,7 +103,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
       if (error) throw error;
       setTickets(data || []);
     } catch (err) {
-      console.error('Error fetching tickets:', err);
+      logger.error('Error fetching tickets:', err);
     } finally {
       setTicketsLoading(false);
     }

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { CreditCard, Plus, X, Save, Edit2, Trash2, Check } from 'lucide-react';
@@ -50,7 +51,7 @@ const PlanManager: React.FC = () => {
       .select('*')
       .order('price_monthly', { ascending: true });
 
-    if (error) console.error('Error fetching plans:', error);
+    if (error) logger.error('Error fetching plans:', error);
     else setPlans(data || []);
     setLoading(false);
   };
@@ -84,7 +85,7 @@ const PlanManager: React.FC = () => {
       fetchPlans();
       setIsModalOpen(false);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       alert('Erro ao salvar plano');
     } finally {
       setFormLoading(false);

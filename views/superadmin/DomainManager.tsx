@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   Globe,
@@ -69,7 +70,7 @@ const DomainManager: React.FC = () => {
 
       // Optional: verify all? might be slow. Let's verify on demand or showing "Check Status"
     } catch (e) {
-      console.error('Error fetching data:', e);
+      logger.error('Error fetching data:', e);
       alert('Erro ao carregar dados');
     } finally {
       setLoading(false);
@@ -105,7 +106,7 @@ const DomainManager: React.FC = () => {
       // Refresh List
       fetchData();
     } catch (e: any) {
-      console.error('Add Error:', e);
+      logger.error('Add Error:', e);
       alert(`Erro ao adicionar: ${e.message}`);
     } finally {
       setAdding(false);

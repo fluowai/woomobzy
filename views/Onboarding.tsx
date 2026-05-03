@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -147,17 +148,17 @@ const Onboarding: React.FC = () => {
   const checkSystem = async () => {
     try {
       const data = await callApi('/api/system-status');
-      console.log('✅ Backend connected. Fresh system:', data.fresh);
-      console.log('✅ Backend connected. Fresh system:', data.fresh);
+      logger.info('✅ Backend connected. Fresh system:', data.fresh);
+      logger.info('✅ Backend connected. Fresh system:', data.fresh);
       if (data.fresh) {
         setIsSystemSetup(true);
         setStep(3); // Go straight to account
       }
     } catch (e: any) {
       if (e.name === 'AbortError') {
-        console.warn('⚠️ Backend check timed out (server may not be running)');
+        logger.warn('⚠️ Backend check timed out (server may not be running)');
       } else {
-        console.warn('⚠️ Backend unavailable:', e.message);
+        logger.warn('⚠️ Backend unavailable:', e.message);
       }
     }
   };

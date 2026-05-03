@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { supabase } from './supabase';
 import { Property, Lead } from '../types';
 
@@ -85,7 +86,7 @@ export const matchingService = {
         .filter((r) => r.score > 0)
         .sort((a, b) => b.score - a.score);
     } catch (error) {
-      console.error('Error matching lead to properties:', error);
+      logger.error('Error matching lead to properties:', error);
       return [];
     }
   },

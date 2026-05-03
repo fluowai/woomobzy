@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -60,7 +61,7 @@ const PropertyListing: React.FC = () => {
       // const available = data.filter(p => p.status === 'Disponível'); // Se houver enum
       setProperties(data);
     } catch (error) {
-      console.error('Erro ao carregar imóveis', error);
+      logger.error('Erro ao carregar imóveis', error);
     } finally {
       setLoading(false);
     }

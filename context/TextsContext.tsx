@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useContext,
@@ -90,7 +91,7 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
           })
           .catch((e) => {
             // Silently ignore background refresh errors (e.g. JWT expired)
-            console.warn(
+            logger.warn(
               '⚠️ [TextsContext] Background refresh failed:',
               e?.message || e
             );
@@ -112,14 +113,14 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
 
       if (isAuthError) {
         // JWT expired — fall back to stale cache if available, don't show error
-        console.warn('⚠️ [TextsContext] JWT expired, using cached texts');
+        logger.warn('⚠️ [TextsContext] JWT expired, using cached texts');
         const staleCache = localStorage.getItem('site_texts');
         if (staleCache) {
           setTexts(JSON.parse(staleCache));
         }
         // Don't set error — this is a transient auth issue
       } else {
-        console.error('Error loading texts:', err);
+        logger.error('Error loading texts:', err);
         setError('Erro ao carregar textos do site');
       }
     } finally {
@@ -150,7 +151,7 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
       localStorage.setItem('site_texts', JSON.stringify(updatedTexts));
       localStorage.setItem('site_texts_cache_time', Date.now().toString());
     } catch (err) {
-      console.error('Error updating text:', err);
+      logger.error('Error updating text:', err);
       throw err;
     }
   };
@@ -161,7 +162,7 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
       const { results, errors } = await textsService.bulkUpdateTexts(updates);
 
       if (errors.length > 0) {
-        console.warn('Some texts failed to update:', errors);
+        logger.warn('Some texts failed to update:', errors);
       }
 
       // Atualizar estado local
@@ -176,7 +177,7 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
       localStorage.setItem('site_texts', JSON.stringify(updatedTexts));
       localStorage.setItem('site_texts_cache_time', Date.now().toString());
     } catch (err) {
-      console.error('Error in bulk update:', err);
+      logger.error('Error in bulk update:', err);
       throw err;
     }
   };
@@ -194,7 +195,7 @@ export const TextsProvider: React.FC<TextsProviderProps> = ({ children }) => {
       localStorage.setItem('site_texts', JSON.stringify(updatedTexts));
       localStorage.setItem('site_texts_cache_time', Date.now().toString());
     } catch (err) {
-      console.error('Error resetting text:', err);
+      logger.error('Error resetting text:', err);
       throw err;
     }
   };

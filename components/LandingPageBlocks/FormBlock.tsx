@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { FormBlockConfig, LandingPageTheme } from '../../types/landingPage';
 import { Send, CheckCircle } from 'lucide-react';
@@ -64,10 +65,10 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
           value: 0,
         });
 
-        console.log('✅ Lead criado via landing page com tracking data');
+        logger.info('✅ Lead criado via landing page com tracking data');
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
+      logger.error('Error submitting form:', error);
     } finally {
       setSubmitting(false);
     }

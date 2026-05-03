@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { X, Sparkles, Loader, Info } from 'lucide-react';
 import axios from 'axios';
@@ -35,7 +36,7 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({ onGenerate, onClo
         throw new Error('Falha ao gerar layout');
       }
     } catch (err: any) {
-      console.error('Erro ao gerar com IA:', err);
+      logger.error('Erro ao gerar com IA:', err);
       setError(err.response?.data?.error || 'Erro ao conectar com Namo Bana. Verifique sua chave nas configurações.');
     } finally {
       setLoading(false);

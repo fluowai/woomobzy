@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
@@ -81,7 +82,7 @@ export const PlansProvider: React.FC<{ children: React.ReactNode }> = ({
         setCurrentPlan(orgData.plans as Plan);
       }
     } catch (error) {
-      console.error('Error fetching plan:', error);
+      logger.error('Error fetching plan:', error);
       // Fallback to basic plan or null
     } finally {
       setLoading(false);

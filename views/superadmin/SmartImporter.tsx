@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import {
   Zap,
@@ -81,7 +82,7 @@ const SmartImporter: React.FC = () => {
             setSelectedOrgId(data.organizations[0].id);
         }
       } catch (err) {
-        console.error('Failed to fetch organizations:', err);
+        logger.error('Failed to fetch organizations:', err);
       }
     };
     fetchOrgs();
@@ -151,17 +152,17 @@ const SmartImporter: React.FC = () => {
   };
 
   React.useEffect(() => {
-    console.log('🔄 [SmartImporter] Step changed to:', step, 'Status:', status);
+    logger.info('🔄 [SmartImporter] Step changed to:', step, 'Status:', status);
     if (step === 3) {
-      console.log(
+      logger.info(
         '⏳ [SmartImporter] Starting auto-advance timer for Step 4...'
       );
       const timer = setTimeout(() => {
-        console.log('🚀 [SmartImporter] Auto-advancing to Step 4');
+        logger.info('🚀 [SmartImporter] Auto-advancing to Step 4');
         setStep(4);
       }, 4000);
       return () => {
-        console.log('🧹 [SmartImporter] Cleaning up timer');
+        logger.info('🧹 [SmartImporter] Cleaning up timer');
         clearTimeout(timer);
       };
     }

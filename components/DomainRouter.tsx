@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -54,7 +55,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         const path = currentPath;
 
         const log = (msg: string) => {
-          console.log(msg);
+          logger.info(msg);
           if (debugMode)
             setDebugLogs((prev) => [
               ...prev,
@@ -198,7 +199,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         setIsPublicSite(false);
         setLoading(false);
       } catch (err) {
-        console.log(`❌ [Router] Fatal Error in checkRoute: ${err}`);
+        logger.info(`❌ [Router] Fatal Error in checkRoute: ${err}`);
         setIsPublicSite(false);
         setLoading(false);
       }

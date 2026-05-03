@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import {
   HeroWithFormBlockConfig,
@@ -53,7 +54,7 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
         trackGoogleEvent('generate_lead', { event_label: 'Hero Form' });
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
+      logger.error('Error submitting form:', error);
     } finally {
       setSubmitting(false);
     }

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { callApi } from '../src/lib/api';
 
 export interface RuralPropertyData {
@@ -76,7 +77,7 @@ export class LegalValidationService {
       );
       return result.data || [];
     } catch (error) {
-      console.error('Erro aoBuscar propriedades SNCR:', error);
+      logger.error('Erro aoBuscar propriedades SNCR:', error);
       return [];
     }
   }
@@ -88,7 +89,7 @@ export class LegalValidationService {
       const result = await callApi(`/api/rural/sncr/imovel/${codigoImovel}`);
       return result.data || null;
     } catch (error) {
-      console.error('Erro aoBuscar detalhes SNCR:', error);
+      logger.error('Erro aoBuscar detalhes SNCR:', error);
       return null;
     }
   }
@@ -98,7 +99,7 @@ export class LegalValidationService {
       const result = await callApi(`/api/rural/sigef/parcela/${codigoParcela}`);
       return result.data || null;
     } catch (error) {
-      console.error('Erro aoBuscar parcela SIGEF:', error);
+      logger.error('Erro aoBuscar parcela SIGEF:', error);
       return null;
     }
   }
@@ -110,7 +111,7 @@ export class LegalValidationService {
       );
       return result.data || null;
     } catch (error) {
-      console.error('Erro aoBuscar CAR:', error);
+      logger.error('Erro aoBuscar CAR:', error);
       return null;
     }
   }
@@ -120,7 +121,7 @@ export class LegalValidationService {
       const result = await callApi(`/api/rural/itr/certidao/${nirf}`);
       return result.data || null;
     } catch (error) {
-      console.error('Erro aoBuscar certidão ITR:', error);
+      logger.error('Erro aoBuscar certidão ITR:', error);
       return null;
     }
   }
@@ -138,7 +139,7 @@ export class LegalValidationService {
       const result = await callApi(`/api/rural/validar/${propertyId}`);
       return result;
     } catch (error) {
-      console.error('Erro na validação:', error);
+      logger.error('Erro na validação:', error);
       throw error;
     }
   }

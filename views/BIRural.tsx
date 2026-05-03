@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   TrendingUp,
@@ -56,7 +57,7 @@ const BIRural: React.FC = () => {
       );
 
       if (statsError) {
-        console.warn(
+        logger.warn(
           '⚠️ RPC get_bi_stats não encontrada ou falhou. Usando fallback local.'
         );
       } else {
@@ -70,7 +71,7 @@ const BIRural: React.FC = () => {
       );
 
       if (sourcesError) {
-        console.warn('⚠️ RPC get_bi_lead_sources não encontrada ou falhou.');
+        logger.warn('⚠️ RPC get_bi_lead_sources não encontrada ou falhou.');
         setLeadSources([]);
       } else {
         setLeadSources(sources || []);
@@ -95,10 +96,10 @@ const BIRural: React.FC = () => {
         ])
         .neq('status', 'Pendente');
 
-      if (propsError) console.error('Error fetching properties:', propsError);
+      if (propsError) logger.error('Error fetching properties:', propsError);
       else setProperties(props || []);
     } catch (error) {
-      console.error('Error loading BI data:', error);
+      logger.error('Error loading BI data:', error);
     } finally {
       setLoading(false);
     }

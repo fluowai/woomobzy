@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import {
@@ -73,7 +74,7 @@ const SupportManager: React.FC = () => {
       if (error) throw error;
       setTickets((data as any) || []);
     } catch (err) {
-      console.error('Error fetching tickets:', err);
+      logger.error('Error fetching tickets:', err);
     } finally {
       setLoading(false);
     }

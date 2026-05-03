@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { landingPageService } from '../../services/landingPages';
@@ -77,7 +78,7 @@ const CloneSiteWrapper: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
       window.location.href = `/admin/landing-pages/${newPage.id}`;
     } catch (error) {
-      console.error('Erro ao criar página clonada:', error);
+      logger.error('Erro ao criar página clonada:', error);
       alert('Erro ao salvar página clonada');
     }
   };

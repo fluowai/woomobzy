@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { instanceApi, type Instance } from '../WhatsApp/hooks/api';
 import QRCodeModal from '../WhatsApp/QRCodeModal';
@@ -45,7 +46,7 @@ const ChannelsSettings: React.FC = () => {
       const data = await instanceApi.list();
       setInstances(data || []);
     } catch (err) {
-      console.error('Failed to refresh instances:', err);
+      logger.error('Failed to refresh instances:', err);
     } finally {
       setLoading(false);
     }

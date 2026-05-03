@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter as Router,
@@ -91,7 +92,7 @@ const SmartImporter = lazy(() => import('./views/superadmin/SmartImporter'));
 // WhatsApp
 const WhatsAppDashboard = lazy(() => import('./views/WhatsApp/WhatsAppDashboard'));
 
-// console.log('App.tsx: Multi-Panel Architecture Active');
+// logger.info('App.tsx: Multi-Panel Architecture Active');
 
 // ==========================================
 // ERROR BOUNDARY
@@ -116,7 +117,7 @@ class ErrorBoundary extends React.Component<EBProps, EBState> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('❌ [ErrorBoundary] Caught error:', error, errorInfo);
+    logger.error('❌ [ErrorBoundary] Caught error:', error, errorInfo);
   }
 
   render() {
@@ -186,7 +187,7 @@ const FullScreenSpinner: React.FC = () => (
     profile?.role !== 'superadmin' &&
     profile?.role !== 'broker'
   ) {
-    console.log('🔄 No organization found for user. Redirecting to onboarding.');
+    logger.info('🔄 No organization found for user. Redirecting to onboarding.');
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -197,7 +198,7 @@ const FullScreenSpinner: React.FC = () => (
   const isRural = rawNiche === 'rural' || rawNiche === 'hybrid';
   const target = isRural ? '/rural' : '/urban';
   
-  console.log(`🚀 NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${isRural})`);
+  logger.info(`🚀 NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${isRural})`);
   return <Navigate to={target} replace />;
 };
 

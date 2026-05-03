@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const IS_VERCEL = window.location.hostname.includes('vercel.app');
@@ -28,7 +29,7 @@ export function useWebSocket() {
       const ws = new WebSocket(WS_URL);
 
       ws.onopen = () => {
-        console.log('✅ WebSocket connected');
+        logger.info('✅ WebSocket connected');
         setIsConnected(true);
         reconnectAttempts.current = 0;
       };
@@ -46,12 +47,12 @@ export function useWebSocket() {
             }
           }
         } catch (err) {
-          console.error('Failed to parse WebSocket message:', err);
+          logger.error('Failed to parse WebSocket message:', err);
         }
       };
 
       ws.onclose = () => {
-        console.warn('⚠️ WebSocket disconnected');
+        logger.warn('⚠️ WebSocket disconnected');
         setIsConnected(false);
         wsRef.current = null;
 
@@ -59,18 +60,18 @@ export function useWebSocket() {
         if (reconnectAttempts.current < maxReconnectAttempts) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
           reconnectAttempts.current += 1;
-          console.log(`🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
+          logger.info(`🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
           reconnectTimeoutRef.current = setTimeout(connect, delay);
         }
       };
 
       ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
+        logger.error('WebSocket error:', err);
       };
 
       wsRef.current = ws;
     } catch (err) {
-      console.error('Failed to create WebSocket:', err);
+      logger.error('Failed to create WebSocket:', err);
     }
   }, []);
 

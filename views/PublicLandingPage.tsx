@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { landingPageService } from '../services/landingPages';
@@ -66,7 +67,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const loadLandingPage = async (slug: string) => {
     try {
       setLoading(true);
-      console.log('🔍 Loading Public Site for Slug:', slug);
+      logger.info('🔍 Loading Public Site for Slug:', slug);
 
       // 1. Find Organization
       let resolvedOrg: any = null;
@@ -79,7 +80,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
           resolvedOrg = org;
         }
       } catch (e) {
-        console.warn('RPC failed, trying direct query');
+        logger.warn('RPC failed, trying direct query');
       }
 
       if (!resolvedOrg) {
@@ -92,7 +93,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       }
 
       if (!resolvedOrg) {
-        console.error('Organization not found');
+        logger.error('Organization not found');
         setLoading(false);
         return;
       }
@@ -159,7 +160,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       setLoading(false);
     } catch (err: any) {
-      console.error('Error loading site:', err);
+      logger.error('Error loading site:', err);
       setError(err.message || 'Erro ao carregar o site');
       setLoading(false);
     }

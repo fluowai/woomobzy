@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -70,7 +71,7 @@ const SupportPortal: React.FC = () => {
       if (error) throw error;
       setTickets(data || []);
     } catch (error) {
-      console.error('Error fetching tickets:', error);
+      logger.error('Error fetching tickets:', error);
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ const SupportPortal: React.FC = () => {
       if (error) throw error;
       setMessages(data || []);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      logger.error('Error fetching messages:', error);
     }
   };
 
@@ -118,7 +119,7 @@ const SupportPortal: React.FC = () => {
       setDescription('');
       setSelectedTicket(data);
     } catch (error) {
-      console.error('Error creating ticket:', error);
+      logger.error('Error creating ticket:', error);
       alert('Erro ao criar chamado. Tente novamente.');
     } finally {
       setCreating(false);
@@ -147,7 +148,7 @@ const SupportPortal: React.FC = () => {
       setMessages([...messages, data]);
       setNewMessage('');
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
     } finally {
       setSendingMessage(false);
     }

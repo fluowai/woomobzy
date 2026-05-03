@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useContext,
@@ -35,6 +36,7 @@ interface AuthContextType {
   impersonateOrganization: (orgId: string) => Promise<void>;
   stopImpersonation: () => void;
   isImpersonating: boolean;
+  enableDebugMode: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -63,7 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log(
+      logger.info(
         '🔄 [AuthContext] Auth Event:',
         _event,
         'User:',
@@ -73,7 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // DEBOUNCE FIX: If SIGNED_IN fires before INITIAL_SESSION, skip it.
       // INITIAL_SESSION is the canonical first event and will follow immediately.
       if (_event === 'SIGNED_IN' && !initialSessionProcessed.current) {
-        console.log(
+        logger.info(
           '⏭️ [AuthContext] Skipping early SIGNED_IN, waiting for INITIAL_SESSION'
         );
         // Still set the user so we have it ready
@@ -94,7 +96,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           profileRef.current?.id === session.user.id;
 
         if (isRedundant) {
-          console.log(
+          logger.info(
             `[AuthContext] Skipping redundant ${_event}, profile already loaded.`
           );
           return;
@@ -107,7 +109,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
         await loadProfile(session.user.id);
       } else {
-        console.log('🔄 [AuthContext] Auth Event: User is null');
+        logger.info('🔄 [AuthContext] Auth Event: User is null');
         setUser(null);
         setProfile(null);
         setIsImpersonating(false);
@@ -132,7 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (!isSilentRefresh) {
         setLoading(true);
       }
-      console.log('📡 [AuthContext] Querying profile for:', userId);
+      logger.info('📡 [AuthContext] Querying profile for:', userId);
 
       // Add a timeout promise to detect if query is hanging
       const queryPromise = supabase
@@ -151,7 +153,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         timeoutPromise,
       ])) as any;
 
-      console.log(
+      logger.info(
         '📡 [AuthContext] Profile query resolved. Data:',
         !!profileData,
         'Error:',
@@ -161,16 +163,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (profileError) {
         // Auto-retry on 401 (token refresh race condition)
         if (profileError.code === '401' || profileError.status === 401) {
-          console.warn('[AuthContext] 401 detected, retrying after token refresh...');
+          logger.warn('[AuthContext] 401 detected, retrying after token refresh...');
           await new Promise(r => setTimeout(r, 1000));
           fetchInProgress.current = null;
           return loadProfile(userId);
         }
-        console.error('❌ [AuthContext] Error loading profile:', profileError);
+        logger.error('❌ [AuthContext] Error loading profile:', profileError);
         setProfile((prev) => (prev && prev.id === userId ? prev : null));
         if (!profile) setIsImpersonating(false);
       } else if (profileData) {
-        console.log(
+        logger.info(
           '✅ [AuthContext] Profile core data loaded:',
           profileData.role
         );
@@ -185,7 +187,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           impOrgId !== 'null' &&
           impOrgId !== 'undefined'
         ) {
-          console.log('🚀 [AuthContext] Checking impersonated org:', impOrgId);
+          logger.info('🚀 [AuthContext] Checking impersonated org:', impOrgId);
           const { data: orgData, error: orgError } = await supabase
             .from('organizations')
             .select('*')
@@ -193,7 +195,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             .single();
 
           if (!orgError && orgData) {
-            console.log('✅ [AuthContext] Impersonation active:', orgData.name);
+            logger.info('✅ [AuthContext] Impersonation active:', orgData.name);
             finalProfile = {
               ...profileData,
               organization_id: orgData.id,
@@ -201,7 +203,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             };
             setIsImpersonating(true);
           } else {
-            console.warn(
+            logger.warn(
               '⚠️ [AuthContext] Impersonation failed or org not found:',
               orgError
             );
@@ -215,14 +217,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           }
         }
 
-        console.log('✅ [AuthContext] Final profile set.');
+        logger.info('✅ [AuthContext] Final profile set.');
         setProfile(finalProfile);
       } else {
-        console.warn('⚠️ [AuthContext] Profile query returned no data.');
+        logger.warn('⚠️ [AuthContext] Profile query returned no data.');
         setProfile((prev) => (prev && prev.id === userId ? prev : null));
       }
     } catch (err: any) {
-      console.error(
+      logger.error(
         '❌ [AuthContext] Critical exception in loadProfile:',
         err.message
       );
@@ -231,7 +233,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (retryCount.current < 2) {
         retryCount.current += 1;
         const delay = retryCount.current * 2000;
-        console.log(
+        logger.info(
           `🔄 [AuthContext] Retrying profile fetch in ${delay}ms (Attempt ${retryCount.current}/2)...`
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
@@ -241,7 +243,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       setProfile((prev) => (prev && prev.id === userId ? prev : null));
     } finally {
-      console.log('🏁 [AuthContext] loadProfile finished.');
+      logger.info('🏁 [AuthContext] loadProfile finished.');
       fetchInProgress.current = null;
       setLoading(false);
     }
@@ -287,7 +289,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err: any) {
-      console.warn('⚠️ [AuthContext] signOut error (ignored):', err.message);
+      logger.warn('⚠️ [AuthContext] signOut error (ignored):', err.message);
     }
     // Always clear local state regardless of API result
     setUser(null);
@@ -318,15 +320,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     if (currentProfile?.role !== 'superadmin') throw new Error('Unauthorized');
 
-    console.log('🚀 Starting impersonation of:', orgId);
+    logger.info('🚀 Starting impersonation of:', orgId);
     sessionStorage.setItem('impersonated_org_id', orgId);
     await loadProfile(user!.id);
   };
 
   const stopImpersonation = () => {
-    console.log('🛑 Stopping impersonation');
+    logger.info('🛑 Stopping impersonation');
     sessionStorage.removeItem('impersonated_org_id');
     if (user) loadProfile(user.id);
+  };
+
+  const enableDebugMode = async () => {
+    if (profile?.role !== 'superadmin') {
+      throw new Error('Apenas SuperAdmins podem ativar o modo de debug.');
+    }
+
+    logger.info('🔐 Ativando Modo de Debug Seguro...');
+    
+    // In a real world, this would call a backend to get a signed short-lived token
+    // For now, we simulate with a session flag that the logger checks
+    // The logger.ts already checks for 'secure_support_debug_token'
+    
+    // Simulate a JWT-like token for the logger to parse
+    const payload = {
+      role: 'superadmin',
+      exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour
+      userId: user?.id
+    };
+    const token = `debug.${btoa(JSON.stringify(payload))}.signature`;
+    sessionStorage.setItem('secure_support_debug_token', token);
+    
+    // Audit log (would be sent to backend)
+    logger.audit('Debug mode activated by SuperAdmin', { userId: user?.id });
+    
+    window.location.reload(); // Reload to apply logger settings
   };
 
   return (
@@ -342,6 +370,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         impersonateOrganization,
         stopImpersonation,
         isImpersonating,
+        enableDebugMode,
       }}
     >
       {children}

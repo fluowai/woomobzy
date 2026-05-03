@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
 
@@ -32,7 +33,7 @@ const TrackingPixels: React.FC = () => {
 
   useEffect(() => {
     if (!settings?.tracking_pixels) {
-      console.log('⚠️ Tracking pixels não configurados');
+      logger.info('⚠️ Tracking pixels não configurados');
       return;
     }
 
@@ -69,7 +70,7 @@ const TrackingPixels: React.FC = () => {
  * Inicializa Facebook Pixel
  */
 function initFacebookPixel(pixelId: string, testMode?: boolean): void {
-  console.log(
+  logger.info(
     `📊 Inicializando Facebook Pixel: ${pixelId}${testMode ? ' (Test Mode)' : ''}`
   );
 
@@ -103,14 +104,14 @@ function initFacebookPixel(pixelId: string, testMode?: boolean): void {
       );
     };
 
-  console.log('✅ Facebook Pixel inicializado');
+  logger.info('✅ Facebook Pixel inicializado');
 }
 
 /**
  * Inicializa Google Analytics 4
  */
 function initGoogleAnalytics(measurementId: string, testMode?: boolean): void {
-  console.log(
+  logger.info(
     `📊 Inicializando Google Analytics 4: ${measurementId}${testMode ? ' (Test Mode)' : ''}`
   );
 
@@ -141,14 +142,14 @@ function initGoogleAnalytics(measurementId: string, testMode?: boolean): void {
       );
     };
 
-  console.log('✅ Google Analytics 4 inicializado');
+  logger.info('✅ Google Analytics 4 inicializado');
 }
 
 /**
  * Inicializa Google Ads
  */
 function initGoogleAds(conversionId: string, testMode?: boolean): void {
-  console.log(
+  logger.info(
     `📊 Inicializando Google Ads: ${conversionId}${testMode ? ' (Test Mode)' : ''}`
   );
 
@@ -180,7 +181,7 @@ function initGoogleAds(conversionId: string, testMode?: boolean): void {
     (window as any).gtag('config', conversionId);
   }
 
-  console.log('✅ Google Ads inicializado');
+  logger.info('✅ Google Ads inicializado');
 }
 
 export default TrackingPixels;

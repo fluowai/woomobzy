@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import {
@@ -58,7 +59,7 @@ const AppearanceSettings: React.FC = () => {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error('Error saving:', error);
+      logger.error('Error saving:', error);
       alert('Erro ao salvar aparência.');
     } finally {
       setSaving(false);
@@ -108,11 +109,11 @@ const AppearanceSettings: React.FC = () => {
           );
         }
       } catch (colorError) {
-        console.error('Info: Could not auto-detect colors', colorError);
+        logger.error('Info: Could not auto-detect colors', colorError);
         // Non-blocking error
       }
     } catch (error) {
-      console.error('Error uploading logo:', error);
+      logger.error('Error uploading logo:', error);
       alert(
         'Erro ao fazer upload da logo. Verifique se o bucket "logos" existe e é público.'
       );

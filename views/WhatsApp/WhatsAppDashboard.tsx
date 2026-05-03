@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect, useCallback } from 'react';
 import './whatsapp.css';
 import { useWebSocket } from './hooks/useWebSocket';
@@ -127,7 +128,7 @@ const WhatsAppDashboard: React.FC = () => {
         setSelectedInstance(connected || data[0]);
       }
     } catch (err) {
-      console.error('Failed to load instances:', err);
+      logger.error('Failed to load instances:', err);
     } finally {
       setLoading(false);
     }
@@ -138,7 +139,7 @@ const WhatsAppDashboard: React.FC = () => {
       const data = await chatApi.list(instanceId);
       setChats(data || []);
     } catch (err) {
-      console.error('Failed to load chats:', err);
+      logger.error('Failed to load chats:', err);
       setChats([]);
     }
   };
@@ -149,7 +150,7 @@ const WhatsAppDashboard: React.FC = () => {
       const data = await messageApi.list(chatId, 100);
       setMessages(data.messages || []);
     } catch (err) {
-      console.error('Failed to load messages:', err);
+      logger.error('Failed to load messages:', err);
       setMessages([]);
     } finally {
       setLoadingMessages(false);
@@ -162,7 +163,7 @@ const WhatsAppDashboard: React.FC = () => {
       try {
         await messageApi.send(selectedChat.id, selectedInstance.id, content);
       } catch (err) {
-        console.error('Failed to send message:', err);
+        logger.error('Failed to send message:', err);
       }
     },
     [selectedChat, selectedInstance]

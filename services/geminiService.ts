@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { GoogleGenAI, Type } from '@google/genai';
 import { Property, Lead } from '../types';
 
@@ -9,7 +10,7 @@ const getAI = () => {
     // @ts-ignore
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
     if (!apiKey) {
-      console.warn(
+      logger.warn(
         '⚠️ VITE_GEMINI_API_KEY não configurada - funcionalidades de IA desabilitadas'
       );
       return null;
@@ -58,7 +59,7 @@ export const generateSmartDescription = async (property: Partial<Property>) => {
     });
     return response.text || 'Descrição não gerada.';
   } catch (error) {
-    console.error('Error generating description:', error);
+    logger.error('Error generating description:', error);
     return 'Erro ao gerar descrição com IA.';
   }
 };
@@ -98,7 +99,7 @@ export const matchLeadWithProperties = async (
     });
     return response.text || 'Nenhuma recomendação disponível.';
   } catch (error) {
-    console.error('Error matching lead:', error);
+    logger.error('Error matching lead:', error);
     return 'Erro ao processar recomendações com IA.';
   }
 };
@@ -118,7 +119,7 @@ export const geminiService = {
       });
       return response.text || '{}';
     } catch (error) {
-      console.error('Error generating text:', error);
+      logger.error('Error generating text:', error);
       return '{}';
     }
   },
@@ -174,7 +175,7 @@ Retorne APENAS um JSON no formato:
         secondaryColor: parsed.secondaryColor || '#10b981',
       };
     } catch (error) {
-      console.error('Error extracting colors from logo via Gemini:', error);
+      logger.error('Error extracting colors from logo via Gemini:', error);
       return { primaryColor: '#2563eb', secondaryColor: '#10b981' };
     }
   },

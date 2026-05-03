@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { supabase } from './supabase';
 import {
   LandingPage,
@@ -26,7 +27,7 @@ export const landingPageService = {
    * Lista todas as landing pages da organização ou do usuário
    */
   async list(): Promise<LandingPage[]> {
-    console.log('📋 [LandingPageService] Listando todas as páginas');
+    logger.info('📋 [LandingPageService] Listando todas as páginas');
 
     let query = supabase.from('landing_pages').select('*');
 
@@ -35,15 +36,15 @@ export const landingPageService = {
     });
 
     if (error) {
-      console.error('❌ [LandingPageService] Erro ao listar:', error);
+      logger.error('❌ [LandingPageService] Erro ao listar:', error);
       throw error;
     }
 
-    console.log(
+    logger.info(
       `✅ [LandingPageService] Encontradas ${data?.length || 0} páginas`
     );
     if (data && data.length > 0) {
-      console.log('📄 Primeira página:', data[0]);
+      logger.info('📄 Primeira página:', data[0]);
     }
 
     return data.map(mapToModel);
@@ -118,9 +119,9 @@ export const landingPageService = {
     id: string,
     input: UpdateLandingPageInput
   ): Promise<LandingPage> {
-    console.log('🗄️ [LandingPageService] Atualizando página:', id);
+    logger.info('🗄️ [LandingPageService] Atualizando página:', id);
     const payload = mapToDatabase(input);
-    console.log(
+    logger.info(
       '📦 [LandingPageService] Payload:',
       JSON.stringify(payload).substring(0, 200) + '...'
     );
@@ -133,11 +134,11 @@ export const landingPageService = {
       .single();
 
     if (error) {
-      console.error('❌ [LandingPageService] Erro no Supabase:', error);
+      logger.error('❌ [LandingPageService] Erro no Supabase:', error);
       throw error;
     }
 
-    console.log('✅ [LandingPageService] Atualizado no banco!');
+    logger.info('✅ [LandingPageService] Atualizado no banco!');
     return mapToModel(data);
   },
 
@@ -373,7 +374,7 @@ export const landingPageService = {
       city: visitorData.city,
     });
 
-    if (error) console.error('Error tracking event:', error);
+    if (error) logger.error('Error tracking event:', error);
   },
 
   /**

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect, useRef } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import {
@@ -92,7 +93,7 @@ const DomainSettings: React.FC = () => {
         }
       }
     } catch (e) {
-      console.error('Error fetching domain:', e);
+      logger.error('Error fetching domain:', e);
     }
   };
 
@@ -124,7 +125,7 @@ const DomainSettings: React.FC = () => {
         if (verifyIntervalRef.current) clearInterval(verifyIntervalRef.current);
       }
     } catch (e) {
-      console.error('Error verifying:', e);
+      logger.error('Error verifying:', e);
       setCurrentDomain((prev) =>
         prev ? { ...prev, status: 'pending' } : null
       );

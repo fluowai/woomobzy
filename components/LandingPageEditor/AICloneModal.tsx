@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { X, Wand2, Loader, Globe } from 'lucide-react';
 import axios from 'axios';
@@ -41,7 +42,7 @@ const AICloneModal: React.FC<AICloneModalProps> = ({ onClone, onClose }) => {
       // Pass data back to parent
       onClone(layoutData);
     } catch (err: any) {
-      console.error('Erro ao clonar:', err);
+      logger.error('Erro ao clonar:', err);
       setError(err.response?.data?.error || err.message || 'Erro desconhecido');
     } finally {
       setLoading(false);

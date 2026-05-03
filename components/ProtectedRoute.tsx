@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +26,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user) {
-    console.log('🛡️ [ProtectedRoute] Redirecting to /login (no user)');
+    logger.info('🛡️ [ProtectedRoute] Redirecting to /login (no user)');
     return <Navigate to="/login" replace />;
   }
 
@@ -34,7 +35,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     profile?.role !== 'admin' &&
     profile?.role !== 'superadmin'
   ) {
-    console.log('🛡️ [ProtectedRoute] Access Denied (not admin/superadmin)');
+    logger.info('🛡️ [ProtectedRoute] Access Denied (not admin/superadmin)');
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center max-w-md p-8">

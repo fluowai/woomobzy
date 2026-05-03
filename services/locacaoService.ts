@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { callApi } from '../src/lib/api';
 
 export interface Contract {
@@ -63,7 +64,7 @@ export class LocacaoService {
       );
       return result.data || [];
     } catch (error) {
-      console.error('Erro ao listar contratos:', error);
+      logger.error('Erro ao listar contratos:', error);
       return [];
     }
   }
@@ -73,7 +74,7 @@ export class LocacaoService {
       const result = await callApi(`/api/locacao/${id}`);
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao buscar contrato:', error);
+      logger.error('Erro ao buscar contrato:', error);
       return null;
     }
   }
@@ -86,7 +87,7 @@ export class LocacaoService {
       });
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao criar contrato:', error);
+      logger.error('Erro ao criar contrato:', error);
       return null;
     }
   }
@@ -102,7 +103,7 @@ export class LocacaoService {
       });
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao atualizar contrato:', error);
+      logger.error('Erro ao atualizar contrato:', error);
       return null;
     }
   }
@@ -114,7 +115,7 @@ export class LocacaoService {
       });
       return true;
     } catch (error) {
-      console.error('Erro ao excluir contrato:', error);
+      logger.error('Erro ao excluir contrato:', error);
       return false;
     }
   }
@@ -124,7 +125,7 @@ export class LocacaoService {
       const result = await callApi('/api/locacao/dashboard/resumo');
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao buscar dashboard:', error);
+      logger.error('Erro ao buscar dashboard:', error);
       return null;
     }
   }
@@ -140,7 +141,7 @@ export class LocacaoService {
       const result = await callApi(url);
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao calcular reajuste:', error);
+      logger.error('Erro ao calcular reajuste:', error);
       return null;
     }
   }
@@ -160,7 +161,7 @@ export class LocacaoService {
       });
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao renovar contrato:', error);
+      logger.error('Erro ao renovar contrato:', error);
       return null;
     }
   }
@@ -180,7 +181,7 @@ export class LocacaoService {
       });
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao registrar pagamento:', error);
+      logger.error('Erro ao registrar pagamento:', error);
       return null;
     }
   }

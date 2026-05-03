@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { useTexts } from '../context/TextsContext';
 import {
@@ -56,7 +57,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
       await updateText(textKey, imageUrl);
       setIsEditing(false);
     } catch (error) {
-      console.error('Failed to update image:', error);
+      logger.error('Failed to update image:', error);
       alert('Erro ao salvar imagem');
     } finally {
       setIsSaving(false);
@@ -87,7 +88,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
         setIsEditing(false);
       }
     } catch (error) {
-      console.error('Upload failed:', error);
+      logger.error('Upload failed:', error);
       alert('Falha ao fazer upload da imagem');
     } finally {
       setIsUploading(false);

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { ClimateData } from '../types';
 
 interface Coordinates {
@@ -28,7 +29,7 @@ export const climateService = {
         lng: parseFloat(data[0].lon),
       };
     } catch (error) {
-      console.error('Erro ao geocodificar:', error);
+      logger.error('Erro ao geocodificar:', error);
       throw new Error('Não foi possível localizar a cidade');
     }
   },
@@ -82,7 +83,7 @@ export const climateService = {
         location: `${city}, ${state}`,
       };
     } catch (error) {
-      console.error('Erro ao buscar dados climáticos:', error);
+      logger.error('Erro ao buscar dados climáticos:', error);
       throw error;
     }
   },

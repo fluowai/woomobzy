@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -53,7 +54,7 @@ const LandingPageManager: React.FC = () => {
       const data = await landingPageService.list();
       setPages(data);
     } catch (error) {
-      console.error('❌ [LandingPageManager] Erro ao carregar:', error);
+      logger.error('❌ [LandingPageManager] Erro ao carregar:', error);
     } finally {
       setLoading(false);
     }
@@ -66,7 +67,7 @@ const LandingPageManager: React.FC = () => {
       await landingPageService.delete(id);
       await loadPages();
     } catch (error) {
-      console.error('Error deleting landing page:', error);
+      logger.error('Error deleting landing page:', error);
       alert('Erro ao excluir landing page');
     }
   };
@@ -76,7 +77,7 @@ const LandingPageManager: React.FC = () => {
       await landingPageService.duplicate(id);
       await loadPages();
     } catch (error) {
-      console.error('Error duplicating landing page:', error);
+      logger.error('Error duplicating landing page:', error);
       alert('Erro ao duplicar landing page');
     }
   };
@@ -90,7 +91,7 @@ const LandingPageManager: React.FC = () => {
       }
       await loadPages();
     } catch (error) {
-      console.error('Error toggling status:', error);
+      logger.error('Error toggling status:', error);
       alert('Erro ao alterar status');
     }
   };
@@ -523,7 +524,7 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       const prefix = currentPath.startsWith('/urban') ? '/urban' : '/rural';
       window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error) {
-      console.error('Error creating from template:', error);
+      logger.error('Error creating from template:', error);
       alert('Erro ao criar landing page');
       setCreating(false);
     }
@@ -601,7 +602,7 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       const prefix = currentPath.startsWith('/urban') ? '/urban' : '/rural';
       window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error) {
-      console.error('Error creating landing page:', error);
+      logger.error('Error creating landing page:', error);
       alert('Erro ao criar landing page');
       setCreating(false);
     }
@@ -779,7 +780,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       const data = await propertyService.list(profile.organization_id);
       setProperties(data);
     } catch (error) {
-      console.error('Failed to load properties', error);
+      logger.error('Failed to load properties', error);
     } finally {
       setLoadingProps(false);
     }
@@ -791,12 +792,12 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
   };
 
   const handleGenerate = async () => {
-    console.log('handleGenerate called');
-    console.log('Selected Prop ID:', selectedPropId);
-    console.log('User ID:', user?.id);
+    logger.info('handleGenerate called');
+    logger.info('Selected Prop ID:', selectedPropId);
+    logger.info('User ID:', user?.id);
 
     if (!selectedPropId || !user?.id) {
-      console.error('Missing required data for generation', {
+      logger.error('Missing required data for generation', {
         selectedPropId,
         userId: user?.id,
       });
@@ -806,7 +807,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
 
     const property = properties.find((p) => p.id === selectedPropId);
     if (!property) {
-      console.error('Property not found');
+      logger.error('Property not found');
       return;
     }
 
@@ -815,7 +816,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
 
       // AI Generation
       setGenerationStage('Escrevendo copy persuasiva com IA...');
-      console.log('Calling generateLandingPageFromProperty with keys...');
+      logger.info('Calling generateLandingPageFromProperty with keys...');
 
       const config = {
         openaiKey: settings.integrations?.openai?.apiKey,
@@ -824,7 +825,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       };
 
       const aiData = await generateLandingPageFromProperty(property, config);
-      console.log('AI Data received:', aiData);
+      logger.info('AI Data received:', aiData);
 
       setGenerationStage('Montando layout v2.0...');
 
@@ -871,14 +872,14 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
         status: LandingPageStatus.DRAFT,
       } as any);
 
-      console.log('Page created:', newPage);
+      logger.info('Page created:', newPage);
 
       // Redirect
       const currentPath = window.location.pathname;
       const prefix = currentPath.startsWith('/urban') ? '/urban' : '/rural';
       window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error: any) {
-      console.error('AI Generation failed:', error);
+      logger.error('AI Generation failed:', error);
       alert('Falha na geração: ' + error.message);
       setStep('property');
     }

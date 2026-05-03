@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState, useRef } from 'react';
 import { useTexts } from '../context/TextsContext';
 import { useAuth } from '../context/AuthContext';
@@ -76,7 +77,7 @@ const VisualSiteEditor: React.FC = () => {
           setCurrentTheme(lpData.theme_config || {});
         }
       } catch (error) {
-        console.error('Erro ao resolver slug:', error);
+        logger.error('Erro ao resolver slug:', error);
       } finally {
         setLoading(false);
       }
@@ -119,7 +120,7 @@ const VisualSiteEditor: React.FC = () => {
       setCurrentTheme(template.themeConfig);
       reloadIframe();
     } catch (error) {
-      console.error('Erro ao aplicar template:', error);
+      logger.error('Erro ao aplicar template:', error);
       alert('Erro ao mudar de modelo.');
     } finally {
       setSaving(false);
@@ -170,7 +171,7 @@ const VisualSiteEditor: React.FC = () => {
               { onConflict: 'organization_id' }
             );
           } catch (err) {
-            console.warn(
+            logger.warn(
               'Silent skip se a logo nao for suportada via base64 na DB local.',
               err
             );
@@ -184,7 +185,7 @@ const VisualSiteEditor: React.FC = () => {
         setUploadingLogo(false);
       };
     } catch (error) {
-      console.error('Erro no processamento da logo:', error);
+      logger.error('Erro no processamento da logo:', error);
       alert('Erro ao enviar a logo.');
       setUploadingLogo(false);
     }

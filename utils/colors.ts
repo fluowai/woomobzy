@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 // Dynamic import with type assertion for ColorThief
 let ColorThief: any;
 
@@ -8,7 +9,7 @@ const initColorThief = async () => {
       const module = await import('colorthief');
       ColorThief = module.default || module;
     } catch (error) {
-      console.warn('ColorThief library not available:', error);
+      logger.warn('ColorThief library not available:', error);
       return null;
     }
   }
@@ -68,13 +69,13 @@ export const extractColorsFromImage = async (
             resolve({ primary: '#FFD700', secondary: '#009B3A' });
           }
         } catch (error) {
-          console.error('Erro ao extrair cores:', error);
+          logger.error('Erro ao extrair cores:', error);
           // Fallback colors instead of rejecting
           resolve({ primary: '#FFD700', secondary: '#009B3A' });
         }
       }
     } catch (error) {
-      console.error('Erro ao inicializar ColorThief:', error);
+      logger.error('Erro ao inicializar ColorThief:', error);
       // Fallback colors
       resolve({ primary: '#FFD700', secondary: '#009B3A' });
     }

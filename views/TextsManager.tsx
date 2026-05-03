@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTexts } from '../context/TextsContext';
 import { useSettings } from '../context/SettingsContext';
@@ -84,7 +85,7 @@ const TextsManager: React.FC = () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
-      console.error('Erro ao salvar:', error);
+      logger.error('Erro ao salvar:', error);
       alert('Erro ao salvar alterações');
     } finally {
       setIsSaving(false);
@@ -104,7 +105,7 @@ const TextsManager: React.FC = () => {
         delete newEdited[key];
         setEditedTexts(newEdited);
       } catch (error) {
-        console.error('Erro ao restaurar:', error);
+        logger.error('Erro ao restaurar:', error);
       }
     }
   };

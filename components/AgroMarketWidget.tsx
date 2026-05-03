@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Leaf, AlertTriangle, RefreshCw } from 'lucide-react';
 
@@ -26,7 +27,7 @@ const AgroMarketWidget: React.FC = () => {
         setError(true);
       }
     } catch (err) {
-      console.warn('Agro Intelligence Service offline. Using mock data for demo.');
+      logger.warn('Agro Intelligence Service offline. Using mock data for demo.');
       // Mock data for WOW effect if service is offline
       setPrices({
         'soja': { valor: 134.50, unidade: 'sc', data: '28/04/2024', moeda: 'BRL' },

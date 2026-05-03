@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   Map,
@@ -87,7 +88,7 @@ const Geointeligencia: React.FC = () => {
         const result = await callApi('/api/rural/market/prices');
         if (result.success) setMarketPrices(result.data);
       } catch (err) {
-        console.error('Market data fetch error:', err);
+        logger.error('Market data fetch error:', err);
       }
     };
     fetchMarketData();
@@ -137,7 +138,7 @@ const Geointeligencia: React.FC = () => {
         if (totalArea > 0) setCalculatedArea(totalArea);
       }
     } catch (err) {
-      console.error(err);
+      logger.error(err);
     } finally {
       setIsUploading(false);
     }
@@ -170,7 +171,7 @@ const Geointeligencia: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error(err);
+      logger.error(err);
     } finally {
       setIsSearching(false);
     }
@@ -186,7 +187,7 @@ const Geointeligencia: React.FC = () => {
         setSearchBounds(result.bounds);
       }
     } catch (err) {
-      console.error('CAR Validation error:', err);
+      logger.error('CAR Validation error:', err);
       alert('Erro ao consultar CAR');
     } finally {
       setIsValidating(false);
@@ -203,7 +204,7 @@ const Geointeligencia: React.FC = () => {
         setSearchBounds(result.bounds);
       }
     } catch (err) {
-      console.error('SIGEF Validation error:', err);
+      logger.error('SIGEF Validation error:', err);
       alert('Erro ao consultar SIGEF');
     } finally {
       setIsValidating(false);

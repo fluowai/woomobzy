@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import {
@@ -136,7 +137,7 @@ const WaitlistLeads: React.FC = () => {
       if (error) throw error;
       setLeads(data || []);
     } catch (err) {
-      console.error('Error fetching waitlist leads:', err);
+      logger.error('Error fetching waitlist leads:', err);
     } finally {
       setLoading(false);
     }

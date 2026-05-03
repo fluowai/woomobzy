@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { supabase } from './supabase';
 
 export const uploadFile = async (
@@ -16,17 +17,17 @@ export const uploadFile = async (
       .upload(filePath, file);
 
     if (uploadError) {
-      console.error('Erro detalhado no upload:', uploadError);
+      logger.error('Erro detalhado no upload:', uploadError);
       alert(`Erro no upload: ${uploadError.message}`); // Feedback visual para o usuário
       throw uploadError;
     }
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
 
-    console.log('Upload sucesso. URL:', data.publicUrl);
+    logger.info('Upload sucesso. URL:', data.publicUrl);
     return data.publicUrl;
   } catch (error) {
-    console.error('Falha ao fazer upload da imagem:', error);
+    logger.error('Falha ao fazer upload da imagem:', error);
     return null;
   }
 };

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import {
@@ -63,7 +64,7 @@ const SystemSettings: React.FC = () => {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error('Error saving settings:', error);
+      logger.error('Error saving settings:', error);
     } finally {
       setSaving(false);
     }

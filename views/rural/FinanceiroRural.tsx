@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
@@ -40,7 +41,7 @@ const FinanceiroRural: React.FC = () => {
         setLeads(leadsData);
         setProperties(propsData);
       } catch (error) {
-        console.error('Erro ao carregar dados financeiros rurais:', error);
+        logger.error('Erro ao carregar dados financeiros rurais:', error);
       } finally {
         setLoading(false);
       }

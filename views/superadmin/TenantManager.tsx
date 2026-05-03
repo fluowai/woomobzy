@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import {
@@ -89,7 +90,7 @@ const TenantManager: React.FC = () => {
       if (!res.ok) throw new Error(data.error || 'Erro ao carregar');
       setTenants(data.organizations || []);
     } catch (error: any) {
-      console.error('Error fetching tenants:', error);
+      logger.error('Error fetching tenants:', error);
       setErrorMsg(error.message || 'Erro desconhecido');
     } finally {
       setLoading(false);
@@ -158,7 +159,7 @@ const TenantManager: React.FC = () => {
       setIsModalOpen(false);
       fetchTenants();
     } catch (error: any) {
-      console.error('Error saving:', error);
+      logger.error('Error saving:', error);
       alert(
         `Erro ao salvar imobiliária: ${error.message || 'Erro desconhecido'}`
       );
@@ -373,7 +374,7 @@ const TenantManager: React.FC = () => {
                           // and NicheRedirect will handle it.
                           window.location.href = '/admin';
                         } catch (err: any) {
-                          console.error(err);
+                          logger.error(err);
                           alert(`Erro: ${err.message}`);
                         }
                       }}

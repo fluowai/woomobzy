@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { Property } from '../types';
 import {
   LandingPage,
@@ -163,17 +164,17 @@ RETORNE APENAS O JSON. SEM MARKDOWN. SEM EXPLICAÇÕES.
 
     // Choose Provider with fallback
     if (config?.openaiKey) {
-      console.log('🤖 Using OpenAI for landing page generation...');
+      logger.info('🤖 Using OpenAI for landing page generation...');
       text = await openaiService.generateText(prompt, config.openaiKey);
     } else if (config?.geminiKey) {
-      console.log('🤖 Using Gemini (Config) for landing page generation...');
+      logger.info('🤖 Using Gemini (Config) for landing page generation...');
       text = await geminiService.generateText(prompt); // geminiService handles its own key currently, but we could refactor
     } else if (config?.groqKey) {
-      console.log('🤖 Using Groq for landing page generation...');
+      logger.info('🤖 Using Groq for landing page generation...');
       text = await groqService.generateText(prompt, config.groqKey);
     } else {
       // Default to env key if available (Gemini)
-      console.log(
+      logger.info(
         '🤖 Using Default Gemini (Env) for landing page generation...'
       );
       text = await geminiService.generateText(prompt);
@@ -289,7 +290,7 @@ RETORNE APENAS O JSON. SEM MARKDOWN. SEM EXPLICAÇÕES.
       blocks: blocks,
     };
   } catch (error) {
-    console.error('Error generating landing page:', error);
+    logger.error('Error generating landing page:', error);
     throw new Error(
       'Failed to generate landing page content: ' + (error as any).message
     );

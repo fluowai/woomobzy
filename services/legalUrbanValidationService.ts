@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { callApi } from '../src/lib/api';
 
 export interface UrbanPropertyData {
@@ -55,7 +56,7 @@ export class LegalUrbanValidationService {
       );
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao buscar IPTU:', error);
+      logger.error('Erro ao buscar IPTU:', error);
       return null;
     }
   }
@@ -65,7 +66,7 @@ export class LegalUrbanValidationService {
       const result = await callApi(`/api/urban/imovel/${codigo}`);
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao buscar imóvel:', error);
+      logger.error('Erro ao buscar imóvel:', error);
       return null;
     }
   }
@@ -77,7 +78,7 @@ export class LegalUrbanValidationService {
       );
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao buscar zoneamento:', error);
+      logger.error('Erro ao buscar zoneamento:', error);
       return null;
     }
   }
@@ -89,7 +90,7 @@ export class LegalUrbanValidationService {
       );
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao buscar certidão:', error);
+      logger.error('Erro ao buscar certidão:', error);
       return null;
     }
   }
@@ -101,7 +102,7 @@ export class LegalUrbanValidationService {
       );
       return result.data || [];
     } catch (error) {
-      console.error('Erro ao buscar propriedades:', error);
+      logger.error('Erro ao buscar propriedades:', error);
       return [];
     }
   }
@@ -119,7 +120,7 @@ export class LegalUrbanValidationService {
       const result = await callApi(`/api/urban/validar/${propertyId}`);
       return result;
     } catch (error) {
-      console.error('Erro na validação:', error);
+      logger.error('Erro na validação:', error);
       throw error;
     }
   }

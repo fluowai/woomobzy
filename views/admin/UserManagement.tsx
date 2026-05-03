@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -68,7 +69,7 @@ const UserManagement: React.FC = () => {
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      logger.error('Error fetching users:', error);
     } finally {
       setLoading(false);
     }
@@ -90,7 +91,7 @@ const UserManagement: React.FC = () => {
       // Optimistic update
       setUsers(users.map((u) => (u.id === userId ? { ...u, ...updates } : u)));
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user:', error);
       alert('Erro ao atualizar usuário.');
     } finally {
       setProcessing(null);
@@ -116,7 +117,7 @@ const UserManagement: React.FC = () => {
       setNewPassword('');
       setSelectedUser(null);
     } catch (error: any) {
-      console.error('Error changing password:', error);
+      logger.error('Error changing password:', error);
       alert(error.message || 'Erro ao alterar senha.');
     } finally {
       setProcessing(null);
@@ -141,7 +142,7 @@ const UserManagement: React.FC = () => {
       setUsers(users.filter((u) => u.id !== user.id));
       alert('Usuário excluído com sucesso.');
     } catch (error: any) {
-      console.error('Error deleting user:', error);
+      logger.error('Error deleting user:', error);
       alert(error.message || 'Erro ao excluir usuário.');
     } finally {
       setProcessing(null);

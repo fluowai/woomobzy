@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { supabase } from './supabase';
 
 // Removed duplicate client creation and unsafe process.env usage
@@ -38,9 +39,9 @@ export const getAllTexts = async (category = null, section = null) => {
   } catch (error: any) {
     // Only log as error if it's NOT a JWT issue (those are handled upstream)
     if (error?.message?.includes('JWT expired') || error?.code === 'PGRST303') {
-      console.warn('⚠️ [texts.ts] JWT expired, skipping fetch');
+      logger.warn('⚠️ [texts.ts] JWT expired, skipping fetch');
     } else {
-      console.error('Error fetching texts:', error);
+      logger.error('Error fetching texts:', error);
     }
     throw error;
   }
@@ -63,7 +64,7 @@ export const getTextByKey = async (key) => {
 
     return data;
   } catch (error) {
-    console.error(`Error fetching text ${key}:`, error);
+    logger.error(`Error fetching text ${key}:`, error);
     throw error;
   }
 };
@@ -87,7 +88,7 @@ export const updateText = async (key, value) => {
 
     return data;
   } catch (error) {
-    console.error(`Error updating text ${key}:`, error);
+    logger.error(`Error updating text ${key}:`, error);
     throw error;
   }
 };
@@ -113,7 +114,7 @@ export const bulkUpdateTexts = async (updates) => {
 
     return { results, errors };
   } catch (error) {
-    console.error('Error in bulk update:', error);
+    logger.error('Error in bulk update:', error);
     throw error;
   }
 };
@@ -149,7 +150,7 @@ export const resetTextToDefault = async (key) => {
 
     return data;
   } catch (error) {
-    console.error(`Error resetting text ${key}:`, error);
+    logger.error(`Error resetting text ${key}:`, error);
     throw error;
   }
 };

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import {
@@ -45,7 +46,7 @@ const TeamManager: React.FC = () => {
       if (error) throw error;
       setStaff(data || []);
     } catch (err) {
-      console.error('Error fetching staff:', err);
+      logger.error('Error fetching staff:', err);
     } finally {
       setLoading(false);
     }

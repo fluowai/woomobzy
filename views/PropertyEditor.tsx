@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -188,7 +189,7 @@ const PropertyEditor: React.FC = () => {
           const data = await propertyService.getById(id);
           setFormData(data);
         } catch (error) {
-          console.error('Erro ao carregar imóvel', error);
+          logger.error('Erro ao carregar imóvel', error);
           navigate(`/${niche}/properties`);
         } finally {
           setLoading(false);
@@ -207,7 +208,7 @@ const PropertyEditor: React.FC = () => {
     }
 
     setLoading(true);
-    console.log('💾 Iniciando salvamento do imóvel...', { isNew, id });
+    logger.info('💾 Iniciando salvamento do imóvel...', { isNew, id });
 
     try {
       const payload = {
@@ -215,20 +216,20 @@ const PropertyEditor: React.FC = () => {
         organization_id: profile?.organization_id,
       };
 
-      console.log('📦 Payload de salvamento:', payload);
+      logger.info('📦 Payload de salvamento:', payload);
 
       if (isNew) {
         const result = await propertyService.create(payload);
-        console.log('✅ Imóvel criado com sucesso:', result);
+        logger.info('✅ Imóvel criado com sucesso:', result);
         alert('Imóvel criado com sucesso!');
       } else if (id) {
         const result = await propertyService.update(id, payload);
-        console.log('✅ Imóvel atualizado com sucesso:', result);
+        logger.info('✅ Imóvel atualizado com sucesso:', result);
         alert('Imóvel atualizado com sucesso!');
       }
       navigate(`/${niche}/properties`);
     } catch (error: any) {
-      console.error('❌ Erro detalhado ao salvar:', error);
+      logger.error('❌ Erro detalhado ao salvar:', error);
       alert(
         `Erro ao salvar imóvel: ${error.message || 'Erro desconhecido'}. Verifique o console para mais detalhes.`
       );
@@ -275,7 +276,7 @@ const PropertyEditor: React.FC = () => {
 
       setFormData((prev) => ({ ...prev, analysis }));
     } catch (error) {
-      console.error('Erro na análise', error);
+      logger.error('Erro na análise', error);
       alert(
         'Erro ao realizar análise. Verifique se a cidade e estado estão corretos.'
       );
@@ -323,7 +324,7 @@ const PropertyEditor: React.FC = () => {
       }));
       alert('Dados importados com sucesso do SICAR!');
     } catch (error: any) {
-      console.error(error);
+      logger.error(error);
       alert(
         error.message ||
           'Erro ao importar dados do CAR. O sistema pode estar instável ou o código é inválido.'
@@ -359,7 +360,7 @@ const PropertyEditor: React.FC = () => {
           alert('KML importado com sucesso!');
         }
       } catch (error) {
-        console.error('Erro ao importar KML:', error);
+        logger.error('Erro ao importar KML:', error);
         alert('Erro ao processar arquivo KML.');
       }
     };

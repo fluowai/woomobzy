@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import {
@@ -137,7 +138,7 @@ const LegalContracts: React.FC = () => {
 
       setContracts(mapped);
     } catch (error) {
-      console.error('Error loading contracts:', error);
+      logger.error('Error loading contracts:', error);
     } finally {
       setLoading(false);
     }
@@ -206,7 +207,7 @@ const LegalContracts: React.FC = () => {
         sendNow: false,
       });
     } catch (error) {
-      console.error('Error creating contract:', error);
+      logger.error('Error creating contract:', error);
       alert('Erro ao criar contrato no banco');
     }
   };
@@ -246,7 +247,7 @@ const LegalContracts: React.FC = () => {
     const content = getGeneratedContent(contract);
     const message = `*DOCUMENTO JURÍDICO - ${contract.title.toUpperCase()}*\n\nOlá ${contract.clientName}, segue a minuta do contrato para sua análise:\n\n${content}`;
 
-    console.log('Enviando via Evolution API:', {
+    logger.info('Enviando via Evolution API:', {
       url: `${normalizedBaseUrl}/message/sendText/${instanceName}`,
       number: cleanPhone,
     });
@@ -283,7 +284,7 @@ const LegalContracts: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Erro ao enviar WhatsApp:', error);
+      logger.error('Erro ao enviar WhatsApp:', error);
       setWhatsappStatus({
         type: 'error',
         message:

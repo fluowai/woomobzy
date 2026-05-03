@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Palette,
@@ -1129,7 +1130,7 @@ const TemplateCustomizer: React.FC = () => {
                         return;
                       }
                       try {
-                        console.log('🔌 Testando conexão Evolution API...');
+                        logger.info('🔌 Testando conexão Evolution API...');
 
                         // Em desenvolvimento, chamar a API diretamente
                         const apiUrl = `${config.baseUrl}/instance/connectionState/${config.instanceName}`;
@@ -1160,7 +1161,7 @@ const TemplateCustomizer: React.FC = () => {
                           );
                         }
                       } catch (e: any) {
-                        console.error('❌ Erro de conexão:', e);
+                        logger.error('❌ Erro de conexão:', e);
                         alert(
                           `❌ Falha na conexão: ${e.message}\n\nVerifique:\n- URL base está correta\n- Token (apikey) está válido\n- Nome da instância existe`
                         );

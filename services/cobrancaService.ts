@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { callApi } from '../src/lib/api';
 
 export interface Billing {
@@ -63,7 +64,7 @@ export class CobrancaService {
       );
       return result.data || [];
     } catch (error) {
-      console.error('Erro ao listar cobranças:', error);
+      logger.error('Erro ao listar cobranças:', error);
       return [];
     }
   }
@@ -81,7 +82,7 @@ export class CobrancaService {
       });
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao criar cobrança:', error);
+      logger.error('Erro ao criar cobrança:', error);
       return null;
     }
   }
@@ -101,7 +102,7 @@ export class CobrancaService {
       });
       return { success: result.success, created: result.created || 0 };
     } catch (error) {
-      console.error('Erro ao gerar cobranças:', error);
+      logger.error('Erro ao gerar cobranças:', error);
       return { success: false, created: 0 };
     }
   }
@@ -121,7 +122,7 @@ export class CobrancaService {
       });
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao registrar pagamento:', error);
+      logger.error('Erro ao registrar pagamento:', error);
       return null;
     }
   }
@@ -137,7 +138,7 @@ export class CobrancaService {
       });
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao cancelar cobrança:', error);
+      logger.error('Erro ao cancelar cobrança:', error);
       return null;
     }
   }
@@ -150,7 +151,7 @@ export class CobrancaService {
       const result = await callApi(url);
       return result.data || null;
     } catch (error) {
-      console.error('Erro ao buscar dashboard:', error);
+      logger.error('Erro ao buscar dashboard:', error);
       return null;
     }
   }
@@ -160,7 +161,7 @@ export class CobrancaService {
       const result = await callApi('/api/cobranca/relatorio/inadimplencia');
       return result.data || [];
     } catch (error) {
-      console.error('Erro ao buscar inadimplência:', error);
+      logger.error('Erro ao buscar inadimplência:', error);
       return [];
     }
   }
@@ -182,7 +183,7 @@ export class CobrancaService {
       );
       return result.data || result;
     } catch (error) {
-      console.error('Erro ao exportar dados:', error);
+      logger.error('Erro ao exportar dados:', error);
       return null;
     }
   }

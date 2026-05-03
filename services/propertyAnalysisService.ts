@@ -1,6 +1,7 @@
 // Serviço de análise inteligente de propriedades rurais
 // Integra dados climáticos com IA (Gemini) para gerar recomendações
 
+import { logger } from '@/utils/logger';
 import { climateService } from './climateService';
 import { geminiService } from './geminiService';
 import { Property, ClimateData, PropertyAnalysis } from '../types';
@@ -17,14 +18,14 @@ export const propertyAnalysisService = {
   ): Promise<PropertyAnalysis> {
     try {
       // 1. Buscar dados climáticos
-      console.log('🌍 Buscando dados climáticos...');
+      logger.info('🌍 Buscando dados climáticos...');
       const climate = await climateService.getClimateData(city, state);
 
       // 2. Preparar prompt para IA
       const prompt = this.buildAnalysisPrompt(climate, areaHectares, soilType);
 
       // 3. Chamar IA para análise
-      console.log('🤖 Analisando com IA...');
+      logger.info('🤖 Analisando com IA...');
       const aiResponse = await geminiService.generateText(prompt);
 
       // 4. Processar resposta
@@ -36,7 +37,7 @@ export const propertyAnalysisService = {
         analyzedAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Erro na análise:', error);
+      logger.error('Erro na análise:', error);
       throw new Error(
         'Não foi possível analisar a propriedade. Tente novamente.'
       );
@@ -121,8 +122,8 @@ IMPORTANTE: Retorne APENAS o JSON válido, sem texto adicional antes ou depois.`
 
       return parsed;
     } catch (error) {
-      console.error('Erro ao processar resposta da IA:', error);
-      console.log('Resposta recebida:', response);
+      logger.error('Erro ao processar resposta da IA:', error);
+      logger.info('Resposta recebida:', response);
 
       // Retornar análise padrão em caso de erro
       return {

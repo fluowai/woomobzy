@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import {
   TrendingUp,
@@ -46,7 +47,7 @@ const RuralDashboard: React.FC = () => {
         setPropertyCount(pCount || 0);
         setLeadCount(lCount || 0);
       } catch (err) {
-        console.error('Loader error:', err);
+        logger.error('Loader error:', err);
       } finally {
         setLoading(false);
       }

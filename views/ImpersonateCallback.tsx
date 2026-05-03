@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -57,7 +58,7 @@ const ImpersonateCallback: React.FC = () => {
         // Force reload to ensure all contexts refresh with new user
         window.location.href = '/admin/dashboard';
       } catch (err: any) {
-        console.error('Impersonation Error:', err);
+        logger.error('Impersonation Error:', err);
         setError(err.message || 'Erro desconhecido ao acessar conta.');
       }
     };

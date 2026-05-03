@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Map,
@@ -107,7 +108,7 @@ const CadastroTecnico: React.FC = () => {
             setGeoData({ type: 'FeatureCollection', features });
           }
         } catch (err) {
-          console.error('Erro ao processar arquivo:', err);
+          logger.error('Erro ao processar arquivo:', err);
         }
       };
       reader.readAsText(file);

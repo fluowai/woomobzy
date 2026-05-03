@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useContext,
@@ -52,9 +53,9 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({
       const data = await response.json();
       setTenant(data);
 
-      console.log('✅ Tenant carregado:', data.name);
+      logger.info('✅ Tenant carregado:', data.name);
     } catch (err: any) {
-      console.error('❌ Erro ao carregar tenant:', err);
+      logger.error('❌ Erro ao carregar tenant:', err);
       setError(err.message);
     } finally {
       setLoading(false);

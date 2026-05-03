@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React from 'react';
 import { CustomHTMLBlockConfig } from '../../../types/landingPage';
 
@@ -42,7 +43,7 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
           onChange={(e) => handleChange('js', e.target.value)}
           rows={5}
           className="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none"
-          placeholder="console.log('Hello from JS');"
+          placeholder="logger.info('Hello from JS');"
         />
         <p className="text-[10px] text-amber-600 mt-1 font-medium">⚠️ Cuidado ao injetar scripts externos.</p>
       </div>

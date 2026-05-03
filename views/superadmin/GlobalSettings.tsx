@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { Key, Save, Server, AlertTriangle } from 'lucide-react';
@@ -24,7 +25,7 @@ const GlobalSettings: React.FC = () => {
 
       if (data) setSettings(data);
     } catch (error) {
-      console.error('Error fetching global settings:', error);
+      logger.error('Error fetching global settings:', error);
     } finally {
       setLoading(false);
     }
@@ -47,7 +48,7 @@ const GlobalSettings: React.FC = () => {
 
       alert('Configurações salvas com sucesso! ✅');
     } catch (error: any) {
-      console.error('Save Error:', error);
+      logger.error('Save Error:', error);
       alert(`Erro ao salvar: ${error.message}`);
     } finally {
       setSaving(false);

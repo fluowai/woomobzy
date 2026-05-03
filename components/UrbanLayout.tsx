@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
@@ -50,7 +51,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
   // Guard: Super Admin can ONLY see this if impersonating
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
-    console.log(
+    logger.info(
       '🛡️ [UrbanLayout] Guard triggered. Redirecting Super Admin to /superadmin'
     );
     return <Navigate to="/superadmin" replace />;
@@ -61,7 +62,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
       await signOut();
       window.location.href = '/login';
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     }
   };
 

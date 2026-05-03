@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { propertyService } from '../services/properties';
@@ -45,7 +46,7 @@ const PropertyDetail: React.FC = () => {
         const data = await propertyService.getById(id); // Use full ID from URL
         setProperty(data);
       } catch (e) {
-        console.error('Erro ao carregar imóvel', e);
+        logger.error('Erro ao carregar imóvel', e);
       } finally {
         setLoading(false);
       }

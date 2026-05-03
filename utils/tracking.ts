@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 /**
  * TRACKING UTILITIES
  * Biblioteca centralizada para captura de dados de tracking
@@ -43,7 +44,7 @@ export function captureUTMParameters(): void {
   // Salvar em sessionStorage se houver parâmetros
   if (Object.keys(utmData).length > 0) {
     sessionStorage.setItem('utm_params', JSON.stringify(utmData));
-    console.log('📊 UTM Parameters captured:', utmData);
+    logger.info('📊 UTM Parameters captured:', utmData);
   }
 }
 
@@ -55,7 +56,7 @@ export function getUTMParameters(): Record<string, string> {
     const stored = sessionStorage.getItem('utm_params');
     return stored ? JSON.parse(stored) : {};
   } catch (error) {
-    console.error('Error reading UTM parameters:', error);
+    logger.error('Error reading UTM parameters:', error);
     return {};
   }
 }
@@ -106,7 +107,7 @@ export function getGoogleAnalyticsClientId(): string | undefined {
       }) as any;
     }
   } catch (error) {
-    console.error('Error getting GA Client ID:', error);
+    logger.error('Error getting GA Client ID:', error);
   }
   return undefined;
 }
@@ -164,7 +165,7 @@ export function trackFacebookEvent(
 ): void {
   if (typeof window !== 'undefined' && (window as any).fbq) {
     (window as any).fbq('track', eventName, params);
-    console.log(`📊 Facebook Pixel Event: ${eventName}`, params);
+    logger.info(`📊 Facebook Pixel Event: ${eventName}`, params);
   }
 }
 
@@ -177,7 +178,7 @@ export function trackGoogleEvent(
 ): void {
   if (typeof window !== 'undefined' && (window as any).gtag) {
     (window as any).gtag('event', eventName, params);
-    console.log(`📊 Google Analytics Event: ${eventName}`, params);
+    logger.info(`📊 Google Analytics Event: ${eventName}`, params);
   }
 }
 
@@ -194,7 +195,7 @@ export function trackGoogleAdsConversion(
       value: value,
       currency: 'BRL',
     });
-    console.log(`📊 Google Ads Conversion: ${conversionLabel}`, { value });
+    logger.info(`📊 Google Ads Conversion: ${conversionLabel}`, { value });
   }
 }
 

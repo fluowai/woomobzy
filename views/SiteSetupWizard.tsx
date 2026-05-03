@@ -203,7 +203,7 @@ const SiteSetupWizard: React.FC = () => {
           await supabase.from('site_settings').upsert(
             {
               organization_id: profile.organization_id,
-              logo: siteData.logoBase64,
+              logo_url: siteData.logoBase64,
             },
             { onConflict: 'organization_id' }
           );

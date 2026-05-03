@@ -65,20 +65,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      logger.info(
-        '🔄 [AuthContext] Auth Event:',
-        _event,
-        'User:',
-        session?.user?.id
-      );
-
       // DEBOUNCE FIX: If SIGNED_IN fires before INITIAL_SESSION, skip it.
-      // INITIAL_SESSION is the canonical first event and will follow immediately.
       if (_event === 'SIGNED_IN' && !initialSessionProcessed.current) {
-        logger.info(
-          '⏭️ [AuthContext] Skipping early SIGNED_IN, waiting for INITIAL_SESSION'
-        );
-        // Still set the user so we have it ready
         if (session?.user) setUser(session.user);
         return;
       }
@@ -88,19 +76,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       if (session?.user) {
-        setUser(session.user);
-
         // Skip redundant events (SIGNED_IN or TOKEN_REFRESHED) if profile is already loaded for this user
         const isRedundant =
           (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') &&
           profileRef.current?.id === session.user.id;
 
-        if (isRedundant) {
-          logger.info(
-            `[AuthContext] Skipping redundant ${_event}, profile already loaded.`
-          );
-          return;
-        }
+        if (isRedundant) return;
+
+        logger.info(
+          '🔄 [AuthContext] Auth Event:',
+          _event,
+          'User:',
+          session?.user?.id
+        );
+
+        setUser(session.user);
 
         // Only reset retryCount on INITIAL_SESSION (not every event)
         if (_event === 'INITIAL_SESSION') {

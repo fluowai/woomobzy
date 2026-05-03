@@ -166,7 +166,7 @@ const VisualSiteEditor: React.FC = () => {
             await supabase.from('site_settings').upsert(
               {
                 organization_id: orgId,
-                logo: base64,
+                logo_url: base64,
               },
               { onConflict: 'organization_id' }
             );

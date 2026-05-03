@@ -18,16 +18,21 @@ const AgroMarketWidget: React.FC = () => {
     setLoading(true);
     setError(false);
     try {
-      // Tenta conectar ao microserviço local
-      const response = await fetch('http://localhost:8000/prices');
-      const result = await response.json();
-      if (result.success) {
-        setPrices(result.data);
-      } else {
-        setError(true);
+      // Tenta conectar ao microserviço local (silenciosamente)
+      const response = await fetch('http://localhost:8000/prices').catch(() => null);
+      
+      if (response && response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setPrices(result.data);
+          setLoading(false);
+          return;
+        }
       }
+      
+      throw new Error('Service offline');
     } catch (err) {
-      logger.warn('Agro Intelligence Service offline. Using mock data for demo.');
+      logger.info('📡 Agro Intelligence Service offline. Usando dados simulados.');
       // Mock data for WOW effect if service is offline
       setPrices({
         'soja': { valor: 134.50, unidade: 'sc', data: '28/04/2024', moeda: 'BRL' },

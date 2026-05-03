@@ -139,11 +139,23 @@ class ErrorBoundary extends React.Component<EBProps, EBState> {
                 {this.state.error?.toString()}
               </code>
             </div>
+            {this.state.error?.name === 'TypeError' && this.state.error?.message?.includes('module') ? (
+              <p className="text-amber-500 text-sm mb-4">
+                ⚠️ Detectamos uma atualização no sistema. Por favor, clique abaixo para atualizar sua versão.
+              </p>
+            ) : null}
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                // If it's a module error, force reload from server
+                if (this.state.error?.name === 'TypeError' && this.state.error?.message?.includes('module')) {
+                   window.location.reload();
+                } else {
+                   window.location.reload();
+                }
+              }}
               className="btn btn-primary btn-lg px-8"
             >
-              Recarregar Sistema
+              Atualizar e Recarregar
             </button>
           </div>
         </div>

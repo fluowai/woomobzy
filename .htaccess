@@ -24,10 +24,12 @@ Options +FollowSymLinks -MultiViews
   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
   # Reescrever URLs para index.html (React Router)
-  # Ignora arquivos reais
+  # Ignora arquivos reais e rotas de API/WS
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteCond %{REQUEST_URI} !^/api [NC]
+  RewriteCond %{REQUEST_URI} !^/ws [NC]
   
   # Redireciona tudo para index.html
   RewriteRule . /index.html [L]

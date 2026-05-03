@@ -6,7 +6,7 @@ const API_BASE = import.meta.env.VITE_WHATSAPP_API_URL || '/api/whatsapp';
 const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || 
   (IS_VERCEL ? `wss://${RAILWAY_URL}/ws` : `wss://${window.location.host}/api/whatsapp/ws`);
 
-import { supabase } from '../../../src/lib/supabase';
+import { supabase } from '@/services/supabase';
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -88,26 +88,26 @@ export interface MessageListResponse {
 // ---- Instance API ----
 export const instanceApi = {
   create: (name: string) =>
-    apiRequest<Instance>('/api/instances', {
+    apiRequest<Instance>('/instances', {
       method: 'POST',
       body: JSON.stringify({ name }),
     }),
 
-  list: () => apiRequest<Instance[]>('/api/instances'),
+  list: () => apiRequest<Instance[]>('/instances'),
 
-  get: (id: string) => apiRequest<Instance>(`/api/instances/${id}`),
+  get: (id: string) => apiRequest<Instance>(`/instances/${id}`),
 
   delete: (id: string) =>
-    apiRequest(`/api/instances/${id}`, { method: 'DELETE' }),
+    apiRequest(`/instances/${id}`, { method: 'DELETE' }),
 
   getQRCode: (id: string) =>
-    apiRequest<{ qr_code?: string; status: string }>(`/api/instances/${id}/qrcode`),
+    apiRequest<{ qr_code?: string; status: string }>(`/instances/${id}/qrcode`),
 
   connect: (id: string) =>
-    apiRequest(`/api/instances/${id}/connect`, { method: 'POST' }),
+    apiRequest(`/instances/${id}/connect`, { method: 'POST' }),
 
   logout: (id: string) =>
-    apiRequest(`/api/instances/${id}/logout`, { method: 'POST' }),
+    apiRequest(`/instances/${id}/logout`, { method: 'POST' }),
 };
 
 // ---- Chat API ----

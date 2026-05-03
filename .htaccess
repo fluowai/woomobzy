@@ -28,10 +28,15 @@ Options +FollowSymLinks -MultiViews
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME} !-l
+  
+  # NÃO redirecionar se for um arquivo de asset (evita erro de MIME type)
+  RewriteCond %{REQUEST_URI} !\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|json|map)$ [NC]
+  
+  # Ignora rotas de backend
   RewriteCond %{REQUEST_URI} !^/api [NC]
   RewriteCond %{REQUEST_URI} !^/ws [NC]
   
-  # Redireciona tudo para index.html
+  # Redireciona o restante para index.html
   RewriteRule . /index.html [L]
 </IfModule>
 

@@ -279,10 +279,9 @@ const PropertyEditor: React.FC = () => {
       }
       navigate(`/${nichePath}/properties`);
     } catch (error: any) {
+      const errorMsg = error?.message || error?.details || JSON.stringify(error);
       logger.error('❌ Erro detalhado ao salvar:', error);
-      alert(
-        `Erro ao salvar imóvel: ${error.message || 'Erro desconhecido'}. Verifique o console para mais detalhes.`
-      );
+      alert(`Erro ao salvar imóvel: ${errorMsg}`);
     } finally {
       setLoading(false);
     }

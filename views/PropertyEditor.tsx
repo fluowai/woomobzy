@@ -92,6 +92,10 @@ const PropertyEditor: React.FC = () => {
         ? URBAN_TYPES
         : Object.values(PropertyType);
 
+  // Detecção dinâmica do tipo de imóvel para exibição de campos
+  const isRuralType = formData.type && RURAL_TYPES.includes(formData.type as PropertyType);
+  const isUrbanType = formData.type && URBAN_TYPES.includes(formData.type as PropertyType);
+
   const [loading, setLoading] = useState(false);
   const [loadingCar, setLoadingCar] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -623,14 +627,14 @@ const PropertyEditor: React.FC = () => {
           </div>
         </div>
 
-        {/* Seção 2.1: Mapeamento Georreferenciado (GIS) - RURAL ONLY */}
-        {niche !== 'traditional' && (
+        {/* Seção 2: Localização & Georreferenciamento - RURAL ONLY */}
+        {isRuralType && (
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2 text-indigo-600">
-                <Sparkles size={20} />
+                <MapPin size={20} />
                 <h2 className="font-bold uppercase tracking-wider text-sm">
-                  Mapeamento Georreferenciado (GIS)
+                  Georreferenciamento & Mapa
                 </h2>
               </div>
               <div className="relative">
@@ -676,7 +680,7 @@ const PropertyEditor: React.FC = () => {
         )}
 
         {/* Seção 3: Características Rurais - RURAL ONLY */}
-        {niche !== 'traditional' && (
+        {isRuralType && (
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex items-center gap-2 mb-6 text-indigo-600">
               <Home size={20} />
@@ -1377,8 +1381,8 @@ const PropertyEditor: React.FC = () => {
           </div>
         )}
 
-        {/* Seção 3.1: Características Urbanas - TRADITIONAL ONLY */}
-        {niche !== 'rural' && (
+        {/* Seção 3.1: Características Urbanas - URBAN ONLY */}
+        {isUrbanType && (
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex items-center gap-2 mb-6 text-indigo-600">
               <Home size={20} />

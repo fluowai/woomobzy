@@ -110,8 +110,6 @@ const PortalCompradorUrbano: React.FC = () => {
     },
   ];
 
-    },
-  ];
 
   const myContracts = [
     {

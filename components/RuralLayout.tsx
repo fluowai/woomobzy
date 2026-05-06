@@ -33,6 +33,7 @@ import SupportModal from './SupportModal';
 const RuralLayout: React.FC = () => {
   const { settings } = useSettings();
   const { profile, signOut, isImpersonating, loading } = useAuth();
+  const niche = (profile?.organization as any)?.niche || 'rural';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();

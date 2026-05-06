@@ -19,8 +19,8 @@ import {
 
 const PortalCompradorUrbano: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
-    'buscar' | 'favoritos' | 'visitas'
-  >('buscar');
+    'buscar' | 'favoritos' | 'visitas' | 'contratos' | 'financeiro' | 'obra'
+  >('contratos');
   const [tipo, setTipo] = useState('');
 
   const properties = [
@@ -110,19 +110,24 @@ const PortalCompradorUrbano: React.FC = () => {
     },
   ];
 
-  const visits = [
-    {
-      property: 'Apt 3Q - Ed. Primavera',
-      date: '12/03/2026',
-      time: '14:00',
-      status: 'confirmada',
     },
+  ];
+
+  const myContracts = [
     {
-      property: 'Cobertura Duplex',
-      date: '18/03/2026',
-      time: '10:00',
-      status: 'pendente',
-    },
+      id: 'cont_1',
+      property: 'Residencial Aurora - Quadra A, Lote 12',
+      type: 'Loteamento',
+      status: 'Ativo',
+      progress: 75,
+      installments: { total: 120, paid: 14, pending: 1, next_due: '10/06/2026' }
+    }
+  ];
+
+  const myPayments = [
+    { id: 'p_14', description: 'Parcela 014/120', amount: 1250.00, due: '10/05/2026', status: 'pago' },
+    { id: 'p_15', description: 'Parcela 015/120', amount: 1250.00, due: '10/06/2026', status: 'aberto', invoice_url: '#' },
+    { id: 'p_16', description: 'Parcela 016/120', amount: 1250.00, due: '10/07/2026', status: 'aberto' },
   ];
 
   const filtered = properties.filter((p) => !tipo || p.type === tipo);
@@ -141,9 +146,11 @@ const PortalCompradorUrbano: React.FC = () => {
 
       <div className="flex gap-2">
         {[
+          { key: 'contratos', label: 'Meus Contratos' },
+          { key: 'financeiro', label: 'Financeiro' },
+          { key: 'obra', label: 'Evolução da Obra' },
           { key: 'buscar', label: 'Buscar Imóveis' },
           { key: 'favoritos', label: 'Favoritos' },
-          { key: 'visitas', label: 'Visitas' },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -154,6 +161,126 @@ const PortalCompradorUrbano: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {activeTab === 'contratos' && (
+        <div className="grid grid-cols-1 gap-6">
+           {myContracts.map(c => (
+             <div key={c.id} className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-xl shadow-slate-200/50">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                   <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                         <Home size={32} />
+                      </div>
+                      <div>
+                         <h3 className="text-xl font-black text-black italic tracking-tighter uppercase">{c.property}</h3>
+                         <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{c.type} • Contrato {c.id}</p>
+                      </div>
+                   </div>
+                   <span className="px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      {c.status}
+                   </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de Parcelas</p>
+                      <p className="text-2xl font-black text-black italic">{c.installments.total}</p>
+                   </div>
+                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pagas</p>
+                      <p className="text-2xl font-black text-emerald-600 italic">{c.installments.paid}</p>
+                   </div>
+                   <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pendentes</p>
+                      <p className="text-2xl font-black text-amber-600 italic">{c.installments.pending}</p>
+                   </div>
+                   <div className="p-6 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20">
+                      <p className="text-[10px] font-black text-white/60 uppercase tracking-widest mb-1">Próximo Vencimento</p>
+                      <p className="text-2xl font-black text-white italic">{c.installments.next_due}</p>
+                   </div>
+                </div>
+             </div>
+           ))}
+        </div>
+      )}
+
+      {activeTab === 'financeiro' && (
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
+           <div className="p-8 border-b border-slate-50 bg-slate-50/50">
+              <h3 className="text-sm font-black text-black uppercase tracking-widest flex items-center gap-2">
+                 <DollarSign size={18} className="text-blue-600" /> Extrato Financeiro
+              </h3>
+           </div>
+           <div className="overflow-x-auto">
+              <table className="w-full">
+                 <thead>
+                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                       <th className="text-left px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Descrição</th>
+                       <th className="text-left px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Vencimento</th>
+                       <th className="text-left px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Valor</th>
+                       <th className="text-left px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Status</th>
+                       <th className="text-right px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Ações</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-slate-50">
+                    {myPayments.map(p => (
+                      <tr key={p.id} className="hover:bg-slate-50/50 transition-all">
+                         <td className="px-8 py-5 font-bold text-sm">{p.description}</td>
+                         <td className="px-8 py-5 text-sm text-slate-500">{p.due}</td>
+                         <td className="px-8 py-5 font-black text-blue-600">{p.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                         <td className="px-8 py-5">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${p.status === 'pago' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                               {p.status}
+                            </span>
+                         </td>
+                         <td className="px-8 py-5 text-right">
+                            {p.status === 'aberto' && (
+                               <button className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+                                  Boleto / PIX
+                               </button>
+                            )}
+                         </td>
+                      </tr>
+                    ))}
+                 </tbody>
+              </table>
+           </div>
+        </div>
+      )}
+
+      {activeTab === 'obra' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+           <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-xl">
+              <h3 className="text-xl font-black text-black italic tracking-tighter uppercase mb-6">Status da Infraestrutura</h3>
+              <div className="space-y-6">
+                 {[
+                   { label: 'Terraplanagem', progress: 100 },
+                   { label: 'Drenagem', progress: 85 },
+                   { label: 'Pavimentação', progress: 40 },
+                   { label: 'Iluminação', progress: 10 },
+                 ].map(item => (
+                   <div key={item.label} className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                         <span>{item.label}</span>
+                         <span className="text-blue-600">{item.progress}%</span>
+                      </div>
+                      <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                         <div className="h-full bg-blue-600 rounded-full transition-all duration-1000" style={{ width: `${item.progress}%` }} />
+                      </div>
+                   </div>
+                 ))}
+              </div>
+           </div>
+           
+           <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white flex flex-col justify-center items-center text-center">
+              <div className="w-32 h-32 rounded-full border-8 border-blue-600 flex items-center justify-center mb-6">
+                 <span className="text-3xl font-black italic">65%</span>
+              </div>
+              <h3 className="text-2xl font-black italic tracking-tighter uppercase mb-2">Obra em Ritmo Acelerado!</h3>
+              <p className="text-white/40 text-sm font-medium">Previsão de entrega: <strong>Dezembro de 2026</strong></p>
+           </div>
+        </div>
+      )}
 
       {activeTab === 'buscar' && (
         <>
@@ -286,35 +413,6 @@ const PortalCompradorUrbano: React.FC = () => {
                 <p className="text-lg font-black text-blue-600">{prop.price}</p>
               </div>
             ))}
-        </div>
-      )}
-
-      {activeTab === 'visitas' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="font-bold text-black mb-4">Visitas Agendadas</h3>
-          <div className="space-y-3">
-            {visits.map((v, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100"
-              >
-                <div className="flex items-center gap-3">
-                  <Calendar size={20} className="text-blue-500" />
-                  <div>
-                    <p className="text-sm font-bold text-black">{v.property}</p>
-                    <p className="text-xs text-slate-400">
-                      {v.date} às {v.time}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${v.status === 'confirmada' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}
-                >
-                  {v.status}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>

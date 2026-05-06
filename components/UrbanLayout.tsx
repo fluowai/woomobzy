@@ -67,15 +67,17 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
   };
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
-    { icon: Users, label: 'Kanban', path: '/urban/crm' },
+    { icon: LayoutDashboard, label: 'Dashboard 360°', path: '/urban' },
     { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
-    { icon: Key, label: 'Locação', path: '/urban/locacao' },
-    { icon: Building2, label: 'Loteamentos (Loteadora)', path: '/urban/loteamentos' },
-    { icon: LayoutTemplate, label: 'Site & Landing Pages', path: '/urban/landing-pages' },
-    { icon: DollarSign, label: 'Financeiro', path: '/urban/cobranca' },
-    { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
-    { icon: MessageSquare, label: 'Atendimento', path: '/urban/whatsapp' },
+    { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
+    { icon: MapIcon, label: 'Loteamentos (Loteadora)', path: '/urban/loteamentos' },
+    { icon: LayoutGrid, label: 'CRM / Kanban', path: '/urban/crm' },
+    { icon: Calculator, label: 'Simulador Financeiro', path: '/urban/simulador' },
+    { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
+    { icon: DollarSign, label: 'Financeiro & Caixa', path: '/urban/cobranca' },
+    { icon: MessageSquare, label: 'Atendimento (WhatsApp)', path: '/urban/whatsapp' },
+    { icon: LayoutTemplate, label: 'Marketing & Portais', path: '/urban/landing-pages' },
+    { icon: PieChart, label: 'Relatórios Gerenciais', path: '/urban/reports' },
     { icon: Settings, label: 'Configurações', path: '/urban/settings' },
   ];
 

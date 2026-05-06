@@ -104,6 +104,34 @@ export const matchLeadWithProperties = async (
   }
 };
 
+const callAI = async (prompt: string, systemInstruction?: string) => {
+  const client = getAI();
+  if (!client) return '';
+  try {
+    const response = await client.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: prompt,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      },
+    });
+    return response.text || '';
+  } catch (error) {
+    logger.error('Error calling Gemini:', error);
+    return '';
+  }
+};
+
+export const generateCollectionMessage = async (
+  clientName: string,
+  debtAmount: number,
+  daysLate: number
+) => {
+  const prompt = `Crie uma mensagem de WhatsApp para o cliente ${clientName} que deve ${debtAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} e está com ${daysLate} dias de atraso. O tom deve ser profissional, empático e focado em negociação.`;
+  return callAI(prompt, 'Você é um assistente de cobrança especializado em imobiliárias e loteadoras 360.');
+};
+
 export const geminiService = {
   generateText: async (prompt: string) => {
     const client = getAI();

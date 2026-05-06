@@ -6,66 +6,90 @@ export interface ContractTemplate {
 
 export const CONTRACT_TEMPLATES: ContractTemplate[] = [
   {
+    id: 'venda-urbana',
+    name: 'Compra e Venda de Imóvel Urbano',
+    content: `
+# INSTRUMENTO PARTICULAR DE COMPROMISSO DE COMPRA E VENDA URBANO
+
+**VENDEDOR:** [NOME DA IMOBILIÁRIA/PROPRIETÁRIO], conforme dados cadastrais.
+**COMPRADOR:** {{client_name}}.
+
+**OBJETO:** O imóvel urbano denominado **{{property_name}}**, localizado em {{property_location}}, devidamente registrado sob a matrícula nº {{property_registration}}.
+
+**PREÇO E CONDIÇÕES:** 
+O valor total da transação é de **{{contract_value}}**.
+- Valor de Entrada: {{entry_value}}
+- Saldo em: {{installments}} parcelas de {{installment_value}}.
+
+**CLÁUSULAS GERAIS:**
+1. O imóvel será entregue livre e desembaraçado de quaisquer ônus.
+2. A posse definitiva será concedida após a assinatura da escritura pública.
+3. Este contrato é regido pelas leis civis brasileiras.
+
+Gerado via Imobzy 360 em {{current_date}}.
+    `,
+  },
+  {
+    id: 'loteamento',
+    name: 'Compromisso de Compra e Venda de Lote',
+    content: `
+# CONTRATO DE COMPROMISSO DE COMPRA E VENDA DE LOTE - LOTEADORA 360°
+
+**LOTEADORA:** {{developer_name}}, inscrita no CNPJ sob nº {{developer_cnpj}}.
+**COMPRADOR:** {{client_name}}.
+
+**OBJETO:** O lote de terreno nº **{{lot_number}}** da Quadra **{{block_name}}**, do loteamento denominado **{{development_name}}**, localizado em {{property_location}}.
+
+**ESPECIFICAÇÕES DO LOTE:**
+- Área Total: {{lot_area}} m²
+- Confrontações: Frente: {{lot_front}}m | Fundo: {{lot_back}}m | Laterais: {{lot_side}}m
+
+**PREÇO E PAGAMENTO:**
+O valor total do lote é de **{{contract_value}}**.
+- Sinal/Entrada: {{entry_value}}
+- Parcelamento: {{installments}} parcelas mensais reajustáveis pelo índice {{adjustment_index}}.
+
+**INFRAESTRUTURA:** A Loteadora se compromete a entregar a infraestrutura conforme o cronograma aprovado pela municipalidade.
+
+Documento assinado digitalmente via Imobzy 360 em {{current_date}}.
+    `,
+  },
+  {
+    id: 'locacao-urbana',
+    name: 'Contrato de Locação Residencial/Comercial',
+    content: `
+# CONTRATO DE LOCAÇÃO DE IMÓVEL URBANO
+
+**LOCADOR:** [NOME DO PROPRIETÁRIO], representado por [IMOBILIÁRIA].
+**LOCATÁRIO:** {{client_name}}.
+
+**OBJETO:** Locação do imóvel **{{property_name}}**, para fins {{rental_purpose}}.
+
+**VALOR E ENCARGOS:**
+- Aluguel Mensal: {{contract_value}}
+- Encargos: IPTU e Condomínio por conta do {{expenses_responsible}}.
+
+**PRAZO:** Vigência de {{duration}} meses, iniciando em {{start_date}}.
+
+**GARANTIA:** {{warranty_type}}.
+
+Gerado via Imobzy 360 em {{current_date}}.
+    `,
+  },
+  {
     id: 'venda-rural',
     name: 'Compra e Venda de Imóvel Rural',
     content: `
 # INSTRUMENTO PARTICULAR DE COMPROMISSO DE COMPRA E VENDA RURAL
 
-**VENDEDOR:** Fazendas Brasil Select, conforme dados cadastrais no sistema.
-**COMPRADOR:** {{client_name}}, com os dados fornecidos no ato da negociação.
+**VENDEDOR:** [NOME DO VENDEDOR], conforme dados cadastrais.
+**COMPRADOR:** {{client_name}}.
 
-**OBJETO:** O presente contrato tem como objeto a compra e venda do imóvel rural denominado **{{property_name}}**, localizado em {{property_location}}, com área total de {{property_area}} hectares.
+**OBJETO:** Imóvel rural denominado **{{property_name}}**, localizado em {{property_location}}, com área de {{property_area}} hectares.
 
-**PREÇO E CONDIÇÕES DE PAGAMENTO:** O valor total da transação é de **{{contract_value}}**, a ser pago conforme as condições estabelecidas entre as partes.
+**PREÇO:** O valor total é de **{{contract_value}}**.
 
-**CLÁUSULAS GERAIS:**
-1. A posse do imóvel será transferida após a quitação total ou conforme acordo de sinal.
-2. O vendedor garante que o imóvel está livre de ônus e gravames, possuindo CAR (Cadastro Ambiental Rural) e Georreferenciamento em dia.
-3. Este contrato serve como título executivo extrajudicial entre as partes.
-
-Este documento foi gerado automaticamente pela plataforma ImobSaaS em {{current_date}}.
+Gerado via Imobzy 360 em {{current_date}}.
     `,
-  },
-  {
-    id: 'arrendamento',
-    name: 'Contrato de Arrendamento Agrícola',
-    content: `
-# CONTRATO DE ARRENDAMENTO AGRÍCOLA
-
-**ARRENDADOR:** Fazendas Brasil Select (Representante do Proprietário).
-**ARRENDATÁRIO:** {{client_name}}.
-
-**OBJETO:** Arrendamento parcial/total da propriedade **{{property_name}}**, visando a exploração de atividade agropecuária.
-
-**PRAZO:** O prazo de arrendamento será de {{duration}} meses, com início em {{start_date}}.
-
-**VALOR:** O valor do arrendamento é fixado em {{contract_value}} por ciclo/ano, podendo ser convertido em sacas de soja/arrobas de boi conforme índice regional.
-
-**CONDIÇÕES:**
-- O arrendatário se compromete a preservar as áreas de reserva legal.
-- Benfeitorias deverão ser autorizadas previamente por escrito.
-
-Gerado via ImobSaaS em {{current_date}}.
-    `,
-  },
-  {
-    id: 'parceria',
-    name: 'Contrato de Parceria Pecuária',
-    content: `
-# CONTRATO DE PARCERIA PECUÁRIA
-
-**PARCEIRO-OUTORGANTE:** Fazendas Brasil Select.
-**PARCEIRO-OUTORGADO:** {{client_name}}.
-
-**OBJETO:** Parceria para criação e engorda de gado na propriedade **{{property_name}}**.
-
-**DIVISÃO DE RESULTADOS:** Os lucros provenientes da venda do rebanho serão divididos na proporção de {{percent}}% para o outorgante e {{percent_out}}% para o outorgado.
-
-**RESPONSABILIDADES:**
-- O outorgante fornece a pastagem e infraestrutura.
-- O outorgado fornece a mão de obra e manejo técnico.
-
-Documento de controle interno ImobSaaS - {{current_date}}.
-    `,
-  },
+  }
 ];

@@ -7,10 +7,12 @@ import {
   ArrowRight,
   RefreshCw,
   Zap,
+  DollarSign,
 } from 'lucide-react';
 import {
   generateSmartDescription,
   matchLeadWithProperties,
+  generateCollectionMessage,
 } from '../services/geminiService';
 import { MOCK_PROPERTIES, MOCK_LEADS } from '../constants';
 
@@ -22,6 +24,10 @@ const AIAssistant: React.FC = () => {
   const [matchResult, setMatchResult] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState(MOCK_LEADS[0].id);
+
+  const [collectionResult, setCollectionResult] = useState('');
+  const [isGeneratingColl, setIsGeneratingColl] = useState(false);
+  const [collectionData, setCollectionData] = useState({ name: 'João Silva', amount: 4500, days: 45 });
 
   const handleGenerateDescription = async () => {
     setIsGeneratingDesc(true);
@@ -43,16 +49,23 @@ const AIAssistant: React.FC = () => {
     setIsMatching(false);
   };
 
+  const handleGenerateCollection = async () => {
+    setIsGeneratingColl(true);
+    const result = await generateCollectionMessage(collectionData.name, collectionData.amount, collectionData.days);
+    setCollectionResult(result || '');
+    setIsGeneratingColl(false);
+  };
+
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
+    <div className="space-y-8 max-w-5xl mx-auto pb-20">
       <div className="flex items-center gap-3">
         <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200">
           <Sparkles size={32} />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Imobi AI Studio</h1>
-          <p className="text-slate-500 text-lg">
-            Aumente sua produtividade com inteligência artificial avançada.
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tighter">Imobi AI Studio 360°</h1>
+          <p className="text-slate-500">
+            Inteligência artificial para acelerar seu faturamento e regularizar sua carteira.
           </p>
         </div>
       </div>
@@ -63,56 +76,38 @@ const AIAssistant: React.FC = () => {
           <div className="p-8 border-b border-slate-50">
             <div className="flex items-center gap-2 mb-4">
               <Zap className="text-yellow-500" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">
-                Copywriter Inteligente
-              </h2>
+              <h2 className="text-xl font-bold text-slate-900">Copywriter Inteligente</h2>
             </div>
-            <p className="text-slate-500 mb-6 text-sm">
-              Gere descrições persuasivas e otimizadas para seus anúncios
-              automaticamente.
-            </p>
+            <p className="text-slate-500 mb-6 text-sm">Gere descrições persuasivas para seus anúncios.</p>
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                  Selecione o Imóvel
-                </label>
-                <select
-                  value={selectedPropId}
-                  onChange={(e) => setSelectedPropId(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                >
-                  {MOCK_PROPERTIES.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={selectedPropId}
+                onChange={(e) => setSelectedPropId(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+              >
+                {MOCK_PROPERTIES.map((p) => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
               <button
                 onClick={handleGenerateDescription}
                 disabled={isGeneratingDesc}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20"
               >
-                {isGeneratingDesc ? (
-                  <RefreshCw className="animate-spin" size={18} />
-                ) : (
-                  <Zap size={18} />
-                )}
+                {isGeneratingDesc ? <RefreshCw className="animate-spin" size={18} /> : <Zap size={18} />}
                 Gerar Descrição Pro
               </button>
             </div>
           </div>
           <div className="p-8 bg-slate-50 flex-1">
             {descriptionResult ? (
-              <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-inner">
-                <div className="prose prose-sm text-slate-700 whitespace-pre-wrap">
-                  {descriptionResult}
-                </div>
+              <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm prose prose-sm max-w-none text-slate-700 whitespace-pre-wrap leading-relaxed">
+                {descriptionResult}
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
-                <MessageSquare size={48} className="opacity-20" />
-                <p className="text-sm">O resultado aparecerá aqui.</p>
+              <div className="h-full flex flex-col items-center justify-center text-slate-300 opacity-50 py-10">
+                <MessageSquare size={48} className="mb-2" />
+                <p className="text-xs font-bold uppercase tracking-widest text-center">O resultado aparecerá aqui.</p>
               </div>
             )}
           </div>
@@ -123,59 +118,107 @@ const AIAssistant: React.FC = () => {
           <div className="p-8 border-b border-slate-50">
             <div className="flex items-center gap-2 mb-4">
               <Search className="text-indigo-600" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">
-                Lead Matchmaker
-              </h2>
+              <h2 className="text-xl font-bold text-slate-900">Lead Matchmaker</h2>
             </div>
-            <p className="text-slate-500 mb-6 text-sm">
-              Deixe a IA analisar seus leads e encontrar os imóveis perfeitos
-              para fechar negócio.
-            </p>
+            <p className="text-slate-500 mb-6 text-sm">Encontre os imóveis perfeitos para seus leads.</p>
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                  Selecione o Lead
-                </label>
-                <select
-                  value={selectedLeadId}
-                  onChange={(e) => setSelectedLeadId(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                >
-                  {MOCK_LEADS.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={selectedLeadId}
+                onChange={(e) => setSelectedLeadId(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+              >
+                {MOCK_LEADS.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
               <button
                 onClick={handleMatchLeads}
                 disabled={isMatching}
-                className="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all hover:bg-black disabled:opacity-50"
               >
-                {isMatching ? (
-                  <RefreshCw className="animate-spin" size={18} />
-                ) : (
-                  <ArrowRight size={18} />
-                )}
+                {isMatching ? <RefreshCw className="animate-spin" size={18} /> : <ArrowRight size={18} />}
                 Analisar Oportunidades
               </button>
             </div>
           </div>
           <div className="p-8 bg-slate-50 flex-1">
             {matchResult ? (
-              <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-inner">
-                <div className="prose prose-sm text-slate-700 whitespace-pre-wrap">
-                  {matchResult}
-                </div>
+              <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm prose prose-sm max-w-none text-slate-700 whitespace-pre-wrap leading-relaxed">
+                {matchResult}
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
-                <CheckCircle size={48} className="opacity-20" />
-                <p className="text-sm">As recomendações aparecerão aqui.</p>
+              <div className="h-full flex flex-col items-center justify-center text-slate-300 opacity-50 py-10">
+                <CheckCircle size={48} className="mb-2" />
+                <p className="text-xs font-bold uppercase tracking-widest text-center">As recomendações aparecerão aqui.</p>
               </div>
             )}
           </div>
+        </div>
+
+        {/* Collection AI Agent */}
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col md:col-span-2">
+           <div className="grid grid-cols-1 lg:grid-cols-2">
+              <div className="p-8 lg:p-12 border-r border-slate-50">
+                 <div className="flex items-center gap-2 mb-4">
+                    <DollarSign className="text-emerald-600" size={28} />
+                    <h2 className="text-2xl font-black text-slate-900 italic tracking-tighter">Agente de Cobrança & Negociação</h2>
+                 </div>
+                 <p className="text-slate-500 mb-8 text-sm">
+                    Gere abordagens humanizadas para clientes inadimplentes e acelere a recuperação de crédito.
+                 </p>
+                 
+                 <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Nome do Cliente</label>
+                          <input 
+                            value={collectionData.name}
+                            onChange={e => setCollectionData({...collectionData, name: e.target.value})}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold"
+                          />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Valor em Atraso</label>
+                          <input 
+                            type="number"
+                            value={collectionData.amount}
+                            onChange={e => setCollectionData({...collectionData, amount: Number(e.target.value)})}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold"
+                          />
+                       </div>
+                    </div>
+                    <button 
+                      onClick={handleGenerateCollection}
+                      disabled={isGeneratingColl}
+                      className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                    >
+                      {isGeneratingColl ? <RefreshCw className="animate-spin" size={18} /> : <Sparkles size={18} />}
+                      Criar Abordagem de Negociação
+                    </button>
+                 </div>
+              </div>
+              
+              <div className="p-8 lg:p-12 bg-slate-50">
+                 {collectionResult ? (
+                    <div className="space-y-6">
+                       <div className="bg-white p-8 rounded-[2rem] border border-emerald-100 shadow-sm text-slate-700 whitespace-pre-wrap text-sm leading-relaxed italic relative">
+                          <div className="absolute -top-3 -left-3 bg-emerald-600 text-white p-2 rounded-lg shadow-lg">
+                             <MessageSquare size={16} />
+                          </div>
+                          "{collectionResult}"
+                       </div>
+                       <button className="w-full flex items-center justify-center gap-2 py-4 bg-white border border-emerald-200 text-emerald-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm">
+                          <ArrowRight size={14} /> Copiar e Abrir WhatsApp
+                       </button>
+                    </div>
+                 ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-300 opacity-50 py-10">
+                       <MessageSquare size={64} className="mb-4" />
+                       <p className="text-xs font-black uppercase tracking-[0.3em] text-center">Aguardando comando do agente...</p>
+                    </div>
+                 )}
+              </div>
+           </div>
         </div>
       </div>
     </div>

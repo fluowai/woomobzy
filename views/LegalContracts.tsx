@@ -96,8 +96,10 @@ const LegalContracts: React.FC = () => {
     propertyId: '',
     clientId: '',
     clientPhone: '',
-    templateId: 'venda-rural',
+    templateId: 'venda-urbana',
     value: 0,
+    entryValue: 0,
+    installments: 1,
     sendNow: false,
   });
 
@@ -297,38 +299,25 @@ const LegalContracts: React.FC = () => {
   };
 
   const getGeneratedContent = (contract: Contract) => {
-    const template = CONTRACT_TEMPLATES.find(
-      (t) => t.id === contract.templateId
-    );
+    const template = CONTRACT_TEMPLATES.find((t) => t.id === contract.templateId);
     if (!template) return '';
-
     const property = MOCK_PROPERTIES.find((p) => p.id === contract.propertyId);
 
     return template.content
       .replace(/{{client_name}}/g, contract.clientName)
       .replace(/{{property_name}}/g, contract.propertyName)
-      .replace(
-        /{{property_location}}/g,
-        property
-          ? `${property.location.city}, ${property.location.state}`
-          : 'Local não informado'
-      )
-      .replace(
-        /{{property_area}}/g,
-        property ? property.features.areaHectares.toString() : '0'
-      )
-      .replace(
-        /{{contract_value}}/g,
-        contract.value.toLocaleString('pt-BR', {
-          style: 'currency',
-          currency: 'BRL',
-        })
-      )
+      .replace(/{{property_location}}/g, property ? `${property.location.city}, ${property.location.state}` : 'Local não informado')
+      .replace(/{{property_registration}}/g, (property as any)?.registration || 'EM BREVE')
+      .replace(/{{property_area}}/g, property ? property.features.areaHectares.toString() : '0')
+      .replace(/{{contract_value}}/g, contract.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
+      .replace(/{{entry_value}}/g, ((contract as any).entryValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
+      .replace(/{{installments}}/g, String((contract as any).installments || 1))
+      .replace(/{{installment_value}}/g, ((contract.value - ((contract as any).entryValue || 0)) / ((contract as any).installments || 1)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
       .replace(/{{current_date}}/g, new Date().toLocaleDateString('pt-BR'))
-      .replace(/{{duration}}/g, '24')
+      .replace(/{{duration}}/g, '12')
       .replace(/{{start_date}}/g, new Date().toLocaleDateString('pt-BR'))
-      .replace(/{{percent}}/g, '50')
-      .replace(/{{percent_out}}/g, '50');
+      .replace(/{{developer_name}}/g, settings.companyName || 'Imobzy 360')
+      .replace(/{{developer_cnpj}}/g, '00.000.000/0001-00');
   };
 
   const getStatusStyle = (status: string) => {
@@ -510,7 +499,7 @@ const LegalContracts: React.FC = () => {
                 <h2 className="text-2xl font-black text-black uppercase italic tracking-tighter">
                   Novo{' '}
                   <span style={{ color: settings.primaryColor }}>
-                    Contrato Rural
+                    Contrato 360°
                   </span>
                 </h2>
                 <button
@@ -635,7 +624,7 @@ const LegalContracts: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
-                      Valor (R$)
+                      Valor Total (R$)
                     </label>
                     <input
                       type="number"
@@ -646,6 +635,41 @@ const LegalContracts: React.FC = () => {
                         setNewContract({
                           ...newContract,
                           value: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                      Valor de Entrada (R$)
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-8 py-4 bg-slate-50 rounded-2xl border-none outline-none font-bold text-sm"
+                      value={newContract.entryValue}
+                      onChange={(e) =>
+                        setNewContract({
+                          ...newContract,
+                          entryValue: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                      Número de Parcelas
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-8 py-4 bg-slate-50 rounded-2xl border-none outline-none font-bold text-sm"
+                      value={newContract.installments}
+                      onChange={(e) =>
+                        setNewContract({
+                          ...newContract,
+                          installments: Number(e.target.value),
                         })
                       }
                     />

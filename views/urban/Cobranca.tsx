@@ -12,9 +12,12 @@ import {
   RefreshCw,
   TrendingUp,
   TrendingDown,
+  CreditCard,
+  QrCode,
+  AlertCircle,
 } from 'lucide-react';
-import { supabase } from '../../services/supabase';
 import { cobrancaService } from '../../services/cobrancaService';
+import { paymentService } from '../../services/paymentService';
 
 interface Billing {
   id: string;
@@ -28,9 +31,12 @@ interface Billing {
     tenant_name?: string;
     property?: { title?: string };
   };
+  invoice_url?: string;
+  payment_gateway_id?: string;
 }
 
 const Cobranca: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'all' | 'rent' | 'sale' | 'lot'>('all');
   const [billings, setBillings] = useState<Billing[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState('');
@@ -41,6 +47,7 @@ const Cobranca: React.FC = () => {
     amount: 0,
     due_date: '',
     description: '',
+    type: 'aluguel', // aluguel, parcela_venda, entrada
   });
 
   const loadBillings = useCallback(async () => {
@@ -129,6 +136,26 @@ const Cobranca: React.FC = () => {
     }
   };
 
+  const handleGenerateInvoice = async (billing: Billing) => {
+    setIsLoading(true);
+    const invoice = await paymentService.createInvoice({
+      amount: billing.amount || 0,
+      dueDate: billing.due_date || '',
+      description: billing.description || 'Cobrança Imobzy',
+      client: {
+        name: billing.contract?.tenant_name || 'Cliente',
+        email: 'cliente@email.com',
+        cpfCnpj: '000.000.000-00'
+      }
+    });
+
+    if (invoice) {
+       // Aqui atualizaríamos o banco via cobrancaService
+       setBillings(prev => prev.map(b => b.id === billing.id ? { ...b, invoice_url: invoice.invoiceUrl, payment_gateway_id: invoice.id } : b));
+    }
+    setIsLoading(false);
+  };
+
   const totalRecebido = billings
     .filter((b) => b.status === 'pago')
     .reduce((s, b) => s + (b.amount || 0), 0);
@@ -138,6 +165,17 @@ const Cobranca: React.FC = () => {
   const totalAberto = billings
     .filter((b) => b.status === 'aberto')
     .reduce((s, b) => s + (b.amount || 0), 0);
+
+  const filteredBillings = React.useMemo(() => {
+    return billings.filter(b => {
+      if (activeTab === 'all') return true;
+      if (activeTab === 'late') return b.status === 'vencido';
+      if (activeTab === 'rent') return b.description?.includes('Aluguel');
+      if (activeTab === 'lot') return b.description?.includes('Parcela');
+      if (activeTab === 'sale') return !b.description?.includes('Aluguel') && !b.description?.includes('Parcela');
+      return true;
+    });
+  }, [billings, activeTab]);
 
   const getStatusColor = (status: string) => {
     const cfg = cobrancaService.getStatusColor(status);
@@ -157,19 +195,37 @@ const Cobranca: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+           <div className="flex bg-slate-100 p-1 rounded-xl mr-4">
+             {[
+               { id: 'all', label: 'Todos' },
+               { id: 'rent', label: 'Locação' },
+               { id: 'sale', label: 'Vendas' },
+               { id: 'lot', label: 'Lotes' },
+               { id: 'late', label: 'Inadimplência' },
+             ].map(tab => (
+               <button
+                 key={tab.id}
+                 onClick={() => setActiveTab(tab.id as any)}
+                 className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
+               >
+                 {tab.label}
+               </button>
+             ))}
+           </div>
+
           <button
             onClick={handleGerarMensal}
             disabled={isLoading}
             className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-emerald-500 transition-all"
           >
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Gerar Mensal
+            Gerar Lote Mensal
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-500 transition-all shadow-lg"
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20"
           >
-            <Plus size={18} /> Novo Boleto
+            <Plus size={18} /> Novo Recebível
           </button>
         </div>
       </div>
@@ -269,7 +325,10 @@ const Cobranca: React.FC = () => {
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
-                  Locatário
+                  Cliente / Contrato
+                </th>
+                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                  Tipo
                 </th>
                 <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
                   Vencimento
@@ -281,14 +340,17 @@ const Cobranca: React.FC = () => {
                   Status
                 </th>
                 <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                  Atraso
+                </th>
+                <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
                   Ações
                 </th>
               </tr>
             </thead>
             <tbody>
-              {billings.length === 0 ? (
+              {filteredBillings.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-slate-400">
+                  <td colSpan={6} className="text-center py-12 text-slate-400">
                     <DollarSign
                       className="mx-auto mb-3 text-slate-300"
                       size={40}
@@ -306,11 +368,16 @@ const Cobranca: React.FC = () => {
                     >
                       <td className="px-6 py-4">
                         <p className="text-sm font-bold text-black">
-                          {b.contract?.tenant_name}
+                          {b.contract?.tenant_name || 'Venda Direta'}
                         </p>
-                        <p className="text-xs text-slate-400">
-                          {b.description}
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">
+                          {b.contract?.property?.title || 'Contrato não especificado'}
                         </p>
+                      </td>
+                      <td className="px-6 py-4">
+                         <span className="text-[10px] font-black uppercase px-2 py-1 bg-slate-100 rounded text-slate-500">
+                           {b.description?.includes('Aluguel') ? 'Aluguel' : b.description?.includes('Parcela') ? 'Lote' : 'Venda'}
+                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
                         {b.due_date
@@ -327,21 +394,53 @@ const Cobranca: React.FC = () => {
                           {b.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 flex gap-2">
-                        {b.status !== 'pago' && b.status !== 'cancelado' && (
+                      <td className="px-6 py-4">
+                         {b.status === 'vencido' ? (
+                           <span className="text-[10px] font-black text-red-600 bg-red-50 px-2 py-1 rounded">
+                             {cobrancaService.calculateDiasVencido(b.due_date!)} DIAS
+                           </span>
+                         ) : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          {b.invoice_url ? (
+                             <a 
+                               href={b.invoice_url} 
+                               target="_blank" 
+                               className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+                               title="Ver Boleto/PIX"
+                             >
+                               <QrCode size={16} />
+                             </a>
+                          ) : (
+                             <button 
+                               onClick={() => handleGenerateInvoice(b)}
+                               className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600" 
+                               title="Gerar Boleto/PIX"
+                             >
+                               <CreditCard size={16} />
+                             </button>
+                          )}
+                          {b.status === 'vencido' && (
+                             <button className="p-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100" title="Renegociar">
+                               <RefreshCw size={16} />
+                             </button>
+                          )}
+                          {b.status !== 'pago' && b.status !== 'cancelado' && (
+                            <button
+                              onClick={() => handlePay(b.id!)}
+                              className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                            >
+                              <CheckCircle size={16} />
+                            </button>
+                          )}
                           <button
-                            onClick={() => handlePay(b.id)}
-                            className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                            onClick={() => handleDelete(b.id!)}
+                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
                           >
-                            <CheckCircle size={16} />
+                            <Trash2 size={16} />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(b.id)}
-                          className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   );

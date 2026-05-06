@@ -68,6 +68,7 @@ const LoteamentoDetails = lazy(() => import('./views/urban/LoteamentoDetails'));
 const Locacao = lazy(() => import('./views/urban/Locacao'));
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
+const Simulator360 = lazy(() => import('./views/urban/Simulator360'));
 const PortalLocatario = lazy(() => import('./views/urban/PortalLocatario'));
 const ExportadorPortais = lazy(() => import('./views/urban/ExportadorPortais'));
 const PortalProprietarioUrbano = lazy(() => import('./views/urban/PortalProprietarioUrbano'));
@@ -359,6 +360,7 @@ const AppContent: React.FC = () => {
             <Route path="locacao" element={<Locacao />} />
             <Route path="compliance" element={<ComplianceUrbano />} />
             <Route path="cobranca" element={<Cobranca />} />
+            <Route path="simulador" element={<Simulator360 />} />
             <Route path="exportador" element={<ExportadorPortais />} />
             <Route path="crm" element={<KanbanBoard />} />
             <Route path="reports" element={<BIRural />} />

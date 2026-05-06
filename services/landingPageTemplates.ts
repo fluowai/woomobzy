@@ -803,5 +803,73 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         responsive: {}
       }
     ]
+  },
+  {
+    id: 'loteadora-360-premium',
+    name: 'Loteadora 360° Premium',
+    description: 'Template de alta conversão para lançamentos de loteamentos com foco em infraestrutura e progresso de obra.',
+    thumbnail: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
+    category: 'Urban',
+    themeConfig: {
+      primaryColor: '#064e3b',
+      secondaryColor: '#facc15',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      fontFamily: 'Inter',
+      borderRadius: '1rem',
+      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '4rem' },
+      fontSize: { base: '1rem', heading1: '4rem', heading2: '3rem', heading3: '2rem' }
+    },
+    blocks: [
+      {
+        type: BlockType.HERO,
+        order: 0,
+        visible: true,
+        config: {
+          title: 'O Estilo de Vida que Você Sempre Sonhou',
+          subtitle: 'Lotes a partir de 360m² com infraestrutura completa e financiamento direto. Oportunidade única de investimento.',
+          backgroundImage: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
+          overlayOpacity: 0.4,
+          ctaText: 'Falar com Consultor',
+          ctaLink: '#contato',
+          height: 700,
+          alignment: 'center',
+          textColor: '#ffffff'
+        },
+        styles: { padding: '0' },
+        responsive: {}
+      },
+      {
+        type: BlockType.STATS,
+        order: 1,
+        visible: true,
+        config: {
+          stats: [
+            { label: 'Lotes Disponíveis', value: '85%', icon: 'Map' },
+            { label: 'Obras Concluídas', value: '70%', icon: 'TrendingUp' },
+            { label: 'Valorização Estimada', value: '25% aa', icon: 'Shield' }
+          ],
+          columns: 3
+        } as any,
+        styles: { padding: '100px 20px', backgroundColor: '#f0fdf4' },
+        responsive: {}
+      },
+      {
+        type: BlockType.FEATURES,
+        order: 2,
+        visible: true,
+        config: {
+          features: [
+            { title: 'Asfalto CBUQ', description: 'Pavimentação de alta qualidade em todo o loteamento.', icon: '🛣️' },
+            { title: 'Energia LED', description: 'Iluminação pública moderna e econômica.', icon: '💡' },
+            { title: 'Área Verde', description: 'Mais de 10.000m² de preservação e lazer.', icon: '🌳' },
+            { title: 'Rede de Água', description: 'Abastecimento garantido com reservatório próprio.', icon: '🚰' }
+          ],
+          columns: 4
+        },
+        styles: { padding: '80px 20px' },
+        responsive: {}
+      }
+    ]
   }
 ];

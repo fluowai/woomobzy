@@ -11,6 +11,9 @@ export interface Billing {
   description?: string;
   barcode?: string;
   nossonumero?: string;
+  invoice_url?: string;
+  payment_gateway_id?: string;
+  pix_code?: string;
   contract?: {
     tenant_name?: string;
     monthly_rent?: number;
@@ -229,6 +232,32 @@ export class CobrancaService {
     const due = new Date(dueDate);
     const now = new Date();
     return Math.ceil((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  // Novo: Simulação de Quitação Antecipada
+  calculateSettlement(billings: Billing[], discountRate: number): { totalOriginal: number, totalWithDiscount: number, savings: number } {
+    const totalOriginal = billings.reduce((acc, b) => acc + (b.amount || 0), 0);
+    // Simples: 1% de desconto por mês de antecipação (exemplo)
+    const totalWithDiscount = totalOriginal * (1 - (discountRate / 100));
+    return {
+      totalOriginal,
+      totalWithDiscount,
+      savings: totalOriginal - totalWithDiscount
+    };
+  }
+
+  // Novo: Criação de Acordo de Renegociação
+  async createRenegotiation(contractId: string, data: { total_debt: number, installments: number, entry: number }): Promise<any> {
+    try {
+      const result = await callApi('/api/financeiro/renegociar', {
+        method: 'POST',
+        body: JSON.stringify({ contractId, ...data }),
+      });
+      return result;
+    } catch (error) {
+      logger.error('Erro ao criar renegociação:', error);
+      return null;
+    }
   }
 }
 

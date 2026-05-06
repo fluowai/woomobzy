@@ -156,13 +156,6 @@ const UrbanDashboard: React.FC = () => {
     { name: 'Lançamento', value: 5 },
   ];
 
-  const recentLeads = [
-    { id: 1, name: 'Marcos Silva', interest: 'Apt 3Q - Centro', channel: 'WhatsApp', time: '2min' },
-    { id: 2, name: 'Fernanda Lima', interest: 'Casa - Jardins', channel: 'Site', time: '15min' },
-    { id: 3, name: 'Paulo Costa', interest: 'Sala Comercial', channel: 'Portal', time: '1h' },
-    { id: 4, name: 'Carla Nunes', interest: 'Cobertura', channel: 'Indicação', time: '3h' },
-  ];
-
   const channelColors: Record<string, string> = {
     WhatsApp: 'bg-primary/15 text-primary',
     Site: 'bg-purple-500/15 text-purple-400',

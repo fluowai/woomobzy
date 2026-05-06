@@ -92,6 +92,7 @@ router.post('/', authLimiter, async (req, res) => {
       role, 
       name: name || agencyName || 'System Owner',
       email, phone: phone || whatsapp, creci: creci || null,
+      approved: true, // Master accounts are auto-approved
     }).select().single();
 
     if (upsertError) console.warn('Profile upsert warning:', upsertError.message);

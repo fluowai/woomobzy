@@ -60,8 +60,12 @@ const UserManagement: React.FC = () => {
           query = query.neq('role', 'superadmin');
           query = query.not('email', 'in', '("admin@imobzy.com","fluowai@gmail.com")');
         } else {
+          // Segurança máxima: se não tem org_id, só vê a si mesmo
           query = query.eq('id', profile?.id);
         }
+      } else {
+        // Superadmin vê tudo, mas talvez queira filtrar por org se estiver simulando
+        // (Isso pode ser expandido depois)
       }
 
       const { data, error } = await query;

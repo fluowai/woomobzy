@@ -185,16 +185,23 @@ const mapToDatabase = (
     owner_info: model.ownerInfo,
     analysis: model.analysis,
     // Colunas especializadas para filtros (devem existir no banco)
-    total_area_ha: model.features?.areaHectares,
+    total_area_ha: (model.features?.areaHectares && model.features.areaHectares > 0) ? model.features.areaHectares : null,
   };
 
-  // Cálculo de densidade de valor se o preço e a área existirem
+  // Cálculo de densidade de valor condicional (Rural vs Urbano)
   if (
     model.price &&
     model.features?.areaHectares &&
     model.features.areaHectares > 0
   ) {
     payload.price_per_ha = model.price / model.features.areaHectares;
+  } else if (
+    model.price &&
+    (model.features as any)?.areaPrivativa &&
+    (model.features as any).areaPrivativa > 0
+  ) {
+    // Para urbanos, podemos salvar densidade por m2 se a coluna existir
+    payload.price_per_m2 = model.price / (model.features as any).areaPrivativa;
   }
 
   return payload;

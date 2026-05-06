@@ -112,6 +112,16 @@ const PropertyEditor: React.FC = () => {
       areaAlqueires: 0,
       alqueireType: AlqueireType.PAULISTA,
       preferredUnit: 'ha',
+      // Urban fields
+      areaPrivativa: 0,
+      areaTotalM2: 0,
+      andar: 0,
+      quartos: 0,
+      suites: 0,
+      banheiros: 0,
+      vagas: 0,
+      condominio: 0,
+      iptu: 0,
       infra: {
         casaSede: false,
         casasFuncionarios: 0,

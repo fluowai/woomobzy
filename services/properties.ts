@@ -36,20 +36,30 @@ export const propertyService = {
 
   // Criar Imóvel
   async create(property: Partial<Property>) {
-    const { data: { session } } = await supabase.auth.getSession();
-    const payload = mapToDatabase({ 
-      ...property, 
-      organization_id: (property as any).organization_id || session?.user?.user_metadata?.organization_id 
-    });
-    
-    const { data, error } = await supabase
-      .from('properties')
-      .insert(payload)
-      .select()
-      .single();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const payload = mapToDatabase({ 
+        ...property, 
+        organization_id: (property as any).organization_id || session?.user?.user_metadata?.organization_id 
+      });
       
-    if (error) throw error;
-    return mapToModel(data);
+      console.log('🚀 Payload sendo enviado ao Supabase:', payload);
+
+      const { data, error } = await supabase
+        .from('properties')
+        .insert(payload)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('❌ Erro retornado pelo Supabase:', error);
+        throw error;
+      }
+      return mapToModel(data);
+    } catch (err) {
+      console.error('❌ Erro na execução do service.create:', err);
+      throw err;
+    }
   },
 
   // Atualizar Imóvel

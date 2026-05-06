@@ -85,9 +85,14 @@ const Empreendimentos: React.FC = () => {
 
   const handleSave = async () => {
     if (!form.name) return;
+    if (!profile?.organization_id) {
+      alert('Erro: Organização não identificada. Por favor, recarregue a página.');
+      return;
+    }
+
     const { error } = await supabase.from('developments').insert({
       ...form,
-      organization_id: profile?.organization_id,
+      organization_id: profile.organization_id,
       available_units: form.total_units,
     });
     if (error) {

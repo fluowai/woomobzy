@@ -20,6 +20,7 @@ import {
   Upload,
   ExternalLink,
   Copy,
+  DollarSign,
 } from 'lucide-react';
 import { kml } from '@tmcw/togeojson';
 import { MOCK_PROPERTIES } from '../constants';

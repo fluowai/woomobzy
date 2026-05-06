@@ -16,6 +16,7 @@ import {
   QrCode,
   AlertCircle,
 } from 'lucide-react';
+import { supabase } from '../../services/supabase';
 import { cobrancaService } from '../../services/cobrancaService';
 import { paymentService } from '../../services/paymentService';
 

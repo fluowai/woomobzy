@@ -17,10 +17,40 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const { page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
 
-    const { data, error, count } = await supabase
+    // 1. Buscar o nicho da organização para saber o que filtrar
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('niche')
+      .eq('id', req.orgId)
+      .single();
+
+    const niche = org?.niche || 'traditional';
+
+    // 2. Definir as listas de tipos permitidos (SQL Separation)
+    const URBAN_TYPES = [
+      'Apartamento', 'Casa', 'Sobrado', 'Terreno Urbano', 
+      'Sala Comercial', 'Galpão Industrial', 'Loft', 'Studio', 'Cobertura'
+    ];
+    
+    const RURAL_TYPES = [
+      'Fazenda', 'Sítio', 'Chácara', 'Estância', 'Haras', 'Granja', 
+      'Agropecuária', 'Terreno Rural', 'Gleba', 'Lote Rural', 'Área Produtiva'
+    ];
+
+    // 3. Montar a query com o filtro de nicho
+    let query = supabase
       .from('properties')
       .select('*', { count: 'exact' })
-      .eq('organization_id', req.orgId)
+      .eq('organization_id', req.orgId);
+
+    if (niche === 'rural') {
+      query = query.in('property_type', RURAL_TYPES);
+    } else {
+      // Default para tradicional/urbano
+      query = query.in('property_type', URBAN_TYPES);
+    }
+
+    const { data, error, count } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

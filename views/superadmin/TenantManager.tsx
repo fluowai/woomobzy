@@ -24,6 +24,7 @@ interface Organization {
   plan_id?: string;
   created_at: string;
   custom_domain?: string;
+  niche?: string;
   plans?: {
     name: string;
   };
@@ -55,6 +56,7 @@ const TenantManager: React.FC = () => {
     status: 'active',
     custom_domain: '',
     password: '',
+    niche: 'hybrid',
   });
 
   useEffect(() => {
@@ -107,6 +109,8 @@ const TenantManager: React.FC = () => {
         plan_id: tenant.plan_id || '',
         status: tenant.status,
         custom_domain: tenant.custom_domain || '',
+        password: '',
+        niche: tenant.niche || 'hybrid',
       });
     } else {
       setEditingId(null);
@@ -117,6 +121,8 @@ const TenantManager: React.FC = () => {
         plan_id: plans.length > 0 ? plans[0].id : '',
         status: 'active',
         custom_domain: '',
+        password: '',
+        niche: 'hybrid',
       });
     }
     setIsModalOpen(true);
@@ -136,6 +142,7 @@ const TenantManager: React.FC = () => {
         custom_domain: formData.custom_domain || null,
         owner_email: formData.owner_email || null,
         password: formData.password || undefined,
+        niche: formData.niche,
       };
 
       let res: Response;
@@ -269,6 +276,9 @@ const TenantManager: React.FC = () => {
                 Responsável
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Nicho
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Status
               </th>
               <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -279,13 +289,13 @@ const TenantManager: React.FC = () => {
           <tbody className="divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   Carregando...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   Nenhuma empresa encontrada.
                 </td>
               </tr>
@@ -322,6 +332,15 @@ const TenantManager: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {tenant.owner_email || '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                      tenant.niche === 'rural' ? 'bg-green-100 text-green-700' :
+                      tenant.niche === 'traditional' ? 'bg-blue-100 text-blue-700' :
+                      'bg-purple-100 text-purple-700'
+                    }`}>
+                      {tenant.niche || 'hybrid'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -544,6 +563,26 @@ const TenantManager: React.FC = () => {
                   <option value="active">Ativo</option>
                   <option value="suspended">Suspenso</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nicho de Atuação
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  value={formData.niche}
+                  onChange={(e) =>
+                    setFormData({ ...formData, niche: e.target.value })
+                  }
+                >
+                  <option value="rural">Rural (Fazendas, SIGEF, CAR)</option>
+                  <option value="traditional">Urbano (Casas, Apartamentos, Locação)</option>
+                  <option value="hybrid">Híbrido (Inteligente - Ambos)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Define o dashboard padrão e os campos do formulário.
+                </p>
               </div>
 
               <div className="pt-4 flex justify-end gap-3">

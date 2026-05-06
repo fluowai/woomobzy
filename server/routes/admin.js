@@ -60,14 +60,15 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
 
 router.post('/organizations', verifySuperAdmin, async (req, res) => {
   try {
-    const { name, slug, plan_id, status, custom_domain } = req.body;
+    const { name, slug, plan_id, status, custom_domain, niche } = req.body;
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
     
     const payload = { 
       name, 
       slug: slug || null, 
       status: status || 'active',
-      custom_domain: custom_domain || null
+      custom_domain: custom_domain || null,
+      niche: niche || 'hybrid'
     };
     if (plan_id) payload.plan_id = plan_id;
     
@@ -86,7 +87,7 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
 router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, slug, plan_id, status, custom_domain, owner_email, password } = req.body;
+    const { name, slug, plan_id, status, custom_domain, owner_email, password, niche } = req.body;
     
     const payload = {};
     if (name !== undefined) payload.name = name;
@@ -94,6 +95,7 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     if (status !== undefined) payload.status = status;
     if (plan_id !== undefined) payload.plan_id = plan_id || null;
     if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
+    if (niche !== undefined) payload.niche = niche;
     
     const { data: organization, error: updateError } = await supabase
       .from('organizations')

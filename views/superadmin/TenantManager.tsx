@@ -56,7 +56,7 @@ const TenantManager: React.FC = () => {
     status: 'active',
     custom_domain: '',
     password: '',
-    niche: 'hybrid',
+    niche: 'traditional',
   });
 
   useEffect(() => {
@@ -110,7 +110,7 @@ const TenantManager: React.FC = () => {
         status: tenant.status,
         custom_domain: tenant.custom_domain || '',
         password: '',
-        niche: tenant.niche || 'hybrid',
+        niche: tenant.niche || 'traditional',
       });
     } else {
       setEditingId(null);
@@ -122,7 +122,7 @@ const TenantManager: React.FC = () => {
         status: 'active',
         custom_domain: '',
         password: '',
-        niche: 'hybrid',
+        niche: 'traditional',
       });
     }
     setIsModalOpen(true);
@@ -578,7 +578,6 @@ const TenantManager: React.FC = () => {
                 >
                   <option value="rural">Rural (Fazendas, SIGEF, CAR)</option>
                   <option value="traditional">Urbano (Casas, Apartamentos, Locação)</option>
-                  <option value="hybrid">Híbrido (Inteligente - Ambos)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   Define o dashboard padrão e os campos do formulário.

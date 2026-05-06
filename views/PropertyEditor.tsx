@@ -100,7 +100,7 @@ const PropertyEditor: React.FC = () => {
   const [formData, setFormData] = useState<Partial<Property>>({
     title: '',
     price: 0,
-    type: PropertyType.FAZENDA,
+    type: niche === 'traditional' ? PropertyType.APARTAMENTO : PropertyType.FAZENDA,
     purpose: PropertyPurpose.SALE,
     aptitude: [],
     status: PropertyStatus.AVAILABLE,
@@ -628,7 +628,7 @@ const PropertyEditor: React.FC = () => {
         </div>
 
         {/* Seção 2: Localização & Georreferenciamento - RURAL ONLY */}
-        {isRuralType && (
+        {niche === 'rural' && (
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2 text-indigo-600">
@@ -680,7 +680,7 @@ const PropertyEditor: React.FC = () => {
         )}
 
         {/* Seção 3: Características Rurais - RURAL ONLY */}
-        {isRuralType && (
+        {niche === 'rural' && (
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex items-center gap-2 mb-6 text-indigo-600">
               <Home size={20} />
@@ -1382,7 +1382,7 @@ const PropertyEditor: React.FC = () => {
         )}
 
         {/* Seção 3.1: Características Urbanas - URBAN ONLY */}
-        {isUrbanType && (
+        {niche === 'traditional' && (
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex items-center gap-2 mb-6 text-indigo-600">
               <Home size={20} />

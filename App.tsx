@@ -204,10 +204,10 @@ const FullScreenSpinner: React.FC = () => (
   }
 
   // Determine niche: check organization.niche
-  // 'rural' or 'hybrid' → Rural Panel
-  // 'traditional', undefined, null, or anything else → Urban Panel (default seguro)
+  // 'rural' → Rural Panel
+  // anything else → Urban Panel (default seguro)
   const rawNiche = (profile?.organization as any)?.niche;
-  const isRural = rawNiche === 'rural' || rawNiche === 'hybrid';
+  const isRural = rawNiche === 'rural';
   const target = isRural ? '/rural' : '/urban';
   
   logger.info(`🚀 NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${isRural})`);

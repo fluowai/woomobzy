@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
+  LayoutGrid,
   Home,
   Users,
   FileText,

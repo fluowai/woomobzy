@@ -183,6 +183,7 @@ const mapToModel = (dbItem: any): Property => ({
   brokerId: dbItem.broker_id || '',
   createdAt: dbItem.created_at,
   analysis: dbItem.analysis,
+  niche: dbItem.niche || 'urbano',
 });
 
 const mapToDatabase = (
@@ -197,6 +198,7 @@ const mapToDatabase = (
     aptitude: model.aptitude,
     status: model.status,
     organization_id: (model as any).organization_id,
+    niche: (model as any).niche || 'urbano',
     // Flat location fields
     city: model.location?.city,
     neighborhood: model.location?.neighborhood,

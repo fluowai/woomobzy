@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
   Filter,
@@ -29,6 +29,9 @@ const PropertyManagement: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isRural = location.pathname.startsWith('/rural');
+  const currentNiche = isRural ? 'rural' : 'urbano';
 
   const { profile } = useAuth();
 
@@ -79,6 +82,10 @@ const PropertyManagement: React.FC = () => {
   };
 
   const filteredProperties = properties.filter((p) => {
+    // Filtrar primeiro por nicho (se a coluna existir ou for mapeada)
+    const matchesNiche = (p as any).niche === currentNiche || (!(p as any).niche && currentNiche === 'urbano');
+    if (!matchesNiche) return false;
+
     if (activeTab === 'pending') return p.status === 'Pendente';
     return p.status !== 'Pendente';
   });

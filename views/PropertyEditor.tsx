@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Save,
   ArrowLeft,
@@ -256,9 +256,14 @@ const PropertyEditor: React.FC = () => {
         return;
       }
 
+      const location = window.location;
+      const isRuralNiche = location.pathname.includes('/rural');
+      const nicheValue = isRuralNiche ? 'rural' : 'urbano';
+
       const payload = {
         ...formData,
         organization_id: orgId,
+        niche: nicheValue,
       };
 
       logger.info('📦 Payload de salvamento:', payload);

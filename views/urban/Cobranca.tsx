@@ -53,9 +53,9 @@ const Cobranca: React.FC = () => {
 
   const loadBillings = useCallback(async () => {
     const { data } = await supabase
-      .from('billing')
+      .from('billings')
       .select(
-        '*, contract:rental_contracts(tenant_name, property:property_id(title))'
+        '*, contract:contracts(tenant_name, property:property_id(title))'
       )
       .order('due_date', { ascending: false });
     setBillings(data || []);
@@ -63,9 +63,9 @@ const Cobranca: React.FC = () => {
 
   const loadContracts = useCallback(async () => {
     const { data } = await supabase
-      .from('rental_contracts')
-      .select('id, tenant_name, property:property_id(title), monthly_rent')
-      .eq('status', 'active')
+      .from('contracts')
+      .select('id, tenant_name, property:property_id(title), value')
+      .eq('status', 'Active')
       .order('tenant_name');
     setContracts(data || []);
   }, []);
@@ -105,7 +105,7 @@ const Cobranca: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir cobrança?')) return;
-    await supabase.from('billing').delete().eq('id', id);
+    await supabase.from('billings').delete().eq('id', id);
     loadBillings();
   };
 

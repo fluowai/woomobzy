@@ -89,6 +89,8 @@ const LegalContracts: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(
     null
   );
+  const [dbProperties, setDbProperties] = useState<any[]>([]);
+  const [dbLeads, setDbLeads] = useState<any[]>([]);
 
   // Form State
   const [newContract, setNewContract] = useState({
@@ -111,7 +113,15 @@ const LegalContracts: React.FC = () => {
 
   useEffect(() => {
     loadContracts();
+    loadResources();
   }, []);
+
+  const loadResources = async () => {
+    const { data: props } = await supabase.from('properties').select('id, title, price');
+    const { data: leadsData } = await supabase.from('leads').select('id, name, phone');
+    setDbProperties(props || []);
+    setDbLeads(leadsData || []);
+  };
 
   const loadContracts = async () => {
     try {
@@ -158,16 +168,16 @@ const LegalContracts: React.FC = () => {
 
   const handleCreateContract = async (e: React.FormEvent) => {
     e.preventDefault();
-    const property = MOCK_PROPERTIES.find(
+    const property = dbProperties.find(
       (p) => p.id === newContract.propertyId
     );
+    const lead = dbLeads.find((l) => l.id === newContract.clientId);
 
     try {
       const generatedContent = getGeneratedContent({
         ...newContract,
         propertyName: property?.title || '',
-        clientName:
-          MOCK_LEADS.find((l) => l.id === newContract.clientId)?.name || '',
+        clientName: lead?.name || '',
       } as any);
 
       const { data, error } = await supabase
@@ -544,7 +554,7 @@ const LegalContracts: React.FC = () => {
                       }
                     >
                       <option value="">Selecionar...</option>
-                      {MOCK_PROPERTIES.map((p) => (
+                      {dbProperties.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.title}
                         </option>
@@ -560,7 +570,7 @@ const LegalContracts: React.FC = () => {
                       className="w-full px-8 py-4 bg-slate-50 rounded-2xl border-none outline-none font-bold text-sm appearance-none cursor-pointer"
                       value={newContract.clientId}
                       onChange={(e) => {
-                        const lead = MOCK_LEADS.find(
+                        const lead = dbLeads.find(
                           (l) => l.id === e.target.value
                         );
                         setNewContract({
@@ -571,7 +581,7 @@ const LegalContracts: React.FC = () => {
                       }}
                     >
                       <option value="">Selecionar...</option>
-                      {MOCK_LEADS.map((l) => (
+                      {dbLeads.map((l) => (
                         <option key={l.id} value={l.id}>
                           {l.name}
                         </option>

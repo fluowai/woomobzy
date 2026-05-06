@@ -92,10 +92,6 @@ const PropertyEditor: React.FC = () => {
         ? URBAN_TYPES
         : Object.values(PropertyType);
 
-  // Detecção dinâmica do tipo de imóvel para exibição de campos
-  const isRuralType = formData.type && RURAL_TYPES.includes(formData.type as PropertyType);
-  const isUrbanType = formData.type && URBAN_TYPES.includes(formData.type as PropertyType);
-
   const [loading, setLoading] = useState(false);
   const [loadingCar, setLoadingCar] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -194,6 +190,10 @@ const PropertyEditor: React.FC = () => {
     },
     images: [],
   });
+
+  // Detecção dinâmica do tipo de imóvel para exibição de campos
+  const isRuralType = formData.type && RURAL_TYPES.includes(formData.type as PropertyType);
+  const isUrbanType = formData.type && URBAN_TYPES.includes(formData.type as PropertyType);
 
   useEffect(() => {
     const loadProperty = async () => {

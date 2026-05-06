@@ -81,6 +81,55 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
 });
 
 /**
+ * PATCH /api/crm/leads/:id
+ * Atualiza detalhes do lead.
+ */
+router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    // Remover campos que não devem ser editados diretamente
+    delete updates.id;
+    delete updates.organization_id;
+    delete updates.created_at;
+
+    // Verificar ownership
+    const { data: lead, error: findError } = await supabase
+      .from('leads')
+      .select('organization_id')
+      .eq('id', id)
+      .single();
+
+    if (findError || lead.organization_id !== req.orgId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const { data, error } = await supabase
+      .from('leads')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Registrar atividade de atualização
+    await supabase.from('lead_activities').insert({
+      lead_id: id,
+      organization_id: req.orgId,
+      created_by: req.userId,
+      type: 'Sistema',
+      description: 'Dados do lead atualizados'
+    });
+
+    res.json({ success: true, lead: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * PATCH /api/crm/leads/:id/status
  */
 router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) => {
@@ -91,7 +140,7 @@ router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) =>
     // Verificar ownership
     const { data: lead, error: findError } = await supabase
       .from('leads')
-      .select('organization_id')
+      .select('organization_id, status')
       .eq('id', id)
       .single();
 
@@ -107,7 +156,82 @@ router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) =>
       .single();
 
     if (error) throw error;
+
+    // Registrar mudança de status na timeline
+    await supabase.from('lead_activities').insert({
+      lead_id: id,
+      organization_id: req.orgId,
+      created_by: req.userId,
+      type: 'Status',
+      description: `Status alterado de ${lead.status} para ${status}`
+    });
+
     res.json({ success: true, lead: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/crm/leads/:id/activities
+ * Lista histórico de atividades do lead.
+ */
+router.get('/leads/:id/activities', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('lead_activities')
+      .select('*, profiles(name)')
+      .eq('lead_id', id)
+      .eq('organization_id', req.orgId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ success: true, activities: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/crm/leads/:id/activities
+ * Adiciona uma nova atividade/interação.
+ */
+router.post('/leads/:id/activities', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, description, metadata } = req.body;
+
+    if (!type || !description) {
+      return res.status(400).json({ error: 'Tipo e descrição são obrigatórios' });
+    }
+
+    const { data, error } = await supabase
+      .from('lead_activities')
+      .insert({
+        lead_id: id,
+        organization_id: req.orgId,
+        created_by: req.userId,
+        type,
+        description,
+        metadata: metadata || {}
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Se for uma interação de contato, atualizar o last_contacted_at do lead
+    if (['Chamada', 'WhatsApp', 'Email', 'Visita'].includes(type)) {
+      await supabase
+        .from('leads')
+        .update({ last_contacted_at: new Date() })
+        .eq('id', id);
+    }
+
+    res.status(201).json({ success: true, activity: data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -130,6 +130,7 @@ const mapToModel = (dbItem: any): Property => ({
     legal: dbItem.features?.legal || {
       matricula: '',
       escritura: false,
+      statusDocumental: 'Regularizado',
       ccir: false,
       ccirNumber: '',
       car: false,
@@ -147,6 +148,7 @@ const mapToModel = (dbItem: any): Property => ({
     commercial: dbItem.features?.commercial || {
       pricePerHa: 0,
       pricePerAlqueire: 0,
+      commissionPercentage: 5,
       isPorteiraFechada: false,
       permuta: false,
       arrendamento: false,
@@ -197,11 +199,11 @@ const mapToDatabase = (
     payload.price_per_ha = model.price / model.features.areaHectares;
   } else if (
     model.price &&
-    (model.features as any)?.areaPrivativa &&
-    (model.features as any).areaPrivativa > 0
+    model.features?.areaM2 &&
+    model.features.areaM2 > 0
   ) {
-    // Para urbanos, podemos salvar densidade por m2 se a coluna existir
-    payload.price_per_m2 = model.price / (model.features as any).areaPrivativa;
+    // Para urbanos, salvamos densidade por m2
+    payload.price_per_m2 = model.price / model.features.areaM2;
   }
 
   return payload;

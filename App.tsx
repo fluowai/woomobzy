@@ -64,6 +64,7 @@ const Matchmaking360 = lazy(() => import('./views/admin/Matchmaking360'));
 
 // Urban-Specific
 const Empreendimentos = lazy(() => import('./views/urban/Empreendimentos'));
+const LoteamentoDetails = lazy(() => import('./views/urban/LoteamentoDetails'));
 const Locacao = lazy(() => import('./views/urban/Locacao'));
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
@@ -353,6 +354,8 @@ const AppContent: React.FC = () => {
             <Route path="properties/new" element={<PropertyEditor />} />
             <Route path="properties/:id" element={<PropertyEditor />} />
             <Route path="empreendimentos" element={<Empreendimentos />} />
+            <Route path="loteamentos" element={<Empreendimentos />} />
+            <Route path="loteamentos/:id" element={<LoteamentoDetails />} />
             <Route path="locacao" element={<Locacao />} />
             <Route path="compliance" element={<ComplianceUrbano />} />
             <Route path="cobranca" element={<Cobranca />} />

@@ -31,18 +31,60 @@ const BRAND_COLORS = ['#007850', '#f59600', '#7c3aed', '#d97706', '#0891b2'];
 const UrbanDashboard: React.FC = () => {
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
+  const [vgv, setVgv] = useState(0);
+  const [recentLeads, setRecentLeads] = useState<any[]>([]);
+  const [propertyStats, setPropertyStats] = useState({
+    available: 0,
+    sold: 0,
+    rented: 0,
+  });
 
   useEffect(() => {
     const load = async () => {
+      // 1. Contagem Total de Imóveis Urbanos
       const { count: pCount } = await supabase
         .from('properties')
         .select('id', { count: 'exact' })
-        .not('property_type', 'in', '("Rural","Fazenda")');
+        .not('property_type', 'in', '("Rural","Fazenda","Sítio","Chácara")');
+
+      // 2. Contagem por Status
+      const { data: pByStatus } = await supabase
+        .from('properties')
+        .select('status')
+        .not('property_type', 'in', '("Rural","Fazenda","Sítio","Chácara")');
+
+      const statsMap = { available: 0, sold: 0, rented: 0 };
+      pByStatus?.forEach((p) => {
+        if (p.status === 'Disponível') statsMap.available++;
+        if (p.status === 'Vendido') statsMap.sold++;
+        if (p.status === 'Alugado') statsMap.rented++;
+      });
+
+      // 3. VGV (Valor Geral de Vendas)
+      const { data: pPrices } = await supabase
+        .from('properties')
+        .select('price')
+        .eq('status', 'Disponível');
+      
+      const totalVgv = pPrices?.reduce((sum, p) => sum + (p.price || 0), 0) || 0;
+
+      // 4. Contagem de Leads
       const { count: lCount } = await supabase
         .from('leads')
         .select('id', { count: 'exact' });
+
+      // 5. Leads Recentes Reais
+      const { data: rLeads } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(4);
+
       setPropertyCount(pCount || 0);
       setLeadCount(lCount || 0);
+      setVgv(totalVgv);
+      setPropertyStats(statsMap);
+      setRecentLeads(rLeads || []);
     };
     load();
   }, []);
@@ -59,8 +101,8 @@ const UrbanDashboard: React.FC = () => {
       borderColor: 'border-primary/20',
     },
     {
-      label: 'Estoque Ativo',
-      value: String(propertyCount),
+      label: 'Disponíveis (Urbano)',
+      value: String(propertyStats.available),
       change: '+3%',
       trend: 'up',
       icon: Home,
@@ -70,7 +112,7 @@ const UrbanDashboard: React.FC = () => {
     },
     {
       label: 'Locações Ativas',
-      value: '0',
+      value: String(propertyStats.rented),
       change: '—',
       trend: 'neutral',
       icon: Key,
@@ -79,8 +121,8 @@ const UrbanDashboard: React.FC = () => {
       borderColor: 'border-amber-500/20',
     },
     {
-      label: 'VGV em Propostas',
-      value: 'R$ 4.2M',
+      label: 'VGV em Estoque',
+      value: `R$ ${(vgv / 1000000).toFixed(1)}M`,
       change: '+24%',
       trend: 'up',
       icon: DollarSign,
@@ -279,27 +321,37 @@ const UrbanDashboard: React.FC = () => {
           </div>
           <div className="space-y-3">
             {recentLeads.map((lead) => (
-              <div
+              <Link
                 key={lead.id}
+                to={`/urban/crm?leadId=${lead.id}`}
                 className="flex items-center justify-between p-3 rounded-xl bg-bg-hover border border-border-subtle hover:border-primary/30 transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                    {lead.name.charAt(0)}
+                    {lead.name?.charAt(0) || 'L'}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-text-primary">{lead.name}</p>
-                    <p className="text-xs text-text-tertiary">{lead.interest}</p>
+                    <p className="text-xs text-text-tertiary">
+                      {lead.property?.title || 'Interesse Geral'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider ${channelColors[lead.channel]}`}>
-                    {lead.channel}
+                  <span className={`text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider ${channelColors[lead.source] || 'bg-slate-500/15 text-slate-400'}`}>
+                    {lead.source || 'Site'}
                   </span>
-                  <span className="text-xs text-text-tertiary">{lead.time}</span>
+                  <span className="text-xs text-text-tertiary">
+                    {new Date(lead.created_at).toLocaleDateString()}
+                  </span>
                 </div>
-              </div>
+              </Link>
             ))}
+            {recentLeads.length === 0 && (
+              <div className="text-center py-8 text-text-tertiary text-sm">
+                Nenhum lead recente encontrado.
+              </div>
+            )}
           </div>
         </div>
       </div>

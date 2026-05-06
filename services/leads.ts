@@ -47,6 +47,30 @@ export const leadService = {
     return mapToModel(data.lead);
   },
 
+  // Update lead details
+  async update(id: string, lead: Partial<Lead>) {
+    const data = await callApi(`/api/crm/leads/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(lead),
+    });
+    return mapToModel(data.lead);
+  },
+
+  // Get lead activities
+  async getActivities(id: string) {
+    const data = await callApi(`/api/crm/leads/${id}/activities`);
+    return data.activities;
+  },
+
+  // Add lead activity
+  async addActivity(id: string, activity: { type: string; description: string; metadata?: any }) {
+    const data = await callApi(`/api/crm/leads/${id}/activities`, {
+      method: 'POST',
+      body: JSON.stringify(activity),
+    });
+    return data.activity;
+  },
+
   // Send welcome message via WhatsApp (Backend Proxy)
   async sendWelcome(id: string) {
     const data = await callApi(`/api/crm/leads/${id}/welcome`, {

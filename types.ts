@@ -105,9 +105,18 @@ export interface Property {
     alqueireType?: AlqueireType;
     areaAcres?: number;
     areaM2?: number;
+    areaConstruida?: number; // Para Urbano
     preferredUnit?: 'ha' | 'alqueire' | 'acre' | 'm2';
 
-    // Características da Terra
+    // Características Urbanas
+    dormitorios?: number;
+    suites?: number;
+    banheiros?: number;
+    vagas?: number;
+    condominio?: number;
+    iptu?: number;
+
+    // Características da Terra (Rural)
     topography?: TopographyType;
     soilTexture?: SoilTexture;
     altitude?: number;
@@ -175,6 +184,7 @@ export interface Property {
     legal?: {
       matricula: string;
       escritura: boolean;
+      statusDocumental?: 'Regularizado' | 'Pendente' | 'Em Inventário' | 'Posse';
       ccir: boolean;
       ccirNumber?: string;
       car: boolean;
@@ -188,12 +198,14 @@ export interface Property {
       incra: string;
       outorgaAgua: boolean;
       regularizacaoFundiaria: boolean;
+      geometry?: any;
     };
 
     // Comercialização
     commercial?: {
       pricePerHa?: number;
       pricePerAlqueire?: number;
+      commissionPercentage?: number;
       isPorteiraFechada: boolean;
       permuta: boolean;
       arrendamento: boolean;
@@ -553,4 +565,73 @@ export interface SiteSettings {
   layout_config?: LayoutConfig;
   custom_css?: string;
   custom_js?: string;
+}
+
+// ============================================
+// LOTEADORA 360 TYPES
+// ============================================
+
+export enum DevelopmentStatus {
+  PROJETO = 'Projeto',
+  APROVACAO = 'Aprovação',
+  PRE_VENDA = 'Pré-venda',
+  VENDAS = 'Em Vendas',
+  OBRAS = 'Em Obras',
+  ENTREGUE = 'Entregue',
+}
+
+export enum LotStatus {
+  AVAILABLE = 'Disponível',
+  RESERVED = 'Reservado',
+  IN_PROPOSAL = 'Em Proposta',
+  SOLD = 'Vendido',
+  BLOCKED = 'Bloqueado',
+  DELINQUENT = 'Inadimplente',
+  SETTLED = 'Quitado',
+}
+
+export interface Development {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string;
+  status: DevelopmentStatus;
+  location: {
+    city: string;
+    state: string;
+    address: string;
+    coordinates?: { lat: number; lng: number };
+  };
+  total_area?: number;
+  total_blocks?: number;
+  total_lots?: number;
+  registration_number?: string; // Matrícula Mãe
+  infrastructure_status?: number; // % de conclusão
+  images: string[];
+  documents?: string[];
+  created_at: string;
+}
+
+export interface Block {
+  id: string;
+  development_id: string;
+  name: string; // Ex: Quadra A
+  total_lots: number;
+}
+
+export interface Lot {
+  id: string;
+  development_id: string;
+  block_id: string;
+  number: string; // Ex: Lote 01
+  area_m2: number;
+  price: number;
+  status: LotStatus;
+  front_m?: number;
+  back_m?: number;
+  left_m?: number;
+  right_m?: number;
+  coordinates?: any; // Para o mapa interativo
+  current_client_id?: string;
+  contract_id?: string;
 }

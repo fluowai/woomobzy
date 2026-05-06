@@ -62,17 +62,22 @@ const Locacao: React.FC = () => {
     const { data } = await supabase
       .from('rental_contracts')
       .select('*')
+      .eq('organization_id', profile?.organization_id)
       .order('created_at', { ascending: false });
     setContracts(data || []);
   };
 
   const handleSave = async () => {
     if (!form.tenant_name) return;
-    await supabase.from('rental_contracts').insert({
+    const { error } = await supabase.from('rental_contracts').insert({
       ...form,
       organization_id: profile?.organization_id,
       status: 'active',
     });
+    if (error) {
+      console.error('Erro ao salvar contrato:', error);
+      return;
+    }
     setShowModal(false);
     setForm({
       tenant_name: '',
@@ -89,7 +94,15 @@ const Locacao: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja excluir este contrato?')) return;
-    await supabase.from('rental_contracts').delete().eq('id', id);
+    const { error } = await supabase
+      .from('rental_contracts')
+      .delete()
+      .eq('id', id)
+      .eq('organization_id', profile?.organization_id);
+    if (error) {
+      console.error('Erro ao excluir contrato:', error);
+      return;
+    }
     load();
   };
 

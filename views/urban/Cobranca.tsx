@@ -425,7 +425,7 @@ const Cobranca: React.FC = () => {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, description: e.target.value }))
                   }
-                  placeholder="Aluguel mês参考..."
+                  placeholder="Aluguel mês referência..."
                   className="w-full mt-1 px-4 py-3 bg-slate-50 rounded-xl border border-slate-200"
                 />
               </div>

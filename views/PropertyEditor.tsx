@@ -57,7 +57,8 @@ const PropertyEditor: React.FC = () => {
   const { profile } = useAuth();
   const isNew = id === 'new';
 
-  const niche = profile?.organization?.niche || 'hybrid';
+  const niche = profile?.organization?.niche || 'traditional';
+  const nichePath = niche === 'traditional' ? 'urban' : 'rural';
 
   const RURAL_TYPES = [
     PropertyType.FAZENDA,
@@ -112,16 +113,36 @@ const PropertyEditor: React.FC = () => {
       areaAlqueires: 0,
       alqueireType: AlqueireType.PAULISTA,
       preferredUnit: 'ha',
-      // Urban fields
-      areaPrivativa: 0,
-      areaTotalM2: 0,
-      andar: 0,
-      quartos: 0,
+      // Urban fields (Platform 360)
+      areaM2: 0, // Área Total
+      areaConstruida: 0,
+      dormitorios: 0,
       suites: 0,
       banheiros: 0,
       vagas: 0,
       condominio: 0,
       iptu: 0,
+      legal: {
+        matricula: '',
+        escritura: false,
+        statusDocumental: 'Regularizado',
+        ccir: false,
+        car: false,
+        itr: false,
+        geo: false,
+        reservaLegal: 0,
+        app: 0,
+        incra: '',
+        outorgaAgua: false,
+        regularizacaoFundiaria: false,
+      },
+      commercial: {
+        commissionPercentage: 5,
+        isPorteiraFechada: false,
+        permuta: false,
+        arrendamento: false,
+        parcelado: false,
+      },
       infra: {
         casaSede: false,
         casasFuncionarios: 0,
@@ -204,7 +225,7 @@ const PropertyEditor: React.FC = () => {
           setFormData(data);
         } catch (error) {
           logger.error('Erro ao carregar imóvel', error);
-          navigate(`/${niche}/properties`);
+          navigate(`/${nichePath}/properties`);
         } finally {
           setLoading(false);
         }
@@ -241,7 +262,7 @@ const PropertyEditor: React.FC = () => {
         logger.info('✅ Imóvel atualizado com sucesso:', result);
         alert('Imóvel atualizado com sucesso!');
       }
-      navigate(`/${niche}/properties`);
+      navigate(`/${nichePath}/properties`);
     } catch (error: any) {
       logger.error('❌ Erro detalhado ao salvar:', error);
       alert(
@@ -386,7 +407,7 @@ const PropertyEditor: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div className="flex items-center gap-4">
           <button
-             onClick={() => navigate(`/${niche}/properties`)}
+             onClick={() => navigate(`/${nichePath}/properties`)}
             className="p-2 hover:bg-white rounded-full transition-colors text-slate-500"
           >
             <ArrowLeft size={24} />
@@ -403,7 +424,7 @@ const PropertyEditor: React.FC = () => {
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             type="button"
-            onClick={() => navigate(`/${niche}/properties`)}
+            onClick={() => navigate(`/${nichePath}/properties`)}
             className="flex-1 md:flex-none px-6 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-white transition-colors text-center"
           >
             Cancelar
@@ -1391,45 +1412,45 @@ const PropertyEditor: React.FC = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Área Privativa (m²)
-                </label>
-                <input
-                  type="number"
-                  value={formData.features?.areaPrivativa || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      features: {
-                        ...formData.features!,
-                        areaPrivativa: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="Ex: 85"
-                />
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Área Total (m²)
                 </label>
                 <input
                   type="number"
-                  value={formData.features?.areaTotalM2 || ''}
+                  value={formData.features?.areaM2 || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
                       features: {
                         ...formData.features!,
-                        areaTotalM2: Number(e.target.value),
+                        areaM2: Number(e.target.value),
                       },
                     })
                   }
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   placeholder="Ex: 120"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Área Construída (m²)
+                </label>
+                <input
+                  type="number"
+                  value={formData.features?.areaConstruida || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      features: {
+                        ...formData.features!,
+                        areaConstruida: Number(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="Ex: 85"
                 />
               </div>
               <div>
@@ -1457,17 +1478,17 @@ const PropertyEditor: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Quartos
+                  Dormitórios
                 </label>
                 <input
                   type="number"
-                  value={formData.features?.quartos || ''}
+                  value={formData.features?.dormitorios || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
                       features: {
                         ...formData.features!,
-                        quartos: Number(e.target.value),
+                        dormitorios: Number(e.target.value),
                       },
                     })
                   }
@@ -1530,6 +1551,126 @@ const PropertyEditor: React.FC = () => {
                   }
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 bg-indigo-50/30 rounded-3xl border border-indigo-100/50 mb-8">
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest">
+                  <FileText size={16} />
+                  Documentação Legal
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                      Número da Matrícula
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.features?.legal?.matricula || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          features: {
+                            ...formData.features!,
+                            legal: {
+                              ...formData.features?.legal!,
+                              matricula: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="Ex: 123.456"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                      Status Documental
+                    </label>
+                    <select
+                      value={formData.features?.legal?.statusDocumental || 'Regularizado'}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          features: {
+                            ...formData.features!,
+                            legal: {
+                              ...formData.features?.legal!,
+                              statusDocumental: e.target.value as any,
+                            },
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                    >
+                      <option value="Regularizado">Regularizado (Escritura/Matrícula OK)</option>
+                      <option value="Pendente">Pendente de Regularização</option>
+                      <option value="Em Inventário">Em Processo de Inventário</option>
+                      <option value="Posse">Apenas Posse / Contrato Gaveta</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
+                  <DollarSign size={16} />
+                  Gestão Comercial
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                      Comissão Prevista (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={formData.features?.commercial?.commissionPercentage || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            features: {
+                              ...formData.features!,
+                              commercial: {
+                                ...formData.features?.commercial!,
+                                commissionPercentage: Number(e.target.value),
+                              },
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none pr-10"
+                        placeholder="Ex: 6"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="permuta"
+                      checked={formData.features?.commercial?.permuta || false}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          features: {
+                            ...formData.features!,
+                            commercial: {
+                              ...formData.features?.commercial!,
+                              permuta: e.target.checked,
+                            },
+                          },
+                        })
+                      }
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <label htmlFor="permuta" className="text-sm text-slate-700 font-medium">
+                      Aceita Permuta
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
 

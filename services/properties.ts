@@ -5,13 +5,27 @@ import {
   PropertyAptitude,
   PropertyStatus,
 } from '../types';
-import { callApi } from '../src/lib/api';
+import { supabase } from './supabase';
 
 export const propertyService = {
   // Listar Imóveis (Implicitly Isolated by Backend Token)
   async list(page: number = 1, limit: number = 50) {
-    const data = await callApi(`/api/properties?page=${page}&limit=${limit}`);
-    return data.properties.map(mapToModel);
+    const { data: { session } } = await supabase.auth.getSession();
+    const orgId = session?.user?.user_metadata?.organization_id;
+
+    let query = supabase
+      .from('properties')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (orgId) {
+      query = query.eq('organization_id', orgId);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    return (data || []).map(mapToModel);
   },
 
   // Obter um Imóvel por ID
@@ -22,12 +36,20 @@ export const propertyService = {
 
   // Criar Imóvel
   async create(property: Partial<Property>) {
-    const payload = mapToDatabase(property);
-    const data = await callApi('/api/properties', {
-      method: 'POST',
-      body: JSON.stringify(payload),
+    const { data: { session } } = await supabase.auth.getSession();
+    const payload = mapToDatabase({ 
+      ...property, 
+      organization_id: (property as any).organization_id || session?.user?.user_metadata?.organization_id 
     });
-    return mapToModel(data.property);
+    
+    const { data, error } = await supabase
+      .from('properties')
+      .insert(payload)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return mapToModel(data);
   },
 
   // Atualizar Imóvel

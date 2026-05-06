@@ -247,9 +247,18 @@ const PropertyEditor: React.FC = () => {
     logger.info('💾 Iniciando salvamento do imóvel...', { isNew, id });
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const orgId = profile?.organization_id || session?.user?.user_metadata?.organization_id;
+
+      if (!orgId) {
+        alert('Erro: Organização não identificada. Aguarde o carregamento do perfil ou faça login novamente.');
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         ...formData,
-        organization_id: profile?.organization_id,
+        organization_id: orgId,
       };
 
       logger.info('📦 Payload de salvamento:', payload);

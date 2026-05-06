@@ -57,10 +57,10 @@ const PropertyListing: React.FC = () => {
     try {
       setLoading(true);
       const data = await propertyService.list();
-      // Filtrar apenas imóveis disponíveis
-      // const available = data.filter(p => p.status === 'Disponível'); // Se houver enum
+      console.log('🔍 Imóveis carregados do banco:', data);
       setProperties(data);
     } catch (error) {
+      console.error('❌ Erro ao carregar imóveis:', error);
       logger.error('Erro ao carregar imóveis', error);
     } finally {
       setLoading(false);

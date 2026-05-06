@@ -4,6 +4,7 @@ import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   LayoutGrid,
+  Calculator,
   Home,
   Users,
   FileText,
@@ -17,6 +18,9 @@ import {
   Menu,
   X,
   Phone,
+  DollarSign,
+  MessageSquare,
+  Map as MapIcon,
   ShieldAlert,
   Building2,
   Shield,

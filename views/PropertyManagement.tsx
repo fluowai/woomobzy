@@ -128,24 +128,36 @@ const PropertyManagement: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border-subtle">
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`px-8 py-4 text-sm font-bold border-b-2 transition-all tracking-wide ${activeTab === 'all' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
-        >
-          Meus Imóveis
-        </button>
-        <button
-          onClick={() => setActiveTab('pending')}
-          className={`px-8 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-3 tracking-wide ${activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
-        >
-          Solicitações Externas
-          {properties.filter((p) => p.status === 'Pendente').length > 0 && (
-            <span className="bg-accent text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg shadow-accent/20">
-              {properties.filter((p) => p.status === 'Pendente').length}
+      <div className="flex border-b border-border-subtle items-center justify-between">
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-8 py-4 text-sm font-bold border-b-2 transition-all tracking-wide ${activeTab === 'all' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
+          >
+            Meus Imóveis
+          </button>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`px-8 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-3 tracking-wide ${activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
+          >
+            Solicitações Externas
+            {properties.filter((p) => p.status === 'Pendente').length > 0 && (
+              <span className="bg-accent text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg shadow-accent/20">
+                {properties.filter((p) => p.status === 'Pendente').length}
+              </span>
+            )}
+          </button>
+        </div>
+        
+        {properties.length > 0 && filteredProperties.length === 0 && (
+          <div className="px-6 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 font-medium mr-4 flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
             </span>
-          )}
-        </button>
+            Atenção: Você tem {properties.length} imóveis cadastrados, mas todos são do nicho {isRural ? 'Urbano' : 'Rural'}.
+          </div>
+        )}
       </div>
 
       {/* Filters Bar */}

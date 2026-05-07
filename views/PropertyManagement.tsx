@@ -36,21 +36,15 @@ const PropertyManagement: React.FC = () => {
   const { profile } = useAuth();
 
   useEffect(() => {
-    if (profile?.organization_id) {
-      loadProperties();
-    }
-  }, [profile?.organization_id]);
+    loadProperties();
+  }, []);
 
   const loadProperties = async () => {
     try {
       setLoading(true);
-      if (!profile?.organization_id) {
-        logger.warn(
-          '❌ Cannot load properties: No organization ID in profile'
-        );
-        return;
-      }
       const data = await propertyService.list();
+      console.log(`📋 [PropertyManagement] Total carregados: ${data.length}, Nicho atual: ${currentNiche}`);
+      console.log(`📋 [PropertyManagement] Nichos dos imóveis:`, data.map((p: any) => ({ title: p.title, niche: p.niche, status: p.status })));
       setProperties(data);
     } catch (error: any) {
       logger.error('Erro ao carregar imóveis:', error);

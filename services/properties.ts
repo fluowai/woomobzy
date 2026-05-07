@@ -8,23 +8,15 @@ import {
 import { supabase } from './supabase';
 
 export const propertyService = {
-  // Listar Imóveis (Implicitly Isolated by Backend Token)
+  // Listar Imóveis — RLS já filtra por organization_id automaticamente
   async list(page: number = 1, limit: number = 50) {
-    const { data: { session } } = await supabase.auth.getSession();
-    const orgId = session?.user?.user_metadata?.organization_id;
-
-    let query = supabase
+    const { data, error } = await supabase
       .from('properties')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (orgId) {
-      query = query.eq('organization_id', orgId);
-    }
-
-    const { data, error } = await query;
-    
     if (error) throw error;
+    console.log('📦 [propertyService.list] Retornou', (data || []).length, 'imóveis do banco');
     return (data || []).map(mapToModel);
   },
 
@@ -37,12 +29,13 @@ export const propertyService = {
   // Criar Imóvel
   async create(property: Partial<Property>) {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const payload = mapToDatabase({ 
-        ...property, 
-        organization_id: (property as any).organization_id || session?.user?.user_metadata?.organization_id 
-      });
-      
+      // organization_id vem do PropertyEditor (profile.organization_id)
+      const orgId = (property as any).organization_id;
+      if (!orgId) {
+        throw new Error('organization_id ausente. Faça login novamente.');
+      }
+
+      const payload = mapToDatabase(property);
       console.log('🚀 Payload sendo enviado ao Supabase:', payload);
 
       const { data, error } = await supabase
@@ -52,12 +45,13 @@ export const propertyService = {
         .single();
         
       if (error) {
-        console.error('❌ Erro retornado pelo Supabase:', error);
-        throw error;
+        console.error('❌ Erro retornado pelo Supabase:', { message: error.message, code: error.code, details: error.details, hint: error.hint });
+        throw new Error(`${error.message} (código: ${error.code})`);
       }
+      console.log('✅ Imóvel criado com sucesso:', data.id);
       return mapToModel(data);
-    } catch (err) {
-      console.error('❌ Erro na execução do service.create:', err);
+    } catch (err: any) {
+      console.error('❌ Erro na execução do service.create:', err.message);
       throw err;
     }
   },

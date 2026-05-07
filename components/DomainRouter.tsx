@@ -81,6 +81,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           hostname.includes('vercel.app') ||
           hostname === 'app.imobisaas.com.br' ||
           hostname === 'imobzy.consultio.com.br' ||
+          hostname === 'consultio.com.br' ||
+          hostname === 'imobs.consulto.com.br' ||
+          hostname === 'consulto.com.br' ||
           hostname === cleanPanelHost;
 
         // 2. Custom Domain Logic
@@ -103,13 +106,6 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
               return;
             } else {
               log(`❌ [Router] Domain not found in DB: ${hostname}`);
-              // If domain points here but not in DB, maybe show a generic "Domain not connected" or 404
-              // For now, fall through to main app or just show nothing?
-              // Better to show the main app (maybe they are just testing CNAME) or a 404.
-              // Let's set isPublicSite=true but slug=null to trigger a 404/Empty view if we confuse it?
-              // Actually, if we return here with slug=null, it renders {children} which is the Main App.
-              // This is confusing for a random domain.
-              // But let's stick to current behavior (render children) for fallback.
             }
           } catch (e) {
             log(`❌ [Router] Exception checking domain: ${e}`);
@@ -134,6 +130,8 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           '/lp/',
           '/site/',
           '/embreve',
+          '/vendas',
+          '/consultoria',
           '/chat',
           '/crm',
           '/reports',

@@ -270,7 +270,7 @@ const AppContent: React.FC = () => {
       <SuperAdminGuard>
         <Routes>
           {/* ====== PUBLIC ROUTES ====== */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<SystemSalesPage />} />
           <Route path="/vendas" element={<SystemSalesPage />} />
           <Route path="/consultoria" element={<SystemSalesPage />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />

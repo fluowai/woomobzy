@@ -30,9 +30,15 @@ export const consultingAgent = {
     
     try {
       const response = await geminiService.generateText(`${systemPrompt}\n\n${prompt}\nClara:`);
+      
+      // If the service is not configured correctly, it might return '{}'
+      if (response === '{}' || !response) {
+        return "Olá! No momento estou passando por uma manutenção rápida na minha inteligência. Mas não se preocupe! Você pode me chamar no WhatsApp agora mesmo para agendarmos sua consultoria. Posso te passar o link?";
+      }
+      
       return response;
     } catch (error) {
-      return "Desculpe, tive um pequeno problema técnico. Posso te ligar em instantes para conversarmos melhor?";
+      return "Desculpe, tive um pequeno problema técnico. Posso te ligar em instantes ou podemos conversar pelo WhatsApp para agendarmos sua consultoria?";
     }
   },
 

@@ -119,26 +119,41 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
 
         {/* Input */}
         <div className="p-6 bg-white border-t border-slate-100">
-          <div className="flex items-center gap-2 bg-slate-50 rounded-2xl p-2 border border-slate-100 focus-within:border-red-500/50 transition-all">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="flex items-center gap-2 bg-slate-50 rounded-2xl p-2 border border-slate-200 focus-within:border-emerald-500/50 transition-all shadow-inner"
+          >
             <input 
               type="text" 
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
               placeholder="Escreva sua mensagem..."
-              className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-sm text-slate-800"
+              className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 font-medium"
             />
             <button 
-              onClick={handleSend}
+              type="submit"
               disabled={!input.trim() || isTyping}
-              className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 disabled:opacity-50 transition-all"
+              className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-30 disabled:grayscale transition-all shadow-lg shadow-emerald-200"
             >
-              <Send size={18} />
+              {isTyping ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <Send size={18} />
+              )}
             </button>
-          </div>
+          </form>
           <div className="mt-4 flex items-center justify-center gap-4">
             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-              <Bot size={12} /> Powered by IMOBZY AI
+              <Bot size={12} className="text-emerald-500" /> Powered by IMOBZY AI
             </div>
           </div>
         </div>

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { leadService } from '../services/leads';
 import { toast } from 'sonner';
+import ConsultingAgent from '../components/ConsultingAgent';
 
 const SystemSalesPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ const SystemSalesPage: React.FC = () => {
     interest: 'Consultoria de Implementação',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedLead, setSubmittedLead] = useState<any>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +44,7 @@ const SystemSalesPage: React.FC = () => {
         notes: `Empresa: ${formData.company} | Interesse: ${formData.interest}`,
       } as any);
       toast.success('Solicitação enviada com sucesso! Entraremos em contato em breve.');
-      setFormData({ name: '', email: '', phone: '', company: '', interest: 'Consultoria de Implementação' });
+      setSubmittedLead({ ...formData });
     } catch (error) {
       toast.error('Erro ao enviar solicitação. Tente novamente ou use o WhatsApp.');
     } finally {
@@ -389,6 +391,9 @@ const SystemSalesPage: React.FC = () => {
           © 2026 IMOBZY Ecosystem • All Rights Reserved
         </div>
       </footer>
+
+      {/* AI Consulting Agent */}
+      <ConsultingAgent initialLeadData={submittedLead} />
     </div>
   );
 };

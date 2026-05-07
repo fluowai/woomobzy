@@ -78,6 +78,7 @@ const PortalCompradorUrbano = lazy(() => import('./views/urban/PortalCompradorUr
 // Super Admin
 const SuperAdminLayout = lazy(() => import('./views/superadmin/SuperAdminLayout'));
 const SuperAdminDashboard = lazy(() => import('./views/superadmin/Dashboard'));
+const ConsultingLeads = lazy(() => import('./views/superadmin/ConsultingLeads'));
 const TenantManager = lazy(() => import('./views/superadmin/TenantManager'));
 const GlobalSettings = lazy(() => import('./views/superadmin/GlobalSettings'));
 const DomainManager = lazy(() => import('./views/superadmin/DomainManager'));
@@ -402,6 +403,7 @@ const AppContent: React.FC = () => {
             <Route path="support" element={<SupportManager />} />
             <Route path="team" element={<TeamManager />} />
             <Route path="domains" element={<DomainManager />} />
+            <Route path="consulting" element={<ConsultingLeads />} />
             <Route path="plans" element={<PlanManager />} />
             <Route path="billing" element={<BillingManager />} />
             <Route path="feature-flags" element={<FeatureFlags />} />

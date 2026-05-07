@@ -12,6 +12,8 @@ import {
   X,
   ShieldAlert,
   Globe,
+  CheckCircle,
+  Calendar,
   ArrowLeft,
   ToggleRight,
   ScrollText,
@@ -53,6 +55,7 @@ const SuperAdminLayout: React.FC = () => {
     { icon: ScrollText, label: 'Audit Log', path: '/superadmin/audit-log' },
     { icon: Layout, label: 'Templates', path: '/superadmin/templates' },
     { icon: Globe, label: 'Domínios', path: '/superadmin/domains' },
+    { icon: Calendar, label: 'Consultoria', path: '/superadmin/consulting' },
     { icon: Zap, label: 'Importador IA', path: '/superadmin/importer' },
     { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
   ];

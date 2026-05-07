@@ -99,6 +99,8 @@ const PropertyEditor: React.FC = () => {
   const [loadingCar, setLoadingCar] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  
+  console.log('🔄 [PropertyEditor] State Check:', { loading, analyzing, isNew, id });
 
   const [formData, setFormData] = useState<Partial<Property>>({
     title: '',
@@ -237,15 +239,17 @@ const PropertyEditor: React.FC = () => {
   }, [id, isNew, navigate]);
 
   const handleSave = async (e?: React.FormEvent) => {
+    console.log('🔘 Botão Salvar clicado!');
     if (e) e.preventDefault();
 
     if (!formData.title?.trim()) {
+      console.warn('⚠️ Validação falhou: Título ausente');
       alert('Por favor, informe o título do imóvel.');
       return;
     }
 
     setLoading(true);
-    logger.info('💾 Iniciando salvamento do imóvel...', { isNew, id });
+    console.log('⏳ Iniciando processo de salvamento...', { isNew, id });
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -466,7 +470,11 @@ const PropertyEditor: React.FC = () => {
             </button>
           )}
           <button
-            onClick={handleSave}
+            type="button"
+            onClick={(e) => {
+              console.log('⚡ Clique físico detectado no botão!');
+              handleSave(e);
+            }}
             disabled={loading}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
           >
@@ -475,7 +483,7 @@ const PropertyEditor: React.FC = () => {
             ) : (
               <Save size={20} />
             )}
-            Salvar Alterações
+            {loading ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </div>
       </div>

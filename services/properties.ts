@@ -59,18 +59,31 @@ export const propertyService = {
   // Atualizar Imóvel
   async update(id: string, property: Partial<Property>) {
     const payload = mapToDatabase(property);
-    const data = await callApi(`/api/properties/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
-    return mapToModel(data.property);
+    
+    console.log('🔄 [propertyService.update] Payload:', payload);
+
+    const { data, error } = await supabase
+      .from('properties')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Erro no update do Supabase:', error);
+      throw error;
+    }
+    return mapToModel(data);
   },
 
   // Excluir Imóvel
   async delete(id: string) {
-    await callApi(`/api/properties/${id}`, {
-      method: 'DELETE',
-    });
+    const { error } = await supabase
+      .from('properties')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
   },
 
   // Submeter novo imóvel (para landing pages)

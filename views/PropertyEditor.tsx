@@ -57,7 +57,7 @@ const PropertyEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const isNew = id === 'new';
+  const isNew = !id || id === 'new';
 
   const niche = profile?.organization?.niche || 'traditional';
   const nichePath = niche === 'traditional' ? 'urban' : 'rural';

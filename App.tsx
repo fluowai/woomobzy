@@ -28,6 +28,7 @@ const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 
 // Public Views (Static for SEO/Initial Load)
 import LandingPage from './views/LandingPage';
+import SystemSalesPage from './views/SystemSalesPage';
 import Login from './views/Login';
 import Onboarding from './views/Onboarding';
 
@@ -269,6 +270,8 @@ const AppContent: React.FC = () => {
         <Routes>
           {/* ====== PUBLIC ROUTES ====== */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/vendas" element={<SystemSalesPage />} />
+          <Route path="/consultoria" element={<SystemSalesPage />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />
           <Route path="/login" element={<Login />} />

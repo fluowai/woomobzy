@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, 
   ShieldCheck, 
   Zap, 
   LayoutDashboard,
-  ArrowRight,
   Phone,
   Building2,
   Mail,
@@ -12,7 +12,6 @@ import {
   Sparkles,
   MessageSquare,
   Users,
-  Search,
   ChevronRight
 } from 'lucide-react';
 import { leadService } from '../services/leads';
@@ -20,6 +19,7 @@ import { toast } from 'sonner';
 import ConsultingAgent from '../components/ConsultingAgent';
 
 const SystemSalesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -27,7 +27,6 @@ const SystemSalesPage: React.FC = () => {
     company: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,11 +39,16 @@ const SystemSalesPage: React.FC = () => {
         source: 'Página de Vendas - Demonstração',
         notes: `Empresa: ${formData.company} | Interesse: Demonstração Completa`,
       } as any);
-      setIsSuccess(true);
-      toast.success('Solicitação enviada! Nossa equipe entrará em contato.');
+      
+      toast.success('Dados recebidos! Redirecionando para agendamento...');
+      
+      // Redirect to Typebot style qualification page
+      setTimeout(() => {
+        navigate(`/consultoria/qualificacao?name=${encodeURIComponent(formData.name)}&email=${encodeURIComponent(formData.email)}&company=${encodeURIComponent(formData.company)}`);
+      }, 1500);
+      
     } catch (error) {
       toast.error('Erro ao enviar solicitação. Tente novamente.');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -149,24 +153,6 @@ const SystemSalesPage: React.FC = () => {
         {/* Right Column: Demo Form Card */}
         <div className="lg:col-span-5 relative">
           <div className="sticky top-12 bg-white/80 backdrop-blur-xl p-8 md:p-12 rounded-[3rem] shadow-2xl shadow-emerald-900/10 border border-white">
-            
-            {/* Success Overlay */}
-            {isSuccess && (
-              <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-300">
-                <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-8 shadow-inner shadow-emerald-200">
-                  <CheckCircle2 size={48} className="animate-bounce" />
-                </div>
-                <h2 className="text-3xl font-black text-slate-900 mb-4 uppercase italic tracking-tighter leading-none">Quase tudo pronto!</h2>
-                <p className="text-slate-600 font-medium mb-8">Nossa equipe entrará em contato em breve para agendar sua demonstração personalizada.</p>
-                <button 
-                  onClick={() => setIsSuccess(false)}
-                  className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200"
-                >
-                  Fechar
-                </button>
-              </div>
-            )}
-
             <div className="mb-10">
               <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter leading-none uppercase italic">Agende uma <span className="text-emerald-600">demonstração</span> da IMOBZY</h2>
               <p className="text-slate-500 font-medium text-sm">Veja como sua imobiliária pode organizar a operação, melhorar o atendimento e vender com mais previsibilidade.</p>

@@ -134,6 +134,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           '/embreve',
           '/vendas',
           '/consultoria',
+          '/consultoria/qualificacao',
           '/chat',
           '/crm',
           '/reports',

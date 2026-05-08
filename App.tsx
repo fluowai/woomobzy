@@ -44,6 +44,7 @@ const LandingPageEditor = lazy(() => import('./views/LandingPageEditor'));
 const VisualSiteEditor = lazy(() => import('./views/VisualSiteEditor'));
 const SiteSetupWizard = lazy(() => import('./views/SiteSetupWizard'));
 const AIAssistant = lazy(() => import('./views/AIAssistant'));
+const ConsultingQualificacao = lazy(() => import('./views/ConsultingQualificacao'));
 const SystemSettings = lazy(() => import('./views/SystemSettings'));
 const DataRoom = lazy(() => import('./views/DataRoom'));
 const LegalContracts = lazy(() => import('./views/LegalContracts'));
@@ -273,6 +274,7 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<SystemSalesPage />} />
           <Route path="/vendas" element={<SystemSalesPage />} />
           <Route path="/consultoria" element={<SystemSalesPage />} />
+          <Route path="/consultoria/qualificacao" element={<ConsultingQualificacao />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />
           <Route path="/login" element={<Login />} />

@@ -81,6 +81,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           hostname.includes('vercel.app') ||
           hostname === 'app.imobisaas.com.br' ||
           hostname === 'imobzy.consultio.com.br' ||
+          hostname === 'urbano.consultio.com.br' ||
           hostname === 'consultio.com.br' ||
           hostname === 'imobs.consulto.com.br' ||
           hostname === 'consulto.com.br' ||
@@ -125,6 +126,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           '/admin',
           '/rural',
           '/urban',
+          '/urbano',
           '/superadmin',
           '/impersonate',
           '/lp/',

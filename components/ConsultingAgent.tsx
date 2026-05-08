@@ -17,24 +17,29 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
   const [messages, setMessages] = useState<ChatMessage[]>([
     { 
       role: 'assistant', 
-      content: `Olá${initialLeadData?.name ? ` ${initialLeadData.name}` : ''}! Sou a Clara, especialista em implementação aqui na IMOBZY. Vi que você tem interesse em transformar sua operação com nossa tecnologia. Podemos conversar rapidinho para eu entender seu perfil e já agendarmos sua consultoria?` 
+      content: `Olá! Sou a Clara, especialista da IMOBZY. Posso te mostrar como nossa plataforma ajuda sua imobiliária a centralizar leads, imóveis, atendimentos e processos comerciais em um único sistema.` 
     }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [leadId, setLeadId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isTyping]);
+  const quickButtons = [
+    'Conhecer a plataforma',
+    'Agendar demonstração',
+    'Ver recursos do sistema'
+  ];
 
-  const handleSend = async () => {
-    if (!input.trim() || isTyping) return;
+  const handleQuickAction = (action: string) => {
+    setInput(action);
+    // Auto-send if desired, or just set input
+  };
 
-    const userMessage: ChatMessage = { role: 'user', content: input };
+  const handleSend = async (overrideInput?: string) => {
+    const messageToSend = overrideInput || input;
+    if (!messageToSend.trim() || isTyping) return;
+
+    const userMessage: ChatMessage = { role: 'user', content: messageToSend };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
@@ -42,14 +47,8 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
     try {
       const response = await consultingAgent.processMessage([...messages, userMessage], initialLeadData);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-      
-      // If the response sounds like a qualification completion, we update the lead
-      if (response.toLowerCase().includes('agendado') || response.toLowerCase().includes('especialista')) {
-        // Logic to capture and update lead in background
-        console.log("Lead qualified or scheduling initiated");
-      }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, tive um erro. Podemos continuar por WhatsApp?" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, tive um erro. Podemos conversar por WhatsApp?" }]);
     } finally {
       setIsTyping(false);
     }
@@ -60,15 +59,9 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
       {/* Floating Button */}
       <button 
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-8 right-8 w-16 h-16 rounded-full bg-slate-900 text-white shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-[100] group ${isOpen ? 'scale-0' : 'scale-100'}`}
+        className={`fixed bottom-8 right-8 w-16 h-16 rounded-full bg-emerald-600 text-white shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-[100] group ${isOpen ? 'scale-0' : 'scale-100'}`}
       >
-        <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-[10px] font-bold animate-bounce">
-          1
-        </div>
         <MessageSquare size={28} />
-        <div className="absolute right-20 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-bold shadow-xl border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-          Falar com Especialista IA
-        </div>
       </button>
 
       {/* Chat Window */}
@@ -76,14 +69,14 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
         {/* Header */}
         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-lg shadow-red-500/20">
+            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
               <Sparkles size={20} className="text-white" />
             </div>
             <div>
               <div className="font-black text-sm uppercase tracking-widest flex items-center gap-2">
                 Clara <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">AI Implementation Expert</div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Especialista IMOBZY</div>
             </div>
           </div>
           <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
@@ -97,7 +90,7 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
                 msg.role === 'user' 
-                  ? 'bg-slate-900 text-white rounded-tr-none' 
+                  ? 'bg-emerald-600 text-white rounded-tr-none' 
                   : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
               }`}>
                 {msg.content}
@@ -117,6 +110,19 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
           )}
         </div>
 
+        {/* Quick Buttons */}
+        <div className="px-6 py-3 bg-white flex flex-wrap gap-2 border-t border-slate-50">
+          {quickButtons.map((btn, i) => (
+            <button 
+              key={i}
+              onClick={() => handleSend(btn)}
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-[10px] font-bold text-slate-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600 transition-all"
+            >
+              {btn}
+            </button>
+          ))}
+        </div>
+
         {/* Input */}
         <div className="p-6 bg-white border-t border-slate-100">
           <form 
@@ -124,7 +130,7 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
               e.preventDefault();
               handleSend();
             }}
-            className="flex items-center gap-2 bg-slate-50 rounded-2xl p-2 border border-slate-200 focus-within:border-emerald-500/50 transition-all shadow-inner"
+            className="flex items-center gap-2 bg-slate-50 rounded-2xl p-2 border border-slate-200 focus-within:border-emerald-500/50 transition-all"
           >
             <input 
               type="text" 
@@ -137,12 +143,12 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
                 }
               }}
               placeholder="Escreva sua mensagem..."
-              className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 font-medium"
+              className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-sm text-slate-800"
             />
             <button 
               type="submit"
               disabled={!input.trim() || isTyping}
-              className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-30 disabled:grayscale transition-all shadow-lg shadow-emerald-200"
+              className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-30 transition-all shadow-lg shadow-emerald-200"
             >
               {isTyping ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

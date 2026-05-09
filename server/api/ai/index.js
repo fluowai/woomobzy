@@ -42,6 +42,35 @@ router.post('/generate-page', async (req, res) => {
   }
 });
 
+router.post('/chat', async (req, res) => {
+  const { prompt, systemInstruction, temperature = 0.7, jsonMode = false } = req.body;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Chave de IA não configurada no servidor.' });
+  }
+
+  try {
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature,
+          responseMimeType: jsonMode ? "application/json" : "text/plain"
+        },
+        systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
+      }
+    );
+
+    const text = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    res.json({ text });
+  } catch (error) {
+    console.error('Gemini API Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Erro ao processar requisição de IA.' });
+  }
+});
+
 async function generateLayoutWithAI(provider, apiKey, prompt, niche) {
   // This is a mock implementation of the AI call. 
   // In a real scenario, we would use the provider's SDK or Axios.

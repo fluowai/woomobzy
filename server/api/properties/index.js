@@ -1,13 +1,11 @@
 import { Router } from 'express';
-import { createClient } from '@supabase/supabase-js';
 import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
 
 const router = Router();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 
 /**
  * GET /api/properties

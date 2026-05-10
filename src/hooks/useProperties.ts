@@ -3,16 +3,14 @@ import { supabase } from '../lib/supabase';
 import type { Property, PropertyStatus } from '../types/property';
 
 interface UsePropertiesOptions {
-  companyId: string;
+  organizationId: string;
   status?: PropertyStatus;
-  category?: 'RURAL' | 'URBAN';
   limit?: number;
 }
 
 export function useProperties({
-  companyId,
+  organizationId,
   status,
-  category,
   limit = 50,
 }: UsePropertiesOptions) {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -27,15 +25,12 @@ export function useProperties({
       let query = supabase
         .from('properties')
         .select('*')
-        .eq('company_id', companyId)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(limit);
 
       if (status) {
         query = query.eq('status', status);
-      }
-      if (category) {
-        query = query.eq('category', category);
       }
 
       const { data, error: fetchError } = await query;
@@ -47,7 +42,7 @@ export function useProperties({
     } finally {
       setLoading(false);
     }
-  }, [companyId, status, category, limit]);
+  }, [organizationId, status, limit]);
 
   useEffect(() => {
     fetchProperties();
@@ -56,7 +51,7 @@ export function useProperties({
   const createProperty = async (property: Partial<Property>) => {
     const { data, error } = await supabase
       .from('properties')
-      .insert([{ ...property, company_id: companyId }])
+      .insert([{ ...property, organization_id: organizationId }])
       .select()
       .single();
 

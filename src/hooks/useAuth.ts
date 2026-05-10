@@ -27,11 +27,21 @@ export function useAuth(): UseAuthReturn {
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, email, name, role, avatar_url, organization_id, created_at')
           .eq('id', session.user.id)
           .single();
 
-        setUser(profile as User);
+        if (profile) {
+          setUser({
+            id: profile.id,
+            email: profile.email || session.user.email || '',
+            name: profile.name || '',
+            role: profile.role as any,
+            avatar_url: profile.avatar_url,
+            organization_id: profile.organization_id || '',
+            created_at: profile.created_at,
+          });
+        }
       }
       setLoading(false);
     };
@@ -44,11 +54,21 @@ export function useAuth(): UseAuthReturn {
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, email, name, role, avatar_url, organization_id, created_at')
           .eq('id', session.user.id)
           .single();
 
-        setUser(profile as User);
+        if (profile) {
+          setUser({
+            id: profile.id,
+            email: profile.email || session.user.email || '',
+            name: profile.name || '',
+            role: profile.role as any,
+            avatar_url: profile.avatar_url,
+            organization_id: profile.organization_id || '',
+            created_at: profile.created_at,
+          });
+        }
       } else {
         setUser(null);
       }

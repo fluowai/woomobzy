@@ -20,44 +20,37 @@ export type PropertyType =
   | 'KITNET';
 
 export type PropertyStatus =
-  | 'DRAFT'
-  | 'ACTIVE'
-  | 'SOLD'
-  | 'SUSPENDED'
-  | 'ARCHIVED';
-
-export type PropertyCategory = 'RURAL' | 'URBAN';
+  | 'Disponível'
+  | 'Alugado'
+  | 'Vendido'
+  | 'Reservado'
+  | 'Pendente';
 
 export interface Property {
   id: string;
-  company_id: string;
-  internal_code: string;
+  organization_id: string;
   title: string;
   description?: string;
-  property_type: PropertyType;
-  category: PropertyCategory;
-  total_area: number;
-  useful_area?: number;
-  state: string;
-  city: string;
+  property_type: string;
+  status: PropertyStatus;
+  purpose?: string;
+  price?: number;
+  total_area_ha?: number;
+  useful_area_ha?: number;
+  city?: string;
+  state?: string;
   address?: string;
   neighborhood?: string;
-  price_total: number;
-  price_per_unit?: number;
-  status: PropertyStatus;
+  features?: Record<string, unknown>;
   images?: string[];
-  videos?: string[];
-  features?: string[];
-  owner_id?: string;
-  agent_id?: string;
-  centroid?: { x: number; y: number };
-  biome?: string;
+  owner_info?: Record<string, unknown>;
+  broker_id?: string;
+  niche?: string;
   created_at: string;
   updated_at?: string;
 }
 
 export interface RuralProperty extends Property {
-  category: 'RURAL';
   biome?: string;
   soil_type?: string;
   water_resources?: string[];
@@ -65,7 +58,6 @@ export interface RuralProperty extends Property {
 }
 
 export interface UrbanProperty extends Property {
-  category: 'URBAN';
   bedrooms?: number;
   bathrooms?: number;
   parking_spaces?: number;

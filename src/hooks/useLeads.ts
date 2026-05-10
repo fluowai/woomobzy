@@ -3,11 +3,11 @@ import { supabase } from '../lib/supabase';
 import type { Lead, LeadStatus } from '../types/lead';
 
 interface UseLeadsOptions {
-  companyId: string;
+  organizationId: string;
   status?: LeadStatus;
 }
 
-export function useLeads({ companyId, status }: UseLeadsOptions) {
+export function useLeads({ organizationId, status }: UseLeadsOptions) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -20,7 +20,7 @@ export function useLeads({ companyId, status }: UseLeadsOptions) {
       let query = supabase
         .from('leads')
         .select('*')
-        .eq('company_id', companyId)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (status) {
@@ -36,7 +36,7 @@ export function useLeads({ companyId, status }: UseLeadsOptions) {
     } finally {
       setLoading(false);
     }
-  }, [companyId, status]);
+  }, [organizationId, status]);
 
   useEffect(() => {
     fetchLeads();
@@ -45,7 +45,7 @@ export function useLeads({ companyId, status }: UseLeadsOptions) {
   const createLead = async (lead: Partial<Lead>) => {
     const { data, error } = await supabase
       .from('leads')
-      .insert([{ ...lead, company_id: companyId }])
+      .insert([{ ...lead, organization_id: organizationId }])
       .select()
       .single();
 

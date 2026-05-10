@@ -1,6 +1,8 @@
 import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabase } from '../supabase.js';
+import { getSupabaseServer } from '../lib/supabase-server.js';
+
+const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 import crypto from 'crypto';
 
 // Helper to get keys from DB

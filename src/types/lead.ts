@@ -18,7 +18,7 @@ export type LeadSource =
 
 export interface Lead {
   id: string;
-  company_id: string;
+  organization_id: string;
   name: string;
   email?: string;
   phone: string;

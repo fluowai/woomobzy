@@ -4,40 +4,24 @@ export const propertySchema = z.object({
   title: z.string().min(3, 'Título deve ter pelo menos 3 caracteres'),
   description: z.string().optional(),
   property_type: z.enum([
-    'FAZENDA',
-    'SITIO',
-    'CHACARA',
-    'HARAS',
-    'AREA_AGRICOLA',
-    'AREA_PECUARIA',
-    'REFLORESTAMENTO',
-    'LAZER_RURAL',
-    'ARRENDAMENTO',
-    'CASA',
-    'APARTAMENTO',
-    'TERRENO',
-    'COMERCIAL',
-    'SALAS',
-    'LOJAS',
-    'GALPOES',
-    'SOBRADO',
-    'FLAT',
-    'KITNET',
+    'Fazenda', 'Sítio', 'Chácara', 'Estância', 'Haras',
+    'Granja', 'Agropecuária', 'Terreno Rural', 'Gleba', 'Lote Rural',
+    'Área Produtiva', 'Apartamento', 'Casa', 'Sobrado', 'Terreno Urbano',
+    'Sala Comercial', 'Galpão Industrial', 'Loft', 'Studio', 'Cobertura',
   ]),
-  category: z.enum(['RURAL', 'URBAN']),
-  total_area: z.number().positive('Área total deve ser positiva'),
-  useful_area: z.number().optional(),
+  purpose: z.enum(['Venda', 'Aluguel', 'Venda e Aluguel']).optional(),
+  price: z.number().positive('Preço deve ser positivo').optional(),
+  total_area_ha: z.number().positive('Área total deve ser positiva').optional(),
+  useful_area_ha: z.number().optional(),
   state: z.string().length(2, 'Estado deve ter 2 caracteres'),
   city: z.string().min(2, 'Cidade inválida'),
   address: z.string().optional(),
   neighborhood: z.string().optional(),
-  price_total: z.number().positive('Preço deve ser positivo'),
-  price_per_unit: z.number().optional(),
   status: z
-    .enum(['DRAFT', 'ACTIVE', 'SOLD', 'SUSPENDED', 'ARCHIVED'])
+    .enum(['Disponível', 'Alugado', 'Vendido', 'Reservado', 'Pendente'])
     .optional(),
   images: z.array(z.string()).optional(),
-  features: z.array(z.string()).optional(),
+  features: z.record(z.unknown()).optional(),
 });
 
 export const leadSchema = z.object({
@@ -46,32 +30,16 @@ export const leadSchema = z.object({
   phone: z.string().min(10, 'Telefone inválido'),
   status: z
     .enum([
-      'NEW',
-      'CONTACTED',
-      'QUALIFIED',
-      'PROPOSITION',
-      'NEGOTIATION',
-      'CLOSED_WON',
-      'CLOSED_LOST',
+      'Novo', 'Contatado', 'Qualificado', 'Proposta',
+      'Negociação', 'Ganho', 'Perdido',
     ])
     .optional(),
-  source: z
-    .enum([
-      'WEBSITE',
-      'WHATSAPP',
-      'PHONE',
-      'REFERRAL',
-      'PORTAL',
-      'SOCIAL_MEDIA',
-      'OFFLINE',
-    ])
-    .optional(),
-  interest_type: z.array(z.string()).optional(),
-  min_area: z.number().optional(),
-  max_budget: z.number().optional(),
-  preferred_location: z.array(z.string()).optional(),
+  source: z.string().optional(),
   notes: z.string().optional(),
   property_id: z.string().uuid().optional(),
+  ad_reference: z.string().optional(),
+  organic_channel: z.string().optional(),
+  campaign: z.string().optional(),
 });
 
 export const contactSchema = z.object({
@@ -80,6 +48,7 @@ export const contactSchema = z.object({
   phone: z.string().min(10, 'Telefone inválido'),
   message: z.string().min(10, 'Mensagem deve ter pelo menos 10 caracteres'),
   property_id: z.string().uuid().optional(),
+  organization_id: z.string().uuid('Organização inválida'),
   source: z.string().optional(),
 });
 

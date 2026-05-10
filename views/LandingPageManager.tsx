@@ -777,7 +777,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
   const loadProperties = async () => {
     try {
       if (!profile?.organization_id) return;
-      const data = await propertyService.list(profile.organization_id);
+      const data = await propertyService.list();
       setProperties(data);
     } catch (error) {
       logger.error('Failed to load properties', error);

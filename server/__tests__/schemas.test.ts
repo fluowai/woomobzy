@@ -10,12 +10,11 @@ describe('Property Schema', () => {
   it('should validate a valid property', () => {
     const property = {
       title: 'Fazenda São João',
-      property_type: 'FAZENDA',
-      category: 'RURAL',
-      total_area: 100,
+      property_type: 'Fazenda',
+      price: 5000000,
+      total_area_ha: 100,
       state: 'SP',
       city: 'Campinas',
-      price_total: 500000,
     };
 
     const result = propertySchema.safeParse(property);
@@ -24,12 +23,11 @@ describe('Property Schema', () => {
 
   it('should reject property without title', () => {
     const property = {
-      property_type: 'FAZENDA',
-      category: 'RURAL',
-      total_area: 100,
+      property_type: 'Fazenda',
+      price: 5000000,
+      total_area_ha: 100,
       state: 'SP',
       city: 'Campinas',
-      price_total: 500000,
     };
 
     const result = propertySchema.safeParse(property);
@@ -39,12 +37,11 @@ describe('Property Schema', () => {
   it('should reject property with negative area', () => {
     const property = {
       title: 'Fazenda São João',
-      property_type: 'FAZENDA',
-      category: 'RURAL',
-      total_area: -100,
+      property_type: 'Fazenda',
+      price: 5000000,
+      total_area_ha: -100,
       state: 'SP',
       city: 'Campinas',
-      price_total: 500000,
     };
 
     const result = propertySchema.safeParse(property);
@@ -68,7 +65,7 @@ describe('Lead Schema', () => {
       name: 'João Silva',
       email: 'joao@example.com',
       phone: '11999999999',
-      source: 'WEBSITE',
+      source: 'Site',
     };
 
     const result = leadSchema.safeParse(lead);
@@ -102,6 +99,7 @@ describe('Contact Schema', () => {
       name: 'Maria Santos',
       phone: '11988887777',
       message: 'Gostaria de mais informações sobre o imóvel.',
+      organization_id: '00000000-0000-0000-0000-000000000001',
     };
 
     const result = contactSchema.safeParse(contact);
@@ -113,6 +111,7 @@ describe('Contact Schema', () => {
       name: 'Maria Santos',
       phone: '11988887777',
       message: 'Olá',
+      organization_id: '00000000-0000-0000-0000-000000000001',
     };
 
     const result = contactSchema.safeParse(contact);

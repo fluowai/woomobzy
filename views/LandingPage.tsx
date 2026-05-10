@@ -240,7 +240,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
       try {
         setLoading(true);
         // Fetch all properties (no slicing), filtered by org if present
-        const data = await propertyService.list(organizationId);
+        const data = await propertyService.list();
         setProperties(data);
       } catch (error) {
         logger.error('Erro ao carregar imóveis da home', error);

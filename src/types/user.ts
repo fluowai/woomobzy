@@ -14,7 +14,7 @@ export interface User {
   phone?: string;
   avatar_url?: string;
   role: UserRole;
-  company_id: string;
+  organization_id: string;
   created_at: string;
   last_login?: string;
 }
@@ -23,12 +23,13 @@ export interface Company {
   id: string;
   name: string;
   slug: string;
-  plan: 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  plan_id?: string;
+  status: 'active' | 'inactive' | 'suspended';
   logo_url?: string;
   primary_color?: string;
   secondary_color?: string;
   custom_domain?: string;
+  niche?: 'rural' | 'traditional' | 'hybrid';
   settings?: Record<string, unknown>;
   created_at: string;
 }

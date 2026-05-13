@@ -29,6 +29,7 @@ const ConexoesRural: React.FC = () => {
   const [qrInstance, setQrInstance] = useState<Instance | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
 
   const { currentPlan } = usePlans();
   const maxInstances = currentPlan?.limits?.whatsapp_instances || 1;
@@ -43,8 +44,13 @@ const ConexoesRural: React.FC = () => {
     try {
       const data = await instanceApi.list();
       setInstances(data || []);
-    } catch (err) {
-      logger.error('Failed to refresh instances:', err);
+      setServiceUnavailable(false);
+    } catch (err: any) {
+      if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
+        setServiceUnavailable(true);
+      } else {
+        logger.error('Failed to refresh instances:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -94,7 +100,29 @@ const ConexoesRural: React.FC = () => {
     }
   };
 
-  return (
+  return serviceUnavailable ? (
+    <div className="space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div>
+        <h1 className="text-4xl font-black text-black uppercase italic tracking-tighter leading-none mb-3">
+          Conexões <br /> <span style={{ color: settings.primaryColor }}>WhatsApp & API</span>
+        </h1>
+      </div>
+      <div className="bg-white rounded-[3rem] p-16 shadow-sm border border-slate-100 text-center">
+        <WifiOff size={64} className="text-amber-400 mx-auto mb-6" />
+        <h2 className="text-2xl font-black text-black uppercase italic tracking-tighter mb-3">Serviço Indisponível</h2>
+        <p className="text-black/50 font-medium italic mb-8 max-w-md mx-auto">
+          O módulo WhatsApp requer que o backend Node.js e o serviço WhatsMeow estejam rodando no servidor.
+        </p>
+        <button
+          onClick={() => { setLoading(true); setServiceUnavailable(false); refreshInstances(); }}
+          className="px-8 py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs hover:brightness-110 transition-all"
+          style={{ backgroundColor: settings.primaryColor }}
+        >
+          <RefreshCw size={14} className="inline mr-2" /> Tentar Novamente
+        </button>
+      </div>
+    </div>
+  ) : (
     <div className="space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">

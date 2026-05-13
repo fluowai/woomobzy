@@ -62,7 +62,9 @@ const SupportManager: React.FC = () => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      let query = supabase.from('support_tickets').select('*');
+      let query = supabase
+        .from('support_tickets')
+        .select('*, organization:organizations(name), user_profile:profiles(name)');
 
       if (filter !== 'all') {
         query = query.eq('status', filter);
@@ -216,7 +218,7 @@ const SupportManager: React.FC = () => {
                 </h4>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <Building2 size={12} />
-                  <span>{ticket.organization_id?.slice(0, 8) || 'N/A'}</span>
+                  <span>{ticket.organization?.name || 'Imobiliária'}</span>
                 </div>
               </button>
             ))
@@ -249,7 +251,7 @@ const SupportManager: React.FC = () => {
               <p className="text-sm text-gray-500">
                 Aberto por{' '}
                 <span className="font-medium text-gray-700">
-                  {selectedTicket.user_id?.slice(0, 8) || 'Usuário'}
+                  {selectedTicket.user_profile?.name || 'Usuário'}
                 </span>{' '}
                 em{' '}
                 <span className="font-medium text-gray-700">

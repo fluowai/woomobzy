@@ -1,5 +1,5 @@
-const API_BASE = import.meta.env.VITE_WHATSAPP_API_URL || `https://${window.location.hostname}:3002/api/whatsapp`;
-const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || `wss://${window.location.hostname}:3002/whatsapp/ws`;
+const API_BASE = '/api/whatsapp';
+const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/whatsapp/ws`;
 
 import { supabase } from '@/services/supabase';
 

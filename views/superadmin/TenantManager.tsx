@@ -87,7 +87,16 @@ const TenantManager: React.FC = () => {
     try {
       setLoading(true);
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/admin/organizations', { headers });
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiUrl}/api/admin/organizations`, { headers });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text();
+        console.error('Resposta não é JSON:', text.substring(0, 200));
+        throw new Error('O servidor retornou uma resposta inválida (não JSON). Verifique se o backend está rodando.');
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erro ao carregar');
       setTenants(data.organizations || []);

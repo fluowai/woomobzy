@@ -1,8 +1,7 @@
 import { logger } from '@/utils/logger';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || `https://${window.location.hostname}:3002`;
-const WS_URL = API_URL.replace('http', 'ws') + '/whatsapp/ws';
+const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || `wss://${window.location.hostname}:3002/whatsapp/ws`;
 
 interface WSEvent {
   event: string;

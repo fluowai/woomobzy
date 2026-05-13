@@ -346,8 +346,14 @@ const TenantManager: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{tenant.owner_name || '—'}</span>
-                      <span className="text-xs text-gray-400">{tenant.owner_email}</span>
+                      <span className="font-bold text-slate-800">
+                        {tenant.owner_name || (tenant.owner_email ? tenant.owner_email.split('@')[0] : '—')}
+                      </span>
+                      {tenant.owner_name && (
+                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">
+                          {tenant.owner_email}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">

@@ -64,32 +64,51 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     }
   }, [activeSlug, searchParams.get('page')]);
 
-  const loadLandingPage = async (slug: string) => {
+  const loadLandingPage = async (slugOrOrg: string) => {
     try {
       setLoading(true);
-      logger.info('🔍 Loading Public Site for Slug:', slug);
+      const isDirectLPLink = location.pathname.startsWith('/lp/');
+      logger.info('🔍 Loading Public Site. Mode:', isDirectLPLink ? 'Direct LP' : 'Org/Subdomain', 'Value:', slugOrOrg);
 
-      // 1. Find Organization
       let resolvedOrg: any = null;
-      try {
-        const { data: org, error: orgError } = await supabase
-          .rpc('get_tenant_public', { slug_input: slug })
+      let targetPage: any = null;
+
+      if (isDirectLPLink) {
+        // Mode A: Search by Landing Page Slug directly
+        const { data: lpData, error: lpError } = await supabase
+          .from('landing_pages')
+          .select('*, organization:organizations(*)')
+          .eq('slug', slugOrOrg)
+          .eq('status', 'published')
           .maybeSingle();
 
-        if (!orgError && org) {
-          resolvedOrg = org;
+        if (lpData) {
+          targetPage = lpData;
+          resolvedOrg = lpData.organization;
+        } else {
+          logger.error('Landing page not found by slug:', slugOrOrg);
         }
-      } catch (e) {
-        logger.warn('RPC failed, trying direct query');
       }
 
+      // Fallback or Mode B: Resolve by Organization first
       if (!resolvedOrg) {
-        const { data: orgDirect } = await supabase
-          .from('organizations')
-          .select('id, name, slug')
-          .or(`slug.eq.${slug},custom_domain.eq.${slug},subdomain.eq.${slug}`)
-          .maybeSingle();
-        resolvedOrg = orgDirect;
+        try {
+          const { data: org, error: orgError } = await supabase
+            .rpc('get_tenant_public', { slug_input: slugOrOrg })
+            .maybeSingle();
+          if (!orgError && org) resolvedOrg = org;
+        } catch (e) {
+          logger.warn('RPC failed, trying direct query');
+        }
+
+        if (!resolvedOrg) {
+          const { data: orgDirect } = await supabase
+            .from('organizations')
+            .select('id, name, slug')
+            .or(`slug.eq.${slugOrOrg},custom_domain.eq.${slugOrOrg},subdomain.eq.${slugOrOrg}`)
+            .maybeSingle();
+          resolvedOrg = orgDirect;
+        }
       }
 
       if (!resolvedOrg) {
@@ -103,58 +122,46 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       // 2. Load Settings
       if (orgId) {
-        const { data: siteSettings, error: settingsError } = await supabase
-          .rpc('get_site_settings_public', { org_id: orgId })
+        const { data: siteSettings } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('organization_id', orgId)
           .maybeSingle();
+        if (siteSettings) setSettings(siteSettings);
+      }
 
-        if (siteSettings && !settingsError) {
-          setSettings(siteSettings);
+      // 3. Load Page Content (if not already loaded in Mode A)
+      if (!targetPage) {
+        const targetPageSlug = searchParams.get('page');
+        let query = supabase
+          .from('landing_pages')
+          .select('*')
+          .eq('organization_id', orgId)
+          .eq('status', 'published');
+
+        if (targetPageSlug) {
+          query = query.eq('slug', targetPageSlug);
         } else {
-          // Fallback direct query
-          const { data: directSettings } = await supabase
-            .from('site_settings')
-            .select('*')
-            .eq('organization_id', orgId)
-            .maybeSingle();
-          if (directSettings) setSettings(directSettings);
+          query = query
+            .in('slug', ['home', 'inicio', 'index', 'main', 'site'])
+            .limit(1);
         }
+
+        const { data: pageData } = await query.maybeSingle();
+        targetPage = pageData;
       }
 
-      // 3. Load Content
-      const targetPageSlug = searchParams.get('page');
-      if (window.location.pathname.endsWith('/site/login')) {
-        setShowLogin(true);
-        setLoading(false);
-        return;
-      }
-
-      let query = supabase
-        .from('landing_pages')
-        .select('*')
-        .eq('organization_id', orgId)
-        .eq('status', 'published');
-
-      if (targetPageSlug) {
-        query = query.eq('slug', targetPageSlug);
-      } else {
-        query = query
-          .in('slug', ['home', 'inicio', 'index', 'main', 'site'])
-          .limit(1);
-      }
-
-      const { data: pageData } = await query.maybeSingle();
-
-      if (pageData) {
+      if (targetPage) {
         const mappedPage: any = {
-          ...pageData,
-          themeConfig: pageData.theme_config || pageData.themeConfig || {},
-          metaTitle: pageData.meta_title,
-          metaDescription: pageData.meta_description,
-          ogImage: pageData.og_image,
+          ...targetPage,
+          themeConfig: targetPage.theme_config || targetPage.themeConfig || {},
+          metaTitle: targetPage.meta_title,
+          metaDescription: targetPage.meta_description,
+          ogImage: targetPage.og_image,
         };
         setLandingPage(mappedPage);
         setShowMainSite(false);
-      } else if (!targetPageSlug) {
+      } else {
         setShowMainSite(true);
       }
 

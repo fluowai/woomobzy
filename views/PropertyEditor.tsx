@@ -126,27 +126,6 @@ const PropertyEditor: React.FC = () => {
       vagas: 0,
       condominio: 0,
       iptu: 0,
-      legal: {
-        matricula: '',
-        escritura: false,
-        statusDocumental: 'Regularizado',
-        ccir: false,
-        car: false,
-        itr: false,
-        geo: false,
-        reservaLegal: 0,
-        app: 0,
-        incra: '',
-        outorgaAgua: false,
-        regularizacaoFundiaria: false,
-      },
-      commercial: {
-        commissionPercentage: 5,
-        isPorteiraFechada: false,
-        permuta: false,
-        arrendamento: false,
-        parcelado: false,
-      },
       infra: {
         casaSede: false,
         casasFuncionarios: 0,
@@ -194,6 +173,7 @@ const PropertyEditor: React.FC = () => {
       legal: {
         matricula: '',
         escritura: false,
+        statusDocumental: 'Regularizado',
         ccir: false,
         car: false,
         itr: false,
@@ -205,6 +185,7 @@ const PropertyEditor: React.FC = () => {
         regularizacaoFundiaria: false,
       },
       commercial: {
+        commissionPercentage: 5,
         pricePerHa: 0,
         pricePerAlqueire: 0,
         isPorteiraFechada: false,

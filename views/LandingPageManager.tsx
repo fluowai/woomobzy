@@ -455,7 +455,7 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
   onClose,
   onCreated,
 }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'templates' | 'blank'>(
     'templates'
   );

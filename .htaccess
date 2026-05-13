@@ -19,6 +19,11 @@ Options +FollowSymLinks -MultiViews
   RewriteEngine On
   RewriteBase /
 
+  # --- PROXY PARA BACKEND NODE.JS ---
+  # Encaminha chamadas /api para o servidor na porta 3002
+  RewriteCond %{REQUEST_URI} ^/api [NC]
+  RewriteRule ^api/(.*)$ http://127.0.0.1:3002/api/$1 [P,L]
+
   # Força HTTPS (SSL)
   RewriteCond %{HTTPS} off
   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

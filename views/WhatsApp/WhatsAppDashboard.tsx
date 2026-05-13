@@ -17,6 +17,7 @@ const WhatsAppDashboard: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [showInstanceManager, setShowInstanceManager] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -123,12 +124,17 @@ const WhatsAppDashboard: React.FC = () => {
     try {
       const data = await instanceApi.list();
       setInstances(data);
+      setServiceUnavailable(false);
       if (data.length > 0 && !selectedInstance) {
         const connected = data.find((i) => i.status === 'connected');
         setSelectedInstance(connected || data[0]);
       }
-    } catch (err) {
-      logger.error('Failed to load instances:', err);
+    } catch (err: any) {
+      if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
+        setServiceUnavailable(true);
+      } else {
+        logger.error('Failed to load instances:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -138,8 +144,10 @@ const WhatsAppDashboard: React.FC = () => {
     try {
       const data = await chatApi.list(instanceId);
       setChats(data || []);
-    } catch (err) {
-      logger.error('Failed to load chats:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
+        logger.error('Failed to load chats:', err);
+      }
       setChats([]);
     }
   };
@@ -149,8 +157,10 @@ const WhatsAppDashboard: React.FC = () => {
     try {
       const data = await messageApi.list(chatId, 100);
       setMessages(data.messages || []);
-    } catch (err) {
-      logger.error('Failed to load messages:', err);
+    } catch (err: any) {
+      if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
+        logger.error('Failed to load messages:', err);
+      }
       setMessages([]);
     } finally {
       setLoadingMessages(false);
@@ -189,6 +199,36 @@ const WhatsAppDashboard: React.FC = () => {
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4" />
           <p className="text-text-secondary">Carregando WhatsApp...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (serviceUnavailable) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[600px]">
+        <div className="text-center max-w-md px-6">
+          <div className="inline-flex p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-6">
+            <WifiOff size={48} className="text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-text-primary mb-3">WhatsApp Indisponível</h2>
+          <p className="text-text-secondary mb-6 leading-relaxed">
+            O serviço de WhatsApp não está ativo no servidor. Para ativar, é necessário que o backend Node.js esteja rodando com o módulo WhatsMeow configurado.
+          </p>
+          <div className="bg-bg-hover rounded-xl p-4 text-left text-sm text-text-secondary border border-border mb-6">
+            <p className="font-semibold text-text-primary mb-2">Checklist para ativar:</p>
+            <ul className="space-y-1.5">
+              <li>✅ Node.js rodando na porta 3002 no servidor</li>
+              <li>✅ mod_proxy e mod_proxy_http habilitados no Apache</li>
+              <li>✅ Serviço WhatsMeow (Go) rodando na porta 8080</li>
+            </ul>
+          </div>
+          <button
+            onClick={() => { setLoading(true); setServiceUnavailable(false); loadInstances(); }}
+            className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium"
+          >
+            Tentar Novamente
+          </button>
         </div>
       </div>
     );

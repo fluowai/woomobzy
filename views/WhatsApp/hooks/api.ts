@@ -1,23 +1,33 @@
 const API_BASE = '/api/whatsapp';
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/whatsapp/ws`;
+export const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/whatsapp/ws`;
 
 import { supabase } from '@/services/supabase';
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   
-  // Ensure path starts with / and doesn't have duplicate /api
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${API_BASE}${cleanPath}`;
   
-  const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': session ? `Bearer ${session.access_token}` : '',
-      ...options?.headers,
-    },
-    ...options,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': session ? `Bearer ${session.access_token}` : '',
+        ...options?.headers,
+      },
+      ...options,
+    });
+  } catch (networkErr: any) {
+    throw new Error(`WHATSAPP_UNAVAILABLE: Serviço não acessível - ${networkErr.message}`);
+  }
+
+  // Detect proxy failure: server returned HTML instead of JSON
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('text/html')) {
+    throw new Error('WHATSAPP_UNAVAILABLE: O servidor WhatsApp não está respondendo. O backend Node.js pode não estar ativo.');
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: res.statusText }));

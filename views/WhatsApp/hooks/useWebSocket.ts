@@ -1,7 +1,6 @@
 import { logger } from '@/utils/logger';
 import { useState, useEffect, useRef, useCallback } from 'react';
-
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/whatsapp/ws`;
+import { WS_URL } from './api';
 
 interface WSEvent {
   event: string;
@@ -16,10 +15,12 @@ export function useWebSocket() {
   const handlersRef = useRef<Map<string, Set<EventHandler>>>(new Map());
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 10;
+  const maxReconnectAttempts = 3; // Limited to prevent console spam
+  const gaveUp = useRef(false);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (gaveUp.current) return; // Don't try if we already gave up
 
     try {
       const ws = new WebSocket(WS_URL);
@@ -28,11 +29,11 @@ export function useWebSocket() {
         logger.info('✅ WebSocket connected');
         setIsConnected(true);
         reconnectAttempts.current = 0;
+        gaveUp.current = false;
       };
 
       ws.onmessage = (event) => {
         try {
-          // Handle batched messages (separated by newlines)
           const messages = event.data.split('\n');
           for (const msgStr of messages) {
             if (!msgStr.trim()) continue;
@@ -43,31 +44,32 @@ export function useWebSocket() {
             }
           }
         } catch (err) {
-          logger.error('Failed to parse WebSocket message:', err);
+          // Silently ignore parse errors
         }
       };
 
       ws.onclose = () => {
-        logger.warn('⚠️ WebSocket disconnected');
         setIsConnected(false);
         wsRef.current = null;
 
-        // Auto-reconnect with exponential backoff
         if (reconnectAttempts.current < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
           reconnectAttempts.current += 1;
-          logger.info(`🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
           reconnectTimeoutRef.current = setTimeout(connect, delay);
+        } else if (!gaveUp.current) {
+          gaveUp.current = true;
+          logger.warn('⚠️ WhatsApp WebSocket: serviço indisponível. Reconexão desativada.');
         }
       };
 
-      ws.onerror = (err) => {
-        logger.error('WebSocket error:', err);
+      ws.onerror = () => {
+        // Suppress error logging - onclose will handle reconnection
       };
 
       wsRef.current = ws;
     } catch (err) {
-      logger.error('Failed to create WebSocket:', err);
+      // WebSocket creation failed - service unavailable
+      gaveUp.current = true;
     }
   }, []);
 
@@ -75,7 +77,7 @@ export function useWebSocket() {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
     }
-    reconnectAttempts.current = maxReconnectAttempts; // Prevent reconnect
+    reconnectAttempts.current = maxReconnectAttempts;
     wsRef.current?.close();
     wsRef.current = null;
     setIsConnected(false);
@@ -87,7 +89,6 @@ export function useWebSocket() {
     }
     handlersRef.current.get(event)!.add(handler);
 
-    // Return cleanup function
     return () => {
       handlersRef.current.get(event)?.delete(handler);
     };

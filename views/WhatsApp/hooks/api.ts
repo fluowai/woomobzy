@@ -1,7 +1,7 @@
 const BACKEND_URL = import.meta.env.VITE_API_URL || '';
-const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api/whatsapp` : '/api/whatsapp';
+const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api` : '/api/whatsapp';
 export const WS_URL = BACKEND_URL 
-  ? `${BACKEND_URL.replace('http', 'ws')}/api/whatsapp/ws`
+  ? `${BACKEND_URL.replace('http', 'ws')}/ws`
   : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/whatsapp/ws`;
 
 import { supabase } from '@/services/supabase';

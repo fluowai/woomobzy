@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { 
   Search, MapPin, Loader2, CheckCircle2, AlertCircle, 
   ChevronRight, Map as MapIcon, Database, Info, 
-  ArrowRight, Navigation, Trash2
+  ArrowRight, Navigation as NavIcon, Trash2
 } from 'lucide-react';
 import { callApi } from '../../src/lib/api';
 import { 
@@ -116,7 +116,7 @@ const CARLocationSearch: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-black uppercase italic tracking-tighter flex items-center gap-3">
-          <Navigation className="text-emerald-600" size={32} />
+          <NavIcon className="text-emerald-600" size={32} />
           Localizar CAR por Localização
         </h1>
         <p className="text-slate-500 font-medium small uppercase tracking-widest text-[10px]">

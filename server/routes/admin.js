@@ -67,7 +67,7 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
 
 router.post('/organizations', verifySuperAdmin, async (req, res) => {
   try {
-    const { name, slug, plan_id, status, custom_domain, niche } = req.body;
+    const { name, slug, plan_id, status, custom_domain, niche, owner_name, owner_email } = req.body;
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
     
     const payload = { 
@@ -75,7 +75,9 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       slug: slug || null, 
       status: status || 'active',
       custom_domain: custom_domain || null,
-      niche: niche || 'hybrid'
+      niche: niche || 'hybrid',
+      owner_name: owner_name || null,
+      owner_email: owner_email || null
     };
     if (plan_id) payload.plan_id = plan_id;
     
@@ -94,7 +96,7 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
 router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, slug, plan_id, status, custom_domain, owner_email, password, niche } = req.body;
+    const { name, slug, plan_id, status, custom_domain, owner_name, owner_email, password, niche } = req.body;
     
     const payload = {};
     if (name !== undefined) payload.name = name;
@@ -103,6 +105,8 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     if (plan_id !== undefined) payload.plan_id = plan_id || null;
     if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
     if (niche !== undefined) payload.niche = niche;
+    if (owner_name !== undefined) payload.owner_name = owner_name;
+    if (owner_email !== undefined) payload.owner_email = owner_email;
     
     const { data: organization, error: updateError } = await supabase
       .from('organizations')

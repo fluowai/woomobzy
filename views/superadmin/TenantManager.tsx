@@ -20,6 +20,7 @@ interface Organization {
   name: string;
   slug?: string;
   status: string;
+  owner_name?: string;
   owner_email?: string;
   plan_id?: string;
   created_at: string;
@@ -51,6 +52,7 @@ const TenantManager: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
+    owner_name: '',
     owner_email: '',
     plan_id: '',
     status: 'active',
@@ -114,6 +116,7 @@ const TenantManager: React.FC = () => {
       setFormData({
         name: tenant.name,
         slug: tenant.slug || '',
+        owner_name: tenant.owner_name || '',
         owner_email: tenant.owner_email || '',
         plan_id: tenant.plan_id || '',
         status: tenant.status,
@@ -126,6 +129,7 @@ const TenantManager: React.FC = () => {
       setFormData({
         name: '',
         slug: '',
+        owner_name: '',
         owner_email: '',
         plan_id: plans.length > 0 ? plans[0].id : '',
         status: 'active',
@@ -149,6 +153,7 @@ const TenantManager: React.FC = () => {
         status: formData.status,
         plan_id: formData.plan_id || undefined,
         custom_domain: formData.custom_domain || null,
+        owner_name: formData.owner_name || null,
         owner_email: formData.owner_email || null,
         password: formData.password || undefined,
         niche: formData.niche,
@@ -340,7 +345,10 @@ const TenantManager: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {tenant.owner_email || '—'}
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900">{tenant.owner_name || '—'}</span>
+                      <span className="text-xs text-gray-400">{tenant.owner_email}</span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
@@ -505,37 +513,58 @@ const TenantManager: React.FC = () => {
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  E-mail do Responsável
-                </label>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="dono@imobiliaria.com"
-                  value={formData.owner_email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, owner_email: e.target.value })
-                  }
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Usado para identificar o dono ao logar.
-                </p>
-              </div>
+              <div className="bg-blue-50/50 p-4 rounded-xl space-y-4 border border-blue-100">
+                <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                  <Plus size={16} /> Dados do Responsável
+                </h4>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                    Nome do Dono / Responsável
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nome completo"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    value={formData.owner_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, owner_name: e.target.value })
+                    }
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nova Senha (deixe em branco para não alterar)
-                </label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="Min. 6 caracteres"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                />
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                    E-mail de Acesso
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    placeholder="dono@imobiliaria.com"
+                    value={formData.owner_email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, owner_email: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                    {editingId ? 'Nova Senha (opcional)' : 'Senha de Acesso'}
+                  </label>
+                  <input
+                    type="password"
+                    required={!editingId}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    placeholder="Min. 6 caracteres"
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                  />
+                </div>
               </div>
 
               <div>
@@ -558,39 +587,38 @@ const TenantManager: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                >
-                  <option value="active">Ativo</option>
-                  <option value="suspended">Suspenso</option>
-                </select>
-              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
+                  >
+                    <option value="active">Ativo</option>
+                    <option value="suspended">Suspenso</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nicho de Atuação
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                  value={formData.niche}
-                  onChange={(e) =>
-                    setFormData({ ...formData, niche: e.target.value })
-                  }
-                >
-                  <option value="rural">Rural (Fazendas, SIGEF, CAR)</option>
-                  <option value="traditional">Urbano (Casas, Apartamentos, Locação)</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Define o dashboard padrão e os campos do formulário.
-                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nicho de Atuação
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    value={formData.niche}
+                    onChange={(e) =>
+                      setFormData({ ...formData, niche: e.target.value })
+                    }
+                  >
+                    <option value="rural">Rural</option>
+                    <option value="traditional">Urbano</option>
+                  </select>
+                </div>
               </div>
 
               <div className="pt-4 flex justify-end gap-3">

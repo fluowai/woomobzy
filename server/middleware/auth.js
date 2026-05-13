@@ -93,80 +93,31 @@ export const requireRole = (...allowedRoles) => {
 };
 
 /** Shortcut para rotas que exigem apenas Admin da própria Org */
-export const verifyAdmin = async (req, res, next) => {
-  try {
-    // Criar wrapper que verifica role após auth
-    const authWithRoleCheck = new Promise((resolve, reject) => {
-      const originalNext = next;
+export const verifyAdmin = (req, res, next) => {
+  verifyAuth(req, res, (err) => {
+    if (err) return next(err);
 
-      // Sobrescrever next para verificar role antes de chamar handler final
-      const wrappedNext = (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        // Após verifyAuth passar, verificar role
-        if (req.userRole !== 'admin' && req.userRole !== 'superadmin') {
-          reject(
-            new Error('Acesso negado: Requer privilégios de administrador')
-          );
-          return;
-        }
-
-        resolve(true);
-      };
-
-      // Chamar verifyAuth com next Wrapped
-      verifyAuth(req, res, wrappedNext);
-    });
-
-    await authWithRoleCheck;
-    next();
-  } catch (e) {
-    console.error('[verifyAdmin] Erro:', e.message);
-    res
-      .status(403)
-      .json({
-        error:
-          e.message || 'Acesso negado: Requer privilégios de administrador',
+    if (req.userRole !== 'admin' && req.userRole !== 'superadmin') {
+      return res.status(403).json({
+        error: 'Acesso negado: Requer privilégios de administrador',
       });
-  }
+    }
+
+    next();
+  });
 };
 
 /** Shortcut para rotas restritas ao Dono do SaaS */
-export const verifySuperAdmin = async (req, res, next) => {
-  try {
-    const authWithRoleCheck = new Promise((resolve, reject) => {
-      const wrappedNext = (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+export const verifySuperAdmin = (req, res, next) => {
+  verifyAuth(req, res, (err) => {
+    if (err) return next(err);
 
-        if (req.userRole !== 'superadmin') {
-          reject(
-            new Error('Acesso negado: Requer privilégios de superadministrador')
-          );
-          return;
-        }
-
-        resolve(true);
-      };
-
-      verifyAuth(req, res, wrappedNext);
-    });
-
-    await authWithRoleCheck;
-    next();
-  } catch (e) {
-    console.error('[verifySuperAdmin] Erro:', e.message);
-    res
-      .status(403)
-      .json({
-        error:
-          e.message ||
-          'Acesso negado: Requer privilégios de superadministrador',
+    if (req.userRole !== 'superadmin') {
+      return res.status(403).json({
+        error: 'Acesso negado: Requer privilégios de superadministrador',
       });
-  }
+    }
+
+    next();
+  });
 };

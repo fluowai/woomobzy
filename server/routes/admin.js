@@ -47,13 +47,20 @@ router.post('/impersonate', verifySuperAdmin, async (req, res) => {
 
 router.get('/organizations', verifySuperAdmin, async (req, res) => {
   try {
+    console.log(`[Admin] 🏢 Fetching organizations for superadmin: ${req.user.email}`);
     const { data, error } = await supabase
       .from('organizations')
       .select('*, plans ( name )')
       .order('created_at', { ascending: false });
-    if (error) throw error;
+    
+    if (error) {
+      console.error('[Admin] ❌ Error fetching organizations from Supabase:', error);
+      throw error;
+    }
+    
     res.json({ success: true, organizations: data });
   } catch (error) {
+    console.error('[Admin] ❌ Internal Error in /organizations:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

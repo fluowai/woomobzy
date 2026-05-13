@@ -30,6 +30,14 @@ const isDebugMode = () => {
 const maskData = (data: any): any => {
   if (typeof data !== 'object' || data === null) return data;
 
+  if (data instanceof Error) {
+    return {
+      name: data.name,
+      message: data.message,
+      stack: isDebugMode() ? data.stack : undefined,
+    };
+  }
+
   if (Array.isArray(data)) {
     return data.map(maskData);
   }

@@ -1,10 +1,7 @@
-const IS_VERCEL = window.location.hostname.includes('vercel.app');
-const RAILWAY_URL = 'web-production-7c3f0.up.railway.app';
+const API_URL = import.meta.env.VITE_API_URL || `https://${window.location.hostname}:3002`;
+const API_BASE = `${API_URL}/api/whatsapp`;
 
-const API_BASE = import.meta.env.VITE_WHATSAPP_API_URL || '/api/whatsapp';
-
-const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || 
-  (IS_VERCEL ? `wss://${RAILWAY_URL}/ws` : `wss://${window.location.host}/api/whatsapp/ws`);
+const WS_URL = API_URL.replace('http', 'ws') + '/whatsapp/ws';
 
 import { supabase } from '@/services/supabase';
 
@@ -113,19 +110,19 @@ export const instanceApi = {
 // ---- Chat API ----
 export const chatApi = {
   list: (instanceId: string) =>
-    apiRequest<Chat[]>(`/api/chats?instance_id=${instanceId}`),
+    apiRequest<Chat[]>(`/chats?instance_id=${instanceId}`),
 
   markRead: (chatId: string) =>
-    apiRequest(`/api/chats/${chatId}/read`, { method: 'POST' }),
+    apiRequest(`/chats/${chatId}/read`, { method: 'POST' }),
 };
 
 // ---- Message API ----
 export const messageApi = {
   list: (chatId: string, limit = 50, offset = 0) =>
-    apiRequest<MessageListResponse>(`/api/messages/${chatId}?limit=${limit}&offset=${offset}`),
+    apiRequest<MessageListResponse>(`/messages/${chatId}?limit=${limit}&offset=${offset}`),
 
   send: (chatId: string, instanceId: string, content: string, type: string = 'text') =>
-    apiRequest(`/api/messages/${chatId}/send?instance_id=${instanceId}`, {
+    apiRequest(`/messages/${chatId}/send?instance_id=${instanceId}`, {
       method: 'POST',
       body: JSON.stringify({ content, type }),
     }),

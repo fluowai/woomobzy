@@ -1,11 +1,8 @@
 import { logger } from '@/utils/logger';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const IS_VERCEL = window.location.hostname.includes('vercel.app');
-const RAILWAY_URL = 'web-production-7c3f0.up.railway.app';
-
-const WS_URL = import.meta.env.VITE_WHATSAPP_WS_URL || 
-  (IS_VERCEL ? `wss://${RAILWAY_URL}/ws` : `wss://${window.location.host}/api/whatsapp/ws`);
+const API_URL = import.meta.env.VITE_API_URL || `https://${window.location.hostname}:3002`;
+const WS_URL = API_URL.replace('http', 'ws') + '/whatsapp/ws';
 
 interface WSEvent {
   event: string;

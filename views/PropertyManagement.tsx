@@ -239,21 +239,21 @@ const PropertyManagement: React.FC = () => {
                           {property.title}
                         </h3>
                         <p className="text-sm text-text-tertiary truncate flex items-center gap-1">
-                          <MapPin size={12} /> {property.location.neighborhood},{' '}
-                          {property.location.city}
+                          <MapPin size={12} /> {property.location?.neighborhood || 'Bairro não informado'},{' '}
+                          {property.location?.city || 'Cidade'}
                         </p>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xl font-black text-primary">
-                          {property.price.toLocaleString('pt-BR', {
+                          {(property.price || 0).toLocaleString('pt-BR', {
                             style: 'currency',
                             currency: 'BRL',
                           })}
                         </span>
                         <div className="flex items-center gap-2 text-text-tertiary text-xs font-bold uppercase tracking-wider">
-                          <span>{property.features.areaHectares} ha</span>
+                          <span>{property.features?.areaHectares || 0} ha</span>
                           <span className="w-1 h-1 bg-text-tertiary rounded-full" />
-                          <span>{property.features.tipoSolo}</span>
+                          <span>{property.features?.tipoSolo || 'N/A'}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 border-t border-border-subtle pt-6 mt-2">
@@ -352,11 +352,11 @@ const PropertyManagement: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-slate-500 whitespace-nowrap">
-                        {property.location.neighborhood},{' '}
-                        {property.location.city}
+                        {property.location?.neighborhood || 'S/ Bairro'},{' '}
+                        {property.location?.city || 'S/ Cidade'}
                       </td>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-bold text-slate-900 whitespace-nowrap">
-                        {property.price.toLocaleString('pt-BR', {
+                        {(property.price || 0).toLocaleString('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
                         })}

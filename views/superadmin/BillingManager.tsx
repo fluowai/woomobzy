@@ -15,9 +15,13 @@ interface Tenant {
   id: string;
   name: string;
   niche: string;
-  plan: string;
+  plan_id: string;
   status: string;
   created_at: string;
+  plans?: {
+    name: string;
+    price_monthly: number;
+  };
 }
 
 const planPrices: Record<string, number> = {
@@ -35,9 +39,9 @@ const BillingManager: React.FC = () => {
     const load = async () => {
       const { data } = await supabase
         .from('organizations')
-        .select('*')
+        .select('*, plans ( name, price_monthly )')
         .order('created_at', { ascending: false });
-      setTenants(data || []);
+      setTenants(data as any || []);
     };
     load();
   }, []);
@@ -46,7 +50,7 @@ const BillingManager: React.FC = () => {
     t.name?.toLowerCase().includes(filter.toLowerCase())
   );
   const totalMRR = tenants.reduce(
-    (sum, t) => sum + (planPrices[t.plan] || 97),
+    (sum, t) => sum + (t.plans?.price_monthly || 0),
     0
   );
   const activeCount = tenants.filter((t) => t.status === 'active').length;
@@ -114,27 +118,32 @@ const BillingManager: React.FC = () => {
           Receita por Plano
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {['starter', 'professional', 'enterprise'].map((plan) => {
-            const count = tenants.filter((t) => t.plan === plan).length;
-            const revenue = count * (planPrices[plan] || 0);
+          {['Starter', 'Professional', 'Enterprise'].map((planName) => {
+            const planTenants = tenants.filter(
+              (t) => t.plans?.name?.toLowerCase() === planName.toLowerCase()
+            );
+            const count = planTenants.length;
+            const revenue = planTenants.reduce((sum, t) => sum + (t.plans?.price_monthly || 0), 0);
+            const price = planTenants[0]?.plans?.price_monthly || planPrices[planName.toLowerCase()] || 0;
+            
             return (
               <div
-                key={plan}
+                key={planName}
                 className="p-4 rounded-xl bg-gray-50 border border-gray-100"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-bold text-gray-700 capitalize">
-                    {plan}
+                    {planName}
                   </span>
                   <span className="text-xs font-bold text-gray-400">
-                    {count} tenants
+                    {count} {count === 1 ? 'tenant' : 'tenants'}
                   </span>
                 </div>
                 <p className="text-xl font-bold text-emerald-600">
                   R$ {revenue.toLocaleString('pt-BR')}/mês
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  R$ {planPrices[plan]}/tenant
+                  R$ {price}/tenant
                 </p>
               </div>
             );
@@ -193,10 +202,10 @@ const BillingManager: React.FC = () => {
                     {t.niche || 'traditional'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 capitalize">
-                    {t.plan || 'starter'}
+                    {t.plans?.name || 'S/ Plano'}
                   </td>
                   <td className="px-6 py-4 text-sm font-bold text-emerald-600">
-                    R$ {(planPrices[t.plan] || 97).toLocaleString('pt-BR')}
+                    R$ {(t.plans?.price_monthly || 0).toLocaleString('pt-BR')}
                   </td>
                   <td className="px-6 py-4">
                     <span

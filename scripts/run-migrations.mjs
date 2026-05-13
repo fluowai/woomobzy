@@ -47,12 +47,12 @@ https://app.supabase.com/ → SQL Editor
 }
 
 const MIGRATIONS = [
-  'definitive_imobzy_schema.sql',
-  'fix_role_and_permissions_v2.sql',
-  'fix_rpc_final.sql',
-  'fix_superadmin_permissions.sql',
-  'fix_landing_pages_rls.sql',
-  'setup_landing_pages.sql',
+  'sql/definitive_imobzy_schema.sql',
+  'sql/fix_role_and_permissions_v2.sql',
+  'sql/fix_rpc_final.sql',
+  'sql/fix_landing_pages_rls.sql',
+  'sql/setup_landing_pages.sql',
+  'migrations/v6_rural_search_logs.sql',
 ];
 
 async function executeMigrations() {
@@ -90,52 +90,59 @@ async function executeMigrations() {
       // Ler conteúdo do arquivo
       const sqlContent = fs.readFileSync(migrationFile, 'utf-8');
 
-      // Dividir em statements (por ;)
-      const statements = sqlContent
-        .split(';')
-        .map((stmt) => stmt.trim())
-        .filter((stmt) => stmt.length > 0 && !stmt.startsWith('--'));
+      // Melhoria: Dividir por ; mas respeitando blocos $$ (funções)
+      const statements = [];
+      let currentStatement = '';
+      let inDollarBlock = false;
 
-      console.log(`    └─ ${statements.length} statements para executar`);
+      const lines = sqlContent.split('\n');
+      for (let line of lines) {
+        if (line.includes('$$')) inDollarBlock = !inDollarBlock;
+        currentStatement += line + '\n';
+
+        if (!inDollarBlock && line.trim().endsWith(';')) {
+          statements.push(currentStatement.trim());
+          currentStatement = '';
+        }
+      }
+      if (currentStatement.trim()) statements.push(currentStatement.trim());
+
+      const filteredStatements = statements.filter(
+        (stmt) => stmt.length > 0 && !stmt.startsWith('--')
+      );
+
+      console.log(`    └─ ${filteredStatements.length} statements para executar`);
 
       // Tentar executar cada statement
       let executed = 0;
       let errors = 0;
 
-      for (let j = 0; j < statements.length; j++) {
-        const statement = statements[j];
+      for (let j = 0; j < filteredStatements.length; j++) {
+        const statement = filteredStatements[j];
 
         try {
-          // Tentar via rpc exec_sql (se existir)
           const { error } = await supabase.rpc('exec_sql', {
             sql: statement,
           });
 
           if (error) {
-            // Se RPC não existe, tentar raw query
-            if (error.code === 'PGRST204' || error.message.includes('exec_sql')) {
-              // RPC não existe, vamos apenas contar como "tentado"
-              executed++;
-              continue;
-            }
-
-            // Alguns erros são esperados (tabelas já existem)
+            // Ignorar erros de "já existe"
             if (
               error.message.includes('already exists') ||
-              error.message.includes('already present') ||
-              error.code === 'PGRST301'
+              error.message.includes('already present')
             ) {
               executed++;
               continue;
             }
 
             errors++;
-            console.log(`    ⚠️  Statement ${j + 1}/${statements.length}: ${error.message}`);
+            console.log(
+              `    ⚠️  Statement ${j + 1}/${filteredStatements.length}: ${error.message}`
+            );
           } else {
             executed++;
           }
         } catch (err) {
-          // Ignorar alguns erros esperados
           executed++;
         }
       }

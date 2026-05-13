@@ -62,6 +62,7 @@ const PortalProprietarioRural = lazy(() => import('./views/rural/PortalProprieta
 const PortalCompradorRural = lazy(() => import('./views/rural/PortalCompradorRural'));
 const FinanceiroRural = lazy(() => import('./views/rural/FinanceiroRural'));
 const ConexoesRural = lazy(() => import('./views/rural/ConexoesRural'));
+const CARLocationSearch = lazy(() => import('./views/rural/CARLocationSearch'));
 const Matchmaking360 = lazy(() => import('./views/admin/Matchmaking360'));
 
 // Urban-Specific
@@ -321,6 +322,7 @@ const AppContent: React.FC = () => {
             <Route path="properties/new" element={<PropertyEditor />} />
             <Route path="properties/:id" element={<PropertyEditor />} />
             <Route path="maps" element={<Geointeligencia />} />
+            <Route path="localizar-car" element={<CARLocationSearch />} />
             <Route path="due-diligence" element={<DueDiligence />} />
             <Route path="dossie" element={<DossieInteligente />} />
             <Route path="dataroom" element={<DataRoom />} />

@@ -17,6 +17,8 @@ import { requireTenant } from '../../middleware/tenant.js';
 import multer from 'multer';
 import { AnalysisController } from './analysis/controller.js';
 import { AgroIntelligenceService } from '../../services/AgroIntelligence.js';
+import { extractLatLngFromGoogleMapsUrl, reverseGeocode, calculateConfidence } from '../../utils/geoUtils.js';
+import { SicarService } from '../../services/sicarService.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -493,6 +495,119 @@ router.post('/geoprocess', verifyAuth, requireTenant, async (req, res) => {
   } catch (error) {
     console.error('Geoprocess route error:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/rural/find-car-by-location
+ * Busca imóvel rural no CAR a partir de link do Maps ou coordenadas.
+ */
+router.post('/find-car-by-location', verifyAuth, requireTenant, async (req, res) => {
+  const { googleMapsUrl, lat: inputLat, lng: inputLng, radiusFallbackMeters, forceUf } = req.body;
+  const startTime = Date.now();
+  let lat = inputLat;
+  let lng = inputLng;
+
+  try {
+    // 1. Extração de Coordenadas
+    if (googleMapsUrl && (!lat || !lng)) {
+      const coords = await extractLatLngFromGoogleMapsUrl(googleMapsUrl);
+      if (!coords) {
+        return res.status(400).json({ success: false, error: 'Não foi possível extrair coordenadas do link informado.' });
+      }
+      lat = coords.lat;
+      lng = coords.lng;
+    }
+
+    if (!lat || !lng) {
+      return res.status(400).json({ success: false, error: 'Latitude e Longitude são obrigatórios.' });
+    }
+
+    // 2. Identificação de UF e Município (Reverse Geocoding)
+    let locationInfo = { uf: forceUf, municipality: null, method: 'manual' };
+    if (!forceUf) {
+      const geoInfo = await reverseGeocode(lat, lng);
+      if (geoInfo) {
+        locationInfo = { ...geoInfo, method: 'reverse_geocoding' };
+      }
+    }
+
+    // 3. Orquestração de Busca no SICAR
+    const ufsToTry = locationInfo.uf ? [locationInfo.uf] : ['MT', 'GO', 'MS', 'PA', 'TO', 'BA', 'MG']; // UFs prioritárias se falhar geo
+    let matches = [];
+    let matchMode = 'none';
+    let queriedUf = null;
+
+    for (const uf of ufsToTry) {
+      // Tentativa 1: Interseção por Ponto
+      matches = await SicarService.findByPoint(uf, lat, lng);
+      if (matches.length > 0) {
+        matchMode = 'contains_point';
+        queriedUf = uf;
+        break;
+      }
+
+      // Tentativa 2: Fallback por Raio
+      const raios = radiusFallbackMeters || [500, 1000, 5000];
+      for (const radius of raios) {
+        matches = await SicarService.findByRadius(uf, lat, lng, radius);
+        if (matches.length > 0) {
+          matchMode = 'nearby_radius';
+          queriedUf = uf;
+          // Injetar distância aproximada se possível (simplificado: raio usado)
+          matches = matches.map(m => ({ ...m, distanceMeters: radius }));
+          break;
+        }
+      }
+      if (matches.length > 0) break;
+    }
+
+    // 4. Formatação e Confiança
+    const confidence = calculateConfidence(matches, matchMode, locationInfo.uf === queriedUf);
+    
+    const formattedMatches = matches.map(f => ({
+      codImovel: f.properties.cod_imovel,
+      areaHa: f.properties.num_area || null,
+      status: f.properties.ind_status || null,
+      municipio: f.properties.nom_munici || null,
+      uf: f.properties.cod_estado || null,
+      sourceLayer: SicarService.getLayerName(queriedUf),
+      matchMode: matchMode,
+      confidence: confidence,
+      distanceMeters: f.distanceMeters || 0,
+      geometry: f.geometry,
+      rawProperties: f.properties
+    }));
+
+    // 5. Logging (Fogo e esqueça para não travar resposta)
+    const supabase = getSupabaseServer();
+    supabase.from('rural_location_search_logs').insert({
+      user_id: req.user.id,
+      organization_id: req.orgId,
+      google_maps_url: googleMapsUrl,
+      lat, lng,
+      uf: locationInfo.uf,
+      municipality: locationInfo.municipality,
+      source_layer: SicarService.getLayerName(queriedUf),
+      match_mode: matchMode,
+      confidence: confidence,
+      total_matches: formattedMatches.length,
+      response_summary: { duration: Date.now() - startTime }
+    }).then(({ error }) => error && console.error('[Log] Erro ao salvar busca:', error.message));
+
+    res.json({
+      success: true,
+      input: { googleMapsUrl, lat, lng },
+      location: locationInfo,
+      matchMode,
+      confidence,
+      totalMatches: formattedMatches.length,
+      matches: formattedMatches
+    });
+
+  } catch (error) {
+    console.error('[CARSearch] Erro crítico:', error);
+    res.status(500).json({ success: false, error: 'Erro interno ao processar busca de localização.', message: error.message });
   }
 });
 

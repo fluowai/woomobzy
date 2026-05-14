@@ -7,7 +7,7 @@ import { supabase } from '../services/supabase';
 import MainLandingPage from './LandingPage';
 import Login from './Login';
 import { SettingsProvider } from '../context/SettingsContext';
-import { Loader } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ComingSoon from '../components/ComingSoon';
 
@@ -235,7 +235,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Loader
+          <Loader2
             className="animate-spin mx-auto mb-4 text-indigo-600"
             size={48}
           />

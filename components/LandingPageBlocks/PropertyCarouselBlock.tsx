@@ -5,11 +5,13 @@ import { LandingPageTheme } from '../../types/landingPage';
 interface PropertyCarouselBlockProps {
   config: any;
   theme: LandingPageTheme;
+  properties?: any[];
 }
 
 const PropertyCarouselBlock: React.FC<PropertyCarouselBlockProps> = ({
   config,
   theme,
+  properties = [],
 }) => {
   const {
     images = [],

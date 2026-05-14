@@ -42,7 +42,7 @@ const PropertyManagement: React.FC = () => {
   const loadProperties = async () => {
     try {
       setLoading(true);
-      const data = await propertyService.list();
+      const data = await propertyService.list(1, 100, currentNiche);
       console.log(`📋 [PropertyManagement] Total carregados: ${data.length}, Nicho atual: ${currentNiche}`);
       console.log(`📋 [PropertyManagement] Nichos dos imóveis:`, data.map((p: any) => ({ title: p.title, niche: p.niche, status: p.status })));
       setProperties(data);

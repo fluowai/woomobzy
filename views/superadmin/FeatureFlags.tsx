@@ -101,11 +101,23 @@ const FeatureFlags: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
-        .from('organizations')
-        .select('id, name, feature_flags')
-        .order('name');
-      setTenants(data || []);
+      try {
+        console.log('📡 [FeatureFlags] Buscando imobiliárias...');
+        const { data, error } = await supabase
+          .from('organizations')
+          .select('id, name, feature_flags')
+          .order('name');
+        
+        if (error) {
+          console.error('❌ [FeatureFlags] Erro ao buscar imobiliárias:', error.message);
+          return;
+        }
+
+        console.log(`✅ [FeatureFlags] ${data?.length || 0} imobiliárias carregadas.`);
+        setTenants(data || []);
+      } catch (err: any) {
+        console.error('❌ [FeatureFlags] Erro inesperado:', err.message);
+      }
     };
     load();
   }, []);

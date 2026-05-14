@@ -54,9 +54,25 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const [organization, setOrganization] = useState<any>(null);
   const [showMainSite, setShowMainSite] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [properties, setProperties] = useState<any[]>([]);
 
   const isPreview = false;
   const page = landingPage;
+
+  useEffect(() => {
+    if (landingPage?.id) {
+      loadProperties(landingPage.id);
+    }
+  }, [landingPage?.id]);
+
+  const loadProperties = async (pageId: string) => {
+    try {
+      const data = await landingPageService.getPageProperties(pageId);
+      setProperties(data);
+    } catch (err) {
+      logger.error('Error loading page properties:', err);
+    }
+  };
 
   useEffect(() => {
     if (activeSlug) {
@@ -189,7 +205,21 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       case BlockType.HERO:
         return <HeroBlock config={block.config} theme={theme} />;
       case BlockType.PROPERTY_GRID:
-        return <PropertyGridBlock config={block.config} theme={theme} />;
+        return (
+          <PropertyGridBlock
+            config={block.config}
+            theme={theme}
+            properties={properties}
+          />
+        );
+      case BlockType.PROPERTY_CAROUSEL:
+        return (
+          <PropertyCarouselBlock
+            config={block.config}
+            theme={theme}
+            properties={properties}
+          />
+        );
       case BlockType.TEXT:
         return <TextBlock config={block.config} theme={theme} />;
       case BlockType.FORM:

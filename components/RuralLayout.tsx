@@ -25,6 +25,7 @@ import {
   Target,
   FileSearch,
   Zap,
+  Navigation as NavIcon,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -52,7 +53,7 @@ const RuralLayout: React.FC = () => {
     { icon: Users, label: 'Kanban', path: '/rural/crm' },
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Mapas & Georreferenciamento', path: '/rural/maps' },
-    { icon: Navigation, label: 'Localizar CAR (Auto)', path: '/rural/localizar-car' },
+    { icon: NavIcon, label: 'Localizar CAR (Auto)', path: '/rural/localizar-car' },
     { icon: FileSearch, label: 'Dossiê 360', path: '/rural/dossie' },
     { icon: FileCheck, label: 'Documentação Rural', path: '/rural/due-diligence' },
     { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },

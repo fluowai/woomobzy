@@ -238,7 +238,10 @@ export const landingPageService = {
     const page = await this.getById(pageId);
     const config = page.propertySelection;
 
-    let query = supabase.from('properties').select('*');
+    let query = supabase
+      .from('properties')
+      .select('*')
+      .eq('organization_id', page.organizationId);
 
     // Modo Manual: IDs específicos
     if (

@@ -34,8 +34,10 @@ function mapToDatabase(model: Partial<Property> & { organization_id?: string; ni
 }
 
 export const propertyService = {
-  async list(page: number = 1, limit: number = 50) {
-    const data = await callApi(`/api/properties?page=${page}&limit=${limit}`);
+  async list(page: number = 1, limit: number = 50, niche?: string) {
+    let url = `/api/properties?page=${page}&limit=${limit}`;
+    if (niche) url += `&niche=${niche}`;
+    const data = await callApi(url);
     return (data.properties || []).map(mapToModel);
   },
 

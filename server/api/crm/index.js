@@ -116,7 +116,7 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
     await supabase.from('lead_activities').insert({
       lead_id: id,
       organization_id: req.orgId,
-      created_by: req.userId,
+      created_by: req.user.id,
       type: 'Sistema',
       description: 'Dados do lead atualizados'
     });
@@ -159,7 +159,7 @@ router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) =>
     await supabase.from('lead_activities').insert({
       lead_id: id,
       organization_id: req.orgId,
-      created_by: req.userId,
+      created_by: req.user.id,
       type: 'Status',
       description: `Status alterado de ${lead.status} para ${status}`
     });
@@ -211,7 +211,7 @@ router.post('/leads/:id/activities', verifyAuth, requireTenant, async (req, res)
       .insert({
         lead_id: id,
         organization_id: req.orgId,
-        created_by: req.userId,
+        created_by: req.user.id,
         type,
         description,
         metadata: metadata || {}

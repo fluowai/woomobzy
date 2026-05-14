@@ -41,11 +41,15 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       .select('*', { count: 'exact' })
       .eq('organization_id', req.orgId);
 
-    if (niche === 'rural') {
-      query = query.in('property_type', RURAL_TYPES);
-    } else {
-      // Default para tradicional/urbano
-      query = query.in('property_type', URBAN_TYPES);
+    // Se o cliente pediu um nicho específico via query string, usamos ele
+    // Caso contrário, usamos o nicho da organização
+    const filterNiche = req.query.niche || niche;
+
+    if (filterNiche === 'rural') {
+      // Tenta filtrar pela coluna 'niche' ou pelos tipos rurais como fallback
+      query = query.or(`niche.eq.rural,property_type.in.(${RURAL_TYPES.map(t => `"${t}"`).join(',')})`);
+    } else if (filterNiche === 'urbano') {
+      query = query.or(`niche.eq.urbano,property_type.in.(${URBAN_TYPES.map(t => `"${t}"`).join(',')})`);
     }
 
     const { data, error, count } = await query
@@ -98,6 +102,9 @@ router.put('/:id', verifyAdmin, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
     const propertyData = req.body;
+
+    delete propertyData.organization_id;
+    delete propertyData.id;
 
     const { data, error } = await supabase
       .from('properties')

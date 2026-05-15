@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import re
 from utils.audio_converter import convert_to_wav
 from stt import transcrever_audio
 from ollama_client import analisar_com_ai, get_ai_config
@@ -34,7 +35,8 @@ def pipeline_automacao_crm(audio_input_path: str, telefone_cliente: str, organiz
         
         # Parse JSON flexível
         if isinstance(ai_raw, str):
-            ai_data = json.loads(ai_raw.replace(/```json|```/g, ''))
+            cleaned = re.sub(r"```json|```", "", ai_raw).strip()
+            ai_data = json.loads(cleaned)
         else:
             ai_data = ai_raw
 

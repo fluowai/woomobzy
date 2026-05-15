@@ -5,8 +5,14 @@ import {
   Filter,
   ArrowUpRight,
   Clock3,
+  Clock,
+  Download,
   Globe,
+  Mail,
+  Phone,
+  Search,
   Settings,
+  User,
   X
 } from 'lucide-react';
 

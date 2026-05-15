@@ -222,10 +222,6 @@ const Onboarding: React.FC = () => {
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Erro ao criar conta');
-      }
-
       setSuccess(data);
       setStep(6); // Success step
     } catch (err: any) {

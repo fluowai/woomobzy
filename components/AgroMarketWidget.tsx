@@ -77,7 +77,7 @@ const AgroMarketWidget: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {Object.entries(prices).map(([key, data]) => (
+        {Object.entries(prices).map(([key, data]: [string, PriceData]) => (
           <div key={key} className="flex items-center justify-between p-3 bg-bg-hover rounded-xl border border-subtle hover:border-emerald-500/30 transition-all">
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-tertiary uppercase tracking-widest">{productLabels[key] || key}</span>

@@ -80,7 +80,7 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         type: BlockType.PROPERTY_GRID,
         order: 2,
         visible: true,
-        config: { columns: 3, gap: 24, maxItems: 6, sortBy: 'price', cardStyle: 'modern' },
+        config: { columns: 3, gap: 24, showFilters: true, maxItems: 6, sortBy: 'price', cardStyle: 'modern' },
         styles: { padding: '60px 20px' },
         responsive: {}
       }

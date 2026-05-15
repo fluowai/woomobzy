@@ -59,6 +59,9 @@ const generateBlockId = () =>
 const createDefaultBlock = (type: BlockType, order: number): Block => {
   const baseBlock: Block = {
     id: generateBlockId(),
+    development_id: '',
+    name: '',
+    total_lots: 0,
     type,
     order,
     visible: true,

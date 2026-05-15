@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -34,10 +34,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  DollarSign,
-  Map as MapIcon,
   Headset,
-  MessageSquare,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -98,16 +95,6 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
   const [openGroups, setOpenGroups] = useState<string[]>([]);
 
   // Expandir automaticamente o grupo que contém a rota atual
-  useEffect(() => {
-    const currentItem = menuItems.find(
-      (item) =>
-        (item.path === '/urban' && pathname === '/urban') ||
-        (item.path !== '/urban' && pathname.startsWith(item.path))
-    );
-    // No need for openGroups anymore as it's a linear menu
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
-
   const toggleGroup = (title: string) => {
     setOpenGroups((prev) =>
       prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]

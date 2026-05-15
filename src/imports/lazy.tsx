@@ -19,11 +19,11 @@ export const LegalContracts = lazy(() => import('../../views/LegalContracts'));
 export const BIRural = lazy(() => import('../../views/BIRural'));
 export const KanbanBoard = lazy(() => import('../../views/CRM/KanbanBoard'));
 export const WhatsAppInstances = lazy(
-  () => import('../../views/admin/WhatsAppInstances')
+  () => import('../../views/WhatsApp/WhatsAppDashboard')
 );
-export const Chat = lazy(() => import('../../views/admin/Chat'));
+export const Chat = lazy(() => import('../../views/WhatsApp/WhatsAppDashboard'));
 export const TestMessages = lazy(
-  () => import('../../views/admin/TestMessages')
+  () => import('../../views/WhatsApp/WhatsAppDashboard')
 );
 export const CadastroTecnico = lazy(
   () => import('../../views/rural/CadastroTecnico')

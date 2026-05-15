@@ -6,24 +6,25 @@ import {
 import { callApi } from '../src/lib/api';
 
 function mapToDatabase(model: Partial<Property> & { organization_id?: string; niche?: string }): any {
+  const source = model as any;
   const payload: any = {
     title: model.title,
     description: model.description,
     price: model.price,
-    property_type: model.type || model.property_type,
+    property_type: model.type || source.property_type,
     purpose: model.purpose,
     status: model.status,
     organization_id: model.organization_id,
     niche: model.niche || 'urbano',
-    city: (model as any).city || (model as any).location?.city,
-    neighborhood: (model as any).neighborhood || (model as any).location?.neighborhood,
-    state: (model as any).state || (model as any).location?.state,
-    address: (model as any).address || (model as any).location?.address,
-    features: (model as any).features || {},
-    images: (model as any).images || [],
-    highlighted: (model as any).highlighted,
-    owner_info: (model as any).ownerInfo || (model as any).owner_info,
-    total_area_ha: (model as any).total_area_ha || (model as any).features?.areaHectares || null,
+    city: source.city || source.location?.city,
+    neighborhood: source.neighborhood || source.location?.neighborhood,
+    state: source.state || source.location?.state,
+    address: source.address || source.location?.address,
+    features: source.features || {},
+    images: source.images || [],
+    highlighted: source.highlighted,
+    owner_info: source.ownerInfo || source.owner_info,
+    total_area_ha: source.total_area_ha || source.features?.areaHectares || null,
   };
 
   if (model.price && payload.total_area_ha > 0) {
@@ -86,10 +87,13 @@ const mapToModel = (dbItem: any): Property => ({
   type: (dbItem.property_type || dbItem.type) as PropertyType,
   purpose: dbItem.purpose || 'Venda',
   status: dbItem.status as PropertyStatus,
-  city: dbItem.city || '',
-  state: dbItem.state || '',
-  address: dbItem.address || '',
-  neighborhood: dbItem.neighborhood || '',
+  location: {
+    city: dbItem.city || '',
+    state: dbItem.state || '',
+    address: dbItem.address || '',
+    neighborhood: dbItem.neighborhood || '',
+  },
+  aptitude: dbItem.aptitude || [],
   features: dbItem.features || {},
   images: dbItem.images || [],
   broker_id: dbItem.broker_id || '',
@@ -97,4 +101,4 @@ const mapToModel = (dbItem: any): Property => ({
   total_area_ha: dbItem.total_area_ha || 0,
   created_at: dbItem.created_at,
   updated_at: dbItem.updated_at,
-});
+} as any);

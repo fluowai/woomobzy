@@ -176,7 +176,7 @@ app.use((err, req, res, next) => {
 });
 
 // --- Server Startup ---
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.PORT || 3002;
 
 // Configura o Proxy de WhatsApp com Segurança SaaS (API + WebSockets)
 // Fazemos isso antes do listen para garantir que as rotas sejam registradas corretamente

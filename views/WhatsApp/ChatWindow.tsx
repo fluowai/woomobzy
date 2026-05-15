@@ -54,7 +54,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   // Group messages by date
-  const groupedMessages = messages.reduce<{ date: string; msgs: Message[] }[]>((acc, msg) => {
+  const groupedMessages = messages.reduce((acc: { date: string; msgs: Message[] }[], msg) => {
     const date = new Date(msg.timestamp).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',

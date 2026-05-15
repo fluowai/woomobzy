@@ -118,6 +118,8 @@ export const generateCollectionMessage = async (
 };
 
 export const geminiService = {
+  matchLeadWithProperties,
+
   generateText: async (prompt: string) => {
     return callSecureAI(prompt, undefined, { temperature: 0.2 });
   },

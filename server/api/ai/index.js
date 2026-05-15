@@ -43,16 +43,15 @@ router.post('/generate-page', async (req, res) => {
 });
 
 router.post('/chat', async (req, res) => {
-  const { prompt, systemInstruction, temperature = 0.7, jsonMode = false } = req.body;
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Chave de IA não configurada no servidor.' });
-  }
-
+  const { prompt, systemInstruction, temperature = 0.7, jsonMode = false, organizationId } = req.body;
+  
+  // Try Gemini first (Global or Org-specific)
   try {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) throw new Error('Gemini Key missing');
+
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
       {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -64,10 +63,51 @@ router.post('/chat', async (req, res) => {
     );
 
     const text = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    res.json({ text });
-  } catch (error) {
-    console.error('Gemini API Error:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao processar requisição de IA.' });
+    return res.json({ text });
+  } catch (geminiError) {
+    console.warn('⚠️ Gemini failed, trying Groq fallback...', geminiError.message);
+    
+    // Fallback to Groq
+    try {
+      let groqKey = process.env.GROQ_API_KEY;
+      
+      // If organizationId is provided, try to get their specific Groq key
+      if (organizationId) {
+        const config = await getOrgAIConfig(organizationId);
+        if (config?.groq?.apiKey) {
+          groqKey = config.groq.apiKey;
+        }
+      }
+
+      if (!groqKey) {
+        return res.status(500).json({ error: 'Nenhuma chave de IA disponível (Gemini falhou e Groq não configurado).' });
+      }
+
+      const groqResponse = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemInstruction || 'Você é um assistente útil.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature,
+          response_format: jsonMode ? { type: 'json_object' } : undefined
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const text = groqResponse.data.choices?.[0]?.message?.content || '';
+      return res.json({ text });
+    } catch (groqError) {
+      console.error('❌ Groq Fallback Error:', groqError.response?.data || groqError.message);
+      return res.status(500).json({ error: 'Falha em todos os provedores de IA.' });
+    }
   }
 });
 

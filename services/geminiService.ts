@@ -2,7 +2,7 @@ import { logger } from '@/utils/logger';
 import { callApi } from '../src/lib/api';
 import { Property, Lead } from '../types';
 
-const callSecureAI = async (prompt: string, systemInstruction?: string, options: { temperature?: number; jsonMode?: boolean } = {}) => {
+const callSecureAI = async (prompt: string, systemInstruction?: string, options: { temperature?: number; jsonMode?: boolean; organizationId?: string } = {}) => {
   try {
     const data = await callApi('/api/ai/chat', {
       method: 'POST',
@@ -10,7 +10,8 @@ const callSecureAI = async (prompt: string, systemInstruction?: string, options:
         prompt,
         systemInstruction,
         temperature: options.temperature ?? 0.7,
-        jsonMode: options.jsonMode ?? false
+        jsonMode: options.jsonMode ?? false,
+        organizationId: options.organizationId
       })
     });
     return data.text || '';
@@ -54,19 +55,57 @@ export const matchLeadWithProperties = async (
     id: p.id,
     title: p.title,
     price: p.price,
-    features: p.features,
-    location: p.location.neighborhood,
+    type: p.type,
+    location: `${p.location.city}, ${p.location.state}`,
+    features: {
+      area: p.features.areaHectares || p.features.areaM2,
+      aptitude: p.aptitude,
+      topography: p.features.topography,
+      rooms: p.features.dormitorios,
+      suites: p.features.suites,
+      parking: p.features.vagas,
+    }
   }));
 
-  const prompt = `Analise o perfil do cliente abaixo e recomende os 3 melhores imóveis da lista fornecida que mais se adequam às suas necessidades.
-    Cliente: ${lead.name}, Budget: R$ ${lead.budget}, Preferências: ${JSON.stringify(lead.preferences)}
-    
-    Imóveis: ${JSON.stringify(propertySummary)}
-    
-    Retorne uma justificativa para cada recomendação.`;
+  const prompt = `Analise o perfil do lead e recomende os 3 melhores imóveis da lista que mais se adequam às suas necessidades e potencial de investimento.
 
-  const response = await callSecureAI(prompt, 'Você é um consultor imobiliário experiente que foca em matching de alta conversão.');
-  return response || 'Nenhuma recomendação disponível.';
+    DADOS DO LEAD:
+    - Nome: ${lead.name}
+    - Orçamento: R$ ${lead.budget || 'Não informado'}
+    - Notas/Histórico: ${lead.notes || 'Sem notas'}
+    - Preferências: ${JSON.stringify(lead.preferences || {})}
+    - Interesse Atual: ${lead.property?.title || 'Nenhum imóvel específico'}
+    
+    LISTA DE IMÓVEIS DISPONÍVEIS:
+    ${JSON.stringify(propertySummary)}
+    
+    Sua tarefa é:
+    1. Entender o perfil do investidor/cliente com base nas notas e dados.
+    2. Selecionar até 3 imóveis que fazem mais sentido.
+    3. Para cada um, forneça uma justificativa curta e persuasiva (máximo 2 frases).
+    
+    Retorne a resposta EXCLUSIVAMENTE em formato JSON:
+    {
+      "profile_analysis": "Breve descrição do perfil identificado",
+      "recommendations": [
+        {
+          "property_id": "id_do_imovel",
+          "justification": "Sua justificativa aqui"
+        }
+      ]
+    }`;
+
+  const response = await callSecureAI(prompt, 'Você é um consultor imobiliário especialista em inteligência de mercado e matching de leads.', { 
+    jsonMode: true,
+    organizationId: lead.organization_id
+  });
+  try {
+    const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanJson);
+  } catch (e) {
+    logger.error('Failed to parse AI response', e);
+    return null;
+  }
 };
 
 export const generateCollectionMessage = async (

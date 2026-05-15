@@ -25,8 +25,10 @@ import {
 import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Sparkles, TrendingUp, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
+import { propertyService } from '../../services/properties';
+import { geminiService } from '../../services/geminiService';
 
 interface NewLeadModalProps {
   isOpen: boolean;
@@ -346,11 +348,14 @@ const LeadDetailsModal: React.FC<{
   onEdit: () => void;
   onRefresh: () => void;
 }> = ({ lead, isOpen, onClose, onEdit, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState<'info' | 'activities'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'activities' | 'investments'>('info');
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [newActivity, setNewActivity] = useState({ type: 'Nota', description: '' });
   const [savingActivity, setSavingActivity] = useState(false);
+  
+  const [recommendations, setRecommendations] = useState<any>(null);
+  const [loadingRecs, setLoadingRecs] = useState(false);
 
   useEffect(() => {
     if (isOpen && lead) {
@@ -370,6 +375,26 @@ const LeadDetailsModal: React.FC<{
       setLoadingActivities(false);
     }
   };
+
+  const loadRecommendations = async () => {
+    if (!lead) return;
+    setLoadingRecs(true);
+    try {
+      const properties = await propertyService.list(1, 100);
+      const result = await geminiService.matchLeadWithProperties(lead, properties);
+      setRecommendations(result);
+    } catch (err) {
+      logger.error('Failed to load recommendations', err);
+    } finally {
+      setLoadingRecs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'investments' && !recommendations) {
+      loadRecommendations();
+    }
+  }, [activeTab]);
 
   const handleAddActivity = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -438,7 +463,16 @@ const LeadDetailsModal: React.FC<{
             onClick={() => setActiveTab('activities')}
             className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'activities' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
           >
-            Linha do Tempo & Atividades
+            Linha do Tempo
+          </button>
+          <button 
+            onClick={() => setActiveTab('investments')}
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'investments' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Sparkles size={12} className={activeTab === 'investments' ? 'text-indigo-600' : 'text-slate-400'} />
+              Sugestões de Investimento
+            </div>
           </button>
         </div>
 
@@ -533,8 +567,7 @@ const LeadDetailsModal: React.FC<{
                    </section>
                 </div>
               </div>
-            </div>
-          ) : (
+          ) : activeTab === 'activities' ? (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-8 pb-10">
                {/* Quick Activity Form */}
                <section className="bg-indigo-50/30 p-6 rounded-[2rem] border border-indigo-100/50">
@@ -556,14 +589,14 @@ const LeadDetailsModal: React.FC<{
                      </div>
                      <div className="flex gap-2">
                         <textarea
-                          placeholder="O que aconteceu nesta interação?"
-                          className="flex-1 px-4 py-3 bg-white border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 outline-none font-medium text-sm min-h-[80px]"
-                          value={newActivity.description}
-                          onChange={(e) => setNewActivity({ ...newActivity, description: e.target.value })}
+                           placeholder="O que aconteceu nesta interação?"
+                           className="flex-1 px-4 py-3 bg-white border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 outline-none font-medium text-sm min-h-[80px]"
+                           value={newActivity.description}
+                           onChange={(e) => setNewActivity({ ...newActivity, description: e.target.value })}
                         />
                         <button
-                          disabled={savingActivity || !newActivity.description.trim()}
-                          className="self-end px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                           disabled={savingActivity || !newActivity.description.trim()}
+                           className="self-end px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                         >
                            {savingActivity ? '...' : 'Salvar'}
                         </button>
@@ -615,6 +648,83 @@ const LeadDetailsModal: React.FC<{
                     <div className="text-center py-20 bg-slate-50 rounded-[3rem] border border-dashed border-slate-200">
                        <Clock3 size={40} className="mx-auto text-slate-200 mb-4" />
                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nenhuma atividade registrada ainda</p>
+                    </div>
+                  )}
+               </section>
+            </div>
+          ) : (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 space-y-8 pb-10">
+               <section>
+                  <div className="flex items-center justify-between mb-6">
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 flex items-center gap-2">
+                      <Sparkles size={16} /> Inteligência Artificial Imobzy
+                    </h5>
+                    <button 
+                      onClick={loadRecommendations}
+                      disabled={loadingRecs}
+                      className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 disabled:opacity-50 transition-colors"
+                    >
+                      {loadingRecs ? 'Analisando...' : 'Recalcular Perfil'}
+                    </button>
+                  </div>
+
+                  {loadingRecs ? (
+                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                      <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] animate-pulse">
+                        Cruzando dados com o inventário...
+                      </p>
+                    </div>
+                  ) : recommendations ? (
+                    <div className="space-y-8">
+                       <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200 border border-white/10 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+                          <div className="relative z-10">
+                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-300 mb-2 block">Perfil de Investidor Identificado</span>
+                            <p className="text-lg font-bold leading-relaxed italic text-indigo-50 italic">
+                              "{recommendations.profile_analysis}"
+                            </p>
+                          </div>
+                       </div>
+
+                       <div className="space-y-4">
+                          <h6 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Melhores Oportunidades Selecionadas</h6>
+                          <div className="grid grid-cols-1 gap-4">
+                             {recommendations.recommendations.map((rec: any, idx: number) => (
+                               <div key={idx} className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all group border-l-4 border-l-indigo-500">
+                                  <div className="flex items-start gap-6">
+                                     <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 font-black text-xl">
+                                        {idx + 1}
+                                     </div>
+                                     <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em]">Match de Alta Conversão</span>
+                                          <TrendingUp size={14} className="text-emerald-500" />
+                                        </div>
+                                        <p className="font-black text-slate-800 text-lg mb-3">ID do Imóvel: {rec.property_id.slice(0, 8)}</p>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 italic text-slate-600 text-sm leading-relaxed">
+                                           <Lightbulb size={14} className="text-amber-500 mb-1" />
+                                           "{rec.justification}"
+                                        </div>
+                                     </div>
+                                  </div>
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                       <Sparkles size={48} className="mx-auto text-slate-200 mb-4" />
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest max-w-xs mx-auto">
+                         Clique em "Recalcular Perfil" para que a IA analise as notas do Kanban e sugira imóveis.
+                       </p>
+                       <button 
+                         onClick={loadRecommendations}
+                         className="mt-6 px-8 py-3 bg-white border border-slate-200 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                       >
+                         Iniciar Análise Inteligente
+                       </button>
                     </div>
                   )}
                </section>
@@ -941,6 +1051,9 @@ const KanbanBoard: React.FC = () => {
                                         <h4 className="font-bold text-slate-800 text-sm leading-tight truncate">
                                           {lead.name}
                                         </h4>
+                                        {lead.notes && (
+                                          <Sparkles size={10} className="text-indigo-500 animate-pulse shrink-0" />
+                                        )}
                                         {lead.classification && (
                                           <span
                                             className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shrink-0 ${

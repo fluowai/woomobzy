@@ -567,6 +567,7 @@ const LeadDetailsModal: React.FC<{
                    </section>
                 </div>
               </div>
+            </div>
           ) : activeTab === 'activities' ? (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-8 pb-10">
                {/* Quick Activity Form */}

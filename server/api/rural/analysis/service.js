@@ -4,14 +4,32 @@ import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import PDFDocument from 'pdfkit';
 
-const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379');
-const analysisQueue = new Queue('rural-analysis', { connection });
+let analysisQueue;
+
+function getAnalysisQueue() {
+  if (!process.env.REDIS_URL) {
+    throw new Error('REDIS_URL nao configurada. Configure um Redis externo para usar a analise KMZ.');
+  }
+
+  if (!analysisQueue) {
+    const connection = new IORedis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      family: 0,
+    });
+    analysisQueue = new Queue('rural-analysis', { connection });
+  }
+
+  return analysisQueue;
+}
 
 export class AnalysisService {
   /**
    * Handle the KMZ upload and initiate analysis
    */
   static async startKMZAnalysis(organizationId, filename, buffer) {
+    const queue = getAnalysisQueue();
+
     // 1. Parse KMZ to GeoJSON
     const featureCollection = await KMZService.parseKMZ(buffer);
     const multiPolygon = KMZService.toMultiPolygon(featureCollection);
@@ -27,7 +45,7 @@ export class AnalysisService {
     const analysis = await RuralRepository.createAnalysis(area.id);
 
     // 4. Queue Heavy Spatial Processing
-    await analysisQueue.add('process-analysis', {
+    await queue.add('process-analysis', {
       analysisId: analysis.id,
       areaId: area.id,
       organizationId,

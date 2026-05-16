@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server/index.js",
+    "worker:rural": "node server/api/rural/analysis/worker.js",
     "dev": "vite --port 3006 --strictPort",
     "server": "node --env-file=.env server/index.js",
     "build": "vite build",

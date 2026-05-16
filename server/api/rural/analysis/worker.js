@@ -6,7 +6,19 @@ import { RuralRepository } from './repository.js';
 import * as turf from '@turf/turf';
 import { AgroIntelligenceService } from '../../../services/AgroIntelligence.js';
 
-const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379');
+if (!process.env.REDIS_URL) {
+  throw new Error('REDIS_URL nao configurada. Worker de analise rural nao iniciado.');
+}
+
+const connection = new IORedis(process.env.REDIS_URL, {
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  family: 0,
+});
+
+connection.on('error', (error) => {
+  console.error('[RuralAnalysisWorker] Redis connection error:', error.message);
+});
 
 export const analysisWorker = new Worker('rural-analysis', async (job) => {
   const { analysisId, areaId, geometry } = job.data;
@@ -91,3 +103,5 @@ export const analysisWorker = new Worker('rural-analysis', async (job) => {
     throw error;
   }
 }, { connection });
+
+console.log('[RuralAnalysisWorker] Worker iniciado.');

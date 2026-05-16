@@ -10,6 +10,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import IADashboardSummary from '../components/IADashboardSummary';
 import { supabase } from '../services/supabase';
 import {
   XAxis,
@@ -185,6 +186,8 @@ const UrbanDashboard: React.FC = () => {
           Visão geral da sua operação imobiliária.
         </p>
       </div>
+
+      <IADashboardSummary />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">

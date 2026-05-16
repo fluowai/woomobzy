@@ -70,6 +70,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
   };
 
   const menuItems = [
+    { icon: MessageSquare, label: 'Atendimento (WhatsApp)', path: '/urban/whatsapp' },
     { icon: LayoutDashboard, label: 'Dashboard 360°', path: '/urban' },
     { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
     { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
@@ -78,7 +79,6 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
     { icon: Calculator, label: 'Simulador Financeiro', path: '/urban/simulador' },
     { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
     { icon: DollarSign, label: 'Financeiro & Caixa', path: '/urban/cobranca' },
-    { icon: MessageSquare, label: 'Atendimento (WhatsApp)', path: '/urban/whatsapp' },
     { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
     { icon: LayoutTemplate, label: 'Marketing & Portais', path: '/urban/landing-pages' },
     { icon: PieChart, label: 'Relatórios Gerenciais', path: '/urban/reports' },
@@ -121,12 +121,12 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
             />
           ) : (
             <>
-                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
+                  <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
                     <Home className="text-white" size={22} />
                   </div>
                   <div className="flex flex-col">
                     <h1 className="text-xl font-extrabold text-slate-900 tracking-tighter leading-none">
-                      Imobi<span className="text-blue-600">CRM</span>
+                      Imobzy<span className="text-blue-600">Urbano</span>
                     </h1>
                   </div>
             </>
@@ -245,7 +245,14 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
             <Menu size={22} />
           </button>
 
-          <div className="relative flex-1 max-w-lg hidden sm:block group">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Painel Especializado</span>
+              <h2 className="text-lg font-black text-slate-900 leading-none">Imobzy Urbano</h2>
+            </div>
+          </div>
+
+          <div className="relative flex-1 max-w-lg hidden lg:block group">
             <Search
               className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"
               size={18}

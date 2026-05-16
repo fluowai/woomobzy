@@ -11,6 +11,7 @@ import {
   Briefcase,
   MapPin,
 } from 'lucide-react';
+import IADashboardSummary from '../components/IADashboardSummary';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import {
@@ -146,6 +147,8 @@ const RuralDashboard: React.FC = () => {
           Gerenciamento de ativos e performance comercial.
         </p>
       </div>
+
+      <IADashboardSummary />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpis.map((kpi, idx) => (

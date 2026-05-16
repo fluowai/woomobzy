@@ -50,8 +50,9 @@ const RuralLayout: React.FC = () => {
   };
 
   const menuItems = [
+    { icon: MessageSquare, label: 'Atendimento', path: '/rural/whatsapp' },
     { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
-    { icon: Users, label: 'Kanban', path: '/rural/crm' },
+    { icon: Users, label: 'Kanban / CRM', path: '/rural/crm' },
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Mapas & Georreferenciamento', path: '/rural/maps' },
     { icon: NavIcon, label: 'Localizar CAR (Auto)', path: '/rural/localizar-car' },
@@ -62,7 +63,6 @@ const RuralLayout: React.FC = () => {
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
     { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
-    { icon: MessageSquare, label: 'Atendimento', path: '/rural/whatsapp' },
     { icon: Link, label: 'Conexões', path: '/rural/connections' },
     { icon: Settings, label: 'Configurações', path: '/rural/settings' },
   ];
@@ -92,12 +92,12 @@ const RuralLayout: React.FC = () => {
           className="flex items-center gap-3 group"
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 transition-transform group-hover:scale-105">
+          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
             <Home className="text-white" size={22} />
           </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tighter leading-none">
-              Imobi<span className="text-emerald-600">CRM</span>
+              Imobzy<span className="text-emerald-600">Rural</span>
             </h1>
           </div>
         </Link>
@@ -218,7 +218,14 @@ const RuralLayout: React.FC = () => {
             <Menu size={22} />
           </button>
 
-          <div className="relative flex-1 max-w-lg hidden sm:block group">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Painel Especializado</span>
+              <h2 className="text-lg font-black text-slate-900 leading-none">Imobzy Rural</h2>
+            </div>
+          </div>
+
+          <div className="relative flex-1 max-w-lg hidden lg:block group">
             <Search
               className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-emerald-500 transition-colors"
               size={18}

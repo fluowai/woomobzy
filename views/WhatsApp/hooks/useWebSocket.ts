@@ -9,7 +9,7 @@ interface WSEvent {
 
 type EventHandler = (data: any) => void;
 
-export function useWebSocket() {
+export function useWebSocket(enabled = true) {
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const handlersRef = useRef<Map<string, Set<EventHandler>>>(new Map());
@@ -19,6 +19,7 @@ export function useWebSocket() {
   const gaveUp = useRef(false);
 
   const connect = useCallback(() => {
+    if (!enabled) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     if (gaveUp.current) return; // Don't try if we already gave up
 
@@ -71,7 +72,7 @@ export function useWebSocket() {
       // WebSocket creation failed - service unavailable
       gaveUp.current = true;
     }
-  }, []);
+  }, [enabled]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -96,9 +97,16 @@ export function useWebSocket() {
 
   // Connect on mount
   useEffect(() => {
+    if (!enabled) {
+      disconnect();
+      return;
+    }
+
+    gaveUp.current = false;
+    reconnectAttempts.current = 0;
     connect();
     return () => disconnect();
-  }, [connect, disconnect]);
+  }, [connect, disconnect, enabled]);
 
   return { isConnected, on, connect, disconnect };
 }

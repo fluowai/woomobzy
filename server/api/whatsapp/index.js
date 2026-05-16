@@ -21,6 +21,29 @@ const rewriteWhatsAppPath = (path) => {
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const target = process.env.WHATSAPP_API_URL || 'http://localhost:3100';
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
+  const allowedOriginPattern = /^https:\/\/([a-z0-9-]+\.)?consultio\.com\.br$/i;
+
+  const applyCorsHeaders = (req, res) => {
+    const origin = req.headers.origin;
+    if (
+      origin &&
+      (allowedOriginPattern.test(origin) ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('http://127.0.0.1') ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.up.railway.app'))
+    ) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+    }
+
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Origin,Accept,Content-Type,Authorization,X-Requested-With,x-impersonate-org-id'
+    );
+  };
 
   app.post('/api/whatsapp/internal/messages', async (req, res) => {
     const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
@@ -72,6 +95,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       error: (err, req, res) => {
         console.error('[WhatsApp Proxy Error]', err.message);
         if (res && typeof res.status === 'function') {
+          applyCorsHeaders(req, res);
           res.status(502).json({
             error: 'Servico WhatsApp Indisponivel',
             message: 'O servidor WhatsMeow (Go) nao respondeu ou nao esta rodando.',
@@ -82,6 +106,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   });
 
   app.use('/api/whatsapp', (req, res, next) => {
+    applyCorsHeaders(req, res);
     if (req.method === 'OPTIONS') {
       return res.sendStatus(204);
     }

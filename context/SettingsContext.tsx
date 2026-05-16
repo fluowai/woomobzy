@@ -21,6 +21,14 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
   undefined
 );
 
+const LEGACY_ORANGE_COLORS = new Set(['#ff6b00', '#f97316', '#ea580c', '#ff6600']);
+const normalizeBrandColor = (color?: string | null) => {
+  if (!color) return DEFAULT_SITE_SETTINGS.primaryColor;
+  return LEGACY_ORANGE_COLORS.has(color.trim().toLowerCase())
+    ? DEFAULT_SITE_SETTINGS.primaryColor
+    : color;
+};
+
 export const SettingsProvider: React.FC<{
   children: ReactNode;
   organizationId?: string;
@@ -85,8 +93,7 @@ export const SettingsProvider: React.FC<{
             ...DEFAULT_SITE_SETTINGS,
             id: data.id,
             agencyName: data.agency_name,
-            primaryColor:
-              data.primary_color || DEFAULT_SITE_SETTINGS.primaryColor,
+            primaryColor: normalizeBrandColor(data.primary_color),
             secondaryColor:
               data.secondary_color || DEFAULT_SITE_SETTINGS.secondaryColor,
             headerColor: data.header_color,

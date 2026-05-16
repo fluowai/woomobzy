@@ -21,8 +21,8 @@ export const MOCK_USER: User = {
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   agencyName: 'IMOBZY',
   templateId: 'modern',
-  primaryColor: '#FF6B00', // Laranja vibrante
-  secondaryColor: '#1E293B', // Slate 800
+  primaryColor: '#16A34A',
+  secondaryColor: '#052E1A',
   logoUrl: '',
   logoHeight: 80,
   contactPhone: '(11) 99999-9999',

@@ -18,11 +18,12 @@ const WhatsAppDashboard: React.FC = () => {
   const [showInstanceManager, setShowInstanceManager] = useState(false);
   const [loading, setLoading] = useState(true);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
+  const [webSocketEnabled, setWebSocketEnabled] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // WebSocket
-  const { isConnected, on } = useWebSocket();
+  const { isConnected, on } = useWebSocket(webSocketEnabled);
 
   // Load instances on mount
   useEffect(() => {
@@ -125,6 +126,7 @@ const WhatsAppDashboard: React.FC = () => {
       const data = await instanceApi.list();
       setInstances(data);
       setServiceUnavailable(false);
+      setWebSocketEnabled(true);
       if (data.length > 0 && !selectedInstance) {
         const connected = data.find((i) => i.status === 'connected');
         setSelectedInstance(connected || data[0]);
@@ -132,6 +134,7 @@ const WhatsAppDashboard: React.FC = () => {
     } catch (err: any) {
       if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         setServiceUnavailable(true);
+        setWebSocketEnabled(false);
       } else {
         logger.error('Failed to load instances:', err);
       }

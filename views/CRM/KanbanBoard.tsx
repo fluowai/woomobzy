@@ -753,8 +753,8 @@ const LeadDetailsModal: React.FC<{
                           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
                           <div className="relative z-10">
                             <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-300 mb-2 block">Perfil de Investidor Identificado</span>
-                            <p className="text-lg font-bold leading-relaxed italic text-indigo-50 italic">
-                              "{recommendations.profile_analysis}"
+                            <p className="text-lg font-bold leading-relaxed italic text-indigo-50">
+                              &quot;{recommendations.profile_analysis}&quot;
                             </p>
                           </div>
                        </div>
@@ -776,7 +776,7 @@ const LeadDetailsModal: React.FC<{
                                         <p className="font-black text-slate-800 text-lg mb-3">ID do Imóvel: {rec.property_id.slice(0, 8)}</p>
                                         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 italic text-slate-600 text-sm leading-relaxed">
                                            <Lightbulb size={14} className="text-amber-500 mb-1" />
-                                           "{rec.justification}"
+                                           &quot;{rec.justification}&quot;
                                         </div>
                                      </div>
                                   </div>

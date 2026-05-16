@@ -160,8 +160,8 @@ const RuralLayout: React.FC = () => {
         >
           <img
             src="/logo-imobzy-360.svg"
-            alt="IMOBZY 360"
-            className="h-12 w-auto object-contain max-w-[180px] transition-transform group-hover:scale-105"
+            alt="IMOBZY"
+            className="h-12 w-auto object-contain max-w-[150px] transition-transform group-hover:scale-105"
           />
         </RouterLink>
       </div>
@@ -225,7 +225,7 @@ const RuralLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-[#052e1a] overflow-hidden selection:bg-primary/20 selection:text-primary">
+    <div className="flex h-screen bg-bg-primary overflow-hidden selection:bg-primary/20 selection:text-primary">
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -261,7 +261,7 @@ const RuralLayout: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Imobiliaria Rural</span>
-              <h2 className="text-lg font-black text-slate-900 leading-none">IMOBZY 360</h2>
+              <h2 className="text-lg font-black text-slate-900 leading-none">IMOBZY</h2>
             </div>
           </div>
 

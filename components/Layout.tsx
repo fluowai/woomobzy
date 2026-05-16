@@ -22,8 +22,6 @@ import {
   Phone,
   ShieldAlert,
 } from 'lucide-react';
-import { MOCK_USER } from '../constants';
-import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { usePlans } from '../context/PlansContext';
 
@@ -32,7 +30,6 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { settings } = useSettings();
   const { profile, signOut, stopImpersonation, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -96,48 +93,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Conteúdo da Sidebar (compartilhado entre desktop e mobile)
   const SidebarContent = () => (
     <>
-      <div className="p-6 md:p-8 border-b border-white/5">
+      <div className="p-6 md:p-8 border-b border-slate-100">
         <Link
           to="/"
           className="flex items-center gap-3"
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          {settings.logoUrl ||
-          window.location.hostname === 'imobzy.consultio.com.br' ? (
-            <img
-              src={
-                window.location.hostname === 'imobzy.consultio.com.br'
-                  ? '/logo-imobzy.png'
-                  : settings.logoUrl
-              }
-              alt="Logo"
-              className="h-10 md:h-12 w-auto object-contain max-w-[160px]"
-            />
-          ) : (
-            <>
-              <div
-                className="p-2 rounded-xl"
-                style={{ backgroundColor: settings.primaryColor }}
-              >
-                <Home className="text-white" size={24} />
-              </div>
-              <span className="text-xl md:text-2xl font-black tracking-tighter uppercase italic">
-                PAINEL
-              </span>
-            </>
-          )}
+          <img
+            src="/logo-imobzy-360.svg"
+            alt="IMOBZY"
+            className="h-10 md:h-12 w-auto object-contain max-w-[150px]"
+          />
         </Link>
         <a
           href="/#/site"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 md:mt-6 flex items-center justify-center gap-2 w-full bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border border-indigo-500/30"
+          className="mt-4 md:mt-6 flex items-center justify-center gap-2 w-full bg-primary/10 text-primary hover:bg-primary hover:text-white py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border border-primary/20"
         >
           <Globe size={14} /> Visualizar Site
         </a>
       </div>
 
-      <nav className="flex-1 p-4 md:p-5 space-y-1 md:space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 p-4 md:p-5 space-y-1 md:space-y-1.5 overflow-y-auto custom-scrollbar">
         {filteredMenuItems.map((item) => (
           <NavLink
             key={item.path}
@@ -147,21 +125,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 md:py-3.5 rounded-xl transition-all ${
                 isActive
-                  ? 'bg-white/10 text-white shadow-lg'
-                  : 'text-white/50 hover:bg-white/5 hover:text-white'
+                  ? 'bg-primary text-white font-bold shadow-lg shadow-primary/25'
+                  : 'text-slate-500 hover:bg-primary/10 hover:text-primary'
               }`
-            }
-            style={({ isActive }) =>
-              isActive
-                ? { borderLeft: `4px solid ${settings.primaryColor}` }
-                : {}
             }
           >
             {({ isActive }) => (
               <>
                 <item.icon
                   size={20}
-                  className={isActive ? 'text-white' : 'text-white/50'}
+                  className={isActive ? 'text-white' : 'text-slate-400'}
                 />
                 <span className="font-semibold text-sm">{item.label}</span>
               </>
@@ -171,23 +144,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </nav>
 
       {/* Bottom: User Profile & Logout */}
-      <div className="p-4 md:p-6 border-t border-white/5">
-        <div className="flex items-center gap-3 mb-3 md:mb-4">
-          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-black text-sm">
+      <div className="p-4 md:p-6 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center gap-3 mb-3 md:mb-4 p-2 rounded-xl border border-slate-200 bg-white">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm border border-primary/20">
             {profile?.full_name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1">
-            <p className="text-xs font-black text-white">
+            <p className="text-xs font-black text-slate-900">
               {profile?.full_name || 'Carregando...'}
             </p>
 
             {/* ROLE BADGE */}
             {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest rounded-sm">
+              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest rounded-sm">
                 SUPER ADMIN
               </span>
             ) : (
-              <p className="text-[10px] text-white/40 uppercase tracking-widest">
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest">
                 {profile?.role === 'admin'
                   ? 'Admin'
                   : loading
@@ -200,9 +173,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all group"
+          className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all group"
         >
-          <LogOut size={18} className="opacity-60 group-hover:opacity-100" />
+          <LogOut size={18} className="opacity-70 group-hover:opacity-100" />
           <span className="text-xs font-black uppercase tracking-widest">
             Sair
           </span>
@@ -225,11 +198,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             onClick={() => setIsMobileMenuOpen(false)}
           />
           {/* Sidebar Drawer */}
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-bg-card text-text-primary flex flex-col animate-in slide-in-from-left duration-300">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white text-slate-900 flex flex-col animate-in slide-in-from-left duration-300 border-r border-slate-200">
             {/* Close Button */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-bg-hover flex items-center justify-center text-secondary hover:text-text-primary transition-all"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
             >
               <X size={20} />
             </button>
@@ -255,14 +228,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="w-64 bg-bg-card text-text-primary flex-col hidden md:flex transition-all border-r border-subtle">
+      <aside className="w-64 bg-white text-slate-900 flex-col hidden md:flex transition-all border-r border-slate-200 shadow-sm">
         <SidebarContent />
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-bg-card border-b border-subtle flex items-center justify-between px-6 z-10 gap-3">
+        <header className="h-16 bg-bg-card/80 backdrop-blur-xl border-b border-border-subtle flex items-center justify-between px-6 z-10 gap-3">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}

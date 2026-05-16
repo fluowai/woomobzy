@@ -52,6 +52,7 @@ if (missingVars.length > 0) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 
 // --- Global Security & Setup ---
 app.use(

@@ -32,9 +32,9 @@ func Load(logger *zap.Logger) *Config {
 	cfg := &Config{
 		Port:               getEnv("PORT", "3100"),
 		GinMode:            getEnv("GIN_MODE", "debug"),
-		SupabaseURL:        getEnv("SUPABASE_URL", ""),
-		SupabaseServiceKey: getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
-		SupabaseDBURL:      getEnv("SUPABASE_DB_URL", ""),
+		SupabaseURL:        getEnvAny([]string{"SUPABASE_URL", "VITE_SUPABASE_URL"}, ""),
+		SupabaseServiceKey: getEnvAny([]string{"SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY"}, ""),
+		SupabaseDBURL:      getEnvAny([]string{"SUPABASE_DB_URL", "DATABASE_URL", "POSTGRES_URL"}, ""),
 		StorageBucket:      getEnv("SUPABASE_STORAGE_BUCKET", "whatsapp-media"),
 		NodeURL:            strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
 		InternalToken:      getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
@@ -46,7 +46,7 @@ func Load(logger *zap.Logger) *Config {
 
 	// Validate required fields
 	if cfg.SupabaseDBURL == "" {
-		logger.Fatal("SUPABASE_DB_URL is required")
+		logger.Fatal("SUPABASE_DB_URL or DATABASE_URL is required")
 	}
 
 	return cfg
@@ -55,6 +55,15 @@ func Load(logger *zap.Logger) *Config {
 func getEnv(key, fallback string) string {
 	if val := os.Getenv(key); val != "" {
 		return val
+	}
+	return fallback
+}
+
+func getEnvAny(keys []string, fallback string) string {
+	for _, key := range keys {
+		if val := os.Getenv(key); val != "" {
+			return val
+		}
 	}
 	return fallback
 }

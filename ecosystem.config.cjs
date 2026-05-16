@@ -21,7 +21,13 @@ module.exports = {
       max_memory_restart: '200M',
       env: {
         PORT: 3100,
-        NODE_URL: `http://127.0.0.1:${webPort}`
+        NODE_URL: `http://127.0.0.1:${webPort}`,
+        SUPABASE_DB_URL: process.env.SUPABASE_DB_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL,
+        SUPABASE_URL: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET || 'whatsapp-media',
+        WHATSAPP_INTERNAL_TOKEN: process.env.WHATSAPP_INTERNAL_TOKEN,
+        WHATSAPP_AI_AUTOMATION: process.env.WHATSAPP_AI_AUTOMATION
       }
     },
     {

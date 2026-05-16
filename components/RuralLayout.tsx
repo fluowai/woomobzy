@@ -25,10 +25,22 @@ import {
   Zap,
   Bot,
   Link as LinkIcon,
+  LucideIcon,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import SupportModal from './SupportModal';
+
+type MenuItem = {
+  icon: LucideIcon;
+  label: string;
+  path: string;
+};
+
+type MenuSection = {
+  title: string;
+  items: MenuItem[];
+};
 
 const RuralLayout: React.FC = () => {
   const { settings } = useSettings();
@@ -47,29 +59,45 @@ const RuralLayout: React.FC = () => {
     }
   };
 
-  const menuItems = [
+  const operationItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
     { icon: MessageSquare, label: 'Mensagens', path: '/rural/whatsapp' },
     { icon: Briefcase, label: 'Kanban', path: '/rural/kanban' },
     { icon: Users, label: 'CRM', path: '/rural/crm' },
+  ];
+
+  const assetItems: MenuItem[] = [
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Território Rural', path: '/rural/territorio' },
+  ];
+
+  const growthItems: MenuItem[] = [
     { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
-    { icon: Globe, label: 'Site & Landing Pages', path: '/rural/landing-pages' },
+    { icon: Globe, label: 'Site & Landing', path: '/rural/landing-pages' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
     { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
+  ];
+
+  const systemItems: MenuItem[] = [
     { icon: LinkIcon, label: 'Conexões', path: '/rural/connections' },
     { icon: Settings, label: 'Configurações', path: '/rural/settings' },
   ];
 
   if (profile?.role === 'superadmin') {
-    menuItems.push({
+    systemItems.push({
       icon: ShieldAlert,
       label: 'Super Admin',
       path: '/superadmin',
     });
   }
+
+  const menuSections: MenuSection[] = [
+    { title: 'Operação', items: operationItems },
+    { title: 'Carteira Rural', items: assetItems },
+    { title: 'Crescimento', items: growthItems },
+    { title: 'Sistema', items: systemItems },
+  ];
 
   useEffect(() => {
     // Scroll to top on route change
@@ -82,6 +110,45 @@ const RuralLayout: React.FC = () => {
 
   const isMenuItemActive = (path: string, isActive: boolean) =>
     isActive || (path === '/rural/territorio' && pathname.startsWith('/rural/territorio'));
+
+  const renderMenuItem = (item: MenuItem) => (
+    <NavLink
+      key={item.path}
+      to={item.path}
+      end={item.path === '/rural'}
+      onClick={() => setIsMobileMenuOpen(false)}
+      className={({ isActive }) => {
+        const active = isMenuItemActive(item.path, isActive);
+        return `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group ${
+          active
+            ? 'bg-primary text-white font-bold shadow-lg shadow-primary/25'
+            : 'text-slate-500 hover:bg-primary/10 hover:text-primary'
+        }`;
+      }}
+    >
+      {({ isActive }) => {
+        const active = isMenuItemActive(item.path, isActive);
+
+        return (
+          <>
+            <div className="flex items-center gap-3.5 min-w-0">
+              <item.icon
+                size={20}
+                className={active ? 'text-white shrink-0' : 'text-slate-400 group-hover:text-primary shrink-0'}
+              />
+              <span className="text-sm font-bold tracking-tight truncate">{item.label}</span>
+            </div>
+            {item.path !== '/rural' && (
+              <ChevronRight
+                size={14}
+                className={active ? 'text-white/80 shrink-0' : 'text-slate-300 group-hover:text-primary shrink-0'}
+              />
+            )}
+          </>
+        );
+      }}
+    </NavLink>
+  );
 
   const renderSidebarContent = () => (
     <>
@@ -99,58 +166,24 @@ const RuralLayout: React.FC = () => {
         </RouterLink>
       </div>
 
-      <nav className="flex-1 px-4 py-8 overflow-y-auto space-y-1 custom-scrollbar">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/rural'}
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={({ isActive }) => {
-              const active = isMenuItemActive(item.path, isActive);
-              return (
-              `flex items-center justify-between px-5 py-3.5 rounded-xl transition-all duration-300 group ${
-                active
-                  ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30'
-                  : 'text-slate-500 hover:bg-primary/10 hover:text-primary'
-              }`
-              );
-            }}
-          >
-            {({ isActive }) => (
-              <>
-                <div className="flex items-center gap-4">
-                  <item.icon
-                    size={22}
-                    className={
-                      isMenuItemActive(item.path, isActive)
-                        ? 'text-white'
-                        : 'text-slate-400 group-hover:text-primary'
-                    }
-                  />
-                  <span className="text-sm font-bold tracking-tight">{item.label}</span>
-                </div>
-                {item.path !== '/rural' && (
-                  <ChevronRight
-                    size={14}
-                    className={
-                      isMenuItemActive(item.path, isActive)
-                        ? 'text-white/80'
-                        : 'text-slate-300 group-hover:text-primary'
-                    }
-                  />
-                )}
-              </>
-            )}
-          </NavLink>
+      <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-6 custom-scrollbar">
+        {menuSections.map((section) => (
+          <div key={section.title} className="space-y-2">
+            <p className="px-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+              {section.title}
+            </p>
+            <div className="space-y-1">
+              {section.items.map(renderMenuItem)}
+            </div>
+          </div>
         ))}
 
         <button
           onClick={() => setIsSupportOpen(true)}
-          className="flex items-center justify-between w-full px-5 py-3.5 rounded-xl transition-all duration-300 group text-slate-500 hover:bg-primary/10 hover:text-primary"
+          className="flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 group text-slate-500 hover:bg-primary/10 hover:text-primary"
         >
-          <div className="flex items-center gap-4">
-            <Headset size={22} className="text-slate-400 group-hover:text-primary" />
+          <div className="flex items-center gap-3.5">
+            <Headset size={20} className="text-slate-400 group-hover:text-primary" />
             <span className="text-sm font-bold tracking-tight">Suporte</span>
           </div>
         </button>

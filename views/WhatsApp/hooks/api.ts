@@ -3,13 +3,18 @@ const RAW_BACKEND_URL =
   import.meta.env.VITE_API_URL ||
   '';
 
+const USE_DIRECT_WHATSAPP_API = Boolean(import.meta.env.VITE_WHATSAPP_API_URL);
 const BACKEND_URL = normalizeBackendUrl(RAW_BACKEND_URL);
-const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api/whatsapp` : '/api/whatsapp';
-export const WS_URL = BACKEND_URL 
-  ? `${BACKEND_URL.replace('http', 'ws')}/api/whatsapp/ws`
+const API_BASE = BACKEND_URL
+  ? `${BACKEND_URL}${USE_DIRECT_WHATSAPP_API ? '/api' : '/api/whatsapp'}`
+  : '/api/whatsapp';
+export const WS_URL = BACKEND_URL
+  ? `${BACKEND_URL.replace('http', 'ws')}${USE_DIRECT_WHATSAPP_API ? '/ws' : '/api/whatsapp/ws'}`
   : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/whatsapp/ws`;
 
 import { supabase } from '@/services/supabase';
+
+let tenantIdCache: string | null | undefined;
 
 function normalizeBackendUrl(url: string): string {
   const clean = (url || '').trim().replace(/\/$/, '');
@@ -24,9 +29,12 @@ function normalizeBackendUrl(url: string): string {
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
+  const tenantId = USE_DIRECT_WHATSAPP_API ? await getTenantId(session?.user?.id) : null;
   
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const url = `${API_BASE}${cleanPath}`;
+  const url = buildApiUrl(cleanPath, tenantId);
+
+  const body = withTenantBody(options?.body, tenantId);
   
   let res: Response;
   try {
@@ -37,6 +45,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
         ...options?.headers,
       },
       ...options,
+      body,
     });
   } catch (networkErr: any) {
     throw new Error(`WHATSAPP_UNAVAILABLE: Serviço não acessível - ${networkErr.message}`);
@@ -54,6 +63,43 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return res.json();
+}
+
+async function getTenantId(userId?: string): Promise<string | null> {
+  if (!userId) return null;
+  if (tenantIdCache !== undefined) return tenantIdCache;
+
+  const { data } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', userId)
+    .single();
+
+  tenantIdCache = data?.organization_id || null;
+  return tenantIdCache;
+}
+
+function buildApiUrl(path: string, tenantId?: string | null): string {
+  const url = new URL(`${API_BASE}${path}`, window.location.origin);
+  if (USE_DIRECT_WHATSAPP_API && tenantId && !url.searchParams.has('tenant_id')) {
+    url.searchParams.set('tenant_id', tenantId);
+  }
+  return url.toString();
+}
+
+function withTenantBody(body: BodyInit | null | undefined, tenantId?: string | null): BodyInit | null | undefined {
+  if (!USE_DIRECT_WHATSAPP_API || !tenantId || typeof body !== 'string') return body;
+
+  try {
+    const parsed = JSON.parse(body);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && !parsed.tenant_id) {
+      return JSON.stringify({ ...parsed, tenant_id: tenantId });
+    }
+  } catch {
+    return body;
+  }
+
+  return body;
 }
 
 // ---- Types ----
@@ -157,12 +203,13 @@ export const messageApi = {
 
   sendMedia: async (chatId: string, instanceId: string, file: File, content = '') => {
     const { data: { session } } = await supabase.auth.getSession();
+    const tenantId = USE_DIRECT_WHATSAPP_API ? await getTenantId(session?.user?.id) : null;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('content', content);
     formData.append('type', mediaTypeFromFile(file));
 
-    const res = await fetch(`${API_BASE}/messages/${chatId}/send-media?instance_id=${instanceId}`, {
+    const res = await fetch(buildApiUrl(`/messages/${chatId}/send-media?instance_id=${instanceId}`, tenantId), {
       method: 'POST',
       headers: {
         Authorization: session ? `Bearer ${session.access_token}` : '',

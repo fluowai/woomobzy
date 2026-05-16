@@ -50,10 +50,10 @@ const RuralLayout: React.FC = () => {
   };
 
   const menuItems = [
-    { icon: MessageSquare, label: 'Mensagens', path: '/rural/whatsapp' },
     { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
-    { icon: Users, label: 'CRM', path: '/rural/crm' },
+    { icon: MessageSquare, label: 'Mensagens', path: '/rural/whatsapp' },
     { icon: Briefcase, label: 'Kanban', path: '/rural/kanban' },
+    { icon: Users, label: 'CRM', path: '/rural/crm' },
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Mapas & Georreferenciamento', path: '/rural/maps' },
     { icon: NavIcon, label: 'Localizar CAR (Auto)', path: '/rural/localizar-car' },

@@ -70,13 +70,13 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
   };
 
   const menuItems = [
-    { icon: MessageSquare, label: 'Mensagens', path: '/urban/whatsapp' },
     { icon: LayoutDashboard, label: 'Dashboard 360°', path: '/urban' },
+    { icon: MessageSquare, label: 'Mensagens', path: '/urban/whatsapp' },
+    { icon: LayoutGrid, label: 'Kanban', path: '/urban/kanban' },
+    { icon: Users, label: 'CRM', path: '/urban/crm' },
     { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
     { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
     { icon: MapIcon, label: 'Loteamentos (Loteadora)', path: '/urban/loteamentos' },
-    { icon: Users, label: 'CRM', path: '/urban/crm' },
-    { icon: LayoutGrid, label: 'Kanban', path: '/urban/kanban' },
     { icon: Calculator, label: 'Simulador Financeiro', path: '/urban/simulador' },
     { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
     { icon: DollarSign, label: 'Financeiro & Caixa', path: '/urban/cobranca' },

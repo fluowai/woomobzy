@@ -61,48 +61,56 @@ app.use(
   })
 );
 
-// SEGURANÇA CORS: Lista explícita de origens permitidas
-// NUNCA permita todos os domínios HTTPS em produção
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+// CORS: lista explicita de origens permitidas.
+// Mantemos os dominios padrao mesmo quando ALLOWED_ORIGINS existe no ambiente.
+const defaultAllowedOrigins = [
+  'http://localhost:3005',
+  'http://localhost:3006',
+  'https://consultio.com.br',
+  'https://imobzy.consultio.com.br',
+  'https://www.consultio.com.br',
+  'https://woomobzy-production.up.railway.app',
+  'https://web-production-7c3f0.up.railway.app',
+];
+
+const envAllowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : [
-      'http://localhost:3005',
-      'http://localhost:3006',
-      'https://consultio.com.br',
-      'https://imobzy.consultio.com.br',
-      'https://www.consultio.com.br',
-    ];
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  : [];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // 1. Permitir requests sem origin (ex: mobile apps, curl, ferramentas de servidor)
-      if (!origin) return callback(null, true);
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
 
-      const isLocal =
-        origin.startsWith('http://localhost') ||
-        origin.startsWith('http://127.0.0.1');
-      const isMainDomain =
-        origin === 'https://consultio.com.br' ||
-        origin.endsWith('.consultio.com.br') ||
-        origin.endsWith('.vercel.app');
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
 
-      // 2. Permitir APENAS domínios da lista explícita
-      if (isLocal || isMainDomain || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+  return (
+    origin.startsWith('http://localhost') ||
+    origin.startsWith('http://127.0.0.1') ||
+    origin === 'https://consultio.com.br' ||
+    origin.endsWith('.consultio.com.br') ||
+    origin.endsWith('.vercel.app') ||
+    origin.endsWith('.up.railway.app') ||
+    allowedOrigins.includes(origin)
+  );
+};
 
-      // 3. BLOCK: Não permitir domínios HTTPS arbitrários em produção
-      // Isso era um VULNERABILIDADE CRÍTICA que permitia ataques CSRF
-      console.warn(`[CORS] Bloqueando origem não permitida: ${origin}`);
-      callback(new Error(`CORS: Origem não permitida - ${origin}`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-impersonate-org-id'],
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
 
+    console.warn(`[CORS] Bloqueando origem nao permitida: ${origin}`);
+    callback(new Error(`CORS: Origem nao permitida - ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-impersonate-org-id'],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000, // Generoso para produção inicial

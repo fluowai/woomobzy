@@ -1,10 +1,26 @@
-const BACKEND_URL = import.meta.env.VITE_API_URL || '';
+const RAW_BACKEND_URL =
+  import.meta.env.VITE_WHATSAPP_API_URL ||
+  import.meta.env.VITE_API_URL ||
+  '';
+
+const BACKEND_URL = normalizeBackendUrl(RAW_BACKEND_URL);
 const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api/whatsapp` : '/api/whatsapp';
 export const WS_URL = BACKEND_URL 
   ? `${BACKEND_URL.replace('http', 'ws')}/api/whatsapp/ws`
   : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/whatsapp/ws`;
 
 import { supabase } from '@/services/supabase';
+
+function normalizeBackendUrl(url: string): string {
+  const clean = (url || '').trim().replace(/\/$/, '');
+  if (!clean) return '';
+
+  if (clean.includes('web-production-7c3f0.up.railway.app')) {
+    return 'https://woomobzy-production.up.railway.app';
+  }
+
+  return clean;
+}
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -74,6 +90,7 @@ export interface Message {
   message_id: string;
   sender_phone: string;
   sender_name: string;
+  sender_avatar_url?: string;
   is_from_me: boolean;
   is_group: boolean;
   type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'sticker' | 'location' | 'contact' | 'unknown';
@@ -137,23 +154,50 @@ export const messageApi = {
       method: 'POST',
       body: JSON.stringify({ content, type }),
     }),
+
+  sendMedia: async (chatId: string, instanceId: string, file: File, content = '') => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('content', content);
+    formData.append('type', mediaTypeFromFile(file));
+
+    const res = await fetch(`${API_BASE}/messages/${chatId}/send-media?instance_id=${instanceId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: session ? `Bearer ${session.access_token}` : '',
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(error.error || `API Error: ${res.status}`);
+    }
+
+    return res.json();
+  },
 };
 
 // ---- Phone Utils ----
 export function formatPhone(number: string): string {
-  return number.replace(/\D/g, '').replace(/^0+/, '');
+  const cleaned = number.replace(/\D/g, '').replace(/^0+/, '');
+  if (cleaned.length === 10 || cleaned.length === 11) return `55${cleaned}`;
+  return cleaned;
+}
+
+export function formatPhoneDisplay(phone: string): string {
+  const normalized = formatPhone(phone);
+  return normalized ? `+${normalized}` : '';
 }
 
 export function getDisplayName(pushName: string | null, number: string): string {
   return pushName && pushName.trim() !== '' ? pushName : formatPhone(number);
 }
 
-export function formatPhoneDisplay(phone: string): string {
-  if (!phone || phone.length < 10) return phone;
-  // Format as +55 (48) 98800-3260
-  const country = phone.substring(0, 2);
-  const area = phone.substring(2, 4);
-  const part1 = phone.substring(4, phone.length - 4);
-  const part2 = phone.substring(phone.length - 4);
-  return `+${country} (${area}) ${part1}-${part2}`;
+function mediaTypeFromFile(file: File): string {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('audio/')) return 'audio';
+  if (file.type.startsWith('video/')) return 'video';
+  return 'document';
 }

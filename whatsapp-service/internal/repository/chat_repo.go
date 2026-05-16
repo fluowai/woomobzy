@@ -26,11 +26,12 @@ func NewChatRepo(db *pgxpool.Pool, logger *zap.Logger) *ChatRepo {
 // Upsert creates or updates a chat. Returns the chat (with ID populated).
 func (r *ChatRepo) Upsert(ctx context.Context, chat *models.Chat) error {
 	query := `
-		INSERT INTO whatsapp_chats (id, instance_id, chat_jid, name, is_group, last_message, last_message_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO whatsapp_chats (id, instance_id, chat_jid, name, is_group, last_message, last_message_at, avatar_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (instance_id, chat_jid)
 		DO UPDATE SET
 			name = CASE WHEN EXCLUDED.name != '' THEN EXCLUDED.name ELSE whatsapp_chats.name END,
+			avatar_url = CASE WHEN EXCLUDED.avatar_url != '' THEN EXCLUDED.avatar_url ELSE whatsapp_chats.avatar_url END,
 			last_message = EXCLUDED.last_message,
 			last_message_at = EXCLUDED.last_message_at,
 			unread_count = whatsapp_chats.unread_count + 1
@@ -47,7 +48,7 @@ func (r *ChatRepo) Upsert(ctx context.Context, chat *models.Chat) error {
 
 	return r.db.QueryRow(ctx, query,
 		chat.ID, chat.InstanceID, chat.ChatJID, chat.Name, chat.IsGroup,
-		chat.LastMessage, chat.LastMessageAt,
+		chat.LastMessage, chat.LastMessageAt, chat.AvatarURL,
 	).Scan(&chat.ID, &chat.CreatedAt, &chat.UpdatedAt, &chat.UnreadCount)
 }
 

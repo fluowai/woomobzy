@@ -135,6 +135,7 @@ func main() {
 		{
 			messages.GET("/:chatId", messageHandler.ListMessages)
 			messages.POST("/:chatId/send", messageHandler.SendMessage)
+			messages.POST("/:chatId/send-media", messageHandler.SendMediaMessage)
 		}
 	}
 

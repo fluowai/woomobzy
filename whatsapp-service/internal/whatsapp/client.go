@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
 
@@ -282,12 +283,14 @@ func (c *Client) handleMessage(evt *events.Message) {
 			senderPhone = phone.Normalize(info.Sender.User)
 		}
 		pushName := info.PushName
-		senderName = phone.GetDisplayName(pushName, senderPhone)
+		senderName = c.resolveDisplayName(ctx, info.Sender, pushName, senderPhone)
+		avatarURL := c.resolveAvatarURL(ctx, info.Sender)
 
 		participantInfo = &models.ParticipantInfo{
 			PushName:    pushName,
 			Phone:       senderPhone,
 			DisplayName: senderName,
+			AvatarURL:   avatarURL,
 		}
 	} else {
 		if info.IsFromMe {
@@ -297,7 +300,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 			senderName = "Me"
 		} else {
 			senderPhone = phone.Normalize(info.Sender.User)
-			senderName = phone.GetDisplayName(info.PushName, senderPhone)
+			senderName = c.resolveDisplayName(ctx, info.Sender, info.PushName, senderPhone)
 		}
 	}
 
@@ -318,9 +321,11 @@ func (c *Client) handleMessage(evt *events.Message) {
 			// For sent messages, the chat is the recipient
 			chatName = phone.GetDisplayName("", phone.Normalize(info.Chat.User))
 		} else {
-			chatName = phone.GetDisplayName(info.PushName, senderPhone)
+			chatName = c.resolveDisplayName(ctx, info.Chat, info.PushName, senderPhone)
 		}
 	}
+
+	chatAvatarURL := c.resolveAvatarURL(ctx, info.Chat)
 
 	// Upsert contact (only for non-group or for the sender in a group)
 	if senderPhone != "" && !info.IsFromMe {
@@ -329,6 +334,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 			Phone:       senderPhone,
 			PushName:    info.PushName,
 			DisplayName: senderName,
+			AvatarURL:   c.resolveAvatarURL(ctx, info.Sender),
 		}
 		if err := c.contactRepo.Upsert(ctx, contact); err != nil {
 			c.logger.Error("Failed to upsert contact", zap.Error(err))
@@ -353,6 +359,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 		IsGroup:       isGroup,
 		LastMessage:   previewContent,
 		LastMessageAt: &now,
+		AvatarURL:     chatAvatarURL,
 	}
 	if err := c.chatRepo.Upsert(ctx, chat); err != nil {
 		c.logger.Error("Failed to upsert chat", zap.Error(err))
@@ -375,19 +382,20 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	// Create message record
 	msg := &models.Message{
-		InstanceID:    c.instanceID,
-		ChatID:        chat.ID,
-		MessageID:     info.ID,
-		SenderPhone:   senderPhone,
-		SenderName:    senderName,
-		IsFromMe:      info.IsFromMe,
-		IsGroup:       isGroup,
-		Type:          msgType,
-		Content:       content,
-		MediaURL:      mediaURL,
-		MediaMimetype: mediaMimetype,
-		MediaFilename: mediaFilename,
-		Timestamp:     info.Timestamp,
+		InstanceID:      c.instanceID,
+		ChatID:          chat.ID,
+		MessageID:       info.ID,
+		SenderPhone:     senderPhone,
+		SenderName:      senderName,
+		SenderAvatarURL: c.resolveAvatarURL(ctx, info.Sender),
+		IsFromMe:        info.IsFromMe,
+		IsGroup:         isGroup,
+		Type:            msgType,
+		Content:         content,
+		MediaURL:        mediaURL,
+		MediaMimetype:   mediaMimetype,
+		MediaFilename:   mediaFilename,
+		Timestamp:       info.Timestamp,
 	}
 
 	// Handle quoted message
@@ -441,6 +449,38 @@ func (c *Client) handleMessage(evt *events.Message) {
 			}
 		}(*msg, *chat, participantInfo)
 	}
+}
+
+func (c *Client) resolveDisplayName(ctx context.Context, jid types.JID, pushName, fallbackPhone string) string {
+	if pushName != "" {
+		return pushName
+	}
+	if c.waClient.Store != nil && c.waClient.Store.Contacts != nil && !jid.IsEmpty() {
+		if contact, err := c.waClient.Store.Contacts.GetContact(ctx, jid); err == nil {
+			switch {
+			case contact.FullName != "":
+				return contact.FullName
+			case contact.PushName != "":
+				return contact.PushName
+			case contact.BusinessName != "":
+				return contact.BusinessName
+			case contact.FirstName != "":
+				return contact.FirstName
+			}
+		}
+	}
+	return phone.GetDisplayName("", fallbackPhone)
+}
+
+func (c *Client) resolveAvatarURL(ctx context.Context, jid types.JID) string {
+	if jid.IsEmpty() {
+		return ""
+	}
+	picture, err := c.waClient.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{Preview: true})
+	if err != nil || picture == nil {
+		return ""
+	}
+	return picture.URL
 }
 
 func uuidToString(id *uuid.UUID) string {

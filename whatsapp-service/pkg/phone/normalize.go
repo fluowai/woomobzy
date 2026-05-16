@@ -15,7 +15,19 @@ func Normalize(number string) string {
 	cleaned := nonDigitRegex.ReplaceAllString(number, "")
 	// Remove leading zeros
 	cleaned = strings.TrimLeft(cleaned, "0")
+	if len(cleaned) == 10 || len(cleaned) == 11 {
+		cleaned = "55" + cleaned
+	}
 	return cleaned
+}
+
+// FormatE164 returns a phone number in +5548988003260 format.
+func FormatE164(number string) string {
+	cleaned := Normalize(number)
+	if cleaned == "" {
+		return ""
+	}
+	return "+" + cleaned
 }
 
 // GetDisplayName returns the pushName if available, otherwise the normalized phone number.

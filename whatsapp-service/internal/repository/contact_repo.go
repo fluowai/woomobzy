@@ -25,12 +25,13 @@ func NewContactRepo(db *pgxpool.Pool, logger *zap.Logger) *ContactRepo {
 // Upsert creates or updates a contact
 func (r *ContactRepo) Upsert(ctx context.Context, contact *models.Contact) error {
 	query := `
-		INSERT INTO whatsapp_contacts (id, instance_id, phone, push_name, display_name)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO whatsapp_contacts (id, instance_id, phone, push_name, display_name, avatar_url)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (instance_id, phone)
 		DO UPDATE SET
 			push_name = CASE WHEN EXCLUDED.push_name != '' THEN EXCLUDED.push_name ELSE whatsapp_contacts.push_name END,
-			display_name = CASE WHEN EXCLUDED.display_name != '' THEN EXCLUDED.display_name ELSE whatsapp_contacts.display_name END
+			display_name = CASE WHEN EXCLUDED.display_name != '' THEN EXCLUDED.display_name ELSE whatsapp_contacts.display_name END,
+			avatar_url = CASE WHEN EXCLUDED.avatar_url != '' THEN EXCLUDED.avatar_url ELSE whatsapp_contacts.avatar_url END
 		RETURNING id, created_at, updated_at`
 
 	if contact.ID == uuid.Nil {
@@ -38,7 +39,7 @@ func (r *ContactRepo) Upsert(ctx context.Context, contact *models.Contact) error
 	}
 
 	return r.db.QueryRow(ctx, query,
-		contact.ID, contact.InstanceID, contact.Phone, contact.PushName, contact.DisplayName,
+		contact.ID, contact.InstanceID, contact.Phone, contact.PushName, contact.DisplayName, contact.AvatarURL,
 	).Scan(&contact.ID, &contact.CreatedAt, &contact.UpdatedAt)
 }
 

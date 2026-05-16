@@ -171,10 +171,16 @@ const WhatsAppDashboard: React.FC = () => {
   };
 
   const handleSendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, file?: File) => {
       if (!selectedChat || !selectedInstance) return;
       try {
-        await messageApi.send(selectedChat.id, selectedInstance.id, content);
+        if (file) {
+          await messageApi.sendMedia(selectedChat.id, selectedInstance.id, file, content);
+        } else {
+          await messageApi.send(selectedChat.id, selectedInstance.id, content);
+        }
+        await loadMessages(selectedChat.id);
+        await loadChats(selectedInstance.id);
       } catch (err) {
         logger.error('Failed to send message:', err);
       }

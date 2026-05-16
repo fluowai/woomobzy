@@ -3,8 +3,10 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -158,6 +160,128 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 		"message": "Message sent",
 		"data":    msg,
 	})
+}
+
+// SendMediaMessage handles POST /api/messages/:chatId/send-media
+func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
+	chatID, err := uuid.Parse(c.Param("chatId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chat ID"})
+		return
+	}
+
+	instanceIDStr := c.Query("instance_id")
+	if instanceIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "instance_id query parameter is required"})
+		return
+	}
+
+	instanceID, err := uuid.Parse(instanceIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance_id"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read file"})
+		return
+	}
+
+	if len(data) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file is empty"})
+		return
+	}
+
+	msgType := strings.TrimSpace(c.PostForm("type"))
+	mimeType := header.Header.Get("Content-Type")
+	if msgType == "" {
+		msgType = messageTypeFromMime(mimeType)
+	}
+	if msgType != "image" && msgType != "audio" && msgType != "video" && msgType != "document" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported media type"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	client, exists := h.manager.GetClient(instanceID)
+	if !exists || !client.IsConnected() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Instance not connected"})
+		return
+	}
+
+	chat, err := h.getChatByID(ctx, chatID, instanceID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Chat not found"})
+		return
+	}
+
+	caption := strings.TrimSpace(c.PostForm("content"))
+	messageID, mediaURL, mediaMimetype, mediaFilename, err := client.SendMediaMessage(ctx, chat.ChatJID, msgType, data, mimeType, header.Filename, caption)
+	if err != nil {
+		h.logger.Error("Failed to send media message", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	waClient := client.GetWAClient()
+	senderPhone := ""
+	if waClient.Store.ID != nil {
+		senderPhone = phone.ExtractFromJID(waClient.Store.ID.String())
+	}
+
+	msg := &models.Message{
+		InstanceID:    instanceID,
+		ChatID:        chatID,
+		MessageID:     messageID,
+		SenderPhone:   senderPhone,
+		SenderName:    "Me",
+		IsFromMe:      true,
+		IsGroup:       chat.IsGroup,
+		Type:          models.MessageType(msgType),
+		Content:       caption,
+		MediaURL:      mediaURL,
+		MediaMimetype: mediaMimetype,
+		MediaFilename: mediaFilename,
+		Timestamp:     time.Now(),
+	}
+
+	if err := h.messageRepo.Create(ctx, msg); err != nil {
+		h.logger.Error("Failed to save sent media message", zap.Error(err))
+	}
+
+	now := time.Now()
+	chat.LastMessage = fmt.Sprintf("[%s]", msgType)
+	if caption != "" {
+		chat.LastMessage = caption
+	}
+	chat.LastMessageAt = &now
+	h.chatRepo.Upsert(ctx, chat)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Media sent",
+		"data":    msg,
+	})
+}
+
+func messageTypeFromMime(mimeType string) string {
+	switch {
+	case strings.HasPrefix(mimeType, "image/"):
+		return "image"
+	case strings.HasPrefix(mimeType, "audio/"):
+		return "audio"
+	case strings.HasPrefix(mimeType, "video/"):
+		return "video"
+	default:
+		return "document"
+	}
 }
 
 func (h *MessageHandler) getChatByID(ctx context.Context, chatID, instanceID uuid.UUID) (*models.Chat, error) {

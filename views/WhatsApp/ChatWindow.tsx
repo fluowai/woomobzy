@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { type Chat, type Message } from './hooks/api';
+import { formatPhoneDisplay, type Chat, type Message } from './hooks/api';
 import MessageBubble from './MessageBubble';
 import { Send, Paperclip, Smile, ArrowDown, Users, Phone, MoreVertical, Loader2 } from 'lucide-react';
 
 interface ChatWindowProps {
   chat: Chat;
   messages: Message[];
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, file?: File) => void;
   loading: boolean;
   instanceName: string;
 }
@@ -22,6 +22,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [showScrollDown, setShowScrollDown] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -42,8 +44,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     e.preventDefault();
     const text = inputText.trim();
     if (!text) return;
-    onSendMessage(text);
+    onSendMessage(text, pendingFile || undefined);
     setInputText('');
+    setPendingFile(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -75,7 +78,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <header className="wa-chat-header">
         <div className="wa-chat-header-info">
           <div className="wa-chat-header-avatar">
-            {chat.is_group ? (
+            {chat.avatar_url ? (
+              <img src={chat.avatar_url} alt="" className="wa-avatar-img" />
+            ) : chat.is_group ? (
               <Users size={20} />
             ) : (
               <span>{chat.name?.charAt(0)?.toUpperCase() || '?'}</span>
@@ -84,7 +89,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div>
             <h2 className="wa-chat-header-name">{chat.name}</h2>
             <span className="wa-chat-header-sub">
-              {chat.is_group ? 'Grupo' : chat.chat_jid?.split('@')[0] || ''}
+              {chat.is_group ? 'Grupo' : formatPhoneDisplay(chat.chat_jid)}
               {instanceName && ` · ${instanceName}`}
             </span>
           </div>
@@ -142,13 +147,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <button type="button" className="wa-icon-btn" title="Emoji">
           <Smile size={22} />
         </button>
-        <button type="button" className="wa-icon-btn" title="Anexar">
+        <button type="button" className="wa-icon-btn" title="Anexar" onClick={() => fileInputRef.current?.click()}>
           <Paperclip size={22} />
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,audio/*,video/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx"
+          onChange={(event) => setPendingFile(event.target.files?.[0] || null)}
+        />
         <div className="wa-input-wrapper">
+          {pendingFile && (
+            <div className="wa-file-chip">
+              <span>{pendingFile.name}</span>
+              <button type="button" onClick={() => setPendingFile(null)}>Remover</button>
+            </div>
+          )}
           <textarea
             className="wa-message-input"
-            placeholder="Digite uma mensagem..."
+            placeholder={pendingFile ? 'Legenda opcional...' : 'Digite uma mensagem...'}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -158,8 +176,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
         <button
           type="submit"
-          className={`wa-send-btn ${inputText.trim() ? 'active' : ''}`}
-          disabled={!inputText.trim()}
+          className={`wa-send-btn ${inputText.trim() || pendingFile ? 'active' : ''}`}
+          disabled={!inputText.trim() && !pendingFile}
           title="Enviar"
         >
           <Send size={20} />

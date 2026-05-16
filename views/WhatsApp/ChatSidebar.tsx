@@ -1,6 +1,6 @@
 import React from 'react';
-import { type Chat } from './hooks/api';
-import { Search, Users, User, MessageCircle } from 'lucide-react';
+import { formatPhoneDisplay, type Chat } from './hooks/api';
+import { Search, Users, MessageCircle } from 'lucide-react';
 
 interface ChatSidebarProps {
   chats: Chat[];
@@ -17,6 +17,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
+  const [activeType, setActiveType] = React.useState<'direct' | 'group'>('direct');
+  const visibleChats = chats.filter((chat) => (activeType === 'group' ? chat.is_group : !chat.is_group));
+
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -75,16 +78,33 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </div>
       </div>
 
+      <div className="wa-chat-tabs">
+        <button
+          type="button"
+          className={`wa-chat-tab ${activeType === 'direct' ? 'active' : ''}`}
+          onClick={() => setActiveType('direct')}
+        >
+          Conversas
+        </button>
+        <button
+          type="button"
+          className={`wa-chat-tab ${activeType === 'group' ? 'active' : ''}`}
+          onClick={() => setActiveType('group')}
+        >
+          Grupos
+        </button>
+      </div>
+
       {/* Chat List */}
       <div className="wa-chat-list" id="chat-list">
-        {chats.length === 0 ? (
+        {visibleChats.length === 0 ? (
           <div className="wa-no-chats">
             <MessageCircle size={32} strokeWidth={1} />
-            <p>Nenhuma conversa</p>
+            <p>Nenhuma {activeType === 'group' ? 'conversa em grupo' : 'conversa individual'}</p>
             <span>As mensagens aparecerão aqui</span>
           </div>
         ) : (
-          chats.map((chat) => (
+          visibleChats.map((chat) => (
             <div
               key={chat.id}
               className={`wa-chat-item ${selectedChat?.id === chat.id ? 'active' : ''}`}
@@ -96,7 +116,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 className="wa-avatar"
                 style={{ backgroundColor: getAvatarColor(chat.name) }}
               >
-                {chat.is_group ? (
+                {chat.avatar_url ? (
+                  <img src={chat.avatar_url} alt="" className="wa-avatar-img" />
+                ) : chat.is_group ? (
                   <Users size={18} color="white" />
                 ) : (
                   <span className="wa-avatar-text">{getInitials(chat.name)}</span>
@@ -108,12 +130,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 <div className="wa-chat-top">
                   <span className="wa-chat-name">
                     {chat.is_group && <Users size={12} className="wa-group-icon" />}
-                    {chat.name || 'Desconhecido'}
+                    {chat.name || formatPhoneDisplay(chat.chat_jid) || 'Desconhecido'}
                   </span>
                   <span className="wa-chat-time">{formatTime(chat.last_message_at)}</span>
                 </div>
                 <div className="wa-chat-bottom">
-                  <p className="wa-chat-preview">{chat.last_message || '...'}</p>
+                  <p className="wa-chat-preview">{chat.last_message || formatPhoneDisplay(chat.chat_jid) || '...'}</p>
                   {chat.unread_count > 0 && (
                     <span className="wa-unread-badge">{chat.unread_count > 99 ? '99+' : chat.unread_count}</span>
                   )}

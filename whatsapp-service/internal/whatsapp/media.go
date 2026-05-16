@@ -171,3 +171,107 @@ func (c *Client) SendTextMessage(ctx context.Context, chatJID string, text strin
 
 	return nil
 }
+
+// SendMediaMessage uploads and sends image, audio, video or document media via WhatsMeow.
+func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType string, data []byte, mimeType, fileName, caption string) (messageID, mediaURL, mediaMimetype, mediaFilename string, err error) {
+	jid, err := parseJID(chatJID)
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("invalid JID: %w", err)
+	}
+
+	appInfo, err := mediaTypeForMessage(msgType)
+	if err != nil {
+		return "", "", "", "", err
+	}
+
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+	if fileName == "" {
+		fileName = fmt.Sprintf("%s_%d%s", msgType, time.Now().UnixMilli(), extensionFromMime(mimeType))
+	}
+
+	upload, err := c.waClient.Upload(ctx, data, appInfo)
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("failed to upload media to WhatsApp: %w", err)
+	}
+
+	outgoing := &waE2E.Message{}
+	switch msgType {
+	case "image":
+		outgoing.ImageMessage = &waE2E.ImageMessage{
+			Caption:       proto.String(caption),
+			Mimetype:      proto.String(mimeType),
+			URL:           proto.String(upload.URL),
+			DirectPath:    proto.String(upload.DirectPath),
+			MediaKey:      upload.MediaKey,
+			FileEncSHA256: upload.FileEncSHA256,
+			FileSHA256:    upload.FileSHA256,
+			FileLength:    proto.Uint64(upload.FileLength),
+		}
+	case "audio":
+		outgoing.AudioMessage = &waE2E.AudioMessage{
+			Mimetype:      proto.String(mimeType),
+			URL:           proto.String(upload.URL),
+			DirectPath:    proto.String(upload.DirectPath),
+			MediaKey:      upload.MediaKey,
+			FileEncSHA256: upload.FileEncSHA256,
+			FileSHA256:    upload.FileSHA256,
+			FileLength:    proto.Uint64(upload.FileLength),
+		}
+	case "video":
+		outgoing.VideoMessage = &waE2E.VideoMessage{
+			Caption:       proto.String(caption),
+			Mimetype:      proto.String(mimeType),
+			URL:           proto.String(upload.URL),
+			DirectPath:    proto.String(upload.DirectPath),
+			MediaKey:      upload.MediaKey,
+			FileEncSHA256: upload.FileEncSHA256,
+			FileSHA256:    upload.FileSHA256,
+			FileLength:    proto.Uint64(upload.FileLength),
+		}
+	case "document":
+		outgoing.DocumentMessage = &waE2E.DocumentMessage{
+			Title:         proto.String(fileName),
+			FileName:      proto.String(fileName),
+			Mimetype:      proto.String(mimeType),
+			Caption:       proto.String(caption),
+			URL:           proto.String(upload.URL),
+			DirectPath:    proto.String(upload.DirectPath),
+			MediaKey:      upload.MediaKey,
+			FileEncSHA256: upload.FileEncSHA256,
+			FileSHA256:    upload.FileSHA256,
+			FileLength:    proto.Uint64(upload.FileLength),
+		}
+	default:
+		return "", "", "", "", fmt.Errorf("unsupported media type: %s", msgType)
+	}
+
+	resp, err := c.waClient.SendMessage(ctx, jid, outgoing, whatsmeow.SendRequestExtra{})
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("failed to send media message: %w", err)
+	}
+
+	storagePath := fmt.Sprintf("%s/%s/sent_%s", c.instanceID.String(), time.Now().Format("2006-01-02"), fileName)
+	publicURL, uploadErr := c.uploadToSupabase(ctx, storagePath, data, mimeType)
+	if uploadErr != nil {
+		c.logger.Warn("Media sent but local preview upload failed", zap.Error(uploadErr))
+	}
+
+	return string(resp.ID), publicURL, mimeType, fileName, nil
+}
+
+func mediaTypeForMessage(msgType string) (whatsmeow.MediaType, error) {
+	switch msgType {
+	case "image":
+		return whatsmeow.MediaImage, nil
+	case "audio":
+		return whatsmeow.MediaAudio, nil
+	case "video":
+		return whatsmeow.MediaVideo, nil
+	case "document":
+		return whatsmeow.MediaDocument, nil
+	default:
+		return "", fmt.Errorf("unsupported media type: %s", msgType)
+	}
+}

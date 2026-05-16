@@ -43,17 +43,17 @@ type Contact struct {
 
 // Chat represents a conversation (individual or group)
 type Chat struct {
-	ID            uuid.UUID `json:"id" db:"id"`
-	InstanceID    uuid.UUID `json:"instance_id" db:"instance_id"`
-	ChatJID       string    `json:"chat_jid" db:"chat_jid"`
-	Name          string    `json:"name" db:"name"`
-	IsGroup       bool      `json:"is_group" db:"is_group"`
-	LastMessage   string    `json:"last_message,omitempty" db:"last_message"`
+	ID            uuid.UUID  `json:"id" db:"id"`
+	InstanceID    uuid.UUID  `json:"instance_id" db:"instance_id"`
+	ChatJID       string     `json:"chat_jid" db:"chat_jid"`
+	Name          string     `json:"name" db:"name"`
+	IsGroup       bool       `json:"is_group" db:"is_group"`
+	LastMessage   string     `json:"last_message,omitempty" db:"last_message"`
 	LastMessageAt *time.Time `json:"last_message_at,omitempty" db:"last_message_at"`
-	UnreadCount   int       `json:"unread_count" db:"unread_count"`
-	AvatarURL     string    `json:"avatar_url,omitempty" db:"avatar_url"`
-	CreatedAt     time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+	UnreadCount   int        `json:"unread_count" db:"unread_count"`
+	AvatarURL     string     `json:"avatar_url,omitempty" db:"avatar_url"`
+	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // MessageType represents the type of message content
@@ -79,6 +79,7 @@ type Message struct {
 	MessageID       string      `json:"message_id" db:"message_id"`
 	SenderPhone     string      `json:"sender_phone" db:"sender_phone"`
 	SenderName      string      `json:"sender_name" db:"sender_name"`
+	SenderAvatarURL string      `json:"sender_avatar_url,omitempty"`
 	IsFromMe        bool        `json:"is_from_me" db:"is_from_me"`
 	IsGroup         bool        `json:"is_group" db:"is_group"`
 	Type            MessageType `json:"type" db:"type"`
@@ -129,6 +130,7 @@ type ParticipantInfo struct {
 	PushName    string `json:"push_name"`
 	Phone       string `json:"phone"`
 	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url,omitempty"`
 }
 
 // QRCodeEvent is emitted when a QR code is generated

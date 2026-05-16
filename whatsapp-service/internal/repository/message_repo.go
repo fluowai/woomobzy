@@ -62,16 +62,19 @@ func (r *MessageRepo) ListByChat(ctx context.Context, chatID uuid.UUID, limit, o
 	}
 
 	query := `
-		SELECT id, instance_id, chat_id, message_id, sender_phone, sender_name,
-		       is_from_me, is_group, type, COALESCE(content, '') as content,
-		       COALESCE(media_url, '') as media_url,
-		       COALESCE(media_mimetype, '') as media_mimetype,
-		       COALESCE(media_filename, '') as media_filename,
-		       COALESCE(quoted_message_id, '') as quoted_message_id,
-		       timestamp, created_at
-		FROM whatsapp_messages
-		WHERE chat_id = $1
-		ORDER BY timestamp DESC
+		SELECT m.id, m.instance_id, m.chat_id, m.message_id, m.sender_phone, m.sender_name,
+		       m.is_from_me, m.is_group, m.type, COALESCE(m.content, '') as content,
+		       COALESCE(m.media_url, '') as media_url,
+		       COALESCE(m.media_mimetype, '') as media_mimetype,
+		       COALESCE(m.media_filename, '') as media_filename,
+		       COALESCE(m.quoted_message_id, '') as quoted_message_id,
+		       m.timestamp, m.created_at,
+		       COALESCE(c.avatar_url, '') as sender_avatar_url
+		FROM whatsapp_messages m
+		LEFT JOIN whatsapp_contacts c
+		  ON c.instance_id = m.instance_id AND c.phone = m.sender_phone
+		WHERE m.chat_id = $1
+		ORDER BY m.timestamp DESC
 		LIMIT $2 OFFSET $3`
 
 	rows, err := r.db.Query(ctx, query, chatID, limit, offset)
@@ -88,6 +91,7 @@ func (r *MessageRepo) ListByChat(ctx context.Context, chatID uuid.UUID, limit, o
 			&msg.SenderPhone, &msg.SenderName, &msg.IsFromMe, &msg.IsGroup,
 			&msg.Type, &msg.Content, &msg.MediaURL, &msg.MediaMimetype,
 			&msg.MediaFilename, &msg.QuotedMessageID, &msg.Timestamp, &msg.CreatedAt,
+			&msg.SenderAvatarURL,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan message: %w", err)
 		}

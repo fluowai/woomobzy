@@ -70,12 +70,13 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
   };
 
   const menuItems = [
-    { icon: MessageSquare, label: 'Atendimento (WhatsApp)', path: '/urban/whatsapp' },
+    { icon: MessageSquare, label: 'Mensagens', path: '/urban/whatsapp' },
     { icon: LayoutDashboard, label: 'Dashboard 360°', path: '/urban' },
     { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
     { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
     { icon: MapIcon, label: 'Loteamentos (Loteadora)', path: '/urban/loteamentos' },
-    { icon: LayoutGrid, label: 'CRM / Kanban', path: '/urban/crm' },
+    { icon: Users, label: 'CRM', path: '/urban/crm' },
+    { icon: LayoutGrid, label: 'Kanban', path: '/urban/kanban' },
     { icon: Calculator, label: 'Simulador Financeiro', path: '/urban/simulador' },
     { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
     { icon: DollarSign, label: 'Financeiro & Caixa', path: '/urban/cobranca' },
@@ -120,16 +121,11 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
               className="h-10 md:h-12 w-auto object-contain max-w-[160px] transition-transform group-hover:scale-105"
             />
           ) : (
-            <>
-                  <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
-                    <Home className="text-white" size={22} />
-                  </div>
-                  <div className="flex flex-col">
-                    <h1 className="text-xl font-extrabold text-slate-900 tracking-tighter leading-none">
-                      Imobzy<span className="text-blue-600">Urbano</span>
-                    </h1>
-                  </div>
-            </>
+            <img
+              src="/logo-imobzy-360.svg"
+              alt="IMOBZY 360"
+              className="h-12 w-auto object-contain max-w-[180px] transition-transform group-hover:scale-105"
+            />
           )}
         </Link>
       </div>
@@ -144,8 +140,8 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
             className={({ isActive }) =>
               `flex items-center justify-between px-5 py-3.5 rounded-xl transition-all duration-300 group ${
                 isActive
-                  ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30'
-                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600'
+                  ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30'
+                  : 'text-slate-500 hover:bg-primary/10 hover:text-primary'
               }`
             }
           >
@@ -154,11 +150,11 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
                 <div className="flex items-center gap-4">
                   <item.icon
                     size={22}
-                    className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}
+                    className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'}
                   />
                   <span className="text-sm font-bold tracking-tight">{item.label}</span>
                 </div>
-                {item.path !== '/urban' && <ChevronRight size={14} className={isActive ? 'text-white/80' : 'text-slate-300 group-hover:text-blue-600'} />}
+                {item.path !== '/urban' && <ChevronRight size={14} className={isActive ? 'text-white/80' : 'text-slate-300 group-hover:text-primary'} />}
               </>
             )}
           </NavLink>
@@ -167,10 +163,10 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
         {/* Support & Gear items as seen in image */}
         <button
           onClick={() => setIsSupportOpen(true)}
-          className="flex items-center justify-between w-full px-5 py-3.5 rounded-xl transition-all duration-300 group text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+          className="flex items-center justify-between w-full px-5 py-3.5 rounded-xl transition-all duration-300 group text-slate-500 hover:bg-primary/10 hover:text-primary"
         >
           <div className="flex items-center gap-4">
-            <Headset size={22} className="text-slate-400 group-hover:text-blue-600" />
+            <Headset size={22} className="text-slate-400 group-hover:text-primary" />
             <span className="text-sm font-bold tracking-tight">Suporte</span>
           </div>
         </button>
@@ -178,7 +174,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
       <div className="p-4 border-t border-slate-100 bg-slate-50/50">
         <div className="flex items-center gap-3 mb-4 p-2 rounded-xl border border-slate-200 bg-white">
-          <div className="w-10 h-10 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold border border-blue-500/20 shadow-inner">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shadow-inner">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
@@ -186,7 +182,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
               {profile?.full_name || profile?.name || 'Carregando...'}
             </p>
             {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-600/10 text-blue-600 text-[9px] font-bold uppercase tracking-widest rounded">
+              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest rounded">
                 SUPER ADMIN
               </span>
             ) : (
@@ -247,8 +243,8 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
 
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Painel Especializado</span>
-              <h2 className="text-lg font-black text-slate-900 leading-none">Imobzy Urbano</h2>
+              <span className="text-xs font-bold text-primary uppercase tracking-widest">Imobiliaria Tradicional</span>
+              <h2 className="text-lg font-black text-slate-900 leading-none">IMOBZY 360</h2>
             </div>
           </div>
 
@@ -265,7 +261,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            <Link to="/urban/properties/new" className="btn bg-blue-600 hover:bg-blue-700 text-white h-11 px-6 shadow-lg shadow-blue-900/20">
+            <Link to="/urban/properties/new" className="btn bg-primary hover:bg-primary-hover text-white h-11 px-6 shadow-lg shadow-primary/20">
               <PlusCircle size={18} />
               <span className="hidden sm:inline">Novo Imóvel</span>
             </Link>

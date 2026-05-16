@@ -1,3 +1,3 @@
 console.log(
-  '[RuralAnalysisWorker] Worker Redis desativado. As analises rurais agora rodam no processo da API.'
+  '[RuralAnalysisWorker] Worker externo desativado. As analises rurais agora rodam no processo da API.'
 );

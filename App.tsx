@@ -50,6 +50,7 @@ const SystemSettings = lazy(() => import('./views/SystemSettings'));
 const DataRoom = lazy(() => import('./views/DataRoom'));
 const LegalContracts = lazy(() => import('./views/LegalContracts'));
 const BIRural = lazy(() => import('./views/BIRural'));
+const CRMLeads = lazy(() => import('./views/CRM/CRMLeads'));
 const KanbanBoard = lazy(() => import('./views/CRM/KanbanBoard'));
 const WaitlistLeads = lazy(() => import('./views/admin/WaitlistLeads'));
 const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
@@ -327,7 +328,8 @@ const AppContent: React.FC = () => {
             <Route path="due-diligence" element={<DueDiligence />} />
             <Route path="dossie" element={<DossieInteligente />} />
             <Route path="dataroom" element={<DataRoom />} />
-            <Route path="crm" element={<KanbanBoard />} />
+            <Route path="crm" element={<CRMLeads />} />
+            <Route path="kanban" element={<KanbanBoard />} />
             <Route path="matchmaking" element={<Matchmaking360 />} />
             <Route path="reports" element={<BIRural />} />
             <Route
@@ -372,7 +374,8 @@ const AppContent: React.FC = () => {
             <Route path="cobranca" element={<Cobranca />} />
             <Route path="simulador" element={<Simulator360 />} />
             <Route path="exportador" element={<ExportadorPortais />} />
-            <Route path="crm" element={<KanbanBoard />} />
+            <Route path="crm" element={<CRMLeads />} />
+            <Route path="kanban" element={<KanbanBoard />} />
             <Route path="reports" element={<BIRural />} />
             <Route
               path="portal-proprietario"

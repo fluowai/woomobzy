@@ -50,9 +50,10 @@ const RuralLayout: React.FC = () => {
   };
 
   const menuItems = [
-    { icon: MessageSquare, label: 'Atendimento', path: '/rural/whatsapp' },
+    { icon: MessageSquare, label: 'Mensagens', path: '/rural/whatsapp' },
     { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
-    { icon: Users, label: 'Kanban / CRM', path: '/rural/crm' },
+    { icon: Users, label: 'CRM', path: '/rural/crm' },
+    { icon: Briefcase, label: 'Kanban', path: '/rural/kanban' },
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Mapas & Georreferenciamento', path: '/rural/maps' },
     { icon: NavIcon, label: 'Localizar CAR (Auto)', path: '/rural/localizar-car' },
@@ -92,14 +93,11 @@ const RuralLayout: React.FC = () => {
           className="flex items-center gap-3 group"
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
-            <Home className="text-white" size={22} />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tighter leading-none">
-              Imobzy<span className="text-emerald-600">Rural</span>
-            </h1>
-          </div>
+          <img
+            src="/logo-imobzy-360.svg"
+            alt="IMOBZY 360"
+            className="h-12 w-auto object-contain max-w-[180px] transition-transform group-hover:scale-105"
+          />
         </Link>
       </div>
 
@@ -113,8 +111,8 @@ const RuralLayout: React.FC = () => {
             className={({ isActive }) =>
               `flex items-center justify-between px-5 py-3.5 rounded-xl transition-all duration-300 group ${
                 isActive
-                  ? 'bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/30'
-                  : 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-600'
+                  ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30'
+                  : 'text-slate-500 hover:bg-primary/10 hover:text-primary'
               }`
             }
           >
@@ -123,14 +121,14 @@ const RuralLayout: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <item.icon
                     size={22}
-                    className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-emerald-600'}
+                    className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'}
                   />
                   <span className="text-sm font-bold tracking-tight">{item.label}</span>
                 </div>
                 {item.path !== '/rural' && (
                   <ChevronRight
                     size={14}
-                    className={isActive ? 'text-white/80' : 'text-slate-300 group-hover:text-emerald-600'}
+                    className={isActive ? 'text-white/80' : 'text-slate-300 group-hover:text-primary'}
                   />
                 )}
               </>
@@ -140,10 +138,10 @@ const RuralLayout: React.FC = () => {
 
         <button
           onClick={() => setIsSupportOpen(true)}
-          className="flex items-center justify-between w-full px-5 py-3.5 rounded-xl transition-all duration-300 group text-slate-500 hover:bg-emerald-50 hover:text-emerald-600"
+          className="flex items-center justify-between w-full px-5 py-3.5 rounded-xl transition-all duration-300 group text-slate-500 hover:bg-primary/10 hover:text-primary"
         >
           <div className="flex items-center gap-4">
-            <Headset size={22} className="text-slate-400 group-hover:text-emerald-600" />
+            <Headset size={22} className="text-slate-400 group-hover:text-primary" />
             <span className="text-sm font-bold tracking-tight">Suporte</span>
           </div>
         </button>
@@ -151,7 +149,7 @@ const RuralLayout: React.FC = () => {
 
       <div className="p-4 border-t border-slate-100 bg-slate-50/50">
         <div className="flex items-center gap-3 mb-4 p-2 rounded-xl border border-slate-200 bg-white">
-          <div className="w-10 h-10 rounded-full bg-emerald-600/10 flex items-center justify-center text-emerald-600 font-bold border border-emerald-500/20 shadow-inner">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shadow-inner">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'R'}
           </div>
           <div className="flex-1 min-w-0">
@@ -159,7 +157,7 @@ const RuralLayout: React.FC = () => {
               {profile?.full_name || profile?.name || 'Carregando...'}
             </p>
             {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-600/10 text-emerald-600 text-[9px] font-bold uppercase tracking-widest rounded">
+              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest rounded">
                 SUPER ADMIN
               </span>
             ) : (
@@ -185,7 +183,7 @@ const RuralLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-[#07130a] overflow-hidden selection:bg-emerald-500/20 selection:text-emerald-400">
+    <div className="flex h-screen bg-[#052e1a] overflow-hidden selection:bg-primary/20 selection:text-primary">
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -213,21 +211,21 @@ const RuralLayout: React.FC = () => {
         <header className="h-20 bg-bg-card/80 backdrop-blur-xl border-b border-border-subtle flex items-center justify-between px-8 z-10 gap-6 sticky top-0">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="lg:hidden p-2.5 text-text-secondary hover:text-emerald-500 bg-bg-hover rounded-xl transition-colors"
+              className="lg:hidden p-2.5 text-text-secondary hover:text-primary bg-bg-hover rounded-xl transition-colors"
           >
             <Menu size={22} />
           </button>
 
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Painel Especializado</span>
-              <h2 className="text-lg font-black text-slate-900 leading-none">Imobzy Rural</h2>
+              <span className="text-xs font-bold text-primary uppercase tracking-widest">Imobiliaria Rural</span>
+              <h2 className="text-lg font-black text-slate-900 leading-none">IMOBZY 360</h2>
             </div>
           </div>
 
           <div className="relative flex-1 max-w-lg hidden lg:block group">
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-emerald-500 transition-colors"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"
               size={18}
             />
             <input
@@ -242,7 +240,7 @@ const RuralLayout: React.FC = () => {
           <div className="flex items-center gap-6">
             <Link
               to="/rural/properties/new"
-              className="btn bg-emerald-600 hover:bg-emerald-700 text-white h-11 px-6 shadow-lg shadow-emerald-900/20"
+              className="btn bg-primary hover:bg-primary-hover text-white h-11 px-6 shadow-lg shadow-primary/20"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">

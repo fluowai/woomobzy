@@ -240,7 +240,7 @@ const WhatsAppDashboard: React.FC = () => {
       <header className="wa-header">
         <div className="wa-header-left">
           <MessageSquare size={20} className="text-[#25D366]" />
-          <h1 className="wa-header-title">WhatsApp</h1>
+          <h1 className="wa-header-title">Mensagens</h1>
           <span className={`wa-status-dot ${isConnected ? 'online' : 'offline'}`} />
           <span className="wa-status-text">
             {isConnected ? 'Realtime' : 'Offline'}
@@ -306,7 +306,7 @@ const WhatsAppDashboard: React.FC = () => {
             <div className="wa-empty-icon">
               <MessageSquare size={64} strokeWidth={1} />
             </div>
-            <h2>WhatsApp Atendimento</h2>
+            <h2>Mensagens</h2>
             <p>Selecione uma conversa para começar</p>
             {selectedInstance?.status !== 'connected' && (
               <div className="wa-empty-warning">

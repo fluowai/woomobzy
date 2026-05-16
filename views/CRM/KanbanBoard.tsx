@@ -547,7 +547,7 @@ const LeadDetailsModal: React.FC<{
                         </div>
                         
                         <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><User size={18} /></div>
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><User size={18} /></div>
                           <div className="flex flex-col">
                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">E-mail Corporativo</span>
                              <span className="font-bold text-slate-700">{lead.email || 'Não informado'}</span>

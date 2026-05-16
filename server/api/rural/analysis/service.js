@@ -22,7 +22,7 @@ export class AnalysisService {
     // 3. Create Analysis Record (Pending)
     const analysis = await RuralRepository.createAnalysis(area.id);
 
-    // 4. Run Heavy Spatial Processing without Redis/BullMQ
+    // 4. Run Heavy Spatial Processing in the API process
     runRuralAnalysisInBackground({
       analysisId: analysis.id,
       areaId: area.id,

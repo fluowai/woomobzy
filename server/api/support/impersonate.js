@@ -20,7 +20,7 @@ if (!supabaseServiceKey || !jwtSecret) {
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-// Store OTC codes in memory for simplicity (Production: Redis)
+// Store OTC codes in memory for simplicity.
 const otcStore = new Map(); // code -> { actorId, targetUserId, tenantId, expiresAt }
 
 // 1. INICIAR SESSÃO (Gera Código de Troca)

@@ -7,13 +7,13 @@
   ============================================ */
 
   /* Cor Principal da Marca (Sincronizada com constants.tsx) */
-  --color-primary: #ff6b00; /* vibrant orange */
-  --color-primary-hover: #e66000;
-  --color-primary-light: #ff8533;
+  --color-primary: #16a34a; /* IMOBZY 360 green */
+  --color-primary-hover: #15803d;
+  --color-primary-light: #22c55e;
 
   /* Cor de Destaque / Accent (Sincronizada com constants.tsx) */
-  --color-accent: #1e293b; /* slate 800 */
-  --color-accent-hover: #0f172a;
+  --color-accent: #052e1a; /* deep green */
+  --color-accent-hover: #021a0f;
 
   /* Alias para compatibilidade com componentes legados */
   --color-brand: var(--color-primary);
@@ -34,9 +34,9 @@
   --color-border-subtle: #f1f5f9;
 
   /* Transparências da Primária (Sincronizadas com o Orange FF6B00) */
-  --color-primary-alpha-10: rgba(255, 107, 0, 0.1);
-  --color-primary-alpha-15: rgba(255, 107, 0, 0.15);
-  --color-primary-alpha-20: rgba(255, 107, 0, 0.2);
+  --color-primary-alpha-10: rgba(22, 163, 74, 0.1);
+  --color-primary-alpha-15: rgba(22, 163, 74, 0.15);
+  --color-primary-alpha-20: rgba(22, 163, 74, 0.2);
 
   /* Sombras (Refinadas para serem mais sutis e modernas) */
   --shadow-premium: 0 10px 40px -12px rgba(0, 0, 0, 0.15);

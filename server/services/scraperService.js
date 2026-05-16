@@ -1,10 +1,5 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const BASE_URL = 'https://www.fazendasbrasil.com.br';
 

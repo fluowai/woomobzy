@@ -3,19 +3,19 @@ import { RuralRepository } from './repository.js';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import PDFDocument from 'pdfkit';
+import { assertRedisEnabled } from './redis.js';
 
 let analysisQueue;
 
 function getAnalysisQueue() {
-  if (!process.env.REDIS_URL) {
-    throw new Error('REDIS_URL nao configurada. Configure um Redis externo para usar a analise KMZ.');
-  }
+  const redisConfig = assertRedisEnabled();
 
   if (!analysisQueue) {
-    const connection = new IORedis(process.env.REDIS_URL, {
+    const connection = new IORedis(redisConfig.url, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
       family: 0,
+      lazyConnect: true,
     });
     analysisQueue = new Queue('rural-analysis', { connection });
   }

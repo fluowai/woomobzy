@@ -27,6 +27,7 @@ import locacaoRoutes from './api/locacao/index.js';
 import cobrancaRoutes from './api/cobranca/index.js';
 import aiRoutes from './api/ai/index.js';
 import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
+import { getRedisConfig } from './api/rural/analysis/redis.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -185,14 +186,15 @@ setupWhatsAppProxy(app, null, verifyAuth, requireTenant);
 const server = app.listen(PORT, async () => {
   console.log(`✅ IMOBZY Server active on port ${PORT}`);
 
-  if (process.env.REDIS_URL && process.env.START_RURAL_WORKER !== 'false') {
+  const redisConfig = getRedisConfig();
+  if (redisConfig.enabled && process.env.START_RURAL_WORKER !== 'false') {
     import('./api/rural/analysis/worker.js')
       .then(() => console.log('✅ Rural analysis worker active'))
       .catch((error) =>
         console.error('❌ Failed to start rural analysis worker:', error.message)
       );
   } else {
-    console.log('ℹ️ Rural analysis worker disabled: REDIS_URL ausente ou START_RURAL_WORKER=false');
+    console.log(`Rural analysis worker disabled: ${redisConfig.reason || 'START_RURAL_WORKER=false'}`);
   }
 });
 

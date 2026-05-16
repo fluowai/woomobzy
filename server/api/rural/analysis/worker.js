@@ -5,15 +5,15 @@ import { CARConnector } from './integrations/car-connector.js';
 import { RuralRepository } from './repository.js';
 import * as turf from '@turf/turf';
 import { AgroIntelligenceService } from '../../../services/AgroIntelligence.js';
+import { assertRedisEnabled } from './redis.js';
 
-if (!process.env.REDIS_URL) {
-  throw new Error('REDIS_URL nao configurada. Worker de analise rural nao iniciado.');
-}
+const redisConfig = assertRedisEnabled();
 
-const connection = new IORedis(process.env.REDIS_URL, {
+const connection = new IORedis(redisConfig.url, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
   family: 0,
+  lazyConnect: true,
 });
 
 connection.on('error', (error) => {

@@ -23,6 +23,8 @@ services:
         sync: false
       - key: REDIS_URL
         sync: false
+      - key: START_RURAL_WORKER
+        value: false
       - key: GEMINI_API_KEY
         sync: false
       - key: GROQ_API_KEY

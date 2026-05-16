@@ -298,6 +298,18 @@ export interface Lead {
   organic_channel?: string;
   last_contacted_at?: string;
   campaign?: string;
+  matched_properties?: Array<{
+    property_id: string;
+    title: string;
+    price: number;
+    city?: string;
+    state?: string;
+    image?: string;
+    score: number;
+    reasons: string[];
+  }>;
+  match_summary?: string;
+  matched_at?: string;
 }
 
 export interface User {

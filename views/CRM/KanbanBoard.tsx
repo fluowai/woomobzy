@@ -875,7 +875,8 @@ const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
   allProperties,
 }) => {
   // Matching heurístico rápido para a superfície do card
-  const matches = allProperties
+  const storedMatches = lead.matched_properties || [];
+  const heuristicMatches = allProperties
     .filter((p) => {
       // 1. Orçamento (30% de margem)
       const budgetMatch = !lead.budget || p.price <= lead.budget * 1.3;
@@ -883,7 +884,8 @@ const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
       // 2. Tipo/Nicho (Detectar se é rural/fazenda nas notas)
       const notes = (lead.notes || '').toLowerCase();
       const isRuralRequested = notes.includes('rural') || notes.includes('fazenda') || notes.includes('ha') || notes.includes('hectare');
-      const typeMatch = isRuralRequested ? p.property_type === 'Rural' : true;
+      const typeText = `${p.property_type || p.type || ''} ${p.niche || ''}`.toLowerCase();
+      const typeMatch = isRuralRequested ? typeText.includes('rural') || typeText.includes('fazenda') : true;
 
       // 3. Estado (se especificado nas notas)
       const stateMatch = true; // Simplificado por enquanto
@@ -891,7 +893,18 @@ const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
       return budgetMatch && typeMatch;
     })
     .sort((a, b) => b.price - a.price)
-    .slice(0, 2);
+    .slice(0, 2)
+    .map((p) => ({
+      property_id: p.id,
+      title: p.title,
+      price: p.price,
+      city: p.location?.city,
+      state: p.location?.state,
+      score: 60,
+      reasons: ['compativel pelo cadastro'],
+    }));
+
+  const matches = storedMatches.length > 0 ? storedMatches.slice(0, 3) : heuristicMatches;
 
   if (matches.length === 0) return null;
 
@@ -903,7 +916,7 @@ const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
       <div className="space-y-1.5">
         {matches.map((p) => (
           <div
-            key={p.id}
+            key={p.property_id}
             className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors group/match"
           >
             <div className="w-7 h-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm group-hover/match:text-indigo-600 transition-colors">
@@ -919,6 +932,11 @@ const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
                   currency: 'BRL',
                 })}
               </p>
+              {p.score ? (
+                <p className="text-[8px] text-emerald-600 font-black">
+                  {p.score}% match{p.city || p.state ? ` - ${[p.city, p.state].filter(Boolean).join(' / ')}` : ''}
+                </p>
+              ) : null}
             </div>
           </div>
         ))}

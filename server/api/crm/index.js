@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { matchLeadProperties } from '../../services/leadPropertyMatcher.js';
 
 const router = Router();
 
@@ -74,7 +75,14 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
 
     if (error) throw error;
 
-    res.status(201).json({ success: true, lead: data });
+    const matchedLead = await matchLeadProperties({
+      supabase,
+      lead: data,
+      organizationId: req.orgId,
+      createdBy: req.user.id,
+    });
+
+    res.status(201).json({ success: true, lead: matchedLead });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -105,6 +113,16 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
+    const shouldRematch = [
+      'notes',
+      'budget',
+      'aptitude_interest',
+      'preferences',
+      'source',
+      'ad_reference',
+      'campaign',
+    ].some((field) => Object.prototype.hasOwnProperty.call(updates, field));
+
     const { data, error } = await supabase
       .from('leads')
       .update(updates)
@@ -123,7 +141,48 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
       description: 'Dados do lead atualizados'
     });
 
-    res.json({ success: true, lead: data });
+    const matchedLead = shouldRematch
+      ? await matchLeadProperties({
+          supabase,
+          lead: data,
+          organizationId: req.orgId,
+          createdBy: req.user.id,
+        })
+      : data;
+
+    res.json({ success: true, lead: matchedLead });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/crm/leads/:id/match-properties
+ * Recalcula as sugestÃµes de imÃ³veis para o lead.
+ */
+router.post('/leads/:id/match-properties', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: lead, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .single();
+
+    if (error || !lead) {
+      return res.status(404).json({ error: 'Lead nÃ£o encontrado' });
+    }
+
+    const matchedLead = await matchLeadProperties({
+      supabase,
+      lead,
+      organizationId: req.orgId,
+      createdBy: req.user.id,
+    });
+
+    res.json({ success: true, lead: matchedLead });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

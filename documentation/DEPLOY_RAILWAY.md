@@ -26,6 +26,8 @@ SUPABASE_SERVICE_ROLE_KEY=...
 ALLOWED_ORIGINS=https://seu-dominio.com,https://www.seu-dominio.com
 REDIS_URL=${{Redis.REDIS_URL}}
 START_RURAL_WORKER=true
+GROQ_API_KEY=...
+GROQ_MATCH_MODEL=llama-3.1-8b-instant
 ```
 
 Se o servico Redis tiver outro nome no Railway, ajuste a referencia:
@@ -50,6 +52,16 @@ npm run worker:rural
 ```
 
 Isso so vale a pena se a fila KMZ crescer e voce quiser separar web e background.
+
+## Matchmaking de leads
+
+Antes do deploy, rode as migrations no Supabase para criar os campos de sugestoes no Kanban:
+
+```bash
+npm run run-migrations
+```
+
+O matchmaking funciona sem Groq usando ranking local. Com `GROQ_API_KEY`, a IA reordena os melhores candidatos antes de salvar no card do lead.
 
 ## Observacoes
 

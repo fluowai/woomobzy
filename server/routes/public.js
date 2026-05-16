@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { rateLimit } from 'express-rate-limit';
 import { sendContactFormEmail } from '../services/emailService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 
 const router = express.Router();
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
@@ -60,11 +61,21 @@ router.post('/leads', contactLimiter, async (req, res) => {
         organic_channel: req.body.organic_channel,
         campaign: req.body.campaign,
         notes: req.body.notes,
+        budget: req.body.budget,
+        aptitude_interest: req.body.aptitude_interest,
         status: 'Novo'
       }])
       .select().single();
 
     if (leadError) throw leadError;
+
+    matchLeadProperties({
+      supabase,
+      lead: leadData,
+      organizationId: organization_id,
+    }).catch((matchError) => {
+      console.warn('[Public API] Erro ao gerar matches do lead:', matchError.message);
+    });
 
     res.json({ success: true, leadId: leadData.id });
   } catch (error) {

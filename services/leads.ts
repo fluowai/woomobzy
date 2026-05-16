@@ -58,6 +58,13 @@ export const leadService = {
     return mapToModel(data.lead);
   },
 
+  async matchProperties(id: string) {
+    const data = await callApi(`/api/crm/leads/${id}/match-properties`, {
+      method: 'POST',
+    });
+    return mapToModel(data.lead);
+  },
+
   // Get lead activities
   async getActivities(id: string) {
     const data = await callApi(`/api/crm/leads/${id}/activities`);
@@ -119,6 +126,9 @@ const mapToModel = (dbItem: any): Lead => ({
   organic_channel: dbItem.organic_channel,
   campaign: dbItem.campaign,
   last_contacted_at: dbItem.last_contacted_at,
+  matched_properties: Array.isArray(dbItem.matched_properties) ? dbItem.matched_properties : [],
+  match_summary: dbItem.match_summary,
+  matched_at: dbItem.matched_at,
   property: dbItem.properties
     ? {
         title: dbItem.properties.title,

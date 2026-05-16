@@ -17,7 +17,8 @@
     "check-db": "node --env-file=.env scripts/check-db.mjs",
     "setup-db": "node --env-file=.env scripts/setup-db.mjs",
     "run-migrations": "node --env-file=.env scripts/run-migrations.mjs",
-    "migrate": "node --env-file=.env scripts/auto-migrate.mjs"
+    "migrate": "node --env-file=.env scripts/auto-migrate.mjs",
+    "start:prod": "pm2-runtime start ecosystem.config.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -55,6 +56,7 @@
     "p-retry": "^8.0.0",
     "pdfkit": "^0.18.0",
     "pg": "^8.20.0",
+    "pm2": "^5.4.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-leaflet": "^5.0.0",

@@ -657,7 +657,7 @@ const LeadDetailsModal: React.FC<{
                            >
                              {type}
                            </button>
-                        ))}
+                        )}
                      </div>
                      <div className="flex gap-2">
                         <textarea
@@ -714,7 +714,7 @@ const LeadDetailsModal: React.FC<{
                                </div>
                             </div>
                          </div>
-                       ))}
+                       )}
                     </div>
                   ) : (
                     <div className="text-center py-20 bg-slate-50 rounded-[3rem] border border-dashed border-slate-200">
@@ -780,8 +780,8 @@ const LeadDetailsModal: React.FC<{
                                         </div>
                                      </div>
                                   </div>
-                               </div>
-                             ))}
+                                </div>
+                             )}
                           </div>
                        </div>
                     </div>

@@ -17,6 +17,9 @@ type Config struct {
 	SupabaseDBURL      string
 	StorageBucket      string
 	CORSOrigins        []string
+	NodeURL            string
+	InternalToken      string
+	AutomationEnabled  bool
 }
 
 // Load reads configuration from environment variables
@@ -33,6 +36,9 @@ func Load(logger *zap.Logger) *Config {
 		SupabaseServiceKey: getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
 		SupabaseDBURL:      getEnv("SUPABASE_DB_URL", ""),
 		StorageBucket:      getEnv("SUPABASE_STORAGE_BUCKET", "whatsapp-media"),
+		NodeURL:            strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
+		InternalToken:      getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
+		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 	}
 
 	corsStr := getEnv("CORS_ORIGINS", "http://localhost:3006")

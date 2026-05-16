@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.mau.fi/whatsmeow"
+	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -156,12 +157,7 @@ func (c *Client) SendTextMessage(ctx context.Context, chatJID string, text strin
 		return fmt.Errorf("invalid JID: %w", err)
 	}
 
-	msg := &proto.Message{} // This will be constructed properly
-	_ = msg
-	_ = jid
-
-	// Use whatsmeow to send
-	_, err = c.waClient.SendMessage(ctx, jid, &proto.Message{
+	_, err = c.waClient.SendMessage(ctx, jid, &waE2E.Message{
 		Conversation: proto.String(text),
 	}, whatsmeow.SendRequestExtra{})
 	if err != nil {

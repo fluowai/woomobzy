@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
@@ -20,18 +21,21 @@ import (
 
 // Manager manages multiple WhatsApp instances
 type Manager struct {
-	clients      map[uuid.UUID]*Client
-	mu           sync.RWMutex
-	instanceRepo *repository.InstanceRepo
-	chatRepo     *repository.ChatRepo
-	contactRepo  *repository.ContactRepo
-	messageRepo  *repository.MessageRepo
-	hub          *ws.Hub
-	logger       *zap.Logger
-	dbURI        string
-	storageBucket string
-	supabaseURL  string
-	supabaseKey  string
+	clients           map[uuid.UUID]*Client
+	mu                sync.RWMutex
+	instanceRepo      *repository.InstanceRepo
+	chatRepo          *repository.ChatRepo
+	contactRepo       *repository.ContactRepo
+	messageRepo       *repository.MessageRepo
+	hub               *ws.Hub
+	logger            *zap.Logger
+	dbURI             string
+	storageBucket     string
+	supabaseURL       string
+	supabaseKey       string
+	nodeURL           string
+	internalToken     string
+	automationEnabled bool
 }
 
 // NewManager creates a new WhatsApp instance manager
@@ -46,19 +50,25 @@ func NewManager(
 	supabaseURL string,
 	supabaseKey string,
 	storageBucket string,
+	nodeURL string,
+	internalToken string,
+	automationEnabled bool,
 ) *Manager {
 	return &Manager{
-		clients:       make(map[uuid.UUID]*Client),
-		instanceRepo:  instanceRepo,
-		chatRepo:      chatRepo,
-		contactRepo:   contactRepo,
-		messageRepo:   messageRepo,
-		hub:           hub,
-		logger:        logger,
-		dbURI:         dbURI,
-		supabaseURL:   supabaseURL,
-		supabaseKey:   supabaseKey,
-		storageBucket: storageBucket,
+		clients:           make(map[uuid.UUID]*Client),
+		instanceRepo:      instanceRepo,
+		chatRepo:          chatRepo,
+		contactRepo:       contactRepo,
+		messageRepo:       messageRepo,
+		hub:               hub,
+		logger:            logger,
+		dbURI:             dbURI,
+		supabaseURL:       supabaseURL,
+		supabaseKey:       supabaseKey,
+		storageBucket:     storageBucket,
+		nodeURL:           nodeURL,
+		internalToken:     internalToken,
+		automationEnabled: automationEnabled,
 	}
 }
 
@@ -101,6 +111,13 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		return fmt.Errorf("instance not found: %w", err)
 	}
 
+	if err := m.instanceRepo.UpdateStatus(ctx, instanceID, models.StatusConnecting); err != nil {
+		m.logger.Error("Failed to update connecting status",
+			zap.String("id", instanceID.String()),
+			zap.Error(err),
+		)
+	}
+
 	// Create WhatsMeow store for this instance
 	sessionsDir := filepath.Join(".", ".sessions")
 	os.MkdirAll(sessionsDir, 0755)
@@ -123,6 +140,7 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 
 	client := NewClient(
 		instanceID,
+		inst.TenantID,
 		inst.Name,
 		waClient,
 		m.instanceRepo,
@@ -134,6 +152,9 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		m.supabaseURL,
 		m.supabaseKey,
 		m.storageBucket,
+		m.nodeURL,
+		m.internalToken,
+		m.automationEnabled,
 	)
 
 	m.clients[instanceID] = client
@@ -145,6 +166,12 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 				zap.String("id", instanceID.String()),
 				zap.Error(err),
 			)
+			if statusErr := m.instanceRepo.UpdateStatus(context.Background(), instanceID, models.StatusDisconnected); statusErr != nil {
+				m.logger.Error("Failed to update disconnected status",
+					zap.String("id", instanceID.String()),
+					zap.Error(statusErr),
+				)
+			}
 		}
 	}()
 

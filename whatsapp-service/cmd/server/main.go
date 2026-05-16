@@ -64,6 +64,7 @@ func main() {
 		instanceRepo, chatRepo, contactRepo, messageRepo,
 		hub, log, cfg.SupabaseDBURL,
 		cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.StorageBucket,
+		cfg.NodeURL, cfg.InternalToken, cfg.AutomationEnabled,
 	)
 
 	// Auto-reconnect existing sessions

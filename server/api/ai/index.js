@@ -1,6 +1,8 @@
 import express from 'express';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import axios from 'axios';
+import { verifyAuth } from '../../middleware/auth.js';
+import { requireTenant } from '../../middleware/tenant.js';
 
 const router = express.Router();
 
@@ -15,6 +17,106 @@ async function getOrgAIConfig(orgId) {
 
   if (error || !data) return null;
   return data.integrations;
+}
+
+router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from('ai_agents')
+      .select('*')
+      .eq('organization_id', req.orgId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ success: true, agents: data || [] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/agents', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const payload = normalizeAgentPayload(req.body);
+
+    const { data, error } = await supabase
+      .from('ai_agents')
+      .insert({
+        ...payload,
+        organization_id: req.orgId,
+        created_by: req.user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ success: true, agent: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const payload = normalizeAgentPayload(req.body, true);
+
+    const { data, error } = await supabase
+      .from('ai_agents')
+      .update(payload)
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, agent: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { error } = await supabase
+      .from('ai_agents')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function normalizeAgentPayload(body, partial = false) {
+  const payload = {
+    name: body.name,
+    role: body.role,
+    channel: body.channel || 'whatsapp',
+    is_active: body.is_active ?? true,
+    personality: body.personality || '',
+    instructions: body.instructions || '',
+    handoff_rules: body.handoff_rules || {},
+    capabilities: body.capabilities || [],
+    tools: body.tools || [],
+    response_style: body.response_style || 'consultivo',
+    working_hours: body.working_hours || {},
+  };
+
+  Object.keys(payload).forEach((key) => {
+    if (payload[key] === undefined || (partial && payload[key] === null)) delete payload[key];
+  });
+
+  if (!partial && (!payload.name || !payload.role)) {
+    throw new Error('Nome e funcao do agente sao obrigatorios.');
+  }
+
+  return payload;
 }
 
 router.post('/generate-page', async (req, res) => {

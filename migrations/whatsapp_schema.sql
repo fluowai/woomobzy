@@ -6,7 +6,7 @@
 -- Tabela de Instâncias WhatsApp
 CREATE TABLE IF NOT EXISTS whatsapp_instances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    tenant_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'disconnected' CHECK (status IN ('connected', 'disconnected', 'connecting', 'qr_pending')),
     qr_code TEXT,

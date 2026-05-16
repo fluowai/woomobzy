@@ -1,10 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
+import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 
-/**
- * AI Automation Engine
- * Handles message processing (text/audio) to automate Kanban actions.
- */
 export class AIAutomationEngine {
   constructor(apiKey) {
     this.defaultApiKey = apiKey;
@@ -13,136 +10,294 @@ export class AIAutomationEngine {
   }
 
   async _ensureModel(organizationId) {
-    if (this.model && !organizationId) return this.model;
-
-    // Se temos organizationId, tentamos carregar a chave específica do banco
     const supabase = getSupabaseServer();
-    const { data: settings } = await supabase
-      .from('site_settings')
-      .select('integrations')
-      .eq('organization_id', organizationId)
-      .maybeSingle();
+    const { data: settings } = organizationId
+      ? await supabase
+          .from('site_settings')
+          .select('integrations')
+          .eq('organization_id', organizationId)
+          .maybeSingle()
+      : { data: null };
 
     const dbKey = settings?.integrations?.gemini?.apiKey || settings?.integrations?.groq?.apiKey;
     const finalKey = dbKey || this.defaultApiKey;
 
-    if (!finalKey) throw new Error('Nenhuma chave de API de IA configurada para esta organização.');
+    if (!finalKey) throw new Error('Nenhuma chave de IA configurada para esta organizacao.');
 
     const genAI = new GoogleGenerativeAI(finalKey);
     return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
-  /**
-   * Process a message to decide Kanban actions.
-   * @param {Object} params 
-   * @param {string} params.content Text content or transcription
-   * @param {Buffer} params.audioData Optional audio buffer
-   * @param {string} params.mimeType Optional audio mime type
-   * @param {string} params.organizationId Optional for dynamic keys
-   * @returns {Object} result { intent, suggestedStage, summary }
-   */
-  async processIntent({ content, audioData, mimeType, organizationId }) {
+  async processIntent({ content, audioData, mimeType, organizationId, agent }) {
     try {
       const model = await this._ensureModel(organizationId);
       const parts = [];
 
-      
       if (audioData) {
         parts.push({
           inlineData: {
             data: audioData.toString('base64'),
-            mimeType: mimeType || 'audio/ogg; codecs=opus'
-          }
+            mimeType: mimeType || 'audio/ogg; codecs=opus',
+          },
         });
       }
 
-      const prompt = `
-        Analise a seguinte mensagem (texto ou áudio) de um cliente imobiliário.
-        
-        ${content ? `Texto: "${content}"` : 'A mensagem é um áudio.'}
-        
-        Identifique o status atual da conversa e sugira em qual etapa do Funil de Vendas o lead deve ser colocado.
-        
-        Etapas disponíveis:
-        - "Novo": Iniciou o contato agora.
-        - "Em Atendimento": Está conversando, tirando dúvidas.
-        - "Visita": Manifestou interesse claro em visitar o imóvel ou agendou uma visita.
-        - "Proposta": Mencionou valores, formas de pagamento ou interesse em fechar negócio.
-        - "Fechado": Confirmou a compra/aluguel.
-        - "Perdido": Desistiu ou não tem perfil.
-        
-        Responda APENAS um JSON (sem markdown) no seguinte formato:
-        {
-          "transcricao": "se for áudio, coloque a transcrição aqui",
-          "intent": "resumo curto da intenção",
-          "suggestedStage": "NOME_DO_ESTAGIO",
-          "classification": "Alta Prioridade | Interessado | Curioso"
-        }
-      `;
+      parts.push({
+        text: `
+Analise a mensagem de um cliente imobiliario e responda apenas JSON valido.
 
-      parts.push({ text: prompt });
+Mensagem:
+${content || 'Midia sem texto.'}
+
+Agente ativo:
+- Nome: ${agent?.name || 'Agente IMOBZY'}
+- Funcao: ${agent?.role || 'Atendimento imobiliario'}
+- Personalidade: ${agent?.personality || 'consultiva, clara e objetiva'}
+- Estilo: ${agent?.response_style || 'consultivo'}
+- Capacidades: ${(agent?.capabilities || []).join(', ') || 'qualificar lead, criar kanban, etiquetar atendimento'}
+- Ferramentas: ${(agent?.tools || []).join(', ') || 'whatsapp, kanban, follow-up'}
+- Instrucoes: ${agent?.instructions || 'Atenda com foco em qualificar e avancar o cliente para o proximo passo comercial.'}
+
+Etapas do kanban:
+- Novo: primeiro contato ou saudacao.
+- Qualificacao: precisa entender perfil, cidade, orcamento, urgencia, tipo de imovel.
+- Visita: quer visitar, marcou horario ou pediu localizacao para visita.
+- Simulacao: falou de proposta, financiamento, entrada, parcelas, negociacao ou valores.
+- Documentacao: enviou/pediu RG, CPF, comprovante, matricula, contrato, PDF ou documento.
+- Fechado: confirmou compra, aluguel ou aceite.
+- Perdido: desistiu, nao tem perfil ou contato improdutivo.
+
+Formato:
+{
+  "transcricao": "se for audio, transcreva aqui; senao vazio",
+  "intent": "resumo curto",
+  "suggestedStage": "Novo | Qualificacao | Visita | Simulacao | Documentacao | Fechado | Perdido",
+  "classification": "Alta Prioridade | Interessado | Curioso | Documentacao | Financeiro",
+  "tags": ["ate 3 etiquetas curtas"],
+  "leadName": "nome identificado ou vazio",
+  "budget": 0,
+  "followUpAt": "data ISO se houver retorno/agendamento; senao vazio",
+  "reply": "resposta curta, humana e comercial para o agente enviar"
+}`,
+      });
 
       const result = await model.generateContent(parts);
-      const response = await result.response;
-      const text = response.text();
-      
-      try {
-        const cleanText = text.replace(/```json|```/g, '').trim();
-        return JSON.parse(cleanText);
-      } catch (e) {
-        console.warn('[AIAutomation] Erro ao parsear JSON da IA:', text);
-        return null;
-      }
+      const text = result.response.text();
+      return JSON.parse(text.replace(/```json|```/g, '').trim());
     } catch (err) {
-      console.error('[AIAutomation] Erro no processamento Gemini:', err.message);
+      console.error('[AIAutomation] Erro no processamento IA:', err.message);
       return null;
     }
   }
 
-  /**
-   * Orchestrates the automation for an existing lead.
-   */
   async handleLeadUpdate(organizationId, phone, messageParams) {
+    return this.handleWhatsAppMessage({
+      tenant_id: organizationId,
+      message: {
+        sender_phone: phone,
+        sender_name: phone,
+        content: messageParams.content,
+        type: messageParams.audioData ? 'audio' : 'text',
+      },
+      chat: {},
+    });
+  }
+
+  async handleWhatsAppMessage(payload) {
     const supabase = getSupabaseServer();
-    
-    // 1. Localizar o lead
-    const { data: lead, error: findError } = await supabase
+    const organizationId = payload.tenant_id || (await this._resolveOrganizationId(payload.instance_id));
+    const message = payload.message || {};
+    const chat = payload.chat || {};
+
+    if (!organizationId || message.is_from_me || !message.sender_phone) {
+      return { skipped: true, reason: 'missing organization or sender' };
+    }
+
+    const normalizedPhone = String(message.sender_phone).replace(/\D/g, '');
+    const mediaHint = this._buildMediaHint(message);
+    const content = [message.content, mediaHint].filter(Boolean).join('\n');
+    const agent = await this._loadActiveAgent(supabase, organizationId, message.type);
+    const aiResult = await this.processIntent({
+      content,
+      organizationId,
+      mimeType: message.media_mimetype,
+      agent,
+    });
+
+    const stage = this._normalizeStage(aiResult?.suggestedStage, message.type);
+    const name = aiResult?.leadName || message.sender_name || chat.name || normalizedPhone;
+    const tags = this._normalizeTags(aiResult?.tags, message);
+    const noteLine = this._buildNoteLine({ aiResult, message, chat, tags });
+
+    const { data: existingLead } = await supabase
       .from('leads')
-      .select('id, name, status, notes')
+      .select('*')
       .eq('organization_id', organizationId)
-      .eq('phone', phone)
+      .eq('phone', normalizedPhone)
       .maybeSingle();
 
-    if (findError || !lead) return;
+    let lead;
+    if (existingLead) {
+      const updates = {
+        name: existingLead.name || name,
+        status: this._shouldAdvance(existingLead.status, stage) ? stage : existingLead.status,
+        classification: aiResult?.classification || existingLead.classification,
+        notes: [existingLead.notes, noteLine].filter(Boolean).join('\n\n'),
+        chat_jid: chat.chat_jid || existingLead.chat_jid,
+        last_contacted_at: new Date().toISOString(),
+      };
 
-    // 2. Processar a intenção via IA
-    const aiResult = await this.processIntent({ ...messageParams, organizationId });
-    
-    if (!aiResult || !aiResult.suggestedStage) return;
+      if (aiResult?.budget && !existingLead.budget) updates.budget = aiResult.budget;
 
-    // 3. Decidir se deve mover
-    // Só movemos para estágios "mais avançados" ou se houver mudança clara
-    const stages = ['Novo', 'Em Atendimento', 'Visita', 'Proposta', 'Fechado', 'Perdido'];
-    const currentIdx = stages.indexOf(lead.status);
-    const suggestedIdx = stages.indexOf(aiResult.suggestedStage);
-
-    const shouldUpdate = suggestedIdx > currentIdx || aiResult.suggestedStage === 'Perdido';
-
-    if (shouldUpdate) {
-      console.log(`[AIAutomation] Automovendo Lead ${lead.name} (${phone}) para ${aiResult.suggestedStage}`);
-      
-      await supabase
+      const { data, error } = await supabase
         .from('leads')
-        .update({ 
-          status: aiResult.suggestedStage,
-          classification: aiResult.classification || lead.classification,
-          notes: lead.notes + '\n\n' + `[IA AUTOMATION - ${new Date().toLocaleDateString()}]: ` + (aiResult.transcricao || aiResult.intent)
+        .update(updates)
+        .eq('id', existingLead.id)
+        .select()
+        .single();
+      if (error) throw error;
+      lead = data;
+    } else {
+      const { data, error } = await supabase
+        .from('leads')
+        .insert({
+          organization_id: organizationId,
+          name,
+          phone: normalizedPhone,
+          source: 'WhatsApp IA',
+          status: stage,
+          classification: aiResult?.classification || 'Interessado',
+          notes: noteLine,
+          chat_jid: chat.chat_jid,
+          budget: aiResult?.budget || null,
+          last_contacted_at: new Date().toISOString(),
         })
-        .eq('id', lead.id);
-        
-      return { moved: true, to: aiResult.suggestedStage };
+        .select()
+        .single();
+      if (error) throw error;
+      lead = data;
     }
-    
-    return { moved: false };
+
+    await this._insertActivity(supabase, {
+      leadId: lead.id,
+      organizationId,
+      type: 'WhatsApp IA',
+      description: aiResult?.intent || message.content || mediaHint || 'Mensagem recebida no WhatsApp',
+      metadata: { tags, aiResult, agent_id: agent?.id, message_id: message.message_id, media_url: message.media_url },
+    });
+
+    await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags });
+    await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult });
+
+    try {
+      lead = await matchLeadProperties({ supabase, lead, organizationId });
+    } catch (error) {
+      console.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
+    }
+
+    return { lead_id: lead.id, status: lead.status, tags };
+  }
+
+  async _loadActiveAgent(supabase, organizationId, messageType) {
+    const preferredTool = messageType === 'audio' ? 'audio-stt' : messageType === 'document' ? 'pdf-reader' : 'whatsapp';
+    const { data, error } = await supabase
+      .from('ai_agents')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.warn('[AIAutomation] Agentes nao carregados:', error.message);
+      return null;
+    }
+
+    return (data || []).find((agent) => (agent.tools || []).includes(preferredTool)) || data?.[0] || null;
+  }
+
+  async _resolveOrganizationId(instanceId) {
+    if (!instanceId) return null;
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('whatsapp_instances')
+      .select('tenant_id')
+      .eq('id', instanceId)
+      .maybeSingle();
+    return data?.tenant_id || null;
+  }
+
+  _normalizeStage(stage, messageType) {
+    const raw = String(stage || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (messageType === 'document') return 'Documentação';
+    if (raw.includes('document')) return 'Documentação';
+    if (raw.includes('simul') || raw.includes('proposta') || raw.includes('finance')) return 'Simulação';
+    if (raw.includes('visita')) return 'Visita';
+    if (raw.includes('fechado')) return 'Fechado';
+    if (raw.includes('perdido')) return 'Perdido';
+    if (raw.includes('qual') || raw.includes('atendimento')) return 'Qualificação';
+    return 'Novo';
+  }
+
+  _shouldAdvance(current, next) {
+    const stages = ['Novo', 'Qualificação', 'Visita', 'Simulação', 'Documentação', 'Fechado', 'Perdido'];
+    if (next === 'Perdido') return true;
+    return stages.indexOf(next) > stages.indexOf(current);
+  }
+
+  _buildMediaHint(message) {
+    if (!message?.type || message.type === 'text') return '';
+    return {
+      audio: 'Audio recebido para transcricao e qualificacao.',
+      document: `Documento recebido: ${message.media_filename || 'arquivo'}.`,
+      image: 'Imagem recebida no atendimento.',
+      video: 'Video recebido no atendimento.',
+    }[message.type] || `Midia recebida: ${message.type}.`;
+  }
+
+  _normalizeTags(tags = [], message = {}) {
+    const base = Array.isArray(tags) ? tags : [];
+    if (message.type === 'audio') base.push('audio');
+    if (message.type === 'document') base.push('documento');
+    if (message.media_mimetype?.includes('pdf')) base.push('pdf');
+    return [...new Set(base.map((tag) => String(tag).trim().toLowerCase()).filter(Boolean))].slice(0, 6);
+  }
+
+  _buildNoteLine({ aiResult, message, chat, tags }) {
+    const text = aiResult?.transcricao || message.content || this._buildMediaHint(message) || 'Mensagem sem texto';
+    return `[WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]\nChat: ${chat.name || chat.chat_jid || 'sem nome'}\nResumo: ${aiResult?.intent || text}\nEtiquetas: ${tags.join(', ') || 'sem etiquetas'}\nResposta sugerida: ${aiResult?.reply || 'sem sugestao'}`;
+  }
+
+  async _insertActivity(supabase, activity) {
+    const { error } = await supabase.from('lead_activities').insert({
+      lead_id: activity.leadId,
+      organization_id: activity.organizationId,
+      type: activity.type,
+      description: activity.description,
+      metadata: activity.metadata || {},
+    });
+    if (error) console.warn('[AIAutomation] Atividade nao registrada:', error.message);
+  }
+
+  async _upsertTags(supabase, { leadId, organizationId, tags }) {
+    if (!tags?.length) return;
+    const rows = tags.map((tag) => ({ lead_id: leadId, organization_id: organizationId, tag }));
+    const { error } = await supabase.from('lead_tags').upsert(rows, { onConflict: 'lead_id,tag' });
+    if (error) console.warn('[AIAutomation] Tags nao registradas:', error.message);
+  }
+
+  async _upsertFollowUp(supabase, { leadId, organizationId, aiResult }) {
+    if (!aiResult?.followUpAt) return;
+    const dueAt = new Date(aiResult.followUpAt);
+    if (Number.isNaN(dueAt.getTime())) return;
+    const { error } = await supabase.from('lead_followups').insert({
+      lead_id: leadId,
+      organization_id: organizationId,
+      due_at: dueAt.toISOString(),
+      title: 'Retorno sugerido pela IA',
+      notes: aiResult.intent || aiResult.reply || '',
+      status: 'pending',
+    });
+    if (error) console.warn('[AIAutomation] Follow-up nao registrado:', error.message);
   }
 }

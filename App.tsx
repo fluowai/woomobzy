@@ -44,6 +44,7 @@ const LandingPageEditor = lazy(() => import('./views/LandingPageEditor'));
 const VisualSiteEditor = lazy(() => import('./views/VisualSiteEditor'));
 const SiteSetupWizard = lazy(() => import('./views/SiteSetupWizard'));
 const AIAssistant = lazy(() => import('./views/AIAssistant'));
+const AIAgents = lazy(() => import('./views/AIAgents'));
 const ConsultingQualificacao = lazy(() => import('./views/ConsultingQualificacao'));
 const SystemSettings = lazy(() => import('./views/SystemSettings'));
 const DataRoom = lazy(() => import('./views/DataRoom'));
@@ -340,6 +341,7 @@ const AppContent: React.FC = () => {
             <Route path="site-setup" element={<SiteSetupWizard />} />
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
+            <Route path="ai-agents" element={<AIAgents />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="financial" element={<FinanceiroRural />} />
             <Route path="financeiro-advanced" element={<Locacao />} />
@@ -386,6 +388,7 @@ const AppContent: React.FC = () => {
             <Route path="site-setup" element={<SiteSetupWizard />} />
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
+            <Route path="ai-agents" element={<AIAgents />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="settings" element={<SystemSettings />} />

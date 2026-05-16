@@ -35,6 +35,7 @@ import {
   ChevronRight,
   Clock,
   Headset,
+  Bot,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -78,6 +79,7 @@ const UrbanLayout: React.FC<LayoutProps> = () => {
     { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
     { icon: DollarSign, label: 'Financeiro & Caixa', path: '/urban/cobranca' },
     { icon: MessageSquare, label: 'Atendimento (WhatsApp)', path: '/urban/whatsapp' },
+    { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
     { icon: LayoutTemplate, label: 'Marketing & Portais', path: '/urban/landing-pages' },
     { icon: PieChart, label: 'Relatórios Gerenciais', path: '/urban/reports' },
     { icon: Settings, label: 'Configurações', path: '/urban/settings' },

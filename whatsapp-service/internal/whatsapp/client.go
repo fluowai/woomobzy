@@ -19,27 +19,31 @@ import (
 
 // Client wraps a WhatsMeow client with business logic
 type Client struct {
-	instanceID   uuid.UUID
-	instanceName string
-	waClient     *whatsmeow.Client
-	instanceRepo *repository.InstanceRepo
-	chatRepo     *repository.ChatRepo
-	contactRepo  *repository.ContactRepo
-	messageRepo  *repository.MessageRepo
-	hub          *ws.Hub
-	logger       *zap.Logger
-	qrCode       string
-	qrChan       <-chan whatsmeow.QRChannelItem
-	connected    bool
-	mu           sync.RWMutex
-	supabaseURL  string
-	supabaseKey  string
-	storageBucket string
+	instanceID     uuid.UUID
+	tenantID       *uuid.UUID
+	instanceName   string
+	waClient       *whatsmeow.Client
+	instanceRepo   *repository.InstanceRepo
+	chatRepo       *repository.ChatRepo
+	contactRepo    *repository.ContactRepo
+	messageRepo    *repository.MessageRepo
+	hub            *ws.Hub
+	logger         *zap.Logger
+	qrCode         string
+	qrChan         <-chan whatsmeow.QRChannelItem
+	connected      bool
+	eventHandlerID uint32
+	mu             sync.RWMutex
+	supabaseURL    string
+	supabaseKey    string
+	storageBucket  string
+	automation     *AutomationClient
 }
 
 // NewClient creates a new WhatsApp client wrapper
 func NewClient(
 	instanceID uuid.UUID,
+	tenantID *uuid.UUID,
 	instanceName string,
 	waClient *whatsmeow.Client,
 	instanceRepo *repository.InstanceRepo,
@@ -51,9 +55,18 @@ func NewClient(
 	supabaseURL string,
 	supabaseKey string,
 	storageBucket string,
+	nodeURL string,
+	internalToken string,
+	automationEnabled bool,
 ) *Client {
+	var automation *AutomationClient
+	if automationEnabled && nodeURL != "" && internalToken != "" {
+		automation = NewAutomationClient(nodeURL, internalToken, logger)
+	}
+
 	return &Client{
 		instanceID:    instanceID,
+		tenantID:      tenantID,
 		instanceName:  instanceName,
 		waClient:      waClient,
 		instanceRepo:  instanceRepo,
@@ -65,17 +78,35 @@ func NewClient(
 		supabaseURL:   supabaseURL,
 		supabaseKey:   supabaseKey,
 		storageBucket: storageBucket,
+		automation:    automation,
 	}
 }
 
 // Connect initiates the WhatsApp connection
 func (c *Client) Connect(ctx context.Context) error {
-	// Register event handler
-	c.waClient.AddEventHandler(c.eventHandler)
+	c.mu.Lock()
+	if c.eventHandlerID == 0 {
+		c.eventHandlerID = c.waClient.AddEventHandler(c.eventHandler)
+	}
+	c.mu.Unlock()
 
 	if c.waClient.Store.ID == nil {
-		// No session — need QR code
-		qrChan, _ := c.waClient.GetQRChannel(ctx)
+		if err := c.instanceRepo.UpdateStatus(ctx, c.instanceID, models.StatusQRPending); err != nil {
+			c.logger.Error("Failed to update QR pending status",
+				zap.String("instance", c.instanceID.String()),
+				zap.Error(err),
+			)
+		}
+
+		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+			InstanceID: c.instanceID,
+			Status:     models.StatusQRPending,
+		})
+
+		qrChan, err := c.waClient.GetQRChannel(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get QR channel: %w", err)
+		}
 		c.qrChan = qrChan
 
 		if err := c.waClient.Connect(); err != nil {
@@ -391,6 +422,32 @@ func (c *Client) handleMessage(evt *events.Message) {
 		zap.String("type", string(msgType)),
 		zap.Bool("group", isGroup),
 	)
+
+	if c.automation != nil && !info.IsFromMe && senderPhone != "" {
+		go func(saved models.Message, savedChat models.Chat, participant *models.ParticipantInfo) {
+			if err := c.automation.ProcessMessage(context.Background(), AutomationMessagePayload{
+				InstanceID:   c.instanceID,
+				TenantID:     uuidToString(c.tenantID),
+				InstanceName: c.instanceName,
+				Chat:         savedChat,
+				Message:      saved,
+				Participant:  participant,
+			}); err != nil {
+				c.logger.Warn("AI automation failed",
+					zap.String("instance", c.instanceID.String()),
+					zap.String("message_id", saved.MessageID),
+					zap.Error(err),
+				)
+			}
+		}(*msg, *chat, participantInfo)
+	}
+}
+
+func uuidToString(id *uuid.UUID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
 }
 
 // extractMessageContent determines the type and text content of a message

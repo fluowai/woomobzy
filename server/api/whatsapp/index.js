@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 
 const router = Router();
 
@@ -9,7 +10,25 @@ const router = Router();
  * garantindo isolamento multi-tenant (SaaS) e suporte a WebSockets.
  */
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
-  const target = process.env.WHATSAPP_API_URL || 'http://localhost:8080';
+  const target = process.env.WHATSAPP_API_URL || 'http://localhost:3100';
+  const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
+
+  app.post('/api/whatsapp/internal/messages', async (req, res) => {
+    const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
+    const receivedToken = req.headers['x-whatsapp-internal-token'];
+
+    if (!expectedToken || receivedToken !== expectedToken) {
+      return res.status(401).json({ error: 'Token interno invalido' });
+    }
+
+    try {
+      const result = await aiEngine.handleWhatsAppMessage(req.body);
+      res.json({ success: true, result });
+    } catch (err) {
+      console.error('[WhatsApp AI Automation Error]', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
   
   const proxy = createProxyMiddleware({
     target,

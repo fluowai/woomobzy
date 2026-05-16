@@ -26,6 +26,7 @@ import {
   FileSearch,
   Zap,
   Navigation as NavIcon,
+  Bot,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -59,6 +60,7 @@ const RuralLayout: React.FC = () => {
     { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
     { icon: Globe, label: 'Site & Landing Pages', path: '/rural/landing-pages' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
+    { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
     { icon: MessageSquare, label: 'Atendimento', path: '/rural/whatsapp' },
     { icon: Link, label: 'Conexões', path: '/rural/connections' },

@@ -65,6 +65,8 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
         organic_channel: req.body.organic_channel,
         campaign: req.body.campaign,
         notes: req.body.notes,
+        budget: req.body.budget,
+        aptitude_interest: req.body.aptitude_interest,
         status: 'Novo'
       })
       .select()

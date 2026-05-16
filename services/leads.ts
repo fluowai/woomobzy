@@ -25,6 +25,8 @@ export const leadService = {
         organic_channel: lead.organic_channel,
         campaign: lead.campaign,
         notes: lead.notes,
+        budget: lead.budget,
+        aptitude_interest: lead.aptitude_interest,
       }),
     });
 
@@ -105,8 +107,9 @@ const mapToModel = (dbItem: any): Lead => ({
   phone: dbItem.phone,
   source: dbItem.source,
   status: dbItem.status,
-  budget: 0,
-  preferences: {},
+  budget: dbItem.budget || 0,
+  preferences: dbItem.preferences || {},
+  aptitude_interest: dbItem.aptitude_interest || [],
   notes: dbItem.notes,
   classification: dbItem.classification,
   chat_jid: dbItem.chat_jid,

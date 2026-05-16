@@ -29,8 +29,11 @@ export async function extractLatLngFromGoogleMapsUrl(url) {
     /[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,           // q=lat,lng
     /[?&]query=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,       // query=lat,lng
     /[?&]ll=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,          // ll=lat,lng
-    /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/            // !3dlat!4dlng (interno do maps)
+    /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,           // !3dlat!4dlng (interno do maps)
+    /place\/.*?\/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/     // place/.../@lat,lng
   ];
+
+  console.log('[GeoUtils] Decoding URL:', decoded);
 
   for (const pattern of patterns) {
     const match = decoded.match(pattern);
@@ -38,13 +41,18 @@ export async function extractLatLngFromGoogleMapsUrl(url) {
       const lat = Number(match[1]);
       const lng = Number(match[2]);
 
-      // Validação básica de coordenadas no Brasil
-      if (lat >= -34 && lat <= 6 && lng >= -74 && lng <= -34) {
+      console.log(`[GeoUtils] Found coordinates: ${lat}, ${lng} with pattern ${pattern}`);
+
+      // Validação básica de coordenadas no Brasil (Aumentada para ser mais permissiva na extração)
+      if (lat >= -35 && lat <= 6 && lng >= -75 && lng <= -30) {
         return { lat, lng };
+      } else {
+        console.warn(`[GeoUtils] Coordinates ${lat}, ${lng} out of Brazil bounds.`);
       }
     }
   }
 
+  console.warn('[GeoUtils] No coordinate pattern matched in URL.');
   return null;
 }
 

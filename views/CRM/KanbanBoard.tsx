@@ -53,6 +53,8 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
     organic_channel: '',
     campaign: '',
     notes: '',
+    budget: 0,
+    aptitude_interest: [] as string[],
   });
 
   if (!isOpen) return null;
@@ -136,6 +138,50 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
                 }
                 placeholder="email@exemplo.com"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                Orçamento Máximo (R$)
+              </label>
+              <input
+                type="number"
+                value={formData.budget}
+                onChange={(e) =>
+                  setFormData({ ...formData, budget: Number(e.target.value) })
+                }
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
+                placeholder="Ex: 5000000"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                Interesses / Aptidões
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {['Pecuária', 'Agricultura', 'Lazer', 'Investimento'].map((apt) => (
+                  <button
+                    key={apt}
+                    type="button"
+                    onClick={() => {
+                      const current = formData.aptitude_interest;
+                      const next = current.includes(apt)
+                        ? current.filter((a) => a !== apt)
+                        : [...current, apt];
+                      setFormData({ ...formData, aptitude_interest: next });
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                      formData.aptitude_interest.includes(apt)
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                    }`}
+                  >
+                    {apt}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -555,6 +601,31 @@ const LeadDetailsModal: React.FC<{
                           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nenhum imóvel vinculado</p>
                        </div>
                      )}
+                    </section>
+
+                    <section>
+                     <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Perfil do Investidor</h5>
+                     <div className="bg-slate-900 p-6 rounded-3xl space-y-6">
+                        <div>
+                           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-2">Orçamento Máximo</span>
+                           <div className="text-2xl font-black text-emerald-400 italic tracking-tighter">
+                              {lead.budget ? lead.budget.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'}) : 'Não Definido'}
+                           </div>
+                        </div>
+                        
+                        <div>
+                           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-2">Aptidões de Interesse</span>
+                           <div className="flex flex-wrap gap-2">
+                              {(lead.aptitude_interest || []).length > 0 ? (
+                                lead.aptitude_interest?.map((apt: string) => (
+                                   <span key={apt} className="px-3 py-1 bg-white/10 text-white rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/5">{apt}</span>
+                                ))
+                              ) : (
+                                <span className="text-slate-600 text-[10px] font-bold italic">Nenhuma aptidão definida</span>
+                              )}
+                           </div>
+                        </div>
+                     </div>
                    </section>
 
                    <section>
@@ -799,6 +870,63 @@ const PIPELINE_STAGES = [
   },
 ];
 
+const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
+  lead,
+  allProperties,
+}) => {
+  // Matching heurístico rápido para a superfície do card
+  const matches = allProperties
+    .filter((p) => {
+      // 1. Orçamento (30% de margem)
+      const budgetMatch = !lead.budget || p.price <= lead.budget * 1.3;
+      
+      // 2. Tipo/Nicho (Detectar se é rural/fazenda nas notas)
+      const notes = (lead.notes || '').toLowerCase();
+      const isRuralRequested = notes.includes('rural') || notes.includes('fazenda') || notes.includes('ha') || notes.includes('hectare');
+      const typeMatch = isRuralRequested ? p.property_type === 'Rural' : true;
+
+      // 3. Estado (se especificado nas notas)
+      const stateMatch = true; // Simplificado por enquanto
+
+      return budgetMatch && typeMatch;
+    })
+    .sort((a, b) => b.price - a.price)
+    .slice(0, 2);
+
+  if (matches.length === 0) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-500">
+      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2 block flex items-center gap-1">
+        <Sparkles size={10} className="animate-pulse" /> Sugestões de Investimento
+      </span>
+      <div className="space-y-1.5">
+        {matches.map((p) => (
+          <div
+            key={p.id}
+            className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors group/match"
+          >
+            <div className="w-7 h-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm group-hover/match:text-indigo-600 transition-colors">
+              <Home size={12} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-slate-700 truncate group-hover/match:text-indigo-600 transition-colors">
+                {p.title}
+              </p>
+              <p className="text-[9px] text-slate-500 font-bold">
+                {p.price?.toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                })}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const KanbanBoard: React.FC = () => {
   const { settings } = useSettings();
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -810,6 +938,7 @@ const KanbanBoard: React.FC = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [allProperties, setAllProperties] = useState<any[]>([]);
 
   const { profile } = useAuth();
   const isImpersonating = !!localStorage.getItem('impersonatedOrgId');
@@ -821,8 +950,18 @@ const KanbanBoard: React.FC = () => {
   useEffect(() => {
     if (targetOrgId || (isSuperAdmin && !isImpersonating)) {
       loadLeads();
+      loadAllProperties();
     }
   }, [targetOrgId, isSuperAdmin, isImpersonating]);
+
+  const loadAllProperties = async () => {
+    try {
+      const data = await propertyService.list();
+      setAllProperties(data);
+    } catch (error) {
+      console.error('Failed to load properties for matching', error);
+    }
+  };
 
   const loadLeads = async () => {
     try {
@@ -1139,7 +1278,9 @@ const KanbanBoard: React.FC = () => {
                                   </div>
                                 )}
 
-                                <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                <PropertyMatches lead={lead} allProperties={allProperties} />
+
+                                <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-3">
                                   <span className="flex items-center gap-1">
                                     <Clock3 size={10} />
                                     {new Date(

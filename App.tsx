@@ -57,6 +57,7 @@ const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
 
 // Rural-Specific
 const CadastroTecnico = lazy(() => import('./views/rural/CadastroTecnico'));
+const RuralTerritoryHub = lazy(() => import('./views/rural/RuralTerritoryHub'));
 const Geointeligencia = lazy(() => import('./views/rural/Geointeligencia'));
 const DossieInteligente = lazy(() => import('./views/rural/DossieInteligente'));
 const DueDiligence = lazy(() => import('./views/rural/DueDiligence'));
@@ -323,10 +324,17 @@ const AppContent: React.FC = () => {
             <Route path="properties" element={<PropertyManagement />} />
             <Route path="properties/new" element={<PropertyEditor />} />
             <Route path="properties/:id" element={<PropertyEditor />} />
-            <Route path="maps" element={<Geointeligencia />} />
-            <Route path="localizar-car" element={<CARLocationSearch />} />
-            <Route path="due-diligence" element={<DueDiligence />} />
-            <Route path="dossie" element={<DossieInteligente />} />
+            <Route path="territorio" element={<RuralTerritoryHub />}>
+              <Route index element={<Navigate to="maps" replace />} />
+              <Route path="maps" element={<Geointeligencia />} />
+              <Route path="localizar-car" element={<CARLocationSearch />} />
+              <Route path="due-diligence" element={<DueDiligence />} />
+              <Route path="dossie" element={<DossieInteligente />} />
+            </Route>
+            <Route path="maps" element={<Navigate to="/rural/territorio/maps" replace />} />
+            <Route path="localizar-car" element={<Navigate to="/rural/territorio/localizar-car" replace />} />
+            <Route path="due-diligence" element={<Navigate to="/rural/territorio/due-diligence" replace />} />
+            <Route path="dossie" element={<Navigate to="/rural/territorio/dossie" replace />} />
             <Route path="dataroom" element={<DataRoom />} />
             <Route path="crm" element={<CRMLeads />} />
             <Route path="kanban" element={<KanbanBoard />} />

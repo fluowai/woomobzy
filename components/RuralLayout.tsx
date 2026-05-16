@@ -1,13 +1,12 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Link as RouterLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
   MessageSquare,
   Home,
   Map as MapIcon,
-  FileCheck,
   Globe,
   Settings,
   Menu,
@@ -23,10 +22,9 @@ import {
   Search,
   Plus,
   Target,
-  FileSearch,
   Zap,
-  Navigation as NavIcon,
   Bot,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -55,16 +53,13 @@ const RuralLayout: React.FC = () => {
     { icon: Briefcase, label: 'Kanban', path: '/rural/kanban' },
     { icon: Users, label: 'CRM', path: '/rural/crm' },
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
-    { icon: MapIcon, label: 'Mapas & Georreferenciamento', path: '/rural/maps' },
-    { icon: NavIcon, label: 'Localizar CAR (Auto)', path: '/rural/localizar-car' },
-    { icon: FileSearch, label: 'Dossiê 360', path: '/rural/dossie' },
-    { icon: FileCheck, label: 'Documentação Rural', path: '/rural/due-diligence' },
+    { icon: MapIcon, label: 'Território Rural', path: '/rural/territorio' },
     { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
     { icon: Globe, label: 'Site & Landing Pages', path: '/rural/landing-pages' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
     { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
-    { icon: Link, label: 'Conexões', path: '/rural/connections' },
+    { icon: LinkIcon, label: 'Conexões', path: '/rural/connections' },
     { icon: Settings, label: 'Configurações', path: '/rural/settings' },
   ];
 
@@ -85,10 +80,13 @@ const RuralLayout: React.FC = () => {
     return <Navigate to="/superadmin" replace />;
   }
 
+  const isMenuItemActive = (path: string, isActive: boolean) =>
+    isActive || (path === '/rural/territorio' && pathname.startsWith('/rural/territorio'));
+
   const renderSidebarContent = () => (
     <>
       <div className="p-8 pb-6">
-        <Link
+        <RouterLink
           to="/rural"
           className="flex items-center gap-3 group"
           onClick={() => setIsMobileMenuOpen(false)}
@@ -98,7 +96,7 @@ const RuralLayout: React.FC = () => {
             alt="IMOBZY 360"
             className="h-12 w-auto object-contain max-w-[180px] transition-transform group-hover:scale-105"
           />
-        </Link>
+        </RouterLink>
       </div>
 
       <nav className="flex-1 px-4 py-8 overflow-y-auto space-y-1 custom-scrollbar">
@@ -108,27 +106,38 @@ const RuralLayout: React.FC = () => {
             to={item.path}
             end={item.path === '/rural'}
             onClick={() => setIsMobileMenuOpen(false)}
-            className={({ isActive }) =>
+            className={({ isActive }) => {
+              const active = isMenuItemActive(item.path, isActive);
+              return (
               `flex items-center justify-between px-5 py-3.5 rounded-xl transition-all duration-300 group ${
-                isActive
+                active
                   ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30'
                   : 'text-slate-500 hover:bg-primary/10 hover:text-primary'
               }`
-            }
+              );
+            }}
           >
             {({ isActive }) => (
               <>
                 <div className="flex items-center gap-4">
                   <item.icon
                     size={22}
-                    className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'}
+                    className={
+                      isMenuItemActive(item.path, isActive)
+                        ? 'text-white'
+                        : 'text-slate-400 group-hover:text-primary'
+                    }
                   />
                   <span className="text-sm font-bold tracking-tight">{item.label}</span>
                 </div>
                 {item.path !== '/rural' && (
                   <ChevronRight
                     size={14}
-                    className={isActive ? 'text-white/80' : 'text-slate-300 group-hover:text-primary'}
+                    className={
+                      isMenuItemActive(item.path, isActive)
+                        ? 'text-white/80'
+                        : 'text-slate-300 group-hover:text-primary'
+                    }
                   />
                 )}
               </>
@@ -238,7 +247,7 @@ const RuralLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            <Link
+            <RouterLink
               to="/rural/properties/new"
               className="btn bg-primary hover:bg-primary-hover text-white h-11 px-6 shadow-lg shadow-primary/20"
             >
@@ -246,7 +255,7 @@ const RuralLayout: React.FC = () => {
               <span className="hidden sm:inline">
                 {niche === 'hybrid' ? 'Novo Imóvel' : 'Nova Fazenda'}
               </span>
-            </Link>
+            </RouterLink>
           </div>
         </header>
 

@@ -101,6 +101,12 @@ const RuralDashboard: React.FC = () => {
     { name: 'Jun', valor: 67 },
   ];
 
+  const displayName =
+    profile?.full_name ||
+    (profile as any)?.name ||
+    profile?.organization?.name ||
+    'gestor';
+
   const tooltipStyle = {
     backgroundColor: 'var(--color-bg-card)',
     borderRadius: 'var(--radius-md)',
@@ -136,14 +142,19 @@ const RuralDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="animate-fade-in">
-        <h1 className="h1 flex items-center gap-3">
+      <div className="animate-fade-in flex flex-col gap-2">
+        <div className="flex items-center gap-3">
           <span className="p-2 bg-primary/5 rounded-xl border border-primary/10">
             <MapPin className="text-primary" size={24} />
           </span>
-          Dashboard Rural
-        </h1>
-        <p className="body text-text-secondary mt-2 ml-1">
+          <div>
+            <p className="text-small font-bold text-primary uppercase tracking-widest">
+              Dashboard Rural
+            </p>
+            <h1 className="h1">Seja bem-vindo, {displayName}</h1>
+          </div>
+        </div>
+        <p className="body text-text-secondary ml-14">
           Gerenciamento de ativos e performance comercial.
         </p>
       </div>

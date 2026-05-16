@@ -1,6 +1,5 @@
 import React from 'react';
-import { Sparkles, ArrowRight, MessageCircle, TrendingUp, AlertCircle } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { ArrowRight, MessageCircle, TrendingUp, AlertCircle } from 'lucide-react';
 
 interface Insight {
   type: 'success' | 'warning' | 'info';
@@ -10,13 +9,6 @@ interface Insight {
 }
 
 const IADashboardSummary: React.FC = () => {
-  const { profile } = useAuth();
-  const displayName =
-    profile?.full_name ||
-    (profile as any)?.name ||
-    profile?.organization?.name ||
-    'gestor';
-
   const insights: Insight[] = [
     {
       type: 'warning',
@@ -36,16 +28,12 @@ const IADashboardSummary: React.FC = () => {
   ];
 
   return (
-    <div className="bg-bg-card rounded-2xl p-6 border border-border-subtle shadow-sm overflow-hidden relative group border-l-4 border-primary animate-in fade-in slide-in-from-top duration-700">
+    <div className="bg-bg-card rounded-2xl p-5 border border-border-subtle shadow-sm overflow-hidden relative group animate-in fade-in slide-in-from-top duration-700">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
       
-      <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6">
-        <div className="p-4 bg-primary rounded-2xl shadow-lg shadow-primary/20 animate-pulse-subtle">
-          <Sparkles className="text-white" size={28} />
-        </div>
-        
-        <div className="flex-1">
+      <div className="relative space-y-4">
+        <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-full">
               <span className="h-1.5 w-1.5 bg-primary rounded-full animate-pulse"></span>
@@ -54,11 +42,8 @@ const IADashboardSummary: React.FC = () => {
             <div className="h-1 w-1 bg-border rounded-full"></div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sincronizado</span>
           </div>
-          <h2 className="text-xl font-black text-text-primary tracking-tight mb-2">
-            Seja bem-vindo, <span className="text-primary">{displayName}</span>. Aqui esta o que preparei para o seu dia:
-          </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {insights.map((insight, idx) => (
               <div 
                 key={idx} 

@@ -26,8 +26,7 @@ export class AnalysisController {
       res.status(202).json(result);
     } catch (error) {
       console.error('[AnalysisController] Error:', error);
-      const missingRedis = error.message?.includes('REDIS_URL');
-      res.status(missingRedis ? 503 : 500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
   }
 

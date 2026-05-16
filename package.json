@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "start": "node server/index.js",
-    "worker:rural": "node server/api/rural/analysis/worker.js",
     "dev": "vite --port 3006 --strictPort",
     "server": "node --env-file=.env server/index.js",
     "build": "vite build",
@@ -34,7 +33,6 @@
     "@types/leaflet": "^1.9.21",
     "@types/leaflet-draw": "^1.0.13",
     "axios": "^1.13.2",
-    "bullmq": "^5.76.2",
     "cheerio": "^1.1.2",
     "colorthief": "^2.6.0",
     "cors": "^2.8.5",
@@ -46,7 +44,6 @@
     "groq-sdk": "^0.37.0",
     "helmet": "^8.0.0",
     "http-proxy-middleware": "^3.0.5",
-    "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.3",
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",

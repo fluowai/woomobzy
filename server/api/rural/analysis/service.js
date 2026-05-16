@@ -1,35 +1,13 @@
 import { KMZService } from './kmz-service.js';
 import { RuralRepository } from './repository.js';
-import { Queue } from 'bullmq';
-import IORedis from 'ioredis';
 import PDFDocument from 'pdfkit';
-import { assertRedisEnabled } from './redis.js';
-
-let analysisQueue;
-
-function getAnalysisQueue() {
-  const redisConfig = assertRedisEnabled();
-
-  if (!analysisQueue) {
-    const connection = new IORedis(redisConfig.url, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      family: 0,
-      lazyConnect: true,
-    });
-    analysisQueue = new Queue('rural-analysis', { connection });
-  }
-
-  return analysisQueue;
-}
+import { runRuralAnalysisInBackground } from './processor.js';
 
 export class AnalysisService {
   /**
    * Handle the KMZ upload and initiate analysis
    */
   static async startKMZAnalysis(organizationId, filename, buffer) {
-    const queue = getAnalysisQueue();
-
     // 1. Parse KMZ to GeoJSON
     const featureCollection = await KMZService.parseKMZ(buffer);
     const multiPolygon = KMZService.toMultiPolygon(featureCollection);
@@ -44,8 +22,8 @@ export class AnalysisService {
     // 3. Create Analysis Record (Pending)
     const analysis = await RuralRepository.createAnalysis(area.id);
 
-    // 4. Queue Heavy Spatial Processing
-    await queue.add('process-analysis', {
+    // 4. Run Heavy Spatial Processing without Redis/BullMQ
+    runRuralAnalysisInBackground({
       analysisId: analysis.id,
       areaId: area.id,
       organizationId,

@@ -32,7 +32,7 @@ const IADashboardSummary: React.FC = () => {
   ];
 
   return (
-    <div className="bg-slate-950 rounded-2xl p-6 border border-slate-800 shadow-2xl overflow-hidden relative group">
+    <div className="bg-slate-950 rounded-2xl p-6 border border-slate-800 shadow-[0_0_30px_rgba(37,99,235,0.1)] overflow-hidden relative group border-l-4 border-primary animate-in fade-in slide-in-from-top duration-700">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-all duration-500"></div>
       
@@ -43,9 +43,12 @@ const IADashboardSummary: React.FC = () => {
         
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">IA Insights • Premium</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-full">
+              <span className="h-1.5 w-1.5 bg-primary rounded-full animate-pulse"></span>
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">IA Insights • Ativo</span>
+            </div>
             <div className="h-1 w-1 bg-slate-700 rounded-full"></div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Atualizado agora</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sincronizado</span>
           </div>
           <h2 className="text-xl font-black text-white tracking-tight mb-2">
             Olá, <span className="text-primary">{firstName}</span>. Aqui está o que preparei para o seu dia:

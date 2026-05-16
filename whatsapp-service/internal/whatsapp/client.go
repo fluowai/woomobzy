@@ -392,7 +392,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	// Handle quoted message
 	if evt.Message.GetExtendedTextMessage() != nil && evt.Message.GetExtendedTextMessage().ContextInfo != nil {
-		if quotedID := evt.Message.GetExtendedTextMessage().ContextInfo.GetStanzaId(); quotedID != "" {
+		if quotedID := evt.Message.GetExtendedTextMessage().ContextInfo.GetStanzaID(); quotedID != "" {
 			msg.QuotedMessageID = quotedID
 		}
 	}

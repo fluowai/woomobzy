@@ -106,7 +106,14 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-impersonate-org-id'],
+  allowedHeaders: [
+    'Origin',
+    'Accept',
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'x-impersonate-org-id',
+  ],
   optionsSuccessStatus: 204,
 };
 
@@ -174,30 +181,24 @@ app.get('/health', (req, res) =>
 );
 app.get('/', (req, res) => res.send('IMOBZY Production API Online 🚀'));
 
+// --- Server Startup ---
+const PORT = process.env.PORT || 3002;
+
+const server = app.listen(PORT, async () => {
+  console.log(`IMOBZY Server active on port ${PORT}`);
+});
+
+// Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
+// O server real e passado para registrar o upgrade do WebSocket.
+setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
+
 // --- Error Handling ---
 app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err.message);
+  console.error('Server Error:', err.message);
   res.status(err.status || 500).json({
     error: err.message || 'Erro interno de servidor',
     timestamp: new Date().toISOString(),
   });
 });
-
-// --- Server Startup ---
-const PORT = process.env.PORT || 3002;
-
-// Configura o Proxy de WhatsApp com Segurança SaaS (API + WebSockets)
-// Fazemos isso antes do listen para garantir que as rotas sejam registradas corretamente
-setupWhatsAppProxy(app, null, verifyAuth, requireTenant);
-
-const server = app.listen(PORT, async () => {
-  console.log(`✅ IMOBZY Server active on port ${PORT}`);
-});
-
-// Update the proxy with the server instance for WebSocket support
-if (server) {
-  // O setupWhatsAppProxy pode ser chamado novamente apenas para vincular o server se necessário,
-  // ou podemos ajustar a função original.
-}
 
 export default app;

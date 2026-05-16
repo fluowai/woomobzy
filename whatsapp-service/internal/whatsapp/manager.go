@@ -123,7 +123,7 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 	os.MkdirAll(sessionsDir, 0755)
 
 	dbPath := filepath.Join(sessionsDir, fmt.Sprintf("%s.db", instanceID.String()))
-	container, err := sqlstore.New("sqlite3",
+	container, err := sqlstore.New(ctx, "sqlite3",
 		fmt.Sprintf("file:%s?_foreign_keys=on", dbPath),
 		waLog.Noop,
 	)
@@ -131,7 +131,7 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		return fmt.Errorf("failed to create session store: %w", err)
 	}
 
-	deviceStore, err := container.GetFirstDevice()
+	deviceStore, err := container.GetFirstDevice(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get device store: %w", err)
 	}

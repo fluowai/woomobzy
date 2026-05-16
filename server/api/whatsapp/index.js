@@ -4,11 +4,20 @@ import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 
 const router = Router();
 
-/**
- * Proxy Profissional para WhatsMeow (Go)
- * Este componente gerencia a comunicação entre o Node.js e o serviço em Go,
- * garantindo isolamento multi-tenant (SaaS) e suporte a WebSockets.
- */
+const rewriteWhatsAppPath = (path) => {
+  const pathWithoutMount = path.startsWith('/api/whatsapp')
+    ? path.replace('/api/whatsapp', '') || '/'
+    : path || '/';
+
+  if (pathWithoutMount === '/ws' || pathWithoutMount.startsWith('/ws?')) {
+    return pathWithoutMount;
+  }
+
+  return pathWithoutMount.startsWith('/api/')
+    ? pathWithoutMount
+    : `/api${pathWithoutMount}`;
+};
+
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const target = process.env.WHATSAPP_API_URL || 'http://localhost:3100';
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
@@ -29,56 +38,69 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
   const proxy = createProxyMiddleware({
     target,
     changeOrigin: true,
     ws: true,
-    pathRewrite: (path, req) => {
-      // O frontend chama /api/whatsapp/ws, mas o Go espera /ws
-      if (path.startsWith('/api/whatsapp/ws')) {
-        return path.replace('/api/whatsapp/ws', '/ws');
-      }
-      // O frontend chama /api/whatsapp/instances, mas o Go espera /api/instances
-      return path.replace('/api/whatsapp', '/api');
-    },
-    onProxyReq: (proxyReq, req, res) => {
-      // 1. Pega o OrgID injetado pelo middleware de autenticação do Node
-      const orgId = req.orgId;
-      
-      if (orgId) {
-        // 2. Injetar no Query String (para GET)
-        const url = new URL(proxyReq.path, 'http://localhost'); // base fictícia para parse
-        url.searchParams.set('tenant_id', orgId);
-        proxyReq.path = url.pathname + url.search;
+    pathRewrite: rewriteWhatsAppPath,
+    on: {
+      proxyReq: (proxyReq, req) => {
+        const orgId = req.orgId;
 
-        // 3. Injetar no Body (para POST/PUT) - Se houver corpo JSON
-        // Nota: O http-proxy-middleware exige cuidado ao reescrever o body
-        if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
-          const bodyData = { ...req.body, tenant_id: orgId };
-          const bodyString = JSON.stringify(bodyData);
-          proxyReq.setHeader('Content-Type', 'application/json');
-          proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyString));
-          proxyReq.write(bodyString);
+        if (orgId) {
+          const url = new URL(proxyReq.path, 'http://localhost');
+          url.searchParams.set('tenant_id', orgId);
+          proxyReq.path = url.pathname + url.search;
+
+          if (req.body && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
+            const bodyData = { ...req.body, tenant_id: orgId };
+            const bodyString = JSON.stringify(bodyData);
+            proxyReq.setHeader('Content-Type', 'application/json');
+            proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyString));
+            proxyReq.write(bodyString);
+          }
         }
-      }
 
-      console.log(`[SaaS Proxy] ${req.method} ${req.url} -> ${target} (Org: ${orgId || 'Public'})`);
+        console.log(
+          `[SaaS Proxy] ${req.method} ${req.originalUrl || req.url} -> ${target}${proxyReq.path} (Org: ${orgId || 'Public'})`
+        );
+      },
+      proxyReqWs: (proxyReq, req) => {
+        console.log(`[WhatsApp WS Proxy] ${req.url} -> ${target}`);
+      },
+      error: (err, req, res) => {
+        console.error('[WhatsApp Proxy Error]', err.message);
+        if (res && typeof res.status === 'function') {
+          res.status(502).json({
+            error: 'Servico WhatsApp Indisponivel',
+            message: 'O servidor WhatsMeow (Go) nao respondeu ou nao esta rodando.',
+          });
+        }
+      },
     },
-    onError: (err, req, res) => {
-      console.error('[WhatsApp Proxy Error]', err.message);
-      if (res && res.status) {
-        res.status(502).json({ 
-          error: 'Serviço WhatsApp Indisponível',
-          message: 'O servidor WhatsMeow (Go) não respondeu ou não está rodando.'
-        });
-      }
-    }
   });
 
-  // Registro da Rota com Middlewares de Segurança
-  // Isso garante que req.orgId esteja disponível dentro do proxy
+  app.use('/api/whatsapp', (req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+    next();
+  });
+
+  // Browser WebSockets cannot send Authorization headers. REST operations stay authenticated.
+  app.use('/api/whatsapp/ws', proxy);
   app.use('/api/whatsapp', verifyAuth, requireTenant, proxy);
+
+  if (server) {
+    server.on('upgrade', (req, socket, head) => {
+      if (req.url?.startsWith('/api/whatsapp/ws')) {
+        proxy.upgrade(req, socket, head);
+      }
+    });
+  }
+
+  return proxy;
 };
 
 export default router;

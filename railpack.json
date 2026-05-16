@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "buildAptPackages": ["gcc", "libc6-dev", "libsqlite3-dev"],
+  "packages": {
+    "node": "20.20.2",
+    "go": "1.25",
+    "python": "3.11"
+  },
+  "steps": {
+    "build": {
+      "commands": [
+        "...",
+        "cd whatsapp-service && go mod download && CGO_ENABLED=1 go build -o whatsapp-service-bin ./cmd/server",
+        "python3 -m pip install -r server/agro-intelligence/requirements.txt --target server/agro-intelligence/.python-deps"
+      ]
+    }
+  },
+  "deploy": {
+    "aptPackages": ["libsqlite3-0"],
+    "startCommand": "npm run start:prod"
+  }
+}

@@ -1,39 +1,60 @@
 import { logger } from '@/utils/logger';
+import { getApiUrl } from '../src/lib/api';
 import { supabase } from './supabase';
+
+type StorageBucket = 'agency-assets' | 'property-images' | 'imobzyimg' | 'imobzymsg' | 'whatsapp-media';
+type ResolvedStorageBucket = 'imobzyimg' | 'imobzymsg' | 'whatsapp-media';
 
 export const uploadFile = async (
   file: File,
-  bucket: 'agency-assets' | 'property-images' | 'imobzyimg' | 'imobzymsg' | 'whatsapp-media',
+  bucket: StorageBucket,
   folder?: string
 ): Promise<string | null> => {
   try {
     const storageBucket = resolveStorageBucket(bucket);
-    // Sanitiza o nome do arquivo para evitar problemas de caracteres especiais
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-    const filePath = folder ? `${folder}/${fileName}` : fileName;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(storageBucket)
-      .upload(filePath, file);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bucket', storageBucket);
+    if (folder) formData.append('folder', folder);
 
-    if (uploadError) {
-      logger.error('Erro detalhado no upload:', uploadError);
-      alert(`Erro no upload: ${uploadError.message}`); // Feedback visual para o usuário
-      throw uploadError;
+    const headers = new Headers();
+    if (session?.access_token) {
+      headers.set('Authorization', `Bearer ${session.access_token}`);
     }
 
-    const { data } = supabase.storage.from(storageBucket).getPublicUrl(filePath);
+    const impId = sessionStorage.getItem('impersonated_org_id');
+    if (impId && impId !== 'null') {
+      headers.set('x-impersonate-org-id', impId);
+    }
+
+    const response = await fetch(getApiUrl('/api/storage/upload'), {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const message = data.error || `Erro no upload: ${response.statusText}`;
+      logger.error('Erro detalhado no upload:', data);
+      alert(`Erro no upload: ${message}`);
+      throw new Error(message);
+    }
 
     logger.info('Upload sucesso. URL:', data.publicUrl);
-    return data.publicUrl;
+    return data.publicUrl || null;
   } catch (error) {
     logger.error('Falha ao fazer upload da imagem:', error);
     return null;
   }
 };
 
-function resolveStorageBucket(bucket: string): 'imobzyimg' | 'imobzymsg' | 'whatsapp-media' {
+function resolveStorageBucket(bucket: StorageBucket): ResolvedStorageBucket {
   if (bucket === 'agency-assets' || bucket === 'property-images') {
     return 'imobzyimg';
   }

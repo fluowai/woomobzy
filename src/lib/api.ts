@@ -2,7 +2,7 @@ import { supabase } from '../../services/supabase';
 
 // Utility to handle API calls to the Railway backend
 export const getApiUrl = (path: string = '') => {
-  const baseUrl = import.meta.env.VITE_API_URL || '';
+  const baseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || '');
   const sanitizedPath = path.startsWith('/') ? path : `/${path}`;
   const sanitizedBaseUrl = baseUrl.endsWith('/')
     ? baseUrl.slice(0, -1)
@@ -11,6 +11,14 @@ export const getApiUrl = (path: string = '') => {
     ? `${sanitizedBaseUrl}${sanitizedPath}`
     : sanitizedPath;
 };
+
+function normalizeApiBaseUrl(url: string): string {
+  const clean = (url || '').trim();
+  if (clean.includes('web-production-7c3f0.up.railway.app')) {
+    return 'https://woomobzy-production.up.railway.app';
+  }
+  return clean;
+}
 
 /**
  * Cliente de API Seguro:

@@ -26,6 +26,7 @@ import urbanRoutes from './api/urban/index.js';
 import locacaoRoutes from './api/locacao/index.js';
 import cobrancaRoutes from './api/cobranca/index.js';
 import aiRoutes from './api/ai/index.js';
+import storageRoutes from './api/storage/index.js';
 import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -154,6 +155,7 @@ app.use('/api/urban', urbanRoutes);
 app.use('/api/locacao', locacaoRoutes);
 app.use('/api/cobranca', cobrancaRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 
 // Tenant Resolution

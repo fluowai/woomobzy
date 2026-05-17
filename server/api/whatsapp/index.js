@@ -19,7 +19,7 @@ const rewriteWhatsAppPath = (path) => {
 };
 
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
-  const target = process.env.WHATSAPP_API_URL || 'http://localhost:3100';
+  const target = resolveWhatsAppTarget(process.env.WHATSAPP_API_URL);
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const allowedOriginPattern = /^https:\/\/([a-z0-9-]+\.)?consultio\.com\.br$/i;
 
@@ -127,5 +127,20 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
 
   return proxy;
 };
+
+function resolveWhatsAppTarget(rawTarget) {
+  const target = (rawTarget || '').trim();
+  if (!target) return 'http://127.0.0.1:3100';
+
+  const publicRailwayHost =
+    target.includes('woomobzy-production.up.railway.app') ||
+    target.includes('web-production-7c3f0.up.railway.app');
+
+  if (publicRailwayHost) {
+    return 'http://127.0.0.1:3100';
+  }
+
+  return target.replace(/\/$/, '');
+}
 
 export default router;

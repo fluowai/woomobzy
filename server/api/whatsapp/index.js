@@ -1,8 +1,19 @@
 import { Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AIAutomationEngine } from '../../lib/AIAutomation.js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
 
 const router = Router();
+const WHATSAPP_DB_ENV_KEYS = [
+  'SUPABASE_DB_URL',
+  'DATABASE_URL',
+  'DATABASE_PRIVATE_URL',
+  'POSTGRES_URL',
+  'POSTGRES_PRIVATE_URL',
+  'POSTGRES_PRISMA_URL',
+  'POSTGRES_URL_NON_POOLING',
+  'PGDATABASE_URL',
+];
 
 const rewriteWhatsAppPath = (path) => {
   const pathWithoutMount = path.startsWith('/api/whatsapp')
@@ -114,6 +125,49 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     next();
   });
 
+  app.get('/api/whatsapp/status', verifyAuth, requireTenant, async (req, res) => {
+    applyCorsHeaders(req, res);
+
+    const service = await checkWhatsAppService(target);
+    res.status(service.ok ? 200 : 503).json({
+      ok: service.ok,
+      target,
+      service,
+      database_env: WHATSAPP_DB_ENV_KEYS.reduce((acc, key) => {
+        acc[key] = Boolean(process.env[key]);
+        return acc;
+      }, {}),
+      hint: service.ok
+        ? 'WhatsMeow esta respondendo.'
+        : 'O Node esta online, mas o processo Go/WhatsMeow nao respondeu. Confira as variaveis de banco no Railway e os logs do processo whatsapp-service.',
+    });
+  });
+
+  app.get('/api/whatsapp/instances', verifyAuth, requireTenant, async (req, res) => {
+    applyCorsHeaders(req, res);
+
+    try {
+      const supabase = getSupabaseServer();
+      const { data, error } = await supabase
+        .from('whatsapp_instances')
+        .select('id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at')
+        .eq('tenant_id', req.orgId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      res.json((data || []).map(normalizeInstanceRow));
+    } catch (err) {
+      console.error('[WhatsApp Instances Fallback Error]', err.message);
+      res.status(500).json({
+        error: 'Falha ao listar instancias do WhatsApp',
+        message: err.message,
+      });
+    }
+  });
+
   // Browser WebSockets cannot send Authorization headers. REST operations stay authenticated.
   app.use('/api/whatsapp/ws', proxy);
   app.use('/api/whatsapp', verifyAuth, requireTenant, proxy);
@@ -142,6 +196,42 @@ function resolveWhatsAppTarget(rawTarget) {
   }
 
   return target.replace(/\/$/, '');
+}
+
+async function checkWhatsAppService(target) {
+  const healthUrl = `${target.replace(/\/$/, '')}/health`;
+
+  try {
+    const response = await fetch(healthUrl, {
+      signal: AbortSignal.timeout(2500),
+    });
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      url: healthUrl,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      url: healthUrl,
+      error: err.message,
+    };
+  }
+}
+
+function normalizeInstanceRow(row) {
+  return {
+    id: row.id,
+    tenant_id: row.tenant_id || undefined,
+    name: row.name || 'WhatsApp',
+    status: row.status || 'disconnected',
+    qr_code: row.qr_code || undefined,
+    phone: row.phone || undefined,
+    jid: row.jid || undefined,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
 }
 
 export default router;

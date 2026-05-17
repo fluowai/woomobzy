@@ -4,7 +4,7 @@ nixPkgs = ["...", "go", "python311"]
 [phases.build]
 cmds = [
   "npm ci", 
-  "cd whatsapp-service && go mod download && go build -o whatsapp-service-bin ./cmd/server/main.go",
+  "cd whatsapp-service && go mod download && CGO_ENABLED=1 go build -o whatsapp-service-bin ./cmd/server/main.go",
   "python3 -m pip install -r server/agro-intelligence/requirements.txt"
 ]
 

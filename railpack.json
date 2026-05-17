@@ -4,7 +4,7 @@
   "buildAptPackages": ["gcc", "libc6-dev", "libsqlite3-dev"],
   "packages": {
     "node": "20.20.2",
-    "go": "1.25",
+    "go": "1.23",
     "python": "3.11"
   },
   "steps": {

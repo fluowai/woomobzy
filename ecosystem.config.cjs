@@ -17,8 +17,7 @@ module.exports = {
     {
       name: 'whatsapp-service',
       script: './whatsapp-service/whatsapp-service-bin',
-      cwd: './whatsapp-service',
-      max_memory_restart: '200M',
+      max_memory_restart: '400M',
       env: {
         PORT: 3100,
         NODE_URL: `http://127.0.0.1:${webPort}`,

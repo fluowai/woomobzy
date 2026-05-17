@@ -22,6 +22,12 @@ import {
   Send,
   Trash2,
   Copy,
+  Mail,
+  MapPin,
+  Target,
+  DollarSign,
+  Tag,
+  Building2,
 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
@@ -480,70 +486,262 @@ const LeadDetailsModal: React.FC<{
 
   if (!isOpen || !lead) return null;
 
+  const scopedMatches = (lead.matched_properties || [])
+    .filter((match: any) => !match.engine || match.engine === matchProfile)
+    .filter((match: any) => isWithinLeadBudget(lead, match.price));
+  const topMatch = scopedMatches[0];
+  const budgetRange = extractLeadBudgetRange(lead);
+  const formatCurrency = (value?: number | null) =>
+    value
+      ? value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+      : 'Nao informado';
+  const budgetLabel = budgetRange.min && budgetRange.max
+    ? `${formatCurrency(budgetRange.min)} a ${formatCurrency(budgetRange.max)}`
+    : budgetRange.max
+      ? `Ate ${formatCurrency(budgetRange.max)}`
+      : lead.budget
+        ? formatCurrency(lead.budget)
+        : 'Nao informado';
+  const lastContactLabel = lead.last_contacted_at
+    ? new Date(lead.last_contacted_at).toLocaleDateString('pt-BR')
+    : 'Sem registro';
+  const leadInitial = lead.name?.charAt(0)?.toUpperCase() || 'L';
+  const profileLabel = matchProfile === 'rural' ? 'Match Rural' : 'Match Urbano';
+  const bestScore = topMatch?.score ? `${topMatch.score}%` : 'Sem match';
+
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100 h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 backdrop-blur-md p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-200 h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-5 sm:p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white shrink-0">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-black text-xl sm:text-2xl shrink-0 shadow-lg">
-              {lead.name.charAt(0)}
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-xl sm:text-2xl font-black uppercase italic tracking-tighter leading-tight truncate">
-                {lead.name}
-              </h3>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${
-                  lead.classification?.includes('Alta') ? 'bg-orange-500 text-white' : 'bg-white/20 text-white/80'
-                }`}>
-                  {lead.classification || 'Lead'}
-                </span>
-                <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                  ID: {lead.id.slice(0, 8)}
-                </span>
+        <div className="px-5 py-5 sm:px-6 border-b border-slate-200 bg-white shrink-0">
+          <div className="flex flex-col gap-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl shrink-0 shadow-sm">
+                  {leadInitial}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-950 leading-tight truncate">
+                      {lead.name}
+                    </h3>
+                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest ${
+                      lead.classification?.includes('Alta') ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {lead.classification || 'Lead'}
+                    </span>
+                    <span className="text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest bg-indigo-50 text-indigo-700">
+                      {profileLabel}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold text-slate-500">
+                    <span>ID {lead.id.slice(0, 8)}</span>
+                    <span>{lead.source || 'Origem nao informada'}</span>
+                    <span>{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : 'Data nao informada'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={onEdit} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-black text-xs uppercase tracking-widest text-slate-700">
+                  <User size={14} /> Editar
+                </button>
+                <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors shrink-0 text-slate-500">
+                  <X size={22} />
+                </button>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-             <button onClick={onEdit} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors font-bold text-xs uppercase tracking-widest">
-                <User size={14} /> Editar
-             </button>
-             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors shrink-0">
-                <X size={20} className="sm:w-6 sm:h-6" />
-             </button>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 min-w-0">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                  <Phone size={13} /> WhatsApp
+                </div>
+                <p className="text-sm font-black text-slate-900 truncate">{lead.phone || 'Nao informado'}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 min-w-0">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                  <DollarSign size={13} /> Orcamento
+                </div>
+                <p className="text-sm font-black text-slate-900 truncate">{budgetLabel}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 min-w-0">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                  <Sparkles size={13} /> Melhor score
+                </div>
+                <p className="text-sm font-black text-emerald-700 truncate">{bestScore}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 min-w-0">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                  <Clock3 size={13} /> Ultimo contato
+                </div>
+                <p className="text-sm font-black text-slate-900 truncate">{lastContactLabel}</p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Tabs Navigation */}
-        <div className="flex border-b border-slate-100 bg-slate-50/50 shrink-0">
+        <div className="flex border-b border-slate-200 bg-slate-50 shrink-0 px-3">
           <button 
             onClick={() => setActiveTab('info')}
-            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'info' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'info' ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
           >
             Informações Gerais
           </button>
           <button 
             onClick={() => setActiveTab('activities')}
-            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'activities' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'activities' ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
           >
             Linha do Tempo
           </button>
           <button 
             onClick={() => setActiveTab('investments')}
-            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'investments' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'investments' ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
           >
             <div className="flex items-center justify-center gap-2">
-              <Sparkles size={12} className={activeTab === 'investments' ? 'text-indigo-600' : 'text-slate-400'} />
+              <Sparkles size={12} className={activeTab === 'investments' ? 'text-indigo-700' : 'text-slate-400'} />
               Match {matchProfile === 'rural' ? 'Rural' : 'Urbano'}
             </div>
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 sm:p-8">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-white">
           {activeTab === 'info' ? (
-            <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
+            <div className="animate-in fade-in slide-in-from-left-4 duration-300 space-y-5">
+              <section className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-5">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div>
+                      <h5 className="text-sm font-black text-slate-950">Resumo do lead</h5>
+                      <p className="text-xs font-bold text-slate-500 mt-1">Dados principais para atendimento e qualificacao.</p>
+                    </div>
+                    <button
+                      onClick={() => window.open(`https://wa.me/${(lead.phone || '').replace(/\D/g, '')}`, '_blank')}
+                      disabled={!lead.phone}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-40"
+                    >
+                      <Send size={13} /> WhatsApp
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                        <Phone size={13} /> Telefone
+                      </div>
+                      <p className="text-sm font-black text-slate-900 break-words">{lead.phone || 'Nao informado'}</p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                        <Mail size={13} /> E-mail
+                      </div>
+                      <p className="text-sm font-black text-slate-900 break-words">{lead.email || 'Nao informado'}</p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                        <Target size={13} /> Origem
+                      </div>
+                      <p className="text-sm font-black text-slate-900">{lead.source || 'Nao informada'}</p>
+                      <p className="text-xs font-bold text-slate-500 mt-1">{lead.organic_channel || 'Canal direto / organico'}</p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                        <Tag size={13} /> Referencia
+                      </div>
+                      <p className="text-sm font-black text-indigo-700 break-words">{lead.ad_reference || 'Sem referencia'}</p>
+                      <p className="text-xs font-bold text-slate-500 mt-1">Campanha: {lead.campaign || 'Nao informada'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div>
+                      <h5 className="text-sm font-black text-slate-950">Perfil de compra</h5>
+                      <p className="text-xs font-bold text-slate-500 mt-1">Faixa, interesse e aderencia dos matches.</p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                      {scopedMatches.length} matches
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Faixa de investimento</span>
+                      <p className="text-2xl font-black text-slate-950 leading-tight">{budgetLabel}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Aptidoes e interesses</span>
+                      <div className="flex flex-wrap gap-2">
+                        {(lead.aptitude_interest || []).length > 0 ? (
+                          lead.aptitude_interest?.map((apt: string) => (
+                            <span key={apt} className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-full text-[10px] font-black uppercase tracking-widest">{apt}</span>
+                          ))
+                        ) : (
+                          <span className="text-xs font-bold text-slate-500">Nenhuma aptidao definida</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-white border border-slate-200 p-4">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Melhor recomendacao</span>
+                      {topMatch ? (
+                        <>
+                          <p className="text-sm font-black text-slate-900 leading-snug">{topMatch.title || `Imovel ${topMatch.property_id?.slice(0, 8)}`}</p>
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest">{topMatch.score || 0}% match</span>
+                            {topMatch.price && <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-widest">{formatCurrency(topMatch.price)}</span>}
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm font-bold text-slate-500">Nenhum match calculado dentro do perfil.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-5">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Building2 size={16} className="text-indigo-600" />
+                    <h5 className="text-sm font-black text-slate-950">Imovel de interesse</h5>
+                  </div>
+                  {lead.property ? (
+                    <div className="flex gap-4">
+                      <div className="w-28 h-24 rounded-2xl bg-slate-100 overflow-hidden shrink-0">
+                        <img src={lead.property.image} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-slate-950 leading-snug">{lead.property.title}</p>
+                        <p className="text-lg font-black text-emerald-700 mt-2">
+                          {lead.property.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                        <p className="text-xs font-bold text-slate-500 mt-1">Imovel vinculado manualmente ao lead</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-slate-50 border border-dashed border-slate-300 p-6 text-center">
+                      <Home size={28} className="mx-auto text-slate-300 mb-3" />
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Nenhum imovel vinculado</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h5 className="text-sm font-black text-slate-950">Anotacoes do corretor</h5>
+                      <p className="text-xs font-bold text-slate-500 mt-1">Texto usado tambem para interpretar orcamento e perfil.</p>
+                    </div>
+                    <MapPin size={16} className="text-slate-300" />
+                  </div>
+                  <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 min-h-[128px]">
+                    <p className="text-sm text-slate-800 font-semibold whitespace-pre-wrap leading-relaxed">
+                      {lead.notes || 'Nenhuma nota registrada.'}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <div className="hidden">
                 <div className="space-y-8">
                    <section>
                      <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Canais de Contato</h5>

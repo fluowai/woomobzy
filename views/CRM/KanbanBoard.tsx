@@ -933,17 +933,55 @@ const buildMatchWhatsappMessage = (lead: Lead, matches: any[]) => {
   ].join('\n');
 };
 
+const parseMoneyValue = (rawNumber?: string, rawUnit?: string) => {
+  if (!rawNumber) return null;
+  const value = Number(rawNumber.replace(/\./g, '').replace(',', '.'));
+  if (!Number.isFinite(value)) return null;
+  const unit = (rawUnit || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (['milhao', 'milhoes', 'mi', 'm'].includes(unit)) return value * 1_000_000;
+  if (unit === 'mil') return value * 1_000;
+  return value;
+};
+
+const extractLeadBudgetRange = (lead: Lead) => {
+  const text = `${lead.notes || ''} ${lead.campaign || ''} ${lead.ad_reference || ''}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const between = text.match(/entre\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?\s+(?:e|a|ate)\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i);
+  if (between) {
+    const min = parseMoneyValue(between[1], between[2] || between[4]);
+    const max = parseMoneyValue(between[3], between[4] || between[2]);
+    if (min && max) return { min: Math.min(min, max), max: Math.max(min, max) };
+  }
+
+  const upTo = text.match(/(?:ate|maximo|max|orcamento)\s+(?:de\s+)?(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i);
+  const max = upTo ? parseMoneyValue(upTo[1], upTo[2]) : Number(lead.budget || 0);
+  return max ? { min: null, max } : { min: null, max: null };
+};
+
+const isWithinLeadBudget = (lead: Lead, price?: number) => {
+  const value = Number(price || 0);
+  if (!value) return true;
+  const budget = extractLeadBudgetRange(lead);
+  if (budget.max && value > budget.max) return false;
+  if (budget.min && value < budget.min) return false;
+  return true;
+};
+
 const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[]; matchProfile: 'urbano' | 'rural' }> = ({
   lead,
   allProperties,
   matchProfile,
 }) => {
   // Matching heurístico rápido para a superfície do card
-  const storedMatches = (lead.matched_properties || []).filter((match: any) => !match.engine || match.engine === matchProfile);
+  const storedMatches = (lead.matched_properties || [])
+    .filter((match: any) => !match.engine || match.engine === matchProfile)
+    .filter((match: any) => isWithinLeadBudget(lead, match.price));
   const heuristicMatches = allProperties
     .filter((p) => {
       // 1. Orçamento (30% de margem)
-      const budgetMatch = !lead.budget || p.price <= lead.budget * 1.3;
+      const budgetMatch = isWithinLeadBudget(lead, p.price);
       
       // 2. Tipo/Nicho conforme o módulo atual
       const typeText = `${p.property_type || p.type || ''} ${p.niche || ''}`.toLowerCase();

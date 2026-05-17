@@ -254,6 +254,13 @@ function scorePrice(price, range, weight, reasons) {
   return 0;
 }
 
+function isOutsideBudget(price, range) {
+  if (!price) return false;
+  if (range.max && price > range.max) return true;
+  if (range.min && price < range.min) return true;
+  return false;
+}
+
 function classifyScore(score) {
   if (score >= 80) return 'Match Quente';
   if (score >= 60) return 'Match Médio';
@@ -275,6 +282,10 @@ function scoreUrbanProperty(lead, property) {
   const bedrooms = Number(getFeature(property, ['bedrooms', 'features.dormitorios', 'features.rooms', 'features.urban.bedrooms'], 0));
   const parking = Number(getFeature(property, ['parking_spaces', 'features.vagas', 'features.parking', 'features.urban.parking'], 0));
   const areaM2 = Number(getFeature(property, ['building_area', 'features.areaM2', 'features.areaConstruida', 'features.urban.areaConstruida'], 0));
+
+  if (isOutsideBudget(price, prefs.budget)) {
+    return buildMatch('urbano', property, 0, ['Fora da faixa de preço informada']);
+  }
 
   if (prefs.city && propertyCity === prefs.city) {
     score += 20;
@@ -336,6 +347,10 @@ function scoreRuralProperty(lead, property) {
   const hasDocs = Boolean(getFeature(property, ['documentacao', 'features.legal.escritura', 'features.legal.car', 'features.legal.ccir'], false))
     || /escritura|documentacao|car|ccir|geo|itr/.test(text);
   const hasAccess = /acesso|estrada|asfalto|rodovia/.test(text);
+
+  if (isOutsideBudget(price, prefs.budget)) {
+    return buildMatch('rural', property, 0, ['Fora da faixa de preço informada']);
+  }
 
   if ((prefs.city && propertyCity === prefs.city) || (prefs.region && propertyRegion.includes(prefs.region))) {
     score += 15;

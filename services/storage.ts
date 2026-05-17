@@ -3,17 +3,18 @@ import { supabase } from './supabase';
 
 export const uploadFile = async (
   file: File,
-  bucket: 'agency-assets' | 'property-images',
+  bucket: 'agency-assets' | 'property-images' | 'imobzyimg' | 'imobzymsg' | 'whatsapp-media',
   folder?: string
 ): Promise<string | null> => {
   try {
+    const storageBucket = resolveStorageBucket(bucket);
     // Sanitiza o nome do arquivo para evitar problemas de caracteres especiais
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
     const filePath = folder ? `${folder}/${fileName}` : fileName;
 
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(bucket)
+      .from(storageBucket)
       .upload(filePath, file);
 
     if (uploadError) {
@@ -22,7 +23,7 @@ export const uploadFile = async (
       throw uploadError;
     }
 
-    const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    const { data } = supabase.storage.from(storageBucket).getPublicUrl(filePath);
 
     logger.info('Upload sucesso. URL:', data.publicUrl);
     return data.publicUrl;
@@ -31,3 +32,15 @@ export const uploadFile = async (
     return null;
   }
 };
+
+function resolveStorageBucket(bucket: string): 'imobzyimg' | 'imobzymsg' | 'whatsapp-media' {
+  if (bucket === 'agency-assets' || bucket === 'property-images') {
+    return 'imobzyimg';
+  }
+
+  if (bucket === 'imobzymsg' || bucket === 'whatsapp-media') {
+    return bucket;
+  }
+
+  return 'imobzyimg';
+}

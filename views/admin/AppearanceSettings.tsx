@@ -10,7 +10,7 @@ import {
   Type,
   Globe,
 } from 'lucide-react';
-import { supabase } from '../../services/supabase';
+import { uploadFile } from '../../services/storage';
 import { extractColorsFromImage } from '../../utils/colors';
 
 const AppearanceSettings: React.FC = () => {
@@ -71,16 +71,8 @@ const AppearanceSettings: React.FC = () => {
     if (!file) return;
 
     try {
-      const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-      const { data, error } = await supabase.storage
-        .from('logos')
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('logos').getPublicUrl(fileName);
+      const publicUrl = await uploadFile(file, 'imobzyimg', 'logos');
+      if (!publicUrl) throw new Error('Logo upload failed');
 
       setFormData((prev) => ({ ...prev, logoUrl: publicUrl }));
       setLogoPreview(publicUrl);

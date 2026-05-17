@@ -3,6 +3,7 @@ import Groq from 'groq-sdk';
 const MAX_CANDIDATES_FOR_AI = 12;
 const MAX_MATCHES = 5;
 const MATCH_VERSION = 'imobzy-match-v2';
+const MISSING_MATCH_COLUMNS_HINT = 'match_summary';
 
 const URBAN_KEYWORDS = [
   'apartamento',
@@ -438,6 +439,14 @@ function buildSummary(profile, matches) {
   return `Perfil ${profile}: ${matches.length} match(es). Melhor opcao: ${best.title} (${best.score}% - ${best.classification}).`;
 }
 
+function isMissingMatchColumnsError(error) {
+  const message = String(error?.message || error?.details || '');
+  return message.includes(MISSING_MATCH_COLUMNS_HINT)
+    || message.includes('matched_properties')
+    || message.includes('matched_at')
+    || message.includes('schema cache');
+}
+
 async function rerankWithGroq(lead, candidates, profile) {
   if (!process.env.GROQ_API_KEY || candidates.length === 0) return candidates;
 
@@ -558,7 +567,8 @@ export async function matchLeadProperties({ supabase, lead, organizationId, crea
   const matchedAt = new Date().toISOString();
   const bestClassification = matches[0]?.classification || 'Sem Match';
 
-  const { data: updatedLead, error: updateError } = await supabase
+  let updatedLead = lead;
+  const { data: persistedLead, error: updateError } = await supabase
     .from('leads')
     .update({
       classification: `Perfil ${profile} - ${bestClassification}`,
@@ -571,7 +581,12 @@ export async function matchLeadProperties({ supabase, lead, organizationId, crea
     .select()
     .single();
 
-  if (updateError) throw updateError;
+  if (updateError) {
+    if (!isMissingMatchColumnsError(updateError)) throw updateError;
+    console.warn('[LeadMatcher] Colunas de match ausentes no banco. Rodar migrations/20260516_lead_property_matches.sql:', updateError.message);
+  } else {
+    updatedLead = persistedLead;
+  }
 
   const { error: activityError } = await supabase.from('lead_activities').insert({
     lead_id: lead.id,
@@ -595,6 +610,10 @@ export async function matchLeadProperties({ supabase, lead, organizationId, crea
 
   return {
     ...updatedLead,
+    classification: updatedLead.classification || `Perfil ${profile} - ${bestClassification}`,
+    matched_properties: matches,
+    match_summary: matchSummary,
+    matched_at: matchedAt,
     match_profile: profile,
     match_whatsapp_message: whatsappMessage,
   };

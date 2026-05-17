@@ -402,8 +402,9 @@ const LeadDetailsModal: React.FC<{
   onClose: () => void;
   onEdit: () => void;
   onRefresh: () => void;
+  onLeadUpdated: (lead: Lead) => void;
   matchProfile: 'urbano' | 'rural';
-}> = ({ lead, isOpen, onClose, onEdit, onRefresh, matchProfile }) => {
+}> = ({ lead, isOpen, onClose, onEdit, onRefresh, onLeadUpdated, matchProfile }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'activities' | 'investments'>('info');
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
@@ -472,7 +473,10 @@ const LeadDetailsModal: React.FC<{
     
     setSavingActivity(true);
     try {
-      await leadService.addActivity(lead.id, newActivity);
+      const result = await leadService.addActivity(lead.id, newActivity);
+      if (result.lead) {
+        onLeadUpdated(result.lead);
+      }
       setNewActivity({ ...newActivity, description: '' });
       toast.success('Atividade registrada!');
       loadActivities();
@@ -1423,6 +1427,10 @@ const KanbanBoard: React.FC = () => {
           setIsEditOpen(true);
         }}
         onRefresh={() => loadLeads()}
+        onLeadUpdated={(updatedLead) => {
+          setLeads((prev) => prev.map((item) => (item.id === updatedLead.id ? updatedLead : item)));
+          setSelectedLead(updatedLead);
+        }}
         matchProfile={matchProfile}
       />
 

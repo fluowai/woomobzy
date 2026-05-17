@@ -19,6 +19,13 @@ async function getOrgAIConfig(orgId) {
   return data.integrations;
 }
 
+function isMissingRelationError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return ['42p01', 'pgrst205'].includes(error?.code) ||
+    message.includes('does not exist') ||
+    message.includes('schema cache');
+}
+
 router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
@@ -28,7 +35,17 @@ router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      if (isMissingRelationError(error)) {
+        return res.json({
+          success: true,
+          agents: [],
+          setup_required: true,
+          message: 'Tabela ai_agents ainda nao foi criada. Execute a migration 20260516_ai_agents_whatsapp_automation.sql.',
+        });
+      }
+      throw error;
+    }
     res.json({ success: true, agents: data || [] });
   } catch (error) {
     res.status(500).json({ error: error.message });

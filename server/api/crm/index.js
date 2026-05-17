@@ -293,14 +293,27 @@ router.post('/leads/:id/activities', verifyAuth, requireTenant, async (req, res)
     if (error) throw error;
 
     // Se for uma interação de contato, atualizar o last_contacted_at do lead
-    if (['Chamada', 'WhatsApp', 'Email', 'Visita'].includes(type)) {
-      await supabase
+    const normalizedType = String(type)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    const isContactActivity = ['chamada', 'ligacao', 'whatsapp', 'email', 'visita'].includes(normalizedType);
+    let updatedLead = null;
+
+    if (isContactActivity) {
+      const { data: leadData, error: leadError } = await supabase
         .from('leads')
-        .update({ last_contacted_at: new Date() })
-        .eq('id', id);
+        .update({ last_contacted_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('organization_id', req.orgId)
+        .select()
+        .single();
+
+      if (leadError) throw leadError;
+      updatedLead = leadData;
     }
 
-    res.status(201).json({ success: true, activity: data });
+    res.status(201).json({ success: true, activity: data, lead: updatedLead });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

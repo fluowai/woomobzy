@@ -79,7 +79,10 @@ export const leadService = {
       method: 'POST',
       body: JSON.stringify(activity),
     });
-    return data.activity;
+    return {
+      activity: data.activity,
+      lead: data.lead ? mapToModel(data.lead) : null,
+    };
   },
 
   // Send welcome message via WhatsApp (Backend Proxy)

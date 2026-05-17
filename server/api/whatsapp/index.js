@@ -98,7 +98,8 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
           applyCorsHeaders(req, res);
           res.status(502).json({
             error: 'Servico WhatsApp Indisponivel',
-            message: 'O servidor WhatsMeow (Go) nao respondeu ou nao esta rodando.',
+            code: 'WHATSAPP_SERVICE_UNREACHABLE',
+            message: 'O servidor WhatsMeow (Go) nao respondeu em http://127.0.0.1:3100. Verifique se a variavel SUPABASE_DB_URL/DATABASE_URL esta configurada no Railway e se o processo whatsapp-service esta online.',
           });
         }
       },

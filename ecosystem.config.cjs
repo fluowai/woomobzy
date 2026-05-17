@@ -22,7 +22,15 @@ module.exports = {
       env: {
         PORT: 3100,
         NODE_URL: `http://127.0.0.1:${webPort}`,
-        SUPABASE_DB_URL: process.env.SUPABASE_DB_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL,
+        SUPABASE_DB_URL:
+          process.env.SUPABASE_DB_URL ||
+          process.env.DATABASE_URL ||
+          process.env.DATABASE_PRIVATE_URL ||
+          process.env.POSTGRES_URL ||
+          process.env.POSTGRES_PRIVATE_URL ||
+          process.env.POSTGRES_PRISMA_URL ||
+          process.env.POSTGRES_URL_NON_POOLING ||
+          process.env.PGDATABASE_URL,
         SUPABASE_URL: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
         SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
         SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET || 'whatsapp-media',

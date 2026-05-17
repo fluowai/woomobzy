@@ -34,11 +34,20 @@ func Load(logger *zap.Logger) *Config {
 		GinMode:            getEnv("GIN_MODE", "debug"),
 		SupabaseURL:        getEnvAny([]string{"SUPABASE_URL", "VITE_SUPABASE_URL"}, ""),
 		SupabaseServiceKey: getEnvAny([]string{"SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY"}, ""),
-		SupabaseDBURL:      getEnvAny([]string{"SUPABASE_DB_URL", "DATABASE_URL", "POSTGRES_URL"}, ""),
-		StorageBucket:      getEnv("SUPABASE_STORAGE_BUCKET", "whatsapp-media"),
-		NodeURL:            strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
-		InternalToken:      getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
-		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
+		SupabaseDBURL: getEnvAny([]string{
+			"SUPABASE_DB_URL",
+			"DATABASE_URL",
+			"DATABASE_PRIVATE_URL",
+			"POSTGRES_URL",
+			"POSTGRES_PRIVATE_URL",
+			"POSTGRES_PRISMA_URL",
+			"POSTGRES_URL_NON_POOLING",
+			"PGDATABASE_URL",
+		}, ""),
+		StorageBucket:     getEnv("SUPABASE_STORAGE_BUCKET", "whatsapp-media"),
+		NodeURL:           strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
+		InternalToken:     getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
+		AutomationEnabled: getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 	}
 
 	corsStr := getEnv("CORS_ORIGINS", "http://localhost:3006,http://localhost:3002,https://consultio.com.br,https://imobzy.consultio.com.br,https://www.consultio.com.br,https://web-production-7c3f0.up.railway.app")
@@ -46,7 +55,7 @@ func Load(logger *zap.Logger) *Config {
 
 	// Validate required fields
 	if cfg.SupabaseDBURL == "" {
-		logger.Fatal("SUPABASE_DB_URL or DATABASE_URL is required")
+		logger.Fatal("Postgres database URL is required. Set SUPABASE_DB_URL, DATABASE_URL, DATABASE_PRIVATE_URL or POSTGRES_URL in Railway variables")
 	}
 
 	return cfg

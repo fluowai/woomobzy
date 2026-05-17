@@ -75,11 +75,16 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
 
     if (error) throw error;
 
+    const forcedProfile = ['urbano', 'rural'].includes(req.body.match_profile)
+      ? req.body.match_profile
+      : null;
+
     const matchedLead = await matchLeadProperties({
       supabase,
       lead: data,
       organizationId: req.orgId,
       createdBy: req.user.id,
+      profileOverride: forcedProfile,
     });
 
     res.status(201).json({ success: true, lead: matchedLead });
@@ -175,11 +180,16 @@ router.post('/leads/:id/match-properties', verifyAuth, requireTenant, async (req
       return res.status(404).json({ error: 'Lead nÃ£o encontrado' });
     }
 
+    const forcedProfile = ['urbano', 'rural'].includes(req.body.match_profile)
+      ? req.body.match_profile
+      : null;
+
     const matchedLead = await matchLeadProperties({
       supabase,
       lead,
       organizationId: req.orgId,
       createdBy: req.user.id,
+      profileOverride: forcedProfile,
     });
 
     res.json({ success: true, lead: matchedLead });

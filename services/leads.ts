@@ -27,6 +27,7 @@ export const leadService = {
         notes: lead.notes,
         budget: lead.budget,
         aptitude_interest: lead.aptitude_interest,
+        match_profile: (lead as any).match_profile,
       }),
     });
 
@@ -58,9 +59,10 @@ export const leadService = {
     return mapToModel(data.lead);
   },
 
-  async matchProperties(id: string) {
+  async matchProperties(id: string, profile?: 'urbano' | 'rural') {
     const data = await callApi(`/api/crm/leads/${id}/match-properties`, {
       method: 'POST',
+      body: JSON.stringify(profile ? { match_profile: profile } : {}),
     });
     return mapToModel(data.lead);
   },
@@ -129,6 +131,8 @@ const mapToModel = (dbItem: any): Lead => ({
   matched_properties: Array.isArray(dbItem.matched_properties) ? dbItem.matched_properties : [],
   match_summary: dbItem.match_summary,
   matched_at: dbItem.matched_at,
+  match_profile: dbItem.match_profile,
+  match_whatsapp_message: dbItem.match_whatsapp_message,
   property: dbItem.properties
     ? {
         title: dbItem.properties.title,

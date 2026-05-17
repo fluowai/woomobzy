@@ -303,13 +303,19 @@ export interface Lead {
     title: string;
     price: number;
     city?: string;
+    neighborhood?: string;
     state?: string;
     image?: string;
+    link?: string;
     score: number;
+    classification?: string;
+    engine?: 'urbano' | 'rural';
     reasons: string[];
   }>;
   match_summary?: string;
   matched_at?: string;
+  match_profile?: 'urbano' | 'rural' | 'misto' | 'indefinido';
+  match_whatsapp_message?: string;
 }
 
 export interface User {

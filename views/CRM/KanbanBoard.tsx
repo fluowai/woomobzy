@@ -21,6 +21,7 @@ import {
   Home,
   Send,
   Trash2,
+  Copy,
 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
@@ -28,13 +29,13 @@ import { useAuth } from '../../context/AuthContext';
 import { Plus, X, Sparkles, TrendingUp, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
 import { propertyService } from '../../services/properties';
-import { geminiService } from '../../services/geminiService';
 
 interface NewLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   orgId?: string;
+  matchProfile: 'urbano' | 'rural';
 }
 
 const NewLeadModal: React.FC<NewLeadModalProps> = ({
@@ -42,6 +43,7 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
   onClose,
   onSuccess,
   orgId,
+  matchProfile,
 }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -66,6 +68,7 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({
       await leadService.create({
         ...formData,
         organization_id: orgId,
+        match_profile: matchProfile,
       } as any);
       onSuccess();
       onClose();
@@ -393,7 +396,8 @@ const LeadDetailsModal: React.FC<{
   onClose: () => void;
   onEdit: () => void;
   onRefresh: () => void;
-}> = ({ lead, isOpen, onClose, onEdit, onRefresh }) => {
+  matchProfile: 'urbano' | 'rural';
+}> = ({ lead, isOpen, onClose, onEdit, onRefresh, matchProfile }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'activities' | 'investments'>('info');
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
@@ -426,19 +430,33 @@ const LeadDetailsModal: React.FC<{
     if (!lead) return;
     setLoadingRecs(true);
     try {
-      const properties = await propertyService.list(1, 100);
-      const result = await geminiService.matchLeadWithProperties(lead, properties);
-      setRecommendations(result);
+      const updatedLead = await leadService.matchProperties(lead.id, matchProfile);
+      setRecommendations({
+        profile_analysis: updatedLead.match_summary || 'Perfil analisado pela IA de matching da IMOBZY.',
+        whatsapp_message: updatedLead.match_whatsapp_message || buildMatchWhatsappMessage(updatedLead, updatedLead.matched_properties || []),
+        recommendations: (updatedLead.matched_properties || []).filter((match: any) => !match.engine || match.engine === matchProfile),
+      });
+      onRefresh();
     } catch (err) {
       logger.error('Failed to load recommendations', err);
+      toast.error('Erro ao recalcular matches do lead');
     } finally {
       setLoadingRecs(false);
     }
   };
 
   useEffect(() => {
-    if (activeTab === 'investments' && !recommendations) {
-      loadRecommendations();
+    if (activeTab === 'investments' && !recommendations && lead) {
+      const scopedMatches = (lead.matched_properties || []).filter((match: any) => !match.engine || match.engine === matchProfile);
+      if (scopedMatches.length > 0) {
+        setRecommendations({
+          profile_analysis: lead.match_summary || 'Matches ja calculados para este lead.',
+          whatsapp_message: buildMatchWhatsappMessage(lead, scopedMatches),
+          recommendations: scopedMatches,
+        });
+      } else {
+        loadRecommendations();
+      }
     }
   }, [activeTab]);
 
@@ -517,7 +535,7 @@ const LeadDetailsModal: React.FC<{
           >
             <div className="flex items-center justify-center gap-2">
               <Sparkles size={12} className={activeTab === 'investments' ? 'text-indigo-600' : 'text-slate-400'} />
-              Sugestões de Investimento
+              Match {matchProfile === 'rural' ? 'Rural' : 'Urbano'}
             </div>
           </button>
         </div>
@@ -729,7 +747,7 @@ const LeadDetailsModal: React.FC<{
                <section>
                   <div className="flex items-center justify-between mb-6">
                     <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 flex items-center gap-2">
-                      <Sparkles size={16} /> Inteligência Artificial Imobzy
+                      <Sparkles size={16} /> Máquina de Match {matchProfile === 'rural' ? 'Rural' : 'Urbano'}
                     </h5>
                     <button 
                       onClick={loadRecommendations}
@@ -744,7 +762,7 @@ const LeadDetailsModal: React.FC<{
                     <div className="flex flex-col items-center justify-center py-20 space-y-4">
                       <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] animate-pulse">
-                        Cruzando dados com o inventário...
+                        Cruzando dados com o inventário {matchProfile === 'rural' ? 'rural' : 'urbano'}...
                       </p>
                     </div>
                   ) : recommendations ? (
@@ -752,7 +770,7 @@ const LeadDetailsModal: React.FC<{
                        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200 border border-white/10 relative overflow-hidden">
                           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
                           <div className="relative z-10">
-                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-300 mb-2 block">Perfil de Investidor Identificado</span>
+                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-300 mb-2 block">Perfil {matchProfile === 'rural' ? 'Rural' : 'Urbano'} Identificado</span>
                             <p className="text-lg font-bold leading-relaxed italic text-indigo-50">
                               &quot;{recommendations.profile_analysis}&quot;
                             </p>
@@ -760,7 +778,7 @@ const LeadDetailsModal: React.FC<{
                        </div>
 
                        <div className="space-y-4">
-                          <h6 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Melhores Oportunidades Selecionadas</h6>
+                          <h6 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Top matches da máquina {matchProfile === 'rural' ? 'rural' : 'urbana'}</h6>
                           <div className="grid grid-cols-1 gap-4">
                              {recommendations.recommendations.map((rec: any, idx: number) => (
                                <div key={idx} className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all group border-l-4 border-l-indigo-500">
@@ -770,13 +788,21 @@ const LeadDetailsModal: React.FC<{
                                      </div>
                                      <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-2">
-                                          <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em]">Match de Alta Conversão</span>
+                                          <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em]">{rec.classification || 'Match IA'} • {rec.score || 0}%</span>
                                           <TrendingUp size={14} className="text-emerald-500" />
                                         </div>
-                                        <p className="font-black text-slate-800 text-lg mb-3">ID do Imóvel: {rec.property_id.slice(0, 8)}</p>
-                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 italic text-slate-600 text-sm leading-relaxed">
+                                        <p className="font-black text-slate-800 text-lg mb-1">{rec.title || `Imóvel ${rec.property_id?.slice(0, 8)}`}</p>
+                                        <p className="text-xs font-bold text-slate-500 mb-3">
+                                          {[rec.city, rec.state].filter(Boolean).join(' / ') || 'Localização não informada'}
+                                          {rec.price ? ` • ${rec.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : ''}
+                                        </p>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-600 text-sm leading-relaxed">
                                            <Lightbulb size={14} className="text-amber-500 mb-1" />
-                                           &quot;{rec.justification}&quot;
+                                           <ul className="space-y-1">
+                                             {(rec.reasons || ['Compatível com dados disponíveis']).map((reason: string) => (
+                                               <li key={reason}>- {reason}</li>
+                                             ))}
+                                           </ul>
                                         </div>
                                      </div>
                                   </div>
@@ -784,12 +810,29 @@ const LeadDetailsModal: React.FC<{
                              ))}
                           </div>
                        </div>
+                       {recommendations.whatsapp_message && (
+                         <div className="bg-emerald-50 border border-emerald-100 rounded-[2rem] p-6">
+                           <div className="flex items-center justify-between gap-3 mb-3">
+                             <h6 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Mensagem pronta para WhatsApp</h6>
+                             <button
+                               onClick={() => {
+                                 navigator.clipboard?.writeText(recommendations.whatsapp_message);
+                                 toast.success('Mensagem copiada');
+                               }}
+                               className="flex items-center gap-2 px-3 py-2 bg-white border border-emerald-200 rounded-xl text-[9px] font-black uppercase tracking-widest text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors"
+                             >
+                               <Copy size={12} /> Copiar
+                             </button>
+                           </div>
+                           <pre className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700 font-medium font-sans">{recommendations.whatsapp_message}</pre>
+                         </div>
+                       )}
                     </div>
                   ) : (
                     <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
                        <Sparkles size={48} className="mx-auto text-slate-200 mb-4" />
                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest max-w-xs mx-auto">
-                         Clique em "Recalcular Perfil" para que a IA analise as notas do Kanban e sugira imóveis.
+                         Clique em "Recalcular Perfil" para que a máquina {matchProfile === 'rural' ? 'rural' : 'urbana'} analise as notas do Kanban e sugira imóveis.
                        </p>
                        <button 
                          onClick={loadRecommendations}
@@ -870,22 +913,42 @@ const PIPELINE_STAGES = [
   },
 ];
 
-const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
+const buildMatchWhatsappMessage = (lead: Lead, matches: any[]) => {
+  const firstName = lead.name?.split(' ')[0] || 'tudo bem';
+  if (!matches.length) {
+    return `Olá ${firstName}, estou analisando novas opções para o seu perfil e te aviso assim que encontrar imóveis realmente aderentes.`;
+  }
+
+  return [
+    `Olá ${firstName}, encontrei alguns imóveis que combinam com o seu perfil.`,
+    '',
+    ...matches.slice(0, 3).flatMap((match, index) => [
+      `${index + 1}. ${match.title}`,
+      match.city || match.state ? `- ${[match.city, match.state].filter(Boolean).join(' / ')}` : null,
+      match.price ? `- ${match.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : null,
+      ...(match.reasons || []).slice(0, 2).map((reason: string) => `- ${reason}`),
+      '',
+    ].filter(Boolean)),
+    'Posso te enviar mais detalhes?',
+  ].join('\n');
+};
+
+const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[]; matchProfile: 'urbano' | 'rural' }> = ({
   lead,
   allProperties,
+  matchProfile,
 }) => {
   // Matching heurístico rápido para a superfície do card
-  const storedMatches = lead.matched_properties || [];
+  const storedMatches = (lead.matched_properties || []).filter((match: any) => !match.engine || match.engine === matchProfile);
   const heuristicMatches = allProperties
     .filter((p) => {
       // 1. Orçamento (30% de margem)
       const budgetMatch = !lead.budget || p.price <= lead.budget * 1.3;
       
-      // 2. Tipo/Nicho (Detectar se é rural/fazenda nas notas)
-      const notes = (lead.notes || '').toLowerCase();
-      const isRuralRequested = notes.includes('rural') || notes.includes('fazenda') || notes.includes('ha') || notes.includes('hectare');
+      // 2. Tipo/Nicho conforme o módulo atual
       const typeText = `${p.property_type || p.type || ''} ${p.niche || ''}`.toLowerCase();
-      const typeMatch = isRuralRequested ? typeText.includes('rural') || typeText.includes('fazenda') : true;
+      const isRuralProperty = typeText.includes('rural') || typeText.includes('fazenda') || typeText.includes('sítio') || typeText.includes('chácara') || typeText.includes('sitio') || typeText.includes('chacara');
+      const typeMatch = matchProfile === 'rural' ? isRuralProperty : !isRuralProperty;
 
       // 3. Estado (se especificado nas notas)
       const stateMatch = true; // Simplificado por enquanto
@@ -901,6 +964,7 @@ const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
       city: p.location?.city,
       state: p.location?.state,
       score: 60,
+      engine: matchProfile,
       reasons: ['compativel pelo cadastro'],
     }));
 
@@ -911,7 +975,7 @@ const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
   return (
     <div className="mt-3 pt-3 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-500">
       <span className="text-[8px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2 block flex items-center gap-1">
-        <Sparkles size={10} className="animate-pulse" /> Sugestões de Investimento
+        <Sparkles size={10} className="animate-pulse" /> Match {matchProfile === 'rural' ? 'Rural' : 'Urbano'}
       </span>
       <div className="space-y-1.5">
         {matches.map((p) => (
@@ -947,6 +1011,7 @@ const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[] }> = ({
 
 const KanbanBoard: React.FC = () => {
   const { settings } = useSettings();
+  const matchProfile: 'urbano' | 'rural' = window.location.pathname.startsWith('/rural') ? 'rural' : 'urbano';
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1108,6 +1173,7 @@ const KanbanBoard: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => loadLeads()}
         orgId={targetOrgId}
+        matchProfile={matchProfile}
       />
 
       <LeadDetailsModal
@@ -1121,6 +1187,7 @@ const KanbanBoard: React.FC = () => {
           setIsEditOpen(true);
         }}
         onRefresh={() => loadLeads()}
+        matchProfile={matchProfile}
       />
 
       <EditLeadModal
@@ -1296,7 +1363,7 @@ const KanbanBoard: React.FC = () => {
                                   </div>
                                 )}
 
-                                <PropertyMatches lead={lead} allProperties={allProperties} />
+                                <PropertyMatches lead={lead} allProperties={allProperties} matchProfile={matchProfile} />
 
                                 <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-3">
                                   <span className="flex items-center gap-1">

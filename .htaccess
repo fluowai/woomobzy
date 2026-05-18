@@ -23,7 +23,7 @@ Options +FollowSymLinks -MultiViews
   # 1. Suporte a WebSockets (Importante para o WhatsApp)
   RewriteCond %{HTTP:Upgrade} websocket [NC]
   RewriteCond %{HTTP:Connection} upgrade [NC]
-  RewriteRule ^api/whatsapp/ws(.*)$ ws://127.0.0.1:3002/whatsapp/ws$1 [P,L]
+  RewriteRule ^api/whatsapp/ws(.*)$ ws://127.0.0.1:3002/api/whatsapp/ws$1 [P,L]
 
   # 2. Encaminha chamadas /api normais para o servidor na porta 3002
   RewriteCond %{REQUEST_URI} ^/api [NC]

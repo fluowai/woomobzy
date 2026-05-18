@@ -230,12 +230,12 @@ const WhatsAppDashboard: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold text-text-primary mb-3">WhatsApp Indisponível</h2>
           <p className="text-text-secondary mb-6 leading-relaxed">
-            O painel não conseguiu consultar a API do WhatsApp na Railway. Verifique se o backend Node.js está online e se as variáveis VITE_WHATSAPP_API_URL e VITE_WHATSAPP_WS_URL foram aplicadas no build.
+            O painel não conseguiu consultar a API do WhatsApp. Verifique se o backend Node.js está online e se o proxy /api/whatsapp está chegando no servidor.
           </p>
           <div className="bg-bg-hover rounded-xl p-4 text-left text-sm text-text-secondary border border-border mb-6">
             <p className="font-semibold text-text-primary mb-2">Checklist da conexão:</p>
             <ul className="space-y-1.5">
-              <li>✅ Frontend chamando https://woomobzy-production.up.railway.app/api/whatsapp</li>
+              <li>✅ Frontend chamando /api/whatsapp pelo mesmo domínio</li>
               <li>✅ Backend Node.js online na Railway</li>
               <li>✅ WhatsMeow (Go) rodando internamente em 127.0.0.1:3100</li>
             </ul>

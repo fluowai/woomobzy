@@ -144,7 +144,7 @@ const ConexoesRural: React.FC = () => {
         <WifiOff size={64} className="text-amber-400 mx-auto mb-6" />
         <h2 className="text-2xl font-black text-black uppercase italic tracking-tighter mb-3">Serviço Indisponível</h2>
         <p className="text-black/50 font-medium italic mb-8 max-w-md mx-auto">
-          O módulo WhatsApp precisa consultar a API da Railway em https://woomobzy-production.up.railway.app/api/whatsapp e que o WhatsMeow esteja rodando internamente na porta 3100.
+          O módulo WhatsApp precisa consultar /api/whatsapp pelo mesmo domínio e que o WhatsMeow esteja rodando internamente na porta 3100.
         </p>
         <button
           onClick={() => { setLoading(true); setServiceUnavailable(false); refreshInstances(); }}

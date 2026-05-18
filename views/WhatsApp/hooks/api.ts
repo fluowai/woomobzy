@@ -1,11 +1,11 @@
-const DEFAULT_WHATSAPP_API_URL = 'https://woomobzy-production.up.railway.app/api/whatsapp';
-const DEFAULT_WHATSAPP_WS_URL = 'wss://woomobzy-production.up.railway.app/api/whatsapp/ws';
+const DEFAULT_WHATSAPP_API_URL = '/api/whatsapp';
+const DEFAULT_WHATSAPP_WS_PATH = '/api/whatsapp/ws';
 
 const RAW_WHATSAPP_API_URL = import.meta.env.VITE_WHATSAPP_API_URL || DEFAULT_WHATSAPP_API_URL;
 const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
 const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
 export const WS_URL = normalizeWhatsAppWsUrl(
-  import.meta.env.VITE_WHATSAPP_WS_URL || DEFAULT_WHATSAPP_WS_URL
+  import.meta.env.VITE_WHATSAPP_WS_URL || DEFAULT_WHATSAPP_WS_PATH
 );
 
 import { supabase } from '@/services/supabase';
@@ -28,10 +28,10 @@ function normalizeWhatsAppApiUrl(url: string): string {
 
 function normalizeWhatsAppWsUrl(url: string): string {
   const clean = (url || '').trim().replace(/\/$/, '');
-  if (!clean) return DEFAULT_WHATSAPP_WS_URL;
+  if (!clean) return buildSameOriginWsUrl(DEFAULT_WHATSAPP_WS_PATH);
 
   if (!/^wss?:\/\//i.test(clean)) {
-    return clean || '/api/whatsapp/ws';
+    return buildSameOriginWsUrl(clean || DEFAULT_WHATSAPP_WS_PATH);
   }
 
   if (/\/api\/whatsapp\/ws$/i.test(clean)) return clean;
@@ -40,6 +40,12 @@ function normalizeWhatsAppWsUrl(url: string): string {
   if (/\/ws$/i.test(clean)) return clean;
 
   return `${clean}/api/whatsapp/ws`;
+}
+
+function buildSameOriginWsUrl(path: string): string {
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${wsProtocol}//${window.location.host}${cleanPath}`;
 }
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {

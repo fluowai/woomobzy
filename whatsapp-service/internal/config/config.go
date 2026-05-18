@@ -19,6 +19,7 @@ type Config struct {
 	StorageBucket      string
 	CORSOrigins        []string
 	NodeURL            string
+	WhatsMeowURL       string
 	InternalToken      string
 	AutomationEnabled  bool
 }
@@ -29,6 +30,15 @@ func Load(logger *zap.Logger) *Config {
 	if err := godotenv.Load(); err != nil {
 		logger.Warn("No .env file found, using environment variables")
 	}
+
+	logger.Info("Environment check",
+		zap.Bool("DATABASE_URL_exists", cleanEnvValue(os.Getenv("DATABASE_URL")) != ""),
+		zap.Bool("SUPABASE_DB_URL_exists", cleanEnvValue(os.Getenv("SUPABASE_DB_URL")) != ""),
+		zap.Bool("DATABASE_PRIVATE_URL_exists", cleanEnvValue(os.Getenv("DATABASE_PRIVATE_URL")) != ""),
+		zap.Bool("POSTGRES_URL_exists", cleanEnvValue(os.Getenv("POSTGRES_URL")) != ""),
+		zap.Bool("WHATSMEOW_URL_exists", cleanEnvValue(os.Getenv("WHATSMEOW_URL")) != ""),
+		zap.Bool("PGSSLMODE_exists", cleanEnvValue(os.Getenv("PGSSLMODE")) != ""),
+	)
 
 	rawDBURL := getEnvAny([]string{
 		"SUPABASE_DB_URL",
@@ -53,11 +63,12 @@ func Load(logger *zap.Logger) *Config {
 		SupabaseDBURL:      normalizeDatabaseURL(rawDBURL),
 		StorageBucket:      getEnv("SUPABASE_STORAGE_BUCKET", "whatsapp-media"),
 		NodeURL:            strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
+		WhatsMeowURL:       strings.TrimRight(getEnvAny([]string{"WHATSMEOW_URL", "WHATSAPP_API_URL"}, "http://127.0.0.1:3100"), "/"),
 		InternalToken:      getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
 		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 	}
 
-	corsStr := getEnv("CORS_ORIGINS", "http://localhost:3006,http://localhost:3002,https://consultio.com.br,https://imobzy.consultio.com.br,https://www.consultio.com.br")
+	corsStr := getEnvAny([]string{"CORS_ORIGINS", "ALLOWED_ORIGINS"}, "http://localhost:3006,http://localhost:3002,https://consultio.com.br,https://imobzy.consultio.com.br,https://www.consultio.com.br")
 	cfg.CORSOrigins = strings.Split(corsStr, ",")
 
 	// Validate required fields
@@ -103,8 +114,12 @@ func normalizeDatabaseURL(raw string) string {
 
 	query := parsed.Query()
 
-	if strings.Contains(parsed.Host, "supabase.co") && query.Get("sslmode") == "" {
-		query.Set("sslmode", "require")
+	if query.Get("sslmode") == "" {
+		if sslMode := cleanEnvValue(os.Getenv("PGSSLMODE")); sslMode != "" {
+			query.Set("sslmode", sslMode)
+		} else if strings.Contains(parsed.Host, "supabase.co") {
+			query.Set("sslmode", "require")
+		}
 	}
 
 	if query.Get("default_query_exec_mode") == "" {

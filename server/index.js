@@ -71,6 +71,7 @@ const defaultAllowedOrigins = [
   'https://consultio.com.br',
   'https://imobzy.consultio.com.br',
   'https://www.consultio.com.br',
+  'https://woomobzy-production.up.railway.app',
 ];
 
 const envAllowedOrigins = process.env.ALLOWED_ORIGINS
@@ -105,19 +106,21 @@ const corsOptions = {
     callback(new Error(`CORS: Origem nao permitida - ${origin}`));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Origin',
     'Accept',
     'Content-Type',
     'Authorization',
     'X-Requested-With',
+    'x-tenant-id',
     'x-impersonate-org-id',
   ],
   optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000, // Generoso para produção inicial

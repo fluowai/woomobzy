@@ -37,12 +37,24 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const target = resolveWhatsAppTarget(process.env.WHATSAPP_API_URL);
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const allowedOriginPattern = /^https:\/\/([a-z0-9-]+\.)?(consultio\.com\.br|imobzy\.com\.br)$/i;
+  const envAllowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : [];
+
+  const allowedOrigins = new Set([
+    'https://imobzy.consultio.com.br',
+    'https://woomobzy-production.up.railway.app',
+    ...envAllowedOrigins,
+  ]);
 
   const applyCorsHeaders = (req, res) => {
     const origin = req.headers.origin;
     if (
       origin &&
-      (allowedOriginPattern.test(origin) ||
+      (allowedOrigins.has(origin) ||
+        allowedOriginPattern.test(origin) ||
         origin.startsWith('http://localhost') ||
         origin.startsWith('http://127.0.0.1') ||
         origin.endsWith('.vercel.app') ||
@@ -56,7 +68,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Origin,Accept,Content-Type,Authorization,X-Requested-With,x-impersonate-org-id'
+      'Origin,Accept,Content-Type,Authorization,X-Requested-With,x-tenant-id,x-impersonate-org-id'
     );
   };
 

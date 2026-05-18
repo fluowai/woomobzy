@@ -75,6 +75,29 @@ func (r *ChatRepo) GetByJID(ctx context.Context, instanceID uuid.UUID, chatJID s
 	return &chat, nil
 }
 
+// GetByID retrieves a chat by ID and instance.
+func (r *ChatRepo) GetByID(ctx context.Context, chatID, instanceID uuid.UUID) (*models.Chat, error) {
+	query := `
+		SELECT id, instance_id, chat_jid, name, is_group,
+		       COALESCE(last_message, '') as last_message,
+		       last_message_at, unread_count,
+		       COALESCE(avatar_url, '') as avatar_url,
+		       created_at, updated_at
+		FROM whatsapp_chats
+		WHERE id = $1 AND instance_id = $2`
+
+	var chat models.Chat
+	err := r.db.QueryRow(ctx, query, chatID, instanceID).Scan(
+		&chat.ID, &chat.InstanceID, &chat.ChatJID, &chat.Name, &chat.IsGroup,
+		&chat.LastMessage, &chat.LastMessageAt, &chat.UnreadCount,
+		&chat.AvatarURL, &chat.CreatedAt, &chat.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &chat, nil
+}
+
 // ListByInstance retrieves all chats for an instance, ordered by last message
 func (r *ChatRepo) ListByInstance(ctx context.Context, instanceID uuid.UUID) ([]models.Chat, error) {
 	query := `

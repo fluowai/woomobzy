@@ -105,17 +105,16 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 		return
 	}
 
-	// Get the WhatsApp client
-	client, exists := h.manager.GetClient(instanceID)
-	if !exists || !client.IsConnected() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Instance not connected"})
-		return
-	}
-
 	// Get chat JID
 	chat, err := h.getChatByID(ctx, chatID, instanceID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Chat not found"})
+		return
+	}
+
+	client, err := h.getConnectedClient(ctx, instanceID)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -211,15 +210,15 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	client, exists := h.manager.GetClient(instanceID)
-	if !exists || !client.IsConnected() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Instance not connected"})
-		return
-	}
-
 	chat, err := h.getChatByID(ctx, chatID, instanceID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Chat not found"})
+		return
+	}
+
+	client, err := h.getConnectedClient(ctx, instanceID)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -285,16 +284,34 @@ func messageTypeFromMime(mimeType string) string {
 }
 
 func (h *MessageHandler) getChatByID(ctx context.Context, chatID, instanceID uuid.UUID) (*models.Chat, error) {
-	// We need to query directly since we don't have a GetByID on chatRepo
-	// For now, list and filter (this should be optimized with a proper GetByID)
-	chats, err := h.chatRepo.ListByInstance(ctx, instanceID)
-	if err != nil {
-		return nil, err
+	return h.chatRepo.GetByID(ctx, chatID, instanceID)
+}
+
+func (h *MessageHandler) getConnectedClient(ctx context.Context, instanceID uuid.UUID) (*whatsapp.Client, error) {
+	client, exists := h.manager.GetClient(instanceID)
+	if exists && client.IsConnected() {
+		return client, nil
 	}
-	for i := range chats {
-		if chats[i].ID == chatID {
-			return &chats[i], nil
+
+	if err := h.manager.ConnectInstance(ctx, instanceID); err != nil {
+		return nil, fmt.Errorf("instancia WhatsApp nao conectada: %w", err)
+	}
+
+	deadline := time.After(8 * time.Second)
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("instancia WhatsApp nao conectada")
+		case <-deadline:
+			return nil, fmt.Errorf("instancia WhatsApp reconectando, tente novamente em alguns segundos")
+		case <-ticker.C:
+			client, exists = h.manager.GetClient(instanceID)
+			if exists && client.IsConnected() {
+				return client, nil
+			}
 		}
 	}
-	return nil, fmt.Errorf("chat not found")
 }

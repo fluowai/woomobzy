@@ -119,9 +119,13 @@ func (h *InstanceHandler) GetQRCode(c *gin.Context) {
 		return
 	}
 
-	// Ensure instance is connecting
-	if err := h.manager.ConnectInstance(c.Request.Context(), id); err != nil {
-		h.logger.Error("Failed to connect for QR", zap.Error(err))
+	// Start a connection only when there is no active client for this instance.
+	// Reading the QR code must not recreate the WhatsMeow client, otherwise an
+	// already displayed QR can be invalidated while the user is scanning it.
+	if _, exists := h.manager.GetClient(id); !exists {
+		if err := h.manager.ConnectInstance(c.Request.Context(), id); err != nil {
+			h.logger.Error("Failed to connect for QR", zap.Error(err))
+		}
 	}
 
 	qrCode, err := h.manager.GetQRCode(c.Request.Context(), id)

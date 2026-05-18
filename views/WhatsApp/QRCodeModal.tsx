@@ -16,6 +16,11 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const { on } = useWebSocket();
   const pollingRef = useRef<ReturnType<typeof setInterval>>();
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const qrCodeRef = useRef(qrCode);
+
+  useEffect(() => {
+    qrCodeRef.current = qrCode;
+  }, [qrCode]);
 
   useEffect(() => {
     // Listen for QR code updates
@@ -62,10 +67,12 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         return;
       }
 
-      const data = await instanceApi.getQRCode(instance.id);
-      if (data.qr_code) {
-        setQrCode(data.qr_code);
-        setLoading(false);
+      if (!qrCodeRef.current) {
+        const data = await instanceApi.getQRCode(instance.id);
+        if (data.qr_code) {
+          setQrCode(data.qr_code);
+          setLoading(false);
+        }
       }
     } catch {
       // QR not ready yet, keep polling

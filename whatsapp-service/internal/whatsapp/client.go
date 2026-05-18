@@ -229,6 +229,7 @@ func (c *Client) eventHandler(evt interface{}) {
 		c.connected = true
 		c.mu.Unlock()
 		c.logger.Info("WhatsApp connected event", zap.String("instance", c.instanceID.String()))
+		c.markConnected(context.Background())
 
 	case *events.Disconnected:
 		c.mu.Lock()
@@ -260,6 +261,10 @@ func (c *Client) eventHandler(evt interface{}) {
 		c.mu.Unlock()
 		c.logger.Warn("WhatsApp logged out", zap.String("instance", c.instanceID.String()))
 		c.instanceRepo.UpdateStatus(context.Background(), c.instanceID, models.StatusDisconnected)
+		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+			InstanceID: c.instanceID,
+			Status:     models.StatusDisconnected,
+		})
 
 	case *events.HistorySync:
 		c.logger.Info("History sync received", zap.String("instance", c.instanceID.String()))
@@ -449,6 +454,29 @@ func (c *Client) handleMessage(evt *events.Message) {
 			}
 		}(*msg, *chat, participantInfo)
 	}
+}
+
+func (c *Client) markConnected(ctx context.Context) {
+	if c.waClient.Store.ID == nil {
+		return
+	}
+
+	jid := c.waClient.Store.ID.String()
+	phoneNum := phone.ExtractFromJID(jid)
+
+	if err := c.instanceRepo.UpdateConnected(ctx, c.instanceID, phoneNum, jid); err != nil {
+		c.logger.Error("Failed to update connected status",
+			zap.String("instance", c.instanceID.String()),
+			zap.Error(err),
+		)
+		return
+	}
+
+	c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+		InstanceID: c.instanceID,
+		Status:     models.StatusConnected,
+		Phone:      phoneNum,
+	})
 }
 
 func (c *Client) resolveDisplayName(ctx context.Context, jid types.JID, pushName, fallbackPhone string) string {

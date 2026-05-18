@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { instanceApi, type Instance } from '../WhatsApp/hooks/api';
+import { useWebSocket } from '../WhatsApp/hooks/useWebSocket';
 import QRCodeModal from '../WhatsApp/QRCodeModal';
 import { usePlans } from '../../context/PlansContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -30,6 +31,7 @@ const ConexoesRural: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
+  const { on } = useWebSocket(!serviceUnavailable);
 
   const { currentPlan } = usePlans();
   const maxInstances = currentPlan?.limits?.whatsapp_instances || 1;
@@ -38,6 +40,37 @@ const ConexoesRural: React.FC = () => {
   useEffect(() => {
     refreshInstances();
   }, []);
+
+  useEffect(() => {
+    const unsubStatus = on('instance_status', (data: any) => {
+      setInstances((prev) =>
+        prev.map((inst) =>
+          inst.id === data.instance_id
+            ? { ...inst, status: data.status, phone: data.phone || inst.phone }
+            : inst
+        )
+      );
+
+      if (data.status === 'connected') {
+        refreshInstances();
+      }
+    });
+
+    const unsubQR = on('qr_code', (data: any) => {
+      setInstances((prev) =>
+        prev.map((inst) =>
+          inst.id === data.instance_id
+            ? { ...inst, status: 'qr_pending', qr_code: data.qr_code }
+            : inst
+        )
+      );
+    });
+
+    return () => {
+      unsubStatus();
+      unsubQR();
+    };
+  }, [on]);
 
   const refreshInstances = async () => {
     setLoading(true);

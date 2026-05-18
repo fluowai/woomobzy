@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './whatsapp.css';
 import { useWebSocket } from './hooks/useWebSocket';
 import { instanceApi, type Instance } from './hooks/api';
 import { X, QrCode, Loader2, CheckCircle2, RefreshCw, Smartphone } from 'lucide-react';
@@ -14,6 +15,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const [loading, setLoading] = useState(!instance.qr_code);
   const { on } = useWebSocket();
   const pollingRef = useRef<ReturnType<typeof setInterval>>();
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     // Listen for QR code updates
@@ -31,31 +33,39 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         setStatus(data.status);
         if (data.status === 'connected') {
           // Auto-close after successful connection
-          setTimeout(onClose, 2000);
+          closeTimeoutRef.current = setTimeout(onClose, 1800);
         }
       }
     });
 
-    // Poll for QR code if not available yet
-    if (!qrCode) {
-      fetchQR();
-      pollingRef.current = setInterval(fetchQR, 3000);
-    }
+    fetchQR();
+    pollingRef.current = setInterval(fetchQR, 3000);
 
     return () => {
       unsubQR();
       unsubStatus();
       if (pollingRef.current) clearInterval(pollingRef.current);
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     };
   }, [instance.id, on]);
 
   const fetchQR = async () => {
     try {
+      const freshInstance = await instanceApi.get(instance.id);
+      setStatus(freshInstance.status);
+
+      if (freshInstance.status === 'connected') {
+        setQrCode('');
+        setLoading(false);
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        closeTimeoutRef.current = setTimeout(onClose, 1800);
+        return;
+      }
+
       const data = await instanceApi.getQRCode(instance.id);
       if (data.qr_code) {
         setQrCode(data.qr_code);
         setLoading(false);
-        if (pollingRef.current) clearInterval(pollingRef.current);
       }
     } catch {
       // QR not ready yet, keep polling

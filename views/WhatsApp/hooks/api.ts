@@ -1,35 +1,45 @@
-const RAW_WHATSAPP_API_URL = import.meta.env.VITE_WHATSAPP_API_URL || '';
-const IS_PRODUCT_ORIGIN =
-  typeof window !== 'undefined' &&
-  /(^|\.)(consultio\.com\.br|imobzy\.com\.br)$/i.test(window.location.hostname);
-const RAW_WHATSAPP_IS_RAILWAY =
-  /^https?:\/\//i.test(RAW_WHATSAPP_API_URL) &&
-  /(^|\.)up\.railway\.app$/i.test(new URL(RAW_WHATSAPP_API_URL).hostname);
-const USE_DIRECT_WHATSAPP_API =
-  /^https?:\/\//i.test(RAW_WHATSAPP_API_URL) &&
-  !(IS_PRODUCT_ORIGIN && RAW_WHATSAPP_IS_RAILWAY);
-const RAW_BACKEND_URL = USE_DIRECT_WHATSAPP_API
-  ? RAW_WHATSAPP_API_URL
-  : IS_PRODUCT_ORIGIN
-    ? ''
-    : import.meta.env.VITE_API_URL || '';
-const BACKEND_URL = normalizeBackendUrl(RAW_BACKEND_URL);
-const API_BASE = BACKEND_URL
-  ? `${BACKEND_URL}${USE_DIRECT_WHATSAPP_API ? '/api' : '/api/whatsapp'}`
-  : '/api/whatsapp';
-export const WS_URL = BACKEND_URL
-  ? `${BACKEND_URL.replace('http', 'ws')}${USE_DIRECT_WHATSAPP_API ? '/ws' : '/api/whatsapp/ws'}`
-  : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/whatsapp/ws`;
+const DEFAULT_WHATSAPP_API_URL = 'https://woomobzy-production.up.railway.app/api/whatsapp';
+const DEFAULT_WHATSAPP_WS_URL = 'wss://woomobzy-production.up.railway.app/api/whatsapp/ws';
+
+const RAW_WHATSAPP_API_URL = import.meta.env.VITE_WHATSAPP_API_URL || DEFAULT_WHATSAPP_API_URL;
+const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
+const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
+export const WS_URL = normalizeWhatsAppWsUrl(
+  import.meta.env.VITE_WHATSAPP_WS_URL || DEFAULT_WHATSAPP_WS_URL
+);
 
 import { supabase } from '@/services/supabase';
 
 let tenantIdCache: string | null | undefined;
 
-function normalizeBackendUrl(url: string): string {
+function normalizeWhatsAppApiUrl(url: string): string {
   const clean = (url || '').trim().replace(/\/$/, '');
-  if (!clean) return '';
+  if (!clean) return DEFAULT_WHATSAPP_API_URL;
 
-  return clean;
+  if (!/^https?:\/\//i.test(clean)) {
+    return clean || '/api/whatsapp';
+  }
+
+  if (/\/api\/whatsapp$/i.test(clean)) return clean;
+  if (/\/api$/i.test(clean)) return `${clean}/whatsapp`;
+
+  return `${clean}/api/whatsapp`;
+}
+
+function normalizeWhatsAppWsUrl(url: string): string {
+  const clean = (url || '').trim().replace(/\/$/, '');
+  if (!clean) return DEFAULT_WHATSAPP_WS_URL;
+
+  if (!/^wss?:\/\//i.test(clean)) {
+    return clean || '/api/whatsapp/ws';
+  }
+
+  if (/\/api\/whatsapp\/ws$/i.test(clean)) return clean;
+  if (/\/api\/whatsapp$/i.test(clean)) return `${clean}/ws`;
+  if (/\/api$/i.test(clean)) return `${clean}/whatsapp/ws`;
+  if (/\/ws$/i.test(clean)) return clean;
+
+  return `${clean}/api/whatsapp/ws`;
 }
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {

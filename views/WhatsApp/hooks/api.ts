@@ -232,13 +232,19 @@ export function formatPhone(number: string): string {
   return cleaned;
 }
 
+export function isValidBrazilianPhone(number: string): boolean {
+  const normalized = formatPhone(number);
+  return normalized.startsWith('55') && (normalized.length === 12 || normalized.length === 13);
+}
+
 export function formatPhoneDisplay(phone: string): string {
   const normalized = formatPhone(phone);
-  return normalized ? `+${normalized}` : '';
+  return isValidBrazilianPhone(normalized) ? `+${normalized}` : '';
 }
 
 export function getDisplayName(pushName: string | null, number: string): string {
-  return pushName && pushName.trim() !== '' ? pushName : formatPhone(number);
+  if (pushName && pushName.trim() !== '') return pushName;
+  return isValidBrazilianPhone(number) ? formatPhone(number) : 'Contato sem telefone';
 }
 
 function mediaTypeFromFile(file: File): string {

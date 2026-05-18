@@ -9,6 +9,11 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
   const isSent = message.is_from_me;
+  const senderPhone = formatPhoneDisplay(message.sender_phone);
+  const senderName =
+    message.sender_name && message.sender_name !== '~'
+      ? message.sender_name
+      : senderPhone || 'Contato sem telefone';
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', {
@@ -128,14 +133,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
           {message.sender_avatar_url ? (
             <img src={message.sender_avatar_url} alt="" className="wa-avatar-img" />
           ) : (
-            <span>{(message.sender_name || message.sender_phone || '?').substring(0, 1).toUpperCase()}</span>
+            <span>{senderName.substring(0, 1).toUpperCase()}</span>
           )}
         </div>
       )}
       <div className={`wa-bubble ${isSent ? 'wa-bubble-sent' : 'wa-bubble-received'}`}>
         {/* Group sender name */}
         {isGroup && !isSent && (
-          <span className="wa-bubble-sender">{message.sender_name || formatPhoneDisplay(message.sender_phone)}</span>
+          <span className="wa-bubble-sender">{senderName}</span>
         )}
 
         {/* Media or text content */}

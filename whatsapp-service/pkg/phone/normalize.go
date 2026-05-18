@@ -24,7 +24,7 @@ func Normalize(number string) string {
 // FormatE164 returns a phone number in +5548988003260 format.
 func FormatE164(number string) string {
 	cleaned := Normalize(number)
-	if cleaned == "" {
+	if !IsValidBR(cleaned) {
 		return ""
 	}
 	return "+" + cleaned
@@ -36,7 +36,11 @@ func GetDisplayName(pushName string, phone string) string {
 	if trimmed != "" {
 		return trimmed
 	}
-	return Normalize(phone)
+	cleaned := Normalize(phone)
+	if IsValidBR(cleaned) {
+		return cleaned
+	}
+	return "Contato sem telefone"
 }
 
 // ExtractFromJID extracts the phone number from a WhatsApp JID.
@@ -52,4 +56,14 @@ func ExtractFromJID(jid string) string {
 // IsGroupJID checks if a JID belongs to a group.
 func IsGroupJID(jid string) bool {
 	return strings.Contains(jid, "@g.us")
+}
+
+// IsValidBR checks if the number is a Brazilian phone in canonical digits.
+// Accepted examples: 5548988003260, 554833806836.
+func IsValidBR(number string) bool {
+	cleaned := Normalize(number)
+	if !strings.HasPrefix(cleaned, "55") {
+		return false
+	}
+	return len(cleaned) == 12 || len(cleaned) == 13
 }

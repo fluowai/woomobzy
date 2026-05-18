@@ -114,3 +114,43 @@ func (r *ChatRepo) MarkRead(ctx context.Context, chatID uuid.UUID) error {
 	_, err := r.db.Exec(ctx, query, chatID)
 	return err
 }
+
+// MergeJIDs moves messages from alternate one-to-one JIDs into the canonical chat.
+func (r *ChatRepo) MergeJIDs(ctx context.Context, instanceID, canonicalChatID uuid.UUID, alternateJIDs []string) error {
+	for _, jid := range alternateJIDs {
+		if jid == "" {
+			continue
+		}
+
+		var duplicateID uuid.UUID
+		err := r.db.QueryRow(ctx, `
+			SELECT id
+			FROM whatsapp_chats
+			WHERE instance_id = $1 AND chat_jid = $2 AND id <> $3
+			LIMIT 1`,
+			instanceID, jid, canonicalChatID,
+		).Scan(&duplicateID)
+		if err != nil {
+			continue
+		}
+
+		if _, err := r.db.Exec(ctx, `
+			UPDATE whatsapp_messages
+			SET chat_id = $1
+			WHERE instance_id = $2 AND chat_id = $3`,
+			canonicalChatID, instanceID, duplicateID,
+		); err != nil {
+			return fmt.Errorf("failed to merge duplicate chat messages: %w", err)
+		}
+
+		if _, err := r.db.Exec(ctx, `
+			DELETE FROM whatsapp_chats
+			WHERE id = $1`,
+			duplicateID,
+		); err != nil {
+			return fmt.Errorf("failed to delete duplicate chat: %w", err)
+		}
+	}
+
+	return nil
+}

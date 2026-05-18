@@ -24,6 +24,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const chatPhone = formatPhoneDisplay(chat.chat_jid);
+  const chatName = chat.is_group
+    ? chat.name || 'Grupo sem nome'
+    : chat.name && chat.name !== '~'
+      ? chat.name
+      : chatPhone || 'Contato sem telefone';
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -83,13 +89,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             ) : chat.is_group ? (
               <Users size={20} />
             ) : (
-              <span>{chat.name?.charAt(0)?.toUpperCase() || '?'}</span>
+              <span>{chatName.charAt(0).toUpperCase()}</span>
             )}
           </div>
           <div>
-            <h2 className="wa-chat-header-name">{chat.name}</h2>
+            <h2 className="wa-chat-header-name">{chatName}</h2>
             <span className="wa-chat-header-sub">
-              {chat.is_group ? 'Grupo' : formatPhoneDisplay(chat.chat_jid)}
+              {chat.is_group ? 'Grupo' : chatPhone || 'Telefone nao identificado'}
               {instanceName && ` · ${instanceName}`}
             </span>
           </div>

@@ -276,8 +276,10 @@ func (c *Client) handleMessage(evt *events.Message) {
 	ctx := context.Background()
 
 	info := evt.Info
-	chatJID := info.Chat.String()
+	canonicalJID := canonicalChatJID(info)
+	chatJID := canonicalJID.String()
 	isGroup := phone.IsGroupJID(chatJID)
+	alternateJIDs := alternateChatJIDs(info, chatJID)
 
 	// Determine sender info
 	var senderPhone, senderName string
@@ -304,8 +306,8 @@ func (c *Client) handleMessage(evt *events.Message) {
 			}
 			senderName = "Me"
 		} else {
-			senderPhone = phone.Normalize(info.Sender.User)
-			senderName = c.resolveDisplayName(ctx, info.Sender, info.PushName, senderPhone)
+			senderPhone = phone.Normalize(canonicalJID.User)
+			senderName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, senderPhone)
 		}
 	}
 
@@ -324,13 +326,13 @@ func (c *Client) handleMessage(evt *events.Message) {
 	} else {
 		if info.IsFromMe {
 			// For sent messages, the chat is the recipient
-			chatName = phone.GetDisplayName("", phone.Normalize(info.Chat.User))
+			chatName = c.resolveDisplayName(ctx, canonicalJID, "", phone.Normalize(canonicalJID.User))
 		} else {
-			chatName = c.resolveDisplayName(ctx, info.Chat, info.PushName, senderPhone)
+			chatName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, senderPhone)
 		}
 	}
 
-	chatAvatarURL := c.resolveAvatarURL(ctx, info.Chat)
+	chatAvatarURL := c.resolveAvatarURL(ctx, canonicalJID)
 
 	// Upsert contact (only for non-group or for the sender in a group)
 	if senderPhone != "" && !info.IsFromMe {
@@ -369,6 +371,13 @@ func (c *Client) handleMessage(evt *events.Message) {
 	if err := c.chatRepo.Upsert(ctx, chat); err != nil {
 		c.logger.Error("Failed to upsert chat", zap.Error(err))
 		return
+	}
+	if err := c.chatRepo.MergeJIDs(ctx, c.instanceID, chat.ID, alternateJIDs); err != nil {
+		c.logger.Warn("Failed to merge duplicate chat JIDs",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("chat_jid", chatJID),
+			zap.Error(err),
+		)
 	}
 
 	// Handle media download
@@ -516,6 +525,45 @@ func uuidToString(id *uuid.UUID) string {
 		return ""
 	}
 	return id.String()
+}
+
+func canonicalChatJID(info types.MessageInfo) types.JID {
+	if phone.IsGroupJID(info.Chat.String()) {
+		return info.Chat.ToNonAD()
+	}
+
+	for _, jid := range []types.JID{info.RecipientAlt, info.SenderAlt, info.Chat, info.Sender} {
+		if isPhoneJID(jid) {
+			return types.NewJID(phone.Normalize(jid.User), types.DefaultUserServer)
+		}
+	}
+
+	return info.Chat.ToNonAD()
+}
+
+func alternateChatJIDs(info types.MessageInfo, canonical string) []string {
+	seen := map[string]bool{canonical: true, "": true}
+	var alternates []string
+
+	for _, jid := range []types.JID{info.Chat, info.Sender, info.SenderAlt, info.RecipientAlt} {
+		value := jid.ToNonAD().String()
+		if !seen[value] {
+			seen[value] = true
+			alternates = append(alternates, value)
+		}
+	}
+
+	return alternates
+}
+
+func isPhoneJID(jid types.JID) bool {
+	if jid.IsEmpty() || jid.User == "" {
+		return false
+	}
+	if jid.Server != types.DefaultUserServer && jid.Server != types.LegacyUserServer {
+		return false
+	}
+	return phone.IsValidBR(jid.User)
 }
 
 // extractMessageContent determines the type and text content of a message

@@ -61,6 +61,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return colors[Math.abs(hash) % colors.length];
   };
 
+  const getChatName = (chat: Chat) => {
+    const formattedPhone = formatPhoneDisplay(chat.chat_jid);
+    if (chat.is_group) return chat.name || 'Grupo sem nome';
+    if (formattedPhone) return chat.name && chat.name !== '~' ? chat.name : formattedPhone;
+    return chat.name && chat.name !== '~' ? chat.name : 'Contato sem telefone';
+  };
+
   return (
     <aside className="wa-sidebar" id="chat-sidebar">
       {/* Search */}
@@ -114,14 +121,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               {/* Avatar */}
               <div
                 className="wa-avatar"
-                style={{ backgroundColor: getAvatarColor(chat.name) }}
+                style={{ backgroundColor: getAvatarColor(getChatName(chat)) }}
               >
                 {chat.avatar_url ? (
                   <img src={chat.avatar_url} alt="" className="wa-avatar-img" />
                 ) : chat.is_group ? (
                   <Users size={18} color="white" />
                 ) : (
-                  <span className="wa-avatar-text">{getInitials(chat.name)}</span>
+                  <span className="wa-avatar-text">{getInitials(getChatName(chat))}</span>
                 )}
               </div>
 
@@ -130,7 +137,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 <div className="wa-chat-top">
                   <span className="wa-chat-name">
                     {chat.is_group && <Users size={12} className="wa-group-icon" />}
-                    {chat.name || formatPhoneDisplay(chat.chat_jid) || 'Desconhecido'}
+                    {getChatName(chat)}
                   </span>
                   <span className="wa-chat-time">{formatTime(chat.last_message_at)}</span>
                 </div>

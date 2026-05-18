@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"whatsapp-service/internal/config"
@@ -36,7 +37,13 @@ func main() {
 
 	// Connect to database
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, cfg.SupabaseDBURL)
+	poolConfig, err := pgxpool.ParseConfig(cfg.SupabaseDBURL)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Failed to parse database config: %v", err))
+	}
+	poolConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Failed to connect to database: %v", err))
 	}

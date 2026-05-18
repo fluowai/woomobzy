@@ -97,11 +97,16 @@ func normalizeDatabaseURL(raw string) string {
 		return raw
 	}
 
-	if strings.Contains(parsed.Host, "supabase.co") && parsed.Query().Get("sslmode") == "" {
-		query := parsed.Query()
+	query := parsed.Query()
+
+	if strings.Contains(parsed.Host, "supabase.co") && query.Get("sslmode") == "" {
 		query.Set("sslmode", "require")
-		parsed.RawQuery = query.Encode()
 	}
 
+	if query.Get("default_query_exec_mode") == "" {
+		query.Set("default_query_exec_mode", "simple_protocol")
+	}
+
+	parsed.RawQuery = query.Encode()
 	return parsed.String()
 }

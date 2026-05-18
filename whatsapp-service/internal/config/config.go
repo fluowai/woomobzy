@@ -34,11 +34,15 @@ func Load(logger *zap.Logger) *Config {
 		"SUPABASE_DB_URL",
 		"DATABASE_URL",
 		"DATABASE_PRIVATE_URL",
+		"DIRECT_URL",
 		"POSTGRES_URL",
 		"POSTGRES_PRIVATE_URL",
 		"POSTGRES_PRISMA_URL",
 		"POSTGRES_URL_NON_POOLING",
+		"POSTGRESQL_URL",
 		"PGDATABASE_URL",
+		"PG_URL",
+		"DB_URL",
 	}, "")
 
 	cfg := &Config{
@@ -58,7 +62,7 @@ func Load(logger *zap.Logger) *Config {
 
 	// Validate required fields
 	if cfg.SupabaseDBURL == "" {
-		logger.Fatal("Postgres database URL is required. Set SUPABASE_DB_URL, DATABASE_URL, DATABASE_PRIVATE_URL or POSTGRES_URL in Railway variables")
+		logger.Fatal("Postgres database URL is required. Set SUPABASE_DB_URL, DATABASE_URL, DATABASE_PRIVATE_URL, DIRECT_URL or POSTGRES_URL in server variables")
 	}
 
 	return cfg

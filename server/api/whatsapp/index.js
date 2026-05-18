@@ -8,11 +8,15 @@ const WHATSAPP_DB_ENV_KEYS = [
   'SUPABASE_DB_URL',
   'DATABASE_URL',
   'DATABASE_PRIVATE_URL',
+  'DIRECT_URL',
   'POSTGRES_URL',
   'POSTGRES_PRIVATE_URL',
   'POSTGRES_PRISMA_URL',
   'POSTGRES_URL_NON_POOLING',
+  'POSTGRESQL_URL',
   'PGDATABASE_URL',
+  'PG_URL',
+  'DB_URL',
 ];
 
 const rewriteWhatsAppPath = (path) => {
@@ -115,7 +119,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
           res.status(502).json({
             error: 'Servico WhatsApp Indisponivel',
             code: 'WHATSAPP_SERVICE_UNREACHABLE',
-            message: 'O servidor WhatsMeow (Go) nao respondeu em http://127.0.0.1:3100. Verifique se a variavel SUPABASE_DB_URL/DATABASE_URL esta configurada no Railway e se o processo whatsapp-service esta online.',
+            message: 'O servidor WhatsMeow (Go) nao respondeu em http://127.0.0.1:3100. Verifique se SUPABASE_DB_URL/DATABASE_URL/DIRECT_URL esta configurada no servidor e se o processo whatsapp-service esta online.',
             diagnostics: {
               target,
               database_env: getDatabaseEnvStatus(),

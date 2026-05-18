@@ -2,8 +2,8 @@ RewriteEngine On
 
 # API requests must reach the Node.js backend before the SPA fallback.
 # Requires Apache mod_proxy, mod_proxy_http and mod_rewrite enabled.
-RewriteRule ^api/(.*)$ http://127.0.0.1:3002/api/$1 [P,L]
-RewriteRule ^health$ http://127.0.0.1:3002/health [P,L]
+RewriteRule ^api/(.*)$ http://127.0.0.1:8080/api/$1 [P,L]
+RewriteRule ^health$ http://127.0.0.1:8080/health [P,L]
 
 # Vite/React SPA fallback.
 RewriteCond %{REQUEST_FILENAME} !-f

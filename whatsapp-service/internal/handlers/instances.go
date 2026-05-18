@@ -119,10 +119,18 @@ func (h *InstanceHandler) GetQRCode(c *gin.Context) {
 		return
 	}
 
-	// Start a connection only when there is no active client for this instance.
-	// Reading the QR code must not recreate the WhatsMeow client, otherwise an
-	// already displayed QR can be invalidated while the user is scanning it.
-	if _, exists := h.manager.GetClient(id); !exists {
+	inst, err := h.instanceRepo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Instance not found"})
+		return
+	}
+
+	client, exists := h.manager.GetClient(id)
+	shouldStart := !exists || (inst.Status == models.StatusDisconnected && (client == nil || !client.IsConnected()))
+
+	// Start/restart only when there is no active QR flow. This avoids resetting
+	// a valid QR while the user is scanning, but recovers after QR timeout.
+	if shouldStart {
 		if err := h.manager.ConnectInstance(c.Request.Context(), id); err != nil {
 			h.logger.Error("Failed to connect for QR", zap.Error(err))
 		}

@@ -17,6 +17,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const pollingRef = useRef<ReturnType<typeof setInterval>>();
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const qrCodeRef = useRef(qrCode);
+  const lastQRFetchRef = useRef(0);
 
   useEffect(() => {
     qrCodeRef.current = qrCode;
@@ -67,7 +68,13 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         return;
       }
 
-      if (!qrCodeRef.current) {
+      const shouldRefreshQR =
+        !qrCodeRef.current ||
+        freshInstance.status === 'disconnected' ||
+        Date.now() - lastQRFetchRef.current > 15000;
+
+      if (shouldRefreshQR) {
+        lastQRFetchRef.current = Date.now();
         const data = await instanceApi.getQRCode(instance.id);
         if (data.qr_code) {
           setQrCode(data.qr_code);

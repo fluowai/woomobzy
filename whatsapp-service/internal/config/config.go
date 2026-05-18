@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/url"
 	"os"
 	"strings"
 
@@ -29,25 +30,27 @@ func Load(logger *zap.Logger) *Config {
 		logger.Warn("No .env file found, using environment variables")
 	}
 
+	rawDBURL := getEnvAny([]string{
+		"SUPABASE_DB_URL",
+		"DATABASE_URL",
+		"DATABASE_PRIVATE_URL",
+		"POSTGRES_URL",
+		"POSTGRES_PRIVATE_URL",
+		"POSTGRES_PRISMA_URL",
+		"POSTGRES_URL_NON_POOLING",
+		"PGDATABASE_URL",
+	}, "")
+
 	cfg := &Config{
 		Port:               getEnv("PORT", "3100"),
 		GinMode:            getEnv("GIN_MODE", "debug"),
 		SupabaseURL:        getEnvAny([]string{"SUPABASE_URL", "VITE_SUPABASE_URL"}, ""),
 		SupabaseServiceKey: getEnvAny([]string{"SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY"}, ""),
-		SupabaseDBURL: getEnvAny([]string{
-			"SUPABASE_DB_URL",
-			"DATABASE_URL",
-			"DATABASE_PRIVATE_URL",
-			"POSTGRES_URL",
-			"POSTGRES_PRIVATE_URL",
-			"POSTGRES_PRISMA_URL",
-			"POSTGRES_URL_NON_POOLING",
-			"PGDATABASE_URL",
-		}, ""),
-		StorageBucket:     getEnv("SUPABASE_STORAGE_BUCKET", "whatsapp-media"),
-		NodeURL:           strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
-		InternalToken:     getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
-		AutomationEnabled: getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
+		SupabaseDBURL:      normalizeDatabaseURL(rawDBURL),
+		StorageBucket:      getEnv("SUPABASE_STORAGE_BUCKET", "whatsapp-media"),
+		NodeURL:            strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
+		InternalToken:      getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
+		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 	}
 
 	corsStr := getEnv("CORS_ORIGINS", "http://localhost:3006,http://localhost:3002,https://consultio.com.br,https://imobzy.consultio.com.br,https://www.consultio.com.br,https://web-production-7c3f0.up.railway.app")
@@ -62,7 +65,7 @@ func Load(logger *zap.Logger) *Config {
 }
 
 func getEnv(key, fallback string) string {
-	if val := os.Getenv(key); val != "" {
+	if val := cleanEnvValue(os.Getenv(key)); val != "" {
 		return val
 	}
 	return fallback
@@ -70,9 +73,35 @@ func getEnv(key, fallback string) string {
 
 func getEnvAny(keys []string, fallback string) string {
 	for _, key := range keys {
-		if val := os.Getenv(key); val != "" {
+		if val := cleanEnvValue(os.Getenv(key)); val != "" {
 			return val
 		}
 	}
 	return fallback
+}
+
+func cleanEnvValue(value string) string {
+	value = strings.TrimSpace(value)
+	value = strings.Trim(value, `"'`)
+	return strings.TrimSpace(value)
+}
+
+func normalizeDatabaseURL(raw string) string {
+	raw = cleanEnvValue(raw)
+	if raw == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	if strings.Contains(parsed.Host, "supabase.co") && parsed.Query().Get("sslmode") == "" {
+		query := parsed.Query()
+		query.Set("sslmode", "require")
+		parsed.RawQuery = query.Encode()
+	}
+
+	return parsed.String()
 }

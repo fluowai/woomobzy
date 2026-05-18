@@ -111,6 +111,10 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
             error: 'Servico WhatsApp Indisponivel',
             code: 'WHATSAPP_SERVICE_UNREACHABLE',
             message: 'O servidor WhatsMeow (Go) nao respondeu em http://127.0.0.1:3100. Verifique se a variavel SUPABASE_DB_URL/DATABASE_URL esta configurada no Railway e se o processo whatsapp-service esta online.',
+            diagnostics: {
+              target,
+              database_env: getDatabaseEnvStatus(),
+            },
           });
         }
       },
@@ -133,10 +137,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       ok: service.ok,
       target,
       service,
-      database_env: WHATSAPP_DB_ENV_KEYS.reduce((acc, key) => {
-        acc[key] = Boolean(process.env[key]);
-        return acc;
-      }, {}),
+      database_env: getDatabaseEnvStatus(),
       hint: service.ok
         ? 'WhatsMeow esta respondendo.'
         : 'O Node esta online, mas o processo Go/WhatsMeow nao respondeu. Confira as variaveis de banco no Railway e os logs do processo whatsapp-service.',
@@ -232,6 +233,13 @@ function normalizeInstanceRow(row) {
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+function getDatabaseEnvStatus() {
+  return WHATSAPP_DB_ENV_KEYS.reduce((acc, key) => {
+    acc[key] = Boolean(process.env[key]);
+    return acc;
+  }, {});
 }
 
 export default router;

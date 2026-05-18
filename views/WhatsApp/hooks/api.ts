@@ -1,5 +1,13 @@
 const RAW_WHATSAPP_API_URL = import.meta.env.VITE_WHATSAPP_API_URL || '';
-const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(RAW_WHATSAPP_API_URL);
+const IS_PRODUCT_ORIGIN =
+  typeof window !== 'undefined' &&
+  /(^|\.)consultio\.com\.br$/i.test(window.location.hostname);
+const RAW_WHATSAPP_IS_RAILWAY =
+  /^https?:\/\//i.test(RAW_WHATSAPP_API_URL) &&
+  /(^|\.)up\.railway\.app$/i.test(new URL(RAW_WHATSAPP_API_URL).hostname);
+const USE_DIRECT_WHATSAPP_API =
+  /^https?:\/\//i.test(RAW_WHATSAPP_API_URL) &&
+  !(IS_PRODUCT_ORIGIN && RAW_WHATSAPP_IS_RAILWAY);
 const RAW_BACKEND_URL = USE_DIRECT_WHATSAPP_API
   ? RAW_WHATSAPP_API_URL
   : import.meta.env.VITE_API_URL || '';

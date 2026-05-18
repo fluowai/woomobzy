@@ -32,7 +32,7 @@ const rewriteWhatsAppPath = (path) => {
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const target = resolveWhatsAppTarget(process.env.WHATSAPP_API_URL);
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
-  const allowedOriginPattern = /^https:\/\/([a-z0-9-]+\.)?consultio\.com\.br$/i;
+  const allowedOriginPattern = /^https:\/\/([a-z0-9-]+\.)?(consultio\.com\.br|imobzy\.com\.br)$/i;
 
   const applyCorsHeaders = (req, res) => {
     const origin = req.headers.origin;

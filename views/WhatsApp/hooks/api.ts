@@ -1,9 +1,8 @@
-const RAW_BACKEND_URL =
-  import.meta.env.VITE_WHATSAPP_API_URL ||
-  import.meta.env.VITE_API_URL ||
-  '';
-
-const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(import.meta.env.VITE_WHATSAPP_API_URL || '');
+const RAW_WHATSAPP_API_URL = import.meta.env.VITE_WHATSAPP_API_URL || '';
+const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(RAW_WHATSAPP_API_URL);
+const RAW_BACKEND_URL = USE_DIRECT_WHATSAPP_API
+  ? RAW_WHATSAPP_API_URL
+  : import.meta.env.VITE_API_URL || '';
 const BACKEND_URL = normalizeBackendUrl(RAW_BACKEND_URL);
 const API_BASE = BACKEND_URL
   ? `${BACKEND_URL}${USE_DIRECT_WHATSAPP_API ? '/api' : '/api/whatsapp'}`

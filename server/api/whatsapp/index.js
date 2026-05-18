@@ -80,24 +80,29 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     pathRewrite: rewriteWhatsAppPath,
     on: {
       proxyReq: (proxyReq, req) => {
-        const orgId = req.orgId;
+        const whatsappUserId = req.user?.id;
 
-        if (orgId) {
+        if (whatsappUserId) {
           const url = new URL(proxyReq.path, 'http://localhost');
-          url.searchParams.set('tenant_id', orgId);
+          url.searchParams.set('tenant_id', whatsappUserId);
           proxyReq.path = url.pathname + url.search;
 
           if (req.body && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
-            const bodyData = { ...req.body, tenant_id: orgId };
+            const bodyData = { ...req.body, tenant_id: whatsappUserId };
             const bodyString = JSON.stringify(bodyData);
             proxyReq.setHeader('Content-Type', 'application/json');
             proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyString));
             proxyReq.write(bodyString);
           }
+
+          if (req.method === 'POST' && (req.originalUrl || req.url) === '/api/whatsapp/instances') {
+            console.log('[WHATSAPP] Auth user:', whatsappUserId);
+            console.log('[WHATSAPP] Creating instance for user');
+          }
         }
 
         console.log(
-          `[SaaS Proxy] ${req.method} ${req.originalUrl || req.url} -> ${target}${proxyReq.path} (Org: ${orgId || 'Public'})`
+          `[SaaS Proxy] ${req.method} ${req.originalUrl || req.url} -> ${target}${proxyReq.path} (WhatsApp user: ${whatsappUserId || 'Public'}, Org: ${req.orgId || 'none'})`
         );
       },
       proxyReqWs: (proxyReq, req) => {
@@ -152,7 +157,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       const { data, error } = await supabase
         .from('whatsapp_instances')
         .select('id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at')
-        .eq('tenant_id', req.orgId)
+        .eq('tenant_id', req.user.id)
         .order('created_at', { ascending: false });
 
       if (error) {

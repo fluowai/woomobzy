@@ -187,6 +187,12 @@ export const chatApi = {
 
   markRead: (chatId: string) =>
     apiRequest(`/chats/${chatId}/read`, { method: 'POST' }),
+
+  updateContactName: (chatId: string, instanceId: string, displayName: string) =>
+    apiRequest<Chat>(`/chats/${chatId}/contact?instance_id=${instanceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ display_name: displayName }),
+    }),
 };
 
 // ---- Message API ----

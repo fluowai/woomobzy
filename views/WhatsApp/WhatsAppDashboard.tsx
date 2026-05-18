@@ -194,6 +194,11 @@ const WhatsAppDashboard: React.FC = () => {
     setChats((prev) => prev.map((c) => (c.id === chat.id ? { ...c, unread_count: 0 } : c)));
   };
 
+  const handleChatUpdated = (chat: Chat) => {
+    setSelectedChat(chat);
+    setChats((prev) => prev.map((c) => (c.id === chat.id ? { ...c, ...chat } : c)));
+  };
+
   const filteredChats = searchQuery
     ? chats.filter(
         (c) =>
@@ -309,6 +314,8 @@ const WhatsAppDashboard: React.FC = () => {
             onSendMessage={handleSendMessage}
             loading={loadingMessages}
             instanceName={selectedInstance?.name || ''}
+            instanceId={selectedInstance?.id || ''}
+            onChatUpdated={handleChatUpdated}
           />
         ) : (
           <div className="wa-empty-state">

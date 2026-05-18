@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { formatPhoneDisplay, type Chat, type Message } from './hooks/api';
+import { chatApi, formatPhoneDisplay, type Chat, type Message } from './hooks/api';
 import MessageBubble from './MessageBubble';
-import { Send, Paperclip, Smile, ArrowDown, Users, Phone, MoreVertical, Loader2 } from 'lucide-react';
+import { Send, Paperclip, Smile, ArrowDown, Users, Phone, MoreVertical, Loader2, X, UserRound, Save } from 'lucide-react';
 
 interface ChatWindowProps {
   chat: Chat;
@@ -9,6 +9,8 @@ interface ChatWindowProps {
   onSendMessage: (content: string, file?: File) => void;
   loading: boolean;
   instanceName: string;
+  instanceId: string;
+  onChatUpdated: (chat: Chat) => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -17,9 +19,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onSendMessage,
   loading,
   instanceName,
+  instanceId,
+  onChatUpdated,
 }) => {
   const [inputText, setInputText] = useState('');
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const [showContactPanel, setShowContactPanel] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [contactNameDraft, setContactNameDraft] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,6 +38,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     : chat.name && chat.name !== '~'
       ? chat.name
       : chatPhone || 'Contato sem telefone';
+
+  useEffect(() => {
+    setContactNameDraft(chatName);
+    setEditingName(false);
+  }, [chat.id, chatName]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -62,6 +75,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  const getInitial = (value: string) => {
+    const match = value.match(/[A-Za-z0-9]/);
+    return (match?.[0] || '?').toUpperCase();
+  };
+
+  const saveContactName = async () => {
+    const nextName = contactNameDraft.trim();
+    if (!nextName) return;
+
+    setSavingContact(true);
+    try {
+      const updated = await chatApi.updateContactName(chat.id, instanceId, nextName);
+      onChatUpdated(updated);
+      setEditingName(false);
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
   // Group messages by date
   const groupedMessages = messages.reduce((acc: { date: string; msgs: Message[] }[], msg) => {
     const date = new Date(msg.timestamp).toLocaleDateString('pt-BR', {
@@ -82,24 +114,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     <main className="wa-chat-window" id="chat-window">
       {/* Chat Header */}
       <header className="wa-chat-header">
-        <div className="wa-chat-header-info">
+        <button
+          type="button"
+          className="wa-chat-header-info wa-chat-header-profile"
+          onClick={() => setShowContactPanel(true)}
+        >
           <div className="wa-chat-header-avatar">
             {chat.avatar_url ? (
               <img src={chat.avatar_url} alt="" className="wa-avatar-img" />
             ) : chat.is_group ? (
               <Users size={20} />
             ) : (
-              <span>{chatName.charAt(0).toUpperCase()}</span>
+              <span>{getInitial(chatName)}</span>
             )}
           </div>
           <div>
             <h2 className="wa-chat-header-name">{chatName}</h2>
             <span className="wa-chat-header-sub">
               {chat.is_group ? 'Grupo' : chatPhone || 'Telefone nao identificado'}
-              {instanceName && ` · ${instanceName}`}
             </span>
           </div>
-        </div>
+        </button>
         <div className="wa-chat-header-actions">
           <button className="wa-icon-btn" title="Ligar">
             <Phone size={18} />
@@ -109,6 +144,72 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </button>
         </div>
       </header>
+
+      {showContactPanel && (
+        <aside className="wa-contact-panel">
+          <div className="wa-contact-panel-head">
+            <span>Contato</span>
+            <button type="button" className="wa-icon-btn" onClick={() => setShowContactPanel(false)} title="Fechar">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="wa-contact-profile">
+            <div className="wa-contact-avatar">
+              {chat.avatar_url ? (
+                <img src={chat.avatar_url} alt="" className="wa-avatar-img" />
+              ) : chat.is_group ? (
+                <Users size={30} />
+              ) : (
+                <span>{getInitial(chatName)}</span>
+              )}
+            </div>
+            {editingName ? (
+              <div className="wa-contact-edit">
+                <input
+                  value={contactNameDraft}
+                  onChange={(e) => setContactNameDraft(e.target.value)}
+                  className="wa-contact-input"
+                  autoFocus
+                />
+                <button type="button" className="wa-contact-save" onClick={saveContactName} disabled={savingContact}>
+                  {savingContact ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  Salvar
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3>{chatName}</h3>
+                <button type="button" className="wa-contact-edit-btn" onClick={() => setEditingName(true)}>
+                  Editar nome do lead
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="wa-contact-fields">
+            <div>
+              <span>WhatsApp</span>
+              <strong>{chatPhone || 'Telefone nao identificado'}</strong>
+            </div>
+            <div>
+              <span>Origem</span>
+              <strong>{chat.is_group ? 'Grupo' : 'Conversa individual'}</strong>
+            </div>
+            {instanceName && (
+              <div>
+                <span>Instancia</span>
+                <strong>{instanceName}</strong>
+              </div>
+            )}
+          </div>
+
+          <button type="button" className="wa-contact-action">
+            <UserRound size={16} />
+            Vincular ao CRM
+          </button>
+        </aside>
+      )}
 
       {/* Messages Area */}
       <div

@@ -79,7 +79,7 @@ func main() {
 
 	// Initialize handlers
 	instanceHandler := handlers.NewInstanceHandler(manager, instanceRepo, log)
-	chatHandler := handlers.NewChatHandler(chatRepo, log)
+	chatHandler := handlers.NewChatHandler(chatRepo, contactRepo, log)
 	messageHandler := handlers.NewMessageHandler(messageRepo, chatRepo, manager, log)
 
 	// Setup Gin router
@@ -135,6 +135,7 @@ func main() {
 		{
 			chats.GET("", chatHandler.ListChats)
 			chats.POST("/:id/read", chatHandler.MarkChatRead)
+			chats.PATCH("/:id/contact", chatHandler.UpdateContactName)
 		}
 
 		// Message routes

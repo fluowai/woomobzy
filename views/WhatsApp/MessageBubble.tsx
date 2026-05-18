@@ -14,6 +14,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
     message.sender_name && message.sender_name !== '~'
       ? message.sender_name
       : senderPhone || 'Contato sem telefone';
+  const senderInitial = (senderName.match(/[A-Za-z0-9]/)?.[0] || '?').toUpperCase();
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', {
@@ -116,7 +117,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
             {message.media_url ? (
               <img src={message.media_url} alt="Sticker" className="wa-sticker-img" />
             ) : (
-              <span>🎨 Sticker</span>
+              <span>Sticker</span>
             )}
           </div>
         );
@@ -133,13 +134,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
           {message.sender_avatar_url ? (
             <img src={message.sender_avatar_url} alt="" className="wa-avatar-img" />
           ) : (
-            <span>{senderName.substring(0, 1).toUpperCase()}</span>
+            <span>{senderInitial}</span>
           )}
         </div>
       )}
       <div className={`wa-bubble ${isSent ? 'wa-bubble-sent' : 'wa-bubble-received'}`}>
-        {/* Group sender name */}
-        {isGroup && !isSent && (
+        {/* Sender identity */}
+        {!isSent && (
           <span className="wa-bubble-sender">{senderName}</span>
         )}
 

@@ -341,7 +341,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 			Phone:       senderPhone,
 			PushName:    info.PushName,
 			DisplayName: senderName,
-			AvatarURL:   c.resolveAvatarURL(ctx, info.Sender),
+			AvatarURL:   chatAvatarURL,
 		}
 		if err := c.contactRepo.Upsert(ctx, contact); err != nil {
 			c.logger.Error("Failed to upsert contact", zap.Error(err))
@@ -383,7 +383,8 @@ func (c *Client) handleMessage(evt *events.Message) {
 	// Handle media download
 	var mediaURL, mediaMimetype, mediaFilename string
 	if msgType == models.MessageTypeImage || msgType == models.MessageTypeAudio ||
-		msgType == models.MessageTypeVideo || msgType == models.MessageTypeDocument {
+		msgType == models.MessageTypeVideo || msgType == models.MessageTypeDocument ||
+		msgType == models.MessageTypeSticker {
 		url, mime, filename, err := c.downloadAndUploadMedia(ctx, evt)
 		if err != nil {
 			c.logger.Error("Failed to handle media", zap.Error(err))
@@ -401,7 +402,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 		MessageID:       info.ID,
 		SenderPhone:     senderPhone,
 		SenderName:      senderName,
-		SenderAvatarURL: c.resolveAvatarURL(ctx, info.Sender),
+		SenderAvatarURL: chatAvatarURL,
 		IsFromMe:        info.IsFromMe,
 		IsGroup:         isGroup,
 		Type:            msgType,

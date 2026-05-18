@@ -92,3 +92,13 @@ func (r *ContactRepo) ListByInstance(ctx context.Context, instanceID uuid.UUID) 
 	}
 	return contacts, nil
 }
+
+// UpdateDisplayName updates a contact display name by phone.
+func (r *ContactRepo) UpdateDisplayName(ctx context.Context, instanceID uuid.UUID, phone, displayName string) error {
+	query := `
+		UPDATE whatsapp_contacts
+		SET display_name = $1, updated_at = NOW()
+		WHERE instance_id = $2 AND phone = $3`
+	_, err := r.db.Exec(ctx, query, displayName, instanceID, phone)
+	return err
+}

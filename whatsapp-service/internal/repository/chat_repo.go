@@ -138,6 +138,30 @@ func (r *ChatRepo) MarkRead(ctx context.Context, chatID uuid.UUID) error {
 	return err
 }
 
+// UpdateName updates a chat display name.
+func (r *ChatRepo) UpdateName(ctx context.Context, chatID, instanceID uuid.UUID, name string) (*models.Chat, error) {
+	query := `
+		UPDATE whatsapp_chats
+		SET name = $1, updated_at = NOW()
+		WHERE id = $2 AND instance_id = $3
+		RETURNING id, instance_id, chat_jid, name, is_group,
+		          COALESCE(last_message, '') as last_message,
+		          last_message_at, unread_count,
+		          COALESCE(avatar_url, '') as avatar_url,
+		          created_at, updated_at`
+
+	var chat models.Chat
+	err := r.db.QueryRow(ctx, query, name, chatID, instanceID).Scan(
+		&chat.ID, &chat.InstanceID, &chat.ChatJID, &chat.Name, &chat.IsGroup,
+		&chat.LastMessage, &chat.LastMessageAt, &chat.UnreadCount,
+		&chat.AvatarURL, &chat.CreatedAt, &chat.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &chat, nil
+}
+
 // MergeJIDs moves messages from alternate one-to-one JIDs into the canonical chat.
 func (r *ChatRepo) MergeJIDs(ctx context.Context, instanceID, canonicalChatID uuid.UUID, alternateJIDs []string) error {
 	for _, jid := range alternateJIDs {

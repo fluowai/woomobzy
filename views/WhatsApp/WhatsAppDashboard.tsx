@@ -18,6 +18,7 @@ const WhatsAppDashboard: React.FC = () => {
   const [showInstanceManager, setShowInstanceManager] = useState(false);
   const [loading, setLoading] = useState(true);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
+  const [serviceError, setServiceError] = useState('');
   const [webSocketEnabled, setWebSocketEnabled] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,6 +127,7 @@ const WhatsAppDashboard: React.FC = () => {
       const data = await instanceApi.list();
       setInstances(data);
       setServiceUnavailable(false);
+      setServiceError('');
       setWebSocketEnabled(true);
       if (data.length > 0 && !selectedInstance) {
         const connected = data.find((i) => i.status === 'connected');
@@ -134,6 +136,7 @@ const WhatsAppDashboard: React.FC = () => {
     } catch (err: any) {
       if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         setServiceUnavailable(true);
+        setServiceError(err.message.replace('WHATSAPP_UNAVAILABLE: ', ''));
         setWebSocketEnabled(false);
       } else {
         logger.error('Failed to load instances:', err);
@@ -227,15 +230,20 @@ const WhatsAppDashboard: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold text-text-primary mb-3">WhatsApp Indisponível</h2>
           <p className="text-text-secondary mb-6 leading-relaxed">
-            O serviço de WhatsApp não está ativo no servidor. Para ativar, é necessário que o backend Node.js esteja rodando com o módulo WhatsMeow configurado.
+            O painel não conseguiu consultar a API do WhatsApp pelo domínio atual. O fluxo correto agora é o servidor encaminhar <strong>/api/whatsapp</strong> para o backend Node.js.
           </p>
           <div className="bg-bg-hover rounded-xl p-4 text-left text-sm text-text-secondary border border-border mb-6">
-            <p className="font-semibold text-text-primary mb-2">Checklist para ativar:</p>
+            <p className="font-semibold text-text-primary mb-2">Checklist do encaminhamento:</p>
             <ul className="space-y-1.5">
-              <li>✅ Node.js rodando na porta 3002 no servidor</li>
-              <li>✅ mod_proxy e mod_proxy_http habilitados no Apache</li>
-              <li>✅ Serviço WhatsMeow (Go) rodando na porta 8080</li>
+              <li>✅ Domínio respondendo em https://imobzy.consultio.com.br</li>
+              <li>✅ /api encaminhando para o backend Node.js</li>
+              <li>✅ WhatsMeow (Go) rodando internamente em 127.0.0.1:3100</li>
             </ul>
+            {serviceError && (
+              <p className="mt-3 rounded-lg bg-white/70 border border-border px-3 py-2 text-xs break-words">
+                {serviceError}
+              </p>
+            )}
           </div>
           <button
             onClick={() => { setLoading(true); setServiceUnavailable(false); loadInstances(); }}

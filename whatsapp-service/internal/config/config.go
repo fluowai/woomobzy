@@ -53,7 +53,7 @@ func Load(logger *zap.Logger) *Config {
 		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 	}
 
-	corsStr := getEnv("CORS_ORIGINS", "http://localhost:3006,http://localhost:3002,https://consultio.com.br,https://imobzy.consultio.com.br,https://www.consultio.com.br,https://web-production-7c3f0.up.railway.app")
+	corsStr := getEnv("CORS_ORIGINS", "http://localhost:3006,http://localhost:3002,https://consultio.com.br,https://imobzy.consultio.com.br,https://www.consultio.com.br")
 	cfg.CORSOrigins = strings.Split(corsStr, ",")
 
 	// Validate required fields

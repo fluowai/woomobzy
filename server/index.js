@@ -71,8 +71,6 @@ const defaultAllowedOrigins = [
   'https://consultio.com.br',
   'https://imobzy.consultio.com.br',
   'https://www.consultio.com.br',
-  'https://woomobzy-production.up.railway.app',
-  'https://web-production-7c3f0.up.railway.app',
 ];
 
 const envAllowedOrigins = process.env.ALLOWED_ORIGINS

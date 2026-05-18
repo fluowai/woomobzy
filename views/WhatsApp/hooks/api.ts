@@ -1,7 +1,7 @@
 const RAW_WHATSAPP_API_URL = import.meta.env.VITE_WHATSAPP_API_URL || '';
 const IS_PRODUCT_ORIGIN =
   typeof window !== 'undefined' &&
-  /(^|\.)consultio\.com\.br$/i.test(window.location.hostname);
+  /(^|\.)(consultio\.com\.br|imobzy\.com\.br)$/i.test(window.location.hostname);
 const RAW_WHATSAPP_IS_RAILWAY =
   /^https?:\/\//i.test(RAW_WHATSAPP_API_URL) &&
   /(^|\.)up\.railway\.app$/i.test(new URL(RAW_WHATSAPP_API_URL).hostname);
@@ -29,10 +29,6 @@ function normalizeBackendUrl(url: string): string {
   const clean = (url || '').trim().replace(/\/$/, '');
   if (!clean) return '';
 
-  if (clean.includes('web-production-7c3f0.up.railway.app')) {
-    return 'https://woomobzy-production.up.railway.app';
-  }
-
   return clean;
 }
 
@@ -57,13 +53,13 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       body,
     });
   } catch (networkErr: any) {
-    throw new Error(`WHATSAPP_UNAVAILABLE: Serviço não acessível - ${networkErr.message}`);
+    throw new Error(`WHATSAPP_UNAVAILABLE: Serviço não acessível em ${url} - ${networkErr.message}`);
   }
 
   // Detect proxy failure: server returned HTML instead of JSON
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('text/html')) {
-    throw new Error('WHATSAPP_UNAVAILABLE: O servidor WhatsApp não está respondendo. O backend Node.js pode não estar ativo.');
+    throw new Error(`WHATSAPP_UNAVAILABLE: ${url} retornou HTML. O proxy /api nao esta chegando no backend Node.js.`);
   }
 
   if (!res.ok) {

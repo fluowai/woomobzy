@@ -134,6 +134,22 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     next();
   });
 
+  app.get('/api/whatsapp/health', async (req, res) => {
+    applyCorsHeaders(req, res);
+
+    const service = await checkWhatsAppService(target);
+    res.status(service.ok ? 200 : 503).json({
+      ok: service.ok,
+      node: {
+        ok: true,
+        uptime: process.uptime(),
+      },
+      whatsmeow: service,
+      target,
+      database_env: getDatabaseEnvStatus(),
+    });
+  });
+
   app.get('/api/whatsapp/status', verifyAuth, requireTenant, async (req, res) => {
     applyCorsHeaders(req, res);
 

@@ -14,8 +14,11 @@ export const getApiUrl = (path: string = '') => {
 
 function normalizeApiBaseUrl(url: string): string {
   const clean = (url || '').trim();
-  if (clean.includes('web-production-7c3f0.up.railway.app')) {
-    return 'https://woomobzy-production.up.railway.app';
+  if (
+    typeof window !== 'undefined' &&
+    /(^|\.)(consultio\.com\.br|imobzy\.com\.br)$/i.test(window.location.hostname)
+  ) {
+    return '';
   }
   return clean;
 }

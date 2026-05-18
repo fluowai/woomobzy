@@ -10,7 +10,9 @@ const USE_DIRECT_WHATSAPP_API =
   !(IS_PRODUCT_ORIGIN && RAW_WHATSAPP_IS_RAILWAY);
 const RAW_BACKEND_URL = USE_DIRECT_WHATSAPP_API
   ? RAW_WHATSAPP_API_URL
-  : import.meta.env.VITE_API_URL || '';
+  : IS_PRODUCT_ORIGIN
+    ? ''
+    : import.meta.env.VITE_API_URL || '';
 const BACKEND_URL = normalizeBackendUrl(RAW_BACKEND_URL);
 const API_BASE = BACKEND_URL
   ? `${BACKEND_URL}${USE_DIRECT_WHATSAPP_API ? '/api' : '/api/whatsapp'}`

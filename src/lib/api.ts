@@ -1,6 +1,7 @@
 import { supabase } from '../../services/supabase';
 
 const DEFAULT_API_URL = 'https://woomobzy-production.up.railway.app';
+const PRODUCTION_HOST_PATTERN = /(^|\.)(consultio\.com\.br|imobzy\.com\.br)$/i;
 
 // Utility to handle API calls to the Railway backend
 export const getApiUrl = (path: string = '') => {
@@ -16,6 +17,10 @@ export const getApiUrl = (path: string = '') => {
 
 function normalizeApiBaseUrl(url: string): string {
   const clean = (url || '').trim();
+  if (typeof window !== 'undefined' && PRODUCTION_HOST_PATTERN.test(window.location.hostname)) {
+    return '';
+  }
+
   if (/web-production-7c3f0\.up\.railway\.app/i.test(clean)) {
     return DEFAULT_API_URL;
   }
@@ -46,7 +51,8 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     headers.set('x-impersonate-org-id', impId);
   }
 
-  if (!headers.has('Content-Type')) {
+  const method = (options.method || 'GET').toUpperCase();
+  if (!headers.has('Content-Type') && (options.body || method !== 'GET')) {
     headers.set('Content-Type', 'application/json');
   }
 

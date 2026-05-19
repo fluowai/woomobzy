@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/whatsapp/(.*)",
-      "destination": "/api/whatsapp/$1"
+      "destination": "https://woomobzy-production.up.railway.app/api/whatsapp/$1"
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "destination": "https://woomobzy-production.up.railway.app/api/$1"
     },
     {
       "source": "/(.*)",

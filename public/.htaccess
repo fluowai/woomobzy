@@ -1,9 +1,14 @@
 RewriteEngine On
+SSLProxyEngine On
 
 # API requests must reach the Node.js backend before the SPA fallback.
 # Requires Apache mod_proxy, mod_proxy_http and mod_rewrite enabled.
-RewriteRule ^api/(.*)$ http://127.0.0.1:8080/api/$1 [P,L]
-RewriteRule ^health$ http://127.0.0.1:8080/health [P,L]
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^api/whatsapp/ws(.*)$ wss://woomobzy-production.up.railway.app/api/whatsapp/ws$1 [P,L]
+
+RewriteRule ^api/(.*)$ https://woomobzy-production.up.railway.app/api/$1 [P,L]
+RewriteRule ^health$ https://woomobzy-production.up.railway.app/health [P,L]
 
 # Vite/React SPA fallback.
 RewriteCond %{REQUEST_FILENAME} !-f

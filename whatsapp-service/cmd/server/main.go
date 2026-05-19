@@ -51,9 +51,10 @@ func main() {
 
 	// Verify connection
 	if err := pool.Ping(ctx); err != nil {
-		log.Fatal(fmt.Sprintf("Failed to ping database: %v", err))
+		log.Error(fmt.Sprintf("⚠️ Database ping failed: %v. Server will continue to start.", err))
+	} else {
+		log.Info("✅ Connected to database")
 	}
-	log.Info("✅ Connected to database")
 
 	// Initialize repositories
 	instanceRepo := repository.NewInstanceRepo(pool, log)

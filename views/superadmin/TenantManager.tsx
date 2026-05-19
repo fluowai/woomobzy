@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
+import { getApiUrl } from '@/src/lib/api';
 import { supabase } from '../../services/supabase';
 import {
   Building2,
@@ -89,8 +90,7 @@ const TenantManager: React.FC = () => {
     try {
       setLoading(true);
       const headers = await getAuthHeaders();
-      const apiUrl = import.meta.env.VITE_API_URL || '';
-      const res = await fetch(`${apiUrl}/api/admin/organizations`, { headers });
+      const res = await fetch(getApiUrl('/api/admin/organizations'), { headers });
       
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -161,13 +161,13 @@ const TenantManager: React.FC = () => {
 
       let res: Response;
       if (editingId) {
-        res = await fetch(`/api/admin/organizations/${editingId}`, {
+        res = await fetch(getApiUrl(`/api/admin/organizations/${editingId}`), {
           method: 'PUT',
           headers,
           body: JSON.stringify(payload),
         });
       } else {
-        res = await fetch('/api/admin/organizations', {
+        res = await fetch(getApiUrl('/api/admin/organizations'), {
           method: 'POST',
           headers,
           body: JSON.stringify(payload),
@@ -195,7 +195,7 @@ const TenantManager: React.FC = () => {
 
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch(`/api/admin/organizations/${id}`, {
+      const res = await fetch(getApiUrl(`/api/admin/organizations/${id}`), {
         method: 'PUT',
         headers,
         body: JSON.stringify({ status: newStatus }),
@@ -220,7 +220,7 @@ const TenantManager: React.FC = () => {
 
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch(`/api/admin/organizations/${id}`, {
+      const res = await fetch(getApiUrl(`/api/admin/organizations/${id}`), {
         method: 'DELETE',
         headers,
       });

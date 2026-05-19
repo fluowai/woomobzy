@@ -19,6 +19,7 @@ import {
   Crown,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '@/src/lib/api';
 
 const MOCK_IDENTITY = {
   palette: ['#1e293b', '#3b82f6', '#f8fafc', '#64748b', '#0f172a'],
@@ -69,8 +70,7 @@ const SmartImporter: React.FC = () => {
   React.useEffect(() => {
     const fetchOrgs = async () => {
       try {
-        const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-        const response = await fetch(`${apiUrl}/api/admin/organizations`, {
+        const response = await fetch(getApiUrl('/api/admin/organizations'), {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
           },
@@ -97,8 +97,7 @@ const SmartImporter: React.FC = () => {
     setStatus('analyzing');
     setError(null);
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-      const response = await fetch(`${apiUrl}/api/import/analyze`, {
+      const response = await fetch(getApiUrl('/api/import/analyze'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,8 +124,7 @@ const SmartImporter: React.FC = () => {
   const finalizeImport = async () => {
     setStatus('importing');
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-      const response = await fetch(`${apiUrl}/api/import/finalize`, {
+      const response = await fetch(getApiUrl('/api/import/finalize'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

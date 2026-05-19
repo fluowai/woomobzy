@@ -16,7 +16,10 @@ export const getApiUrl = (path: string = '') => {
 
 function normalizeApiBaseUrl(url: string): string {
   const clean = (url || '').trim();
-  return clean;
+  if (/web-production-7c3f0\.up\.railway\.app/i.test(clean)) {
+    return DEFAULT_API_URL;
+  }
+  return clean || DEFAULT_API_URL;
 }
 
 /**

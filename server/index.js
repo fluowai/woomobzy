@@ -115,16 +115,7 @@ const dynamicOriginValidator = (origin, callback) => {
 const corsOptions = {
   origin: dynamicOriginValidator,
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Origin",
-    "X-Requested-With",
-    "Content-Type",
-    "Accept",
-    "Authorization",
-    "x-tenant-id",
-    "x-impersonate-org-id"
-  ]
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 };
 
 app.use(cors(corsOptions));

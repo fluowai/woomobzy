@@ -119,8 +119,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// MUITO IMPORTANTE: Garante o Preflight (OPTIONS)
-app.options(/(.*)/, cors(corsOptions));
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000, // Generoso para produção inicial

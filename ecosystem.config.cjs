@@ -54,6 +54,10 @@ const whatsappEnv = compactEnv({
 
 const backendEnv = compactEnv({
   NODE_ENV: process.env.NODE_ENV || 'production',
+  PORT: process.env.PORT || 3002,
+  VITE_SUPABASE_URL: firstEnv('VITE_SUPABASE_URL', 'SUPABASE_URL'),
+  SUPABASE_SERVICE_ROLE_KEY: firstEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY'),
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   WHATSAPP_API_URL: process.env.WHATSAPP_API_URL || process.env.WHATSMEOW_URL || 'http://127.0.0.1:3100',
   WHATSMEOW_URL: process.env.WHATSMEOW_URL || process.env.WHATSAPP_API_URL || 'http://127.0.0.1:3100',
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,

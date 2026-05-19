@@ -188,7 +188,10 @@ app.get('/', (req, res) => res.send('IMOBZY Production API Online 🚀'));
 // --- Server Startup ---
 const PORT = process.env.PORT || 3002;
 
-const shouldListen = process.env.VERCEL !== '1';
+const isRailway = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_ENVIRONMENT_ID || !!process.env.RAILWAY_PROJECT_ID;
+const isVercel = process.env.VERCEL === '1' && !isRailway;
+const shouldListen = !isVercel;
+
 const server = shouldListen
   ? app.listen(PORT, async () => {
       console.log(`IMOBZY Server active on port ${PORT}`);

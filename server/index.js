@@ -129,7 +129,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 // MUITO IMPORTANTE: Garante o Preflight (OPTIONS)
-app.options("*", cors(corsOptions));
+app.options(/(.*)/, cors(corsOptions));
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000, // Generoso para produção inicial
@@ -197,15 +197,9 @@ app.get('/', (req, res) => res.send('IMOBZY Production API Online 🚀'));
 // --- Server Startup ---
 const PORT = process.env.PORT || 3002;
 
-const isRailway = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_ENVIRONMENT_ID || !!process.env.RAILWAY_PROJECT_ID;
-const isVercel = process.env.VERCEL === '1' && !isRailway;
-const shouldListen = !isVercel;
-
-const server = shouldListen
-  ? app.listen(PORT, async () => {
-      console.log(`IMOBZY Server active on port ${PORT}`);
-    })
-  : null;
+const server = app.listen(PORT, async () => {
+  console.log(`IMOBZY Server active on port ${PORT}`);
+});
 
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
 // O server real e passado para registrar o upgrade do WebSocket.
@@ -214,7 +208,7 @@ setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
 // --- Error Handling & Fallbacks ---
 
 // Fallback para rotas nao encontradas
-app.all('*', (req, res) => {
+app.all(/(.*)/, (req, res) => {
   res.status(404).json({
     success: false,
     error: "Route not found"

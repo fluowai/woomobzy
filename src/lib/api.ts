@@ -1,8 +1,10 @@
 import { supabase } from '../../services/supabase';
 
+const DEFAULT_API_URL = 'https://woomobzy-production.up.railway.app';
+
 // Utility to handle API calls to the Railway backend
 export const getApiUrl = (path: string = '') => {
-  const baseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || '');
+  const baseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || DEFAULT_API_URL);
   const sanitizedPath = path.startsWith('/') ? path : `/${path}`;
   const sanitizedBaseUrl = baseUrl.endsWith('/')
     ? baseUrl.slice(0, -1)
@@ -14,12 +16,6 @@ export const getApiUrl = (path: string = '') => {
 
 function normalizeApiBaseUrl(url: string): string {
   const clean = (url || '').trim();
-  if (
-    typeof window !== 'undefined' &&
-    /(^|\.)(consultio\.com\.br|imobzy\.com\.br)$/i.test(window.location.hostname)
-  ) {
-    return '';
-  }
   return clean;
 }
 
@@ -57,8 +53,18 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   });
 
   if (!response.ok) {
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      throw new Error(`Backend indisponível em ${url}: resposta HTML (${response.status})`);
+    }
+
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || `Erro na API: ${response.statusText}`);
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('text/html')) {
+    throw new Error(`Backend indisponível em ${url}: resposta HTML`);
   }
 
   return response.json();

@@ -31,6 +31,9 @@ const onboardingSchema = z.object({
 });
 
 router.post('/', authLimiter, async (req, res) => {
+  console.log("📥 ONBOARDING RECEIVED");
+  console.log(req.body);
+
   const validation = onboardingSchema.safeParse(req.body);
   if (!validation.success) {
     return res.status(400).json({ error: 'Dados inválidos', details: validation.error.errors });

@@ -63,64 +63,73 @@ app.use(
   })
 );
 
-// CORS: lista explicita de origens permitidas.
-// Mantemos os dominios padrao mesmo quando ALLOWED_ORIGINS existe no ambiente.
-const defaultAllowedOrigins = [
-  'http://localhost:3005',
-  'http://localhost:3006',
-  'https://consultio.com.br',
-  'https://imobzy.consultio.com.br',
-  'https://www.consultio.com.br',
-  'https://woomobzy-production.up.railway.app',
+// --- Debug Logger Middleware ---
+app.use((req, res, next) => {
+  if (!req.originalUrl.includes('/ws')) {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("METHOD:", req.method);
+    console.log("URL:", req.originalUrl);
+    console.log("ORIGIN:", req.headers.origin || 'No Origin');
+    console.log("IP:", req.ip);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━");
+  }
+  next();
+});
+
+// --- CORS Configuration ---
+const staticAllowedOrigins = [
+  "https://imobzy.com.br",
+  "https://www.imobzy.com.br",
+  "https://imobzy.consultio.com.br",
+  "https://consultio.com.br",
+  "https://woomobzy-production.up.railway.app",
 ];
 
-const envAllowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean)
-  : [];
+const dynamicOriginValidator = (origin, callback) => {
+  // Permitir requests sem origin (ex: chamadas S2S, cURL, PM2, Railway Healthcheck)
+  if (!origin) {
+    return callback(null, true);
+  }
 
-const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+  // Permitir origins exatas
+  if (staticAllowedOrigins.includes(origin)) {
+    return callback(null, true);
+  }
 
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
+  // Permitir subdomínios da empresa e dev/staging
+  if (
+    origin.endsWith(".imobzy.com.br") ||
+    origin.endsWith(".consultio.com.br") ||
+    origin.endsWith(".vercel.app") ||
+    origin.endsWith(".up.railway.app") ||
+    origin.startsWith("http://localhost") ||
+    origin.startsWith("http://127.0.0.1")
+  ) {
+    return callback(null, true);
+  }
 
-  return (
-    origin.startsWith('http://localhost') ||
-    origin.startsWith('http://127.0.0.1') ||
-    origin === 'https://consultio.com.br' ||
-    origin.endsWith('.consultio.com.br') ||
-    origin.endsWith('.vercel.app') ||
-    origin.endsWith('.up.railway.app') ||
-    allowedOrigins.includes(origin)
-  );
+  console.error("❌ CORS BLOCKED:", origin);
+  return callback(new Error(`CORS blocked for origin: ${origin}`));
 };
 
 const corsOptions = {
-  origin: (origin, callback) => {
-    if (isAllowedOrigin(origin)) {
-      return callback(null, true);
-    }
-
-    console.warn(`[CORS] Bloqueando origem nao permitida: ${origin}`);
-    callback(new Error(`CORS: Origem nao permitida - ${origin}`));
-  },
+  origin: dynamicOriginValidator,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
-    'Origin',
-    'Accept',
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'x-tenant-id',
-    'x-impersonate-org-id',
-  ],
-  optionsSuccessStatus: 204,
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+    "x-tenant-id",
+    "x-impersonate-org-id"
+  ]
 };
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+// MUITO IMPORTANTE: Garante o Preflight (OPTIONS)
+app.options("*", cors(corsOptions));
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000, // Generoso para produção inicial
@@ -167,12 +176,12 @@ app.get('/api/tenant/current', (req, res) => tenantHandler(req, res));
 // System Status & Health
 app.get('/api/system-status', async (req, res) => {
   try {
-    const supabase = getSupabaseServer();
-    const { count } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
+    // const supabase = getSupabaseServer();
+    // const { count } = await supabase
+    //  .from('profiles')
+    //  .select('*', { count: 'exact', head: true });
     res.json({
-      fresh: (count || 0) === 0,
+      success: true, status: "online", service: "woomobzy-backend",
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -202,13 +211,33 @@ const server = shouldListen
 // O server real e passado para registrar o upgrade do WebSocket.
 setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
 
-// --- Error Handling ---
+// --- Error Handling & Fallbacks ---
+
+// Fallback para rotas nao encontradas
+app.all('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: "Route not found"
+  });
+});
+
 app.use((err, req, res, next) => {
-  console.error('Server Error:', err.message);
+  console.error('GLOBAL ERROR:', err.message);
+
+  if (err.message.includes("CORS")) {
+    return res.status(403).json({
+      success: false,
+      error: err.message
+    });
+  }
+
   res.status(err.status || 500).json({
-    error: err.message || 'Erro interno de servidor',
+    success: false,
+    error: err.message || 'Internal server error',
     timestamp: new Date().toISOString(),
   });
 });
+
+server.timeout = 30000; // Hardening extra
 
 export default app;

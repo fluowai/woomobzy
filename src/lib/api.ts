@@ -17,13 +17,18 @@ export const getApiUrl = (path: string = '') => {
 
 function normalizeApiBaseUrl(url: string): string {
   const clean = (url || '').trim();
-  if (typeof window !== 'undefined' && PRODUCTION_HOST_PATTERN.test(window.location.hostname)) {
+  if (clean === '/' || clean.toLowerCase() === 'same-origin') {
     return '';
   }
 
   if (/web-production-7c3f0\.up\.railway\.app/i.test(clean)) {
     return DEFAULT_API_URL;
   }
+
+  if (!clean && typeof window !== 'undefined' && PRODUCTION_HOST_PATTERN.test(window.location.hostname)) {
+    return DEFAULT_API_URL;
+  }
+
   return clean || DEFAULT_API_URL;
 }
 

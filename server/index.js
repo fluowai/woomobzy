@@ -188,7 +188,7 @@ app.get('/', (req, res) => res.send('IMOBZY Production API Online 🚀'));
 // --- Server Startup ---
 const PORT = process.env.PORT || 3002;
 
-const server = app.listen(PORT, async () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`IMOBZY Server active on port ${PORT}`);
 });
 

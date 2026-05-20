@@ -101,6 +101,8 @@ const dynamicOriginValidator = (origin, callback) => {
     origin.endsWith(".imobzy.com.br") ||
     origin.endsWith(".consultio.com.br") ||
     origin.endsWith(".vercel.app") ||
+    origin.endsWith(".pages.dev") ||
+    origin.endsWith(".onrender.com") ||
     origin.endsWith(".up.railway.app") ||
     origin.startsWith("http://localhost") ||
     origin.startsWith("http://127.0.0.1")

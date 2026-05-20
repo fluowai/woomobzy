@@ -119,6 +119,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// MUITO IMPORTANTE: Garante o Preflight (OPTIONS)
+app.options(/(.*)/, cors(corsOptions));
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000, // Generoso para produção inicial
@@ -126,7 +128,8 @@ const globalLimiter = rateLimit({
 });
 
 app.use(globalLimiter);
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 // Request Logging
 app.use((req, res, next) => {
@@ -165,6 +168,27 @@ app.get('/api/tenant/current', (req, res) => tenantHandler(req, res));
 // System Status & Health
 app.get('/api/system-status', async (req, res) => {
   try {
+    return res.status(200).json({
+      success: true,
+      status: "online",
+      service: "woomobzy-backend",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV
+    });
+  } catch (error) {
+    console.error("SYSTEM STATUS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Old route backup below (commented out by replacement):
+/*
+/*
+  try {
     // const supabase = getSupabaseServer();
     // const { count } = await supabase
     //  .from('profiles')
@@ -178,6 +202,7 @@ app.get('/api/system-status', async (req, res) => {
   }
 });
 
+*/
 app.get('/health', (req, res) =>
   res.json({ status: 'ok', uptime: process.uptime() })
 );
@@ -194,9 +219,7 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
 // O server real e passado para registrar o upgrade do WebSocket.
 setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
 
-// --- Error Handling & Fallbacks ---
-
-// Fallback para rotas nao encontradas
+// 10. HARDENING EXTRA - Fallback para rotas nao encontradas
 app.all(/(.*)/, (req, res) => {
   res.status(404).json({
     success: false,
@@ -204,20 +227,20 @@ app.all(/(.*)/, (req, res) => {
   });
 });
 
+// 7. TRATAMENTO GLOBAL DE ERROS
 app.use((err, req, res, next) => {
-  console.error('GLOBAL ERROR:', err.message);
+  console.error("GLOBAL ERROR:", err);
 
-  if (err.message.includes("CORS")) {
+  if (err.message && err.message.includes("CORS")) {
     return res.status(403).json({
       success: false,
       error: err.message
     });
   }
 
-  res.status(err.status || 500).json({
+  return res.status(500).json({
     success: false,
-    error: err.message || 'Internal server error',
-    timestamp: new Date().toISOString(),
+    error: "Internal server error"
   });
 });
 

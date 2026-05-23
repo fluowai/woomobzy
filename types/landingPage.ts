@@ -210,6 +210,8 @@ export interface PropertyGridBlockConfig {
   maxItems: number;
   sortBy: 'price' | 'date' | 'area';
   cardStyle: 'modern' | 'classic' | 'minimal';
+  propertyIds?: string[];
+  properties?: Property[];
 }
 
 export interface PropertyCarouselBlockConfig {
@@ -326,6 +328,12 @@ export interface CustomHTMLBlockConfig {
   html: string;
   css?: string;
   js?: string;
+  editableFields?: Array<{
+    key: string;
+    label: string;
+    type: 'text' | 'textarea' | 'image';
+    value: string;
+  }>;
 }
 
 export interface Feature {

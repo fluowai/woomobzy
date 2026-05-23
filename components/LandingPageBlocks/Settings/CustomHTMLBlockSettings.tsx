@@ -12,8 +12,60 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
     onUpdate({ ...config, [key]: value });
   };
 
+  const handleEditableFieldChange = (fieldKey: string, value: string) => {
+    onUpdate({
+      ...config,
+      editableFields: (config.editableFields || []).map((field) =>
+        field.key === fieldKey ? { ...field, value } : field
+      ),
+    });
+  };
+
   return (
     <div className="space-y-6">
+      {config.editableFields?.length ? (
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
+          <div className="mb-4">
+            <h3 className="text-sm font-black text-indigo-950">
+              Edicao rapida do tema
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-indigo-700">
+              Altere os textos principais sem mexer no HTML. As mudancas aparecem
+              direto na previa da landing page.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {config.editableFields.map((field) => (
+              <div key={field.key}>
+                <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-indigo-900">
+                  {field.label}
+                </label>
+                {field.type === 'textarea' ? (
+                  <textarea
+                    value={field.value}
+                    onChange={(event) =>
+                      handleEditableFieldChange(field.key, event.target.value)
+                    }
+                    rows={3}
+                    className="w-full rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                  />
+                ) : (
+                  <input
+                    type={field.type === 'image' ? 'url' : 'text'}
+                    value={field.value}
+                    onChange={(event) =>
+                      handleEditableFieldChange(field.key, event.target.value)
+                    }
+                    className="w-full rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div>
         <label className="block text-sm font-bold text-gray-700 mb-2">HTML Content</label>
         <textarea

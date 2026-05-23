@@ -16,3 +16,4 @@ server/agro-intelligence/.python-deps
 coverage
 .gocache
 ai_worker
+documentation

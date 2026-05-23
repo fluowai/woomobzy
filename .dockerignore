@@ -15,4 +15,4 @@ whatsapp-service/whatsapp-service-bin
 server/agro-intelligence/.python-deps
 coverage
 .gocache
-
+ai_worker

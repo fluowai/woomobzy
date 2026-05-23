@@ -238,7 +238,24 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
 
   if (profile?.role === 'superadmin' && !isImpersonating) {
     const path = location.pathname;
+    const publicPaths = [
+      '/',
+      '/vendas',
+      '/consultoria',
+      '/consultoria/qualificacao',
+      '/lp/',
+      '/site/',
+      '/embreve',
+      '/login',
+      '/register',
+      '/impersonate',
+    ];
+    const isPublicPath = publicPaths.some((publicPath) =>
+      publicPath === '/' ? path === '/' : path.startsWith(publicPath)
+    );
+
     if (
+      !isPublicPath &&
       !path.startsWith('/superadmin') &&
       path !== '/login' &&
       path !== '/impersonate'
@@ -402,6 +419,7 @@ const AppContent: React.FC = () => {
             <Route path="ai-agents" element={<AIAgents />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
+            <Route path="connections" element={<ConexoesRural />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 

@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Headset,
   Bot,
+  Link as LinkIcon,
   LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -86,6 +87,7 @@ const UrbanLayout: React.FC = () => {
   ];
 
   const systemItems: MenuItem[] = [
+    { icon: LinkIcon, label: 'Conexões', path: '/urban/connections' },
     { icon: Settings, label: 'Configurações', path: '/urban/settings' },
   ];
 

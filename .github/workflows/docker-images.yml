@@ -59,4 +59,4 @@ jobs:
             VITE_WHATSAPP_WS_URL=/api/whatsapp/ws
             VITE_SUPABASE_URL=runtime
             VITE_SUPABASE_ANON_KEY=runtime
-            VITE_PANEL_URL=https://imobzy.consultio.com.br
+            VITE_PANEL_URL=https://crmimobzy.consultio.com.br

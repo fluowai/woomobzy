@@ -7,7 +7,7 @@ services:
       VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
       VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
       VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
-      VITE_PANEL_URL: "https://imobzy.consultio.com.br"
+      VITE_PANEL_URL: "https://crmimobzy.consultio.com.br"
     networks:
       - network_public
       - imobzy_internal
@@ -17,7 +17,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=network_public"
-        - "traefik.http.routers.imobzy_frontend.rule=Host(`imobzy.consultio.com.br`)"
+        - "traefik.http.routers.imobzy_frontend.rule=Host(`crmimobzy.consultio.com.br`)"
         - "traefik.http.routers.imobzy_frontend.entrypoints=websecure"
         - "traefik.http.routers.imobzy_frontend.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_frontend.priority=1"
@@ -30,8 +30,8 @@ services:
       NODE_ENV: production
       PORT: 3002
 
-      ALLOWED_ORIGINS: "https://imobzy.consultio.com.br"
-      CORS_ORIGINS: "https://imobzy.consultio.com.br"
+      ALLOWED_ORIGINS: "https://crmimobzy.consultio.com.br"
+      CORS_ORIGINS: "https://crmimobzy.consultio.com.br"
 
       VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
       VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
@@ -67,7 +67,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=network_public"
-        - "traefik.http.routers.imobzy_api.rule=Host(`imobzy.consultio.com.br`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.imobzy_api.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api`)"
         - "traefik.http.routers.imobzy_api.entrypoints=websecure"
         - "traefik.http.routers.imobzy_api.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_api.priority=10"
@@ -80,8 +80,8 @@ services:
       NODE_ENV: production
       PORT: 3100
 
-      ALLOWED_ORIGINS: "https://imobzy.consultio.com.br"
-      CORS_ORIGINS: "https://imobzy.consultio.com.br"
+      ALLOWED_ORIGINS: "https://crmimobzy.consultio.com.br"
+      CORS_ORIGINS: "https://crmimobzy.consultio.com.br"
 
       VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
       VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
@@ -111,7 +111,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=network_public"
-        - "traefik.http.routers.imobzy_whatsapp_ws.rule=Host(`imobzy.consultio.com.br`) && PathPrefix(`/api/whatsapp/ws`)"
+        - "traefik.http.routers.imobzy_whatsapp_ws.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api/whatsapp/ws`)"
         - "traefik.http.routers.imobzy_whatsapp_ws.entrypoints=websecure"
         - "traefik.http.routers.imobzy_whatsapp_ws.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_whatsapp_ws.priority=20"

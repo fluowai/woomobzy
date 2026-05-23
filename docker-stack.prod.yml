@@ -103,23 +103,10 @@ services:
     volumes:
       - whatsapp_sessions:/app/.sessions
     networks:
-      - network_public
       - imobzy_internal
     deploy:
       restart_policy:
         condition: any
-      labels:
-        - "traefik.enable=true"
-        - "traefik.docker.network=network_public"
-        - "traefik.http.routers.imobzy_whatsapp_ws.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api/whatsapp/ws`)"
-        - "traefik.http.routers.imobzy_whatsapp_ws.entrypoints=websecure"
-        - "traefik.http.routers.imobzy_whatsapp_ws.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.imobzy_whatsapp_ws.priority=20"
-        - "traefik.http.routers.imobzy_whatsapp_ws.middlewares=imobzy_whatsapp_ws_rewrite"
-        - "traefik.http.routers.imobzy_whatsapp_ws.service=imobzy_whatsapp_ws"
-        - "traefik.http.middlewares.imobzy_whatsapp_ws_rewrite.replacepathregex.regex=^/api/whatsapp/ws(.*)"
-        - "traefik.http.middlewares.imobzy_whatsapp_ws_rewrite.replacepathregex.replacement=/ws$$1"
-        - "traefik.http.services.imobzy_whatsapp_ws.loadbalancer.server.port=3100"
 
   agro-intelligence:
     image: ghcr.io/fluowai/woomobzy-agro:latest

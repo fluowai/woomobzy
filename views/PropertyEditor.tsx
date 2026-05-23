@@ -100,7 +100,7 @@ const PropertyEditor: React.FC = () => {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   
-  console.log('🔄 [PropertyEditor] State Check:', { loading, analyzing, isNew, id });
+  logger.debug('[PropertyEditor] State Check', { loading, analyzing, isNew, id });
 
   const [formData, setFormData] = useState<Partial<Property>>({
     title: '',
@@ -220,17 +220,17 @@ const PropertyEditor: React.FC = () => {
   }, [id, isNew, navigate]);
 
   const handleSave = async (e?: React.FormEvent) => {
-    console.log('🔘 Botão Salvar clicado!');
+    logger.debug('[PropertyEditor] Save clicked');
     if (e) e.preventDefault();
 
     if (!formData.title?.trim()) {
-      console.warn('⚠️ Validação falhou: Título ausente');
+      logger.warn('[PropertyEditor] Validacao falhou: titulo ausente');
       alert('Por favor, informe o título do imóvel.');
       return;
     }
 
     setLoading(true);
-    console.log('⏳ Iniciando processo de salvamento...', { isNew, id });
+    logger.debug('[PropertyEditor] Iniciando salvamento', { isNew, id });
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -265,7 +265,7 @@ const PropertyEditor: React.FC = () => {
       }
       navigate(`/${nichePath}/properties`);
     } catch (error: any) {
-      console.error('❌ ERRO AO SALVAR:', error);
+      logger.error('[PropertyEditor] Erro ao salvar', error);
       
       const errorMsg = error?.message || 'Erro desconhecido';
       const errorDetails = error?.details || '';
@@ -453,7 +453,7 @@ const PropertyEditor: React.FC = () => {
           <button
             type="button"
             onClick={(e) => {
-              console.log('⚡ Clique físico detectado no botão!');
+              logger.debug('[PropertyEditor] Clique fisico no botao salvar');
               handleSave(e);
             }}
             disabled={loading}

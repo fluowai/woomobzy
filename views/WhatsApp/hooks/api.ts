@@ -1,11 +1,13 @@
+import { getRuntimeEnv } from '@/utils/runtimeConfig';
+
 const DEFAULT_WHATSAPP_API_URL = '/api/whatsapp';
 const DEFAULT_WHATSAPP_WS_PATH = '/api/whatsapp/ws';
 
-const RAW_WHATSAPP_API_URL = import.meta.env.VITE_WHATSAPP_API_URL || DEFAULT_WHATSAPP_API_URL;
+const RAW_WHATSAPP_API_URL = getRuntimeEnv('VITE_WHATSAPP_API_URL', DEFAULT_WHATSAPP_API_URL);
 const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
 const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
 export const WS_URL = normalizeWhatsAppWsUrl(
-  import.meta.env.VITE_WHATSAPP_WS_URL || DEFAULT_WHATSAPP_WS_PATH
+  getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
 );
 
 import { supabase } from '@/services/supabase';
@@ -51,6 +53,7 @@ function buildSameOriginWsUrl(path: string): string {
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   const tenantId = USE_DIRECT_WHATSAPP_API ? await getTenantId(session?.user?.id) : null;
+  const impersonatedOrgId = getImpersonatedOrgId();
   
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const url = buildApiUrl(cleanPath, tenantId);
@@ -63,6 +66,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': session ? `Bearer ${session.access_token}` : '',
+        ...(impersonatedOrgId ? { 'x-impersonate-org-id': impersonatedOrgId } : {}),
         ...options?.headers,
       },
       ...options,
@@ -84,6 +88,18 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return res.json();
+}
+
+export async function getAuthorizedWhatsAppWsUrl(): Promise<string> {
+  const response = await apiRequest<{ token: string }>('/ws-token', { method: 'POST' });
+  const url = new URL(WS_URL);
+  url.searchParams.set('ws_token', response.token);
+  return url.toString();
+}
+
+function getImpersonatedOrgId(): string | null {
+  const value = sessionStorage.getItem('impersonated_org_id');
+  return value && value !== 'null' && value !== 'undefined' ? value : null;
 }
 
 async function getTenantId(userId?: string): Promise<string | null> {
@@ -177,6 +193,34 @@ export interface MessageListResponse {
   offset: number;
 }
 
+const LEGACY_MEDIA_PREVIEWS: Record<string, string> = {
+  '[image]': 'Imagem',
+  '[audio]': 'Audio',
+  '[video]': 'Video',
+  '[document]': 'Documento',
+  '[sticker]': 'Figurinha',
+  '[location]': 'Localizacao',
+  '[contact]': 'Contato',
+  '[unknown]': 'Mensagem',
+};
+
+export function normalizeMessagePreview(value?: string): string {
+  const clean = (value || '').trim();
+  if (!clean) return '';
+  return LEGACY_MEDIA_PREVIEWS[clean.toLowerCase()] || clean;
+}
+
+export function isTechnicalMediaPlaceholder(value?: string): boolean {
+  const clean = (value || '').trim().toLowerCase();
+  return Boolean(clean && LEGACY_MEDIA_PREVIEWS[clean]);
+}
+
+export function isSupportedChat(chat: Pick<Chat, 'chat_jid' | 'is_group'>): boolean {
+  const jid = (chat.chat_jid || '').toLowerCase();
+  if (chat.is_group) return jid.includes('@g.us');
+  return jid.includes('@s.whatsapp.net') && Boolean(formatPhoneDisplay(jid));
+}
+
 // ---- Instance API ----
 export const instanceApi = {
   create: (name: string) =>
@@ -231,6 +275,7 @@ export const messageApi = {
   sendMedia: async (chatId: string, instanceId: string, file: File, content = '') => {
     const { data: { session } } = await supabase.auth.getSession();
     const tenantId = USE_DIRECT_WHATSAPP_API ? await getTenantId(session?.user?.id) : null;
+    const impersonatedOrgId = getImpersonatedOrgId();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('content', content);
@@ -240,6 +285,7 @@ export const messageApi = {
       method: 'POST',
       headers: {
         Authorization: session ? `Bearer ${session.access_token}` : '',
+        ...(impersonatedOrgId ? { 'x-impersonate-org-id': impersonatedOrgId } : {}),
       },
       body: formData,
     });

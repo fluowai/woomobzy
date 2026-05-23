@@ -4,6 +4,8 @@ import { rateLimit } from 'express-rate-limit';
 import { sendContactFormEmail } from '../services/emailService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
+import { verifyAdmin } from '../middleware/auth.js';
+import { requireTenant } from '../middleware/tenant.js';
 
 const router = express.Router();
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
@@ -101,7 +103,7 @@ router.get('/texts', async (req, res) => {
   }
 });
 
-router.put('/texts/:key', async (req, res) => {
+router.put('/texts/:key', verifyAdmin, requireTenant, async (req, res) => {
   try {
     const { key } = req.params;
     const { value } = req.body;
@@ -109,6 +111,7 @@ router.put('/texts/:key', async (req, res) => {
       .from('site_texts')
       .update({ value, updated_at: new Date().toISOString() })
       .eq('key', key)
+      .eq('organization_id', req.orgId)
       .select().single();
     if (error) throw error;
     res.json({ success: true, text: data });

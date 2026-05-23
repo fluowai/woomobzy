@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 const WHATSAPP_DB_ENV_KEYS = [
@@ -36,7 +37,7 @@ const rewriteWhatsAppPath = (path) => {
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const target = resolveWhatsAppTarget(process.env.WHATSAPP_API_URL);
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
-  const allowedOriginPattern = /^https:\/\/([a-z0-9-]+\.)?(consultio\.com\.br|imobzy\.com\.br)$/i;
+  const isProduction = process.env.NODE_ENV === 'production';
   const envAllowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
         .map((origin) => origin.trim())
@@ -45,6 +46,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
 
   const allowedOrigins = new Set([
     'https://imobzy.consultio.com.br',
+    'https://crmimobzy.consultio.com.br',
     'https://woomobzy-production.up.railway.app',
     ...envAllowedOrigins,
   ]);
@@ -54,11 +56,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     if (
       origin &&
       (allowedOrigins.has(origin) ||
-        allowedOriginPattern.test(origin) ||
-        origin.startsWith('http://localhost') ||
-        origin.startsWith('http://127.0.0.1') ||
-        origin.endsWith('.vercel.app') ||
-        origin.endsWith('.up.railway.app'))
+        (!isProduction &&
+          (origin.startsWith('http://localhost') ||
+            origin.startsWith('http://127.0.0.1') ||
+            origin.endsWith('.vercel.app') ||
+            origin.endsWith('.up.railway.app'))))
     ) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
@@ -96,6 +98,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     pathRewrite: rewriteWhatsAppPath,
     on: {
       proxyReq: (proxyReq, req) => {
+        // The browser Origin is already validated by the Node API. Do not pass it
+        // to the internal WooAPI service, otherwise Gin CORS can reject localhost
+        // ports that are only meant to hit the public proxy.
+        proxyReq.removeHeader('origin');
+
         const whatsappUserId = req.user?.id;
 
         if (whatsappUserId) {
@@ -131,11 +138,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
           res.status(502).json({
             error: 'Servico WhatsApp Indisponivel',
             code: 'WHATSAPP_SERVICE_UNREACHABLE',
-            message: 'O servidor WhatsMeow (Go) nao respondeu em http://127.0.0.1:3100. Verifique se SUPABASE_DB_URL/DATABASE_URL/DIRECT_URL esta configurada no servidor e se o processo whatsapp-service esta online.',
-            diagnostics: {
-              target,
-              database_env: getDatabaseEnvStatus(),
-            },
+            message: 'Servico temporariamente indisponivel.',
           });
         }
       },
@@ -160,9 +163,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         ok: true,
         uptime: process.uptime(),
       },
-      whatsmeow: service,
-      target,
-      database_env: getDatabaseEnvStatus(),
+      whatsmeow: { ok: service.ok, status: service.status },
     });
   });
 
@@ -172,13 +173,34 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     const service = await checkWhatsAppService(target);
     res.status(service.ok ? 200 : 503).json({
       ok: service.ok,
-      target,
-      service,
-      database_env: getDatabaseEnvStatus(),
+      service: { ok: service.ok, status: service.status },
       hint: service.ok
         ? 'WhatsMeow esta respondendo.'
-        : 'O Node esta online, mas o processo Go/WhatsMeow nao respondeu. Confira as variaveis de banco no Railway e os logs do processo whatsapp-service.',
+        : 'O servico WhatsApp esta temporariamente indisponivel.',
     });
+  });
+
+  app.post('/api/whatsapp/ws-token', verifyAuth, requireTenant, (req, res) => {
+    const secret = getWsTokenSecret();
+    if (!secret) {
+      return res.status(503).json({ error: 'WebSocket token indisponivel' });
+    }
+
+    const token = jwt.sign(
+      {
+        sub: req.user.id,
+        org_id: req.orgId,
+        purpose: 'whatsapp_ws',
+      },
+      secret,
+      {
+        expiresIn: '2m',
+        issuer: 'imobzy-api',
+        audience: 'imobzy-whatsapp-ws',
+      }
+    );
+
+    res.json({ token, expires_in: 120 });
   });
 
   app.get('/api/whatsapp/instances', verifyAuth, requireTenant, async (req, res) => {
@@ -206,20 +228,79 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     }
   });
 
-  // Browser WebSockets cannot send Authorization headers. REST operations stay authenticated.
-  app.use('/api/whatsapp/ws', proxy);
+  app.use('/api/whatsapp/ws', validateWsTokenMiddleware, proxy);
   app.use('/api/whatsapp', verifyAuth, requireTenant, proxy);
 
   if (server) {
     server.on('upgrade', (req, socket, head) => {
       if (req.url?.startsWith('/api/whatsapp/ws')) {
-        proxy.upgrade(req, socket, head);
+        validateWsUpgrade(req)
+          .then((ok) => {
+            if (!ok) {
+              socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+              socket.destroy();
+              return;
+            }
+            proxy.upgrade(req, socket, head);
+          })
+          .catch(() => {
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+          });
       }
     });
   }
 
   return proxy;
 };
+
+function getWsTokenSecret() {
+  return process.env.WHATSAPP_INTERNAL_TOKEN || process.env.SUPABASE_JWT_SECRET || '';
+}
+
+function verifyWsToken(token) {
+  const secret = getWsTokenSecret();
+  if (!secret || !token) return null;
+
+  try {
+    const payload = jwt.verify(token, secret, {
+      issuer: 'imobzy-api',
+      audience: 'imobzy-whatsapp-ws',
+    });
+    if (payload?.purpose !== 'whatsapp_ws' || !payload.sub || !payload.org_id) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function getWsTokenFromUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl || '', 'http://localhost');
+    return url.searchParams.get('ws_token');
+  } catch {
+    return null;
+  }
+}
+
+function validateWsTokenMiddleware(req, res, next) {
+  const payload = verifyWsToken(getWsTokenFromUrl(req.originalUrl || req.url));
+  if (!payload) {
+    return res.status(401).json({ error: 'WebSocket nao autorizado' });
+  }
+
+  req.user = { id: payload.sub };
+  req.orgId = payload.org_id;
+  next();
+}
+
+async function validateWsUpgrade(req) {
+  const payload = verifyWsToken(getWsTokenFromUrl(req.url));
+  if (!payload) return false;
+  req.user = { id: payload.sub };
+  req.orgId = payload.org_id;
+  return true;
+}
 
 function resolveWhatsAppTarget(rawTarget) {
   const target = (rawTarget || '').trim();

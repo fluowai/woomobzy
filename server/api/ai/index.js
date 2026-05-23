@@ -3,6 +3,7 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import axios from 'axios';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { randomUUID } from 'crypto';
 
 const router = express.Router();
 
@@ -37,16 +38,17 @@ router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
 
     if (error) {
       if (isMissingRelationError(error)) {
+        const agents = await listFallbackAgents(supabase, req.orgId);
         return res.json({
           success: true,
-          agents: [],
+          agents,
           setup_required: true,
-          message: 'Tabela ai_agents ainda nao foi criada. Execute a migration 20260516_ai_agents_whatsapp_automation.sql.',
+          message: 'Tabela ai_agents ainda nao foi criada. Salvando agentes temporariamente em site_settings.integrations.operationalAgents.',
         });
       }
       throw error;
     }
-    res.json({ success: true, agents: data || [] });
+    res.json({ success: true, agents: (data || []).map(hydrateAgent) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -67,8 +69,14 @@ router.post('/agents', verifyAuth, requireTenant, async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
-    res.status(201).json({ success: true, agent: data });
+    if (error) {
+      if (isMissingRelationError(error)) {
+        const agent = await createFallbackAgent(supabase, req.orgId, payload);
+        return res.status(201).json({ success: true, agent, setup_required: true });
+      }
+      throw error;
+    }
+    res.status(201).json({ success: true, agent: hydrateAgent(data) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -87,8 +95,15 @@ router.patch('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
-    res.json({ success: true, agent: data });
+    if (error) {
+      if (isMissingRelationError(error)) {
+        const agent = await updateFallbackAgent(supabase, req.orgId, req.params.id, payload);
+        if (!agent) return res.status(404).json({ error: 'Agente nao encontrado' });
+        return res.json({ success: true, agent, setup_required: true });
+      }
+      throw error;
+    }
+    res.json({ success: true, agent: hydrateAgent(data) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -103,7 +118,13 @@ router.delete('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
       .eq('id', req.params.id)
       .eq('organization_id', req.orgId);
 
-    if (error) throw error;
+    if (error) {
+      if (isMissingRelationError(error)) {
+        await deleteFallbackAgent(supabase, req.orgId, req.params.id);
+        return res.json({ success: true, setup_required: true });
+      }
+      throw error;
+    }
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -111,18 +132,53 @@ router.delete('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
 });
 
 function normalizeAgentPayload(body, partial = false) {
+  const extendedConfig = {
+    department: body.department,
+    status: body.status || (body.is_active ? 'Ativo' : 'Rascunho'),
+    description: body.description,
+    avatar_url: body.avatar_url,
+    icon: body.icon,
+    operation_mode: body.operation_mode,
+    autonomy_level: Number(body.autonomy_level || 1),
+    channel_scope: body.channel_scope,
+    channels: body.channels || [],
+    instances: body.instances || [],
+    channel_permissions: body.channel_permissions || {},
+    workspaces: body.workspaces || [],
+    triggers: body.triggers || [],
+    permissions: body.permissions || {},
+    pipelines: body.pipelines || [],
+    knowledge_sources: body.knowledge_sources || [],
+    handoff: body.handoff || {},
+    metrics: body.metrics || [],
+    simulation: body.simulation || {},
+    limits: body.limits || {},
+  };
+
+  Object.keys(extendedConfig).forEach((key) => {
+    if (extendedConfig[key] === undefined || (partial && extendedConfig[key] === null)) {
+      delete extendedConfig[key];
+    }
+  });
+
   const payload = {
     name: body.name,
     role: body.role,
     channel: body.channel || 'whatsapp',
-    is_active: body.is_active ?? true,
+    is_active: body.status ? body.status === 'Ativo' || body.status === 'Em teste' : (body.is_active ?? true),
     personality: body.personality || '',
-    instructions: body.instructions || '',
-    handoff_rules: body.handoff_rules || {},
+    instructions: body.instructions || body.operational_instructions || '',
+    handoff_rules: {
+      ...(body.handoff_rules || {}),
+      __operational360: extendedConfig,
+    },
     capabilities: body.capabilities || [],
     tools: body.tools || [],
     response_style: body.response_style || 'consultivo',
-    working_hours: body.working_hours || {},
+    working_hours: {
+      ...(body.working_hours || {}),
+      limits: body.limits || body.working_hours?.limits || {},
+    },
   };
 
   Object.keys(payload).forEach((key) => {
@@ -136,8 +192,103 @@ function normalizeAgentPayload(body, partial = false) {
   return payload;
 }
 
-router.post('/generate-page', async (req, res) => {
-  const { prompt, niche, organizationId } = req.body;
+function hydrateAgent(agent) {
+  const config = agent?.handoff_rules?.__operational360 || {};
+  const { __operational360, ...handoffRules } = agent?.handoff_rules || {};
+
+  return {
+    ...agent,
+    ...config,
+    handoff_rules: handoffRules,
+    status: config.status || (agent?.is_active ? 'Ativo' : 'Pausado'),
+    department: config.department || 'Atendimento',
+    description: config.description || '',
+    operation_mode: config.operation_mode || 'Copiloto humano',
+    autonomy_level: config.autonomy_level || 2,
+  };
+}
+
+async function getFallbackSettings(supabase, organizationId) {
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('id, integrations')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
+}
+
+async function saveFallbackAgents(supabase, organizationId, agents) {
+  const settings = await getFallbackSettings(supabase, organizationId);
+  const integrations = {
+    ...(settings?.integrations || {}),
+    operationalAgents: agents,
+  };
+
+  if (settings?.id) {
+    const { error } = await supabase
+      .from('site_settings')
+      .update({ integrations })
+      .eq('id', settings.id);
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase.from('site_settings').insert({
+    organization_id: organizationId,
+    integrations,
+  });
+  if (error) throw error;
+}
+
+async function listFallbackAgents(supabase, organizationId) {
+  const settings = await getFallbackSettings(supabase, organizationId);
+  return settings?.integrations?.operationalAgents || [];
+}
+
+async function createFallbackAgent(supabase, organizationId, payload) {
+  const agents = await listFallbackAgents(supabase, organizationId);
+  const agent = hydrateAgent({
+    ...payload,
+    id: randomUUID(),
+    organization_id: organizationId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+  await saveFallbackAgents(supabase, organizationId, [agent, ...agents]);
+  return agent;
+}
+
+async function updateFallbackAgent(supabase, organizationId, agentId, payload) {
+  const agents = await listFallbackAgents(supabase, organizationId);
+  let updated = null;
+  const nextAgents = agents.map((agent) => {
+    if (agent.id !== agentId) return agent;
+    updated = hydrateAgent({
+      ...agent,
+      ...payload,
+      updated_at: new Date().toISOString(),
+    });
+    return updated;
+  });
+  if (!updated) return null;
+  await saveFallbackAgents(supabase, organizationId, nextAgents);
+  return updated;
+}
+
+async function deleteFallbackAgent(supabase, organizationId, agentId) {
+  const agents = await listFallbackAgents(supabase, organizationId);
+  await saveFallbackAgents(
+    supabase,
+    organizationId,
+    agents.filter((agent) => agent.id !== agentId)
+  );
+}
+
+router.post('/generate-page', verifyAuth, requireTenant, async (req, res) => {
+  const { prompt, niche } = req.body;
+  const organizationId = req.orgId;
 
   try {
     const config = await getOrgAIConfig(organizationId);
@@ -161,8 +312,9 @@ router.post('/generate-page', async (req, res) => {
   }
 });
 
-router.post('/chat', async (req, res) => {
-  const { prompt, systemInstruction, temperature = 0.7, jsonMode = false, organizationId } = req.body;
+router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
+  const { prompt, systemInstruction, temperature = 0.7, jsonMode = false } = req.body;
+  const organizationId = req.orgId;
   
   // Try Gemini first (Global or Org-specific)
   try {

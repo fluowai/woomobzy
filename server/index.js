@@ -54,18 +54,32 @@ if (missingVars.length > 0) {
 
 const app = express();
 app.set('trust proxy', 1);
+const isProduction = process.env.NODE_ENV === 'production';
 
 // --- Global Security & Setup ---
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: isProduction
+      ? {
+          useDefaults: true,
+          directives: {
+            "default-src": ["'self'"],
+            "script-src": ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com", "https://connect.facebook.net"],
+            "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            "img-src": ["'self'", "data:", "blob:", "https:"],
+            "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
+            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://crmimobzy.consultio.com.br", "wss://crmimobzy.consultio.com.br"],
+            "frame-ancestors": ["'self'"],
+          },
+        }
+      : false,
     crossOriginEmbedderPolicy: false,
   })
 );
 
 // --- Debug Logger Middleware ---
 app.use((req, res, next) => {
-  if (!req.originalUrl.includes('/ws')) {
+  if (!isProduction && !req.originalUrl.includes('/ws')) {
     console.log("━━━━━━━━━━━━━━━━━━━━━━");
     console.log("METHOD:", req.method);
     console.log("URL:", req.originalUrl);
@@ -81,9 +95,14 @@ const staticAllowedOrigins = [
   "https://imobzy.com.br",
   "https://www.imobzy.com.br",
   "https://imobzy.consultio.com.br",
+  "https://crmimobzy.consultio.com.br",
   "https://consultio.com.br",
   "https://woomobzy-production.up.railway.app",
 ];
+const envAllowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : [];
+const productionAllowedOrigins = new Set([...staticAllowedOrigins, ...envAllowedOrigins]);
 
 const dynamicOriginValidator = (origin, callback) => {
   // Permitir requests sem origin (ex: chamadas S2S, cURL, PM2, Railway Healthcheck)
@@ -92,8 +111,13 @@ const dynamicOriginValidator = (origin, callback) => {
   }
 
   // Permitir origins exatas
-  if (staticAllowedOrigins.includes(origin)) {
+  if (productionAllowedOrigins.has(origin)) {
     return callback(null, true);
+  }
+
+  if (isProduction) {
+    console.error("CORS BLOCKED:", origin);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
   }
 
   // Permitir subdomínios da empresa e dev/staging
@@ -135,10 +159,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request Logging
 app.use((req, res, next) => {
-  const auth = req.headers.authorization ? '🔒' : '🔓';
-  console.log(
-    `[${new Date().toISOString()}] ${auth} ${req.method} ${req.path}`
-  );
+  if (!isProduction) {
+    const auth = req.headers.authorization ? 'auth' : 'anon';
+    console.log(`[${new Date().toISOString()}] ${auth} ${req.method} ${req.path}`);
+  }
   next();
 });
 
@@ -249,3 +273,4 @@ app.use((err, req, res, next) => {
 server.timeout = 30000; // Hardening extra
 
 export default app;
+

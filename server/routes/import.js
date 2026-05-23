@@ -21,8 +21,8 @@ router.post('/admin/analyze', verifySuperAdmin, async (req, res) => {
   }
 });
 
-// Analyze site for properties (Public / Onboarding Wizard)
-router.post('/analyze', async (req, res) => {
+// Analyze site for properties. Restricted because it can trigger outbound scraping.
+router.post('/analyze', verifySuperAdmin, async (req, res) => {
   const { url, organizationId } = req.body;
   if (!url || !organizationId) return res.status(400).json({ error: 'URL and Organization ID are required' });
   
@@ -72,8 +72,8 @@ router.post('/admin/finalize', verifySuperAdmin, async (req, res) => {
   }
 });
 
-// Finalize Import (Bulk Save) - Public / Onboarding
-router.post('/finalize', async (req, res) => {
+// Finalize Import (Bulk Save). Restricted because it writes properties into an organization.
+router.post('/finalize', verifySuperAdmin, async (req, res) => {
   const { properties, organizationId } = req.body;
   if (!properties || !organizationId) return res.status(400).json({ error: 'Data and Organization ID are required' });
   

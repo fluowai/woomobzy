@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { WS_URL } from './api';
+import { getAuthorizedWhatsAppWsUrl } from './api';
 
 interface WSEvent {
   event: string;
@@ -17,14 +17,18 @@ export function useWebSocket(enabled = true) {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 3; // Limited to prevent console spam
   const gaveUp = useRef(false);
+  const intentionalClose = useRef(false);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!enabled) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     if (gaveUp.current) return; // Don't try if we already gave up
 
     try {
-      const ws = new WebSocket(WS_URL);
+      intentionalClose.current = false;
+      const wsUrl = await getAuthorizedWhatsAppWsUrl();
+      if (intentionalClose.current || !enabled) return;
+      const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
         logger.info('✅ WebSocket connected');
@@ -53,6 +57,10 @@ export function useWebSocket(enabled = true) {
         setIsConnected(false);
         wsRef.current = null;
 
+        if (intentionalClose.current || !enabled) {
+          return;
+        }
+
         if (reconnectAttempts.current < maxReconnectAttempts) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
           reconnectAttempts.current += 1;
@@ -78,6 +86,7 @@ export function useWebSocket(enabled = true) {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
     }
+    intentionalClose.current = true;
     reconnectAttempts.current = maxReconnectAttempts;
     wsRef.current?.close();
     wsRef.current = null;

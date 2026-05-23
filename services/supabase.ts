@@ -1,8 +1,9 @@
 import { logger } from '@/utils/logger';
 import { createClient } from '@supabase/supabase-js';
+import { getRuntimeEnv } from '@/utils/runtimeConfig';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = getRuntimeEnv('VITE_SUPABASE_URL');
+const supabaseAnonKey = getRuntimeEnv('VITE_SUPABASE_ANON_KEY');
 
 if (!supabaseUrl || !supabaseAnonKey) {
   logger.error(

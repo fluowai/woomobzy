@@ -1,9 +1,6 @@
 services:
   proxy:
     image: caddy:2.8-alpine
-    depends_on:
-      - frontend
-      - api
     ports:
       - "80:80"
       - "443:443"
@@ -37,116 +34,98 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
-    restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: any
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        VITE_API_URL: same-origin
-        VITE_WHATSAPP_API_URL: /api/whatsapp
-        VITE_WHATSAPP_WS_URL: /api/whatsapp/ws
-        VITE_SUPABASE_URL: "https://seu-projeto.supabase.co"
-        VITE_SUPABASE_ANON_KEY: "sua-chave-anon-publica"
-        VITE_PANEL_URL: "https://imobzy.consultio.com.br"
-    restart: unless-stopped
+    image: ghcr.io/fluowai/woomobzy-frontend:latest
+    environment:
+      VITE_API_URL: "same-origin"
+      VITE_WHATSAPP_API_URL: "/api/whatsapp"
+      VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
+      VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
+      VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
+      VITE_PANEL_URL: "https://imobzy.consultio.com.br"
+    deploy:
+      restart_policy:
+        condition: any
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    image: ghcr.io/fluowai/woomobzy-api:latest
     environment:
       NODE_ENV: production
       PORT: 3002
 
-      # Dominio / CORS
       ALLOWED_ORIGINS: "https://imobzy.consultio.com.br"
       CORS_ORIGINS: "https://imobzy.consultio.com.br"
 
-      # Supabase
-      VITE_SUPABASE_URL: "https://seu-projeto.supabase.co"
-      VITE_SUPABASE_ANON_KEY: "sua-chave-anon-publica"
-      SUPABASE_SERVICE_ROLE_KEY: "sua-service-role-key"
-      SUPABASE_JWT_SECRET: "seu-jwt-secret"
+      VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
+      VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
+      SUPABASE_SERVICE_ROLE_KEY: "TROCAR_AQUI_SUPABASE_SERVICE_ROLE_KEY"
+      SUPABASE_JWT_SECRET: "TROCAR_AQUI_SUPABASE_JWT_SECRET"
 
-      # Banco
-      DATABASE_URL: "postgresql://user:password@host:5432/postgres?sslmode=require"
-      SUPABASE_DB_URL: "postgresql://user:password@host:5432/postgres?sslmode=require"
+      DATABASE_URL: "TROCAR_AQUI_DATABASE_URL"
+      SUPABASE_DB_URL: "TROCAR_AQUI_SUPABASE_DB_URL"
       PGSSLMODE: require
 
-      # URLs internas Docker
       WHATSAPP_API_URL: "http://whatsapp-service:3100"
       WHATSMEOW_URL: "http://whatsapp-service:3100"
       AGRO_INTEL_URL: "http://agro-intelligence:8000"
       NODE_URL: "http://api:3002"
 
-      # IA / integrações opcionais
       OPENAI_API_KEY: ""
       GEMINI_API_KEY: ""
       GROQ_API_KEY: ""
 
-      # Email opcional
       EMAIL_HOST: ""
       EMAIL_PORT: 587
       EMAIL_USER: ""
       EMAIL_PASSWORD: ""
 
-      # WhatsApp / automacao
-      WHATSAPP_INTERNAL_TOKEN: "troque-por-um-token-grande"
+      WHATSAPP_INTERNAL_TOKEN: "TROCAR_AQUI_TOKEN_GRANDE"
       WHATSAPP_AI_AUTOMATION: "true"
-    depends_on:
-      - whatsapp-service
-      - agro-intelligence
-    expose:
-      - "3002"
-    restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: any
 
   whatsapp-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.whatsapp
+    image: ghcr.io/fluowai/woomobzy-whatsapp:latest
     environment:
       NODE_ENV: production
       PORT: 3100
 
-      # Dominio / CORS
       ALLOWED_ORIGINS: "https://imobzy.consultio.com.br"
       CORS_ORIGINS: "https://imobzy.consultio.com.br"
 
-      # Supabase / banco
-      VITE_SUPABASE_URL: "https://seu-projeto.supabase.co"
-      VITE_SUPABASE_ANON_KEY: "sua-chave-anon-publica"
-      SUPABASE_SERVICE_ROLE_KEY: "sua-service-role-key"
-      SUPABASE_JWT_SECRET: "seu-jwt-secret"
-      DATABASE_URL: "postgresql://user:password@host:5432/postgres?sslmode=require"
-      SUPABASE_DB_URL: "postgresql://user:password@host:5432/postgres?sslmode=require"
+      VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
+      VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
+      SUPABASE_SERVICE_ROLE_KEY: "TROCAR_AQUI_SUPABASE_SERVICE_ROLE_KEY"
+      SUPABASE_JWT_SECRET: "TROCAR_AQUI_SUPABASE_JWT_SECRET"
+      DATABASE_URL: "TROCAR_AQUI_DATABASE_URL"
+      SUPABASE_DB_URL: "TROCAR_AQUI_SUPABASE_DB_URL"
       PGSSLMODE: require
 
-      # URLs internas Docker
       NODE_URL: "http://api:3002"
       WHATSMEOW_URL: "http://whatsapp-service:3100"
       WHATSAPP_API_URL: "http://whatsapp-service:3100"
 
-      # IA / automacao
       OPENAI_API_KEY: ""
       GEMINI_API_KEY: ""
       GROQ_API_KEY: ""
-      WHATSAPP_INTERNAL_TOKEN: "troque-por-um-token-grande"
+      WHATSAPP_INTERNAL_TOKEN: "TROCAR_AQUI_TOKEN_GRANDE"
       WHATSAPP_AI_AUTOMATION: "true"
     volumes:
       - whatsapp_sessions:/app/.sessions
-    expose:
-      - "3100"
-    restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: any
 
   agro-intelligence:
-    build:
-      context: .
-      dockerfile: Dockerfile.agro
-    expose:
-      - "8000"
-    restart: unless-stopped
+    image: ghcr.io/fluowai/woomobzy-agro:latest
+    deploy:
+      restart_policy:
+        condition: any
 
 volumes:
   caddy_data:

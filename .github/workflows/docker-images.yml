@@ -1,0 +1,62 @@
+name: Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: frontend
+            image: ghcr.io/fluowai/woomobzy-frontend
+            dockerfile: Dockerfile.frontend
+          - name: api
+            image: ghcr.io/fluowai/woomobzy-api
+            dockerfile: Dockerfile.api
+          - name: whatsapp
+            image: ghcr.io/fluowai/woomobzy-whatsapp
+            dockerfile: Dockerfile.whatsapp
+          - name: agro
+            image: ghcr.io/fluowai/woomobzy-agro
+            dockerfile: Dockerfile.agro
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ matrix.image }}:latest
+            ${{ matrix.image }}:${{ github.sha }}
+          build-args: |
+            VITE_API_URL=same-origin
+            VITE_WHATSAPP_API_URL=/api/whatsapp
+            VITE_WHATSAPP_WS_URL=/api/whatsapp/ws
+            VITE_SUPABASE_URL=runtime
+            VITE_SUPABASE_ANON_KEY=runtime
+            VITE_PANEL_URL=https://imobzy.consultio.com.br

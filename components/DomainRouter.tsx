@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
+import { getRuntimeEnv } from '@/utils/runtimeConfig';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useTexts } from '../context/TextsContext';
@@ -66,7 +67,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         log(`🌍 [Router] Checking: ${hostname}${path}`);
 
         // 1. Whitelist (System Domains)
-        const panelUrl = import.meta.env.VITE_PANEL_URL || '';
+        const panelUrl = getRuntimeEnv('VITE_PANEL_URL');
         // Remove protocol and trailing slash
         const panelHost = panelUrl
           .replace(/^https?:\/\//, '')

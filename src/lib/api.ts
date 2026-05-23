@@ -1,11 +1,11 @@
 import { supabase } from '../../services/supabase';
+import { getRuntimeEnv } from '../../utils/runtimeConfig';
 
-const DEFAULT_API_URL = 'https://woomobzy-production.up.railway.app';
-const PRODUCTION_HOST_PATTERN = /(^|\.)(consultio\.com\.br|imobzy\.com\.br)$/i;
+const DEFAULT_API_URL = 'same-origin';
 
-// Utility to handle API calls to the Railway backend
+// Utility to handle API calls to the configured backend.
 export const getApiUrl = (path: string = '') => {
-  const baseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || DEFAULT_API_URL);
+  const baseUrl = normalizeApiBaseUrl(getRuntimeEnv('VITE_API_URL', DEFAULT_API_URL));
   const sanitizedPath = path.startsWith('/') ? path : `/${path}`;
   const sanitizedBaseUrl = baseUrl.endsWith('/')
     ? baseUrl.slice(0, -1)
@@ -22,14 +22,10 @@ function normalizeApiBaseUrl(url: string): string {
   }
 
   if (/web-production-7c3f0\.up\.railway\.app/i.test(clean)) {
-    return DEFAULT_API_URL;
+    return '';
   }
 
-  if (!clean && typeof window !== 'undefined' && PRODUCTION_HOST_PATTERN.test(window.location.hostname)) {
-    return DEFAULT_API_URL;
-  }
-
-  return clean || DEFAULT_API_URL;
+  return clean || '';
 }
 
 /**

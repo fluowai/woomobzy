@@ -97,7 +97,39 @@ const CRMLeads: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-slate-100 md:hidden">
+          {filteredLeads.map((lead) => (
+            <article key={lead.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-black text-slate-950 truncate">{lead.name}</p>
+                  <p className="text-xs font-semibold text-slate-400">{lead.classification || 'Sem classificacao'}</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-black text-primary">
+                  {lead.status || 'Novo'}
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm font-semibold text-slate-600">
+                <span className="flex items-center gap-2"><Phone size={14} /> {lead.phone || '-'}</span>
+                {lead.email ? <span className="flex items-center gap-2 break-all"><Mail size={14} /> {lead.email}</span> : null}
+                <span className="block text-xs text-slate-400">Origem: {lead.source || '-'}</span>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-slate-400">
+                <span>{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                <Link to={kanbanPath} className="text-primary">Abrir no Kanban</Link>
+              </div>
+            </article>
+          ))}
+          {filteredLeads.length === 0 ? (
+            <div className="px-5 py-12 text-center text-slate-400 font-semibold">
+              Nenhum lead encontrado.
+            </div>
+          ) : null}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>

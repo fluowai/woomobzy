@@ -1262,6 +1262,7 @@ const KanbanBoard: React.FC = () => {
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [allProperties, setAllProperties] = useState<any[]>([]);
+  const [mobileStageId, setMobileStageId] = useState(PIPELINE_STAGES[0].id);
 
   const { profile } = useAuth();
   const isImpersonating = !!localStorage.getItem('impersonatedOrgId');
@@ -1319,6 +1320,25 @@ const KanbanBoard: React.FC = () => {
     } catch (error) {
       logger.error('Failed to update status', error);
       // Revert on failure
+      loadLeads();
+    }
+  };
+
+  const handleMoveLeadStage = async (leadId: string, nextStageId: string) => {
+    const currentLead = leads.find((lead) => lead.id === leadId);
+    if (!currentLead || currentLead.status === nextStageId) return;
+
+    setLeads((prev) =>
+      prev.map((lead) =>
+        lead.id === leadId ? { ...lead, status: nextStageId as any } : lead
+      )
+    );
+    setMobileStageId(nextStageId);
+
+    try {
+      await leadService.updateStatus(leadId, nextStageId);
+    } catch (error) {
+      logger.error('Failed to update status', error);
       loadLeads();
     }
   };
@@ -1448,6 +1468,32 @@ const KanbanBoard: React.FC = () => {
         lead={selectedLead}
       />
 
+      <div className="md:hidden -mx-4 px-4 pb-3 overflow-x-auto">
+        <div className="flex gap-2 min-w-max">
+          {PIPELINE_STAGES.map((stage) => {
+            const count = getLeadsByStage(stage.id).length;
+            return (
+              <button
+                key={stage.id}
+                type="button"
+                onClick={() => setMobileStageId(stage.id)}
+                className={`h-10 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wide flex items-center gap-2 ${
+                  mobileStageId === stage.id
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-500 border-slate-200'
+                }`}
+              >
+                <stage.icon size={12} />
+                {stage.label}
+                <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-x-auto pb-4 -mx-4 px-4">
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="flex gap-3 sm:gap-4 h-full pb-2">
@@ -1459,7 +1505,7 @@ const KanbanBoard: React.FC = () => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`w-72 sm:w-80 flex-shrink-0 flex flex-col rounded-2xl ${snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'} border border-slate-100 max-h-full`}
+                      className={`${stage.id === mobileStageId ? 'flex' : 'hidden md:flex'} w-full md:w-72 lg:w-80 flex-shrink-0 flex-col rounded-2xl ${snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'} border border-slate-100 max-h-full`}
                     >
                       {/* Header */}
                       <div className="p-4 border-b border-slate-100 bg-white/50 backdrop-blur rounded-t-2xl sticky top-0 z-10">
@@ -1616,6 +1662,28 @@ const KanbanBoard: React.FC = () => {
                                       lead.createdAt
                                     ).toLocaleDateString()}
                                   </span>
+                                </div>
+                                <div
+                                  className="mt-3 md:hidden"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                  <label className="mb-1 block text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                    Mover etapa
+                                  </label>
+                                  <select
+                                    value={lead.status}
+                                    onChange={(e) =>
+                                      handleMoveLeadStage(lead.id, e.target.value)
+                                    }
+                                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500"
+                                  >
+                                    {PIPELINE_STAGES.map((option) => (
+                                      <option key={option.id} value={option.id}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
                               </div>
                             )}

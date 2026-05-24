@@ -85,6 +85,9 @@
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
+.wa-mobile-back {
+  display: none;
+}
 
 /* Main Layout */
 .wa-main {
@@ -1012,8 +1015,121 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .wa-sidebar { width: 100%; }
-  .wa-main { flex-direction: column; }
-  .wa-messages { padding: 12px 16px; }
-  .wa-bubble { max-width: 85%; }
+  .wa-dashboard {
+    height: calc(100dvh - 64px);
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+  .wa-header {
+    align-items: flex-start;
+    padding: 10px 12px;
+  }
+  .wa-header-left,
+  .wa-header-right {
+    min-width: 0;
+  }
+  .wa-header-title {
+    font-size: 1rem;
+  }
+  .wa-status-text {
+    display: none;
+  }
+  .wa-instance-selector {
+    max-width: 168px;
+    padding: 6px 8px;
+  }
+  .wa-instance-select {
+    max-width: 118px;
+  }
+  .wa-main {
+    position: relative;
+    flex-direction: row;
+  }
+  .wa-sidebar,
+  .wa-chat-window {
+    width: 100%;
+    min-width: 100%;
+  }
+  .wa-chat-window,
+  .wa-empty-state {
+    display: none;
+  }
+  .wa-dashboard.wa-chat-open .wa-sidebar {
+    display: none;
+  }
+  .wa-dashboard.wa-chat-open .wa-chat-window {
+    display: flex;
+  }
+  .wa-mobile-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .wa-chat-header {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .wa-chat-header-info {
+    min-width: 0;
+    flex: 1;
+  }
+  .wa-chat-header-profile > div:last-child {
+    min-width: 0;
+  }
+  .wa-chat-header-name,
+  .wa-chat-header-sub {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wa-chat-header-actions {
+    flex-shrink: 0;
+  }
+  .wa-messages {
+    padding: 12px 10px;
+  }
+  .wa-bubble {
+    max-width: 88%;
+  }
+  .wa-bubble-audio {
+    min-width: 0;
+  }
+  .wa-input-area {
+    padding: 8px 10px;
+  }
+  .wa-modal {
+    width: calc(100% - 24px);
+    max-height: 90dvh;
+  }
+  .wa-create-instance {
+    flex-direction: column;
+  }
+  .wa-inst-card {
+    align-items: flex-start;
+    gap: 10px;
+    flex-direction: column;
+  }
+  .wa-inst-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .wa-qr-modal {
+    width: calc(100% - 24px);
+    padding: 24px 16px;
+  }
+  .wa-qr-image {
+    width: min(260px, 72vw);
+    height: min(260px, 72vw);
+  }
 }

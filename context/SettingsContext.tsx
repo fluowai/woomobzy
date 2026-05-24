@@ -85,6 +85,7 @@ export const SettingsProvider: React.FC<{
         if (error) {
           logger.warn('⚠️ [SettingsContext] Load Error:', error.message);
         } else if (data && isMounted) {
+          const layoutConfig = data.layout_config || {};
           logger.info(
             '✅ [SettingsContext] Settings loaded:',
             data.agency_name
@@ -98,21 +99,26 @@ export const SettingsProvider: React.FC<{
               data.secondary_color || DEFAULT_SITE_SETTINGS.secondaryColor,
             headerColor: data.header_color,
             logoUrl: data.logo_url,
-            logoHeight: data.logo_height,
-            isLive: data.is_live ?? false, // Mapeamento do status de manutenção
-            fontFamily: data.font_family,
-            baseFontSize: data.base_font_size,
-            headingFontSize: data.heading_font_size,
+            logoHeight: layoutConfig.logoHeight,
+            isLive: layoutConfig.isLive ?? false,
+            fontFamily: layoutConfig.fontFamily,
+            baseFontSize: layoutConfig.baseFontSize,
+            headingFontSize: layoutConfig.headingFontSize,
             footerText: data.footer_text,
-            templateId: data.template_id,
+            templateId: layoutConfig.templateId || DEFAULT_SITE_SETTINGS.templateId,
             contactEmail: data.contact_email || DEFAULT_SITE_SETTINGS.contactEmail,
-            contactPhone: data.contact_phone || data.whatsapp_number || DEFAULT_SITE_SETTINGS.contactPhone,
+            contactPhone:
+              data.contact_phone ||
+              data.social_links?.whatsapp ||
+              DEFAULT_SITE_SETTINGS.contactPhone,
             socialLinks: {
-              instagram: data.instagram_url,
-              facebook: data.facebook_url,
-              whatsapp: data.whatsapp_number,
+              instagram: data.social_links?.instagram || data.instagram_url,
+              facebook: data.social_links?.facebook || data.facebook_url,
+              whatsapp: data.social_links?.whatsapp || data.whatsapp_url,
+              youtube: data.social_links?.youtube || data.youtube_url,
+              linkedin: data.social_links?.linkedin || data.linkedin_url,
             },
-            homeContent: data.home_content || {},
+            homeContent: layoutConfig.homeContent || {},
             integrations: data.integrations,
           });
         }
@@ -171,18 +177,22 @@ export const SettingsProvider: React.FC<{
         secondary_color: newSettings.secondaryColor,
         header_color: newSettings.headerColor,
         logo_url: newSettings.logoUrl,
-        logo_height: newSettings.logoHeight,
-        font_family: newSettings.fontFamily,
-        base_font_size: newSettings.baseFontSize,
-        heading_font_size: newSettings.headingFontSize,
         footer_text: newSettings.footerText,
-        template_id: newSettings.templateId,
-        instagram_url: newSettings.socialLinks?.instagram,
-        facebook_url: newSettings.socialLinks?.facebook,
-        whatsapp_number: newSettings.socialLinks?.whatsapp,
         social_links: newSettings.socialLinks,
-        is_live: newSettings.isLive,
-        home_content: newSettings.homeContent,
+        facebook_url: newSettings.socialLinks?.facebook,
+        instagram_url: newSettings.socialLinks?.instagram,
+        whatsapp_url: newSettings.socialLinks?.whatsapp,
+        youtube_url: newSettings.socialLinks?.youtube,
+        linkedin_url: newSettings.socialLinks?.linkedin,
+        layout_config: {
+          logoHeight: newSettings.logoHeight,
+          fontFamily: newSettings.fontFamily,
+          baseFontSize: newSettings.baseFontSize,
+          headingFontSize: newSettings.headingFontSize,
+          templateId: newSettings.templateId,
+          isLive: newSettings.isLive,
+          homeContent: newSettings.homeContent,
+        },
         integrations: newSettings.integrations,
         contact_email: newSettings.contactEmail,
         contact_phone: newSettings.contactPhone,
@@ -201,13 +211,40 @@ export const SettingsProvider: React.FC<{
         payload.organization_id = activeOrgId;
       }
 
-      const { data, error } = await supabase
-        .from('site_settings')
-        .upsert(payload)
-        .select()
-        .single();
+      let data: any = null;
+      const ignoredMissingColumns: string[] = [];
 
-      if (error) throw error;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const { data: saved, error } = await supabase
+          .from('site_settings')
+          .upsert(payload)
+          .select()
+          .single();
+
+        if (!error) {
+          data = saved;
+          break;
+        }
+
+        const missingColumn = getMissingSchemaColumn(error);
+        if (!missingColumn || !(missingColumn in payload)) {
+          throw error;
+        }
+
+        delete payload[missingColumn];
+        ignoredMissingColumns.push(missingColumn);
+      }
+
+      if (!data) {
+        throw new Error('Nao foi possivel salvar configuracoes no Supabase.');
+      }
+
+      if (ignoredMissingColumns.length > 0) {
+        logger.warn(
+          'Site settings salvas ignorando colunas ausentes no schema:',
+          ignoredMissingColumns
+        );
+      }
 
       if (data) {
         setSettings((prev) => ({ ...prev, id: data.id }));
@@ -216,6 +253,12 @@ export const SettingsProvider: React.FC<{
       logger.error('Erro ao salvar no Supabase:', e);
       alert(`Erro ao salvar configurações: ${e.message || e}`);
     }
+  };
+
+  const getMissingSchemaColumn = (error: any): string | null => {
+    if (error?.code !== 'PGRST204') return null;
+    const message = String(error?.message || '');
+    return message.match(/'([^']+)' column/)?.[1] || null;
   };
 
   return (

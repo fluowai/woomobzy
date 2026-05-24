@@ -537,6 +537,8 @@ export interface SiteSettings {
     instagram?: string;
     facebook?: string;
     whatsapp?: string;
+    youtube?: string;
+    linkedin?: string;
   };
   footerText: string;
   homeContent?: {

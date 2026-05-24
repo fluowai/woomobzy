@@ -2,7 +2,16 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect, useCallback } from 'react';
 import './whatsapp.css';
 import { useWebSocket } from './hooks/useWebSocket';
-import { instanceApi, chatApi, messageApi, type Instance, type Chat, type Message } from './hooks/api';
+import {
+  instanceApi,
+  chatApi,
+  messageApi,
+  isSupportedChat,
+  normalizeMessagePreview,
+  type Instance,
+  type Chat,
+  type Message,
+} from './hooks/api';
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import InstanceManager from './InstanceManager';
@@ -43,6 +52,7 @@ const WhatsAppDashboard: React.FC = () => {
   // Load messages when chat changes
   useEffect(() => {
     if (selectedChat) {
+      setMessages([]);
       loadMessages(selectedChat.id);
       // Mark as read
       chatApi.markRead(selectedChat.id).catch(() => {});
@@ -55,6 +65,7 @@ const WhatsAppDashboard: React.FC = () => {
   useEffect(() => {
     const unsubMessage = on('new_message', (data: any) => {
       const { message, chat } = data;
+      if (!isSupportedChat(chat)) return;
 
       // Update chat list
       setChats((prev) => {
@@ -63,7 +74,12 @@ const WhatsAppDashboard: React.FC = () => {
           return prev
             .map((c) =>
               c.id === chat.id
-                ? { ...c, last_message: chat.last_message, last_message_at: chat.last_message_at, unread_count: chat.unread_count }
+                ? {
+                    ...c,
+                    last_message: normalizeMessagePreview(chat.last_message),
+                    last_message_at: chat.last_message_at,
+                    unread_count: chat.unread_count,
+                  }
                 : c
             )
             .sort((a, b) => {
@@ -72,7 +88,7 @@ const WhatsAppDashboard: React.FC = () => {
               return dateB - dateA;
             });
         } else {
-          return [chat, ...prev];
+          return [{ ...chat, last_message: normalizeMessagePreview(chat.last_message) }, ...prev];
         }
       });
 
@@ -149,7 +165,10 @@ const WhatsAppDashboard: React.FC = () => {
   const loadChats = async (instanceId: string) => {
     try {
       const data = await chatApi.list(instanceId);
-      setChats(data || []);
+      setChats((data || []).filter(isSupportedChat).map((chat) => ({
+        ...chat,
+        last_message: normalizeMessagePreview(chat.last_message),
+      })));
     } catch (err: any) {
       if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         logger.error('Failed to load chats:', err);
@@ -178,12 +197,14 @@ const WhatsAppDashboard: React.FC = () => {
       if (!selectedChat || !selectedInstance) return;
       try {
         if (file) {
-          await messageApi.sendMedia(selectedChat.id, selectedInstance.id, file, content);
+          const result: any = await messageApi.sendMedia(selectedChat.id, selectedInstance.id, file, content);
+          appendSentMessage(result?.data);
+          updateChatPreview(selectedChat.id, content || `[${resultTypeFromFile(file)}]`);
         } else {
-          await messageApi.send(selectedChat.id, selectedInstance.id, content);
+          const result: any = await messageApi.send(selectedChat.id, selectedInstance.id, content);
+          appendSentMessage(result?.data);
+          updateChatPreview(selectedChat.id, content);
         }
-        await loadMessages(selectedChat.id);
-        await loadChats(selectedInstance.id);
       } catch (err) {
         logger.error('Failed to send message:', err);
       }
@@ -206,9 +227,36 @@ const WhatsAppDashboard: React.FC = () => {
     ? chats.filter(
         (c) =>
           c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.last_message?.toLowerCase().includes(searchQuery.toLowerCase())
+          normalizeMessagePreview(c.last_message).toLowerCase().includes(searchQuery.toLowerCase())
       )
     : chats;
+
+  const appendSentMessage = (message?: Message) => {
+    if (!message) return;
+    setMessages((prev) =>
+      prev.some((item) => item.message_id === message.message_id) ? prev : [...prev, message]
+    );
+  };
+
+  const updateChatPreview = (chatId: string, preview: string) => {
+    setChats((prev) =>
+      prev
+        .map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                last_message: normalizeMessagePreview(preview),
+                last_message_at: new Date().toISOString(),
+              }
+            : chat
+        )
+        .sort((a, b) => {
+          const dateA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+          const dateB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+          return dateB - dateA;
+        })
+    );
+  };
 
   if (loading) {
     return (
@@ -257,7 +305,7 @@ const WhatsAppDashboard: React.FC = () => {
   }
 
   return (
-    <div className="wa-dashboard" id="whatsapp-dashboard">
+    <div className={`wa-dashboard ${selectedChat ? 'wa-chat-open' : ''}`} id="whatsapp-dashboard">
       {/* Header Bar */}
       <header className="wa-header">
         <div className="wa-header-left">
@@ -324,6 +372,7 @@ const WhatsAppDashboard: React.FC = () => {
             instanceName={selectedInstance?.name || ''}
             instanceId={selectedInstance?.id || ''}
             onChatUpdated={handleChatUpdated}
+            onBack={() => setSelectedChat(null)}
           />
         ) : (
           <div className="wa-empty-state">
@@ -356,5 +405,12 @@ const WhatsAppDashboard: React.FC = () => {
     </div>
   );
 };
+
+function resultTypeFromFile(file: File): string {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('audio/')) return 'audio';
+  if (file.type.startsWith('video/')) return 'video';
+  return 'document';
+}
 
 export default WhatsAppDashboard;

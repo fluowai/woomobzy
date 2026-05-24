@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
-  BarChart3,
   Bot,
   Building2,
   CalendarCheck,
@@ -11,14 +10,12 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  DollarSign,
   Globe,
   Heart,
   Home,
   Instagram,
   LayoutDashboard,
   LayoutGrid,
-  Link as LinkIcon,
   Loader2,
   Mail,
   MessageSquare,
@@ -30,7 +27,6 @@ import {
   ShoppingCart,
   Star,
   Target,
-  Users,
   Workflow,
   XCircle,
   Zap,
@@ -177,7 +173,7 @@ const SystemSalesPage: React.FC = () => {
       <main>
         <section className="mx-auto grid max-w-[1360px] gap-10 px-5 pb-10 pt-12 md:px-8 lg:grid-cols-[0.95fr_1.25fr] lg:items-start lg:pt-16 2xl:grid-cols-[1.05fr_1.2fr_.72fr]">
           <div className="pt-3">
-            <h1 className="max-w-xl text-5xl font-black leading-[0.95] tracking-tight text-[#0a1c3b] md:text-6xl">
+            <h1 className="max-w-xl text-4xl font-black leading-[0.98] tracking-tight text-[#0a1c3b] sm:text-5xl md:text-6xl">
               A plataforma inteligente que organiza, acelera <span className="text-emerald-600">e escala</span> sua imobiliaria.
             </h1>
             <p className="mt-7 max-w-lg text-lg font-semibold leading-8 text-slate-700">
@@ -201,9 +197,9 @@ const SystemSalesPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-200/80">
-            <div className="grid min-h-[545px] grid-cols-[132px_1fr] overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
-              <aside className="bg-white p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-200/80 sm:p-4">
+            <div className="grid overflow-hidden rounded-lg border border-slate-100 bg-slate-50 sm:min-h-[545px] sm:grid-cols-[132px_1fr]">
+              <aside className="hidden bg-white p-4 sm:block">
                 <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="mb-8 h-9 w-auto" />
                 {['Visao geral', 'Leads', 'Atendimentos', 'Imoveis', 'Oportunidades', 'Atividades', 'Agenda', 'Relatorios', 'Configuracoes'].map((item, index) => (
                   <div key={item} className={`mb-2 flex items-center gap-2 rounded-md px-2 py-2 text-[11px] font-bold ${index === 0 ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500'}`}>
@@ -212,7 +208,7 @@ const SystemSalesPage: React.FC = () => {
                   </div>
                 ))}
               </aside>
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-black text-slate-900">Visao geral</h2>
@@ -221,7 +217,7 @@ const SystemSalesPage: React.FC = () => {
                   <button className="rounded-md bg-emerald-600 px-4 py-2 text-[11px] font-black text-white">+ Novo lead</button>
                 </div>
 
-                <div className="mb-7 grid grid-cols-4 gap-3">
+                <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {heroStats.map((stat) => (
                     <div key={stat.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
                       <p className="text-[11px] font-bold text-slate-500">{stat.label}</p>
@@ -233,7 +229,7 @@ const SystemSalesPage: React.FC = () => {
 
                 <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
                   <h3 className="mb-4 text-sm font-black text-slate-900">Funil de oportunidades</h3>
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
                     {kanbanColumns.map((column) => (
                       <div key={column.title}>
                         <div className="mb-3 flex items-center gap-2">
@@ -253,7 +249,7 @@ const SystemSalesPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-4">
+                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
                     <h3 className="mb-4 text-sm font-black">Atendimentos recentes</h3>
                     {['Novo lead de Juliana Costa', 'Mensagem de Beatriz Lima', 'Novo formulario recebido'].map((item) => (
@@ -275,7 +271,7 @@ const SystemSalesPage: React.FC = () => {
             </div>
           </div>
 
-          <aside id="demo-form" className="rounded-2xl bg-white p-8 shadow-2xl shadow-slate-300/70 ring-1 ring-slate-200 lg:col-span-2 2xl:col-span-1">
+          <aside id="demo-form" className="rounded-2xl bg-white p-5 shadow-2xl shadow-slate-300/70 ring-1 ring-slate-200 sm:p-8 lg:col-span-2 2xl:col-span-1">
             <h2 className="text-3xl font-black leading-tight text-[#0a1c3b]">
               Agende uma <span className="text-emerald-600">demonstracao personalizada</span>
             </h2>
@@ -459,7 +455,7 @@ const SystemSalesPage: React.FC = () => {
         </div>
         <div className="mx-auto mt-10 flex max-w-[1360px] flex-col gap-4 border-t border-white/10 pt-6 text-xs font-semibold text-slate-400 md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} IMOBZY. Todos os direitos reservados.</p>
-          <div className="flex gap-8"><span>Politica de Privacidade</span><span>Termos de Uso</span><span>DPA</span><span>Status do Sistema</span></div>
+          <div className="flex flex-wrap gap-4 md:gap-8"><span>Politica de Privacidade</span><span>Termos de Uso</span><span>DPA</span><span>Status do Sistema</span></div>
         </div>
       </footer>
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { chatApi, formatPhoneDisplay, type Chat, type Message } from './hooks/api';
 import MessageBubble from './MessageBubble';
-import { Send, Paperclip, Smile, ArrowDown, Users, Phone, MoreVertical, Loader2, X, UserRound, Save } from 'lucide-react';
+import { Send, Paperclip, Smile, ArrowDown, Users, Phone, MoreVertical, Loader2, X, UserRound, Save, ArrowLeft } from 'lucide-react';
 
 interface ChatWindowProps {
   chat: Chat;
@@ -11,6 +11,7 @@ interface ChatWindowProps {
   instanceName: string;
   instanceId: string;
   onChatUpdated: (chat: Chat) => void;
+  onBack?: () => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -21,6 +22,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   instanceName,
   instanceId,
   onChatUpdated,
+  onBack,
 }) => {
   const [inputText, setInputText] = useState('');
   const [showScrollDown, setShowScrollDown] = useState(false);
@@ -114,6 +116,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     <main className="wa-chat-window" id="chat-window">
       {/* Chat Header */}
       <header className="wa-chat-header">
+        <button type="button" className="wa-mobile-back" onClick={onBack} title="Voltar">
+          <ArrowLeft size={20} />
+        </button>
         <button
           type="button"
           className="wa-chat-header-info wa-chat-header-profile"

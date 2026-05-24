@@ -225,7 +225,7 @@ const RuralLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-bg-primary overflow-hidden selection:bg-primary/20 selection:text-primary">
+    <div className="flex h-dvh bg-bg-primary overflow-hidden selection:bg-primary/20 selection:text-primary">
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -250,7 +250,7 @@ const RuralLayout: React.FC = () => {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-bg-primary">
-        <header className="h-20 bg-bg-card/80 backdrop-blur-xl border-b border-border-subtle flex items-center justify-between px-8 z-10 gap-6 sticky top-0">
+        <header className="h-16 md:h-20 bg-bg-card/80 backdrop-blur-xl border-b border-border-subtle flex items-center justify-between px-4 md:px-8 z-10 gap-3 md:gap-6 sticky top-0">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
               className="lg:hidden p-2.5 text-text-secondary hover:text-primary bg-bg-hover rounded-xl transition-colors"
@@ -279,10 +279,10 @@ const RuralLayout: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
             <RouterLink
               to="/rural/properties/new"
-              className="btn bg-primary hover:bg-primary-hover text-white h-11 px-6 shadow-lg shadow-primary/20"
+              className="btn bg-primary hover:bg-primary-hover text-white h-10 md:h-11 px-3 md:px-6 shadow-lg shadow-primary/20"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">
@@ -292,7 +292,7 @@ const RuralLayout: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
           <div className="max-w-[1600px] mx-auto">
             <Outlet />
           </div>

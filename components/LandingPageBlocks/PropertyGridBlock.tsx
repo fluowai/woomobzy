@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   PropertyGridBlockConfig,
   LandingPageTheme,
 } from '../../types/landingPage';
 import { Property } from '../../types';
-import { MapPin, Maximize2, DollarSign } from 'lucide-react';
+import { MapPin, Maximize2 } from 'lucide-react';
 
 interface PropertyGridBlockProps {
   config: PropertyGridBlockConfig;
@@ -17,10 +17,13 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
   theme,
   properties = [],
 }) => {
+  const selectedProperties = config.properties || [];
+  const providedProperties = properties.length > 0 ? properties : selectedProperties;
+
   // Mock properties para preview no editor
   const mockProperties: Property[] =
-    properties.length > 0
-      ? properties
+    providedProperties.length > 0
+      ? providedProperties
       : [
           {
             id: '1',
@@ -120,11 +123,14 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
           },
         ];
 
-  const displayProperties = mockProperties.slice(0, config.maxItems);
+  const displayProperties = sortProperties(
+    mockProperties,
+    config.sortBy
+  ).slice(0, config.maxItems);
 
   return (
-    <div className="py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="py-12">
+      <div className="w-full max-w-[1800px] mx-auto">
         <div
           className={`grid gap-${config.gap / 4} md:grid-cols-${Math.min(config.columns, 3)} lg:grid-cols-${config.columns}`}
           style={{ gap: `${config.gap}px` }}
@@ -142,6 +148,24 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
     </div>
   );
 };
+
+function sortProperties(properties: Property[], sortBy: PropertyGridBlockConfig['sortBy']) {
+  const sorted = [...properties];
+
+  if (sortBy === 'price') {
+    return sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+  }
+
+  if (sortBy === 'area') {
+    return sorted.sort((a, b) => getPropertyArea(a) - getPropertyArea(b));
+  }
+
+  return sorted.sort(
+    (a: any, b: any) =>
+      new Date(b.createdAt || b.created_at || 0).getTime() -
+      new Date(a.createdAt || a.created_at || 0).getTime()
+  );
+}
 
 interface PropertyCardProps {
   property: Property;
@@ -188,7 +212,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold text-white"
           style={{ backgroundColor: theme.primaryColor }}
         >
-          {property.type}
+          {getPropertyType(property)}
         </div>
       </div>
 
@@ -207,14 +231,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="flex items-center text-gray-600 text-sm mb-3">
           <MapPin size={16} className="mr-1" />
           <span>
-            {property.location.city}, {property.location.state}
+            {formatLocation(property)}
           </span>
         </div>
 
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center text-gray-600 text-sm">
             <Maximize2 size={16} className="mr-1" />
-            <span>{property.features.areaHectares} hectares</span>
+            <span>{formatArea(property)}</span>
           </div>
         </div>
 
@@ -229,16 +253,55 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             </p>
           </div>
 
-          <button
+          <a
+            href={`/property/${property.id}`}
             className="px-4 py-2 rounded-lg font-medium text-white transition-transform hover:scale-105"
             style={{ backgroundColor: theme.primaryColor }}
           >
             Ver Detalhes
-          </button>
+          </a>
         </div>
       </div>
     </div>
   );
 };
+
+function getPropertyArea(property: Property): number {
+  const features = property.features || ({} as any);
+  return Number(
+    (property as any).total_area_ha ||
+      features.areaHectares ||
+      features.physical?.area ||
+      features.areaM2 ||
+      0
+  );
+}
+
+function formatArea(property: Property): string {
+  const features = property.features || ({} as any);
+  const areaHa = Number(
+    (property as any).total_area_ha ||
+      features.areaHectares ||
+      features.physical?.area ||
+      0
+  );
+  if (areaHa > 0) return `${areaHa.toLocaleString('pt-BR')} hectares`;
+
+  const areaM2 = Number(features.areaM2 || features.areaConstruida || 0);
+  if (areaM2 > 0) return `${areaM2.toLocaleString('pt-BR')} m2`;
+
+  return 'Area nao informada';
+}
+
+function getPropertyType(property: Property): string {
+  return String((property as any).type || (property as any).property_type || 'Imovel');
+}
+
+function formatLocation(property: Property): string {
+  const location = property.location || ({} as any);
+  const city = location.city || (property as any).city;
+  const state = location.state || (property as any).state;
+  return [city, state].filter(Boolean).join(', ') || 'Localizacao nao informada';
+}
 
 export default PropertyGridBlock;

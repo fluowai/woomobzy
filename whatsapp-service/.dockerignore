@@ -1,0 +1,6 @@
+.env
+.env.*
+whatsapp-service-bin
+.sessions
+*.log
+

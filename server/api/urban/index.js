@@ -14,8 +14,10 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { requireEnvironment } from '../../middleware/environment.js';
 
 const router = Router();
+router.use(verifyAuth, requireTenant, requireEnvironment);
 
 const SNCR_API_BASE =
   'https://apigateway.conectagov.estaleiro.serpro.gov.br/api-sncr/v2';
@@ -71,6 +73,7 @@ router.get('/iptu/:inscricao', verifyAuth, requireTenant, async (req, res) => {
       .from('properties')
       .select('*')
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .eq('features->urban->iptuNumber', inscricao)
       .single();
 
@@ -126,6 +129,7 @@ router.get('/endereco/:cep', verifyAuth, requireTenant, async (req, res) => {
       .from('properties')
       .select('id, title, address, features')
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .like('features->location->zip', `%${cep}%`)
       .limit(5);
 
@@ -235,6 +239,7 @@ router.get(
         .select('*')
         .eq('id', propertyId)
         .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
         .single();
 
       if (!property) {
@@ -332,6 +337,7 @@ router.get('/buscar', verifyAuth, requireTenant, async (req, res) => {
       .from('properties')
       .select('id, title, address, features')
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .not('property_type', 'in', '("Rural","Fazenda")')
       .order('title');
 
@@ -376,6 +382,7 @@ router.get('/imovel/:codigo', verifyAuth, requireTenant, async (req, res) => {
       .select('*')
       .eq('id', codigo)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
     if (!property) {

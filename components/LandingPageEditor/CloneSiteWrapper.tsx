@@ -10,10 +10,10 @@ import AICloneModal from './AICloneModal';
 // ============================================
 
 const CloneSiteWrapper: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   const handleCloneApply = async (layoutConfig: any) => {
-    if (!user?.id || !user?.organizationId) {
+    if (!user?.id || !profile?.organization_id) {
       alert('Erro: usuário não autenticado');
       return;
     }
@@ -23,7 +23,7 @@ const CloneSiteWrapper: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       const slug = `site-clonado-${timestamp}`;
 
       const newPage = await landingPageService.create({
-        organizationId: user.organizationId,
+        organizationId: profile.organization_id,
         userId: user.id,
         name: `Site Clonado ${new Date().toLocaleTimeString()}`,
         slug: slug,
@@ -76,7 +76,9 @@ const CloneSiteWrapper: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         status: LandingPageStatus.DRAFT,
       });
 
-      window.location.href = `/admin/landing-pages/${newPage.id}`;
+      const currentPath = window.location.pathname;
+      const prefix = currentPath.startsWith('/urban') ? '/urban' : '/rural';
+      window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error) {
       logger.error('Erro ao criar página clonada:', error);
       alert('Erro ao salvar página clonada');

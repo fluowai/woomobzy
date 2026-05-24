@@ -16,6 +16,7 @@ import {
 import { supabase } from '../../services/supabase';
 import { Property, Lead } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 
 interface Match {
   lead: Lead;
@@ -26,20 +27,21 @@ interface Match {
 
 const Matchmaking360: React.FC = () => {
   const { profile, loading: authLoading } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
 
-    if (!profile?.organization_id) {
+    if (!profile?.organization_id || !activeEnvironmentId) {
       setMatches([]);
       setLoading(false);
       return;
     }
 
     loadMatches();
-  }, [authLoading, profile?.organization_id]);
+  }, [authLoading, profile?.organization_id, activeEnvironmentId]);
 
   const loadMatches = async () => {
     try {
@@ -51,11 +53,13 @@ const Matchmaking360: React.FC = () => {
         .from('properties')
         .select('*')
         .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId)
         .limit(20);
       const { data: leads } = await supabase
         .from('leads')
         .select('*')
         .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId)
         .limit(20);
 
       if (properties && leads) {

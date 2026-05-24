@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 
 interface Contract {
   id: string;
@@ -120,6 +121,7 @@ const SectionTitle: React.FC<{
 
 const Locacao: React.FC = () => {
   const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -137,6 +139,7 @@ const Locacao: React.FC = () => {
       .from('rental_contracts')
       .select('*')
       .eq('organization_id', profile?.organization_id)
+      .eq('environment_id', activeEnvironmentId)
       .order('created_at', { ascending: false });
     setContracts(data || []);
   };
@@ -147,6 +150,7 @@ const Locacao: React.FC = () => {
     const { error } = await supabase.from('rental_contracts').insert({
       ...form,
       organization_id: profile?.organization_id,
+      environment_id: activeEnvironmentId,
       status: 'active',
     });
 
@@ -166,7 +170,8 @@ const Locacao: React.FC = () => {
       .from('rental_contracts')
       .delete()
       .eq('id', id)
-      .eq('organization_id', profile?.organization_id);
+      .eq('organization_id', profile?.organization_id)
+      .eq('environment_id', activeEnvironmentId);
     if (error) {
       console.error('Erro ao excluir contrato:', error);
       return;

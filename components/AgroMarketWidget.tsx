@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Leaf, AlertTriangle, RefreshCw } from 'lucide-react';
+import { callApi } from '@/src/lib/api';
 
 interface PriceData {
   valor: number;
@@ -18,16 +19,13 @@ const AgroMarketWidget: React.FC = () => {
     setLoading(true);
     setError(false);
     try {
-      // Tenta conectar ao microserviço local (silenciosamente)
-      const response = await fetch('http://localhost:8000/prices').catch(() => null);
+      // Browser -> Node API -> Agro service. The Python service stays private in Docker.
+      const result = await callApi('/api/rural/market/prices');
       
-      if (response && response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setPrices(result.data);
-          setLoading(false);
-          return;
-        }
+      if (result.success) {
+        setPrices(result.data);
+        setLoading(false);
+        return;
       }
       
       throw new Error('Service offline');

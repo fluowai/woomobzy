@@ -12,8 +12,10 @@ import { Router } from 'express';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { requireEnvironment } from '../../middleware/environment.js';
 
 const router = Router();
+router.use(verifyAuth, requireTenant, requireEnvironment);
 
 function isValidUUID(id) {
   const uuidRegex =
@@ -39,6 +41,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     `
       )
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .order('due_date', { ascending: false });
 
     if (status) query = query.eq('status', status);
@@ -85,6 +88,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       .select('organization_id, tenant_name')
       .eq('id', contract_id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
     if (!contract) {
@@ -95,6 +99,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       .from('billing')
       .insert({
         organization_id: req.orgId,
+            environment_id: req.environment.id,
         contract_id,
         amount,
         due_date,
@@ -131,6 +136,7 @@ router.post('/gerar-mensal', verifyAuth, requireTenant, async (req, res) => {
       .from('rental_contracts')
       .select('*, property:property_id(title, address)')
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .eq('status', 'active')
       .eq('payment_status', 'em_dia');
 
@@ -158,6 +164,7 @@ router.post('/gerar-mensal', verifyAuth, requireTenant, async (req, res) => {
           .from('billing')
           .insert({
             organization_id: req.orgId,
+            environment_id: req.environment.id,
             contract_id: contract.id,
             amount: contract.monthly_rent,
             due_date: dueDate,
@@ -202,6 +209,7 @@ router.put('/:id/pagar', verifyAuth, requireTenant, async (req, res) => {
       })
       .eq('id', id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .select()
       .single();
 
@@ -217,11 +225,13 @@ router.put('/:id/pagar', verifyAuth, requireTenant, async (req, res) => {
           updated_at: new Date().toISOString(),
         })
         .eq('id', billing.contract_id)
-        .eq('organization_id', req.orgId);
+        .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
       await supabase.from('payment_history').insert({
         contract_id: billing.contract_id,
         organization_id: req.orgId,
+            environment_id: req.environment.id,
         payment_date: data_pagamento || new Date().toISOString().split('T')[0],
         amount_paid: valor_pago || billing.amount,
         status: 'pago',
@@ -254,6 +264,7 @@ router.put('/:id/cancelar', verifyAuth, requireTenant, async (req, res) => {
       .update({ status: 'cancelado', observation: motivo })
       .eq('id', id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .select()
       .single();
 
@@ -286,12 +297,14 @@ router.get(
       const { data: billings } = await supabase
         .from('billing')
         .select('*')
-        .eq('organization_id', req.orgId);
+        .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
       const { data: contracts } = await supabase
         .from('rental_contracts')
         .select('*')
-        .eq('organization_id', req.orgId);
+        .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
       if (!billings) {
         return res.json({
@@ -420,6 +433,7 @@ router.get(
     `
         )
         .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
         .order('due_date', { ascending: true });
 
       if (ano && mes) {
@@ -511,6 +525,7 @@ router.get(
       `
         )
         .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
         .eq('payment_status', 'inadimplente');
 
       const inadimplentes = (contracts || [])

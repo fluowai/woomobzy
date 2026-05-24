@@ -9,15 +9,26 @@ export class AIAutomationEngine {
     this.model = this.genAI ? this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) : null;
   }
 
-  async _ensureModel(organizationId) {
+  async _ensureModel(organizationId, environmentId = null) {
     const supabase = getSupabaseServer();
-    const { data: settings } = organizationId
-      ? await supabase
+    let settingsResult = { data: null };
+    if (organizationId) {
+      let query = supabase
+        .from('site_settings')
+        .select('integrations')
+        .eq('organization_id', organizationId);
+      if (environmentId) query = query.eq('environment_id', environmentId);
+      settingsResult = await query.maybeSingle();
+      if (!settingsResult.data && environmentId) {
+        settingsResult = await supabase
           .from('site_settings')
           .select('integrations')
           .eq('organization_id', organizationId)
-          .maybeSingle()
-      : { data: null };
+          .is('environment_id', null)
+          .maybeSingle();
+      }
+    }
+    const { data: settings } = settingsResult;
 
     const dbKey = settings?.integrations?.gemini?.apiKey || settings?.integrations?.groq?.apiKey;
     const finalKey = dbKey || this.defaultApiKey;
@@ -28,9 +39,9 @@ export class AIAutomationEngine {
     return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
-  async processIntent({ content, audioData, mimeType, organizationId, agent }) {
+  async processIntent({ content, audioData, mimeType, organizationId, environmentId = null, agent }) {
     try {
-      const model = await this._ensureModel(organizationId);
+      const model = await this._ensureModel(organizationId, environmentId);
       const parts = [];
 
       if (audioData) {
@@ -106,6 +117,7 @@ Formato:
   async handleWhatsAppMessage(payload) {
     const supabase = getSupabaseServer();
     const organizationId = payload.tenant_id || (await this._resolveOrganizationId(payload.instance_id));
+    const environmentId = payload.environment_id || (await this._resolveEnvironmentId(payload.instance_id));
     const message = payload.message || {};
     const chat = payload.chat || {};
 
@@ -116,10 +128,11 @@ Formato:
     const normalizedPhone = String(message.sender_phone).replace(/\D/g, '');
     const mediaHint = this._buildMediaHint(message);
     const content = [message.content, mediaHint].filter(Boolean).join('\n');
-    const agent = await this._loadActiveAgent(supabase, organizationId, message.type);
+    const agent = await this._loadActiveAgent(supabase, organizationId, environmentId, message.type);
     const aiResult = await this.processIntent({
       content,
       organizationId,
+      environmentId,
       mimeType: message.media_mimetype,
       agent,
     });
@@ -133,6 +146,7 @@ Formato:
       .from('leads')
       .select('*')
       .eq('organization_id', organizationId)
+      .eq('environment_id', environmentId)
       .eq('phone', normalizedPhone)
       .maybeSingle();
 
@@ -154,6 +168,7 @@ Formato:
         .update(updates)
         .eq('id', existingLead.id)
         .eq('organization_id', organizationId)
+        .eq('environment_id', environmentId)
         .select()
         .single();
       if (error) throw error;
@@ -163,6 +178,7 @@ Formato:
         .from('leads')
         .insert({
           organization_id: organizationId,
+          environment_id: environmentId,
           name,
           phone: normalizedPhone,
           source: 'WhatsApp IA',
@@ -191,7 +207,7 @@ Formato:
     await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult });
 
     try {
-      lead = await matchLeadProperties({ supabase, lead, organizationId });
+      lead = await matchLeadProperties({ supabase, lead, organizationId, environmentId });
     } catch (error) {
       console.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
     }
@@ -199,12 +215,13 @@ Formato:
     return { lead_id: lead.id, status: lead.status, tags };
   }
 
-  async _loadActiveAgent(supabase, organizationId, messageType) {
+  async _loadActiveAgent(supabase, organizationId, environmentId, messageType) {
     const preferredTool = messageType === 'audio' ? 'audio-stt' : messageType === 'document' ? 'pdf-reader' : 'whatsapp';
     const { data, error } = await supabase
       .from('ai_agents')
       .select('*')
       .eq('organization_id', organizationId)
+      .eq('environment_id', environmentId)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -226,6 +243,17 @@ Formato:
       .eq('id', instanceId)
       .maybeSingle();
     return data?.tenant_id || null;
+  }
+
+  async _resolveEnvironmentId(instanceId) {
+    if (!instanceId) return null;
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('whatsapp_instances')
+      .select('environment_id')
+      .eq('id', instanceId)
+      .maybeSingle();
+    return data?.environment_id || null;
   }
 
   _normalizeStage(stage, messageType) {

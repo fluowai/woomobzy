@@ -11,13 +11,25 @@ const router = express.Router();
 router.use(verifyAuth, requireTenant, requireEnvironment);
 
 // Helper to get organization AI keys
-async function getOrgAIConfig(orgId) {
+async function getOrgAIConfig(orgId, environmentId = null) {
   const supabase = getSupabaseServer();
-  const { data, error } = await supabase
+  let query = supabase
     .from('site_settings')
     .select('integrations')
-    .eq('organization_id', orgId)
-    .maybeSingle();
+    .eq('organization_id', orgId);
+  if (environmentId) query = query.eq('environment_id', environmentId);
+  let { data, error } = await query.maybeSingle();
+
+  if (!data && environmentId) {
+    const fallback = await supabase
+      .from('site_settings')
+      .select('integrations')
+      .eq('organization_id', orgId)
+      .is('environment_id', null)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error || !data) return null;
   return data.integrations;
@@ -42,7 +54,7 @@ router.get('/agents', async (req, res) => {
 
     if (error) {
       if (isMissingRelationError(error)) {
-        const agents = await listFallbackAgents(supabase, req.orgId);
+        const agents = await listFallbackAgents(supabase, req.orgId, req.environment.id);
         return res.json({
           success: true,
           agents,
@@ -76,7 +88,7 @@ router.post('/agents', async (req, res) => {
 
     if (error) {
       if (isMissingRelationError(error)) {
-        const agent = await createFallbackAgent(supabase, req.orgId, payload);
+        const agent = await createFallbackAgent(supabase, req.orgId, req.environment.id, payload);
         return res.status(201).json({ success: true, agent, setup_required: true });
       }
       throw error;
@@ -103,7 +115,7 @@ router.patch('/agents/:id', async (req, res) => {
 
     if (error) {
       if (isMissingRelationError(error)) {
-        const agent = await updateFallbackAgent(supabase, req.orgId, req.params.id, payload);
+        const agent = await updateFallbackAgent(supabase, req.orgId, req.environment.id, req.params.id, payload);
         if (!agent) return res.status(404).json({ error: 'Agente nao encontrado' });
         return res.json({ success: true, agent, setup_required: true });
       }
@@ -127,7 +139,7 @@ router.delete('/agents/:id', async (req, res) => {
 
     if (error) {
       if (isMissingRelationError(error)) {
-        await deleteFallbackAgent(supabase, req.orgId, req.params.id);
+        await deleteFallbackAgent(supabase, req.orgId, req.environment.id, req.params.id);
         return res.json({ success: true, setup_required: true });
       }
       throw error;
@@ -215,19 +227,33 @@ function hydrateAgent(agent) {
   };
 }
 
-async function getFallbackSettings(supabase, organizationId) {
-  const { data, error } = await supabase
+async function getFallbackSettings(supabase, organizationId, environmentId = null) {
+  let query = supabase
     .from('site_settings')
     .select('id, integrations')
-    .eq('organization_id', organizationId)
-    .maybeSingle();
+    .eq('organization_id', organizationId);
+  if (environmentId) {
+    query = query.eq('environment_id', environmentId);
+  }
+  let { data, error } = await query.maybeSingle();
+
+  if (!data && environmentId) {
+    const fallback = await supabase
+      .from('site_settings')
+      .select('id, integrations')
+      .eq('organization_id', organizationId)
+      .is('environment_id', null)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) throw error;
   return data || null;
 }
 
-async function saveFallbackAgents(supabase, organizationId, agents) {
-  const settings = await getFallbackSettings(supabase, organizationId);
+async function saveFallbackAgents(supabase, organizationId, environmentId, agents) {
+  const settings = await getFallbackSettings(supabase, organizationId, environmentId);
   const integrations = {
     ...(settings?.integrations || {}),
     operationalAgents: agents,
@@ -244,31 +270,33 @@ async function saveFallbackAgents(supabase, organizationId, agents) {
 
   const { error } = await supabase.from('site_settings').insert({
     organization_id: organizationId,
+    environment_id: environmentId,
     integrations,
   });
   if (error) throw error;
 }
 
-async function listFallbackAgents(supabase, organizationId) {
-  const settings = await getFallbackSettings(supabase, organizationId);
+async function listFallbackAgents(supabase, organizationId, environmentId) {
+  const settings = await getFallbackSettings(supabase, organizationId, environmentId);
   return settings?.integrations?.operationalAgents || [];
 }
 
-async function createFallbackAgent(supabase, organizationId, payload) {
-  const agents = await listFallbackAgents(supabase, organizationId);
+async function createFallbackAgent(supabase, organizationId, environmentId, payload) {
+  const agents = await listFallbackAgents(supabase, organizationId, environmentId);
   const agent = hydrateAgent({
     ...payload,
     id: randomUUID(),
     organization_id: organizationId,
+    environment_id: environmentId,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });
-  await saveFallbackAgents(supabase, organizationId, [agent, ...agents]);
+  await saveFallbackAgents(supabase, organizationId, environmentId, [agent, ...agents]);
   return agent;
 }
 
-async function updateFallbackAgent(supabase, organizationId, agentId, payload) {
-  const agents = await listFallbackAgents(supabase, organizationId);
+async function updateFallbackAgent(supabase, organizationId, environmentId, agentId, payload) {
+  const agents = await listFallbackAgents(supabase, organizationId, environmentId);
   let updated = null;
   const nextAgents = agents.map((agent) => {
     if (agent.id !== agentId) return agent;
@@ -280,15 +308,16 @@ async function updateFallbackAgent(supabase, organizationId, agentId, payload) {
     return updated;
   });
   if (!updated) return null;
-  await saveFallbackAgents(supabase, organizationId, nextAgents);
+  await saveFallbackAgents(supabase, organizationId, environmentId, nextAgents);
   return updated;
 }
 
-async function deleteFallbackAgent(supabase, organizationId, agentId) {
-  const agents = await listFallbackAgents(supabase, organizationId);
+async function deleteFallbackAgent(supabase, organizationId, environmentId, agentId) {
+  const agents = await listFallbackAgents(supabase, organizationId, environmentId);
   await saveFallbackAgents(
     supabase,
     organizationId,
+    environmentId,
     agents.filter((agent) => agent.id !== agentId)
   );
 }
@@ -298,7 +327,7 @@ router.post('/generate-page', verifyAuth, requireTenant, async (req, res) => {
   const organizationId = req.orgId;
 
   try {
-    const config = await getOrgAIConfig(organizationId);
+    const config = await getOrgAIConfig(organizationId, req.environment.id);
     
     // Determine provider and key
     // We prioritize "namoBana" as requested, falling back to openai or gemini
@@ -351,7 +380,7 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
       
       // If organizationId is provided, try to get their specific Groq key
       if (organizationId) {
-        const config = await getOrgAIConfig(organizationId);
+        const config = await getOrgAIConfig(organizationId, req.environment.id);
         if (config?.groq?.apiKey) {
           groqKey = config.groq.apiKey;
         }

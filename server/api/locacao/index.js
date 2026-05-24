@@ -14,8 +14,10 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { requireEnvironment } from '../../middleware/environment.js';
 
 const router = Router();
+router.use(verifyAuth, requireTenant, requireEnvironment);
 
 function isValidUUID(id) {
   const uuidRegex =
@@ -57,6 +59,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       .from('rental_contracts')
       .select('*')
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .order('created_at', { ascending: false });
 
     if (status) query = query.eq('status', status);
@@ -109,6 +112,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       .from('rental_contracts')
       .insert({
         organization_id: req.orgId,
+        environment_id: req.environment.id,
         property_id,
         tenant_name,
         tenant_email,
@@ -160,6 +164,7 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
       )
       .eq('id', id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
     if (error || !data)
@@ -242,6 +247,7 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
       })
       .eq('id', id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .select()
       .single();
 
@@ -273,7 +279,8 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
       .from('rental_contracts')
       .delete()
       .eq('id', id)
-      .eq('organization_id', req.orgId);
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
     if (error) throw error;
 
@@ -295,7 +302,8 @@ router.get('/dashboard/resumo', verifyAuth, requireTenant, async (req, res) => {
     const { data: contracts } = await supabase
       .from('rental_contracts')
       .select('*')
-      .eq('organization_id', req.orgId);
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
     if (!contracts) {
       return res.json({
@@ -395,6 +403,7 @@ router.get(
         .select('*')
         .eq('id', id)
         .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
         .single();
 
       if (!contract) {
@@ -470,6 +479,7 @@ router.post('/:id/renovar', verifyAuth, requireTenant, async (req, res) => {
       .select('*')
       .eq('id', id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
     if (!contract) {
@@ -492,6 +502,7 @@ router.post('/:id/renovar', verifyAuth, requireTenant, async (req, res) => {
       .insert({
         contract_id: id,
         organization_id: contract.organization_id,
+        environment_id: req.environment.id,
         old_end_date: contract.end_date,
         new_start_date: contract.end_date,
         new_end_date: nova_data_fim,
@@ -551,6 +562,7 @@ router.put('/:id/pagamento', verifyAuth, requireTenant, async (req, res) => {
       })
       .eq('id', id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .select()
       .single();
 
@@ -562,6 +574,7 @@ router.put('/:id/pagamento', verifyAuth, requireTenant, async (req, res) => {
     await supabase.from('payment_history').insert({
       contract_id: id,
       organization_id: req.orgId,
+        environment_id: req.environment.id,
       payment_date: data_pagamento,
       amount_paid: valor_pago,
       status: status || 'pago',

@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useEnvironment } from '../context/EnvironmentContext';
 import { callApi } from '../src/lib/api';
 import { supabase } from '../services/supabase';
 import { geminiService } from '../services/geminiService';
@@ -25,6 +26,7 @@ import {
 
 const SiteSetupWizard: React.FC = () => {
   const { profile, user } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -203,9 +205,10 @@ const SiteSetupWizard: React.FC = () => {
           await supabase.from('site_settings').upsert(
             {
               organization_id: profile.organization_id,
+              environment_id: activeEnvironmentId,
               logo_url: siteData.logoBase64,
             },
-            { onConflict: 'organization_id' }
+            activeEnvironmentId ? { onConflict: 'organization_id,environment_id' } : undefined
           );
         } catch (e) {}
       }

@@ -278,6 +278,13 @@ func (c *Client) handleMessage(evt *events.Message) {
 	info := evt.Info
 	canonicalJID := canonicalChatJID(info)
 	chatJID := canonicalJID.String()
+	if !phone.IsSupportedChatJID(chatJID) {
+		c.logger.Debug("Ignoring unsupported WhatsApp chat",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("chat_jid", chatJID),
+		)
+		return
+	}
 	isGroup := phone.IsGroupJID(chatJID)
 	alternateJIDs := alternateChatJIDs(info, chatJID)
 
@@ -349,10 +356,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 	}
 
 	// Get preview content for last_message
-	previewContent := content
-	if msgType != models.MessageTypeText {
-		previewContent = fmt.Sprintf("[%s]", msgType)
-	}
+	previewContent := messagePreview(msgType, content)
 	if len(previewContent) > 100 {
 		previewContent = previewContent[:100] + "..."
 	}
@@ -610,4 +614,31 @@ func extractMessageContent(evt *events.Message) (models.MessageType, string) {
 	}
 
 	return models.MessageTypeUnknown, ""
+}
+
+func messagePreview(msgType models.MessageType, content string) string {
+	if msgType == models.MessageTypeText {
+		return content
+	}
+	if content != "" {
+		return content
+	}
+	switch msgType {
+	case models.MessageTypeImage:
+		return "Imagem"
+	case models.MessageTypeAudio:
+		return "Audio"
+	case models.MessageTypeVideo:
+		return "Video"
+	case models.MessageTypeDocument:
+		return "Documento"
+	case models.MessageTypeSticker:
+		return "Figurinha"
+	case models.MessageTypeLocation:
+		return "Localizacao"
+	case models.MessageTypeContact:
+		return "Contato"
+	default:
+		return "Mensagem"
+	}
 }

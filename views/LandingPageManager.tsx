@@ -45,13 +45,16 @@ const LandingPageManager: React.FC = () => {
   const [showCloneModal, setShowCloneModal] = useState(false);
 
   useEffect(() => {
-    loadPages();
-  }, []);
+    if (profile?.organization_id) {
+      loadPages();
+    }
+  }, [profile?.organization_id]);
 
   const loadPages = async () => {
     try {
       setLoading(true);
-      const data = await landingPageService.list();
+      if (!profile?.organization_id) return;
+      const data = await landingPageService.list(profile.organization_id);
       setPages(data);
     } catch (error) {
       logger.error('❌ [LandingPageManager] Erro ao carregar:', error);
@@ -796,10 +799,11 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
     logger.info('Selected Prop ID:', selectedPropId);
     logger.info('User ID:', user?.id);
 
-    if (!selectedPropId || !user?.id) {
+    if (!selectedPropId || !user?.id || !profile?.organization_id) {
       logger.error('Missing required data for generation', {
         selectedPropId,
         userId: user?.id,
+        organizationId: profile?.organization_id,
       });
       alert('Erro: Informações do usuário incompletas.');
       return;
@@ -842,6 +846,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       setGenerationStage('Salvando página...');
       const newPage = await landingPageService.create({
         userId: user.id,
+        organizationId: profile.organization_id,
         name: aiData.name || property.title,
         title: aiData.title || property.title,
         description: aiData.description,

@@ -457,6 +457,7 @@ export interface LandingPageSettings {
 export interface LandingPage {
   id: string;
   organizationId?: string;
+  environmentId?: string;
   userId: string;
 
   // Identificação

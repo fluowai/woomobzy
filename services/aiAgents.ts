@@ -5,6 +5,11 @@ export interface AIAgent {
   organization_id: string;
   name: string;
   role: string;
+  department?: string;
+  status?: string;
+  description?: string;
+  avatar_url?: string;
+  icon?: string;
   channel: string;
   is_active: boolean;
   personality?: string;
@@ -14,6 +19,21 @@ export interface AIAgent {
   tools: string[];
   response_style: string;
   working_hours?: Record<string, unknown>;
+  operation_mode?: string;
+  autonomy_level?: number;
+  channel_scope?: string;
+  channels?: string[];
+  instances?: string[];
+  channel_permissions?: Record<string, string[]>;
+  workspaces?: string[];
+  triggers?: string[];
+  permissions?: Record<string, boolean>;
+  pipelines?: string[];
+  knowledge_sources?: string[];
+  handoff?: Record<string, unknown>;
+  metrics?: string[];
+  simulation?: Record<string, unknown>;
+  limits?: Record<string, unknown>;
   created_at: string;
 }
 

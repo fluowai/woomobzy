@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 import { Link } from 'react-router-dom';
 
 interface Development {
@@ -50,6 +51,7 @@ const statusLabels: Record<
 
 const Empreendimentos: React.FC = () => {
   const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [developments, setDevelopments] = useState<Development[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -76,6 +78,7 @@ const Empreendimentos: React.FC = () => {
         .from('developments')
         .select('*')
         .eq('organization_id', profile?.organization_id)
+        .eq('environment_id', activeEnvironmentId)
         .order('created_at', { ascending: false });
       setDevelopments(data || []);
     } finally {
@@ -93,6 +96,7 @@ const Empreendimentos: React.FC = () => {
     const { error } = await supabase.from('developments').insert({
       ...form,
       organization_id: profile.organization_id,
+      environment_id: activeEnvironmentId,
       available_units: form.total_units,
     });
     if (error) {
@@ -120,7 +124,8 @@ const Empreendimentos: React.FC = () => {
       .from('developments')
       .delete()
       .eq('id', id)
-      .eq('organization_id', profile?.organization_id);
+      .eq('organization_id', profile?.organization_id)
+      .eq('environment_id', activeEnvironmentId);
     if (error) {
       console.error('Erro ao excluir empreendimento:', error);
       return;

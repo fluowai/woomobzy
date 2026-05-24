@@ -3,6 +3,22 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+CREATE OR REPLACE FUNCTION public.get_my_org_id()
+RETURNS uuid AS $$
+BEGIN
+  IF (auth.jwt() -> 'app_metadata' ->> 'organization_id') IS NOT NULL THEN
+    RETURN (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid;
+  END IF;
+
+  RETURN (
+    SELECT organization_id
+    FROM public.profiles
+    WHERE id = auth.uid()
+    LIMIT 1
+  );
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
 CREATE TABLE IF NOT EXISTS public.environments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
@@ -58,7 +74,11 @@ DECLARE
     'whatsapp_instances',
     'rental_contracts',
     'billing',
-    'developments'
+    'developments',
+    'payment_history',
+    'contract_renewals',
+    'rural_location_search_logs',
+    'contracts'
   ];
 BEGIN
   FOREACH table_name IN ARRAY tables LOOP
@@ -82,7 +102,11 @@ DECLARE
     'site_settings',
     'rental_contracts',
     'billing',
-    'developments'
+    'developments',
+    'payment_history',
+    'contract_renewals',
+    'rural_location_search_logs',
+    'contracts'
   ];
 BEGIN
   FOREACH table_name IN ARRAY tables LOOP
@@ -127,6 +151,9 @@ BEGIN
     CREATE INDEX IF NOT EXISTS idx_ai_agents_environment_id ON public.ai_agents(environment_id);
   END IF;
   IF to_regclass('public.site_settings') IS NOT NULL THEN
+    ALTER TABLE public.site_settings DROP CONSTRAINT IF EXISTS site_settings_organization_id_key;
+    CREATE UNIQUE INDEX IF NOT EXISTS site_settings_org_environment_unique
+      ON public.site_settings(organization_id, environment_id);
     CREATE INDEX IF NOT EXISTS idx_site_settings_environment_id ON public.site_settings(environment_id);
   END IF;
   IF to_regclass('public.whatsapp_instances') IS NOT NULL THEN
@@ -140,6 +167,18 @@ BEGIN
   END IF;
   IF to_regclass('public.developments') IS NOT NULL THEN
     CREATE INDEX IF NOT EXISTS idx_developments_environment_id ON public.developments(environment_id);
+  END IF;
+  IF to_regclass('public.payment_history') IS NOT NULL THEN
+    CREATE INDEX IF NOT EXISTS idx_payment_history_environment_id ON public.payment_history(environment_id);
+  END IF;
+  IF to_regclass('public.contract_renewals') IS NOT NULL THEN
+    CREATE INDEX IF NOT EXISTS idx_contract_renewals_environment_id ON public.contract_renewals(environment_id);
+  END IF;
+  IF to_regclass('public.rural_location_search_logs') IS NOT NULL THEN
+    CREATE INDEX IF NOT EXISTS idx_rural_location_search_logs_environment_id ON public.rural_location_search_logs(environment_id);
+  END IF;
+  IF to_regclass('public.contracts') IS NOT NULL THEN
+    CREATE INDEX IF NOT EXISTS idx_contracts_environment_id ON public.contracts(environment_id);
   END IF;
 END $$;
 
@@ -158,3 +197,81 @@ CREATE POLICY "Tenant isolation environments" ON public.environments
       SELECT organization_id FROM public.profiles WHERE id = auth.uid()
     )
   );
+
+DO $$
+BEGIN
+  IF to_regclass('public.properties') IS NOT NULL THEN
+    ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Tenant environment isolation properties" ON public.properties;
+    CREATE POLICY "Tenant environment isolation properties" ON public.properties
+      FOR ALL TO authenticated
+      USING (
+        organization_id = public.get_my_org_id()
+        AND (
+          environment_id IS NULL
+          OR environment_id IN (
+            SELECT id FROM public.environments WHERE organization_id = public.get_my_org_id()
+          )
+        )
+      )
+      WITH CHECK (
+        organization_id = public.get_my_org_id()
+        AND (
+          environment_id IS NULL
+          OR environment_id IN (
+            SELECT id FROM public.environments WHERE organization_id = public.get_my_org_id()
+          )
+        )
+      );
+  END IF;
+
+  IF to_regclass('public.landing_pages') IS NOT NULL THEN
+    ALTER TABLE public.landing_pages ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Tenant environment isolation landing_pages" ON public.landing_pages;
+    CREATE POLICY "Tenant environment isolation landing_pages" ON public.landing_pages
+      FOR ALL TO authenticated
+      USING (
+        organization_id = public.get_my_org_id()
+        AND (
+          environment_id IS NULL
+          OR environment_id IN (
+            SELECT id FROM public.environments WHERE organization_id = public.get_my_org_id()
+          )
+        )
+      )
+      WITH CHECK (
+        organization_id = public.get_my_org_id()
+        AND (
+          environment_id IS NULL
+          OR environment_id IN (
+            SELECT id FROM public.environments WHERE organization_id = public.get_my_org_id()
+          )
+        )
+      );
+  END IF;
+
+  IF to_regclass('public.site_settings') IS NOT NULL THEN
+    ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "Tenant environment isolation site_settings" ON public.site_settings;
+    CREATE POLICY "Tenant environment isolation site_settings" ON public.site_settings
+      FOR ALL TO authenticated
+      USING (
+        organization_id = public.get_my_org_id()
+        AND (
+          environment_id IS NULL
+          OR environment_id IN (
+            SELECT id FROM public.environments WHERE organization_id = public.get_my_org_id()
+          )
+        )
+      )
+      WITH CHECK (
+        organization_id = public.get_my_org_id()
+        AND (
+          environment_id IS NULL
+          OR environment_id IN (
+            SELECT id FROM public.environments WHERE organization_id = public.get_my_org_id()
+          )
+        )
+      );
+  END IF;
+END $$;

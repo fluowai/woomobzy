@@ -276,6 +276,10 @@ export const landingPageService = {
       .from('properties')
       .select('*')
       .eq('organization_id', page.organizationId);
+    const environmentId = getActiveEnvironmentId() || (page as any).environmentId;
+    if (environmentId) {
+      query = query.eq('environment_id', environmentId);
+    }
 
     // Modo Manual: IDs específicos
     if (
@@ -550,6 +554,7 @@ export const landingPageService = {
 const mapToModel = (dbItem: any): LandingPage => ({
   id: dbItem.id,
   organizationId: dbItem.organization_id,
+  environmentId: dbItem.environment_id,
   userId: dbItem.user_id,
   name: dbItem.name,
   slug: dbItem.slug,
@@ -581,6 +586,8 @@ const mapToDatabase = (model: Partial<LandingPage>): any => {
 
   if (model.organizationId !== undefined)
     db.organization_id = model.organizationId;
+  if ((model as any).environmentId !== undefined)
+    db.environment_id = (model as any).environmentId;
   if (model.userId !== undefined) db.user_id = model.userId;
   if (model.name !== undefined) db.name = model.name;
   if (model.slug !== undefined) db.slug = model.slug;

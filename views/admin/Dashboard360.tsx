@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 import { supabase } from '../../services/supabase';
 import WelcomeTour from '../../components/WelcomeTour';
 import AgroMarketWidget from '../../components/AgroMarketWidget';
 
 const Dashboard360: React.FC = () => {
   const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [stats, setStats] = useState({
     leads: 0,
     properties: 0,
@@ -32,7 +34,7 @@ const Dashboard360: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!profile?.organization_id) return;
+    if (!profile?.organization_id || !activeEnvironmentId) return;
 
     const fetchStats = async () => {
       const organizationId = profile.organization_id;
@@ -40,11 +42,13 @@ const Dashboard360: React.FC = () => {
       const { count: leadsCount } = await supabase
         .from('leads')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', organizationId);
+        .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId);
       const { count: propsCount } = await supabase
         .from('properties')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', organizationId);
+        .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId);
       setStats({
         leads: leadsCount || 0,
         properties: propsCount || 0,
@@ -52,7 +56,7 @@ const Dashboard360: React.FC = () => {
       });
     };
     fetchStats();
-  }, [profile?.organization_id]);
+  }, [profile?.organization_id, activeEnvironmentId]);
 
   return (
     <div className="min-h-full space-y-8 animate-in fade-in duration-700">

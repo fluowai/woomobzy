@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import React, { useEffect, useState, useRef } from 'react';
 import { useTexts } from '../context/TextsContext';
 import { useAuth } from '../context/AuthContext';
+import { useEnvironment } from '../context/EnvironmentContext';
 import { supabase } from '../services/supabase';
 import { landingPageService } from '../services/landingPages';
 import { geminiService } from '../services/geminiService';
@@ -26,6 +27,7 @@ import {
 const VisualSiteEditor: React.FC = () => {
   const { setVisualMode } = useTexts();
   const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const navigate = useNavigate();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -67,6 +69,7 @@ const VisualSiteEditor: React.FC = () => {
           .from('landing_pages')
           .select('id, theme_config')
           .eq('organization_id', profile.organization_id)
+          .eq('environment_id', activeEnvironmentId)
           .eq('status', 'published')
           .in('slug', ['home', 'inicio', 'index', 'main', 'site', targetSlug])
           .limit(1)
@@ -166,9 +169,10 @@ const VisualSiteEditor: React.FC = () => {
             await supabase.from('site_settings').upsert(
               {
                 organization_id: orgId,
+                environment_id: activeEnvironmentId,
                 logo_url: base64,
               },
-              { onConflict: 'organization_id' }
+              activeEnvironmentId ? { onConflict: 'organization_id,environment_id' } : undefined
             );
           } catch (err) {
             logger.warn(

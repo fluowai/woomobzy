@@ -14,15 +14,18 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { requireEnvironment } from '../../middleware/environment.js';
 import multer from 'multer';
 import { AnalysisController } from './analysis/controller.js';
 import { AgroIntelligenceService } from '../../services/AgroIntelligence.js';
 import { extractLatLngFromGoogleMapsUrl, reverseGeocode, calculateConfidence } from '../../utils/geoUtils.js';
 import { SicarService } from '../../services/sicarService.js';
+import { RuralGovernmentApis, sanitizeCpfCnpj } from '../../services/ruralGovernmentApis.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 const router = Router();
+router.use(verifyAuth, requireTenant, requireEnvironment);
 
 /**
  * GET /api/rural/market/prices
@@ -97,6 +100,7 @@ router.get('/sncr/buscar', verifyAuth, requireTenant, async (req, res) => {
       .from('properties')
       .select('id, title, features')
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .eq('property_type', 'Rural')
       .or(
         `legal->ccirNumber.cs.${cpfCnpjClean},legal->ccirNumber.cs.${cpfCnpj}`
@@ -139,6 +143,7 @@ router.get(
         .from('properties')
         .select('*')
         .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
         .eq('features->legal->ccirNumber', codigo)
         .single();
 
@@ -187,6 +192,7 @@ router.get(
         .from('properties')
         .select('*')
         .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
         .eq('features->legal->geoNumber', codigo)
         .single();
 
@@ -272,6 +278,7 @@ router.get('/car/:codigo', verifyAuth, requireTenant, async (req, res) => {
       .from('properties')
       .select('*')
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .eq('features->legal->carNumber', codigo);
 
     if (!properties || properties.length === 0) {
@@ -358,6 +365,7 @@ router.get(
         .select('*')
         .eq('id', propertyId)
         .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
         .single();
 
       if (!property) {
@@ -499,11 +507,50 @@ router.post('/geoprocess', verifyAuth, requireTenant, async (req, res) => {
 });
 
 /**
+ * POST /api/rural/property-dossier
+ * Executa o cruzamento oficial completo para um ponto/poligono rural.
+ */
+router.post('/property-dossier', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { lat, lng, geometry, ownerDocument, rainYear = 2023 } = req.body;
+
+    if (!lat || !lng) {
+      return res.status(400).json({
+        success: false,
+        error: 'Latitude e longitude sao obrigatorios para gerar o dossie.',
+      });
+    }
+
+    const dossier = await RuralGovernmentApis.buildPropertyDossier({
+      latitude: lat,
+      longitude: lng,
+      geometry,
+      ownerDocument: sanitizeCpfCnpj(ownerDocument),
+      rainYear,
+    });
+
+    res.json({ success: true, data: dossier });
+  } catch (error) {
+    console.error('[PropertyDossier] Erro ao gerar dossie:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/rural/find-car-by-location
  * Busca imóvel rural no CAR a partir de link do Maps ou coordenadas.
  */
 router.post('/find-car-by-location', verifyAuth, requireTenant, async (req, res) => {
-  const { googleMapsUrl, lat: inputLat, lng: inputLng, radiusFallbackMeters, forceUf } = req.body;
+  const {
+    googleMapsUrl,
+    lat: inputLat,
+    lng: inputLng,
+    radiusFallbackMeters,
+    forceUf,
+    ownerDocument,
+    rainYear = 2023,
+    maxDossierMatches = 1,
+  } = req.body;
   const startTime = Date.now();
   let lat = inputLat;
   let lng = inputLng;
@@ -548,7 +595,11 @@ router.post('/find-car-by-location', verifyAuth, requireTenant, async (req, res)
       }
 
       // Tentativa 2: Fallback por Raio
-      const raios = radiusFallbackMeters || [500, 1000, 5000];
+      const raios = Array.isArray(radiusFallbackMeters)
+        ? radiusFallbackMeters
+        : radiusFallbackMeters
+          ? [radiusFallbackMeters]
+          : [500, 1000, 5000];
       for (const radius of raios) {
         matches = await SicarService.findByRadius(uf, lat, lng, radius);
         if (matches.length > 0) {
@@ -579,11 +630,49 @@ router.post('/find-car-by-location', verifyAuth, requireTenant, async (req, res)
       rawProperties: f.properties
     }));
 
+    const ownerDocumentClean = sanitizeCpfCnpj(ownerDocument);
+    const dossierLimit = Math.max(0, Math.min(Number(maxDossierMatches) || 0, formattedMatches.length));
+    const enrichedDossiers = await Promise.all(
+      formattedMatches.slice(0, dossierLimit).map((match) =>
+        RuralGovernmentApis.buildPropertyDossier({
+          latitude: lat,
+          longitude: lng,
+          geometry: match.geometry,
+          ownerDocument: ownerDocumentClean,
+          rainYear,
+        })
+      )
+    );
+
+    enrichedDossiers.forEach((dossier, index) => {
+      formattedMatches[index].complianceDossier = dossier;
+    });
+
+    const dossierSummary = {
+      enrichedMatches: enrichedDossiers.length,
+      ownerDocumentChecked: Boolean(ownerDocumentClean),
+      sources: [
+        'OSM_NOMINATIM_REVERSE',
+        'SICAR_WFS',
+        'IBAMA_AREAS_EMBARGADAS_WFS',
+        'IBAMA_AUTOS_INFRACAO_WFS',
+        'FUNAI_TERRAS_INDIGENAS_WFS',
+        'ICMBIO_UNIDADES_CONSERVACAO_WFS',
+        'SIGEF_CERTIFICACAO_WFS',
+        'IBAMA_AREAS_EMBARGADAS_ARCGIS',
+        'INPE_TERRABRASILIS_PRODES_WFS',
+        'OPEN_METEO_ARCHIVE',
+        ...(ownerDocumentClean ? ['CNJ_DATAJUD'] : []),
+      ],
+      alerts: enrichedDossiers.flatMap((dossier) => dossier.alerts || []),
+    };
+
     // 5. Logging (Fogo e esqueça para não travar resposta)
     const supabase = getSupabaseServer();
     supabase.from('rural_location_search_logs').insert({
       user_id: req.user.id,
       organization_id: req.orgId,
+      environment_id: req.environment.id,
       google_maps_url: googleMapsUrl,
       lat, lng,
       uf: locationInfo.uf,
@@ -592,7 +681,10 @@ router.post('/find-car-by-location', verifyAuth, requireTenant, async (req, res)
       match_mode: matchMode,
       confidence: confidence,
       total_matches: formattedMatches.length,
-      response_summary: { duration: Date.now() - startTime }
+      response_summary: {
+        duration: Date.now() - startTime,
+        dossier: dossierSummary,
+      }
     }).then(({ error }) => error && console.error('[Log] Erro ao salvar busca:', error.message));
 
     res.json({
@@ -602,6 +694,7 @@ router.post('/find-car-by-location', verifyAuth, requireTenant, async (req, res)
       matchMode,
       confidence,
       totalMatches: formattedMatches.length,
+      dossierSummary,
       matches: formattedMatches
     });
 

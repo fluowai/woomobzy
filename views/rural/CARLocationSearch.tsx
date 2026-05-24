@@ -36,6 +36,17 @@ if (typeof window !== 'undefined') {
 
 const SAT_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
+const parseCoordinateInput = (value: string) => {
+  const match = value.trim().match(/^(-?\d+(?:[\.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[\.,]\d+)?)$/);
+  if (!match) return null;
+
+  const lat = Number(match[1].replace(',', '.'));
+  const lng = Number(match[2].replace(',', '.'));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  return { lat, lng };
+};
+
 interface CARCandidate {
   codImovel: string;
   areaHa: number | null;
@@ -48,6 +59,10 @@ interface CARCandidate {
   distanceMeters: number;
   geometry: any;
   rawProperties: any;
+  complianceDossier?: {
+    alerts?: string[];
+    sources?: Record<string, any>;
+  };
 }
 
 const CARLocationSearch: React.FC = () => {
@@ -73,16 +88,21 @@ const CARLocationSearch: React.FC = () => {
     setInputData(null);
 
     try {
-      addProgress('Processando link do Google Maps...');
+      const coordinates = parseCoordinateInput(inputValue);
+      addProgress(coordinates ? 'Processando coordenadas informadas...' : 'Processando link do Google Maps...');
+
       const response = await callApi('/api/rural/find-car-by-location', {
         method: 'POST',
-        body: JSON.stringify({ googleMapsUrl: inputValue })
+        body: JSON.stringify(coordinates || { googleMapsUrl: inputValue })
       });
 
       if (response.success) {
         addProgress('Coordenadas extraídas com sucesso.');
         addProgress(`UF identificada: ${response.location?.uf || 'Desconhecida'}`);
         addProgress('Consulta SICAR WFS concluída.');
+        if (response.dossierSummary?.enrichedMatches) {
+          addProgress(`Dossiê oficial enriquecido em ${response.dossierSummary.enrichedMatches} imóvel(is).`);
+        }
         
         setInputData(response.input);
         setResults(response.matches);
@@ -142,7 +162,7 @@ const CARLocationSearch: React.FC = () => {
                   type="text" 
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="https://www.google.com/maps/..." 
+                  placeholder="https://www.google.com/maps/... ou -15.123, -55.456" 
                   className="w-full pl-4 pr-12 py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm focus:border-emerald-500 focus:bg-white outline-none transition-all"
                   disabled={isLoading}
                 />
@@ -218,6 +238,11 @@ const CARLocationSearch: React.FC = () => {
                     {candidate.matchMode === 'nearby_radius' && (
                       <p className="text-[9px] mt-2 italic font-bold">Localizado a aprox. {candidate.distanceMeters}m</p>
                     )}
+                    {candidate.complianceDossier?.alerts?.length ? (
+                      <p className={`text-[9px] mt-2 font-black uppercase ${selectedCandidate?.codImovel === candidate.codImovel ? 'text-red-100' : 'text-red-500'}`}>
+                        {candidate.complianceDossier.alerts.length} alerta(s) oficial(is)
+                      </p>
+                    ) : null}
                   </button>
                 ))}
               </div>
@@ -270,6 +295,19 @@ const CARLocationSearch: React.FC = () => {
                 <p className="text-emerald-200/60 text-xs font-medium italic">
                   Pronto para gerar dossiê ambiental e jurídico completo
                 </p>
+                {selectedCandidate.complianceDossier?.alerts?.length ? (
+                  <div className="pt-3 space-y-1">
+                    {selectedCandidate.complianceDossier.alerts.slice(0, 4).map((alert, index) => (
+                      <p key={index} className="text-[10px] font-bold text-red-100 uppercase">
+                        {alert}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="pt-2 text-[10px] font-bold text-emerald-100 uppercase">
+                    Nenhum alerta oficial retornado no cruzamento inicial
+                  </p>
+                )}
               </div>
               <button 
                 className="group flex items-center gap-3 bg-white text-emerald-900 px-8 py-4 rounded-2xl font-black uppercase text-xs hover:bg-emerald-50 transition-all"

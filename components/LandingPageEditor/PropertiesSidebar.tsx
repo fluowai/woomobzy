@@ -111,6 +111,7 @@ function renderBlockSettings(
     case 'property_grid':
       return (
         <PropertyGridBlockSettings
+          blockId={block.id}
           config={block.config}
           onUpdate={updateConfig}
           page={page}

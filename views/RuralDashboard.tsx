@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import IADashboardSummary from '../components/IADashboardSummary';
 import { useAuth } from '../context/AuthContext';
+import { useEnvironment } from '../context/EnvironmentContext';
 import { supabase } from '../services/supabase';
 import {
   XAxis,
@@ -26,24 +27,27 @@ import {
 
 const RuralDashboard: React.FC = () => {
   const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!profile?.organization_id) return;
+    if (!profile?.organization_id || !activeEnvironmentId) return;
 
     const loadData = async () => {
       try {
         const { count: pCount } = await supabase
           .from('properties')
           .select('*', { count: 'exact', head: true })
-          .eq('organization_id', profile.organization_id);
+          .eq('organization_id', profile.organization_id)
+          .eq('environment_id', activeEnvironmentId);
 
         const { count: lCount } = await supabase
           .from('leads')
           .select('*', { count: 'exact', head: true })
-          .eq('organization_id', profile.organization_id);
+          .eq('organization_id', profile.organization_id)
+          .eq('environment_id', activeEnvironmentId);
 
         setPropertyCount(pCount || 0);
         setLeadCount(lCount || 0);
@@ -55,7 +59,7 @@ const RuralDashboard: React.FC = () => {
     };
 
     loadData();
-  }, [profile?.organization_id]);
+  }, [profile?.organization_id, activeEnvironmentId]);
 
   const kpis = [
     {

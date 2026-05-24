@@ -257,10 +257,7 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 	}
 
 	now := time.Now()
-	chat.LastMessage = fmt.Sprintf("[%s]", msgType)
-	if caption != "" {
-		chat.LastMessage = caption
-	}
+	chat.LastMessage = messagePreview(models.MessageType(msgType), caption)
 	chat.LastMessageAt = &now
 	h.chatRepo.Upsert(ctx, chat)
 
@@ -280,6 +277,33 @@ func messageTypeFromMime(mimeType string) string {
 		return "video"
 	default:
 		return "document"
+	}
+}
+
+func messagePreview(msgType models.MessageType, content string) string {
+	if msgType == models.MessageTypeText {
+		return content
+	}
+	if content != "" {
+		return content
+	}
+	switch msgType {
+	case models.MessageTypeImage:
+		return "Imagem"
+	case models.MessageTypeAudio:
+		return "Audio"
+	case models.MessageTypeVideo:
+		return "Video"
+	case models.MessageTypeDocument:
+		return "Documento"
+	case models.MessageTypeSticker:
+		return "Figurinha"
+	case models.MessageTypeLocation:
+		return "Localizacao"
+	case models.MessageTypeContact:
+		return "Contato"
+	default:
+		return "Mensagem"
 	}
 }
 

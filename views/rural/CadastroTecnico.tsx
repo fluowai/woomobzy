@@ -14,6 +14,7 @@ import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 
 interface PropertyGeo {
   id: string;
@@ -31,6 +32,7 @@ interface PropertyGeo {
 
 const CadastroTecnico: React.FC = () => {
   const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [activeTab, setActiveTab] = useState<'list' | 'import'>('list');
   const [geoData, setGeoData] = useState<any>(null);
   const [fileName, setFileName] = useState('');
@@ -38,7 +40,7 @@ const CadastroTecnico: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      if (!profile?.organization_id) return;
+      if (!profile?.organization_id || !activeEnvironmentId) return;
 
       const { data } = await supabase
         .from('properties')
@@ -46,6 +48,7 @@ const CadastroTecnico: React.FC = () => {
           'id, title, area_total_ha, location_city, location_state, status'
         )
         .eq('organization_id', profile?.organization_id)
+        .eq('environment_id', activeEnvironmentId)
         .in('property_type', [
           'Fazenda',
           'Sítio',
@@ -64,7 +67,7 @@ const CadastroTecnico: React.FC = () => {
       setProperties(data || []);
     };
     load();
-  }, [profile?.organization_id]);
+  }, [profile?.organization_id, activeEnvironmentId]);
 
   const handleFileUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

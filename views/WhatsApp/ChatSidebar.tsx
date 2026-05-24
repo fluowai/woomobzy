@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatPhoneDisplay, type Chat } from './hooks/api';
+import { formatPhoneDisplay, isSupportedChat, normalizeMessagePreview, type Chat } from './hooks/api';
 import { Search, Users, MessageCircle } from 'lucide-react';
 
 interface ChatSidebarProps {
@@ -18,7 +18,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSearchChange,
 }) => {
   const [activeType, setActiveType] = React.useState<'direct' | 'group'>('direct');
-  const visibleChats = chats.filter((chat) => (activeType === 'group' ? chat.is_group : !chat.is_group));
+  const visibleChats = chats.filter(
+    (chat) => isSupportedChat(chat) && (activeType === 'group' ? chat.is_group : !chat.is_group)
+  );
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -142,7 +144,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   <span className="wa-chat-time">{formatTime(chat.last_message_at)}</span>
                 </div>
                 <div className="wa-chat-bottom">
-                  <p className="wa-chat-preview">{chat.last_message || formatPhoneDisplay(chat.chat_jid) || '...'}</p>
+                  <p className="wa-chat-preview">
+                    {normalizeMessagePreview(chat.last_message) || formatPhoneDisplay(chat.chat_jid) || 'Mensagem'}
+                  </p>
                   {chat.unread_count > 0 && (
                     <span className="wa-unread-badge">{chat.unread_count > 99 ? '99+' : chat.unread_count}</span>
                   )}

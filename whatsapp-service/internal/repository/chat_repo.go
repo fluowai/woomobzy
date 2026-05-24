@@ -108,6 +108,7 @@ func (r *ChatRepo) ListByInstance(ctx context.Context, instanceID uuid.UUID) ([]
 		       created_at, updated_at
 		FROM whatsapp_chats
 		WHERE instance_id = $1
+		  AND (chat_jid LIKE '%@s.whatsapp.net' OR chat_jid LIKE '%@g.us')
 		ORDER BY last_message_at DESC NULLS LAST`
 
 	rows, err := r.db.Query(ctx, query, instanceID)

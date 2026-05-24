@@ -15,7 +15,7 @@ export const SicarService = {
    */
   getLayerName(uf) {
     if (!uf) return null;
-    const cleanUf = uf.toUpperCase().trim();
+    const cleanUf = uf.toLowerCase().trim();
     return `sicar:sicar_imoveis_${cleanUf}`;
   },
 

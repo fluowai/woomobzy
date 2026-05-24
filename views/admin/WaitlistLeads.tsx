@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 import {
   Filter,
   ArrowUpRight,
@@ -123,6 +124,7 @@ const LeadDetailsModal: React.FC<{
 
 const WaitlistLeads: React.FC = () => {
   const { profile, loading: authLoading } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -130,10 +132,10 @@ const WaitlistLeads: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
-    if (authLoading || !profile?.organization_id) return;
+    if (authLoading || !profile?.organization_id || !activeEnvironmentId) return;
 
     fetchLeads();
-  }, [authLoading, profile?.organization_id]);
+  }, [authLoading, profile?.organization_id, activeEnvironmentId]);
 
   const fetchLeads = async () => {
     try {
@@ -142,6 +144,7 @@ const WaitlistLeads: React.FC = () => {
         .from('leads')
         .select('*')
         .eq('organization_id', profile!.organization_id!)
+        .eq('environment_id', activeEnvironmentId)
         .eq('source', 'Espera Imobzy')
         .order('created_at', { ascending: false });
 

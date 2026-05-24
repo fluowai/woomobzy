@@ -569,18 +569,18 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
-          <SettingsProvider>
-            <TextsProvider>
-              <PlansProvider>
-                <EnvironmentProvider>
+          <EnvironmentProvider>
+            <SettingsProvider>
+              <TextsProvider>
+                <PlansProvider>
                   <DomainRouter>
                     <TrackingPixels />
                     <AppContent />
                   </DomainRouter>
-                </EnvironmentProvider>
-              </PlansProvider>
-            </TextsProvider>
-          </SettingsProvider>
+                </PlansProvider>
+              </TextsProvider>
+            </SettingsProvider>
+          </EnvironmentProvider>
         </AuthProvider>
       </Router>
     </ErrorBoundary>

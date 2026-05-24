@@ -17,20 +17,26 @@ import {
 import { supabase } from '../../services/supabase';
 import { Property } from '../../types';
 import AgroMarketWidget from '../../components/AgroMarketWidget';
+import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 
 const DossieInteligente: React.FC = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
+  const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
 
   useEffect(() => {
-    loadProperties();
-  }, []);
+    if (profile?.organization_id && activeEnvironmentId) loadProperties();
+  }, [profile?.organization_id, activeEnvironmentId]);
 
   const loadProperties = async () => {
     const { data } = await supabase
       .from('properties')
       .select('*')
+      .eq('organization_id', profile?.organization_id)
+      .eq('environment_id', activeEnvironmentId)
       .order('created_at', { ascending: false });
     if (data) setProperties(data);
   };

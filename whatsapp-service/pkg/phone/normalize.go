@@ -58,6 +58,14 @@ func IsGroupJID(jid string) bool {
 	return strings.Contains(jid, "@g.us")
 }
 
+// IsSupportedChatJID returns true for regular one-to-one chats and groups.
+// WhatsApp newsletters/channels, status and broadcast JIDs are intentionally
+// excluded from the CRM inbox.
+func IsSupportedChatJID(jid string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(jid))
+	return strings.Contains(normalized, "@s.whatsapp.net") || strings.Contains(normalized, "@g.us")
+}
+
 // IsValidBR checks if the number is a Brazilian phone in canonical digits.
 // Accepted examples: 5548988003260, 554833806836.
 func IsValidBR(number string) bool {

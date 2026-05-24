@@ -31,6 +31,7 @@ import VideoBlock from '../components/LandingPageBlocks/VideoBlock';
 import TestimonialsBlock from '../components/LandingPageBlocks/TestimonialsBlock';
 import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
 import DividerBlock from '../components/LandingPageBlocks/DividerBlock';
+import CustomHTMLBlock from '../components/LandingPageBlocks/CustomHTMLBlock';
 
 interface PublicLandingPageProps {
   forceSlug?: string;
@@ -50,13 +51,13 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [organization, setOrganization] = useState<any>(null);
   const [showMainSite, setShowMainSite] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
 
-  const isPreview = false;
+  const isPreview = searchParams.get('preview') === 'true';
   const page = landingPage;
 
   useEffect(() => {
@@ -75,10 +76,10 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   };
 
   useEffect(() => {
-    if (activeSlug) {
+    if (activeSlug && (!isPreview || !authLoading)) {
       loadLandingPage(activeSlug);
     }
-  }, [activeSlug, searchParams.get('page')]);
+  }, [activeSlug, searchParams.get('page'), isPreview, authLoading, profile?.id]);
 
   const loadLandingPage = async (slugOrOrg: string) => {
     try {
@@ -91,12 +92,16 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       if (isDirectLPLink) {
         // Mode A: Search by Landing Page Slug directly
-        const { data: lpData, error: lpError } = await supabase
+        let lpQuery = supabase
           .from('landing_pages')
           .select('*, organization:organizations(*)')
-          .eq('slug', slugOrOrg)
-          .eq('status', 'published')
-          .maybeSingle();
+          .eq('slug', slugOrOrg);
+
+        if (!isPreview) {
+          lpQuery = lpQuery.eq('status', 'published');
+        }
+
+        const { data: lpData, error: lpError } = await lpQuery.maybeSingle();
 
         if (lpData) {
           targetPage = lpData;
@@ -136,17 +141,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       setOrganization(resolvedOrg);
       const orgId = resolvedOrg.id;
 
-      // 2. Load Settings
-      if (orgId) {
-        const { data: siteSettings } = await supabase
-          .from('site_settings')
-          .select('*')
-          .eq('organization_id', orgId)
-          .maybeSingle();
-        if (siteSettings) setSettings(siteSettings);
-      }
-
-      // 3. Load Page Content (if not already loaded in Mode A)
+      // 2. Load Page Content (if not already loaded in Mode A)
       if (!targetPage) {
         const targetPageSlug = searchParams.get('page');
         let query = supabase
@@ -167,7 +162,40 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         targetPage = pageData;
       }
 
+      // 3. Load Settings for the page environment, falling back to legacy org settings.
+      if (orgId) {
+        let settingsQuery = supabase
+          .from('site_settings')
+          .select('*')
+          .eq('organization_id', orgId);
+        if (targetPage?.environment_id) {
+          settingsQuery = settingsQuery.eq('environment_id', targetPage.environment_id);
+        }
+        let { data: siteSettings } = await settingsQuery.maybeSingle();
+        if (!siteSettings && targetPage?.environment_id) {
+          const fallback = await supabase
+            .from('site_settings')
+            .select('*')
+            .eq('organization_id', orgId)
+            .is('environment_id', null)
+            .maybeSingle();
+          siteSettings = fallback.data;
+        }
+        if (siteSettings) setSettings(siteSettings);
+      }
+
       if (targetPage) {
+        const canPreviewUnpublished =
+          isPreview &&
+          (profile?.role === 'superadmin' ||
+            profile?.organization_id === targetPage.organization_id);
+
+        if (targetPage.status !== 'published' && !canPreviewUnpublished) {
+          setError('Pagina nao encontrada');
+          setLoading(false);
+          return;
+        }
+
         const mappedPage: any = {
           ...targetPage,
           themeConfig: targetPage.theme_config || targetPage.themeConfig || {},
@@ -189,8 +217,9 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     }
   };
 
-  const getContainerClass = (width?: string) => {
-    return width === 'full' ? 'w-full' : 'max-w-7xl mx-auto px-4';
+  const getContainerClass = (width?: string, blockType?: BlockType) => {
+    if (width === 'full' || blockType === BlockType.HERO) return 'w-full';
+    return 'w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-10';
   };
 
   const renderBlock = (block: any) => {
@@ -220,6 +249,28 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             properties={properties}
           />
         );
+      case BlockType.GALLERY:
+        return <GalleryBlock config={block.config} theme={theme} />;
+      case BlockType.STATS:
+        return <StatsBlock config={block.config} theme={theme} />;
+      case BlockType.IMAGE:
+        return <ImageBlock config={block.config} theme={theme} />;
+      case BlockType.MAP:
+        return <MapBlock config={block.config as any} theme={theme} />;
+      case BlockType.TIMELINE:
+        return <TimelineBlock config={block.config} theme={theme} />;
+      case BlockType.VIDEO:
+        return <VideoBlock config={block.config as any} theme={theme} />;
+      case BlockType.TESTIMONIALS:
+        return <TestimonialsBlock config={block.config as any} theme={theme} />;
+      case BlockType.BROKER_CARD:
+        return <BrokerCardBlock config={block.config} theme={theme} />;
+      case BlockType.DIVIDER:
+        return <DividerBlock config={block.config} theme={theme} />;
+      case BlockType.SPACER:
+        return <SpacerBlock config={block.config} theme={theme} />;
+      case BlockType.CUSTOM_HTML:
+        return <CustomHTMLBlock config={block.config as any} />;
       case BlockType.TEXT:
         return <TextBlock config={block.config} theme={theme} />;
       case BlockType.FORM:
@@ -250,7 +301,21 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     profile?.role === 'superadmin';
   const isLive = settings?.is_live === true || settings?.isLive === true;
 
-  if ((forceComingSoon || !isLive) && !isSiteOwner) {
+  if (authLoading && (isPreview || organization)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2
+            className="animate-spin mx-auto mb-4 text-indigo-600"
+            size={48}
+          />
+          <p className="text-gray-600 font-medium">Carregando acesso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isPreview && (forceComingSoon || !isLive) && !isSiteOwner) {
     const isMaintenancePath = location.pathname.includes('/embreve');
     if (!isMaintenancePath && !forceComingSoon) {
       window.location.href = '/embreve';
@@ -324,7 +389,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         {page.blocks.map((block) => (
           <div
             key={block.id}
-            className={getContainerClass(block.containerWidth)}
+            className={getContainerClass(block.containerWidth, block.type)}
           >
             {renderBlock(block)}
           </div>

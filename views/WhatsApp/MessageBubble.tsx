@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatPhoneDisplay, type Message } from './hooks/api';
+import { formatPhoneDisplay, isTechnicalMediaPlaceholder, type Message } from './hooks/api';
 import { Image, FileAudio, FileVideo, FileText, MapPin, Contact, Check, CheckCheck } from 'lucide-react';
 
 interface MessageBubbleProps {
@@ -15,6 +15,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
       ? message.sender_name
       : senderPhone || 'Contato sem telefone';
   const senderInitial = (senderName.match(/[A-Za-z0-9]/)?.[0] || '?').toUpperCase();
+  const caption = isTechnicalMediaPlaceholder(message.content) ? '' : message.content;
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', {
@@ -42,7 +43,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
                 <span>Imagem</span>
               </div>
             )}
-            {message.content && <p className="wa-bubble-caption">{message.content}</p>}
+            {caption && <p className="wa-bubble-caption">{caption}</p>}
           </div>
         );
 
@@ -75,7 +76,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
                 <span>Vídeo</span>
               </div>
             )}
-            {message.content && <p className="wa-bubble-caption">{message.content}</p>}
+            {caption && <p className="wa-bubble-caption">{caption}</p>}
           </div>
         );
 
@@ -146,7 +147,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
 
         {/* Media or text content */}
         {message.type !== 'text' && renderMedia()}
-        {message.type === 'text' && <p className="wa-bubble-text">{message.content}</p>}
+        {message.type === 'text' && !isTechnicalMediaPlaceholder(message.content) && (
+          <p className="wa-bubble-text">{message.content}</p>
+        )}
+        {message.type === 'unknown' && (
+          <div className="wa-bubble-media-placeholder">
+            <FileText size={24} />
+            <span>Mensagem recebida</span>
+          </div>
+        )}
 
         {/* Timestamp + check marks */}
         <div className="wa-bubble-meta">

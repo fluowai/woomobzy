@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 import { legalValidationService } from '../../services/legalValidationService';
 
 type DocStatus = 'approved' | 'pending' | 'rejected' | 'missing';
@@ -175,6 +176,7 @@ const statusConfig: Record<
 
 const DueDiligence: React.FC = () => {
   const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [checklist, setChecklist] =
     useState<ChecklistItem[]>(DEFAULT_CHECKLIST);
   const [expandedCategory, setExpandedCategory] = useState<string>('fundiario');
@@ -187,7 +189,7 @@ const DueDiligence: React.FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const loadProps = useCallback(async () => {
-    if (!profile?.organization_id) {
+    if (!profile?.organization_id || !activeEnvironmentId) {
       logger.warn('DueDiligence: organization_id não encontrado no perfil');
       return;
     }
@@ -197,6 +199,7 @@ const DueDiligence: React.FC = () => {
         .from('properties')
         .select('*')
         .eq('organization_id', profile.organization_id)
+        .eq('environment_id', activeEnvironmentId)
         .in('property_type', [
           'Fazenda',
           'Sítio',
@@ -223,7 +226,7 @@ const DueDiligence: React.FC = () => {
     } catch (err) {
       logger.error('Erro inesperado ao carregar propriedades:', err);
     }
-  }, [profile?.organization_id]);
+  }, [profile?.organization_id, activeEnvironmentId]);
 
   useEffect(() => {
     loadProps();

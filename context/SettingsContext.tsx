@@ -10,6 +10,7 @@ import { SiteSettings } from '../types';
 import { DEFAULT_SITE_SETTINGS } from '../constants';
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
+import { useEnvironment } from './EnvironmentContext';
 
 interface SettingsContextType {
   settings: SiteSettings;
@@ -45,6 +46,13 @@ export const SettingsProvider: React.FC<{
   }
   const profileOrgId = authContext?.profile?.organization_id;
   const authLoading = authContext?.loading || false;
+  let environmentContext: any = null;
+  try {
+    environmentContext = useEnvironment();
+  } catch (e) {
+    // Public nested providers can render without an active environment.
+  }
+  const activeEnvironmentId = environmentContext?.activeEnvironmentId || null;
 
   useEffect(() => {
     let isMounted = true;
@@ -75,12 +83,26 @@ export const SettingsProvider: React.FC<{
           `📡 [SettingsContext] Loading site settings for org: ${activeOrgId}...`
         );
 
-        // Fetch specific organization settings
-        const { data, error } = await supabase
+        // Fetch specific environment settings, falling back to legacy org settings.
+        let query = supabase
           .from('site_settings')
           .select('*')
-          .eq('organization_id', activeOrgId)
-          .maybeSingle();
+          .eq('organization_id', activeOrgId);
+        if (activeEnvironmentId) {
+          query = query.eq('environment_id', activeEnvironmentId);
+        }
+        let { data, error } = await query.maybeSingle();
+
+        if (!data && activeEnvironmentId) {
+          const fallback = await supabase
+            .from('site_settings')
+            .select('*')
+            .eq('organization_id', activeOrgId)
+            .is('environment_id', null)
+            .maybeSingle();
+          data = fallback.data;
+          error = fallback.error;
+        }
 
         if (error) {
           logger.warn('⚠️ [SettingsContext] Load Error:', error.message);
@@ -137,7 +159,7 @@ export const SettingsProvider: React.FC<{
     return () => {
       isMounted = false;
     };
-  }, [propsOrgId, profileOrgId, authLoading]);
+  }, [propsOrgId, profileOrgId, authLoading, activeEnvironmentId]);
 
   // Apply settings to CSS variables whenever settings change
   useEffect(() => {
@@ -210,6 +232,9 @@ export const SettingsProvider: React.FC<{
       if (activeOrgId) {
         payload.organization_id = activeOrgId;
       }
+      if (activeEnvironmentId) {
+        payload.environment_id = activeEnvironmentId;
+      }
 
       let data: any = null;
       const ignoredMissingColumns: string[] = [];
@@ -217,7 +242,7 @@ export const SettingsProvider: React.FC<{
       for (let attempt = 0; attempt < 12; attempt += 1) {
         const { data: saved, error } = await supabase
           .from('site_settings')
-          .upsert(payload)
+          .upsert(payload, activeEnvironmentId ? { onConflict: 'organization_id,environment_id' } : undefined)
           .select()
           .single();
 

@@ -12,6 +12,7 @@ import {
 import { Link } from 'react-router-dom';
 import IADashboardSummary from '../components/IADashboardSummary';
 import { useAuth } from '../context/AuthContext';
+import { useEnvironment } from '../context/EnvironmentContext';
 import { supabase } from '../services/supabase';
 import {
   XAxis,
@@ -32,6 +33,7 @@ const BRAND_COLORS = ['#007850', '#f59600', '#7c3aed', '#d97706', '#0891b2'];
 
 const UrbanDashboard: React.FC = () => {
   const { profile, loading: authLoading } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
   const [vgv, setVgv] = useState(0);
@@ -43,7 +45,7 @@ const UrbanDashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    if (authLoading || !profile?.organization_id) return;
+    if (authLoading || !profile?.organization_id || !activeEnvironmentId) return;
 
     const load = async () => {
       const organizationId = profile.organization_id;
@@ -53,6 +55,7 @@ const UrbanDashboard: React.FC = () => {
         .from('properties')
         .select('id', { count: 'exact' })
         .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId)
         .not('property_type', 'in', '("Rural","Fazenda","Sítio","Chácara")');
 
       // 2. Contagem por Status
@@ -60,6 +63,7 @@ const UrbanDashboard: React.FC = () => {
         .from('properties')
         .select('status')
         .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId)
         .not('property_type', 'in', '("Rural","Fazenda","Sítio","Chácara")');
 
       const statsMap = { available: 0, sold: 0, rented: 0 };
@@ -74,6 +78,7 @@ const UrbanDashboard: React.FC = () => {
         .from('properties')
         .select('price')
         .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId)
         .eq('status', 'Disponível');
       
       const totalVgv = pPrices?.reduce((sum, p) => sum + (p.price || 0), 0) || 0;
@@ -82,13 +87,15 @@ const UrbanDashboard: React.FC = () => {
       const { count: lCount } = await supabase
         .from('leads')
         .select('id', { count: 'exact' })
-        .eq('organization_id', organizationId);
+        .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId);
 
       // 5. Leads Recentes Reais
       const { data: rLeads } = await supabase
         .from('leads')
         .select('*')
         .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId)
         .order('created_at', { ascending: false })
         .limit(4);
 
@@ -99,7 +106,7 @@ const UrbanDashboard: React.FC = () => {
       setRecentLeads(rLeads || []);
     };
     load();
-  }, [authLoading, profile?.organization_id]);
+  }, [authLoading, profile?.organization_id, activeEnvironmentId]);
 
   const stats = [
     {

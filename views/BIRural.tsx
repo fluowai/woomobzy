@@ -30,56 +30,44 @@ import {
   Legend,
 } from 'recharts';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
+import { useEnvironment } from '../context/EnvironmentContext';
 import { MOCK_PROPERTIES, MOCK_LEADS } from '../constants.tsx';
 import { PropertyType, Property } from '../types';
 import { supabase } from '../services/supabase';
 
 const BIRural: React.FC = () => {
   const { settings } = useSettings();
+  const { profile, loading: authLoading } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [timeRange, setTimeRange] = useState('Anual');
   const [properties, setProperties] = useState<Property[]>([]);
-  const [biStats, setBiStats] = useState<any>(null);
   const [leadSources, setLeadSources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (authLoading) return;
 
-  const loadData = async () => {
+    if (!profile?.organization_id || !activeEnvironmentId) {
+      logger.warn('BI Rural: organization_id indisponivel no perfil.');
+      setProperties([]);
+      setLeadSources([]);
+      setLoading(false);
+      return;
+    }
+
+    loadData(profile.organization_id);
+  }, [authLoading, profile?.organization_id, activeEnvironmentId]);
+
+  const loadData = async (organizationId: string) => {
     try {
       setLoading(true);
-
-      // Fetch stats via RPC
-      const { data: stats, error: statsError } = await supabase.rpc(
-        'get_bi_stats',
-        { org_id: settings.id }
-      );
-
-      if (statsError) {
-        logger.warn(
-          '⚠️ RPC get_bi_stats não encontrada ou falhou. Usando fallback local.'
-        );
-      } else {
-        setBiStats(stats);
-      }
-
-      // Fetch lead sources via RPC
-      const { data: sources, error: sourcesError } = await supabase.rpc(
-        'get_bi_lead_sources',
-        { org_id: settings.id }
-      );
-
-      if (sourcesError) {
-        logger.warn('⚠️ RPC get_bi_lead_sources não encontrada ou falhou.');
-        setLeadSources([]);
-      } else {
-        setLeadSources(sources || []);
-      }
 
       const { data: props, error: propsError } = await supabase
         .from('properties')
         .select('*')
+        .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId)
         .in('property_type', [
           'Fazenda',
           'Sítio',
@@ -98,6 +86,32 @@ const BIRural: React.FC = () => {
 
       if (propsError) logger.error('Error fetching properties:', propsError);
       else setProperties(props || []);
+
+      const { data: leads, error: leadsError } = await supabase
+        .from('leads')
+        .select('source')
+        .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId);
+
+      if (leadsError) {
+        logger.error('Error fetching lead sources:', leadsError);
+        setLeadSources([]);
+      } else {
+        const sourceCounts = (leads || []).reduce<Record<string, number>>(
+          (acc, lead) => {
+            const source = String(lead.source || '').trim() || 'Outros';
+            acc[source] = (acc[source] || 0) + 1;
+            return acc;
+          },
+          {}
+        );
+
+        setLeadSources(
+          Object.entries(sourceCounts)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+        );
+      }
     } catch (error) {
       logger.error('Error loading BI data:', error);
     } finally {
@@ -107,16 +121,6 @@ const BIRural: React.FC = () => {
 
   // Aggregation Logic (Now based on real properties)
   const stats = useMemo(() => {
-    if (biStats) {
-      return {
-        totalValue: biStats.total_value,
-        totalArea: biStats.total_area_ha,
-        avgHectarePrice: biStats.avg_ha_price,
-        totalLeads: leadSources.reduce((acc, s) => acc + s.value, 0),
-        propertyCount: biStats.property_count,
-      };
-    }
-
     const totalValue = properties.reduce((acc, p) => acc + (p.price || 0), 0);
     const totalArea = properties.reduce(
       (acc, p) => acc + (p.total_area_ha || 0),
@@ -131,13 +135,14 @@ const BIRural: React.FC = () => {
       totalLeads: leadSources.reduce((acc, s) => acc + s.value, 0),
       propertyCount: properties.length,
     };
-  }, [properties, biStats, leadSources]);
+  }, [properties, leadSources]);
 
   // Inventory by Type Data
   const typeData = useMemo(() => {
     const counts: Record<string, number> = {};
     properties.forEach((p) => {
-      counts[p.type] = (counts[p.type] || 0) + 1;
+      const type = p.type || (p as any).property_type || 'Outros';
+      counts[type] = (counts[type] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [properties]);

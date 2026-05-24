@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { useEnvironment } from '../context/EnvironmentContext';
 import { MOCK_PROPERTIES, MOCK_LEADS } from '../constants.tsx';
 import {
   CONTRACT_TEMPLATES,
@@ -50,6 +51,7 @@ interface Contract {
 const LegalContracts: React.FC = () => {
   const { settings } = useSettings();
   const { profile, loading: authLoading } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [contracts, setContracts] = useState<Contract[]>([
     {
       id: 'cnt-01',
@@ -114,22 +116,24 @@ const LegalContracts: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
-    if (authLoading || !profile?.organization_id) return;
+    if (authLoading || !profile?.organization_id || !activeEnvironmentId) return;
 
     loadContracts();
     loadResources();
-  }, [authLoading, profile?.organization_id]);
+  }, [authLoading, profile?.organization_id, activeEnvironmentId]);
 
   const loadResources = async () => {
     const organizationId = profile!.organization_id!;
     const { data: props } = await supabase
       .from('properties')
       .select('id, title, price')
-      .eq('organization_id', organizationId);
+      .eq('organization_id', organizationId)
+      .eq('environment_id', activeEnvironmentId);
     const { data: leadsData } = await supabase
       .from('leads')
       .select('id, name, phone')
-      .eq('organization_id', organizationId);
+      .eq('organization_id', organizationId)
+      .eq('environment_id', activeEnvironmentId);
     setDbProperties(props || []);
     setDbLeads(leadsData || []);
   };
@@ -142,6 +146,7 @@ const LegalContracts: React.FC = () => {
         .from('contracts')
         .select('*, properties(title), leads(name, phone)')
         .eq('organization_id', organizationId)
+        .eq('environment_id', activeEnvironmentId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -197,6 +202,7 @@ const LegalContracts: React.FC = () => {
         .from('contracts')
         .insert({
           organization_id: profile!.organization_id!,
+          environment_id: activeEnvironmentId,
           title: newContract.title,
           type:
             CONTRACT_TEMPLATES.find((t) => t.id === newContract.templateId)

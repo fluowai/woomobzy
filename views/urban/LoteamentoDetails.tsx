@@ -18,12 +18,16 @@ import {
   FileText
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { useEnvironment } from '../../context/EnvironmentContext';
 import { Development, Lot, LotStatus } from '../../types';
 import { toast } from 'sonner';
 
 const LoteamentoDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const { activeEnvironmentId } = useEnvironment();
   const [development, setDevelopment] = useState<Development | null>(null);
   const [lots, setLots] = useState<Lot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,10 +35,10 @@ const LoteamentoDetails: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<LotStatus | 'Todos'>('Todos');
 
   useEffect(() => {
-    if (id) {
+    if (id && profile?.organization_id && activeEnvironmentId) {
       loadData();
     }
-  }, [id]);
+  }, [id, profile?.organization_id, activeEnvironmentId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -44,6 +48,8 @@ const LoteamentoDetails: React.FC = () => {
         .from('developments')
         .select('*')
         .eq('id', id)
+        .eq('organization_id', profile?.organization_id)
+        .eq('environment_id', activeEnvironmentId)
         .single();
       
       setDevelopment(dev);

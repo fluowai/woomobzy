@@ -45,16 +45,32 @@ router.post('/contact', contactLimiter, async (req, res) => {
  */
 router.post('/leads', contactLimiter, async (req, res) => {
   try {
-    const { name, email, phone, organization_id, source } = req.body;
+    const { name, email, phone, organization_id, source, environment_id } = req.body;
 
     if (!organization_id || !name || !phone) {
       return res.status(400).json({ error: 'Dados insuficientes (nome, telefone e org_id são obrigatórios)' });
+    }
+
+    let environmentQuery = supabase
+      .from('environments')
+      .select('id')
+      .eq('organization_id', organization_id);
+    if (environment_id) {
+      environmentQuery = environmentQuery.eq('id', environment_id);
+    } else {
+      environmentQuery = environmentQuery.eq('is_primary', true);
+    }
+    const { data: environment, error: environmentError } = await environmentQuery.maybeSingle();
+    if (environmentError) throw environmentError;
+    if (!environment) {
+      return res.status(400).json({ error: 'Ambiente nao encontrado para esta organizacao' });
     }
 
     const { data: leadData, error: leadError } = await supabase
       .from('leads')
       .insert([{
         organization_id,
+        environment_id: environment.id,
         name,
         email,
         phone,
@@ -75,6 +91,7 @@ router.post('/leads', contactLimiter, async (req, res) => {
       supabase,
       lead: leadData,
       organizationId: organization_id,
+      environmentId: environment.id,
     }).catch((matchError) => {
       console.warn('[Public API] Erro ao gerar matches do lead:', matchError.message);
     });

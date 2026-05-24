@@ -30,6 +30,7 @@ import {
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import SupportModal from './SupportModal';
+import EnvironmentSwitcher from './EnvironmentSwitcher';
 
 type MenuItem = {
   icon: LucideIcon;
@@ -278,6 +279,7 @@ const RuralLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
+            <EnvironmentSwitcher />
             <RouterLink
               to="/rural/properties/new"
               className="btn bg-primary hover:bg-primary-hover text-white h-10 md:h-11 px-3 md:px-6 shadow-lg shadow-primary/20"

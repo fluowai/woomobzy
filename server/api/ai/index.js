@@ -3,9 +3,12 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import axios from 'axios';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { requireEnvironment } from '../../middleware/environment.js';
 import { randomUUID } from 'crypto';
 
 const router = express.Router();
+
+router.use(verifyAuth, requireTenant, requireEnvironment);
 
 // Helper to get organization AI keys
 async function getOrgAIConfig(orgId) {
@@ -27,13 +30,14 @@ function isMissingRelationError(error) {
     message.includes('schema cache');
 }
 
-router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
+router.get('/agents', async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
       .from('ai_agents')
       .select('*')
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -54,7 +58,7 @@ router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/agents', verifyAuth, requireTenant, async (req, res) => {
+router.post('/agents', async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     const payload = normalizeAgentPayload(req.body);
@@ -64,6 +68,7 @@ router.post('/agents', verifyAuth, requireTenant, async (req, res) => {
       .insert({
         ...payload,
         organization_id: req.orgId,
+        environment_id: req.environment.id,
         created_by: req.user.id,
       })
       .select()
@@ -82,7 +87,7 @@ router.post('/agents', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.patch('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
+router.patch('/agents/:id', async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     const payload = normalizeAgentPayload(req.body, true);
@@ -92,6 +97,7 @@ router.patch('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
       .update(payload)
       .eq('id', req.params.id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .select()
       .single();
 
@@ -109,14 +115,15 @@ router.patch('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.delete('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
+router.delete('/agents/:id', async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     const { error } = await supabase
       .from('ai_agents')
       .delete()
       .eq('id', req.params.id)
-      .eq('organization_id', req.orgId);
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
     if (error) {
       if (isMissingRelationError(error)) {

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import SupportModal from './SupportModal';
+import EnvironmentSwitcher from './EnvironmentSwitcher';
 
 type MenuItem = {
   icon: LucideIcon;
@@ -271,6 +272,7 @@ const UrbanLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
+            <EnvironmentSwitcher />
             <Link to="/urban/properties/new" className="btn bg-primary hover:bg-primary-hover text-white h-10 md:h-11 px-3 md:px-6 shadow-lg shadow-primary/20">
               <PlusCircle size={18} />
               <span className="hidden sm:inline">Novo Imóvel</span>

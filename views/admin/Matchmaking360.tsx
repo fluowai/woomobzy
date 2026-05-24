@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { Property, Lead } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 interface Match {
   lead: Lead;
@@ -24,19 +25,38 @@ interface Match {
 }
 
 const Matchmaking360: React.FC = () => {
+  const { profile, loading: authLoading } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!profile?.organization_id) {
+      setMatches([]);
+      setLoading(false);
+      return;
+    }
+
     loadMatches();
-  }, []);
+  }, [authLoading, profile?.organization_id]);
 
   const loadMatches = async () => {
     try {
       setLoading(true);
+      const organizationId = profile!.organization_id!;
+
       // Simulação de algoritmo 360 (num sistema real, isso seria um script no backend)
-      const { data: properties } = await supabase.from('properties').select('*').limit(20);
-      const { data: leads } = await supabase.from('leads').select('*').limit(20);
+      const { data: properties } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .limit(20);
+      const { data: leads } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .limit(20);
 
       if (properties && leads) {
         const potentialMatches: Match[] = [];

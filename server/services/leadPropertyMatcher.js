@@ -551,14 +551,17 @@ function runEngines(lead, properties, profile) {
   ];
 }
 
-export async function matchLeadProperties({ supabase, lead, organizationId, createdBy = null, profileOverride = null }) {
+export async function matchLeadProperties({ supabase, lead, organizationId, environmentId = null, createdBy = null, profileOverride = null }) {
   if (!lead?.id || !organizationId) return lead;
 
-  const { data: properties, error } = await supabase
+  let propertiesQuery = supabase
     .from('properties')
     .select('*')
-    .eq('organization_id', organizationId)
-    .limit(500);
+    .eq('organization_id', organizationId);
+  if (environmentId) {
+    propertiesQuery = propertiesQuery.eq('environment_id', environmentId);
+  }
+  const { data: properties, error } = await propertiesQuery.limit(500);
 
   if (error) throw error;
 
@@ -583,7 +586,7 @@ export async function matchLeadProperties({ supabase, lead, organizationId, crea
   const bestClassification = matches[0]?.classification || 'Sem Match';
 
   let updatedLead = lead;
-  const { data: persistedLead, error: updateError } = await supabase
+  let leadUpdateQuery = supabase
     .from('leads')
     .update({
       classification: `Perfil ${profile} - ${bestClassification}`,
@@ -592,9 +595,11 @@ export async function matchLeadProperties({ supabase, lead, organizationId, crea
       matched_at: matchedAt,
     })
     .eq('id', lead.id)
-    .eq('organization_id', organizationId)
-    .select()
-    .single();
+    .eq('organization_id', organizationId);
+  if (environmentId) {
+    leadUpdateQuery = leadUpdateQuery.eq('environment_id', environmentId);
+  }
+  const { data: persistedLead, error: updateError } = await leadUpdateQuery.select().single();
 
   if (updateError) {
     if (!isMissingMatchColumnsError(updateError)) throw updateError;

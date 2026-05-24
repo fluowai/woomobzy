@@ -14,6 +14,11 @@ import {
 } from '../types/landingPage';
 import { Property } from '../types';
 
+const getActiveEnvironmentId = () => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('active_environment_id') || sessionStorage.getItem('active_environment_id');
+};
+
 // ============================================
 // LANDING PAGE SERVICE
 // ============================================
@@ -26,10 +31,17 @@ export const landingPageService = {
   /**
    * Lista todas as landing pages da organização ou do usuário
    */
-  async list(): Promise<LandingPage[]> {
+  async list(organizationId?: string): Promise<LandingPage[]> {
     logger.info('📋 [LandingPageService] Listando todas as páginas');
 
     let query = supabase.from('landing_pages').select('*');
+    if (organizationId) {
+      query = query.eq('organization_id', organizationId);
+    }
+    const environmentId = getActiveEnvironmentId();
+    if (environmentId) {
+      query = query.eq('environment_id', environmentId);
+    }
 
     const { data, error } = await query.order('updated_at', {
       ascending: false,
@@ -54,11 +66,15 @@ export const landingPageService = {
    * Busca landing page por ID
    */
   async getById(id: string): Promise<LandingPage> {
-    const { data, error } = await supabase
+    let query = supabase
       .from('landing_pages')
       .select('*')
-      .eq('id', id)
-      .single();
+      .eq('id', id);
+    const environmentId = getActiveEnvironmentId();
+    if (environmentId) {
+      query = query.eq('environment_id', environmentId);
+    }
+    const { data, error } = await query.single();
 
     if (error) throw error;
     return mapToModel(data);
@@ -83,6 +99,10 @@ export const landingPageService = {
    * Cria uma nova landing page
    */
   async create(input: CreateLandingPageInput): Promise<LandingPage> {
+    if (!input.organizationId) {
+      throw new Error('Organizacao obrigatoria para criar landing page');
+    }
+
     // Gera slug único se não fornecido
     let slug = input.slug;
     if (!slug) {
@@ -90,17 +110,23 @@ export const landingPageService = {
     }
 
     // Verifica se slug já existe
-    const { data: existing } = await supabase
+    let slugQuery = supabase
       .from('landing_pages')
       .select('id')
       .eq('slug', slug)
-      .single();
+      .eq('organization_id', input.organizationId);
+    const environmentId = getActiveEnvironmentId();
+    if (environmentId) {
+      slugQuery = slugQuery.eq('environment_id', environmentId);
+    }
+    const { data: existing } = await slugQuery.single();
 
     if (existing) {
       slug = `${slug}-${Date.now()}`;
     }
 
     const payload = mapToDatabase({ ...input, slug });
+    if (environmentId) payload.environment_id = environmentId;
 
     const { data, error } = await supabase
       .from('landing_pages')
@@ -126,12 +152,15 @@ export const landingPageService = {
       JSON.stringify(payload).substring(0, 200) + '...'
     );
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('landing_pages')
       .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
+      .eq('id', id);
+    const environmentId = getActiveEnvironmentId();
+    if (environmentId) {
+      query = query.eq('environment_id', environmentId);
+    }
+    const { data, error } = await query.select().single();
 
     if (error) {
       logger.error('❌ [LandingPageService] Erro no Supabase:', error);
@@ -146,10 +175,15 @@ export const landingPageService = {
    * Deleta uma landing page
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
+    let query = supabase
       .from('landing_pages')
       .delete()
       .eq('id', id);
+    const environmentId = getActiveEnvironmentId();
+    if (environmentId) {
+      query = query.eq('environment_id', environmentId);
+    }
+    const { error } = await query;
 
     if (error) throw error;
   },

@@ -52,6 +52,28 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     headers.set('x-impersonate-org-id', impId);
   }
 
+  const routeEnvironmentType =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/urban')
+      ? 'urban'
+      : typeof window !== 'undefined' && window.location.pathname.startsWith('/rural')
+        ? 'rural'
+        : null;
+  const storedEnvironmentType =
+    typeof window !== 'undefined' ? localStorage.getItem('active_environment_type') : null;
+  const environmentId =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('active_environment_id') ||
+        sessionStorage.getItem('active_environment_id')
+      : null;
+  if (environmentId && environmentId !== 'null' && (!routeEnvironmentType || storedEnvironmentType === routeEnvironmentType)) {
+    headers.set('x-environment-id', environmentId);
+  }
+  if (typeof window !== 'undefined') {
+    if (routeEnvironmentType) {
+      headers.set('x-environment-type', routeEnvironmentType);
+    }
+  }
+
   const method = (options.method || 'GET').toUpperCase();
   if (!headers.has('Content-Type') && (options.body || method !== 'GET')) {
     headers.set('Content-Type', 'application/json');

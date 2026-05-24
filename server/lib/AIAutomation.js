@@ -153,6 +153,7 @@ Formato:
         .from('leads')
         .update(updates)
         .eq('id', existingLead.id)
+        .eq('organization_id', organizationId)
         .select()
         .single();
       if (error) throw error;

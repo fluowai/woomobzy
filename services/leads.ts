@@ -16,6 +16,7 @@ export const leadService = {
       method: 'POST',
       body: JSON.stringify({
         organization_id: lead.organization_id, // Incluído para rotas públicas
+        environment_id: (lead as any).environment_id || (typeof window !== 'undefined' ? localStorage.getItem('active_environment_id') : undefined),
         name: lead.name,
         phone: lead.phone,
         email: lead.email,

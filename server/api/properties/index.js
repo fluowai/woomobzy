@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { requireEnvironment } from '../../middleware/environment.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 
 const router = Router();
 
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+
+router.use(verifyAuth, requireTenant, requireEnvironment);
 
 /**
  * GET /api/properties
@@ -39,11 +42,12 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     let query = supabase
       .from('properties')
       .select('*', { count: 'exact' })
-      .eq('organization_id', req.orgId);
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
     // Se o cliente pediu um nicho específico via query string, usamos ele
     // Caso contrário, usamos o nicho da organização
-    const filterNiche = req.query.niche || niche;
+    const filterNiche = req.query.niche || (req.environment.type === 'rural' ? 'rural' : 'urbano') || niche;
 
     if (filterNiche === 'rural') {
       // Tenta filtrar pela coluna 'niche' ou pelos tipos rurais como fallback
@@ -78,12 +82,15 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 router.post('/', verifyAdmin, requireTenant, async (req, res) => {
   try {
     const propertyData = req.body;
-    
+    delete propertyData.organization_id;
+    delete propertyData.environment_id;
+
     const { data, error } = await supabase
       .from('properties')
       .insert({
         ...propertyData,
-        organization_id: req.orgId // FORÇADO
+        organization_id: req.orgId,
+        environment_id: req.environment.id
       })
       .select()
       .single();
@@ -104,6 +111,7 @@ router.put('/:id', verifyAdmin, requireTenant, async (req, res) => {
     const propertyData = req.body;
 
     delete propertyData.organization_id;
+    delete propertyData.environment_id;
     delete propertyData.id;
 
     const { data, error } = await supabase
@@ -111,6 +119,7 @@ router.put('/:id', verifyAdmin, requireTenant, async (req, res) => {
       .update(propertyData)
       .eq('id', id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .select()
       .single();
 
@@ -133,6 +142,7 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
       .select('*')
       .eq('id', req.params.id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
     if (error || !data) return res.status(404).json({ error: 'Imóvel não encontrado' });
@@ -151,7 +161,8 @@ router.delete('/:id', verifyAdmin, requireTenant, async (req, res) => {
       .from('properties')
       .delete()
       .eq('id', req.params.id)
-      .eq('organization_id', req.orgId);
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
     if (error) throw error;
     res.json({ success: true, message: 'Imóvel excluído' });

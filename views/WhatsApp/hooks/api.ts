@@ -54,6 +54,8 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   const tenantId = USE_DIRECT_WHATSAPP_API ? await getTenantId(session?.user?.id) : null;
   const impersonatedOrgId = getImpersonatedOrgId();
+  const activeEnvironmentId = getActiveEnvironmentId();
+  const activeEnvironmentType = getRouteEnvironmentType();
   
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const url = buildApiUrl(cleanPath, tenantId);
@@ -67,6 +69,8 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
         'Content-Type': 'application/json',
         'Authorization': session ? `Bearer ${session.access_token}` : '',
         ...(impersonatedOrgId ? { 'x-impersonate-org-id': impersonatedOrgId } : {}),
+        ...(activeEnvironmentId ? { 'x-environment-id': activeEnvironmentId } : {}),
+        ...(activeEnvironmentType ? { 'x-environment-type': activeEnvironmentType } : {}),
         ...options?.headers,
       },
       ...options,
@@ -102,6 +106,20 @@ function getImpersonatedOrgId(): string | null {
   return value && value !== 'null' && value !== 'undefined' ? value : null;
 }
 
+function getActiveEnvironmentId(): string | null {
+  const routeType = getRouteEnvironmentType();
+  const storedType = localStorage.getItem('active_environment_type');
+  if (routeType && storedType !== routeType) return null;
+  const value = localStorage.getItem('active_environment_id') || sessionStorage.getItem('active_environment_id');
+  return value && value !== 'null' && value !== 'undefined' ? value : null;
+}
+
+function getRouteEnvironmentType(): 'urban' | 'rural' | null {
+  if (window.location.pathname.startsWith('/urban')) return 'urban';
+  if (window.location.pathname.startsWith('/rural')) return 'rural';
+  return null;
+}
+
 async function getTenantId(userId?: string): Promise<string | null> {
   if (!userId) return null;
   if (tenantIdCache !== undefined) return tenantIdCache;
@@ -121,6 +139,10 @@ function buildApiUrl(path: string, tenantId?: string | null): string {
   if (USE_DIRECT_WHATSAPP_API && tenantId && !url.searchParams.has('tenant_id')) {
     url.searchParams.set('tenant_id', tenantId);
   }
+  const environmentId = getActiveEnvironmentId();
+  if (USE_DIRECT_WHATSAPP_API && environmentId && !url.searchParams.has('environment_id')) {
+    url.searchParams.set('environment_id', environmentId);
+  }
   return url.toString();
 }
 
@@ -129,8 +151,9 @@ function withTenantBody(body: BodyInit | null | undefined, tenantId?: string | n
 
   try {
     const parsed = JSON.parse(body);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && !parsed.tenant_id) {
-      return JSON.stringify({ ...parsed, tenant_id: tenantId });
+    const environmentId = getActiveEnvironmentId();
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && (!parsed.tenant_id || !parsed.environment_id)) {
+      return JSON.stringify({ ...parsed, tenant_id: parsed.tenant_id || tenantId, environment_id: parsed.environment_id || environmentId });
     }
   } catch {
     return body;

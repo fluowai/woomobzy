@@ -25,6 +25,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 import { MOCK_PROPERTIES, MOCK_LEADS } from '../constants.tsx';
 import {
   CONTRACT_TEMPLATES,
@@ -48,6 +49,7 @@ interface Contract {
 
 const LegalContracts: React.FC = () => {
   const { settings } = useSettings();
+  const { profile, loading: authLoading } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([
     {
       id: 'cnt-01',
@@ -112,13 +114,22 @@ const LegalContracts: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
+    if (authLoading || !profile?.organization_id) return;
+
     loadContracts();
     loadResources();
-  }, []);
+  }, [authLoading, profile?.organization_id]);
 
   const loadResources = async () => {
-    const { data: props } = await supabase.from('properties').select('id, title, price');
-    const { data: leadsData } = await supabase.from('leads').select('id, name, phone');
+    const organizationId = profile!.organization_id!;
+    const { data: props } = await supabase
+      .from('properties')
+      .select('id, title, price')
+      .eq('organization_id', organizationId);
+    const { data: leadsData } = await supabase
+      .from('leads')
+      .select('id, name, phone')
+      .eq('organization_id', organizationId);
     setDbProperties(props || []);
     setDbLeads(leadsData || []);
   };
@@ -126,9 +137,11 @@ const LegalContracts: React.FC = () => {
   const loadContracts = async () => {
     try {
       setLoading(true);
+      const organizationId = profile!.organization_id!;
       const { data, error } = await supabase
         .from('contracts')
         .select('*, properties(title), leads(name, phone)')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -183,7 +196,7 @@ const LegalContracts: React.FC = () => {
       const { data, error } = await supabase
         .from('contracts')
         .insert({
-          organization_id: settings.id,
+          organization_id: profile!.organization_id!,
           title: newContract.title,
           type:
             CONTRACT_TEMPLATES.find((t) => t.id === newContract.templateId)

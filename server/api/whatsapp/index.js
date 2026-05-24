@@ -34,7 +34,7 @@ const rewriteWhatsAppPath = (path) => {
     : `/api${pathWithoutMount}`;
 };
 
-export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
+export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant, requireEnvironment) => {
   const target = resolveWhatsAppTarget(process.env.WHATSAPP_API_URL);
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const isProduction = process.env.NODE_ENV === 'production';
@@ -103,15 +103,19 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         // ports that are only meant to hit the public proxy.
         proxyReq.removeHeader('origin');
 
-        const whatsappUserId = req.user?.id;
+        const whatsappTenantId = req.orgId;
+        const whatsappEnvironmentId = req.environment?.id;
 
-        if (whatsappUserId) {
+        if (whatsappTenantId) {
           const url = new URL(proxyReq.path, 'http://localhost');
-          url.searchParams.set('tenant_id', whatsappUserId);
+          url.searchParams.set('tenant_id', whatsappTenantId);
+          if (whatsappEnvironmentId) {
+            url.searchParams.set('environment_id', whatsappEnvironmentId);
+          }
           proxyReq.path = url.pathname + url.search;
 
           if (req.body && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
-            const bodyData = { ...req.body, tenant_id: whatsappUserId };
+            const bodyData = { ...req.body, tenant_id: whatsappTenantId, environment_id: whatsappEnvironmentId };
             const bodyString = JSON.stringify(bodyData);
             proxyReq.setHeader('Content-Type', 'application/json');
             proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyString));
@@ -119,13 +123,12 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
           }
 
           if (req.method === 'POST' && (req.originalUrl || req.url) === '/api/whatsapp/instances') {
-            console.log('[WHATSAPP] Auth user:', whatsappUserId);
-            console.log('[WHATSAPP] Creating instance for user');
+            console.log('[WHATSAPP] Creating instance for org/environment:', whatsappTenantId, whatsappEnvironmentId);
           }
         }
 
         console.log(
-          `[SaaS Proxy] ${req.method} ${req.originalUrl || req.url} -> ${target}${proxyReq.path} (WhatsApp user: ${whatsappUserId || 'Public'}, Org: ${req.orgId || 'none'})`
+          `[SaaS Proxy] ${req.method} ${req.originalUrl || req.url} -> ${target}${proxyReq.path} (Org: ${req.orgId || 'none'}, Env: ${whatsappEnvironmentId || 'none'})`
         );
       },
       proxyReqWs: (proxyReq, req) => {
@@ -167,7 +170,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     });
   });
 
-  app.get('/api/whatsapp/status', verifyAuth, requireTenant, async (req, res) => {
+  app.get('/api/whatsapp/status', verifyAuth, requireTenant, requireEnvironment, async (req, res) => {
     applyCorsHeaders(req, res);
 
     const service = await checkWhatsAppService(target);
@@ -180,7 +183,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     });
   });
 
-  app.post('/api/whatsapp/ws-token', verifyAuth, requireTenant, (req, res) => {
+  app.post('/api/whatsapp/ws-token', verifyAuth, requireTenant, requireEnvironment, (req, res) => {
     const secret = getWsTokenSecret();
     if (!secret) {
       return res.status(503).json({ error: 'WebSocket token indisponivel' });
@@ -203,15 +206,16 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     res.json({ token, expires_in: 120 });
   });
 
-  app.get('/api/whatsapp/instances', verifyAuth, requireTenant, async (req, res) => {
+  app.get('/api/whatsapp/instances', verifyAuth, requireTenant, requireEnvironment, async (req, res) => {
     applyCorsHeaders(req, res);
 
     try {
       const supabase = getSupabaseServer();
       const { data, error } = await supabase
         .from('whatsapp_instances')
-        .select('id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at')
-        .eq('tenant_id', req.user.id)
+        .select('id, tenant_id, environment_id, name, status, qr_code, phone, jid, created_at, updated_at')
+        .eq('tenant_id', req.orgId)
+        .eq('environment_id', req.environment.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -229,7 +233,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   });
 
   app.use('/api/whatsapp/ws', validateWsTokenMiddleware, proxy);
-  app.use('/api/whatsapp', verifyAuth, requireTenant, proxy);
+  app.use('/api/whatsapp', verifyAuth, requireTenant, requireEnvironment, proxy);
 
   if (server) {
     server.on('upgrade', (req, socket, head) => {
@@ -343,6 +347,7 @@ function normalizeInstanceRow(row) {
   return {
     id: row.id,
     tenant_id: row.tenant_id || undefined,
+    environment_id: row.environment_id || undefined,
     name: row.name || 'WhatsApp',
     status: row.status || 'disconnected',
     qr_code: row.qr_code || undefined,

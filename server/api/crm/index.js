@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { requireEnvironment } from '../../middleware/environment.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { matchLeadProperties } from '../../services/leadPropertyMatcher.js';
 
 const router = Router();
 
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+
+router.use(verifyAuth, requireTenant, requireEnvironment);
 
 /**
  * GET /api/crm/leads
@@ -21,6 +24,7 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
       .from('leads')
       .select('*, properties(title, price, images)', { count: 'exact' })
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -57,6 +61,7 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
       .from('leads')
       .insert({
         organization_id: req.orgId, 
+        environment_id: req.environment.id,
         name,
         phone,
         email,
@@ -83,6 +88,7 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
       supabase,
       lead: data,
       organizationId: req.orgId,
+      environmentId: req.environment.id,
       createdBy: req.user.id,
       profileOverride: forcedProfile,
     });
@@ -105,6 +111,7 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
     // Remover campos que não devem ser editados diretamente
     delete updates.id;
     delete updates.organization_id;
+    delete updates.environment_id;
     delete updates.created_at;
 
     // Verificar ownership
@@ -112,9 +119,11 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
       .from('leads')
       .select('organization_id')
       .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
-    if (findError || lead.organization_id !== req.orgId) {
+    if (findError || !lead) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -132,6 +141,8 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
       .from('leads')
       .update(updates)
       .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .select()
       .single();
 
@@ -151,6 +162,7 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
           supabase,
           lead: data,
           organizationId: req.orgId,
+          environmentId: req.environment.id,
           createdBy: req.user.id,
         })
       : data;
@@ -174,6 +186,7 @@ router.post('/leads/:id/match-properties', verifyAuth, requireTenant, async (req
       .select('*')
       .eq('id', id)
       .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
     if (error || !lead) {
@@ -188,6 +201,7 @@ router.post('/leads/:id/match-properties', verifyAuth, requireTenant, async (req
       supabase,
       lead,
       organizationId: req.orgId,
+      environmentId: req.environment.id,
       createdBy: req.user.id,
       profileOverride: forcedProfile,
     });
@@ -211,9 +225,11 @@ router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) =>
       .from('leads')
       .select('organization_id, status')
       .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
-    if (findError || lead.organization_id !== req.orgId) {
+    if (findError || !lead) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -221,6 +237,8 @@ router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) =>
       .from('leads')
       .update({ status })
       .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .select()
       .single();
 
@@ -306,6 +324,7 @@ router.post('/leads/:id/activities', verifyAuth, requireTenant, async (req, res)
         .update({ last_contacted_at: new Date().toISOString() })
         .eq('id', id)
         .eq('organization_id', req.orgId)
+        .eq('environment_id', req.environment.id)
         .select()
         .single();
 
@@ -331,16 +350,20 @@ router.delete('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
       .from('leads')
       .select('organization_id')
       .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id)
       .single();
 
-    if (findError || lead.organization_id !== req.orgId) {
+    if (findError || !lead) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
     const { error } = await supabase
       .from('leads')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
     if (error) throw error;
     res.json({ success: true, message: 'Lead excluído com sucesso' });
@@ -366,7 +389,8 @@ router.post('/leads/bulk-delete', verifyAuth, requireTenant, async (req, res) =>
       .from('leads')
       .delete()
       .in('id', ids)
-      .eq('organization_id', req.orgId);
+      .eq('organization_id', req.orgId)
+      .eq('environment_id', req.environment.id);
 
     if (error) throw error;
     res.json({ success: true, message: `${ids.length} leads excluídos com sucesso` });

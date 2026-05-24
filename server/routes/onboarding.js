@@ -91,6 +91,26 @@ router.post('/', authLimiter, async (req, res) => {
       
       if (orgError) return res.status(400).json({ error: `Erro ao criar organização: ${orgError.message}` });
       organization = orgData;
+
+      const envType = organization.niche === 'rural' ? 'rural' : 'urban';
+      const { error: envError } = await supabase.from('environments').insert({
+        organization_id: organization.id,
+        type: envType,
+        name: envType === 'rural' ? 'Imobzy Rural' : 'Imobzy Urbana',
+        slug: envType,
+        is_primary: true,
+        brand_config: {
+          primaryColor: primaryColor || null,
+          secondaryColor: secondaryColor || null,
+          logoUrl: logoUrl || null,
+          agencyName: agencyName || null,
+        },
+        feature_flags: {},
+      });
+
+      if (envError && envError.code !== '23505') {
+        return res.status(400).json({ error: `Erro ao criar ambiente: ${envError.message}` });
+      }
     }
 
     const { data: profileRecord, error: upsertError } = await supabase.from('profiles').upsert({

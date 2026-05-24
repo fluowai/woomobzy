@@ -11,6 +11,7 @@ import rateLimit from 'express-rate-limit';
 import { getSupabaseServer } from './lib/supabase-server.js';
 import { verifyAuth } from './middleware/auth.js';
 import { requireTenant } from './middleware/tenant.js';
+import { requireEnvironment } from './middleware/environment.js';
 
 // --- Modular Routes ---
 import adminRoutes from './routes/admin.js';
@@ -27,6 +28,7 @@ import locacaoRoutes from './api/locacao/index.js';
 import cobrancaRoutes from './api/cobranca/index.js';
 import aiRoutes from './api/ai/index.js';
 import storageRoutes from './api/storage/index.js';
+import environmentRoutes from './api/environments/index.js';
 import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -183,6 +185,7 @@ app.use('/api/urban', urbanRoutes);
 app.use('/api/locacao', locacaoRoutes);
 app.use('/api/cobranca', cobrancaRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/environments', environmentRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 
@@ -243,7 +246,7 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
 
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
 // O server real e passado para registrar o upgrade do WebSocket.
-setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
+setupWhatsAppProxy(app, server, verifyAuth, requireTenant, requireEnvironment);
 
 // 10. HARDENING EXTRA - Fallback para rotas nao encontradas
 app.all(/(.*)/, (req, res) => {

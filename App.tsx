@@ -23,6 +23,7 @@ import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
+import { EnvironmentProvider, useEnvironment } from './context/EnvironmentContext';
 import { supabase } from './services/supabase';
 
 const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
@@ -35,6 +36,7 @@ import Onboarding from './views/Onboarding';
 
 // Lazy Loaded Views
 const Register = lazy(() => import('./views/Register'));
+const ActivateEnvironment = lazy(() => import('./views/ActivateEnvironment'));
 const ImpersonateCallback = lazy(() => import('./views/ImpersonateCallback'));
 const PublicLandingPage = lazy(() => import('./views/PublicLandingPage'));
 const RuralDashboard = lazy(() => import('./views/RuralDashboard'));
@@ -194,8 +196,9 @@ const FullScreenSpinner: React.FC = () => (
 // ==========================================
   const NicheRedirect: React.FC = () => {
   const { profile, isImpersonating, loading } = useAuth();
+  const { environments, loading: envLoading } = useEnvironment();
 
-  if (loading) return <FullScreenSpinner />;
+  if (loading || envLoading) return <FullScreenSpinner />;
 
   // If Super Admin and NOT impersonating, go to Super Admin panel
   if (profile?.role === 'superadmin' && !isImpersonating) {
@@ -216,8 +219,9 @@ const FullScreenSpinner: React.FC = () => (
   // Determine niche: check organization.niche
   // 'rural' → Rural Panel
   // anything else → Urban Panel (default seguro)
+  const primaryEnvironment = environments.find((environment) => environment.is_primary) || environments[0];
   const rawNiche = (profile?.organization as any)?.niche;
-  const isRural = rawNiche === 'rural';
+  const isRural = primaryEnvironment ? primaryEnvironment.type === 'rural' : rawNiche === 'rural';
   const target = isRural ? '/rural' : '/urban';
   
   logger.info(`🚀 NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${isRural})`);
@@ -394,6 +398,14 @@ const AppContent: React.FC = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/portal-locatario" element={<PortalLocatario />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route
+            path="/activate-environment/:type"
+            element={
+              <ProtectedRoute>
+                <ActivateEnvironment />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/site/:slug/*" element={<PublicLandingPage />} />
 
           {/* ====== LEGACY /admin → NICHE REDIRECT ====== */}
@@ -560,10 +572,12 @@ const App: React.FC = () => {
           <SettingsProvider>
             <TextsProvider>
               <PlansProvider>
-                <DomainRouter>
-                  <TrackingPixels />
-                  <AppContent />
-                </DomainRouter>
+                <EnvironmentProvider>
+                  <DomainRouter>
+                    <TrackingPixels />
+                    <AppContent />
+                  </DomainRouter>
+                </EnvironmentProvider>
               </PlansProvider>
             </TextsProvider>
           </SettingsProvider>

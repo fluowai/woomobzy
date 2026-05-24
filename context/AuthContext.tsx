@@ -20,7 +20,10 @@ interface UserProfile {
     id: string;
     name: string;
     slug: string;
-    niche: 'rural' | 'traditional' | 'hybrid';
+    niche: 'rural' | 'traditional';
+    plan_id?: string;
+    trial_ends_at?: string;
+    subscription_status?: 'trial' | 'active' | 'payment_required' | 'suspended';
   };
   created_at: string;
 }

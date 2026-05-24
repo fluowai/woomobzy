@@ -272,9 +272,7 @@ const RuralLayout: React.FC = () => {
             />
             <input
               type="text"
-              placeholder={
-                niche === 'hybrid' ? 'Buscar imóveis...' : 'Buscar fazendas...'
-              }
+              placeholder="Buscar fazendas..."
               className="input-field pl-12 h-11"
             />
           </div>
@@ -285,9 +283,7 @@ const RuralLayout: React.FC = () => {
               className="btn bg-primary hover:bg-primary-hover text-white h-10 md:h-11 px-3 md:px-6 shadow-lg shadow-primary/20"
             >
               <Plus size={18} />
-              <span className="hidden sm:inline">
-                {niche === 'hybrid' ? 'Novo Imóvel' : 'Nova Fazenda'}
-              </span>
+              <span className="hidden sm:inline">Nova Fazenda</span>
             </RouterLink>
           </div>
         </header>

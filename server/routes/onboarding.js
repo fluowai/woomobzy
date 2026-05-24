@@ -1,7 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
 import { rateLimit } from 'express-rate-limit';
-import { provisionTenantDomain } from '../domainService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
@@ -24,7 +23,7 @@ const onboardingSchema = z.object({
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().or(z.literal('')),
   secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().or(z.literal('')),
   logoUrl: z.string().url().optional().nullable().or(z.literal('')),
-  profileType: z.enum(['rural', 'traditional', 'hybrid']).optional().nullable().or(z.literal('')),
+  profileType: z.enum(['rural', 'traditional']).optional().nullable().or(z.literal('')),
   themeId: z.string().optional().nullable().or(z.literal('')),
   plan: z.string().optional().nullable().or(z.literal('')),
   region: z.string().optional().nullable().or(z.literal('')),
@@ -72,11 +71,22 @@ router.post('/', authLimiter, async (req, res) => {
       const slug = agencyName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+      const { data: selectedPlan } = await supabase
+        .from('plans')
+        .select('id')
+        .ilike('slug', plan || 'free')
+        .maybeSingle();
+
+      const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
       const { data: orgData, error: orgError } = await supabase.from('organizations').insert({
         name: agencyName, 
         slug, 
         subdomain: slug,
-        niche: profileType || 'rural' // Salva o nicho selecionado
+        niche: profileType || 'rural',
+        plan_id: selectedPlan?.id || null,
+        trial_ends_at: trialEndsAt,
+        subscription_status: 'trial',
       }).select().single();
       
       if (orgError) return res.status(400).json({ error: `Erro ao criar organização: ${orgError.message}` });
@@ -96,15 +106,10 @@ router.post('/', authLimiter, async (req, res) => {
 
     let domain = null;
     if (organization) {
-      try {
-        const domainResult = await provisionTenantDomain(organization.slug);
-        if (domainResult?.success) {
-          const { data: domainData } = await supabase.from('domains').insert({
-            organization_id: organization.id, domain: domainResult.fullDomain, is_primary: true, status: 'active',
-          }).select().single();
-          domain = domainData;
-        }
-      } catch (e) { console.warn('Domain error:', e.message); }
+      domain = {
+        fullDomain: `https://crmimobzy.consultio.com.br/${organization.slug}`,
+        slug: organization.slug,
+      };
     }
 
     // Retorna o objeto completo que o Onboarding.tsx espera

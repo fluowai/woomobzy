@@ -75,7 +75,7 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       slug: slug || null, 
       status: status || 'active',
       custom_domain: custom_domain || null,
-      niche: niche || 'hybrid',
+      niche: niche === 'rural' ? 'rural' : 'traditional',
       owner_name: owner_name || null,
       owner_email: owner_email || null
     };

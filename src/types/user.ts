@@ -29,7 +29,7 @@ export interface Company {
   primary_color?: string;
   secondary_color?: string;
   custom_domain?: string;
-  niche?: 'rural' | 'traditional' | 'hybrid';
+  niche?: 'rural' | 'traditional';
   settings?: Record<string, unknown>;
   created_at: string;
 }

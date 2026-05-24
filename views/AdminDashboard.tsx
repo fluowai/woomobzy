@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import RuralDashboard from './RuralDashboard';
 import UrbanDashboard from './UrbanDashboard';
-import HybridDashboard from './HybridDashboard';
 
 const AdminDashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -12,10 +11,6 @@ const AdminDashboard: React.FC = () => {
 
   if (niche === 'rural') {
     return <RuralDashboard />;
-  }
-
-  if (niche === 'hybrid') {
-    return <HybridDashboard />;
   }
 
   // Default Traditional/Urban

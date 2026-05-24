@@ -132,6 +132,59 @@ const PROFILES = [
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
+const ACTIVE_PLANS = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: 0,
+    period: '7 dias',
+    description: 'Teste gratuito por 7 dias',
+    color: 'from-slate-500 to-slate-700',
+    border: 'border-slate-200',
+    features: ['1 corretor', '15 imoveis', 'CRM simples', 'URL da imobiliaria', 'Expira em 7 dias'],
+    limits: { brokers: 1, properties: 15 },
+    popular: false,
+  },
+  {
+    id: 'starter',
+    name: 'Essencial',
+    price: 97,
+    period: '/mes apos 7 dias',
+    description: 'Para operacoes pequenas',
+    color: 'from-emerald-500 to-emerald-700',
+    border: 'border-emerald-300',
+    features: ['5 corretores', '100 imoveis', 'CRM + Kanban', 'WhatsApp integrado', 'Site premium'],
+    limits: { brokers: 5, properties: 100 },
+    popular: false,
+  },
+  {
+    id: 'pro',
+    name: 'Profissional',
+    price: 197,
+    period: '/mes apos 7 dias',
+    description: 'Para operacoes avancadas',
+    color: 'from-amber-500 to-amber-700',
+    border: 'border-amber-300',
+    features: ['Corretores ilimitados', 'Imoveis ilimitados', 'IA integrada', 'BI e relatorios', 'Portal do proprietario'],
+    limits: { brokers: -1, properties: -1 },
+    popular: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 397,
+    period: '/mes apos 7 dias',
+    description: 'Para redes e operacoes completas',
+    color: 'from-blue-600 to-indigo-800',
+    border: 'border-blue-300',
+    features: ['Tudo do Profissional', 'Multi-equipe', 'Suporte prioritario', 'Dominio personalizado', 'Consultoria de implantacao'],
+    limits: { brokers: -1, properties: -1 },
+    popular: false,
+  },
+];
+
+const ACTIVE_PROFILES = PROFILES.filter((profile) => profile.id !== 'hybrid');
+
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -255,7 +308,7 @@ const Onboarding: React.FC = () => {
       </div>
 
       <div className="grid gap-4">
-        {PLANS.map((plan) => (
+        {ACTIVE_PLANS.map((plan) => (
           <button
             key={plan.id}
             onClick={() => update('plan', plan.id)}
@@ -279,7 +332,7 @@ const Onboarding: React.FC = () => {
                   >
                     {plan.id === 'free' ? (
                       <Zap size={16} className="text-white" />
-                    ) : plan.id === 'basic' ? (
+                    ) : plan.id === 'starter' ? (
                       <Star size={16} className="text-white" />
                     ) : (
                       <Crown size={16} className="text-white" />
@@ -340,7 +393,7 @@ const Onboarding: React.FC = () => {
       </div>
 
       <div className="grid gap-4">
-        {PROFILES.map((profile) => {
+        {ACTIVE_PROFILES.map((profile) => {
           const Icon = profile.icon;
           return (
             <button
@@ -503,7 +556,7 @@ const Onboarding: React.FC = () => {
                 <Globe size={12} className="text-emerald-500" />
                 <span className="text-slate-400">Sua URL:</span>
                 <span className="font-mono font-bold text-emerald-600">
-                  {slug}.imobzy.com.br
+                  crmimobzy.consultio.com.br/{slug}
                 </span>
               </div>
             )}
@@ -571,8 +624,8 @@ const Onboarding: React.FC = () => {
   // STEP 5: Confirmation
   // ==========================================
   const renderConfirmStep = () => {
-    const selectedPlan = PLANS.find((p) => p.id === formData.plan);
-    const selectedProfile = PROFILES.find((p) => p.id === formData.profileType);
+    const selectedPlan = ACTIVE_PLANS.find((p) => p.id === formData.plan);
+    const selectedProfile = ACTIVE_PROFILES.find((p) => p.id === formData.profileType);
     const slug = formData.agencyName
       .toLowerCase()
       .normalize('NFD')
@@ -606,7 +659,7 @@ const Onboarding: React.FC = () => {
               <span className="text-sm text-slate-600">Domínio</span>
             </div>
             <span className="font-mono text-sm font-bold text-emerald-600">
-              {slug}.imobzy.com.br
+              crmimobzy.consultio.com.br/{slug}
             </span>
           </div>
           <div className="flex items-center justify-between">
@@ -642,7 +695,7 @@ const Onboarding: React.FC = () => {
           <p className="text-xs text-emerald-700">
             <Shield size={14} className="inline mr-1" />
             Seu site será publicado em <strong>
-              {slug}.imobzy.com.br
+              crmimobzy.consultio.com.br/{slug}
             </strong>{' '}
             automaticamente via Vercel.
           </p>

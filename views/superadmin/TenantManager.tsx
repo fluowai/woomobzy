@@ -122,7 +122,7 @@ const TenantManager: React.FC = () => {
         status: tenant.status,
         custom_domain: tenant.custom_domain || '',
         password: '',
-        niche: tenant.niche || 'traditional',
+        niche: tenant.niche === 'rural' ? 'rural' : 'traditional',
       });
     } else {
       setEditingId(null);
@@ -362,7 +362,7 @@ const TenantManager: React.FC = () => {
                       tenant.niche === 'traditional' ? 'bg-blue-100 text-blue-700' :
                       'bg-purple-100 text-purple-700'
                     }`}>
-                      {tenant.niche || 'hybrid'}
+                      {tenant.niche === 'rural' ? 'rural' : 'traditional'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -494,7 +494,7 @@ const TenantManager: React.FC = () => {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Endereço de acesso: seussistema.com/{formData.slug || '...'}
+                  Endereco de acesso: crmimobzy.consultio.com.br/{formData.slug || '...'}
                 </p>
               </div>
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -115,6 +116,9 @@ func main() {
 	router.GET("/ws", func(c *gin.Context) {
 		hub.HandleWebSocket(c.Writer, c.Request)
 	})
+	router.POST("/ws", func(c *gin.Context) {
+		proxyLegacyWsToken(c, cfg.NodeURL)
+	})
 
 	// API routes
 	api := router.Group("/api")
@@ -182,4 +186,38 @@ func main() {
 	}
 
 	log.Info("👋 Server exited")
+}
+
+func proxyLegacyWsToken(c *gin.Context, nodeURL string) {
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, nodeURL+"/api/whatsapp/socket-token", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create token request"})
+		return
+	}
+
+	for _, header := range []string{"Authorization", "x-impersonate-org-id"} {
+		if value := c.GetHeader(header); value != "" {
+			req.Header.Set(header, value)
+		}
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to reach api token endpoint"})
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to read api token response"})
+		return
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/json"
+	}
+	c.Data(resp.StatusCode, contentType, body)
 }

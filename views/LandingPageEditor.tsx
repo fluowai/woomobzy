@@ -1,13 +1,12 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable';
-import { useAuth } from '../context/AuthContext';
 import { landingPageService } from '../services/landingPages';
 import {
   LandingPage,
@@ -43,7 +42,7 @@ type ViewMode = 'desktop' | 'tablet' | 'mobile';
 const LandingPageEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { pathname } = useLocation();
 
   // State
   const [page, setPage] = useState<LandingPage | null>(null);
@@ -86,7 +85,7 @@ const LandingPageEditor: React.FC = () => {
     } catch (error) {
       logger.error('Error loading page:', error);
       alert('Erro ao carregar landing page');
-      navigate('/landing-pages');
+      navigate(landingPagesPath);
     } finally {
       setLoading(false);
     }
@@ -297,6 +296,12 @@ const LandingPageEditor: React.FC = () => {
     }
   };
 
+  const landingPagesPath = pathname.startsWith('/rural/')
+    ? '/rural/landing-pages'
+    : pathname.startsWith('/urban/')
+      ? '/urban/landing-pages'
+      : '/admin/landing-pages';
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -319,7 +324,7 @@ const LandingPageEditor: React.FC = () => {
             Landing page não encontrada
           </p>
           <button
-            onClick={() => navigate('/landing-pages')}
+            onClick={() => navigate(landingPagesPath)}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Voltar para Landing Pages
@@ -336,10 +341,10 @@ const LandingPageEditor: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm shrink-0">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/landing-pages')}
+            onClick={() => navigate(landingPagesPath)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             title="Voltar"
           >
@@ -361,7 +366,7 @@ const LandingPageEditor: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 xl:gap-3">
           {/* View Mode */}
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <button
@@ -484,9 +489,9 @@ const LandingPageEditor: React.FC = () => {
         <BlocksSidebar onAddBlock={handleAddBlock} />
 
         {/* Center - Canvas */}
-        <div className="flex-1 overflow-auto bg-gray-100 p-6">
+        <div className="flex-1 overflow-auto bg-gray-100 p-2 lg:p-3">
           <div
-            className="mx-auto bg-white shadow-lg transition-all duration-300"
+            className="mx-auto bg-white transition-all duration-300"
             style={{
               width: getViewModeWidth(),
               minHeight: '100%',

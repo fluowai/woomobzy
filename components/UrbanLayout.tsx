@@ -111,6 +111,16 @@ const UrbanLayout: React.FC = () => {
   const isMenuItemActive = (path: string, isActive: boolean) =>
     isActive || (path !== '/urban' && pathname.startsWith(path));
 
+  const isLandingPageEditor = /^\/urban\/landing-pages\/[^/]+$/.test(pathname);
+
+  if (isLandingPageEditor) {
+    return (
+      <div className="h-dvh overflow-hidden bg-bg-primary">
+        <Outlet />
+      </div>
+    );
+  }
+
   const renderMenuItem = (item: MenuItem) => (
     <NavLink
       key={item.path}

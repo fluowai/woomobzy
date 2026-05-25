@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
-import { getApiUrl } from '../../src/lib/api';
+import { callApi, getApiUrl } from '../../src/lib/api';
 
 interface DomainData {
   name: string;
@@ -100,15 +100,7 @@ const DomainSettings: React.FC = () => {
   const checkVerification = async (domainName: string, retries = 0) => {
     setVerifyingDomain(true);
     try {
-      const res = await fetch(
-        getApiUrl(`/api/domains/verify/${domainName}?retries=${retries}`)
-      );
-      const data = await res.json();
-
-      if (!data.success && res.status === 404) {
-        setCurrentDomain(null);
-        return;
-      }
+      const data = await callApi(`/api/domains/verify/${domainName}?retries=${retries}`);
 
       setCurrentDomain({
         name: domainName,

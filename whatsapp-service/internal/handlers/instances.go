@@ -36,7 +36,7 @@ func (h *InstanceHandler) CreateInstance(c *gin.Context) {
 		return
 	}
 
-	inst, err := h.manager.CreateInstance(c.Request.Context(), req.Name, req.TenantID)
+	inst, err := h.manager.CreateInstance(c.Request.Context(), req.Name, req.TenantID, req.EnvironmentID)
 	if err != nil {
 		h.logger.Error("Failed to create instance", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -56,14 +56,21 @@ func (h *InstanceHandler) CreateInstance(c *gin.Context) {
 // ListInstances handles GET /api/instances
 func (h *InstanceHandler) ListInstances(c *gin.Context) {
 	var tenantID *uuid.UUID
+	var environmentID *uuid.UUID
 	if tid := c.Query("tenant_id"); tid != "" {
 		parsed, err := uuid.Parse(tid)
 		if err == nil {
 			tenantID = &parsed
 		}
 	}
+	if eid := c.Query("environment_id"); eid != "" {
+		parsed, err := uuid.Parse(eid)
+		if err == nil {
+			environmentID = &parsed
+		}
+	}
 
-	instances, err := h.instanceRepo.List(c.Request.Context(), tenantID)
+	instances, err := h.instanceRepo.List(c.Request.Context(), tenantID, environmentID)
 	if err != nil {
 		h.logger.Error("Failed to list instances", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

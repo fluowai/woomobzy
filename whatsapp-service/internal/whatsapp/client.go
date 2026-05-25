@@ -22,6 +22,7 @@ import (
 type Client struct {
 	instanceID     uuid.UUID
 	tenantID       *uuid.UUID
+	environmentID  *uuid.UUID
 	instanceName   string
 	waClient       *whatsmeow.Client
 	instanceRepo   *repository.InstanceRepo
@@ -45,6 +46,7 @@ type Client struct {
 func NewClient(
 	instanceID uuid.UUID,
 	tenantID *uuid.UUID,
+	environmentID *uuid.UUID,
 	instanceName string,
 	waClient *whatsmeow.Client,
 	instanceRepo *repository.InstanceRepo,
@@ -68,6 +70,7 @@ func NewClient(
 	return &Client{
 		instanceID:    instanceID,
 		tenantID:      tenantID,
+		environmentID: environmentID,
 		instanceName:  instanceName,
 		waClient:      waClient,
 		instanceRepo:  instanceRepo,
@@ -100,8 +103,10 @@ func (c *Client) Connect(ctx context.Context) error {
 		}
 
 		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
-			InstanceID: c.instanceID,
-			Status:     models.StatusQRPending,
+			InstanceID:    c.instanceID,
+			TenantID:      c.tenantID,
+			EnvironmentID: c.environmentID,
+			Status:        models.StatusQRPending,
 		})
 
 		qrChan, err := c.waClient.GetQRChannel(ctx)
@@ -131,8 +136,10 @@ func (c *Client) Connect(ctx context.Context) error {
 
 				// Broadcast to WebSocket
 				c.hub.BroadcastEvent("qr_code", models.QRCodeEvent{
-					InstanceID: c.instanceID,
-					QRCode:     evt.Code,
+					InstanceID:    c.instanceID,
+					TenantID:      c.tenantID,
+					EnvironmentID: c.environmentID,
+					QRCode:        evt.Code,
 				})
 
 			case "login":
@@ -152,9 +159,11 @@ func (c *Client) Connect(ctx context.Context) error {
 				)
 
 				c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
-					InstanceID: c.instanceID,
-					Status:     models.StatusConnected,
-					Phone:      phoneNum,
+					InstanceID:    c.instanceID,
+					TenantID:      c.tenantID,
+					EnvironmentID: c.environmentID,
+					Status:        models.StatusConnected,
+					Phone:         phoneNum,
 				})
 
 			case "timeout":
@@ -186,9 +195,11 @@ func (c *Client) Connect(ctx context.Context) error {
 		)
 
 		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
-			InstanceID: c.instanceID,
-			Status:     models.StatusConnected,
-			Phone:      phoneNum,
+			InstanceID:    c.instanceID,
+			TenantID:      c.tenantID,
+			EnvironmentID: c.environmentID,
+			Status:        models.StatusConnected,
+			Phone:         phoneNum,
 		})
 	}
 
@@ -239,8 +250,10 @@ func (c *Client) eventHandler(evt interface{}) {
 
 		c.instanceRepo.UpdateStatus(context.Background(), c.instanceID, models.StatusDisconnected)
 		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
-			InstanceID: c.instanceID,
-			Status:     models.StatusDisconnected,
+			InstanceID:    c.instanceID,
+			TenantID:      c.tenantID,
+			EnvironmentID: c.environmentID,
+			Status:        models.StatusDisconnected,
 		})
 
 		// Auto-reconnect after delay
@@ -262,8 +275,10 @@ func (c *Client) eventHandler(evt interface{}) {
 		c.logger.Warn("WhatsApp logged out", zap.String("instance", c.instanceID.String()))
 		c.instanceRepo.UpdateStatus(context.Background(), c.instanceID, models.StatusDisconnected)
 		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
-			InstanceID: c.instanceID,
-			Status:     models.StatusDisconnected,
+			InstanceID:    c.instanceID,
+			TenantID:      c.tenantID,
+			EnvironmentID: c.environmentID,
+			Status:        models.StatusDisconnected,
 		})
 
 	case *events.HistorySync:
@@ -431,8 +446,10 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	// Broadcast via WebSocket
 	c.hub.BroadcastEvent("new_message", models.NewMessageEvent{
-		Message: *msg,
-		Chat:    *chat,
+		TenantID:      c.tenantID,
+		EnvironmentID: c.environmentID,
+		Message:       *msg,
+		Chat:          *chat,
 		Instance: struct {
 			ID   uuid.UUID `json:"id"`
 			Name string    `json:"name"`
@@ -487,9 +504,11 @@ func (c *Client) markConnected(ctx context.Context) {
 	}
 
 	c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
-		InstanceID: c.instanceID,
-		Status:     models.StatusConnected,
-		Phone:      phoneNum,
+		InstanceID:    c.instanceID,
+		TenantID:      c.tenantID,
+		EnvironmentID: c.environmentID,
+		Status:        models.StatusConnected,
+		Phone:         phoneNum,
 	})
 }
 

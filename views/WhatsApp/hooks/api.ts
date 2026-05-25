@@ -12,7 +12,7 @@ export const WS_URL = normalizeWhatsAppWsUrl(
 
 import { supabase } from '@/services/supabase';
 
-let tenantIdCache: string | null | undefined;
+let tenantIdCache: { userId: string; organizationId: string | null } | null = null;
 
 function normalizeWhatsAppApiUrl(url: string): string {
   const clean = (url || '').trim().replace(/\/$/, '');
@@ -122,7 +122,7 @@ function getRouteEnvironmentType(): 'urban' | 'rural' | null {
 
 async function getTenantId(userId?: string): Promise<string | null> {
   if (!userId) return null;
-  if (tenantIdCache !== undefined) return tenantIdCache;
+  if (tenantIdCache?.userId === userId) return tenantIdCache.organizationId;
 
   const { data } = await supabase
     .from('profiles')
@@ -130,8 +130,8 @@ async function getTenantId(userId?: string): Promise<string | null> {
     .eq('id', userId)
     .single();
 
-  tenantIdCache = data?.organization_id || null;
-  return tenantIdCache;
+  tenantIdCache = { userId, organizationId: data?.organization_id || null };
+  return tenantIdCache.organizationId;
 }
 
 function buildApiUrl(path: string, tenantId?: string | null): string {
@@ -299,6 +299,8 @@ export const messageApi = {
     const { data: { session } } = await supabase.auth.getSession();
     const tenantId = USE_DIRECT_WHATSAPP_API ? await getTenantId(session?.user?.id) : null;
     const impersonatedOrgId = getImpersonatedOrgId();
+    const activeEnvironmentId = getActiveEnvironmentId();
+    const activeEnvironmentType = getRouteEnvironmentType();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('content', content);
@@ -309,6 +311,8 @@ export const messageApi = {
       headers: {
         Authorization: session ? `Bearer ${session.access_token}` : '',
         ...(impersonatedOrgId ? { 'x-impersonate-org-id': impersonatedOrgId } : {}),
+        ...(activeEnvironmentId ? { 'x-environment-id': activeEnvironmentId } : {}),
+        ...(activeEnvironmentType ? { 'x-environment-type': activeEnvironmentType } : {}),
       },
       body: formData,
     });

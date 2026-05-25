@@ -132,7 +132,9 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant, requi
         );
       },
       proxyReqWs: (proxyReq, req) => {
-        console.log(`[WhatsApp WS Proxy] ${req.url} -> ${target}`);
+        console.log(
+          `[WhatsApp WS Proxy] ${req.url} -> ${target} (Org: ${req.orgId || 'none'}, Env: ${req.environment?.id || 'none'})`
+        );
       },
       error: (err, req, res) => {
         console.error('[WhatsApp Proxy Error]', err.message);
@@ -193,6 +195,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant, requi
       {
         sub: req.user.id,
         org_id: req.orgId,
+        environment_id: req.environment.id,
         purpose: 'whatsapp_ws',
       },
       secret,
@@ -233,7 +236,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant, requi
   });
 
   app.use('/api/whatsapp/ws', validateWsTokenMiddleware, proxy);
-  app.use('/api/whatsapp', verifyAuth, requireTenant, requireEnvironment, proxy);
+  app.use('/api/whatsapp', verifyAuth, requireTenant, requireEnvironment, authorizeWhatsAppScope, proxy);
 
   if (server) {
     server.on('upgrade', (req, socket, head) => {
@@ -271,7 +274,7 @@ function verifyWsToken(token) {
       issuer: 'imobzy-api',
       audience: 'imobzy-whatsapp-ws',
     });
-    if (payload?.purpose !== 'whatsapp_ws' || !payload.sub || !payload.org_id) return null;
+    if (payload?.purpose !== 'whatsapp_ws' || !payload.sub || !payload.org_id || !payload.environment_id) return null;
     return payload;
   } catch {
     return null;
@@ -295,6 +298,8 @@ function validateWsTokenMiddleware(req, res, next) {
 
   req.user = { id: payload.sub };
   req.orgId = payload.org_id;
+  req.environment = { id: payload.environment_id };
+  appendWsScope(req);
   next();
 }
 
@@ -303,7 +308,58 @@ async function validateWsUpgrade(req) {
   if (!payload) return false;
   req.user = { id: payload.sub };
   req.orgId = payload.org_id;
+  req.environment = { id: payload.environment_id };
+  appendWsScope(req);
   return true;
+}
+
+function appendWsScope(req) {
+  const url = new URL(req.url || '/api/whatsapp/ws', 'http://localhost');
+  url.searchParams.set('tenant_id', req.orgId);
+  url.searchParams.set('environment_id', req.environment.id);
+  req.url = `${url.pathname}${url.search}`;
+}
+
+async function authorizeWhatsAppScope(req, res, next) {
+  try {
+    const instanceId = getInstanceIdFromRequest(req);
+    if (!instanceId) return next();
+
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from('whatsapp_instances')
+      .select('id')
+      .eq('id', instanceId)
+      .eq('tenant_id', req.orgId)
+      .eq('environment_id', req.environment.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({
+        error: 'Instancia WhatsApp nao encontrada para este cliente/ambiente',
+        code: 'WHATSAPP_INSTANCE_NOT_FOUND',
+      });
+    }
+
+    next();
+  } catch (err) {
+    console.error('[WhatsApp Scope Error]', err.message);
+    res.status(500).json({
+      error: 'Falha ao validar escopo da instancia WhatsApp',
+      message: err.message,
+    });
+  }
+}
+
+function getInstanceIdFromRequest(req) {
+  const rawUrl = req.originalUrl || req.url || '';
+  const url = new URL(rawUrl, 'http://localhost');
+  const queryInstanceId = url.searchParams.get('instance_id');
+  if (queryInstanceId) return queryInstanceId;
+
+  const match = url.pathname.match(/^\/api\/whatsapp\/instances\/([^/]+)/);
+  return match ? match[1] : null;
 }
 
 function resolveWhatsAppTarget(rawTarget) {

@@ -112,6 +112,16 @@ const RuralLayout: React.FC = () => {
   const isMenuItemActive = (path: string, isActive: boolean) =>
     isActive || (path === '/rural/territorio' && pathname.startsWith('/rural/territorio'));
 
+  const isLandingPageEditor = /^\/rural\/landing-pages\/[^/]+$/.test(pathname);
+
+  if (isLandingPageEditor) {
+    return (
+      <div className="h-dvh overflow-hidden bg-bg-primary">
+        <Outlet />
+      </div>
+    );
+  }
+
   const renderMenuItem = (item: MenuItem) => (
     <NavLink
       key={item.path}

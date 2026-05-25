@@ -29,9 +29,11 @@ var upgrader = websocket.Upgrader{
 
 // Client represents a single WebSocket connection
 type Client struct {
-	hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
+	hub           *Hub
+	conn          *websocket.Conn
+	send          chan []byte
+	tenantID      string
+	environmentID string
 }
 
 // Hub maintains the set of active clients and broadcasts messages to them
@@ -75,16 +77,30 @@ func (h *Hub) Run() {
 			h.logger.Info("WebSocket client disconnected", zap.Int("total", len(h.clients)))
 
 		case message := <-h.broadcast:
+			var staleClients []*Client
+
 			h.mu.RLock()
 			for client := range h.clients {
+				if !client.canReceive(message) {
+					continue
+				}
+
 				select {
 				case client.send <- message:
 				default:
 					close(client.send)
-					delete(h.clients, client)
+					staleClients = append(staleClients, client)
 				}
 			}
 			h.mu.RUnlock()
+
+			if len(staleClients) > 0 {
+				h.mu.Lock()
+				for _, client := range staleClients {
+					delete(h.clients, client)
+				}
+				h.mu.Unlock()
+			}
 		}
 	}
 }
@@ -122,15 +138,40 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &Client{
-		hub:  h,
-		conn: conn,
-		send: make(chan []byte, 256),
+		hub:           h,
+		conn:          conn,
+		send:          make(chan []byte, 256),
+		tenantID:      r.URL.Query().Get("tenant_id"),
+		environmentID: r.URL.Query().Get("environment_id"),
 	}
 
 	h.register <- client
 
 	go client.writePump()
 	go client.readPump()
+}
+
+func (c *Client) canReceive(message []byte) bool {
+	var event struct {
+		Data struct {
+			TenantID      string `json:"tenant_id"`
+			EnvironmentID string `json:"environment_id"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(message, &event); err != nil {
+		return false
+	}
+
+	if event.Data.TenantID != "" && event.Data.TenantID != c.tenantID {
+		return false
+	}
+
+	if event.Data.EnvironmentID != "" && event.Data.EnvironmentID != c.environmentID {
+		return false
+	}
+
+	return true
 }
 
 // readPump reads messages from the WebSocket (for heartbeat/pong)

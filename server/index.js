@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
 
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -240,9 +241,7 @@ app.get('/', (req, res) => res.send('IMOBZY Production API Online 🚀'));
 // --- Server Startup ---
 const PORT = process.env.PORT || 3002;
 
-const server = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`IMOBZY Server active on port ${PORT}`);
-});
+const server = http.createServer(app);
 
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
 // O server real e passado para registrar o upgrade do WebSocket.
@@ -274,6 +273,10 @@ app.use((err, req, res, next) => {
 });
 
 server.timeout = 30000; // Hardening extra
+
+server.listen(PORT, '0.0.0.0', async () => {
+  console.log(`IMOBZY Server active on port ${PORT}`);
+});
 
 export default app;
 

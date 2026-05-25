@@ -37,8 +37,8 @@ services:
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100
       AGRO_INTEL_URL: http://agro-intelligence:8000
-      ALLOWED_ORIGINS: http://localhost:8080,http://localhost:3006,http://localhost:3002
-      CORS_ORIGINS: http://localhost:8080,http://localhost:3006,http://localhost:3002
+      ALLOWED_ORIGINS: http://localhost:8081,http://localhost:8080,http://localhost:3006,http://localhost:3002
+      CORS_ORIGINS: http://localhost:8081,http://localhost:8080,http://localhost:3006,http://localhost:3002
     depends_on:
       whatsapp-service:
         condition: service_started
@@ -61,8 +61,8 @@ services:
       WHATSMEOW_URL: http://whatsapp-service:3100
       WHATSAPP_API_URL: http://whatsapp-service:3100
       PGSSLMODE: require
-      CORS_ORIGINS: http://localhost:8080,http://localhost:3006,http://localhost:3002
-      ALLOWED_ORIGINS: http://localhost:8080,http://localhost:3006,http://localhost:3002
+      CORS_ORIGINS: http://localhost:8081,http://localhost:8080,http://localhost:3006,http://localhost:3002
+      ALLOWED_ORIGINS: http://localhost:8081,http://localhost:8080,http://localhost:3006,http://localhost:3002
     volumes:
       - whatsapp_sessions:/app/.sessions
     expose:

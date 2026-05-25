@@ -18,15 +18,16 @@ const (
 
 // Instance represents a WhatsApp connection instance
 type Instance struct {
-	ID        uuid.UUID      `json:"id" db:"id"`
-	TenantID  *uuid.UUID     `json:"tenant_id,omitempty" db:"tenant_id"`
-	Name      string         `json:"name" db:"name"`
-	Status    InstanceStatus `json:"status" db:"status"`
-	QRCode    string         `json:"qr_code,omitempty" db:"qr_code"`
-	Phone     string         `json:"phone,omitempty" db:"phone"`
-	JID       string         `json:"jid,omitempty" db:"jid"`
-	CreatedAt time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at" db:"updated_at"`
+	ID            uuid.UUID      `json:"id" db:"id"`
+	TenantID      *uuid.UUID     `json:"tenant_id,omitempty" db:"tenant_id"`
+	EnvironmentID *uuid.UUID     `json:"environment_id,omitempty" db:"environment_id"`
+	Name          string         `json:"name" db:"name"`
+	Status        InstanceStatus `json:"status" db:"status"`
+	QRCode        string         `json:"qr_code,omitempty" db:"qr_code"`
+	Phone         string         `json:"phone,omitempty" db:"phone"`
+	JID           string         `json:"jid,omitempty" db:"jid"`
+	CreatedAt     time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at" db:"updated_at"`
 }
 
 // Contact represents a WhatsApp contact
@@ -96,8 +97,9 @@ type Message struct {
 
 // CreateInstanceRequest is the payload for creating a new instance
 type CreateInstanceRequest struct {
-	Name     string     `json:"name" binding:"required"`
-	TenantID *uuid.UUID `json:"tenant_id,omitempty"`
+	Name          string     `json:"name" binding:"required"`
+	TenantID      *uuid.UUID `json:"tenant_id,omitempty"`
+	EnvironmentID *uuid.UUID `json:"environment_id,omitempty"`
 }
 
 // SendMessageRequest is the payload for sending a message
@@ -116,9 +118,11 @@ type WSEvent struct {
 
 // NewMessageEvent is the data payload for a new message WebSocket event
 type NewMessageEvent struct {
-	Message  Message `json:"message"`
-	Chat     Chat    `json:"chat"`
-	Instance struct {
+	TenantID      *uuid.UUID `json:"tenant_id,omitempty"`
+	EnvironmentID *uuid.UUID `json:"environment_id,omitempty"`
+	Message       Message    `json:"message"`
+	Chat          Chat       `json:"chat"`
+	Instance      struct {
 		ID   uuid.UUID `json:"id"`
 		Name string    `json:"name"`
 	} `json:"instance"`
@@ -135,13 +139,17 @@ type ParticipantInfo struct {
 
 // QRCodeEvent is emitted when a QR code is generated
 type QRCodeEvent struct {
-	InstanceID uuid.UUID `json:"instance_id"`
-	QRCode     string    `json:"qr_code"`
+	InstanceID    uuid.UUID  `json:"instance_id"`
+	TenantID      *uuid.UUID `json:"tenant_id,omitempty"`
+	EnvironmentID *uuid.UUID `json:"environment_id,omitempty"`
+	QRCode        string     `json:"qr_code"`
 }
 
 // InstanceStatusEvent is emitted when an instance status changes
 type InstanceStatusEvent struct {
-	InstanceID uuid.UUID      `json:"instance_id"`
-	Status     InstanceStatus `json:"status"`
-	Phone      string         `json:"phone,omitempty"`
+	InstanceID    uuid.UUID      `json:"instance_id"`
+	TenantID      *uuid.UUID     `json:"tenant_id,omitempty"`
+	EnvironmentID *uuid.UUID     `json:"environment_id,omitempty"`
+	Status        InstanceStatus `json:"status"`
+	Phone         string         `json:"phone,omitempty"`
 }

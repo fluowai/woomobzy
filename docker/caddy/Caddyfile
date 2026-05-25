@@ -1,7 +1,8 @@
 :80 {
   encode gzip zstd
 
-  handle /api/whatsapp/ws /api/whatsapp/ws/* {
+  @whatsapp_ws path /api/whatsapp/ws /api/whatsapp/ws/*
+  handle @whatsapp_ws {
     rewrite * /ws
     reverse_proxy whatsapp-service:3100
   }

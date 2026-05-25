@@ -26,29 +26,29 @@ func NewInstanceRepo(db *pgxpool.Pool, logger *zap.Logger) *InstanceRepo {
 // Create inserts a new instance
 func (r *InstanceRepo) Create(ctx context.Context, inst *models.Instance) error {
 	query := `
-		INSERT INTO whatsapp_instances (id, tenant_id, name, status)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO whatsapp_instances (id, tenant_id, environment_id, name, status)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING created_at, updated_at`
 
 	inst.ID = uuid.New()
 	inst.Status = models.StatusDisconnected
 
 	return r.db.QueryRow(ctx, query,
-		inst.ID, inst.TenantID, inst.Name, inst.Status,
+		inst.ID, inst.TenantID, inst.EnvironmentID, inst.Name, inst.Status,
 	).Scan(&inst.CreatedAt, &inst.UpdatedAt)
 }
 
 // GetByID retrieves an instance by ID
 func (r *InstanceRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.Instance, error) {
 	query := `
-		SELECT id, tenant_id, name, status, COALESCE(qr_code, '') as qr_code,
+		SELECT id, tenant_id, environment_id, name, status, COALESCE(qr_code, '') as qr_code,
 		       COALESCE(phone, '') as phone, COALESCE(jid, '') as jid,
 		       created_at, updated_at
 		FROM whatsapp_instances WHERE id = $1`
 
 	var inst models.Instance
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&inst.ID, &inst.TenantID, &inst.Name, &inst.Status, &inst.QRCode,
+		&inst.ID, &inst.TenantID, &inst.EnvironmentID, &inst.Name, &inst.Status, &inst.QRCode,
 		&inst.Phone, &inst.JID, &inst.CreatedAt, &inst.UpdatedAt,
 	)
 	if err == pgx.ErrNoRows {
@@ -60,21 +60,28 @@ func (r *InstanceRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.Insta
 	return &inst, nil
 }
 
-// List retrieves all instances, optionally filtered by tenant
-func (r *InstanceRepo) List(ctx context.Context, tenantID *uuid.UUID) ([]models.Instance, error) {
+// List retrieves all instances, optionally filtered by tenant and environment.
+func (r *InstanceRepo) List(ctx context.Context, tenantID *uuid.UUID, environmentID *uuid.UUID) ([]models.Instance, error) {
 	var query string
 	var args []interface{}
 
-	if tenantID != nil {
+	if tenantID != nil && environmentID != nil {
 		query = `
-			SELECT id, tenant_id, name, status, COALESCE(qr_code, '') as qr_code,
+			SELECT id, tenant_id, environment_id, name, status, COALESCE(qr_code, '') as qr_code,
+			       COALESCE(phone, '') as phone, COALESCE(jid, '') as jid,
+			       created_at, updated_at
+			FROM whatsapp_instances WHERE tenant_id = $1 AND environment_id = $2 ORDER BY created_at DESC`
+		args = append(args, *tenantID, *environmentID)
+	} else if tenantID != nil {
+		query = `
+			SELECT id, tenant_id, environment_id, name, status, COALESCE(qr_code, '') as qr_code,
 			       COALESCE(phone, '') as phone, COALESCE(jid, '') as jid,
 			       created_at, updated_at
 			FROM whatsapp_instances WHERE tenant_id = $1 ORDER BY created_at DESC`
 		args = append(args, *tenantID)
 	} else {
 		query = `
-			SELECT id, tenant_id, name, status, COALESCE(qr_code, '') as qr_code,
+			SELECT id, tenant_id, environment_id, name, status, COALESCE(qr_code, '') as qr_code,
 			       COALESCE(phone, '') as phone, COALESCE(jid, '') as jid,
 			       created_at, updated_at
 			FROM whatsapp_instances ORDER BY created_at DESC`
@@ -90,7 +97,7 @@ func (r *InstanceRepo) List(ctx context.Context, tenantID *uuid.UUID) ([]models.
 	for rows.Next() {
 		var inst models.Instance
 		if err := rows.Scan(
-			&inst.ID, &inst.TenantID, &inst.Name, &inst.Status, &inst.QRCode,
+			&inst.ID, &inst.TenantID, &inst.EnvironmentID, &inst.Name, &inst.Status, &inst.QRCode,
 			&inst.Phone, &inst.JID, &inst.CreatedAt, &inst.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan instance: %w", err)

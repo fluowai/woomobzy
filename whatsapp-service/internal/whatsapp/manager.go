@@ -73,10 +73,11 @@ func NewManager(
 }
 
 // CreateInstance creates a new WhatsApp instance and prepares it for connection
-func (m *Manager) CreateInstance(ctx context.Context, name string, tenantID *uuid.UUID) (*models.Instance, error) {
+func (m *Manager) CreateInstance(ctx context.Context, name string, tenantID *uuid.UUID, environmentID *uuid.UUID) (*models.Instance, error) {
 	inst := &models.Instance{
-		Name:     name,
-		TenantID: tenantID,
+		Name:          name,
+		TenantID:      tenantID,
+		EnvironmentID: environmentID,
 	}
 
 	if err := m.instanceRepo.Create(ctx, inst); err != nil {
@@ -93,6 +94,10 @@ func (m *Manager) CreateInstance(ctx context.Context, name string, tenantID *uui
 
 // ConnectInstance starts a WhatsApp session for an instance
 func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) error {
+	return m.connectInstance(ctx, instanceID, true)
+}
+
+func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, allowPairing bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -136,11 +141,16 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		return fmt.Errorf("failed to get device store: %w", err)
 	}
 
+	if !allowPairing && deviceStore.ID == nil {
+		return fmt.Errorf("stored WhatsApp session is not paired")
+	}
+
 	waClient := whatsmeow.NewClient(deviceStore, waLog.Noop)
 
 	client := NewClient(
 		instanceID,
 		inst.TenantID,
+		inst.EnvironmentID,
 		inst.Name,
 		waClient,
 		m.instanceRepo,
@@ -244,7 +254,7 @@ func (m *Manager) GetQRCode(ctx context.Context, instanceID uuid.UUID) (string, 
 
 // ReconnectAll reconnects all instances that were previously connected
 func (m *Manager) ReconnectAll(ctx context.Context) {
-	instances, err := m.instanceRepo.List(ctx, nil)
+	instances, err := m.instanceRepo.List(ctx, nil, nil)
 	if err != nil {
 		m.logger.Error("Failed to list instances for reconnection", zap.Error(err))
 		return
@@ -253,15 +263,37 @@ func (m *Manager) ReconnectAll(ctx context.Context) {
 	for _, inst := range instances {
 		// Only reconnect instances that have a JID (were previously connected)
 		if inst.JID != "" {
+			dbPath := filepath.Join(".", ".sessions", fmt.Sprintf("%s.db", inst.ID.String()))
+			if _, statErr := os.Stat(dbPath); statErr != nil {
+				m.logger.Warn("Skipping auto-reconnect because session file is missing",
+					zap.String("id", inst.ID.String()),
+					zap.String("name", inst.Name),
+					zap.Error(statErr),
+				)
+				if err := m.instanceRepo.UpdateStatus(ctx, inst.ID, models.StatusDisconnected); err != nil {
+					m.logger.Error("Failed to mark missing-session instance as disconnected",
+						zap.String("id", inst.ID.String()),
+						zap.Error(err),
+					)
+				}
+				continue
+			}
+
 			m.logger.Info("Reconnecting instance",
 				zap.String("id", inst.ID.String()),
 				zap.String("name", inst.Name),
 			)
-			if err := m.ConnectInstance(ctx, inst.ID); err != nil {
+			if err := m.connectInstance(ctx, inst.ID, false); err != nil {
 				m.logger.Error("Failed to reconnect instance",
 					zap.String("id", inst.ID.String()),
 					zap.Error(err),
 				)
+				if statusErr := m.instanceRepo.UpdateStatus(ctx, inst.ID, models.StatusDisconnected); statusErr != nil {
+					m.logger.Error("Failed to mark failed reconnect instance as disconnected",
+						zap.String("id", inst.ID.String()),
+						zap.Error(statusErr),
+					)
+				}
 			}
 		}
 	}

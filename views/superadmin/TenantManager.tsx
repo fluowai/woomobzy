@@ -59,7 +59,7 @@ const TenantManager: React.FC = () => {
     status: 'active',
     custom_domain: '',
     password: '',
-    niche: 'traditional',
+    niche: '',
   });
 
   useEffect(() => {
@@ -135,7 +135,7 @@ const TenantManager: React.FC = () => {
         status: 'active',
         custom_domain: '',
         password: '',
-        niche: 'traditional',
+        niche: '',
       });
     }
     setIsModalOpen(true);
@@ -599,6 +599,7 @@ const TenantManager: React.FC = () => {
                     Status
                   </label>
                   <select
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                     value={formData.status}
                     onChange={(e) =>
@@ -621,6 +622,7 @@ const TenantManager: React.FC = () => {
                       setFormData({ ...formData, niche: e.target.value })
                     }
                   >
+                    <option value="">Selecione o nicho correto</option>
                     <option value="rural">Rural</option>
                     <option value="traditional">Urbano</option>
                   </select>

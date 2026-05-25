@@ -9,6 +9,17 @@ const router = express.Router();
 // Isso permite usar supabase.from(), supabase.auth, etc. sem mudar o resto do código.
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 
+function normalizeNiche(niche, ...signals) {
+  const normalized = String(niche || '').toLowerCase().trim();
+  if (normalized === 'rural') return 'rural';
+  if (['traditional', 'urban', 'urbano'].includes(normalized)) return 'traditional';
+
+  const text = signals.filter(Boolean).join(' ').toLowerCase();
+  return /\b(rural|fazenda|fazendas|sitio|sítio|chacara|chácara|agro|haras)\b/.test(text)
+    ? 'rural'
+    : 'traditional';
+}
+
 // --- 🔓 IMPERSONATION (BLOCO 3) ---
 
 /**
@@ -75,7 +86,7 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       slug: slug || null, 
       status: status || 'active',
       custom_domain: custom_domain || null,
-      niche: niche === 'rural' ? 'rural' : 'traditional',
+      niche: normalizeNiche(niche, name, slug, custom_domain, owner_email),
       owner_name: owner_name || null,
       owner_email: owner_email || null
     };
@@ -104,7 +115,7 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     if (status !== undefined) payload.status = status;
     if (plan_id !== undefined) payload.plan_id = plan_id || null;
     if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
-    if (niche !== undefined) payload.niche = niche;
+    if (niche !== undefined) payload.niche = normalizeNiche(niche, name, slug, custom_domain, owner_email);
     if (owner_name !== undefined) payload.owner_name = owner_name;
     if (owner_email !== undefined) payload.owner_email = owner_email;
     

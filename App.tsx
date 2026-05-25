@@ -202,12 +202,10 @@ const FullScreenSpinner: React.FC = () => (
     return <Navigate to="/superadmin" replace />;
   }
 
-  // If user has no organization AND is not an admin/superadmin/broker, redirect to onboarding
+  // If user has no organization, redirect to onboarding instead of guessing a panel.
   if (
     !profile?.organization_id &&
-    profile?.role !== 'admin' &&
-    profile?.role !== 'superadmin' &&
-    profile?.role !== 'broker'
+    profile?.role !== 'superadmin'
   ) {
     logger.info('🔄 No organization found for user. Redirecting to onboarding.');
     return <Navigate to="/onboarding" replace />;
@@ -217,12 +215,23 @@ const FullScreenSpinner: React.FC = () => (
   // 'rural' → Rural Panel
   // anything else → Urban Panel (default seguro)
   const rawNiche = (profile?.organization as any)?.niche;
-  const isRural = rawNiche === 'rural';
+  const orgName = (profile?.organization as any)?.name;
+  const orgSlug = (profile?.organization as any)?.slug;
+  const isRural = isRuralOrganization(rawNiche, orgName, orgSlug);
   const target = isRural ? '/rural' : '/urban';
   
   logger.info(`🚀 NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${isRural})`);
   return <Navigate to={target} replace />;
 };
+
+function isRuralOrganization(niche?: string, name?: string, slug?: string) {
+  const normalizedNiche = String(niche || '').toLowerCase().trim();
+  if (normalizedNiche === 'rural') return true;
+  if (['traditional', 'urban', 'urbano'].includes(normalizedNiche)) return false;
+
+  const text = `${name || ''} ${slug || ''}`.toLowerCase();
+  return /\b(rural|fazenda|fazendas|sitio|sítio|chacara|chácara|agro|haras)\b/.test(text);
+}
 
 // ==========================================
 // GLOBAL SUPER ADMIN GUARD
@@ -355,6 +364,26 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+const PanelGuard: React.FC<{
+  panel: 'rural' | 'urban';
+  children: React.ReactNode;
+}> = ({ panel, children }) => {
+  const { profile, isImpersonating, loading } = useAuth();
+
+  if (loading) return <FullScreenSpinner />;
+  if (profile?.role === 'superadmin' && !isImpersonating) return <>{children}</>;
+  if (!profile?.organization_id) return <Navigate to="/onboarding" replace />;
+
+  const org: any = profile.organization;
+  const correctPanel = isRuralOrganization(org?.niche, org?.name, org?.slug) ? 'rural' : 'urban';
+
+  if (panel !== correctPanel) {
+    return <Navigate to={`/${correctPanel}`} replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // ==========================================
 // MAIN APP CONTENT
 // ==========================================
@@ -419,9 +448,11 @@ const AppContent: React.FC = () => {
             path="/rural"
             element={
               <ProtectedRoute>
-                <SubscriptionGuard>
-                  <RuralLayout />
-                </SubscriptionGuard>
+                <PanelGuard panel="rural">
+                  <SubscriptionGuard>
+                    <RuralLayout />
+                  </SubscriptionGuard>
+                </PanelGuard>
               </ProtectedRoute>
             }
           >
@@ -472,9 +503,11 @@ const AppContent: React.FC = () => {
             path="/urban"
             element={
               <ProtectedRoute>
-                <SubscriptionGuard>
-                  <UrbanLayout />
-                </SubscriptionGuard>
+                <PanelGuard panel="urban">
+                  <SubscriptionGuard>
+                    <UrbanLayout />
+                  </SubscriptionGuard>
+                </PanelGuard>
               </ProtectedRoute>
             }
           >

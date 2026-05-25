@@ -20,6 +20,71 @@ function normalizeNiche(niche, ...signals) {
     : 'traditional';
 }
 
+async function findAuthUserByEmail(email) {
+  const target = String(email || '').toLowerCase().trim();
+  if (!target) return null;
+
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+
+    const user = data?.users?.find((item) => item.email?.toLowerCase() === target);
+    if (user) return user;
+    if (!data?.users || data.users.length < 1000) break;
+  }
+
+  return null;
+}
+
+async function ensureOrganizationOwner({ organization, ownerName, ownerEmail, password }) {
+  const email = String(ownerEmail || '').toLowerCase().trim();
+  if (!email) return null;
+  if (!password || password.length < 6) {
+    throw new Error('Senha de acesso deve ter no minimo 6 caracteres');
+  }
+
+  let authUser = await findAuthUserByEmail(email);
+
+  if (!authUser) {
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        name: ownerName || organization.owner_name || organization.name,
+        agencyName: organization.name,
+      },
+    });
+    if (error) throw error;
+    authUser = data.user;
+  } else {
+    const { error } = await supabase.auth.admin.updateUserById(authUser.id, {
+      password,
+      email_confirm: true,
+      user_metadata: {
+        ...(authUser.user_metadata || {}),
+        name: ownerName || authUser.user_metadata?.name || organization.owner_name || organization.name,
+        agencyName: organization.name,
+      },
+    });
+    if (error) throw error;
+  }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .upsert({
+      id: authUser.id,
+      organization_id: organization.id,
+      name: ownerName || authUser.user_metadata?.name || organization.owner_name || organization.name,
+      email,
+      role: 'admin',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+
+  if (profileError) throw profileError;
+  return authUser;
+}
+
 // --- 🔓 IMPERSONATION (BLOCO 3) ---
 
 /**
@@ -78,8 +143,11 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
 
 router.post('/organizations', verifySuperAdmin, async (req, res) => {
   try {
-    const { name, slug, plan_id, status, custom_domain, niche, owner_name, owner_email } = req.body;
+    const { name, slug, plan_id, status, custom_domain, niche, owner_name, owner_email, password } = req.body;
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
+    if (owner_email && (!password || password.length < 6)) {
+      return res.status(400).json({ error: 'Senha de acesso deve ter no minimo 6 caracteres' });
+    }
     
     const payload = { 
       name, 
@@ -98,7 +166,15 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       .select()
       .single();
     if (error) throw error;
-    res.json({ success: true, organization: data });
+
+    const ownerUser = await ensureOrganizationOwner({
+      organization: data,
+      ownerName: owner_name,
+      ownerEmail: owner_email,
+      password,
+    });
+
+    res.json({ success: true, organization: data, owner_user_id: ownerUser?.id || null });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -128,8 +204,15 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
 
     if (updateError) throw updateError;
 
-    // Password Update Logic (Secure)
-    if (password && password.length >= 6) {
+    if (owner_email && password) {
+      await ensureOrganizationOwner({
+        organization,
+        ownerName: owner_name ?? organization.owner_name,
+        ownerEmail: owner_email,
+        password,
+      });
+    } else if (password && password.length >= 6) {
+      // Password Update Logic (Secure)
       const { data: adminProfile } = await supabase
         .from('profiles')
         .select('id, email')

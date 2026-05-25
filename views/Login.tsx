@@ -40,7 +40,7 @@ const Login: React.FC = () => {
       setIsSuccess(true);
       // O redirecionamento acontece via AuthContext/App.tsx
     } catch (err: any) {
-      setError(err.message || 'Erro ao realizar login. Verifique suas credenciais.');
+      setError(getLoginErrorMessage(err));
       setLoading(false);
     }
   };
@@ -279,5 +279,20 @@ const Login: React.FC = () => {
     </div>
   );
 };
+
+function getLoginErrorMessage(err: any) {
+  const message = String(err?.message || '').toLowerCase();
+  const status = err?.status;
+
+  if (status === 400 || message.includes('invalid login credentials')) {
+    return 'E-mail ou senha inválidos. Se esta conta foi criada agora pelo SuperAdmin, salve a imobiliária com uma senha de acesso para criar/atualizar o usuário.';
+  }
+
+  if (message.includes('email not confirmed')) {
+    return 'E-mail ainda não confirmado. Peça ao administrador para confirmar ou recriar o acesso.';
+  }
+
+  return err?.message || 'Erro ao realizar login. Verifique suas credenciais.';
+}
 
 export default Login;

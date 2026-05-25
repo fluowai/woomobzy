@@ -41,6 +41,7 @@ debug_scrape.html
 scratch/
 scripts/debug/
 imobzy-message-isolation-report-*.json
+owner-access-repair-*.json
 
 # WhatsApp Sessions
 .sessions/

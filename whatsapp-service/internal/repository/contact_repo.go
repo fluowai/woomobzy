@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -61,36 +60,6 @@ func (r *ContactRepo) GetByPhone(ctx context.Context, instanceID uuid.UUID, phon
 		return nil, err
 	}
 	return &contact, nil
-}
-
-// ListByInstance retrieves all contacts for an instance
-func (r *ContactRepo) ListByInstance(ctx context.Context, instanceID uuid.UUID) ([]models.Contact, error) {
-	query := `
-		SELECT id, instance_id, phone, COALESCE(push_name, '') as push_name,
-		       display_name, COALESCE(avatar_url, '') as avatar_url,
-		       created_at, updated_at
-		FROM whatsapp_contacts
-		WHERE instance_id = $1
-		ORDER BY display_name ASC`
-
-	rows, err := r.db.Query(ctx, query, instanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list contacts: %w", err)
-	}
-	defer rows.Close()
-
-	var contacts []models.Contact
-	for rows.Next() {
-		var contact models.Contact
-		if err := rows.Scan(
-			&contact.ID, &contact.InstanceID, &contact.Phone, &contact.PushName,
-			&contact.DisplayName, &contact.AvatarURL, &contact.CreatedAt, &contact.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("failed to scan contact: %w", err)
-		}
-		contacts = append(contacts, contact)
-	}
-	return contacts, nil
 }
 
 // UpdateDisplayName updates a contact display name by phone.

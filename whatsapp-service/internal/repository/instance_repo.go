@@ -60,6 +60,28 @@ func (r *InstanceRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.Insta
 	return &inst, nil
 }
 
+// GetByIDForTenant retrieves an instance only when it belongs to the tenant.
+func (r *InstanceRepo) GetByIDForTenant(ctx context.Context, id, tenantID uuid.UUID) (*models.Instance, error) {
+	query := `
+		SELECT id, tenant_id, name, status, COALESCE(qr_code, '') as qr_code,
+		       COALESCE(phone, '') as phone, COALESCE(jid, '') as jid,
+		       created_at, updated_at
+		FROM whatsapp_instances WHERE id = $1 AND tenant_id = $2`
+
+	var inst models.Instance
+	err := r.db.QueryRow(ctx, query, id, tenantID).Scan(
+		&inst.ID, &inst.TenantID, &inst.Name, &inst.Status, &inst.QRCode,
+		&inst.Phone, &inst.JID, &inst.CreatedAt, &inst.UpdatedAt,
+	)
+	if err == pgx.ErrNoRows {
+		return nil, fmt.Errorf("instance not found: %s", id)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance: %w", err)
+	}
+	return &inst, nil
+}
+
 // List retrieves all instances, optionally filtered by tenant
 func (r *InstanceRepo) List(ctx context.Context, tenantID *uuid.UUID) ([]models.Instance, error) {
 	var query string

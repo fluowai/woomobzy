@@ -100,7 +100,7 @@ func (c *Client) Connect(ctx context.Context) error {
 			)
 		}
 
-		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 			InstanceID: c.instanceID,
 			Status:     models.StatusQRPending,
 		})
@@ -131,7 +131,7 @@ func (c *Client) Connect(ctx context.Context) error {
 				c.instanceRepo.UpdateQRCode(ctx, c.instanceID, evt.Code)
 
 				// Broadcast to WebSocket
-				c.hub.BroadcastEvent("qr_code", models.QRCodeEvent{
+				c.broadcastEvent("qr_code", models.QRCodeEvent{
 					InstanceID: c.instanceID,
 					QRCode:     evt.Code,
 				})
@@ -152,7 +152,7 @@ func (c *Client) Connect(ctx context.Context) error {
 					zap.String("phone", phoneNum),
 				)
 
-				c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+				c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 					InstanceID: c.instanceID,
 					Status:     models.StatusConnected,
 					Phone:      phoneNum,
@@ -186,7 +186,7 @@ func (c *Client) Connect(ctx context.Context) error {
 			zap.String("phone", phoneNum),
 		)
 
-		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 			InstanceID: c.instanceID,
 			Status:     models.StatusConnected,
 			Phone:      phoneNum,
@@ -219,6 +219,10 @@ func (c *Client) GetWAClient() *whatsmeow.Client {
 	return c.waClient
 }
 
+func (c *Client) broadcastEvent(event string, data interface{}) {
+	c.hub.BroadcastEventToTenant(uuidToString(c.tenantID), event, data)
+}
+
 // eventHandler processes all WhatsMeow events
 func (c *Client) eventHandler(evt interface{}) {
 	switch v := evt.(type) {
@@ -239,7 +243,7 @@ func (c *Client) eventHandler(evt interface{}) {
 		c.logger.Warn("WhatsApp disconnected event", zap.String("instance", c.instanceID.String()))
 
 		c.instanceRepo.UpdateStatus(context.Background(), c.instanceID, models.StatusDisconnected)
-		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 			InstanceID: c.instanceID,
 			Status:     models.StatusDisconnected,
 		})
@@ -262,7 +266,7 @@ func (c *Client) eventHandler(evt interface{}) {
 		c.mu.Unlock()
 		c.logger.Warn("WhatsApp logged out", zap.String("instance", c.instanceID.String()))
 		c.instanceRepo.UpdateStatus(context.Background(), c.instanceID, models.StatusDisconnected)
-		c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 			InstanceID: c.instanceID,
 			Status:     models.StatusDisconnected,
 		})
@@ -434,7 +438,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 	}
 
 	// Broadcast via WebSocket
-	c.hub.BroadcastEvent("new_message", models.NewMessageEvent{
+	c.broadcastEvent("new_message", models.NewMessageEvent{
 		Message: *msg,
 		Chat:    *chat,
 		Instance: struct {
@@ -490,7 +494,7 @@ func (c *Client) markConnected(ctx context.Context) {
 		return
 	}
 
-	c.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+	c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 		InstanceID: c.instanceID,
 		Status:     models.StatusConnected,
 		Phone:      phoneNum,

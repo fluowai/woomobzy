@@ -44,16 +44,31 @@ func NewMessageHandler(
 
 // ListMessages handles GET /api/messages/:chatId
 func (h *MessageHandler) ListMessages(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
+	instanceID, ok := requireInstanceID(c)
+	if !ok {
+		return
+	}
+
 	chatID, err := uuid.Parse(c.Param("chatId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chat ID"})
 		return
 	}
 
+	if _, err := h.getChatByIDForTenant(c.Request.Context(), chatID, instanceID, tenantID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Chat not found for tenant"})
+		return
+	}
+
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
-	messages, err := h.messageRepo.ListByChat(c.Request.Context(), chatID, limit, offset)
+	messages, err := h.messageRepo.ListByChatForTenant(c.Request.Context(), chatID, instanceID, tenantID, limit, offset)
 	if err != nil {
 		h.logger.Error("Failed to list messages", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -65,7 +80,7 @@ func (h *MessageHandler) ListMessages(c *gin.Context) {
 	}
 
 	// Get total count for pagination
-	total, _ := h.messageRepo.CountByChat(c.Request.Context(), chatID)
+	total, _ := h.messageRepo.CountByChatForTenant(c.Request.Context(), chatID, instanceID, tenantID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"messages": messages,
@@ -77,6 +92,11 @@ func (h *MessageHandler) ListMessages(c *gin.Context) {
 
 // SendMessage handles POST /api/messages/:chatId/send
 func (h *MessageHandler) SendMessage(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	chatID, err := uuid.Parse(c.Param("chatId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chat ID"})
@@ -100,23 +120,15 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 	// Get chat to find instance and JID
 	ctx := c.Request.Context()
 
-	// We need instance_id from query since chat doesn't have it easily
-	instanceIDStr := c.Query("instance_id")
-	if instanceIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "instance_id query parameter is required"})
-		return
-	}
-
-	instanceID, err := uuid.Parse(instanceIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance_id"})
+	instanceID, ok := requireInstanceID(c)
+	if !ok {
 		return
 	}
 
 	// Get chat JID
-	chat, err := h.getChatByID(ctx, chatID, instanceID)
+	chat, err := h.getChatByIDForTenant(ctx, chatID, instanceID, tenantID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Chat not found"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Chat not found for tenant"})
 		return
 	}
 
@@ -171,21 +183,19 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 
 // SendMediaMessage handles POST /api/messages/:chatId/send-media
 func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	chatID, err := uuid.Parse(c.Param("chatId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chat ID"})
 		return
 	}
 
-	instanceIDStr := c.Query("instance_id")
-	if instanceIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "instance_id query parameter is required"})
-		return
-	}
-
-	instanceID, err := uuid.Parse(instanceIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance_id"})
+	instanceID, ok := requireInstanceID(c)
+	if !ok {
 		return
 	}
 
@@ -218,9 +228,9 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	chat, err := h.getChatByID(ctx, chatID, instanceID)
+	chat, err := h.getChatByIDForTenant(ctx, chatID, instanceID, tenantID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Chat not found"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Chat not found for tenant"})
 		return
 	}
 
@@ -291,8 +301,8 @@ func messageTypeFromMime(mimeType string) string {
 	}
 }
 
-func (h *MessageHandler) getChatByID(ctx context.Context, chatID, instanceID uuid.UUID) (*models.Chat, error) {
-	return h.chatRepo.GetByID(ctx, chatID, instanceID)
+func (h *MessageHandler) getChatByIDForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID) (*models.Chat, error) {
+	return h.chatRepo.GetByIDForTenant(ctx, chatID, instanceID, tenantID)
 }
 
 func (h *MessageHandler) getConnectedClient(ctx context.Context, instanceID uuid.UUID) (*whatsapp.Client, error) {

@@ -51,21 +51,22 @@ const WhatsAppDashboard: React.FC = () => {
 
   // Load messages when chat changes
   useEffect(() => {
-    if (selectedChat) {
+    if (selectedChat && selectedInstance) {
       setMessages([]);
-      loadMessages(selectedChat.id);
+      loadMessages(selectedChat.id, selectedInstance.id);
       // Mark as read
-      chatApi.markRead(selectedChat.id).catch(() => {});
+      chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
     } else {
       setMessages([]);
     }
-  }, [selectedChat]);
+  }, [selectedChat, selectedInstance]);
 
   // WebSocket event handlers
   useEffect(() => {
     const unsubMessage = on('new_message', (data: any) => {
       const { message, chat } = data;
       if (!isSupportedChat(chat)) return;
+      if (!selectedInstance || chat.instance_id !== selectedInstance.id || message.instance_id !== selectedInstance.id) return;
 
       // Update chat list
       setChats((prev) => {
@@ -101,7 +102,7 @@ const WhatsAppDashboard: React.FC = () => {
         });
 
         // Mark as read since chat is open
-        chatApi.markRead(selectedChat.id).catch(() => {});
+        chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
       }
     });
 
@@ -177,10 +178,10 @@ const WhatsAppDashboard: React.FC = () => {
     }
   };
 
-  const loadMessages = async (chatId: string) => {
+  const loadMessages = async (chatId: string, instanceId: string) => {
     setLoadingMessages(true);
     try {
-      const data = await messageApi.list(chatId, 100);
+      const data = await messageApi.list(chatId, instanceId, 100);
       setMessages(data.messages || []);
     } catch (err: any) {
       if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
@@ -213,6 +214,7 @@ const WhatsAppDashboard: React.FC = () => {
   );
 
   const handleSelectChat = (chat: Chat) => {
+    if (selectedInstance && chat.instance_id !== selectedInstance.id) return;
     setSelectedChat(chat);
     // Clear unread on selection
     setChats((prev) => prev.map((c) => (c.id === chat.id ? { ...c, unread_count: 0 } : c)));

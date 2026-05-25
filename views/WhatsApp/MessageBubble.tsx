@@ -5,9 +5,10 @@ import { Image, FileAudio, FileVideo, FileText, MapPin, Contact, Check, CheckChe
 interface MessageBubbleProps {
   message: Message;
   isGroup: boolean;
+  onOpenDetails?: () => void;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenDetails }) => {
   const isSent = message.is_from_me;
   const content = (message.content || '').trim();
   const hasMedia = Boolean(message.media_url || message.media_filename);
@@ -21,6 +22,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
       ? message.sender_name
       : senderPhone || 'Contato sem telefone';
   const senderInitial = (senderName.match(/[A-Za-z0-9]/)?.[0] || '?').toUpperCase();
+  const showSenderName = !isSent && isGroup;
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', {
@@ -144,9 +146,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
           )}
         </div>
       )}
-      <div className={`wa-bubble ${isSent ? 'wa-bubble-sent' : 'wa-bubble-received'}`}>
+      <div
+        className={`wa-bubble ${isSent ? 'wa-bubble-sent' : 'wa-bubble-received'} ${onOpenDetails ? 'wa-bubble-clickable' : ''}`}
+        role={onOpenDetails ? 'button' : undefined}
+        tabIndex={onOpenDetails ? 0 : undefined}
+        onClick={onOpenDetails}
+        onKeyDown={(event) => {
+          if (!onOpenDetails) return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onOpenDetails();
+          }
+        }}
+      >
         {/* Sender identity */}
-        {!isSent && (
+        {showSenderName && (
           <span className="wa-bubble-sender">{senderName}</span>
         )}
 

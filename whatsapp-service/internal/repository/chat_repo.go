@@ -75,19 +75,20 @@ func (r *ChatRepo) GetByJID(ctx context.Context, instanceID uuid.UUID, chatJID s
 	return &chat, nil
 }
 
-// GetByID retrieves a chat by ID and instance.
-func (r *ChatRepo) GetByID(ctx context.Context, chatID, instanceID uuid.UUID) (*models.Chat, error) {
+// GetByIDForTenant retrieves a chat after proving its instance belongs to the tenant.
+func (r *ChatRepo) GetByIDForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID) (*models.Chat, error) {
 	query := `
-		SELECT id, instance_id, chat_jid, name, is_group,
-		       COALESCE(last_message, '') as last_message,
-		       last_message_at, unread_count,
-		       COALESCE(avatar_url, '') as avatar_url,
-		       created_at, updated_at
-		FROM whatsapp_chats
-		WHERE id = $1 AND instance_id = $2`
+		SELECT c.id, c.instance_id, c.chat_jid, c.name, c.is_group,
+		       COALESCE(c.last_message, '') as last_message,
+		       c.last_message_at, c.unread_count,
+		       COALESCE(c.avatar_url, '') as avatar_url,
+		       c.created_at, c.updated_at
+		FROM whatsapp_chats c
+		JOIN whatsapp_instances wi ON wi.id = c.instance_id
+		WHERE c.id = $1 AND c.instance_id = $2 AND wi.tenant_id = $3`
 
 	var chat models.Chat
-	err := r.db.QueryRow(ctx, query, chatID, instanceID).Scan(
+	err := r.db.QueryRow(ctx, query, chatID, instanceID, tenantID).Scan(
 		&chat.ID, &chat.InstanceID, &chat.ChatJID, &chat.Name, &chat.IsGroup,
 		&chat.LastMessage, &chat.LastMessageAt, &chat.UnreadCount,
 		&chat.AvatarURL, &chat.CreatedAt, &chat.UpdatedAt,
@@ -98,19 +99,20 @@ func (r *ChatRepo) GetByID(ctx context.Context, chatID, instanceID uuid.UUID) (*
 	return &chat, nil
 }
 
-// ListByInstance retrieves all chats for an instance, ordered by last message
-func (r *ChatRepo) ListByInstance(ctx context.Context, instanceID uuid.UUID) ([]models.Chat, error) {
+// ListByInstanceForTenant retrieves chats only when the instance belongs to the tenant.
+func (r *ChatRepo) ListByInstanceForTenant(ctx context.Context, instanceID, tenantID uuid.UUID) ([]models.Chat, error) {
 	query := `
-		SELECT id, instance_id, chat_jid, name, is_group,
-		       COALESCE(last_message, '') as last_message,
-		       last_message_at, unread_count,
-		       COALESCE(avatar_url, '') as avatar_url,
-		       created_at, updated_at
-		FROM whatsapp_chats
-		WHERE instance_id = $1
-		ORDER BY last_message_at DESC NULLS LAST`
+		SELECT c.id, c.instance_id, c.chat_jid, c.name, c.is_group,
+		       COALESCE(c.last_message, '') as last_message,
+		       c.last_message_at, c.unread_count,
+		       COALESCE(c.avatar_url, '') as avatar_url,
+		       c.created_at, c.updated_at
+		FROM whatsapp_chats c
+		JOIN whatsapp_instances wi ON wi.id = c.instance_id
+		WHERE c.instance_id = $1 AND wi.tenant_id = $2
+		ORDER BY c.last_message_at DESC NULLS LAST`
 
-	rows, err := r.db.Query(ctx, query, instanceID)
+	rows, err := r.db.Query(ctx, query, instanceID, tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list chats: %w", err)
 	}
@@ -131,27 +133,44 @@ func (r *ChatRepo) ListByInstance(ctx context.Context, instanceID uuid.UUID) ([]
 	return chats, nil
 }
 
-// MarkRead resets the unread count for a chat
-func (r *ChatRepo) MarkRead(ctx context.Context, chatID uuid.UUID) error {
-	query := `UPDATE whatsapp_chats SET unread_count = 0 WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, chatID)
-	return err
+// MarkReadForTenant resets unread count only for a chat owned by the tenant.
+func (r *ChatRepo) MarkReadForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID) error {
+	query := `
+		UPDATE whatsapp_chats c
+		SET unread_count = 0
+		FROM whatsapp_instances wi
+		WHERE c.id = $1
+		  AND c.instance_id = $2
+		  AND wi.id = c.instance_id
+		  AND wi.tenant_id = $3`
+	tag, err := r.db.Exec(ctx, query, chatID, instanceID, tenantID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("chat not found")
+	}
+	return nil
 }
 
-// UpdateName updates a chat display name.
-func (r *ChatRepo) UpdateName(ctx context.Context, chatID, instanceID uuid.UUID, name string) (*models.Chat, error) {
+// UpdateNameForTenant updates a chat display name only for a tenant-owned instance.
+func (r *ChatRepo) UpdateNameForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID, name string) (*models.Chat, error) {
 	query := `
-		UPDATE whatsapp_chats
+		UPDATE whatsapp_chats c
 		SET name = $1, updated_at = NOW()
-		WHERE id = $2 AND instance_id = $3
-		RETURNING id, instance_id, chat_jid, name, is_group,
-		          COALESCE(last_message, '') as last_message,
-		          last_message_at, unread_count,
-		          COALESCE(avatar_url, '') as avatar_url,
-		          created_at, updated_at`
+		FROM whatsapp_instances wi
+		WHERE c.id = $2
+		  AND c.instance_id = $3
+		  AND wi.id = c.instance_id
+		  AND wi.tenant_id = $4
+		RETURNING c.id, c.instance_id, c.chat_jid, c.name, c.is_group,
+		          COALESCE(c.last_message, '') as last_message,
+		          c.last_message_at, c.unread_count,
+		          COALESCE(c.avatar_url, '') as avatar_url,
+		          c.created_at, c.updated_at`
 
 	var chat models.Chat
-	err := r.db.QueryRow(ctx, query, name, chatID, instanceID).Scan(
+	err := r.db.QueryRow(ctx, query, name, chatID, instanceID, tenantID).Scan(
 		&chat.ID, &chat.InstanceID, &chat.ChatJID, &chat.Name, &chat.IsGroup,
 		&chat.LastMessage, &chat.LastMessageAt, &chat.UnreadCount,
 		&chat.AvatarURL, &chat.CreatedAt, &chat.UpdatedAt,

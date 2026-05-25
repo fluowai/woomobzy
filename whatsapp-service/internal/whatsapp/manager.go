@@ -195,7 +195,7 @@ func (m *Manager) DisconnectInstance(ctx context.Context, instanceID uuid.UUID) 
 		m.logger.Error("Failed to update instance status", zap.Error(err))
 	}
 
-	m.hub.BroadcastEvent("instance_status", models.InstanceStatusEvent{
+	m.hub.BroadcastEventToTenant(uuidToString(client.tenantID), "instance_status", models.InstanceStatusEvent{
 		InstanceID: instanceID,
 		Status:     models.StatusDisconnected,
 	})

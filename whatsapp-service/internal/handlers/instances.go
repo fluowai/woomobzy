@@ -30,11 +30,17 @@ func NewInstanceHandler(manager *whatsapp.Manager, instanceRepo *repository.Inst
 
 // CreateInstance handles POST /api/instances
 func (h *InstanceHandler) CreateInstance(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	var req models.CreateInstanceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
 		return
 	}
+	req.TenantID = &tenantID
 
 	inst, err := h.manager.CreateInstance(c.Request.Context(), req.Name, req.TenantID)
 	if err != nil {
@@ -55,15 +61,12 @@ func (h *InstanceHandler) CreateInstance(c *gin.Context) {
 
 // ListInstances handles GET /api/instances
 func (h *InstanceHandler) ListInstances(c *gin.Context) {
-	var tenantID *uuid.UUID
-	if tid := c.Query("tenant_id"); tid != "" {
-		parsed, err := uuid.Parse(tid)
-		if err == nil {
-			tenantID = &parsed
-		}
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
 	}
 
-	instances, err := h.instanceRepo.List(c.Request.Context(), tenantID)
+	instances, err := h.instanceRepo.List(c.Request.Context(), &tenantID)
 	if err != nil {
 		h.logger.Error("Failed to list instances", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -79,13 +82,18 @@ func (h *InstanceHandler) ListInstances(c *gin.Context) {
 
 // GetInstance handles GET /api/instances/:id
 func (h *InstanceHandler) GetInstance(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance ID"})
 		return
 	}
 
-	inst, err := h.instanceRepo.GetByID(c.Request.Context(), id)
+	inst, err := h.instanceRepo.GetByIDForTenant(c.Request.Context(), id, tenantID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Instance not found"})
 		return
@@ -96,9 +104,19 @@ func (h *InstanceHandler) GetInstance(c *gin.Context) {
 
 // DeleteInstance handles DELETE /api/instances/:id
 func (h *InstanceHandler) DeleteInstance(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance ID"})
+		return
+	}
+
+	if _, err := h.instanceRepo.GetByIDForTenant(c.Request.Context(), id, tenantID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Instance not found for tenant"})
 		return
 	}
 
@@ -113,13 +131,18 @@ func (h *InstanceHandler) DeleteInstance(c *gin.Context) {
 
 // GetQRCode handles GET /api/instances/:id/qrcode
 func (h *InstanceHandler) GetQRCode(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance ID"})
 		return
 	}
 
-	inst, err := h.instanceRepo.GetByID(c.Request.Context(), id)
+	inst, err := h.instanceRepo.GetByIDForTenant(c.Request.Context(), id, tenantID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Instance not found"})
 		return
@@ -158,9 +181,19 @@ func (h *InstanceHandler) GetQRCode(c *gin.Context) {
 
 // ConnectInstance handles POST /api/instances/:id/connect
 func (h *InstanceHandler) ConnectInstance(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance ID"})
+		return
+	}
+
+	if _, err := h.instanceRepo.GetByIDForTenant(c.Request.Context(), id, tenantID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Instance not found for tenant"})
 		return
 	}
 
@@ -175,9 +208,19 @@ func (h *InstanceHandler) ConnectInstance(c *gin.Context) {
 
 // LogoutInstance handles POST /api/instances/:id/logout
 func (h *InstanceHandler) LogoutInstance(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance ID"})
+		return
+	}
+
+	if _, err := h.instanceRepo.GetByIDForTenant(c.Request.Context(), id, tenantID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Instance not found for tenant"})
 		return
 	}
 

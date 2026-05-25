@@ -1,7 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { chatApi, formatPhoneDisplay, type Chat, type Message } from './hooks/api';
 import MessageBubble from './MessageBubble';
-import { Send, Paperclip, Smile, ArrowDown, Users, Phone, MoreVertical, Loader2, X, UserRound, Save, ArrowLeft } from 'lucide-react';
+import {
+  Send,
+  Paperclip,
+  Smile,
+  ArrowDown,
+  Users,
+  Phone,
+  MoreVertical,
+  Loader2,
+  X,
+  UserRound,
+  Save,
+  ArrowLeft,
+  ArrowRightLeft,
+  Tag,
+  Clock3,
+  ShieldCheck,
+} from 'lucide-react';
 
 interface ChatWindowProps {
   chat: Chat;
@@ -114,7 +131,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }, []);
 
   return (
-    <main className="wa-chat-window" id="chat-window">
+    <main className={`wa-chat-window ${showContactPanel ? 'details-open' : ''}`} id="chat-window">
       {/* Chat Header */}
       <header className="wa-chat-header">
         <button type="button" className="wa-mobile-back" onClick={onBack} title="Voltar">
@@ -154,7 +171,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {showContactPanel && (
         <aside className="wa-contact-panel">
           <div className="wa-contact-panel-head">
-            <span>Contato</span>
+            <span>Dados do contato</span>
             <button type="button" className="wa-icon-btn" onClick={() => setShowContactPanel(false)} title="Fechar">
               <X size={18} />
             </button>
@@ -210,10 +227,40 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             )}
           </div>
 
-          <button type="button" className="wa-contact-action">
-            <UserRound size={16} />
-            Vincular ao CRM
-          </button>
+          <div className="wa-contact-section">
+            <span className="wa-contact-section-title">Atendimento</span>
+            <label className="wa-contact-select-label">
+              Responsavel
+              <select className="wa-contact-select" defaultValue="equipe">
+                <option value="equipe">Equipe comercial</option>
+                <option value="renato">Renato Piovesana</option>
+                <option value="admin">Admin imobiliaria</option>
+              </select>
+            </label>
+            <button type="button" className="wa-contact-action primary">
+              <ArrowRightLeft size={16} />
+              Transferir atendimento
+            </button>
+          </div>
+
+          <div className="wa-contact-actions-grid">
+            <button type="button" className="wa-contact-action">
+              <UserRound size={16} />
+              Vincular ao CRM
+            </button>
+            <button type="button" className="wa-contact-action">
+              <Tag size={16} />
+              Adicionar tag
+            </button>
+            <button type="button" className="wa-contact-action">
+              <Clock3 size={16} />
+              Criar tarefa
+            </button>
+            <button type="button" className="wa-contact-action">
+              <ShieldCheck size={16} />
+              Marcar prioridade
+            </button>
+          </div>
         </aside>
       )}
 
@@ -241,7 +288,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
               {group.msgs.map((msg) => {
                 const key = msg.id || msg.message_id;
-                return <MessageBubble key={key} message={msg} isGroup={chat.is_group} />;
+                return (
+                  <MessageBubble
+                    key={key}
+                    message={msg}
+                    isGroup={chat.is_group}
+                    onOpenDetails={() => setShowContactPanel(true)}
+                  />
+                );
               })}
             </div>
           ))

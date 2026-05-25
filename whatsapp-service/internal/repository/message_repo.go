@@ -52,8 +52,8 @@ func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
 	return err
 }
 
-// ListByChat retrieves messages for a chat with pagination
-func (r *MessageRepo) ListByChat(ctx context.Context, chatID uuid.UUID, limit, offset int) ([]models.Message, error) {
+// ListByChatForTenant retrieves messages only after proving the chat instance belongs to the tenant.
+func (r *MessageRepo) ListByChatForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID, limit, offset int) ([]models.Message, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -71,13 +71,18 @@ func (r *MessageRepo) ListByChat(ctx context.Context, chatID uuid.UUID, limit, o
 		       m.timestamp, m.created_at,
 		       COALESCE(c.avatar_url, '') as sender_avatar_url
 		FROM whatsapp_messages m
+		JOIN whatsapp_chats wc ON wc.id = m.chat_id
+		JOIN whatsapp_instances wi ON wi.id = wc.instance_id
 		LEFT JOIN whatsapp_contacts c
 		  ON c.instance_id = m.instance_id AND c.phone = m.sender_phone
 		WHERE m.chat_id = $1
+		  AND m.instance_id = $4
+		  AND wc.instance_id = $4
+		  AND wi.tenant_id = $5
 		ORDER BY m.timestamp DESC
 		LIMIT $2 OFFSET $3`
 
-	rows, err := r.db.Query(ctx, query, chatID, limit, offset)
+	rows, err := r.db.Query(ctx, query, chatID, limit, offset, instanceID, tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list messages: %w", err)
 	}
@@ -106,9 +111,19 @@ func (r *MessageRepo) ListByChat(ctx context.Context, chatID uuid.UUID, limit, o
 	return messages, nil
 }
 
-// CountByChat returns the total number of messages in a chat
-func (r *MessageRepo) CountByChat(ctx context.Context, chatID uuid.UUID) (int, error) {
+// CountByChatForTenant counts messages only for a chat owned by the tenant.
+func (r *MessageRepo) CountByChatForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID) (int, error) {
 	var count int
-	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM whatsapp_messages WHERE chat_id = $1`, chatID).Scan(&count)
+	err := r.db.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM whatsapp_messages m
+		JOIN whatsapp_chats c ON c.id = m.chat_id
+		JOIN whatsapp_instances wi ON wi.id = c.instance_id
+		WHERE m.chat_id = $1
+		  AND m.instance_id = $2
+		  AND c.instance_id = $2
+		  AND wi.tenant_id = $3`,
+		chatID, instanceID, tenantID,
+	).Scan(&count)
 	return count, err
 }

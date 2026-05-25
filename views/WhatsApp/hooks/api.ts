@@ -52,8 +52,10 @@ function buildSameOriginWsUrl(path: string): string {
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
-  const tenantId = USE_DIRECT_WHATSAPP_API ? await getTenantId(session?.user?.id) : null;
   const impersonatedOrgId = getImpersonatedOrgId();
+  const tenantId = USE_DIRECT_WHATSAPP_API
+    ? impersonatedOrgId || await getTenantId(session?.user?.id)
+    : null;
   
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const url = buildApiUrl(cleanPath, tenantId);
@@ -251,8 +253,8 @@ export const chatApi = {
   list: (instanceId: string) =>
     apiRequest<Chat[]>(`/chats?instance_id=${instanceId}`),
 
-  markRead: (chatId: string) =>
-    apiRequest(`/chats/${chatId}/read`, { method: 'POST' }),
+  markRead: (chatId: string, instanceId: string) =>
+    apiRequest(`/chats/${chatId}/read?instance_id=${instanceId}`, { method: 'POST' }),
 
   updateContactName: (chatId: string, instanceId: string, displayName: string) =>
     apiRequest<Chat>(`/chats/${chatId}/contact?instance_id=${instanceId}`, {
@@ -263,8 +265,8 @@ export const chatApi = {
 
 // ---- Message API ----
 export const messageApi = {
-  list: (chatId: string, limit = 50, offset = 0) =>
-    apiRequest<MessageListResponse>(`/messages/${chatId}?limit=${limit}&offset=${offset}`),
+  list: (chatId: string, instanceId: string, limit = 50, offset = 0) =>
+    apiRequest<MessageListResponse>(`/messages/${chatId}?instance_id=${instanceId}&limit=${limit}&offset=${offset}`),
 
   send: (chatId: string, instanceId: string, content: string, type: string = 'text') =>
     apiRequest(`/messages/${chatId}/send?instance_id=${instanceId}`, {
@@ -274,8 +276,10 @@ export const messageApi = {
 
   sendMedia: async (chatId: string, instanceId: string, file: File, content = '') => {
     const { data: { session } } = await supabase.auth.getSession();
-    const tenantId = USE_DIRECT_WHATSAPP_API ? await getTenantId(session?.user?.id) : null;
     const impersonatedOrgId = getImpersonatedOrgId();
+    const tenantId = USE_DIRECT_WHATSAPP_API
+      ? impersonatedOrgId || await getTenantId(session?.user?.id)
+      : null;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('content', content);

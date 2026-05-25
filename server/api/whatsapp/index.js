@@ -104,14 +104,15 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         proxyReq.removeHeader('origin');
 
         const whatsappUserId = req.user?.id;
+        const whatsappTenantId = req.orgId;
 
-        if (whatsappUserId) {
+        if (whatsappTenantId) {
           const url = new URL(proxyReq.path, 'http://localhost');
-          url.searchParams.set('tenant_id', whatsappUserId);
+          url.searchParams.set('tenant_id', whatsappTenantId);
           proxyReq.path = url.pathname + url.search;
 
           if (req.body && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
-            const bodyData = { ...req.body, tenant_id: whatsappUserId };
+            const bodyData = { ...req.body, tenant_id: whatsappTenantId };
             const bodyString = JSON.stringify(bodyData);
             proxyReq.setHeader('Content-Type', 'application/json');
             proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyString));
@@ -125,10 +126,15 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         }
 
         console.log(
-          `[SaaS Proxy] ${req.method} ${req.originalUrl || req.url} -> ${target}${proxyReq.path} (WhatsApp user: ${whatsappUserId || 'Public'}, Org: ${req.orgId || 'none'})`
+          `[SaaS Proxy] ${req.method} ${req.originalUrl || req.url} -> ${target}${proxyReq.path} (WhatsApp user: ${whatsappUserId || 'Public'}, Org: ${whatsappTenantId || 'none'})`
         );
       },
       proxyReqWs: (proxyReq, req) => {
+        if (req.orgId) {
+          const url = new URL(proxyReq.path, 'http://localhost');
+          url.searchParams.set('tenant_id', req.orgId);
+          proxyReq.path = url.pathname + url.search;
+        }
         console.log(`[WhatsApp WS Proxy] ${req.url} -> ${target}`);
       },
       error: (err, req, res) => {
@@ -190,7 +196,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       const { data, error } = await supabase
         .from('whatsapp_instances')
         .select('id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at')
-        .eq('tenant_id', req.user.id)
+        .eq('tenant_id', req.orgId)
         .order('created_at', { ascending: false });
 
       if (error) {

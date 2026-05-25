@@ -31,19 +31,17 @@ func NewChatHandler(chatRepo *repository.ChatRepo, contactRepo *repository.Conta
 
 // ListChats handles GET /api/chats
 func (h *ChatHandler) ListChats(c *gin.Context) {
-	instanceIDStr := c.Query("instance_id")
-	if instanceIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "instance_id query parameter is required"})
+	tenantID, ok := requireTenantID(c)
+	if !ok {
 		return
 	}
 
-	instanceID, err := uuid.Parse(instanceIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance_id"})
+	instanceID, ok := requireInstanceID(c)
+	if !ok {
 		return
 	}
 
-	chats, err := h.chatRepo.ListByInstance(c.Request.Context(), instanceID)
+	chats, err := h.chatRepo.ListByInstanceForTenant(c.Request.Context(), instanceID, tenantID)
 	if err != nil {
 		h.logger.Error("Failed to list chats", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -59,15 +57,25 @@ func (h *ChatHandler) ListChats(c *gin.Context) {
 
 // MarkChatRead handles POST /api/chats/:id/read
 func (h *ChatHandler) MarkChatRead(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
+	instanceID, ok := requireInstanceID(c)
+	if !ok {
+		return
+	}
+
 	chatID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chat ID"})
 		return
 	}
 
-	if err := h.chatRepo.MarkRead(c.Request.Context(), chatID); err != nil {
+	if err := h.chatRepo.MarkReadForTenant(c.Request.Context(), chatID, instanceID, tenantID); err != nil {
 		h.logger.Error("Failed to mark chat as read", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Chat not found for tenant"})
 		return
 	}
 
@@ -76,15 +84,19 @@ func (h *ChatHandler) MarkChatRead(c *gin.Context) {
 
 // UpdateContactName handles PATCH /api/chats/:id/contact
 func (h *ChatHandler) UpdateContactName(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
 	chatID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chat ID"})
 		return
 	}
 
-	instanceID, err := uuid.Parse(c.Query("instance_id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance_id"})
+	instanceID, ok := requireInstanceID(c)
+	if !ok {
 		return
 	}
 
@@ -102,10 +114,10 @@ func (h *ChatHandler) UpdateContactName(c *gin.Context) {
 		return
 	}
 
-	chat, err := h.chatRepo.UpdateName(c.Request.Context(), chatID, instanceID, displayName)
+	chat, err := h.chatRepo.UpdateNameForTenant(c.Request.Context(), chatID, instanceID, tenantID, displayName)
 	if err != nil {
 		h.logger.Error("Failed to update chat contact name", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Chat not found for tenant"})
 		return
 	}
 

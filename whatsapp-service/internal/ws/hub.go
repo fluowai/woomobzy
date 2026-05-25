@@ -29,15 +29,21 @@ var upgrader = websocket.Upgrader{
 
 // Client represents a single WebSocket connection
 type Client struct {
-	hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
+	hub      *Hub
+	conn     *websocket.Conn
+	send     chan []byte
+	tenantID string
+}
+
+type outboundMessage struct {
+	tenantID string
+	payload  []byte
 }
 
 // Hub maintains the set of active clients and broadcasts messages to them
 type Hub struct {
 	clients    map[*Client]bool
-	broadcast  chan []byte
+	broadcast  chan outboundMessage
 	register   chan *Client
 	unregister chan *Client
 	mu         sync.RWMutex
@@ -48,7 +54,7 @@ type Hub struct {
 func NewHub(logger *zap.Logger) *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),
-		broadcast:  make(chan []byte, 256),
+		broadcast:  make(chan outboundMessage, 256),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		logger:     logger,
@@ -77,8 +83,11 @@ func (h *Hub) Run() {
 		case message := <-h.broadcast:
 			h.mu.RLock()
 			for client := range h.clients {
+				if message.tenantID != "" && client.tenantID != message.tenantID {
+					continue
+				}
 				select {
-				case client.send <- message:
+				case client.send <- message.payload:
 				default:
 					close(client.send)
 					delete(h.clients, client)
@@ -91,6 +100,11 @@ func (h *Hub) Run() {
 
 // BroadcastEvent sends a typed event to all connected clients
 func (h *Hub) BroadcastEvent(event string, data interface{}) {
+	h.BroadcastEventToTenant("", event, data)
+}
+
+// BroadcastEventToTenant sends a typed event only to clients connected to a tenant.
+func (h *Hub) BroadcastEventToTenant(tenantID string, event string, data interface{}) {
 	wsEvent := models.WSEvent{
 		Event: event,
 		Data:  data,
@@ -102,7 +116,7 @@ func (h *Hub) BroadcastEvent(event string, data interface{}) {
 		return
 	}
 
-	h.broadcast <- jsonData
+	h.broadcast <- outboundMessage{tenantID: tenantID, payload: jsonData}
 	h.logger.Debug("Broadcast event", zap.String("event", event), zap.Int("clients", len(h.clients)))
 }
 
@@ -115,6 +129,12 @@ func (h *Hub) ClientCount() int {
 
 // HandleWebSocket upgrades an HTTP connection to WebSocket
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
+	tenantID := r.URL.Query().Get("tenant_id")
+	if tenantID == "" {
+		http.Error(w, "tenant_id is required", http.StatusUnauthorized)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		h.logger.Error("WebSocket upgrade failed", zap.Error(err))
@@ -122,9 +142,10 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &Client{
-		hub:  h,
-		conn: conn,
-		send: make(chan []byte, 256),
+		hub:      h,
+		conn:     conn,
+		send:     make(chan []byte, 256),
+		tenantID: tenantID,
 	}
 
 	h.register <- client

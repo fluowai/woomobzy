@@ -40,6 +40,7 @@ debug_scrape.html
 *.debug
 scratch/
 scripts/debug/
+imobzy-message-isolation-report-*.json
 
 # WhatsApp Sessions
 .sessions/

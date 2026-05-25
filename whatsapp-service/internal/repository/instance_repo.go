@@ -25,6 +25,26 @@ func NewInstanceRepo(db *pgxpool.Pool, logger *zap.Logger) *InstanceRepo {
 
 // Create inserts a new instance
 func (r *InstanceRepo) Create(ctx context.Context, inst *models.Instance) error {
+	if inst.TenantID != nil {
+		var exists bool
+		err := r.db.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM organizations WHERE id = $1)", inst.TenantID).Scan(&exists)
+		if err != nil {
+			r.logger.Error("Failed to check if organization exists", zap.Error(err))
+		} else if !exists {
+			r.logger.Warn("Organization not found in database, auto-generating to prevent foreign key violation", zap.String("id", inst.TenantID.String()))
+			slugVal := "auto-" + inst.TenantID.String()
+			_, err = r.db.Exec(ctx, `
+				INSERT INTO organizations (id, name, slug)
+				VALUES ($1, 'Auto-Generated Organization', $2)
+				ON CONFLICT (id) DO NOTHING`,
+				inst.TenantID, slugVal,
+			)
+			if err != nil {
+				r.logger.Error("Failed to auto-generate organization", zap.Error(err))
+			}
+		}
+	}
+
 	query := `
 		INSERT INTO whatsapp_instances (id, tenant_id, name, status)
 		VALUES ($1, $2, $3, $4)

@@ -13,6 +13,13 @@ export const WS_URL = normalizeWhatsAppWsUrl(
 import { supabase } from '@/services/supabase';
 
 let tenantIdCache: string | null | undefined;
+let userTenantContextCache:
+  | {
+      userId: string;
+      role: string | null;
+      organizationId: string | null;
+    }
+  | undefined;
 
 function normalizeWhatsAppApiUrl(url: string): string {
   const clean = (url || '').trim().replace(/\/$/, '');
@@ -52,7 +59,7 @@ function buildSameOriginWsUrl(path: string): string {
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
-  const impersonatedOrgId = getImpersonatedOrgId();
+  const impersonatedOrgId = await getValidImpersonatedOrgId(session?.user?.id);
   const tenantId = USE_DIRECT_WHATSAPP_API
     ? impersonatedOrgId || await getTenantId(session?.user?.id)
     : null;
@@ -108,18 +115,55 @@ function getImpersonatedOrgId(): string | null {
   return value && value !== 'null' && value !== 'undefined' ? value : null;
 }
 
+async function getValidImpersonatedOrgId(userId?: string): Promise<string | null> {
+  const impersonatedOrgId = getImpersonatedOrgId();
+  if (!impersonatedOrgId) return null;
+
+  const context = await getUserTenantContext(userId);
+  if (context?.role !== 'superadmin') {
+    sessionStorage.removeItem('impersonated_org_id');
+    return null;
+  }
+
+  const { data } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', impersonatedOrgId)
+    .maybeSingle();
+
+  if (!data?.id) {
+    sessionStorage.removeItem('impersonated_org_id');
+    return null;
+  }
+
+  return data.id;
+}
+
 async function getTenantId(userId?: string): Promise<string | null> {
   if (!userId) return null;
   if (tenantIdCache !== undefined) return tenantIdCache;
 
+  const context = await getUserTenantContext(userId);
+  tenantIdCache = context?.organizationId || null;
+  return tenantIdCache;
+}
+
+async function getUserTenantContext(userId?: string) {
+  if (!userId) return null;
+  if (userTenantContextCache?.userId === userId) return userTenantContextCache;
+
   const { data } = await supabase
     .from('profiles')
-    .select('organization_id')
+    .select('role, organization_id')
     .eq('id', userId)
     .single();
 
-  tenantIdCache = data?.organization_id || null;
-  return tenantIdCache;
+  userTenantContextCache = {
+    userId,
+    role: data?.role || null,
+    organizationId: data?.organization_id || null,
+  };
+  return userTenantContextCache;
 }
 
 function buildApiUrl(path: string, tenantId?: string | null): string {

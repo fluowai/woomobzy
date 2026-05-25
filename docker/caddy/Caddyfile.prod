@@ -1,7 +1,7 @@
 {$APP_DOMAIN} {
   encode gzip zstd
 
-  handle /api/whatsapp/ws* {
+  handle /api/whatsapp/ws /api/whatsapp/ws/* {
     rewrite * /ws
     reverse_proxy whatsapp-service:3100
   }

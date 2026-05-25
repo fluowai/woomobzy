@@ -49,10 +49,26 @@ export const verifyAuth = async (req, res, next) => {
     const impersonateId = req.headers['x-impersonate-org-id'];
 
     if (impersonateId && profile.role === 'superadmin') {
+      const { data: impersonatedOrg, error: impersonatedOrgError } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('id', impersonateId)
+        .maybeSingle();
+
+      if (impersonatedOrgError || !impersonatedOrg) {
+        console.warn(
+          `[Auth] Impersonation invalida bloqueada para ${user.email}: ${impersonateId}`
+        );
+        return res.status(403).json({
+          error: 'Organizacao impersonada nao encontrada.',
+          code: 'INVALID_IMPERSONATED_ORG',
+        });
+      }
+
       console.log(
         `[Auth] 🔐 SuperAdmin ${user.email} impersonando Org: ${impersonateId}`
       );
-      req.orgId = impersonateId;
+      req.orgId = impersonatedOrg.id;
       req.isImpersonating = true;
     } else {
       req.orgId = profile.organization_id;

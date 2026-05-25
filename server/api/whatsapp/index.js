@@ -291,10 +291,17 @@ function getWsTokenFromUrl(rawUrl) {
   }
 }
 
-function validateWsTokenMiddleware(req, res, next) {
+async function validateWsTokenMiddleware(req, res, next) {
   const payload = verifyWsToken(getWsTokenFromUrl(req.originalUrl || req.url));
   if (!payload) {
     return res.status(401).json({ error: 'WebSocket nao autorizado' });
+  }
+
+  if (!(await organizationExists(payload.org_id))) {
+    return res.status(403).json({
+      error: 'Organizacao do WebSocket nao encontrada.',
+      code: 'INVALID_TENANT',
+    });
   }
 
   req.user = { id: payload.sub };
@@ -305,9 +312,23 @@ function validateWsTokenMiddleware(req, res, next) {
 async function validateWsUpgrade(req) {
   const payload = verifyWsToken(getWsTokenFromUrl(req.url));
   if (!payload) return false;
+  if (!(await organizationExists(payload.org_id))) return false;
   req.user = { id: payload.sub };
   req.orgId = payload.org_id;
   return true;
+}
+
+async function organizationExists(orgId) {
+  if (!orgId) return false;
+
+  const supabase = getSupabaseServer();
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', orgId)
+    .maybeSingle();
+
+  return !error && Boolean(data);
 }
 
 function resolveWhatsAppTarget(rawTarget) {

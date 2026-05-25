@@ -45,6 +45,21 @@ async function ensureOrganizationOwner({ organization, ownerName, ownerEmail, pa
 
   let authUser = await findAuthUserByEmail(email);
 
+  if (authUser) {
+    const { data: existingProfile, error: existingProfileError } = await supabase
+      .from('profiles')
+      .select('role, organization_id')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    if (existingProfileError) throw existingProfileError;
+    if (existingProfile?.role === 'superadmin') {
+      throw new Error(
+        'Este e-mail pertence a um SuperAdmin e nao pode ser usado como responsavel de imobiliaria.'
+      );
+    }
+  }
+
   if (!authUser) {
     const { data, error } = await supabase.auth.admin.createUser({
       email,

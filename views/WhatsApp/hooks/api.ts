@@ -86,6 +86,10 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: res.statusText }));
+    if (error.code === 'INVALID_TENANT' || error.code === 'INVALID_IMPERSONATED_ORG') {
+      sessionStorage.removeItem('impersonated_org_id');
+      tenantIdCache = undefined;
+    }
     throw new Error(error.error || `API Error: ${res.status}`);
   }
 

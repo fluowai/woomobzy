@@ -180,28 +180,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     });
   });
 
-  app.post('/api/whatsapp/ws-token', verifyAuth, requireTenant, (req, res) => {
-    const secret = getWsTokenSecret();
-    if (!secret) {
-      return res.status(503).json({ error: 'WebSocket token indisponivel' });
-    }
-
-    const token = jwt.sign(
-      {
-        sub: req.user.id,
-        org_id: req.orgId,
-        purpose: 'whatsapp_ws',
-      },
-      secret,
-      {
-        expiresIn: '2m',
-        issuer: 'imobzy-api',
-        audience: 'imobzy-whatsapp-ws',
-      }
-    );
-
-    res.json({ token, expires_in: 120 });
-  });
+  app.post(['/api/whatsapp/socket-token', '/api/whatsapp/ws-token'], verifyAuth, requireTenant, issueWsToken);
 
   app.get('/api/whatsapp/instances', verifyAuth, requireTenant, async (req, res) => {
     applyCorsHeaders(req, res);
@@ -272,6 +251,29 @@ function verifyWsToken(token) {
   } catch {
     return null;
   }
+}
+
+function issueWsToken(req, res) {
+  const secret = getWsTokenSecret();
+  if (!secret) {
+    return res.status(503).json({ error: 'WebSocket token indisponivel' });
+  }
+
+  const token = jwt.sign(
+    {
+      sub: req.user.id,
+      org_id: req.orgId,
+      purpose: 'whatsapp_ws',
+    },
+    secret,
+    {
+      expiresIn: '2m',
+      issuer: 'imobzy-api',
+      audience: 'imobzy-whatsapp-ws',
+    }
+  );
+
+  res.json({ token, expires_in: 120 });
 }
 
 function getWsTokenFromUrl(rawUrl) {

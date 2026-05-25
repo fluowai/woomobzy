@@ -91,7 +91,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export async function getAuthorizedWhatsAppWsUrl(): Promise<string> {
-  const response = await apiRequest<{ token: string }>('/ws-token', { method: 'POST' });
+  const response = await apiRequest<{ token: string }>('/socket-token', { method: 'POST' });
   const url = new URL(WS_URL);
   url.searchParams.set('ws_token', response.token);
   return url.toString();

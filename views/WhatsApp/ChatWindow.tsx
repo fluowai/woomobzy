@@ -64,7 +64,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = inputText.trim();
-    if (!text) return;
+    if (!text && !pendingFile) return;
     onSendMessage(text, pendingFile || undefined);
     setInputText('');
     setPendingFile(null);
@@ -97,7 +97,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   // Group messages by date
-  const groupedMessages = messages.reduce((acc: { date: string; msgs: Message[] }[], msg) => {
+  const visibleMessages = messages.filter(isRenderableMessage);
+  const groupedMessages = visibleMessages.reduce((acc: { date: string; msgs: Message[] }[], msg) => {
     const date = new Date(msg.timestamp).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',
@@ -228,7 +229,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <Loader2 size={24} className="animate-spin" />
             <span>Carregando mensagens...</span>
           </div>
-        ) : messages.length === 0 ? (
+        ) : visibleMessages.length === 0 ? (
           <div className="wa-messages-empty">
             <p>Nenhuma mensagem nesta conversa</p>
           </div>
@@ -238,9 +239,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <div className="wa-date-divider">
                 <span>{group.date}</span>
               </div>
-              {group.msgs.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} isGroup={chat.is_group} />
-              ))}
+              {group.msgs.map((msg) => {
+                const key = msg.id || msg.message_id;
+                return <MessageBubble key={key} message={msg} isGroup={chat.is_group} />;
+              })}
             </div>
           ))
         )}
@@ -300,3 +302,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 };
 
 export default ChatWindow;
+
+function isRenderableMessage(message: Message) {
+  const content = (message.content || '').trim();
+  const hasMedia = Boolean(message.media_url || message.media_filename);
+  return message.type !== 'text' || content || hasMedia;
+}

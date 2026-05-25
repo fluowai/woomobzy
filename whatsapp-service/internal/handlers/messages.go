@@ -88,6 +88,14 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Content and type are required"})
 		return
 	}
+	req.Content = strings.TrimSpace(req.Content)
+	if req.Type == "" {
+		req.Type = models.MessageTypeText
+	}
+	if req.Type == models.MessageTypeText && req.Content == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "message content is required"})
+		return
+	}
 
 	// Get chat to find instance and JID
 	ctx := c.Request.Context()

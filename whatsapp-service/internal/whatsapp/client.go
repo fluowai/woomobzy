@@ -3,6 +3,7 @@ package whatsapp
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -313,6 +314,13 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	// Determine message type and content
 	msgType, content := extractMessageContent(evt)
+	if (msgType == models.MessageTypeUnknown || msgType == models.MessageTypeText) && strings.TrimSpace(content) == "" {
+		c.logger.Debug("Ignoring WhatsApp event without renderable message content",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("message_id", info.ID),
+		)
+		return
+	}
 
 	// Determine chat name
 	chatName := ""

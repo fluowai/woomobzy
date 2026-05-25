@@ -9,6 +9,12 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
   const isSent = message.is_from_me;
+  const content = (message.content || '').trim();
+  const hasMedia = Boolean(message.media_url || message.media_filename);
+  const isRenderable = message.type !== 'text' || content || hasMedia;
+
+  if (!isRenderable) return null;
+
   const senderPhone = formatPhoneDisplay(message.sender_phone);
   const senderName =
     message.sender_name && message.sender_name !== '~'
@@ -42,7 +48,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
                 <span>Imagem</span>
               </div>
             )}
-            {message.content && <p className="wa-bubble-caption">{message.content}</p>}
+            {content && <p className="wa-bubble-caption">{content}</p>}
           </div>
         );
 
@@ -75,7 +81,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
                 <span>Vídeo</span>
               </div>
             )}
-            {message.content && <p className="wa-bubble-caption">{message.content}</p>}
+            {content && <p className="wa-bubble-caption">{content}</p>}
           </div>
         );
 
@@ -89,7 +95,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
           >
             <FileText size={28} />
             <div>
-              <span className="wa-doc-name">{message.media_filename || message.content || 'Documento'}</span>
+              <span className="wa-doc-name">{message.media_filename || content || 'Documento'}</span>
               <span className="wa-doc-type">{message.media_mimetype || 'PDF'}</span>
             </div>
           </a>
@@ -146,7 +152,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup }) => {
 
         {/* Media or text content */}
         {message.type !== 'text' && renderMedia()}
-        {message.type === 'text' && <p className="wa-bubble-text">{message.content}</p>}
+        {message.type === 'text' && <p className="wa-bubble-text">{content}</p>}
 
         {/* Timestamp + check marks */}
         <div className="wa-bubble-meta">

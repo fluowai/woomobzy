@@ -107,7 +107,25 @@ export async function getAuthorizedWhatsAppWsUrl(): Promise<string> {
   const response = await apiRequest<{ token: string }>('/socket-token', { method: 'POST' });
   const url = new URL(WS_URL);
   url.searchParams.set('ws_token', response.token);
+  const payload = decodeJwtPayload(response.token);
+  if (payload?.org_id) {
+    url.searchParams.set('tenant_id', payload.org_id);
+  }
   return url.toString();
+}
+
+function decodeJwtPayload(token: string): { org_id?: string } | null {
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+
+  try {
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const parsed = JSON.parse(atob(padded));
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
 }
 
 function getImpersonatedOrgId(): string | null {

@@ -16,15 +16,15 @@ import {
 
 interface Ticket {
   id: string;
-  organization_id: string;
-  user_id: string;
+  organization_id: string | null;
+  user_id: string | null;
   subject: string;
   description: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   created_at: string;
-  organization?: { name: string };
-  user_profile?: { full_name: string };
+  organization?: { name: string | null };
+  user_profile?: { name: string | null };
 }
 
 interface Message {
@@ -59,12 +59,58 @@ const SupportManager: React.FC = () => {
     }
   }, [selectedTicket]);
 
+  const hydrateTicketRelations = async (ticketRows: Ticket[]): Promise<Ticket[]> => {
+    if (ticketRows.length === 0) return ticketRows;
+
+    const organizationIds = [
+      ...new Set(ticketRows.map((ticket) => ticket.organization_id).filter(Boolean)),
+    ] as string[];
+    const userIds = [
+      ...new Set(ticketRows.map((ticket) => ticket.user_id).filter(Boolean)),
+    ] as string[];
+
+    const [organizationsResult, profilesResult] = await Promise.all([
+      organizationIds.length
+        ? supabase.from('organizations').select('id, name').in('id', organizationIds)
+        : Promise.resolve({ data: [], error: null }),
+      userIds.length
+        ? supabase.from('profiles').select('id, name').in('id', userIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (organizationsResult.error) {
+      logger.warn('Error fetching ticket organizations:', organizationsResult.error);
+    }
+    if (profilesResult.error) {
+      logger.warn('Error fetching ticket users:', profilesResult.error);
+    }
+
+    const organizationsById = new Map(
+      (organizationsResult.data || []).map((organization: any) => [
+        organization.id,
+        { name: organization.name },
+      ])
+    );
+    const profilesById = new Map(
+      (profilesResult.data || []).map((profile: any) => [
+        profile.id,
+        { name: profile.name },
+      ])
+    );
+
+    return ticketRows.map((ticket) => ({
+      ...ticket,
+      organization: ticket.organization_id
+        ? organizationsById.get(ticket.organization_id)
+        : undefined,
+      user_profile: ticket.user_id ? profilesById.get(ticket.user_id) : undefined,
+    }));
+  };
+
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('support_tickets')
-        .select('*, organization:organizations(name), user_profile:profiles(name)');
+      let query = supabase.from('support_tickets').select('*');
 
       if (filter !== 'all') {
         query = query.eq('status', filter);
@@ -74,7 +120,8 @@ const SupportManager: React.FC = () => {
         ascending: false,
       });
       if (error) throw error;
-      setTickets((data as any) || []);
+      const ticketsWithRelations = await hydrateTicketRelations((data as Ticket[]) || []);
+      setTickets(ticketsWithRelations);
     } catch (err) {
       logger.error('Error fetching tickets:', err);
     } finally {

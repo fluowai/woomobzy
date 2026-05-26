@@ -37,20 +37,26 @@ router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      if (isMissingRelationError(error)) {
-        const agents = await listFallbackAgents(supabase, req.orgId);
-        return res.json({
-          success: true,
-          agents,
-          setup_required: true,
-          message: 'Tabela ai_agents ainda nao foi criada. Salvando agentes temporariamente em site_settings.integrations.operationalAgents.',
-        });
-      }
-      throw error;
+      console.warn('[AIAgents] Falha ao listar ai_agents, usando fallback:', error.message);
+      const agents = await listFallbackAgentsSafe(supabase, req.orgId);
+      return res.json({
+        success: true,
+        agents,
+        setup_required: true,
+        message: isMissingRelationError(error)
+          ? 'Tabela ai_agents ainda nao foi criada. Salvando agentes temporariamente em site_settings.integrations.operationalAgents.'
+          : 'Nao foi possivel consultar ai_agents. A tela foi carregada em modo seguro.',
+      });
     }
     res.json({ success: true, agents: (data || []).map(hydrateAgent) });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[AIAgents] Erro ao carregar agentes:', error.message);
+    res.json({
+      success: true,
+      agents: [],
+      setup_required: true,
+      message: 'Nao foi possivel carregar agentes agora. A tela foi carregada em modo seguro.',
+    });
   }
 });
 
@@ -244,7 +250,19 @@ async function saveFallbackAgents(supabase, organizationId, agents) {
 
 async function listFallbackAgents(supabase, organizationId) {
   const settings = await getFallbackSettings(supabase, organizationId);
-  return settings?.integrations?.operationalAgents || [];
+  const integrations = typeof settings?.integrations === 'object' && settings?.integrations
+    ? settings.integrations
+    : {};
+  return Array.isArray(integrations.operationalAgents) ? integrations.operationalAgents : [];
+}
+
+async function listFallbackAgentsSafe(supabase, organizationId) {
+  try {
+    return await listFallbackAgents(supabase, organizationId);
+  } catch (error) {
+    console.warn('[AIAgents] Fallback indisponivel:', error.message);
+    return [];
+  }
 }
 
 async function createFallbackAgent(supabase, organizationId, payload) {

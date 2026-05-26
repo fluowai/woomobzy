@@ -1,8 +1,24 @@
 {$APP_DOMAIN} {
   encode gzip zstd
 
+  @whatsapp_ws path /api/whatsapp/ws*
+  reverse_proxy @whatsapp_ws api:3002 {
+    flush_interval -1
+    header_up Host {host}
+    header_up X-Real-IP {remote_host}
+    header_up X-Forwarded-Proto {scheme}
+    transport http {
+      read_timeout 0
+      write_timeout 0
+    }
+  }
+
   handle /api/* {
-    reverse_proxy api:3002
+    reverse_proxy api:3002 {
+      header_up Host {host}
+      header_up X-Real-IP {remote_host}
+      header_up X-Forwarded-Proto {scheme}
+    }
   }
 
   handle /health {

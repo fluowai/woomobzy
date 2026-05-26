@@ -15,14 +15,12 @@ export function useWebSocket(enabled = true) {
   const handlersRef = useRef<Map<string, Set<EventHandler>>>(new Map());
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 3; // Limited to prevent console spam
-  const gaveUp = useRef(false);
+  const maxReconnectDelay = 30000;
   const intentionalClose = useRef(false);
 
   const connect = useCallback(async () => {
     if (!enabled) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
-    if (gaveUp.current) return; // Don't try if we already gave up
 
     try {
       intentionalClose.current = false;
@@ -34,7 +32,6 @@ export function useWebSocket(enabled = true) {
         logger.info('✅ WebSocket connected');
         setIsConnected(true);
         reconnectAttempts.current = 0;
-        gaveUp.current = false;
       };
 
       ws.onmessage = (event) => {
@@ -61,24 +58,22 @@ export function useWebSocket(enabled = true) {
           return;
         }
 
-        if (reconnectAttempts.current < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
-          reconnectAttempts.current += 1;
-          reconnectTimeoutRef.current = setTimeout(connect, delay);
-        } else if (!gaveUp.current) {
-          gaveUp.current = true;
-          logger.warn('⚠️ WhatsApp WebSocket: serviço indisponível. Reconexão desativada.');
-        }
+        const delay = getReconnectDelay(reconnectAttempts.current, maxReconnectDelay);
+        reconnectAttempts.current += 1;
+        logger.warn(`WhatsApp WebSocket disconnected. Reconnecting in ${delay}ms.`);
+        reconnectTimeoutRef.current = setTimeout(connect, delay);
       };
 
-      ws.onerror = () => {
-        // Suppress error logging - onclose will handle reconnection
+      ws.onerror = (event) => {
+        logger.warn('WhatsApp WebSocket error', event);
       };
 
       wsRef.current = ws;
     } catch (err) {
-      // WebSocket creation failed - service unavailable
-      gaveUp.current = true;
+      const delay = getReconnectDelay(reconnectAttempts.current, maxReconnectDelay);
+      reconnectAttempts.current += 1;
+      logger.warn(`Failed to create WhatsApp WebSocket. Reconnecting in ${delay}ms.`, err);
+      reconnectTimeoutRef.current = setTimeout(connect, delay);
     }
   }, [enabled]);
 
@@ -87,7 +82,6 @@ export function useWebSocket(enabled = true) {
       clearTimeout(reconnectTimeoutRef.current);
     }
     intentionalClose.current = true;
-    reconnectAttempts.current = maxReconnectAttempts;
     wsRef.current?.close();
     wsRef.current = null;
     setIsConnected(false);
@@ -111,11 +105,16 @@ export function useWebSocket(enabled = true) {
       return;
     }
 
-    gaveUp.current = false;
     reconnectAttempts.current = 0;
     connect();
     return () => disconnect();
   }, [connect, disconnect, enabled]);
 
   return { isConnected, on, connect, disconnect };
+}
+
+function getReconnectDelay(attempt: number, maxDelay: number): number {
+  const exponentialDelay = Math.min(1000 * 2 ** attempt, maxDelay);
+  const jitter = Math.floor(Math.random() * 1000);
+  return exponentialDelay + jitter;
 }

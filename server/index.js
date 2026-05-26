@@ -270,7 +270,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-server.timeout = 30000; // Hardening extra
+// WebSocket connections must stay open behind reverse proxies. Keep request
+// timeouts disabled for upgraded sockets and let the WS heartbeat/proxy decide.
+server.timeout = 0;
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
 
 export default app;
 

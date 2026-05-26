@@ -130,12 +130,10 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         );
       },
       proxyReqWs: (proxyReq, req) => {
-        if (req.orgId) {
-          const url = new URL(proxyReq.path, 'http://localhost');
-          url.searchParams.set('tenant_id', req.orgId);
-          proxyReq.path = url.pathname + url.search;
-        }
-        console.log(`[WhatsApp WS Proxy] ${req.url} -> ${target}`);
+        proxyReq.removeHeader('origin');
+        console.log(
+          `[WhatsApp WS Proxy] ${req.url} -> ${target} (Org: ${req.orgId || 'none'})`
+        );
       },
       error: (err, req, res) => {
         console.error('[WhatsApp Proxy Error]', err.message);
@@ -220,12 +218,13 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     server.on('upgrade', (req, socket, head) => {
       if (req.url?.startsWith('/api/whatsapp/ws')) {
         validateWsUpgrade(req)
-          .then((ok) => {
-            if (!ok) {
+          .then((payload) => {
+            if (!payload) {
               socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
               socket.destroy();
               return;
             }
+            prepareWsProxyRequest(req, payload);
             proxy.upgrade(req, socket, head);
           })
           .catch(() => {
@@ -254,7 +253,8 @@ function verifyWsToken(token) {
     });
     if (payload?.purpose !== 'whatsapp_ws' || !payload.sub || !payload.org_id) return null;
     return payload;
-  } catch {
+  } catch (err) {
+    console.warn('[WhatsApp WS Auth] invalid token:', err.message);
     return null;
   }
 }
@@ -273,13 +273,13 @@ function issueWsToken(req, res) {
     },
     secret,
     {
-      expiresIn: '2m',
+      expiresIn: '5m',
       issuer: 'imobzy-api',
       audience: 'imobzy-whatsapp-ws',
     }
   );
 
-  res.json({ token, expires_in: 120 });
+  res.json({ token, expires_in: 300 });
 }
 
 function getWsTokenFromUrl(rawUrl) {
@@ -311,11 +311,18 @@ async function validateWsTokenMiddleware(req, res, next) {
 
 async function validateWsUpgrade(req) {
   const payload = verifyWsToken(getWsTokenFromUrl(req.url));
-  if (!payload) return false;
-  if (!(await organizationExists(payload.org_id))) return false;
+  if (!payload) return null;
+  if (!(await organizationExists(payload.org_id))) return null;
   req.user = { id: payload.sub };
   req.orgId = payload.org_id;
-  return true;
+  return payload;
+}
+
+function prepareWsProxyRequest(req, payload) {
+  const url = new URL(req.url || '/api/whatsapp/ws', 'http://localhost');
+  url.pathname = '/api/whatsapp/ws';
+  url.searchParams.set('tenant_id', payload.org_id);
+  req.url = url.pathname + url.search;
 }
 
 async function organizationExists(orgId) {

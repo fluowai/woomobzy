@@ -94,7 +94,10 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const proxy = createProxyMiddleware({
     target,
     changeOrigin: true,
-    ws: true,
+    // WebSocket upgrades are authenticated and forwarded explicitly in
+    // server.on('upgrade') below. Keeping the HTTP proxy from auto-subscribing
+    // to upgrade events avoids bypassing prepareWsProxyRequest().
+    ws: false,
     pathRewrite: rewriteWhatsAppPath,
     on: {
       proxyReq: (proxyReq, req) => {
@@ -144,6 +147,8 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
             code: 'WHATSAPP_SERVICE_UNREACHABLE',
             message: 'Servico temporariamente indisponivel.',
           });
+        } else if (res && typeof res.destroy === 'function') {
+          res.destroy();
         }
       },
     },
@@ -321,6 +326,7 @@ async function validateWsUpgrade(req) {
 function prepareWsProxyRequest(req, payload) {
   const url = new URL(req.url || '/api/whatsapp/ws', 'http://localhost');
   url.pathname = '/api/whatsapp/ws';
+  url.searchParams.delete('ws_token');
   url.searchParams.set('tenant_id', payload.org_id);
   req.url = url.pathname + url.search;
 }

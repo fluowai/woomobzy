@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Loader2,
+  Menu,
   Mail,
   MessageSquare,
   Phone,
@@ -28,13 +29,26 @@ import {
   Star,
   Target,
   Workflow,
+  X,
   XCircle,
   Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { leadService } from '../services/leads';
 
-const menuItems = ['Plataforma', 'Solucoes', 'Recursos', 'Clientes', 'Precos', 'Conteudos'];
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+};
+
+const menuItems = [
+  { label: 'Plataforma', target: 'plataforma' },
+  { label: 'Soluções', target: 'recursos' },
+  { label: 'Recursos', target: 'recursos' },
+  { label: 'Clientes', target: 'clientes' },
+  { label: 'Preços', target: 'demo-form' },
+  { label: 'Conteúdos', target: 'conteudos' },
+];
 
 const heroStats = [
   { label: 'Leads', value: '1.248', delta: '+18.2%' },
@@ -108,6 +122,9 @@ const testimonials = [
 
 const SystemSalesPage: React.FC = () => {
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -116,6 +133,33 @@ const SystemSalesPage: React.FC = () => {
     goal: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    setIsStandalone(standalone);
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    const handleAppInstalled = () => {
+      setInstallPrompt(null);
+      setIsStandalone(true);
+      toast.success('IMOBZY instalado com sucesso.');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,86 +186,134 @@ const SystemSalesPage: React.FC = () => {
   };
 
   const scrollToForm = () => {
+    setIsMenuOpen(false);
     document.getElementById('demo-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  const scrollToSection = (target: string) => {
+    setIsMenuOpen(false);
+    document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleInstallApp = async () => {
+    if (!installPrompt) return;
+
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white text-[#0c1f3f] selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen overflow-x-hidden bg-white text-[#0c1f3f] selection:bg-emerald-100 selection:text-emerald-900">
       <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-[1360px] items-center justify-between px-5 md:px-8">
-          <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-10 w-auto max-w-[135px] sm:h-12 sm:max-w-none" />
+        <div className="mx-auto flex h-16 max-w-[1360px] items-center justify-between px-4 md:h-20 md:px-8">
+          <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-9 w-auto max-w-[128px] sm:h-11 sm:max-w-none" />
           <nav className="hidden items-center gap-8 lg:flex">
             {menuItems.map((item) => (
-              <button key={item} className="flex items-center gap-1 text-sm font-bold text-slate-700 transition hover:text-emerald-700">
-                {item}
-                {['Plataforma', 'Solucoes', 'Recursos', 'Conteudos'].includes(item) && <ChevronDown size={14} />}
+              <button key={item.label} onClick={() => scrollToSection(item.target)} className="flex items-center gap-1 text-sm font-bold text-slate-700 transition hover:text-emerald-700">
+                {item.label}
+                {['Plataforma', 'Soluções', 'Recursos', 'Conteúdos'].includes(item.label) && <ChevronDown size={14} />}
               </button>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={() => navigate('/login')} className="hidden h-11 rounded-md border border-slate-300 px-6 text-sm font-extrabold text-slate-800 transition hover:border-emerald-500 hover:text-emerald-700 sm:block">
               Entrar
             </button>
             <button onClick={scrollToForm} className="h-10 whitespace-nowrap rounded-md bg-emerald-600 px-3 text-xs font-extrabold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700 sm:h-11 sm:px-7 sm:text-sm">
-              <span className="hidden sm:inline">Agendar demonstracao</span>
+              <span className="hidden sm:inline">Agendar demonstração</span>
               <span className="sm:hidden">Agendar demo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((current) => !current)}
+              aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-900 shadow-sm lg:hidden"
+            >
+              {isMenuOpen ? <X size={19} /> : <Menu size={19} />}
             </button>
           </div>
         </div>
+        {isMenuOpen && (
+          <>
+            <button type="button" aria-label="Fechar menu" className="fixed inset-0 top-16 -z-10 bg-slate-950/20 lg:hidden" onClick={() => setIsMenuOpen(false)} />
+            <div className="fixed inset-x-3 top-[72px] z-50 rounded-lg border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-900/15 lg:hidden">
+              <nav className="grid grid-cols-2 gap-2">
+                {menuItems.map((item) => (
+                  <button key={item.label} type="button" onClick={() => scrollToSection(item.target)} className="rounded-md bg-slate-50 px-3 py-3 text-left text-sm font-black text-slate-800">
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+              <div className="mt-3 grid gap-2">
+                {!isStandalone && installPrompt && (
+                  <button type="button" onClick={handleInstallApp} className="h-11 rounded-md border border-emerald-200 bg-emerald-50 text-sm font-black text-emerald-700">
+                    Instalar aplicativo
+                  </button>
+                )}
+                <button type="button" onClick={() => navigate('/login')} className="h-11 rounded-md border border-slate-200 text-sm font-black text-slate-900">
+                  Entrar no painel
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </header>
 
       <main>
-        <section className="mx-auto grid grid-cols-1 max-w-[1360px] gap-10 px-5 pb-10 pt-12 md:px-8 lg:grid-cols-[0.95fr_1.25fr] lg:items-start lg:pt-16 2xl:grid-cols-[1.05fr_1.2fr_.72fr]">
-          <div className="pt-3">
-            <h1 className="max-w-xl text-4xl font-black leading-[0.98] tracking-tight text-[#0a1c3b] sm:text-5xl md:text-6xl">
-              A plataforma inteligente que organiza, acelera <span className="text-emerald-600">e escala</span> sua imobiliaria.
+        <section id="plataforma" className="mx-auto grid max-w-[1500px] grid-cols-1 gap-8 px-5 pb-10 pt-10 md:px-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start lg:pt-14 2xl:grid-cols-[minmax(380px,0.9fr)_minmax(620px,1.25fr)_minmax(300px,0.62fr)]">
+          <div className="pt-2">
+            <h1 className="max-w-xl text-[40px] font-black leading-none text-[#0a1c3b] sm:text-5xl lg:text-[58px] 2xl:text-[64px]">
+              A plataforma inteligente que organiza, acelera <span className="text-emerald-600">e escala</span> sua imobiliária.
             </h1>
-            <p className="mt-7 max-w-lg text-lg font-semibold leading-8 text-slate-700">
-              CRM, imoveis, atendimento, automacoes e IA em um so lugar para aumentar vendas, reduzir retrabalho e entregar uma experiencia excepcional.
+            <p className="mt-6 max-w-lg text-base font-semibold leading-7 text-slate-700 sm:text-lg sm:leading-8">
+              CRM, imóveis, atendimento, automações e IA em um só lugar para aumentar vendas, reduzir retrabalho e entregar uma experiência excepcional.
             </p>
             <div className="mt-7 space-y-4">
-              {['Mais organizacao e previsibilidade', 'Atendimento rapido e sem perder oportunidades', 'Decisoes baseadas em dados e IA'].map((item) => (
+              {['Mais organização e previsibilidade', 'Atendimento rápido e sem perder oportunidades', 'Decisões baseadas em dados e IA'].map((item) => (
                 <div key={item} className="flex items-center gap-3 text-base font-bold text-slate-700">
-                  <CheckCircle2 size={19} className="text-emerald-600" />
+                  <CheckCircle2 size={19} className="shrink-0 text-emerald-600" />
                   {item}
                 </div>
               ))}
             </div>
-            <div className="mt-12 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <button onClick={scrollToForm} className="inline-flex h-14 items-center justify-center gap-3 rounded-md bg-emerald-600 px-7 text-sm font-black text-white shadow-xl shadow-emerald-900/15 transition hover:bg-emerald-700">
-                Agendar demonstracao <ArrowRight size={18} />
+                Agendar demonstração <ArrowRight size={18} />
               </button>
-              <button className="inline-flex h-14 items-center justify-center gap-3 rounded-md border border-slate-300 bg-white px-7 text-sm font-black text-slate-900 transition hover:border-emerald-500 hover:text-emerald-700">
+              <button onClick={() => scrollToSection('recursos')} className="inline-flex h-14 items-center justify-center gap-3 rounded-md border border-slate-300 bg-white px-7 text-sm font-black text-slate-900 transition hover:border-emerald-500 hover:text-emerald-700">
                 Ver como funciona <ChevronRight size={18} />
               </button>
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-200/80 sm:p-4">
-            <div className="grid overflow-hidden rounded-lg border border-slate-100 bg-slate-50 sm:min-h-[545px] sm:grid-cols-[132px_1fr]">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-200/80 sm:p-4">
+            <div className="grid overflow-hidden rounded-lg border border-slate-100 bg-slate-50 lg:max-h-[640px] sm:grid-cols-[132px_1fr]">
               <aside className="hidden bg-white p-4 sm:block">
                 <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="mb-8 h-9 w-auto" />
-                {['Visao geral', 'Leads', 'Atendimentos', 'Imoveis', 'Oportunidades', 'Atividades', 'Agenda', 'Relatorios', 'Configuracoes'].map((item, index) => (
+                {['Visão geral', 'Leads', 'Atendimentos', 'Imóveis', 'Oportunidades', 'Atividades', 'Agenda', 'Relatórios', 'Configurações'].map((item, index) => (
                   <div key={item} className={`mb-2 flex items-center gap-2 rounded-md px-2 py-2 text-[11px] font-bold ${index === 0 ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500'}`}>
                     <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                     {item}
                   </div>
                 ))}
               </aside>
-              <div className="p-4 sm:p-6">
+              <div className="p-4 sm:p-5">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-black text-slate-900">Visao geral</h2>
-                    <button className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-500">Este mes</button>
+                    <h2 className="text-lg font-black text-slate-900">Visão geral</h2>
+                    <button className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-500">Este mês</button>
                   </div>
                   <button className="rounded-md bg-emerald-600 px-4 py-2 text-[11px] font-black text-white">+ Novo lead</button>
                 </div>
 
                 <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {heroStats.map((stat) => (
-                    <div key={stat.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+                    <div key={stat.label} className="min-w-0 rounded-lg border border-slate-100 bg-white p-3 shadow-sm">
                       <p className="text-[11px] font-bold text-slate-500">{stat.label}</p>
-                      <p className="mt-2 text-2xl font-black text-slate-900">{stat.value}</p>
+                      <p className={`mt-2 whitespace-nowrap font-black text-slate-900 ${stat.value.startsWith('R$') ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'}`}>{stat.value}</p>
                       <p className="mt-1 text-[11px] font-black text-emerald-600">{stat.delta}</p>
                     </div>
                   ))}
@@ -232,7 +324,7 @@ const SystemSalesPage: React.FC = () => {
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
                     {kanbanColumns.map((column) => (
                       <div key={column.title}>
-                        <div className="mb-3 flex items-center gap-2">
+                        <div className="mb-3 flex min-h-6 items-center gap-2">
                           <span className={`h-2 w-2 rounded-full ${column.color}`} />
                           <span className="text-[10px] font-black text-slate-600">{column.title}</span>
                         </div>
@@ -271,16 +363,16 @@ const SystemSalesPage: React.FC = () => {
             </div>
           </div>
 
-          <aside id="demo-form" className="rounded-2xl bg-white p-5 shadow-2xl shadow-slate-300/70 ring-1 ring-slate-200 sm:p-8 lg:col-span-2 2xl:col-span-1">
+          <aside id="demo-form" className="rounded-lg bg-white p-5 shadow-2xl shadow-slate-300/70 ring-1 ring-slate-200 sm:p-7 lg:col-span-2 2xl:col-span-1">
             <h2 className="text-3xl font-black leading-tight text-[#0a1c3b]">
-              Agende uma <span className="text-emerald-600">demonstracao personalizada</span>
+              Agende uma <span className="text-emerald-600">demonstração personalizada</span>
             </h2>
-            <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">Veja na pratica como a IMOBZY pode transformar sua operacao comercial.</p>
+            <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">Veja na prática como a IMOBZY pode transformar sua operação comercial.</p>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Ex.: Joao da Silva" />
+              <input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Ex.: João da Silva" />
               <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="seu@imobiliaria.com.br" />
               <input required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="(00) 00000-0000" />
-              <input required value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Nome da sua imobiliaria" />
+              <input required value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Nome da sua imobiliária" />
               <select value={formData.goal} onChange={(e) => setFormData({ ...formData, goal: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
                 <option value="">Qual seu principal objetivo?</option>
                 <option>Organizar leads e atendimento</option>
@@ -292,16 +384,16 @@ const SystemSalesPage: React.FC = () => {
                 {isSubmitting ? <Loader2 className="animate-spin" size={22} /> : <>Quero agendar minha demo <ChevronRight size={18} /></>}
               </button>
             </form>
-            <div className="mt-6 flex items-center justify-center gap-2 text-xs font-black text-slate-600">
-              <div className="flex -space-x-2">
+            <div className="mt-6 flex items-center justify-center gap-4 text-xs font-black leading-4 text-slate-600">
+              <div className="flex shrink-0 -space-x-2">
                 {[1, 2, 3, 4].map((i) => <img key={i} src={`https://i.pravatar.cc/80?img=${i + 10}`} alt="" className="h-8 w-8 rounded-full border-2 border-white" />)}
               </div>
-              +350 imobiliarias ja confiam na IMOBZY
+              <span>+350 imobiliárias já confiam na IMOBZY</span>
             </div>
           </aside>
         </section>
 
-        <section className="mx-auto max-w-[1360px] px-5 py-6 md:px-8">
+        <section id="recursos" className="mx-auto max-w-[1360px] px-5 py-6 md:px-8">
           <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-6">
             {impactStats.map(({ icon: Icon, value, label }) => (
               <div key={value} className="flex items-center gap-4 border-slate-100 p-3 lg:border-r last:border-r-0">
@@ -312,7 +404,7 @@ const SystemSalesPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="mx-auto max-w-[1360px] px-5 py-10 text-center md:px-8">
+        <section id="conteudos" className="mx-auto max-w-[1360px] px-5 py-10 text-center md:px-8">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Plataforma completa</p>
           <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-black leading-tight md:text-4xl">Tudo o que sua imobiliaria precisa para vender mais e melhor</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -354,7 +446,7 @@ const SystemSalesPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="mx-auto max-w-[1360px] px-5 py-12 text-center md:px-8">
+        <section id="clientes" className="mx-auto max-w-[1360px] px-5 py-12 text-center md:px-8">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Fluxo de sucesso</p>
           <h2 className="mt-3 text-3xl font-black">Como a Imobzy organiza sua operacao</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-6">

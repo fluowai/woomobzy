@@ -34,14 +34,17 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['logo-imobzy.png', 'logo-imobzy-360.svg', 'icons/*.png'],
         manifest: {
+          id: '/',
           name: 'IMOBZY - Gestão Imobiliária Inteligente',
           short_name: 'IMOBZY',
           description: 'Sistema de gestão imobiliária completo para mercado rural e urbano.',
           theme_color: '#16a34a',
           background_color: '#f8fafc',
           display: 'standalone',
+          display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
           orientation: 'portrait-primary',
           lang: 'pt-BR',
+          dir: 'ltr',
           scope: '/',
           start_url: '/',
           icons: [
@@ -59,6 +62,22 @@ export default defineConfig(({ mode }) => {
             },
           ],
           categories: ['business', 'productivity', 'real estate'],
+          shortcuts: [
+            {
+              name: 'Painel IMOBZY',
+              short_name: 'Painel',
+              description: 'Abrir o painel do sistema',
+              url: '/login',
+              icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
+            },
+            {
+              name: 'Agendar demonstração',
+              short_name: 'Demo',
+              description: 'Solicitar uma demonstração da plataforma',
+              url: '/consultoria',
+              icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
+            },
+          ],
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],

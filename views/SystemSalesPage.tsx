@@ -291,8 +291,8 @@ const HeroAdvisorPanel: React.FC = () => (
 
         <div className="relative min-h-[360px] overflow-hidden bg-slate-100 sm:min-h-[430px]">
           <img
-            src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=900&q=85"
-            alt="Especialista comercial usando tecnologia para atender clientes imobiliários"
+            src="/images/sales/hero-corretores.webp"
+            alt="Corretores imobiliários usando tecnologia para acompanhar leads e oportunidades"
             className="absolute inset-0 h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,23,42,0.02)_0%,rgba(7,23,42,0.52)_100%)]" />

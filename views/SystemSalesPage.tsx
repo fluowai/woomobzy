@@ -2,32 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  BarChart3,
   Bot,
   Building2,
   CalendarCheck,
-  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clock,
-  Globe,
-  Heart,
+  Clock3,
+  Globe2,
   Home,
   Instagram,
   LayoutDashboard,
-  LayoutGrid,
   Loader2,
-  Menu,
   Mail,
+  Menu,
   MessageSquare,
   Phone,
   Plug,
   Quote,
   Send,
   ShieldCheck,
-  ShoppingCart,
-  Star,
-  Target,
+  Sparkles,
+  TrendingUp,
   Workflow,
   X,
   XCircle,
@@ -43,82 +40,225 @@ type BeforeInstallPromptEvent = Event & {
 
 const menuItems = [
   { label: 'Plataforma', target: 'plataforma' },
-  { label: 'Soluções', target: 'recursos' },
-  { label: 'Recursos', target: 'recursos' },
+  { label: 'Soluções', target: 'beneficios' },
+  { label: 'Recursos', target: 'como-funciona' },
   { label: 'Clientes', target: 'clientes' },
   { label: 'Preços', target: 'demo-form' },
-  { label: 'Conteúdos', target: 'conteudos' },
+  { label: 'Conteúdos', target: 'integracoes' },
 ];
 
 const heroStats = [
-  { label: 'Leads', value: '1.248', delta: '+18.2%' },
-  { label: 'Oportunidades', value: '312', delta: '+22.1%' },
-  { label: 'Negociacoes', value: '78', delta: '+8.4%' },
-  { label: 'Vendas', value: 'R$ 1,48M', delta: '+30.4%' },
+  { label: 'Leads captados', value: '1.248', delta: '+18%' },
+  { label: 'Oportunidades', value: '312', delta: '+22%' },
+  { label: 'Negociações', value: '78', delta: '+8%' },
+  { label: 'Receita prevista', value: 'R$ 1,48M', delta: '+30%' },
 ];
 
 const kanbanColumns = [
-  { title: 'Novos Leads', color: 'bg-amber-400', cards: ['Joao Mendes', 'Mariana Telles', 'Carlos Andrade'] },
-  { title: 'Qualificacao', color: 'bg-orange-400', cards: ['Beatriz Lima', 'Rapha Nunes'] },
+  { title: 'Novo lead', color: 'bg-amber-400', cards: ['João Mendes', 'Mariana Telles'] },
+  { title: 'Qualificado', color: 'bg-orange-400', cards: ['Beatriz Lima', 'Rapha Nunes'] },
   { title: 'Proposta', color: 'bg-sky-400', cards: ['Juliana Costa', 'Lucas Ferreira'] },
-  { title: 'Negociacao', color: 'bg-emerald-400', cards: ['Ana Paula', 'Felipe Santos'] },
-  { title: 'Fechado', color: 'bg-green-500', cards: ['Roberta Alves'] },
+  { title: 'Negociação', color: 'bg-emerald-400', cards: ['Ana Paula', 'Felipe Santos'] },
 ];
 
-const impactStats = [
-  { icon: Zap, value: '+250%', label: 'aumento medio na produtividade' },
-  { icon: Clock, value: '-60%', label: 'no tempo de resposta aos leads' },
-  { icon: Workflow, value: '+1.8M', label: 'de leads processados por mes' },
-  { icon: ShieldCheck, value: '+20 mil', label: 'imoveis gerenciados na plataforma' },
-  { icon: Heart, value: '+98%', label: 'de satisfacao dos clientes' },
-  { icon: MessageSquare, value: '99,9%', label: 'de uptime e seguranca' },
+const metrics = [
+  { icon: TrendingUp, value: '+250%', label: 'produtividade comercial' },
+  { icon: Clock3, value: '-60%', label: 'tempo de resposta' },
+  { icon: Workflow, value: '+1.8M', label: 'leads processados/mês' },
+  { icon: ShieldCheck, value: '99,9%', label: 'uptime e segurança' },
 ];
 
-const platformCards = [
-  { icon: LayoutDashboard, title: 'CRM Comercial', text: 'Organize leads, oportunidades e negociacoes em um funil inteligente e visual.' },
-  { icon: MessageSquare, title: 'Central de Atendimento', text: 'Omnichannel integrado com WhatsApp, Instagram, e-mail, site e telefone.' },
-  { icon: Home, title: 'Gestao de Imoveis', text: 'Cadastro completo, documentos, multimidia, portais e controle de disponibilidade.' },
-  { icon: ShoppingCart, title: 'Funil de Leads', text: 'Acompanhe cada etapa do funil e aumente sua taxa de conversao com processos claros.' },
-  { icon: Zap, title: 'Automacao', text: 'Automatize tarefas, disparos, follow-ups e rotinas para ganhar tempo e vender mais.' },
-  { icon: Bot, title: 'IA para Qualificacao', text: 'Inteligencia artificial que qualifica leads, identifica intencao e sugere proximos passos.' },
-  { icon: CalendarCheck, title: 'Agenda e Visitas', text: 'Agendamento online, roteiros, check-in e acompanhamento de visitas.' },
-  { icon: Target, title: 'Gestao 360 da Operacao', text: 'Relatorios, dashboards e KPIs em tempo real para decisoes mais estrategicas.' },
+const benefits = [
+  {
+    icon: LayoutDashboard,
+    title: 'CRM imobiliário visual',
+    text: 'Pipeline claro para acompanhar captação, atendimento, propostas e fechamento em uma única operação.',
+  },
+  {
+    icon: MessageSquare,
+    title: 'Atendimento omnichannel',
+    text: 'Centralize WhatsApp, site, portais, Instagram e e-mail sem perder histórico ou oportunidades.',
+  },
+  {
+    icon: Bot,
+    title: 'IA para qualificação',
+    text: 'Priorize leads com maior intenção, receba sugestões de próximo passo e reduza atendimento manual.',
+  },
+  {
+    icon: Home,
+    title: 'Gestão de imóveis',
+    text: 'Controle disponibilidade, mídia, documentos, portais e dados comerciais com padrão profissional.',
+  },
+  {
+    icon: CalendarCheck,
+    title: 'Agenda e visitas',
+    text: 'Organize visitas, retornos, follow-ups e tarefas críticas para manter o time em movimento.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Dashboards executivos',
+    text: 'Métricas de conversão, velocidade de atendimento e previsão de vendas em tempo real.',
+  },
 ];
 
-const flowSteps = [
-  ['1. Captar', 'Atraia leads de todos os canais e centralize em um so lugar.'],
-  ['2. Atender', 'Responda rapido e qualifique com IA e automacoes.'],
-  ['3. Distribuir', 'Direcione para o corretor certo, no momento certo.'],
-  ['4. Negociar', 'Acompanhe o funil e conduza negociacoes com inteligencia.'],
-  ['5. Fechar', 'Formalize, assine e registre tudo com seguranca.'],
-  ['6. Acompanhar', 'Pos-venda, recompra e fidelizacao para resultados recorrentes.'],
+const beforeItems = [
+  'Leads espalhados em planilhas e conversas',
+  'Atendimento lento e sem prioridade',
+  'Gestores sem previsibilidade de venda',
+  'Corretores repetindo tarefas manuais',
 ];
 
-const segments = [
-  { icon: Building2, title: 'Vendas', text: 'Mais organizacao e conversao' },
-  { icon: Home, title: 'Locacao', text: 'Agilidade e controle de ponta a ponta' },
-  { icon: LayoutGrid, title: 'Lancamentos', text: 'Gestao completa de empreendimentos' },
-  { icon: Globe, title: 'Loteamentos', text: 'Controle de lotes, vendas e contratos' },
-  { icon: Star, title: 'Alto Padrao', text: 'Atendimento premium e personalizado' },
-  { icon: Target, title: 'Imobiliaria Rural', text: 'Especializada para o agronegocio' },
+const afterItems = [
+  'Todos os canais centralizados no CRM',
+  'IA indicando intenção e próximo passo',
+  'Pipeline previsível por etapa e corretor',
+  'Automação para follow-up e distribuição',
+];
+
+const steps = [
+  ['1', 'Captar', 'Receba leads de site, portais, WhatsApp e redes sociais em uma entrada organizada.'],
+  ['2', 'Qualificar', 'A IA identifica intenção, urgência, perfil e melhores oportunidades para o time.'],
+  ['3', 'Distribuir', 'Direcione o lead para o corretor certo com regras e contexto completo.'],
+  ['4', 'Negociar', 'Acompanhe propostas, visitas, tarefas e mensagens sem perder o ritmo comercial.'],
+  ['5', 'Escalar', 'Use dados para replicar o que vende mais e corrigir gargalos rapidamente.'],
 ];
 
 const integrations = [
   { icon: MessageSquare, title: 'WhatsApp', text: 'Business API' },
   { icon: Instagram, title: 'Instagram', text: 'Direct' },
-  { icon: Globe, title: 'Site', text: 'Formularios' },
+  { icon: Globe2, title: 'Site', text: 'Formulários' },
   { icon: Mail, title: 'E-mail', text: 'Marketing' },
-  { icon: Building2, title: 'Portais', text: 'Imobiliarios' },
-  { icon: Zap, title: 'Zapier', text: 'Automacao' },
+  { icon: Building2, title: 'Portais', text: 'Imobiliários' },
+  { icon: Zap, title: 'Zapier', text: 'Automação' },
   { icon: Send, title: 'RD Station', text: 'Marketing' },
-  { icon: Plug, title: '+ APIs', text: 'Integracoes' },
+  { icon: Plug, title: 'APIs', text: 'Integrações' },
 ];
 
 const testimonials = [
-  ['A IMOBZY mudou nossa operacao. Centralizamos tudo e aumentamos nossas vendas em 35%.', 'Carlos Machado', 'Diretor Comercial'],
-  ['O atendimento ficou muito mais agil e nao perdemos mais nenhuma oportunidade.', 'Juliana Ribeiro', 'Gerente de Operacoes'],
-  ['Os relatorios e dashboards nos dao clareza total para tomar decisoes todos os dias.', 'Rafael Nogueira', 'CEO'],
+  {
+    quote: 'Centralizamos atendimento, funil e gestão. Em poucas semanas já tínhamos mais velocidade e previsibilidade.',
+    name: 'Carlos Machado',
+    role: 'Diretor Comercial',
+    metric: '+35% em vendas',
+    avatar: 'https://i.pravatar.cc/120?img=12',
+  },
+  {
+    quote: 'O time parou de perder lead no WhatsApp. A distribuição ficou clara e os retornos acontecem na hora certa.',
+    name: 'Juliana Ribeiro',
+    role: 'Gerente de Operações',
+    metric: '-58% no tempo de resposta',
+    avatar: 'https://i.pravatar.cc/120?img=47',
+  },
+  {
+    quote: 'Os relatórios tiraram a operação do achismo. Hoje sabemos onde cada venda trava e o que precisa melhorar.',
+    name: 'Rafael Nogueira',
+    role: 'CEO',
+    metric: '4,9/5 de avaliação',
+    avatar: 'https://i.pravatar.cc/120?img=33',
+  },
 ];
+
+const socialProofAvatars = ['https://i.pravatar.cc/80?img=21', 'https://i.pravatar.cc/80?img=36', 'https://i.pravatar.cc/80?img=52', 'https://i.pravatar.cc/80?img=59'];
+
+const SectionHeader: React.FC<{ eyebrow: string; title: string; text?: string }> = ({ eyebrow, title, text }) => (
+  <div className="mx-auto max-w-3xl text-center">
+    <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">{eyebrow}</p>
+    <h2 className="mt-3 text-3xl font-black leading-tight text-[#07172a] md:text-4xl">{title}</h2>
+    {text ? <p className="mt-4 text-base font-semibold leading-7 text-slate-600">{text}</p> : null}
+  </div>
+);
+
+const DashboardPreview: React.FC = () => (
+  <div className="relative">
+    <div className="max-h-[420px] overflow-hidden rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_28px_80px_rgba(15,23,42,0.14)] sm:max-h-[680px] lg:max-h-none">
+      <div className="overflow-hidden rounded-[18px] border border-slate-200 bg-[#f5f7fb]">
+        <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-4">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-rose-300" />
+            <span className="h-3 w-3 rounded-full bg-amber-300" />
+            <span className="h-3 w-3 rounded-full bg-emerald-400" />
+          </div>
+          <div className="hidden rounded-full bg-slate-100 px-4 py-1 text-xs font-black text-slate-500 sm:block">app.imobzy.com/pipeline</div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <Sparkles size={15} />
+          </div>
+        </div>
+
+        <div className="grid min-h-[380px] sm:min-h-[520px] lg:grid-cols-[160px_1fr]">
+          <aside className="hidden border-r border-slate-200 bg-white p-4 lg:block">
+            <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="mb-7 h-8 w-auto" />
+            {['Visão geral', 'Leads', 'Atendimentos', 'Imóveis', 'Agenda', 'Relatórios'].map((item, index) => (
+              <div key={item} className={`mb-2 flex items-center gap-2 rounded-xl px-3 py-3 text-xs font-black ${index === 0 ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500'}`}>
+                <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                {item}
+              </div>
+            ))}
+          </aside>
+
+          <div className="min-w-0 p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Operação comercial</p>
+                <h3 className="mt-1 text-2xl font-black text-[#07172a]">Pipeline em tempo real</h3>
+              </div>
+              <button className="h-10 rounded-xl bg-emerald-600 px-4 text-xs font-black text-white shadow-lg shadow-emerald-900/15">+ Novo lead</button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+              {heroStats.map((stat) => (
+                <div key={stat.label} className="rounded-[18px] border border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="text-xs font-black text-slate-500">{stat.label}</p>
+                  <p className="mt-2 whitespace-nowrap text-2xl font-black text-[#07172a]">{stat.value}</p>
+                  <p className="mt-2 text-xs font-black text-emerald-600">{stat.delta}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h4 className="text-base font-black text-[#07172a]">Funil de oportunidades</h4>
+                <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">78 negociações ativas</span>
+              </div>
+              <div className="overflow-x-auto pb-2 xl:overflow-visible">
+                <div className="grid min-w-[640px] grid-cols-4 gap-3 xl:min-w-0">
+                  {kanbanColumns.map((column) => (
+                    <div key={column.title} className="rounded-[18px] bg-[#f5f7fb] p-3">
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${column.color}`} />
+                        <span className="text-[11px] font-black text-slate-700">{column.title}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {column.cards.map((card) => (
+                          <div key={card} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                            <p className="text-xs font-black leading-4 text-[#07172a]">{card}</p>
+                            <p className="mt-2 text-[11px] font-bold text-slate-400">R$ 680.000</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {['WhatsApp respondido', 'Visita agendada', 'Proposta enviada'].map((item, index) => (
+                <div key={item} className="rounded-[18px] border border-slate-200 bg-white p-4">
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                    {index === 0 ? <MessageSquare size={18} /> : index === 1 ? <CalendarCheck size={18} /> : <Send size={18} />}
+                  </div>
+                  <p className="text-xs font-black text-[#07172a]">{item}</p>
+                  <p className="mt-1 text-[11px] font-bold text-slate-400">Agora há pouco</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="pointer-events-none absolute inset-x-3 bottom-3 h-20 rounded-b-[18px] bg-gradient-to-t from-white to-transparent sm:hidden" />
+    </div>
+  </div>
+);
 
 const SystemSalesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -170,8 +310,8 @@ const SystemSalesPage: React.FC = () => {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        source: 'Pagina de Vendas - Demonstracao',
-        notes: `Empresa: ${formData.company} | Objetivo: ${formData.goal || 'Nao informado'} | Interesse: Demonstracao Completa`,
+        source: 'Página de Vendas - Demonstração',
+        notes: `Empresa: ${formData.company} | Objetivo: ${formData.goal || 'Não informado'} | Interesse: Demonstração Completa`,
       } as any);
 
       toast.success('Dados recebidos! Redirecionando para agendamento...');
@@ -180,7 +320,7 @@ const SystemSalesPage: React.FC = () => {
         navigate(`/consultoria/qualificacao?name=${encodeURIComponent(formData.name)}&email=${encodeURIComponent(formData.email)}&company=${encodeURIComponent(formData.company)}`);
       }, 1200);
     } catch (error) {
-      toast.error('Erro ao enviar solicitacao. Tente novamente.');
+      toast.error('Erro ao enviar solicitação. Tente novamente.');
       setIsSubmitting(false);
     }
   };
@@ -206,365 +346,282 @@ const SystemSalesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white text-[#0c1f3f] selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen overflow-x-hidden bg-white text-[#07172a] selection:bg-emerald-100 selection:text-emerald-900">
       <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1680px] items-center justify-between px-4 md:h-20 md:px-8">
-          <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-9 w-auto max-w-[128px] sm:h-11 sm:max-w-none" />
-          <nav className="hidden items-center gap-8 lg:flex">
+        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-5">
+          <button type="button" onClick={() => scrollToSection('plataforma')} className="flex items-center">
+            <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-9 w-auto" />
+          </button>
+          <nav className="hidden items-center gap-7 lg:flex">
             {menuItems.map((item) => (
-              <button key={item.label} onClick={() => scrollToSection(item.target)} className="flex items-center gap-1 text-sm font-bold text-slate-700 transition hover:text-emerald-700">
+              <button key={item.label} onClick={() => scrollToSection(item.target)} className="flex items-center gap-1 text-sm font-extrabold text-slate-700 transition hover:text-emerald-700">
                 {item.label}
                 {['Plataforma', 'Soluções', 'Recursos', 'Conteúdos'].includes(item.label) && <ChevronDown size={14} />}
               </button>
             ))}
           </nav>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button onClick={() => navigate('/login')} className="hidden h-11 rounded-md border border-slate-300 px-6 text-sm font-extrabold text-slate-800 transition hover:border-emerald-500 hover:text-emerald-700 sm:block">
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate('/login')} className="hidden h-11 rounded-xl border border-slate-300 px-6 text-sm font-black text-slate-800 transition hover:border-emerald-500 hover:text-emerald-700 sm:block">
               Entrar
             </button>
-            <button onClick={scrollToForm} className="h-10 whitespace-nowrap rounded-md bg-emerald-600 px-3 text-xs font-extrabold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700 sm:h-11 sm:px-7 sm:text-sm">
-              <span className="hidden sm:inline">Agendar demonstração</span>
-              <span className="sm:hidden">Agendar demo</span>
+            <button onClick={scrollToForm} className="h-11 rounded-xl bg-emerald-600 px-4 text-xs font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700 sm:px-6 sm:text-sm">
+              Agendar demo
             </button>
             <button
               type="button"
               onClick={() => setIsMenuOpen((current) => !current)}
               aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-900 shadow-sm lg:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm lg:hidden"
             >
               {isMenuOpen ? <X size={19} /> : <Menu size={19} />}
             </button>
           </div>
         </div>
         {isMenuOpen && (
-          <>
-            <button type="button" aria-label="Fechar menu" className="fixed inset-0 top-16 -z-10 bg-slate-950/20 lg:hidden" onClick={() => setIsMenuOpen(false)} />
-            <div className="fixed inset-x-3 top-[72px] z-50 rounded-lg border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-900/15 lg:hidden">
-              <nav className="grid grid-cols-2 gap-2">
-                {menuItems.map((item) => (
-                  <button key={item.label} type="button" onClick={() => scrollToSection(item.target)} className="rounded-md bg-slate-50 px-3 py-3 text-left text-sm font-black text-slate-800">
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
-              <div className="mt-3 grid gap-2">
-                {!isStandalone && installPrompt && (
-                  <button type="button" onClick={handleInstallApp} className="h-11 rounded-md border border-emerald-200 bg-emerald-50 text-sm font-black text-emerald-700">
-                    Instalar aplicativo
-                  </button>
-                )}
-                <button type="button" onClick={() => navigate('/login')} className="h-11 rounded-md border border-slate-200 text-sm font-black text-slate-900">
-                  Entrar no painel
+          <div className="fixed inset-x-3 top-[72px] z-50 rounded-[20px] border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-900/15 lg:hidden">
+            <nav className="grid grid-cols-2 gap-2">
+              {menuItems.map((item) => (
+                <button key={item.label} type="button" onClick={() => scrollToSection(item.target)} className="rounded-2xl bg-[#f5f7fb] px-4 py-3 text-left text-sm font-black text-slate-800">
+                  {item.label}
                 </button>
-              </div>
+              ))}
+            </nav>
+            <div className="mt-3 grid gap-2">
+              {!isStandalone && installPrompt && (
+                <button type="button" onClick={handleInstallApp} className="h-11 rounded-2xl border border-emerald-200 bg-emerald-50 text-sm font-black text-emerald-700">
+                  Instalar aplicativo
+                </button>
+              )}
+              <button type="button" onClick={() => navigate('/login')} className="h-11 rounded-2xl border border-slate-200 text-sm font-black text-slate-900">
+                Entrar no painel
+              </button>
             </div>
-          </>
+          </div>
         )}
       </header>
 
       <main>
-        <section id="plataforma" className="border-b border-slate-100 bg-white">
-          <div className="mx-auto grid max-w-[1680px] grid-cols-1 gap-10 px-5 pb-12 pt-10 md:px-8 lg:grid-cols-[minmax(360px,0.78fr)_minmax(0,1.22fr)] lg:items-start lg:pb-16 lg:pt-14 xl:grid-cols-[minmax(420px,0.82fr)_minmax(0,1.18fr)]">
+        <section id="plataforma" className="bg-[linear-gradient(180deg,#ffffff_0%,#f5f7fb_100%)]">
+          <div className="mx-auto grid max-w-[1280px] gap-8 px-5 py-8 sm:gap-12 sm:py-12 lg:grid-cols-[0.88fr_1.12fr] lg:items-center lg:py-16">
             <div>
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
-                <Zap size={15} />
-                CRM, IA e atendimento em uma tela
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white px-3 py-2 text-xs font-black text-emerald-700 shadow-sm">
+                <Sparkles size={15} />
+                Plataforma comercial inteligente para imobiliárias
               </div>
-              <h1 className="max-w-[680px] text-[42px] font-black leading-none text-[#0a1c3b] sm:text-5xl lg:text-[58px] 2xl:text-[68px]">
-                Organize, acelere e escale sua imobiliária.
+              <h1 className="max-w-2xl text-[36px] font-black leading-[0.98] text-[#07172a] sm:text-6xl lg:text-[68px]">
+                Venda mais imóveis com automação, IA e pipeline previsível.
               </h1>
-              <p className="mt-6 max-w-2xl text-base font-semibold leading-7 text-slate-700 sm:text-xl sm:leading-9">
-                CRM, imóveis, atendimento, automações e IA em um só lugar para vender mais, reduzir retrabalho e acompanhar cada oportunidade com clareza.
+              <p className="mt-5 max-w-xl text-base font-semibold leading-7 text-slate-600 sm:mt-6 sm:text-lg sm:leading-8">
+                A IMOBZY centraliza leads, imóveis, atendimento e dados comerciais para sua equipe responder rápido, negociar melhor e escalar vendas.
               </p>
-              <div className="mt-7 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                {['Pipeline visual', 'Resposta rápida', 'Dados em tempo real'].map((item) => (
-                  <div key={item} className="flex items-center gap-3 text-sm font-black text-slate-700">
-                    <CheckCircle2 size={19} className="shrink-0 text-emerald-600" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <button onClick={scrollToForm} className="inline-flex h-14 items-center justify-center gap-3 rounded-md bg-emerald-600 px-8 text-sm font-black text-white shadow-xl shadow-emerald-900/20 transition hover:bg-emerald-700">
+              <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
+                <button onClick={scrollToForm} className="inline-flex h-12 items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-8 text-sm font-black text-white shadow-xl shadow-emerald-900/20 transition hover:-translate-y-0.5 hover:bg-emerald-700 sm:h-14">
                   Agendar demonstração <ArrowRight size={18} />
                 </button>
-                <button onClick={() => scrollToSection('recursos')} className="inline-flex h-14 items-center justify-center gap-3 rounded-md border border-slate-300 bg-white px-8 text-sm font-black text-slate-900 transition hover:border-emerald-500 hover:text-emerald-700">
-                  Ver recursos <ChevronRight size={18} />
+                <button onClick={() => scrollToSection('beneficios')} className="inline-flex h-12 items-center justify-center gap-3 rounded-2xl border border-slate-300 bg-white px-8 text-sm font-black text-[#07172a] transition hover:border-emerald-500 hover:text-emerald-700 sm:h-14">
+                  Ver plataforma <ChevronRight size={18} />
                 </button>
               </div>
+              <div className="mt-5 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex -space-x-3">
+                  {socialProofAvatars.map((avatar) => (
+                    <img key={avatar} src={avatar} alt="" className="h-10 w-10 rounded-full border-2 border-white object-cover" />
+                  ))}
+                </div>
+                <p className="max-w-sm text-sm font-bold leading-6 text-slate-600">
+                  +350 imobiliárias já transformaram sua operação comercial com a IMOBZY.
+                </p>
+              </div>
             </div>
+            <DashboardPreview />
+          </div>
+        </section>
 
-            <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-200/80 md:p-4">
-              <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-                <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-4">
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-rose-300" />
-                    <span className="h-3 w-3 rounded-full bg-amber-300" />
-                    <span className="h-3 w-3 rounded-full bg-emerald-400" />
+        <section className="bg-white py-8">
+          <div className="mx-auto max-w-[1280px] px-5">
+            <div className="grid gap-3 rounded-[20px] border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-4">
+              {metrics.map(({ icon: Icon, value, label }) => (
+                <div key={value} className="flex items-center gap-4 rounded-2xl p-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                    <Icon size={22} />
                   </div>
-                  <div className="hidden rounded-full bg-slate-100 px-4 py-1 text-xs font-black text-slate-500 sm:block">
-                    app.imobzy.com/pipeline
-                  </div>
-                  <div className="h-8 w-8 rounded-full bg-emerald-100" />
-                </div>
-
-                <div className="grid min-h-[560px] xl:grid-cols-[176px_1fr]">
-                  <aside className="hidden border-r border-slate-200 bg-white p-5 xl:block">
-                    <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="mb-8 h-8 w-auto" />
-                    {['Visão geral', 'Leads', 'Atendimentos', 'Imóveis', 'Agenda', 'Relatórios'].map((item, index) => (
-                      <div key={item} className={`mb-2 flex items-center gap-2 rounded-md px-3 py-3 text-xs font-black ${index === 0 ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500'}`}>
-                        <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-                        {item}
-                      </div>
-                    ))}
-                  </aside>
-
-                  <div className="min-w-0 p-4 sm:p-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-xs font-black uppercase text-emerald-600">Operação comercial</p>
-                        <h2 className="mt-1 text-2xl font-black text-slate-950">Pipeline em tempo real</h2>
-                      </div>
-                      <button className="h-10 rounded-md bg-emerald-600 px-4 text-xs font-black text-white shadow-lg shadow-emerald-900/15">
-                        + Novo lead
-                      </button>
-                    </div>
-
-                    <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-                      {heroStats.map((stat) => (
-                        <div key={stat.label} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-                          <p className="text-xs font-black text-slate-500">{stat.label}</p>
-                          <p className="mt-2 whitespace-nowrap text-2xl font-black text-slate-950">{stat.value}</p>
-                          <p className="mt-2 text-xs font-black text-emerald-600">{stat.delta}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_280px]">
-                      <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="mb-4 flex items-center justify-between gap-4">
-                          <h3 className="text-base font-black text-slate-950">Funil de oportunidades</h3>
-                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">78 negociações</span>
-                        </div>
-                        <div className="overflow-x-auto pb-1">
-                          <div className="grid min-w-[620px] grid-cols-5 gap-3">
-                            {kanbanColumns.map((column) => (
-                              <div key={column.title} className="rounded-md bg-slate-50 p-3">
-                                <div className="mb-3 flex min-h-8 items-center gap-2">
-                                  <span className={`h-2 w-2 shrink-0 rounded-full ${column.color}`} />
-                                  <span className="text-[11px] font-black leading-4 text-slate-700">{column.title}</span>
-                                </div>
-                                <div className="space-y-2">
-                                  {column.cards.slice(0, 2).map((card) => (
-                                    <div key={card} className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
-                                      <p className="text-[12px] font-black leading-4 text-slate-800">{card}</p>
-                                      <p className="mt-2 text-[11px] font-bold text-slate-400">R$ 680.000</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-                        <h3 className="text-base font-black text-slate-950">Atendimentos</h3>
-                        <div className="mt-4 space-y-3">
-                          {['WhatsApp respondido', 'Visita agendada', 'Proposta enviada'].map((item, index) => (
-                            <div key={item} className="flex items-start gap-3 rounded-md bg-slate-50 p-3">
-                              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                                {index === 0 ? <MessageSquare size={16} /> : index === 1 ? <CalendarCheck size={16} /> : <Send size={16} />}
-                              </div>
-                              <div>
-                                <p className="text-xs font-black text-slate-800">{item}</p>
-                                <p className="mt-1 text-[11px] font-bold text-slate-400">Agora há pouco</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="mt-5 rounded-md bg-slate-950 p-4 text-white">
-                          <p className="text-xs font-bold text-slate-300">Previsão do mês</p>
-                          <p className="mt-1 text-2xl font-black">R$ 1,48M</p>
-                          <svg viewBox="0 0 240 70" className="mt-3 h-20 w-full">
-                            <polyline points="0,55 35,43 70,49 105,28 140,34 175,18 210,26 240,8" fill="none" stroke="#34d399" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
+                  <div>
+                    <p className="text-2xl font-black text-[#07172a]">{value}</p>
+                    <p className="text-xs font-bold leading-5 text-slate-500">{label}</p>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="beneficios" className="bg-[#f5f7fb] py-16">
+          <div className="mx-auto max-w-[1280px] px-5">
+            <SectionHeader
+              eyebrow="Plataforma completa"
+              title="O sistema comercial que sua imobiliária usa todos os dias."
+              text="Menos troca de abas, menos retrabalho e mais clareza para transformar atendimento em venda."
+            />
+            <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {benefits.map(({ icon: Icon, title, text }) => (
+                <div key={title} className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/70">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                    <Icon size={24} />
+                  </div>
+                  <h3 className="text-lg font-black text-[#07172a]">{title}</h3>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white py-16">
+          <div className="mx-auto grid max-w-[1280px] gap-8 px-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Problema x solução</p>
+              <h2 className="mt-3 text-3xl font-black leading-tight text-[#07172a] md:text-4xl">Pare de operar no improviso. Venda com processo.</h2>
+              <p className="mt-4 text-base font-semibold leading-7 text-slate-600">
+                A IMOBZY transforma uma rotina espalhada em uma operação comercial com prioridade, contexto e previsibilidade.
+              </p>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="rounded-[20px] border border-rose-100 bg-rose-50/60 p-6">
+                <p className="mb-5 text-sm font-black uppercase text-rose-600">Antes</p>
+                {beforeItems.map((item) => (
+                  <p key={item} className="mb-4 flex gap-3 text-sm font-bold leading-6 text-slate-700">
+                    <XCircle size={18} className="mt-0.5 shrink-0 text-rose-500" />
+                    {item}
+                  </p>
+                ))}
+              </div>
+              <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/80 p-6">
+                <p className="mb-5 text-sm font-black uppercase text-emerald-700">Com IMOBZY</p>
+                {afterItems.map((item) => (
+                  <p key={item} className="mb-4 flex gap-3 text-sm font-bold leading-6 text-slate-700">
+                    <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+                    {item}
+                  </p>
+                ))}
               </div>
             </div>
           </div>
+        </section>
 
-          <div id="demo-form" className="mx-auto max-w-[1680px] px-5 pb-12 md:px-8">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/70 md:p-6">
-              <div className="grid gap-5 xl:grid-cols-[320px_1fr] xl:items-center">
-                <div>
-                  <h2 className="text-2xl font-black leading-tight text-[#0a1c3b]">Agende uma demonstração personalizada</h2>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">Veja na prática como a IMOBZY transforma sua operação comercial.</p>
+        <section id="como-funciona" className="bg-[#f5f7fb] py-16">
+          <div className="mx-auto max-w-[1280px] px-5">
+            <SectionHeader
+              eyebrow="Como funciona"
+              title="Um fluxo simples para organizar a operação inteira."
+            />
+            <div className="mt-10 grid gap-4 lg:grid-cols-5">
+              {steps.map(([number, title, text]) => (
+                <div key={title} className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#07172a] text-sm font-black text-white">{number}</div>
+                  <h3 className="text-base font-black text-[#07172a]">{title}</h3>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{text}</p>
                 </div>
-                <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_1.15fr_auto]">
-                  <input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Ex.: João da Silva" />
-                  <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="seu@imobiliaria.com.br" />
-                  <input required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="(00) 00000-0000" />
-                  <input required value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Nome da imobiliária" />
-                  <select value={formData.goal} onChange={(e) => setFormData({ ...formData, goal: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="integracoes" className="bg-white py-16">
+          <div className="mx-auto max-w-[1280px] px-5">
+            <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+              <SectionHeader
+                eyebrow="Ecossistema conectado"
+                title="Integre seus canais e automatize a jornada do lead."
+              />
+              <div className="mt-10 grid gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
+                {integrations.map(({ icon: Icon, title, text }) => (
+                  <div key={title} className="rounded-[20px] border border-slate-200 bg-[#f5f7fb] p-4 text-center">
+                    <Icon className="mx-auto text-emerald-600" size={24} />
+                    <p className="mt-3 text-sm font-black text-[#07172a]">{title}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="clientes" className="bg-[#f5f7fb] py-16">
+          <div className="mx-auto max-w-[1280px] px-5">
+            <SectionHeader
+              eyebrow="Quem usa, aprova"
+              title="Cases reais de times comerciais que precisavam de mais controle."
+            />
+            <div className="mt-10 grid gap-5 lg:grid-cols-3">
+              {testimonials.map((item) => (
+                <div key={item.name} className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <Quote size={30} className="text-emerald-600" />
+                  <p className="mt-5 text-base font-semibold leading-7 text-slate-700">{item.quote}</p>
+                  <div className="mt-6 flex items-center gap-4">
+                    <img src={item.avatar} alt={item.name} className="h-12 w-12 rounded-full object-cover" />
+                    <div>
+                      <p className="font-black text-[#07172a]">{item.name}</p>
+                      <p className="text-xs font-bold text-slate-500">{item.role}</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700">{item.metric}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="demo-form" className="bg-white py-16">
+          <div className="mx-auto max-w-[1280px] px-5">
+            <div className="overflow-hidden rounded-[24px] bg-[#07172a] p-6 text-white shadow-2xl shadow-slate-900/20 md:p-10">
+              <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Próximo passo</p>
+                  <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
+                    Veja como a IMOBZY organizaria sua operação comercial.
+                  </h2>
+                  <p className="mt-4 text-base font-semibold leading-7 text-slate-300">
+                    Demonstração personalizada, sem compromisso, com foco nos gargalos da sua imobiliária.
+                  </p>
+                  <div className="mt-6 flex flex-wrap gap-3 text-sm font-black text-slate-200">
+                    <span className="rounded-full bg-white/10 px-4 py-2">Sem cartão</span>
+                    <span className="rounded-full bg-white/10 px-4 py-2">Diagnóstico rápido</span>
+                    <span className="rounded-full bg-white/10 px-4 py-2">Plano de implantação</span>
+                  </div>
+                </div>
+                <form onSubmit={handleSubmit} className="grid gap-3 rounded-[20px] bg-white p-4 text-[#07172a] shadow-xl md:grid-cols-2 md:p-5">
+                  <input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Nome completo" />
+                  <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="E-mail profissional" />
+                  <input required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="WhatsApp" />
+                  <input required value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Nome da imobiliária" />
+                  <select value={formData.goal} onChange={(e) => setFormData({ ...formData, goal: e.target.value })} className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 md:col-span-2">
                     <option value="">Principal objetivo</option>
                     <option>Organizar leads e atendimento</option>
                     <option>Aumentar vendas</option>
                     <option>Automatizar processos</option>
                     <option>Integrar WhatsApp e canais</option>
                   </select>
-                  <button disabled={isSubmitting} className="flex h-12 min-w-[210px] items-center justify-center gap-3 rounded-md bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700 disabled:opacity-60 md:col-span-2 xl:col-span-1">
-                    {isSubmitting ? <Loader2 className="animate-spin" size={22} /> : <>Quero minha demo <ChevronRight size={18} /></>}
+                  <button disabled={isSubmitting} className="flex h-14 min-h-14 items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 py-4 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700 disabled:opacity-60 md:col-span-2">
+                    {isSubmitting ? <Loader2 className="animate-spin" size={22} /> : <>Agendar demonstração agora <ArrowRight size={18} /></>}
                   </button>
                 </form>
               </div>
             </div>
           </div>
         </section>
-
-        <section id="recursos" className="mx-auto max-w-[1680px] px-5 py-8 md:px-8">
-          <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-6">
-            {impactStats.map(({ icon: Icon, value, label }) => (
-              <div key={value} className="flex items-center gap-4 border-slate-100 p-4 lg:border-r last:border-r-0">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"><Icon size={22} /></div>
-                <div><p className="text-2xl font-black text-[#0a1c3b]">{value}</p><p className="text-xs font-bold leading-5 text-slate-500">{label}</p></div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section id="conteudos" className="mx-auto max-w-[1360px] px-5 py-10 text-center md:px-8">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Plataforma completa</p>
-          <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-black leading-tight md:text-4xl">Tudo o que sua imobiliaria precisa para vender mais e melhor</h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {platformCards.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="rounded-xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/70">
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><Icon size={24} /></div>
-                <h3 className="text-base font-black text-[#0a1c3b]">{title}</h3>
-                <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">{text}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-[1360px] px-5 py-4 md:px-8">
-          <div className="grid gap-6 rounded-2xl bg-slate-50 p-7 ring-1 ring-slate-200 lg:grid-cols-[.8fr_1.7fr] lg:items-center">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Menos problemas. Mais resultados.</p>
-              <h2 className="mt-3 text-3xl font-black leading-tight">Nos entendemos os desafios da sua operacao</h2>
-              <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">A IMOBZY foi criada para resolver os principais gargalos que travam o crescimento da sua imobiliaria.</p>
-              <button className="mt-6 rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-800">Ver todas as solucoes</button>
-            </div>
-            <div className="grid gap-5 rounded-xl bg-white p-6 shadow-sm md:grid-cols-[1fr_auto_1fr] md:items-center">
-              <div>
-                <p className="mb-4 text-sm font-black uppercase text-slate-500">Sem IMOBZY</p>
-                {['Leads perdidos e sem resposta', 'Processos manuais e repetitivos', 'Informacoes espalhadas', 'Falta de controle e previsibilidade', 'Decisoes no achismo', 'Baixa produtividade da equipe'].map((item) => (
-                  <p key={item} className="mb-3 flex items-center gap-3 text-sm font-bold text-slate-600"><XCircle size={17} className="text-rose-500" />{item}</p>
-                ))}
-              </div>
-              <div className="hidden h-24 w-24 items-center justify-center rounded-full bg-white shadow-xl ring-1 ring-slate-200 md:flex">
-                <img src="/logo-imobzy.png" alt="IMOBZY" className="h-14 w-14 object-contain" />
-              </div>
-              <div>
-                <p className="mb-4 text-sm font-black uppercase text-emerald-600">Com IMOBZY</p>
-                {['Leads atendidos na hora certa', 'Processos automatizados e inteligentes', 'Dados centralizados e organizados', 'Visao completa e previsivel da operacao', 'Decisoes baseadas em dados e IA', 'Equipe mais produtiva e focada em vender'].map((item) => (
-                  <p key={item} className="mb-3 flex items-center gap-3 text-sm font-bold text-slate-600"><CheckCircle2 size={17} className="text-emerald-600" />{item}</p>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="clientes" className="mx-auto max-w-[1360px] px-5 py-12 text-center md:px-8">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Fluxo de sucesso</p>
-          <h2 className="mt-3 text-3xl font-black">Como a Imobzy organiza sua operacao</h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-            {flowSteps.map(([title, text], index) => (
-              <div key={title} className="relative">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"><Check size={22} /></div>
-                {index < flowSteps.length - 1 && <div className="absolute left-[58%] top-6 hidden h-px w-[84%] border-t border-dashed border-emerald-300 lg:block" />}
-                <h3 className="mt-5 text-sm font-black">{title}</h3>
-                <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">{text}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-[1360px] px-5 py-4 md:px-8">
-          <div className="grid rounded-2xl border border-slate-200 bg-white shadow-sm md:grid-cols-3 lg:grid-cols-6">
-            {segments.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="flex items-center gap-4 border-slate-100 p-6 md:border-r">
-                <Icon size={30} className="text-slate-500" />
-                <div><h3 className="font-black">{title}</h3><p className="text-sm font-semibold leading-5 text-slate-500">{text}</p></div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-[1360px] px-5 py-12 text-center md:px-8">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Conectada aos seus canais</p>
-          <h2 className="mt-3 text-3xl font-black">Integre, automatize e potencialize resultados</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
-            {integrations.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <Icon className="mx-auto text-emerald-600" size={25} />
-                <p className="mt-3 text-sm font-black">{title}</p>
-                <p className="text-xs font-semibold text-slate-500">{text}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-8 grid gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-[1fr_1fr_1fr_.8fr]">
-            {testimonials.map(([text, name, role]) => (
-              <div key={name} className="border-slate-100 text-left lg:border-r lg:pr-6">
-                <Quote size={32} className="mb-4 text-emerald-600" />
-                <p className="text-sm font-semibold leading-6 text-slate-600">{text}</p>
-                <p className="mt-5 font-black">{name}</p>
-                <p className="text-xs font-semibold text-slate-500">{role}</p>
-              </div>
-            ))}
-            <div className="flex flex-col items-center justify-center text-center">
-              <p className="text-3xl font-black">4,9/5</p>
-              <div className="mt-2 flex text-emerald-600">{[1, 2, 3, 4, 5].map((i) => <Star key={i} size={18} fill="currentColor" />)}</div>
-              <p className="mt-3 text-sm font-bold text-slate-500">+350 imobiliarias recomendam a IMOBZY</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-[1360px] px-5 pt-4 md:px-8">
-          <div className="grid gap-8 rounded-t-2xl bg-[#061a35] p-10 text-white md:grid-cols-[1fr_1.25fr] md:p-14">
-            <div>
-              <h2 className="text-4xl font-black leading-tight">Pronto para <span className="text-emerald-400">transformar</span> a sua imobiliaria?</h2>
-              <p className="mt-5 max-w-xl text-base font-semibold leading-7 text-slate-300">Agende uma demonstracao gratuita e descubra como a IMOBZY pode levar sua operacao a outro nivel.</p>
-            </div>
-            <div className="flex flex-col justify-center gap-6">
-              <div className="grid gap-3 sm:grid-cols-3">
-                {['Demonstracao 100% personalizada', 'Sem compromisso e sem cartao', 'Resultados reais desde o inicio'].map((item) => (
-                  <div key={item} className="flex items-center gap-3 text-sm font-black text-slate-200"><CheckCircle2 size={22} className="text-emerald-400" />{item}</div>
-                ))}
-              </div>
-              <button onClick={scrollToForm} className="mx-auto flex h-14 w-full max-w-md items-center justify-center gap-3 rounded-md bg-emerald-500 text-sm font-black text-white shadow-xl shadow-emerald-950/30 transition hover:bg-emerald-400">
-                Agendar demonstracao agora <ChevronRight size={18} />
-              </button>
-              <p className="text-center text-sm font-semibold text-slate-300">Ou fale com nosso time: (11) 4000-1234</p>
-            </div>
-          </div>
-        </section>
       </main>
 
-      <footer className="bg-[#061a35] px-5 py-10 text-white md:px-8">
-        <div className="mx-auto grid max-w-[1360px] gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr_1.2fr]">
+      <footer className="bg-[#07172a] px-5 py-10 text-white">
+        <div className="mx-auto grid max-w-[1280px] gap-8 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div>
-            <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-12 w-auto rounded-lg bg-white" />
-            <p className="mt-4 max-w-xs text-sm font-semibold leading-6 text-slate-300">A plataforma inteligente que organiza, acelera e escala sua imobiliaria.</p>
+            <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-11 w-auto rounded-xl bg-white p-1" />
+            <p className="mt-4 max-w-sm text-sm font-semibold leading-6 text-slate-300">
+              Plataforma SaaS para imobiliárias que precisam vender com organização, velocidade e inteligência comercial.
+            </p>
           </div>
           {[
-            ['Plataforma', 'Recursos', 'Integracoes', 'Seguranca', 'Precos'],
-            ['Solucoes', 'Vendas', 'Locacao', 'Lancamentos', 'Imobiliaria Rural'],
-            ['Conteudos', 'Blog', 'Materiais', 'Webinars', 'Cases'],
+            ['Plataforma', 'CRM', 'Atendimento', 'Automação', 'IA'],
+            ['Soluções', 'Vendas', 'Locação', 'Lançamentos', 'Rural'],
           ].map(([title, ...items]) => (
             <div key={title}>
               <h3 className="mb-4 text-xs font-black uppercase tracking-[0.18em] text-slate-400">{title}</h3>
@@ -572,15 +629,15 @@ const SystemSalesPage: React.FC = () => {
             </div>
           ))}
           <div>
-            <h3 className="mb-4 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Fale com a IMOBZY</h3>
+            <h3 className="mb-4 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Contato</h3>
             <p className="mb-3 flex items-center gap-3 text-sm font-semibold text-slate-300"><Phone size={16} />(11) 4000-1234</p>
             <p className="mb-3 flex items-center gap-3 text-sm font-semibold text-slate-300"><Mail size={16} />contato@imobzy.com.br</p>
-            <p className="flex items-center gap-3 text-sm font-semibold text-slate-300"><Building2 size={16} />Sao Paulo, SP - Brasil</p>
+            <p className="flex items-center gap-3 text-sm font-semibold text-slate-300"><Building2 size={16} />São Paulo, SP</p>
           </div>
         </div>
-        <div className="mx-auto mt-10 flex max-w-[1360px] flex-col gap-4 border-t border-white/10 pt-6 text-xs font-semibold text-slate-400 md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto mt-10 flex max-w-[1280px] flex-col gap-4 border-t border-white/10 pt-6 text-xs font-semibold text-slate-400 md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} IMOBZY. Todos os direitos reservados.</p>
-          <div className="flex flex-wrap gap-4 md:gap-8"><span>Politica de Privacidade</span><span>Termos de Uso</span><span>DPA</span><span>Status do Sistema</span></div>
+          <div className="flex flex-wrap gap-4 md:gap-8"><span>Privacidade</span><span>Termos</span><span>Status</span></div>
         </div>
       </footer>
     </div>

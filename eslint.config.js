@@ -47,7 +47,7 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ['**/*.{ts,tsx,js,mjs}'],
+    files: ['**/*.{ts,tsx,js,mjs,cjs}'],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 'latest',

@@ -112,7 +112,7 @@ const SiteHeader: React.FC = () => {
 
       {/* 2. MAIN HEADER (White) */}
       <div className="bg-white py-4 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 relative">
           {/* Logo */}
           <div onClick={() => navigate('/')} className="cursor-pointer">
             {settings.logoUrl ? (

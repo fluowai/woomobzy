@@ -225,9 +225,9 @@ const RuralLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-dvh bg-bg-primary overflow-hidden selection:bg-primary/20 selection:text-primary">
+    <div className="flex h-dvh bg-bg-primary selection:bg-primary/20 selection:text-primary">
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 md:hidden">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
@@ -245,7 +245,7 @@ const RuralLayout: React.FC = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="w-66 bg-white border-r border-slate-200 text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden shadow-sm">
+      <aside className="w-64 bg-white border-r border-slate-200 text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden shadow-sm">
         {renderSidebarContent()}
       </aside>
 
@@ -253,7 +253,7 @@ const RuralLayout: React.FC = () => {
         <header className="h-16 md:h-20 bg-bg-card/80 backdrop-blur-xl border-b border-border-subtle flex items-center justify-between px-4 md:px-8 z-10 gap-3 md:gap-6 sticky top-0">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2.5 text-text-secondary hover:text-primary bg-bg-hover rounded-xl transition-colors"
+              className="md:hidden p-2.5 text-text-secondary hover:text-primary bg-bg-hover rounded-xl transition-colors"
           >
             <Menu size={22} />
           </button>

@@ -238,7 +238,7 @@ const UrbanLayout: React.FC = () => {
         </div>
       )}
 
-      <aside className="w-66 bg-white border-r border-slate-200 text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden shadow-sm">
+      <aside className="w-64 bg-white border-r border-slate-200 text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden shadow-sm">
         {renderSidebarContent()}
       </aside>
 

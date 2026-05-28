@@ -8,6 +8,7 @@ import {
   BookOpen,
   Bot,
   CalendarClock,
+  ChevronLeft,
   CheckCircle2,
   ChevronDown,
   Circle,
@@ -346,6 +347,10 @@ const AIAgents: React.FC = () => {
   const activeAgents = useMemo(() => agents.filter((agent) => agent.is_active).length, [agents]);
   const pausedAgents = useMemo(() => agents.length - activeAgents, [agents, activeAgents]);
   const propertyPath = pathname.startsWith('/rural') ? '/rural/properties/new' : '/urban/properties/new';
+  const activeStepIndex = Math.max(tabs.findIndex((tab) => tab.id === activeTab), 0);
+  const activeStep = tabs[activeStepIndex] || tabs[0];
+  const isFirstStep = activeStepIndex === 0;
+  const isLastStep = activeStepIndex === tabs.length - 1;
 
   useEffect(() => {
     loadAgents();
@@ -392,9 +397,18 @@ const AIAgents: React.FC = () => {
     }
   };
 
-  const scrollToSection = (id: string) => {
+  const goToStep = (id: string) => {
     setActiveTab(id);
-    document.getElementById(`agent-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const goToPreviousStep = () => {
+    if (isFirstStep) return;
+    setActiveTab(tabs[activeStepIndex - 1].id);
+  };
+
+  const goToNextStep = () => {
+    if (isLastStep) return;
+    setActiveTab(tabs[activeStepIndex + 1].id);
   };
 
   const startBlankAgent = () => {
@@ -712,27 +726,46 @@ const AIAgents: React.FC = () => {
             </section>
 
             <section className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="border-b border-slate-100 bg-white px-3">
-                <div className="flex gap-1 overflow-x-auto py-2">
+              <div className="border-b border-slate-100 bg-white p-3">
+                <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                      Etapa {activeStepIndex + 1} de {tabs.length}
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-950">
+                      <activeStep.icon size={16} />
+                      {activeStep.label}
+                    </div>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 lg:w-56">
+                    <div
+                      className="h-full rounded-full bg-emerald-600 transition-all"
+                      style={{ width: `${((activeStepIndex + 1) / tabs.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => scrollToSection(tab.id)}
-                      className={`h-11 shrink-0 rounded-lg px-4 text-xs font-black flex items-center gap-2 transition ${
+                      onClick={() => goToStep(tab.id)}
+                      aria-selected={activeTab === tab.id}
+                      className={`h-11 min-w-0 rounded-lg px-3 text-xs font-black flex items-center justify-center gap-2 transition ${
                         activeTab === tab.id
                           ? 'bg-slate-100 text-slate-950'
                           : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                       }`}
                     >
-                      <tab.icon size={15} />
-                      {tab.label}
+                      <tab.icon size={15} className="shrink-0" />
+                      <span className="truncate">{tab.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="p-5 lg:p-6 space-y-8">
-                <section id="agent-identity" className="scroll-mt-28">
+              <div className="p-5 lg:p-6 min-h-[520px]">
+                <section id="agent-identity" className={activeTab === 'identity' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Identidade"
                     title="Perfil operacional do agente"
@@ -807,7 +840,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-channels" className="scroll-mt-28">
+                <section id="agent-channels" className={activeTab === 'channels' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Canais"
                     title="Canais de atuação e instância WooAPI"
@@ -847,7 +880,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-operation" className="scroll-mt-28">
+                <section id="agent-operation" className={activeTab === 'operation' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Operação"
                     title="Onde este agente atua?"
@@ -923,7 +956,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-tools" className="scroll-mt-28">
+                <section id="agent-tools" className={activeTab === 'tools' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Ferramentas"
                     title="Ferramentas permitidas"
@@ -948,7 +981,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-rules" className="scroll-mt-28">
+                <section id="agent-rules" className={activeTab === 'rules' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Regras"
                     title="Quando acionar humano?"
@@ -976,7 +1009,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-test" className="scroll-mt-28">
+                <section id="agent-test" className={activeTab === 'test' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Teste"
                     title="Simule uma conversa antes de publicar"
@@ -1006,7 +1039,7 @@ const AIAgents: React.FC = () => {
               </div>
             </section>
 
-            <footer className="sticky bottom-0 z-10 rounded-lg border border-slate-200 bg-white/94 p-3 shadow-lg shadow-slate-200/70 backdrop-blur-xl">
+            <footer className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <button
                   onClick={resetDraft}
@@ -1014,7 +1047,24 @@ const AIAgents: React.FC = () => {
                 >
                   Cancelar
                 </button>
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <button
+                    onClick={goToPreviousStep}
+                    disabled={isFirstStep}
+                    className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <ChevronLeft size={17} />
+                    Voltar
+                  </button>
+                  {!isLastStep && (
+                    <button
+                      onClick={goToNextStep}
+                      className="h-11 rounded-lg bg-slate-950 px-5 text-sm font-black text-white flex items-center justify-center gap-2 hover:bg-slate-800"
+                    >
+                      Próxima etapa
+                      <ArrowRight size={17} />
+                    </button>
+                  )}
                   <button
                     onClick={() => saveAgent('Rascunho')}
                     disabled={saving}

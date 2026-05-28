@@ -208,7 +208,7 @@ const SystemSalesPage: React.FC = () => {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-[#0c1f3f] selection:bg-emerald-100 selection:text-emerald-900">
       <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1360px] items-center justify-between px-4 md:h-20 md:px-8">
+        <div className="mx-auto flex h-16 max-w-[1680px] items-center justify-between px-4 md:h-20 md:px-8">
           <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-9 w-auto max-w-[128px] sm:h-11 sm:max-w-none" />
           <nav className="hidden items-center gap-8 lg:flex">
             {menuItems.map((item) => (
@@ -263,142 +263,175 @@ const SystemSalesPage: React.FC = () => {
       </header>
 
       <main>
-        <section id="plataforma" className="mx-auto grid max-w-[1500px] grid-cols-1 gap-8 px-5 pb-10 pt-10 md:px-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start lg:pt-14 2xl:grid-cols-[minmax(380px,0.9fr)_minmax(620px,1.25fr)_minmax(300px,0.62fr)]">
-          <div className="pt-2">
-            <h1 className="max-w-xl text-[40px] font-black leading-none text-[#0a1c3b] sm:text-5xl lg:text-[58px] 2xl:text-[64px]">
-              A plataforma inteligente que organiza, acelera <span className="text-emerald-600">e escala</span> sua imobiliária.
-            </h1>
-            <p className="mt-6 max-w-lg text-base font-semibold leading-7 text-slate-700 sm:text-lg sm:leading-8">
-              CRM, imóveis, atendimento, automações e IA em um só lugar para aumentar vendas, reduzir retrabalho e entregar uma experiência excepcional.
-            </p>
-            <div className="mt-7 space-y-4">
-              {['Mais organização e previsibilidade', 'Atendimento rápido e sem perder oportunidades', 'Decisões baseadas em dados e IA'].map((item) => (
-                <div key={item} className="flex items-center gap-3 text-base font-bold text-slate-700">
-                  <CheckCircle2 size={19} className="shrink-0 text-emerald-600" />
-                  {item}
-                </div>
-              ))}
-            </div>
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              <button onClick={scrollToForm} className="inline-flex h-14 items-center justify-center gap-3 rounded-md bg-emerald-600 px-7 text-sm font-black text-white shadow-xl shadow-emerald-900/15 transition hover:bg-emerald-700">
-                Agendar demonstração <ArrowRight size={18} />
-              </button>
-              <button onClick={() => scrollToSection('recursos')} className="inline-flex h-14 items-center justify-center gap-3 rounded-md border border-slate-300 bg-white px-7 text-sm font-black text-slate-900 transition hover:border-emerald-500 hover:text-emerald-700">
-                Ver como funciona <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-200/80 sm:p-4">
-            <div className="grid overflow-hidden rounded-lg border border-slate-100 bg-slate-50 lg:max-h-[640px] sm:grid-cols-[132px_1fr]">
-              <aside className="hidden bg-white p-4 sm:block">
-                <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="mb-8 h-9 w-auto" />
-                {['Visão geral', 'Leads', 'Atendimentos', 'Imóveis', 'Oportunidades', 'Atividades', 'Agenda', 'Relatórios', 'Configurações'].map((item, index) => (
-                  <div key={item} className={`mb-2 flex items-center gap-2 rounded-md px-2 py-2 text-[11px] font-bold ${index === 0 ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500'}`}>
-                    <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+        <section id="plataforma" className="border-b border-slate-100 bg-white">
+          <div className="mx-auto grid max-w-[1680px] grid-cols-1 gap-10 px-5 pb-12 pt-10 md:px-8 lg:grid-cols-[minmax(360px,0.78fr)_minmax(0,1.22fr)] lg:items-start lg:pb-16 lg:pt-14 xl:grid-cols-[minmax(420px,0.82fr)_minmax(0,1.18fr)]">
+            <div>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
+                <Zap size={15} />
+                CRM, IA e atendimento em uma tela
+              </div>
+              <h1 className="max-w-[680px] text-[42px] font-black leading-none text-[#0a1c3b] sm:text-5xl lg:text-[58px] 2xl:text-[68px]">
+                Organize, acelere e escale sua imobiliária.
+              </h1>
+              <p className="mt-6 max-w-2xl text-base font-semibold leading-7 text-slate-700 sm:text-xl sm:leading-9">
+                CRM, imóveis, atendimento, automações e IA em um só lugar para vender mais, reduzir retrabalho e acompanhar cada oportunidade com clareza.
+              </p>
+              <div className="mt-7 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                {['Pipeline visual', 'Resposta rápida', 'Dados em tempo real'].map((item) => (
+                  <div key={item} className="flex items-center gap-3 text-sm font-black text-slate-700">
+                    <CheckCircle2 size={19} className="shrink-0 text-emerald-600" />
                     {item}
                   </div>
                 ))}
-              </aside>
-              <div className="p-4 sm:p-5">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-900">Visão geral</h2>
-                    <button className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-500">Este mês</button>
+              </div>
+              <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                <button onClick={scrollToForm} className="inline-flex h-14 items-center justify-center gap-3 rounded-md bg-emerald-600 px-8 text-sm font-black text-white shadow-xl shadow-emerald-900/20 transition hover:bg-emerald-700">
+                  Agendar demonstração <ArrowRight size={18} />
+                </button>
+                <button onClick={() => scrollToSection('recursos')} className="inline-flex h-14 items-center justify-center gap-3 rounded-md border border-slate-300 bg-white px-8 text-sm font-black text-slate-900 transition hover:border-emerald-500 hover:text-emerald-700">
+                  Ver recursos <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-200/80 md:p-4">
+              <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-4">
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full bg-rose-300" />
+                    <span className="h-3 w-3 rounded-full bg-amber-300" />
+                    <span className="h-3 w-3 rounded-full bg-emerald-400" />
                   </div>
-                  <button className="rounded-md bg-emerald-600 px-4 py-2 text-[11px] font-black text-white">+ Novo lead</button>
-                </div>
-
-                <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {heroStats.map((stat) => (
-                    <div key={stat.label} className="min-w-0 rounded-lg border border-slate-100 bg-white p-3 shadow-sm">
-                      <p className="text-[11px] font-bold text-slate-500">{stat.label}</p>
-                      <p className={`mt-2 whitespace-nowrap font-black text-slate-900 ${stat.value.startsWith('R$') ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'}`}>{stat.value}</p>
-                      <p className="mt-1 text-[11px] font-black text-emerald-600">{stat.delta}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
-                  <h3 className="mb-4 text-sm font-black text-slate-900">Funil de oportunidades</h3>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
-                    {kanbanColumns.map((column) => (
-                      <div key={column.title}>
-                        <div className="mb-3 flex min-h-6 items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full ${column.color}`} />
-                          <span className="text-[10px] font-black text-slate-600">{column.title}</span>
-                        </div>
-                        <div className="space-y-2">
-                          {column.cards.map((card) => (
-                            <div key={card} className="rounded-md border border-slate-100 bg-slate-50 p-3">
-                              <p className="text-[11px] font-black text-slate-700">{card}</p>
-                              <p className="mt-1 text-[10px] font-semibold text-slate-400">R$ 680.000</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="hidden rounded-full bg-slate-100 px-4 py-1 text-xs font-black text-slate-500 sm:block">
+                    app.imobzy.com/pipeline
                   </div>
+                  <div className="h-8 w-8 rounded-full bg-emerald-100" />
                 </div>
 
-                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
-                    <h3 className="mb-4 text-sm font-black">Atendimentos recentes</h3>
-                    {['Novo lead de Juliana Costa', 'Mensagem de Beatriz Lima', 'Novo formulario recebido'].map((item) => (
-                      <div key={item} className="flex items-center gap-3 border-t border-slate-100 py-3 text-[11px] font-bold text-slate-600">
-                        <CheckCircle2 size={14} className="text-emerald-500" />
+                <div className="grid min-h-[560px] xl:grid-cols-[176px_1fr]">
+                  <aside className="hidden border-r border-slate-200 bg-white p-5 xl:block">
+                    <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="mb-8 h-8 w-auto" />
+                    {['Visão geral', 'Leads', 'Atendimentos', 'Imóveis', 'Agenda', 'Relatórios'].map((item, index) => (
+                      <div key={item} className={`mb-2 flex items-center gap-2 rounded-md px-3 py-3 text-xs font-black ${index === 0 ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500'}`}>
+                        <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                         {item}
                       </div>
                     ))}
-                  </div>
-                  <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
-                    <h3 className="text-sm font-black">Desempenho de vendas</h3>
-                    <p className="mt-2 text-2xl font-black">R$ 1,48M</p>
-                    <svg viewBox="0 0 260 90" className="mt-3 h-24 w-full">
-                      <polyline points="0,70 30,55 60,62 90,36 120,48 150,28 180,43 210,18 240,35 260,8" fill="none" stroke="#10b981" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                  </aside>
+
+                  <div className="min-w-0 p-4 sm:p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase text-emerald-600">Operação comercial</p>
+                        <h2 className="mt-1 text-2xl font-black text-slate-950">Pipeline em tempo real</h2>
+                      </div>
+                      <button className="h-10 rounded-md bg-emerald-600 px-4 text-xs font-black text-white shadow-lg shadow-emerald-900/15">
+                        + Novo lead
+                      </button>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+                      {heroStats.map((stat) => (
+                        <div key={stat.label} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+                          <p className="text-xs font-black text-slate-500">{stat.label}</p>
+                          <p className="mt-2 whitespace-nowrap text-2xl font-black text-slate-950">{stat.value}</p>
+                          <p className="mt-2 text-xs font-black text-emerald-600">{stat.delta}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_280px]">
+                      <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="mb-4 flex items-center justify-between gap-4">
+                          <h3 className="text-base font-black text-slate-950">Funil de oportunidades</h3>
+                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">78 negociações</span>
+                        </div>
+                        <div className="overflow-x-auto pb-1">
+                          <div className="grid min-w-[620px] grid-cols-5 gap-3">
+                            {kanbanColumns.map((column) => (
+                              <div key={column.title} className="rounded-md bg-slate-50 p-3">
+                                <div className="mb-3 flex min-h-8 items-center gap-2">
+                                  <span className={`h-2 w-2 shrink-0 rounded-full ${column.color}`} />
+                                  <span className="text-[11px] font-black leading-4 text-slate-700">{column.title}</span>
+                                </div>
+                                <div className="space-y-2">
+                                  {column.cards.slice(0, 2).map((card) => (
+                                    <div key={card} className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+                                      <p className="text-[12px] font-black leading-4 text-slate-800">{card}</p>
+                                      <p className="mt-2 text-[11px] font-bold text-slate-400">R$ 680.000</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+                        <h3 className="text-base font-black text-slate-950">Atendimentos</h3>
+                        <div className="mt-4 space-y-3">
+                          {['WhatsApp respondido', 'Visita agendada', 'Proposta enviada'].map((item, index) => (
+                            <div key={item} className="flex items-start gap-3 rounded-md bg-slate-50 p-3">
+                              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                {index === 0 ? <MessageSquare size={16} /> : index === 1 ? <CalendarCheck size={16} /> : <Send size={16} />}
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-slate-800">{item}</p>
+                                <p className="mt-1 text-[11px] font-bold text-slate-400">Agora há pouco</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-5 rounded-md bg-slate-950 p-4 text-white">
+                          <p className="text-xs font-bold text-slate-300">Previsão do mês</p>
+                          <p className="mt-1 text-2xl font-black">R$ 1,48M</p>
+                          <svg viewBox="0 0 240 70" className="mt-3 h-20 w-full">
+                            <polyline points="0,55 35,43 70,49 105,28 140,34 175,18 210,26 240,8" fill="none" stroke="#34d399" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <aside id="demo-form" className="rounded-lg bg-white p-5 shadow-2xl shadow-slate-300/70 ring-1 ring-slate-200 sm:p-7 lg:col-span-2 2xl:col-span-1">
-            <h2 className="text-3xl font-black leading-tight text-[#0a1c3b]">
-              Agende uma <span className="text-emerald-600">demonstração personalizada</span>
-            </h2>
-            <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">Veja na prática como a IMOBZY pode transformar sua operação comercial.</p>
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Ex.: João da Silva" />
-              <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="seu@imobiliaria.com.br" />
-              <input required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="(00) 00000-0000" />
-              <input required value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Nome da sua imobiliária" />
-              <select value={formData.goal} onChange={(e) => setFormData({ ...formData, goal: e.target.value })} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
-                <option value="">Qual seu principal objetivo?</option>
-                <option>Organizar leads e atendimento</option>
-                <option>Aumentar vendas</option>
-                <option>Automatizar processos</option>
-                <option>Integrar WhatsApp e canais</option>
-              </select>
-              <button disabled={isSubmitting} className="flex h-14 w-full items-center justify-center gap-3 rounded-md bg-emerald-600 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700 disabled:opacity-60">
-                {isSubmitting ? <Loader2 className="animate-spin" size={22} /> : <>Quero agendar minha demo <ChevronRight size={18} /></>}
-              </button>
-            </form>
-            <div className="mt-6 flex items-center justify-center gap-4 text-xs font-black leading-4 text-slate-600">
-              <div className="flex shrink-0 -space-x-2">
-                {[1, 2, 3, 4].map((i) => <img key={i} src={`https://i.pravatar.cc/80?img=${i + 10}`} alt="" className="h-8 w-8 rounded-full border-2 border-white" />)}
+          <div id="demo-form" className="mx-auto max-w-[1680px] px-5 pb-12 md:px-8">
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/70 md:p-6">
+              <div className="grid gap-5 xl:grid-cols-[320px_1fr] xl:items-center">
+                <div>
+                  <h2 className="text-2xl font-black leading-tight text-[#0a1c3b]">Agende uma demonstração personalizada</h2>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">Veja na prática como a IMOBZY transforma sua operação comercial.</p>
+                </div>
+                <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_1.15fr_auto]">
+                  <input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Ex.: João da Silva" />
+                  <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="seu@imobiliaria.com.br" />
+                  <input required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="(00) 00000-0000" />
+                  <input required value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="Nome da imobiliária" />
+                  <select value={formData.goal} onChange={(e) => setFormData({ ...formData, goal: e.target.value })} className="h-12 w-full rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
+                    <option value="">Principal objetivo</option>
+                    <option>Organizar leads e atendimento</option>
+                    <option>Aumentar vendas</option>
+                    <option>Automatizar processos</option>
+                    <option>Integrar WhatsApp e canais</option>
+                  </select>
+                  <button disabled={isSubmitting} className="flex h-12 min-w-[210px] items-center justify-center gap-3 rounded-md bg-emerald-600 px-5 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700 disabled:opacity-60 md:col-span-2 xl:col-span-1">
+                    {isSubmitting ? <Loader2 className="animate-spin" size={22} /> : <>Quero minha demo <ChevronRight size={18} /></>}
+                  </button>
+                </form>
               </div>
-              <span>+350 imobiliárias já confiam na IMOBZY</span>
             </div>
-          </aside>
+          </div>
         </section>
 
-        <section id="recursos" className="mx-auto max-w-[1360px] px-5 py-6 md:px-8">
-          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-6">
+        <section id="recursos" className="mx-auto max-w-[1680px] px-5 py-8 md:px-8">
+          <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-6">
             {impactStats.map(({ icon: Icon, value, label }) => (
-              <div key={value} className="flex items-center gap-4 border-slate-100 p-3 lg:border-r last:border-r-0">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"><Icon size={22} /></div>
-                <div><p className="text-2xl font-black text-[#0a1c3b]">{value}</p><p className="text-xs font-semibold leading-4 text-slate-500">{label}</p></div>
+              <div key={value} className="flex items-center gap-4 border-slate-100 p-4 lg:border-r last:border-r-0">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"><Icon size={22} /></div>
+                <div><p className="text-2xl font-black text-[#0a1c3b]">{value}</p><p className="text-xs font-bold leading-5 text-slate-500">{label}</p></div>
               </div>
             ))}
           </div>

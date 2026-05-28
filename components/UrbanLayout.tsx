@@ -219,7 +219,7 @@ const UrbanLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-dvh bg-bg-primary overflow-hidden selection:bg-primary/20 selection:text-primary">
+    <div className="flex h-screen h-dvh bg-bg-primary overflow-hidden selection:bg-primary/20 selection:text-primary">
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div

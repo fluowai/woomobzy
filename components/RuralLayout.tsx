@@ -225,7 +225,7 @@ const RuralLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-dvh bg-bg-primary selection:bg-primary/20 selection:text-primary">
+    <div className="flex h-screen h-dvh bg-bg-primary overflow-hidden selection:bg-primary/20 selection:text-primary">
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
@@ -288,7 +288,7 @@ const RuralLayout: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-bg-primary">
           <div className="max-w-[1600px] mx-auto">
             <Outlet />
           </div>

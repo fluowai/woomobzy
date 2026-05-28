@@ -171,7 +171,7 @@ const SystemSalesPage: React.FC = () => {
       </header>
 
       <main>
-        <section className="mx-auto grid max-w-[1360px] gap-10 px-5 pb-10 pt-12 md:px-8 lg:grid-cols-[0.95fr_1.25fr] lg:items-start lg:pt-16 2xl:grid-cols-[1.05fr_1.2fr_.72fr]">
+        <section className="mx-auto grid grid-cols-1 max-w-[1360px] gap-10 px-5 pb-10 pt-12 md:px-8 lg:grid-cols-[0.95fr_1.25fr] lg:items-start lg:pt-16 2xl:grid-cols-[1.05fr_1.2fr_.72fr]">
           <div className="pt-3">
             <h1 className="max-w-xl text-4xl font-black leading-[0.98] tracking-tight text-[#0a1c3b] sm:text-5xl md:text-6xl">
               A plataforma inteligente que organiza, acelera <span className="text-emerald-600">e escala</span> sua imobiliaria.

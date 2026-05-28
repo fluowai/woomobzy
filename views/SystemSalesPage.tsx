@@ -261,59 +261,59 @@ const DashboardPreview: React.FC = () => (
 );
 
 const HeroAdvisorPanel: React.FC = () => (
-  <div className="relative">
-    <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.12)]">
-      <div className="grid bg-[#07172a] lg:grid-cols-[0.82fr_1fr]">
-        <div className="relative z-10 p-6 text-white sm:p-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-black text-emerald-200">
-            <Bot size={15} />
-            IA comercial ativa
-          </div>
-          <h3 className="mt-5 text-2xl font-black leading-tight sm:text-3xl">
-            Atendimento rápido, corretor certo e lead quente no funil.
-          </h3>
-          <p className="mt-4 text-sm font-semibold leading-6 text-slate-300">
-            A IMOBZY organiza cada contato para sua equipe agir com contexto, velocidade e previsibilidade.
-          </p>
+  <div className="relative lg:pl-4 xl:pl-8">
+    <div className="relative min-h-[430px] overflow-hidden rounded-[30px] border border-slate-200 bg-slate-100 shadow-[0_28px_80px_rgba(15,23,42,0.12)] sm:min-h-[520px] lg:min-h-[560px]">
+      <img
+        src="/images/sales/hero-corretores.webp"
+        alt="Corretores imobiliários usando tecnologia para acompanhar leads e oportunidades"
+        className="absolute inset-0 h-full w-full object-cover object-center"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,23,42,0.68)_0%,rgba(7,23,42,0.28)_34%,rgba(7,23,42,0.04)_66%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,rgba(7,23,42,0)_0%,rgba(7,23,42,0.56)_100%)]" />
 
-          <div className="mt-7 grid gap-3">
-            {[
-              ['00:42', 'tempo médio para primeiro contato'],
-              ['92%', 'leads com próximo passo sugerido'],
-            ].map(([value, label]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/10 p-4">
-                <p className="text-2xl font-black text-emerald-300">{value}</p>
-                <p className="mt-1 text-xs font-bold leading-5 text-slate-300">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/90 px-3 py-2 text-xs font-black text-emerald-700 shadow-lg backdrop-blur">
+        <Bot size={15} />
+        IA comercial ativa
+      </div>
 
-        <div className="relative min-h-[360px] overflow-hidden bg-slate-100 sm:min-h-[430px]">
-          <img
-            src="/images/sales/hero-corretores.webp"
-            alt="Corretores imobiliários usando tecnologia para acompanhar leads e oportunidades"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,23,42,0.02)_0%,rgba(7,23,42,0.52)_100%)]" />
-          <div className="absolute bottom-5 left-5 right-5 rounded-[20px] border border-white/25 bg-white/90 p-4 shadow-2xl backdrop-blur">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                <MessageSquare size={20} />
-              </div>
-              <div>
-                <p className="text-sm font-black text-[#07172a]">Novo lead qualificado</p>
-                <p className="mt-1 text-xs font-bold leading-5 text-slate-600">
-                  Cliente com intenção alta para imóvel de R$ 680 mil. Próximo passo enviado ao corretor.
-                </p>
-              </div>
+      <div className="absolute left-5 top-20 hidden max-w-[310px] text-white sm:left-7 sm:top-24 sm:block">
+        <h3 className="text-2xl font-black leading-tight sm:text-3xl">
+          Corretores com contexto, prioridade e próximo passo claro.
+        </h3>
+        <p className="mt-3 text-sm font-semibold leading-6 text-white/85">
+          A IMOBZY organiza cada lead para o time agir rápido e vender com previsibilidade.
+        </p>
+      </div>
+
+      <div className="absolute bottom-5 left-5 right-5 grid gap-3 sm:grid-cols-[0.92fr_1.08fr]">
+        <div className="rounded-[20px] border border-white/25 bg-white/90 p-4 shadow-2xl backdrop-blur">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+              <MessageSquare size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-black text-[#07172a]">Novo lead qualificado</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-slate-600">
+                Cliente com intenção alta para imóvel de R$ 680 mil.
+              </p>
             </div>
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            ['00:42', '1º contato'],
+            ['92%', 'próximo passo'],
+          ].map(([value, label]) => (
+            <div key={label} className="rounded-[20px] border border-white/25 bg-[#07172a]/86 p-4 text-white shadow-2xl backdrop-blur">
+              <p className="text-2xl font-black text-emerald-300">{value}</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-slate-200">{label}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
 
-    <div className="absolute -bottom-5 left-5 hidden rounded-[18px] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/10 sm:block">
+    <div className="absolute -bottom-6 right-8 hidden rounded-[18px] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/10 sm:block">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
           <TrendingUp size={19} />
@@ -415,7 +415,7 @@ const SystemSalesPage: React.FC = () => {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-[#07172a] selection:bg-emerald-100 selection:text-emerald-900">
       <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-5">
+        <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between px-5 2xl:px-8">
           <button type="button" onClick={() => scrollToSection('plataforma')} className="flex items-center">
             <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-9 w-auto" />
           </button>
@@ -469,7 +469,7 @@ const SystemSalesPage: React.FC = () => {
 
       <main>
         <section id="plataforma" className="bg-[linear-gradient(180deg,#ffffff_0%,#f5f7fb_100%)]">
-          <div className="mx-auto grid max-w-[1280px] gap-8 px-5 py-8 sm:gap-12 sm:py-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:py-16">
+          <div className="mx-auto grid max-w-[1500px] gap-8 px-5 py-8 sm:gap-12 sm:py-12 lg:grid-cols-[0.86fr_1.14fr] lg:items-center lg:py-16 2xl:px-8">
             <div>
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white px-3 py-2 text-xs font-black text-emerald-700 shadow-sm">
                 <Sparkles size={15} />
@@ -503,7 +503,7 @@ const SystemSalesPage: React.FC = () => {
             <HeroAdvisorPanel />
           </div>
 
-          <div className="mx-auto max-w-[1280px] px-5 pb-10 sm:pb-14">
+          <div className="mx-auto max-w-[1500px] px-5 pb-10 sm:pb-14 2xl:px-8">
             <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Produto em ação</p>

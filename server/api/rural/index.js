@@ -65,6 +65,69 @@ function isValidUUID(id) {
   return uuidRegex.test(id);
 }
 
+function extractUfFromRuralCode(code) {
+  const match = String(code || '').trim().match(/^([A-Z]{2})[-_]/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+function extractGeoServerException(rawText) {
+  const text = String(rawText || '');
+  const exceptionText = text.match(/<ows:ExceptionText[^>]*>([\s\S]*?)<\/ows:ExceptionText>/i)
+    || text.match(/<ExceptionText[^>]*>([\s\S]*?)<\/ExceptionText>/i);
+  if (exceptionText?.[1]) {
+    return exceptionText[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  return text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+}
+
+function collectCoordinateBounds(coordinates, bounds = { minLat: Infinity, minLng: Infinity, maxLat: -Infinity, maxLng: -Infinity }) {
+  if (!Array.isArray(coordinates)) return bounds;
+
+  if (
+    coordinates.length >= 2 &&
+    typeof coordinates[0] === 'number' &&
+    typeof coordinates[1] === 'number'
+  ) {
+    const [lng, lat] = coordinates;
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      bounds.minLat = Math.min(bounds.minLat, lat);
+      bounds.maxLat = Math.max(bounds.maxLat, lat);
+      bounds.minLng = Math.min(bounds.minLng, lng);
+      bounds.maxLng = Math.max(bounds.maxLng, lng);
+    }
+    return bounds;
+  }
+
+  for (const item of coordinates) {
+    collectCoordinateBounds(item, bounds);
+  }
+  return bounds;
+}
+
+function featureCollectionToMapTarget(featureCollection) {
+  const features = featureCollection?.features || [];
+  if (!features.length) return null;
+
+  const bounds = features.reduce((acc, feature) => (
+    collectCoordinateBounds(feature.geometry?.coordinates, acc)
+  ), { minLat: Infinity, minLng: Infinity, maxLat: -Infinity, maxLng: -Infinity });
+
+  if (!Number.isFinite(bounds.minLat) || !Number.isFinite(bounds.minLng)) {
+    return null;
+  }
+
+  return {
+    coords: [
+      (bounds.minLat + bounds.maxLat) / 2,
+      (bounds.minLng + bounds.maxLng) / 2,
+    ],
+    bounds: [
+      [bounds.minLat, bounds.minLng],
+      [bounds.maxLat, bounds.maxLng],
+    ],
+  };
+}
+
 const cpfCnpjSchema = z
   .string()
   .min(11)
@@ -221,14 +284,65 @@ router.get(
  */
 router.get('/car/consultar/:codigo', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { codigo } = req.params;
-    const wfsUrl = `https://geoserver.car.gov.br/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typeName=car_imoveis&outputFormat=application/json&cql_filter=cod_imovel='${codigo}'`;
-    
-    const response = await fetch(wfsUrl);
-    if (!response.ok) throw new Error('Falha ao consultar servidor do CAR');
-    
-    const data = await response.json();
-    res.json({ success: true, data });
+    const codigo = sanitizeInput(req.params.codigo, 80).toUpperCase();
+    if (!codigo) {
+      return res.status(400).json({ success: false, error: 'Codigo CAR invalido' });
+    }
+
+    const uf = extractUfFromRuralCode(codigo);
+    if (!uf) {
+      return res.status(400).json({ success: false, error: 'Codigo CAR deve iniciar com a UF. Ex: PA-...' });
+    }
+
+    const layer = SicarService.getLayerName(uf);
+    const params = new URLSearchParams({
+      service: 'WFS',
+      version: '1.0.0',
+      request: 'GetFeature',
+      typeName: layer,
+      outputFormat: 'application/json',
+      CQL_FILTER: `cod_imovel='${codigo}'`,
+    });
+
+    const wfsUrl = `https://geoserver.car.gov.br/geoserver/sicar/ows?${params.toString()}`;
+    const response = await fetch(wfsUrl, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(20000),
+    });
+    const rawText = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!response.ok) {
+      const message = extractGeoServerException(rawText) || 'Falha ao consultar servidor do CAR';
+      return res.status(502).json({ success: false, error: message, status: response.status });
+    }
+
+    if (!contentType.includes('json') && rawText.trim().startsWith('<')) {
+      const message = extractGeoServerException(rawText) || 'Servidor do CAR retornou XML em vez de JSON.';
+      return res.status(200).json({ success: false, error: message, data: null });
+    }
+
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseError) {
+      return res.status(502).json({
+        success: false,
+        error: 'Resposta invalida do servidor do CAR.',
+        details: parseError.message,
+      });
+    }
+
+    const target = featureCollectionToMapTarget(data);
+    if (!target) {
+      return res.status(200).json({
+        success: false,
+        error: 'Nenhum imovel encontrado para este codigo CAR.',
+        data,
+      });
+    }
+
+    res.json({ success: true, data, ...target });
   } catch (error) {
     console.error('CAR WFS error:', error);
     res.status(500).json({ success: false, error: error.message });

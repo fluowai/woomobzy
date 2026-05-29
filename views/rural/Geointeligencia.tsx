@@ -185,6 +185,8 @@ const Geointeligencia: React.FC = () => {
       if (result.success) {
         setSearchResult(result.coords);
         setSearchBounds(result.bounds);
+      } else {
+        alert(result.error || 'CAR não encontrado');
       }
     } catch (err) {
       logger.error('CAR Validation error:', err);
@@ -202,6 +204,8 @@ const Geointeligencia: React.FC = () => {
       if (result.success) {
         setSearchResult(result.coords);
         setSearchBounds(result.bounds);
+      } else {
+        alert(result.error || 'SIGEF não encontrado');
       }
     } catch (err) {
       logger.error('SIGEF Validation error:', err);

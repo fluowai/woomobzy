@@ -253,6 +253,8 @@ const WhatsAppDashboard: React.FC = () => {
     }
   };
 
+  const canImportHistory = Boolean(selectedInstance && selectedInstance.status === 'connected');
+
   const filteredChats = searchQuery
     ? chats.filter(
         (c) =>
@@ -374,7 +376,7 @@ const WhatsAppDashboard: React.FC = () => {
           <button
             onClick={handleImportHistory}
             className="wa-import-btn"
-            disabled={!selectedInstance || selectedInstance.status !== 'connected' || importingHistory}
+            disabled={!canImportHistory || importingHistory}
             title="Importar conversas e organizar no CRM com IA"
           >
             {importingHistory ? <Loader2 size={16} className="animate-spin" /> : <DownloadCloud size={16} />}
@@ -400,6 +402,9 @@ const WhatsAppDashboard: React.FC = () => {
           onSelectChat={handleSelectChat}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onImportHistory={handleImportHistory}
+          importingHistory={importingHistory}
+          canImportHistory={canImportHistory}
         />
 
         {/* Chat Window */}

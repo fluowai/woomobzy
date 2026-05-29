@@ -182,6 +182,42 @@
   background: var(--color-primary-alpha-10);
   color: var(--color-primary);
 }
+.wa-sidebar-actions {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.wa-sidebar-import-btn {
+  width: 100%;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-primary-alpha-20);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-alpha-10);
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.wa-sidebar-import-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+.wa-sidebar-import-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+.wa-sidebar-import-btn span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Chat List */
 .wa-chat-list {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatPhoneDisplay, type Chat } from './hooks/api';
-import { Search, Users, MessageCircle } from 'lucide-react';
+import { Search, Users, MessageCircle, DownloadCloud, Loader2 } from 'lucide-react';
 
 interface ChatSidebarProps {
   chats: Chat[];
@@ -8,6 +8,9 @@ interface ChatSidebarProps {
   onSelectChat: (chat: Chat) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onImportHistory: () => void;
+  importingHistory: boolean;
+  canImportHistory: boolean;
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -16,6 +19,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectChat,
   searchQuery,
   onSearchChange,
+  onImportHistory,
+  importingHistory,
+  canImportHistory,
 }) => {
   const [activeType, setActiveType] = React.useState<'direct' | 'group'>('direct');
   const visibleChats = chats.filter((chat) => (activeType === 'group' ? chat.is_group : !chat.is_group));
@@ -99,6 +105,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           onClick={() => setActiveType('group')}
         >
           Grupos
+        </button>
+      </div>
+
+      <div className="wa-sidebar-actions">
+        <button
+          type="button"
+          className="wa-sidebar-import-btn"
+          onClick={onImportHistory}
+          disabled={!canImportHistory || importingHistory}
+          title="Importar conversas do WhatsApp e organizar no CRM com IA"
+        >
+          {importingHistory ? <Loader2 size={16} className="animate-spin" /> : <DownloadCloud size={16} />}
+          <span>{importingHistory ? 'Importando...' : 'Importar conversas'}</span>
         </button>
       </div>
 

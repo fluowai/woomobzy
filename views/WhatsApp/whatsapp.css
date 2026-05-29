@@ -501,6 +501,21 @@
   color: var(--color-text-primary);
   font-size: 0.9rem;
 }
+.wa-contact-tags {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  gap: 6px !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+.wa-contact-tags b {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-primary-alpha-10);
+  color: var(--color-primary);
+  font-size: 0.7rem;
+}
 .wa-contact-section {
   padding: 14px 16px 0;
 }
@@ -545,6 +560,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+.wa-contact-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 .wa-contact-action.primary {
   margin-top: 10px;

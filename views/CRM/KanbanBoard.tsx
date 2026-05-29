@@ -1135,6 +1135,20 @@ const buildMatchWhatsappMessage = (lead: Lead, matches: any[]) => {
   ].join('\n');
 };
 
+const getLeadDisplayName = (lead: Lead) => {
+  const name = (lead.name || '').trim();
+  if (name && name !== '~') return name;
+  const phone = (lead.phone || '').replace(/\D/g, '');
+  return phone || 'Lead sem nome';
+};
+
+const getLeadInitials = (lead: Lead) => {
+  const displayName = getLeadDisplayName(lead);
+  const parts = displayName.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return displayName.slice(0, 2).toUpperCase();
+};
+
 const parseMoneyValue = (rawNumber?: string, rawUnit?: string) => {
   if (!rawNumber) return null;
   const value = Number(rawNumber.replace(/\./g, '').replace(',', '.'));
@@ -1570,12 +1584,12 @@ const KanbanBoard: React.FC = () => {
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase shrink-0">
-                                      {lead.name.slice(0, 2)}
+                                      {getLeadInitials(lead)}
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-bold text-slate-800 text-sm leading-tight truncate">
-                                          {lead.name}
+                                        <h4 className="font-bold text-slate-800 text-sm leading-tight truncate" title={getLeadDisplayName(lead)}>
+                                          {getLeadDisplayName(lead)}
                                         </h4>
                                         {lead.notes && (
                                           <Sparkles size={10} className="text-indigo-500 animate-pulse shrink-0" />
@@ -1632,14 +1646,6 @@ const KanbanBoard: React.FC = () => {
                                     </button>
                                   </div>
                                 </div>
-
-                                {lead.notes && (
-                                  <div className="mb-3 p-2.5 bg-amber-50/50 border border-amber-100/50 rounded-lg">
-                                    <p className="text-[11px] text-amber-900 font-medium italic leading-snug">
-                                      "{(lead as any).notes}"
-                                    </p>
-                                  </div>
-                                )}
 
                                 {lead.property && (
                                   <div className="bg-slate-50 rounded-lg p-2 flex items-center gap-3 mb-3 hover:bg-slate-100 transition-colors cursor-pointer group/prop">

@@ -29,7 +29,13 @@ func (r *ContactRepo) Upsert(ctx context.Context, contact *models.Contact) error
 		ON CONFLICT (instance_id, phone)
 		DO UPDATE SET
 			push_name = CASE WHEN EXCLUDED.push_name != '' THEN EXCLUDED.push_name ELSE whatsapp_contacts.push_name END,
-			display_name = CASE WHEN EXCLUDED.display_name != '' THEN EXCLUDED.display_name ELSE whatsapp_contacts.display_name END,
+			display_name = CASE
+				WHEN COALESCE(whatsapp_contacts.display_name, '') = '' THEN EXCLUDED.display_name
+				WHEN lower(whatsapp_contacts.display_name) IN ('~', 'contato sem telefone') THEN EXCLUDED.display_name
+				WHEN regexp_replace(whatsapp_contacts.display_name, '\D', '', 'g') = whatsapp_contacts.phone
+					AND EXCLUDED.display_name != '' THEN EXCLUDED.display_name
+				ELSE whatsapp_contacts.display_name
+			END,
 			avatar_url = CASE WHEN EXCLUDED.avatar_url != '' THEN EXCLUDED.avatar_url ELSE whatsapp_contacts.avatar_url END
 		RETURNING id, created_at, updated_at`
 

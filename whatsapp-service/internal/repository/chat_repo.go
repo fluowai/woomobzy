@@ -30,7 +30,13 @@ func (r *ChatRepo) Upsert(ctx context.Context, chat *models.Chat) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (instance_id, chat_jid)
 		DO UPDATE SET
-			name = CASE WHEN EXCLUDED.name != '' THEN EXCLUDED.name ELSE whatsapp_chats.name END,
+			name = CASE
+				WHEN COALESCE(whatsapp_chats.name, '') = '' THEN EXCLUDED.name
+				WHEN lower(whatsapp_chats.name) IN ('~', 'contato sem telefone') THEN EXCLUDED.name
+				WHEN regexp_replace(whatsapp_chats.name, '\D', '', 'g') = split_part(whatsapp_chats.chat_jid, '@', 1)
+					AND EXCLUDED.name != '' THEN EXCLUDED.name
+				ELSE whatsapp_chats.name
+			END,
 			avatar_url = CASE WHEN EXCLUDED.avatar_url != '' THEN EXCLUDED.avatar_url ELSE whatsapp_chats.avatar_url END,
 			last_message = EXCLUDED.last_message,
 			last_message_at = EXCLUDED.last_message_at,
@@ -60,7 +66,13 @@ func (r *ChatRepo) UpsertImported(ctx context.Context, chat *models.Chat) error 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (instance_id, chat_jid)
 		DO UPDATE SET
-			name = CASE WHEN EXCLUDED.name != '' THEN EXCLUDED.name ELSE whatsapp_chats.name END,
+			name = CASE
+				WHEN COALESCE(whatsapp_chats.name, '') = '' THEN EXCLUDED.name
+				WHEN lower(whatsapp_chats.name) IN ('~', 'contato sem telefone') THEN EXCLUDED.name
+				WHEN regexp_replace(whatsapp_chats.name, '\D', '', 'g') = split_part(whatsapp_chats.chat_jid, '@', 1)
+					AND EXCLUDED.name != '' THEN EXCLUDED.name
+				ELSE whatsapp_chats.name
+			END,
 			avatar_url = CASE WHEN EXCLUDED.avatar_url != '' THEN EXCLUDED.avatar_url ELSE whatsapp_chats.avatar_url END,
 			last_message = CASE
 				WHEN whatsapp_chats.last_message_at IS NULL

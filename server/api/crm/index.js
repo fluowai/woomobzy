@@ -8,6 +8,93 @@ const router = Router();
 
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 
+function normalizePhone(value = '') {
+  return String(value).replace(/\D/g, '');
+}
+
+function isPlaceholderLeadName(value = '') {
+  const clean = String(value).trim().toLowerCase();
+  if (!clean || clean === '~' || clean === 'me' || clean === 'contato sem telefone') return true;
+  return /^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''));
+}
+
+function resolveLeadName(...values) {
+  let phoneFallback = '';
+  for (const value of values) {
+    const clean = String(value || '').trim();
+    if (/^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''))) phoneFallback = clean;
+    if (!clean || isPlaceholderLeadName(clean)) continue;
+    return clean;
+  }
+  return phoneFallback || 'Lead WhatsApp';
+}
+
+async function findOrCreateWhatsAppLead({ organizationId, phone, name, chatJid, source = 'WhatsApp' }) {
+  const normalizedPhone = normalizePhone(phone);
+  if (!normalizedPhone) {
+    const error = new Error('Telefone do WhatsApp e obrigatorio');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { data: existingLead, error: findError } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .eq('phone', normalizedPhone)
+    .maybeSingle();
+
+  if (findError) throw findError;
+
+  const displayName = resolveLeadName(name, existingLead?.name, normalizedPhone);
+  if (existingLead) {
+    const updates = {
+      chat_jid: chatJid || existingLead.chat_jid,
+    };
+
+    if (isPlaceholderLeadName(existingLead.name)) updates.name = displayName;
+    if (!existingLead.source) updates.source = source;
+
+    const { data, error } = await supabase
+      .from('leads')
+      .update(updates)
+      .eq('id', existingLead.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from('leads')
+    .insert({
+      organization_id: organizationId,
+      name: displayName,
+      phone: normalizedPhone,
+      source,
+      status: 'Novo',
+      classification: 'Interessado',
+      chat_jid: chatJid || null,
+      last_contacted_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function getLeadTags(organizationId, leadId) {
+  const { data, error } = await supabase
+    .from('lead_tags')
+    .select('tag')
+    .eq('organization_id', organizationId)
+    .eq('lead_id', leadId)
+    .order('tag', { ascending: true });
+  if (error) throw error;
+  return (data || []).map((item) => item.tag);
+}
+
 /**
  * GET /api/crm/leads
  * Lista leads da organização do usuário logado.
@@ -38,6 +125,133 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/crm/whatsapp/contact
+ * Retorna o lead e tags vinculados a um contato do WhatsApp.
+ */
+router.get('/whatsapp/contact', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const phone = normalizePhone(req.query.phone);
+    if (!phone) return res.status(400).json({ error: 'Telefone e obrigatorio' });
+
+    const { data: lead, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('organization_id', req.orgId)
+      .eq('phone', phone)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const tags = lead ? await getLeadTags(req.orgId, lead.id) : [];
+    res.json({ success: true, lead, tags });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/crm/whatsapp/link-contact
+ * Vincula uma conversa individual do WhatsApp ao CRM, criando o lead se preciso.
+ */
+router.post('/whatsapp/link-contact', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const lead = await findOrCreateWhatsAppLead({
+      organizationId: req.orgId,
+      phone: req.body.phone,
+      name: req.body.name,
+      chatJid: req.body.chat_jid,
+      source: req.body.source || 'WhatsApp',
+    });
+
+    await supabase.from('lead_activities').insert({
+      lead_id: lead.id,
+      organization_id: req.orgId,
+      created_by: req.user.id,
+      type: 'WhatsApp',
+      description: 'Contato do WhatsApp vinculado ao CRM',
+      metadata: { chat_jid: req.body.chat_jid || lead.chat_jid || null },
+    });
+
+    res.json({ success: true, lead, tags: await getLeadTags(req.orgId, lead.id) });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/crm/whatsapp/contact-tags
+ * Adiciona tags ao lead vinculado ao contato do WhatsApp.
+ */
+router.post('/whatsapp/contact-tags', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const rawTags = Array.isArray(req.body.tags) ? req.body.tags : [req.body.tag];
+    const tags = [...new Set(rawTags.map((tag) => String(tag || '').trim().toLowerCase()).filter(Boolean))].slice(0, 8);
+    if (!tags.length) return res.status(400).json({ error: 'Informe ao menos uma tag' });
+
+    const lead = await findOrCreateWhatsAppLead({
+      organizationId: req.orgId,
+      phone: req.body.phone,
+      name: req.body.name,
+      chatJid: req.body.chat_jid,
+      source: req.body.source || 'WhatsApp',
+    });
+
+    const rows = tags.map((tag) => ({ lead_id: lead.id, organization_id: req.orgId, tag }));
+    const { error } = await supabase.from('lead_tags').upsert(rows, { onConflict: 'lead_id,tag' });
+    if (error) throw error;
+
+    await supabase.from('lead_activities').insert({
+      lead_id: lead.id,
+      organization_id: req.orgId,
+      created_by: req.user.id,
+      type: 'Tag',
+      description: `Tags adicionadas pelo WhatsApp: ${tags.join(', ')}`,
+    });
+
+    res.json({ success: true, lead, tags: await getLeadTags(req.orgId, lead.id) });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/crm/whatsapp/priority
+ * Marca o contato do WhatsApp como alta prioridade no CRM.
+ */
+router.post('/whatsapp/priority', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const lead = await findOrCreateWhatsAppLead({
+      organizationId: req.orgId,
+      phone: req.body.phone,
+      name: req.body.name,
+      chatJid: req.body.chat_jid,
+      source: req.body.source || 'WhatsApp',
+    });
+
+    const { data, error } = await supabase
+      .from('leads')
+      .update({ classification: 'Alta Prioridade', last_contacted_at: new Date().toISOString() })
+      .eq('id', lead.id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+    if (error) throw error;
+
+    await supabase.from('lead_activities').insert({
+      lead_id: lead.id,
+      organization_id: req.orgId,
+      created_by: req.user.id,
+      type: 'Prioridade',
+      description: 'Contato marcado como alta prioridade pelo WhatsApp',
+    });
+
+    res.json({ success: true, lead: data, tags: await getLeadTags(req.orgId, data.id) });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
   }
 });
 

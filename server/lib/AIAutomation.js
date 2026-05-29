@@ -67,8 +67,16 @@ Etapas do kanban:
 - Fechado: confirmou compra, aluguel ou aceite.
 - Perdido: desistiu, nao tem perfil ou contato improdutivo.
 
+Filtro obrigatorio:
+- So marque shouldCreateLead=true quando a conversa for de cliente/prospect imobiliario ou lead ja qualificado.
+- Familia, amigos, assuntos pessoais, fornecedores, spam, grupos, conversas internas, links soltos e mensagens sem intencao imobiliaria devem ser shouldCreateLead=false.
+- Se for apenas saudacao sem contexto, use shouldCreateLead=true somente se houver indicio comercial, nome de imovel, CAR, fazenda, casa, aluguel, compra, venda, visita, proposta ou pergunta imobiliaria.
+
 Formato:
 {
+  "shouldCreateLead": true,
+  "leadType": "cliente | familia | amigo | fornecedor | interno | spam | outro",
+  "confidence": 0.0,
   "transcricao": "se for audio, transcreva aqui; senao vazio",
   "intent": "resumo curto",
   "suggestedStage": "Novo | Qualificacao | Visita | Simulacao | Documentacao | Fechado | Perdido",
@@ -113,6 +121,10 @@ Formato:
       return { skipped: true, reason: 'missing organization or sender' };
     }
 
+    if (message.is_group || chat.is_group) {
+      return { skipped: true, reason: 'group messages are not sent to CRM' };
+    }
+
     const normalizedPhone = String(message.sender_phone).replace(/\D/g, '');
     const mediaHint = this._buildMediaHint(message);
     const content = [message.content, mediaHint].filter(Boolean).join('\n');
@@ -124,17 +136,25 @@ Formato:
       agent,
     });
 
-    const stage = this._normalizeStage(aiResult?.suggestedStage, message.type);
-    const name = aiResult?.leadName || message.sender_name || chat.name || normalizedPhone;
-    const tags = this._normalizeTags(aiResult?.tags, message);
-    const noteLine = this._buildNoteLine({ aiResult, message, chat, tags });
-
     const { data: existingLead } = await supabase
       .from('leads')
       .select('*')
       .eq('organization_id', organizationId)
       .eq('phone', normalizedPhone)
       .maybeSingle();
+
+    if (!existingLead && !this._shouldCreateLeadFromAI(aiResult, content)) {
+      return {
+        skipped: true,
+        reason: aiResult?.leadType || 'not a qualified client conversation',
+        aiResult,
+      };
+    }
+
+    const stage = this._normalizeStage(aiResult?.suggestedStage, message.type);
+    const name = this._resolveLeadName(aiResult?.leadName, message.sender_name, chat.name, normalizedPhone);
+    const tags = this._normalizeTags(aiResult?.tags, message);
+    const noteLine = this._buildNoteLine({ aiResult, message, chat, tags });
 
     let lead;
     if (existingLead) {
@@ -300,17 +320,30 @@ Formato:
       organizationId,
     });
 
-    const stage = this._normalizeStage(aiResult?.suggestedStage, 'text');
-    const name = aiResult?.leadName || chat.name || inboundMessages[inboundMessages.length - 1]?.sender_name || normalizedPhone;
-    const tags = this._normalizeTags(aiResult?.tags, {});
-    const noteLine = this._buildImportNoteLine({ aiResult, chat, tags, transcript });
-
     const { data: existingLead } = await supabase
       .from('leads')
       .select('*')
       .eq('organization_id', organizationId)
       .eq('phone', normalizedPhone)
       .maybeSingle();
+
+    if (!existingLead && !this._shouldCreateLeadFromAI(aiResult, transcript)) {
+      return {
+        chat_id: chat.id,
+        skipped: true,
+        reason: aiResult?.leadType || 'not a qualified client conversation',
+      };
+    }
+
+    const stage = this._normalizeStage(aiResult?.suggestedStage, 'text');
+    const name = this._resolveLeadName(
+      aiResult?.leadName,
+      chat.name,
+      inboundMessages[inboundMessages.length - 1]?.sender_name,
+      normalizedPhone
+    );
+    const tags = this._normalizeTags(aiResult?.tags, {});
+    const noteLine = this._buildImportNoteLine({ aiResult, chat, tags, transcript });
 
     let lead;
     if (existingLead) {
@@ -399,12 +432,17 @@ Objetivo:
 - Identificar ou atualizar o lead no CRM.
 - Resumir necessidades, imovel desejado, cidade/regiao, orcamento, urgencia e proximas acoes.
 - Escolher a etapa correta do funil.
+- Filtrar conversas que nao sao clientes/prospects imobiliarios.
+- Familia, amigos, fornecedores, assuntos pessoais, spam, grupos e conversas internas nao devem criar lead.
 
 Etapas do funil:
 Novo, Qualificacao, Visita, Simulacao, Documentacao, Fechado, Perdido.
 
 Formato:
 {
+  "shouldCreateLead": true,
+  "leadType": "cliente | familia | amigo | fornecedor | interno | spam | outro",
+  "confidence": 0.0,
   "intent": "resumo comercial curto da conversa",
   "suggestedStage": "Novo | Qualificacao | Visita | Simulacao | Documentacao | Fechado | Perdido",
   "classification": "Alta Prioridade | Interessado | Curioso | Documentacao | Financeiro",
@@ -424,6 +462,9 @@ Formato:
     } catch (err) {
       console.error('[AIAutomation] Erro ao analisar conversa importada:', err.message);
       return {
+        shouldCreateLead: false,
+        leadType: 'outro',
+        confidence: 0,
         intent: 'Conversa importada do WhatsApp para organizacao do CRM.',
         suggestedStage: 'Novo',
         classification: 'Interessado',
@@ -463,6 +504,48 @@ Formato:
       .eq('id', instanceId)
       .maybeSingle();
     return data?.tenant_id || null;
+  }
+
+  _shouldCreateLeadFromAI(aiResult, text = '') {
+    if (!aiResult) return this._hasRealEstateSignal(text);
+
+    const type = String(aiResult.leadType || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (['familia', 'amigo', 'fornecedor', 'interno', 'spam'].includes(type)) return false;
+    if (aiResult.shouldCreateLead === false) return false;
+
+    const confidence = Number(aiResult.confidence);
+    if (Number.isFinite(confidence) && confidence > 0 && confidence < 0.35 && !this._hasRealEstateSignal(text)) {
+      return false;
+    }
+
+    return aiResult.shouldCreateLead === true || type === 'cliente' || this._hasRealEstateSignal(text);
+  }
+
+  _hasRealEstateSignal(text = '') {
+    const normalized = String(text)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return /\b(imovel|casa|apartamento|terreno|fazenda|sitio|chacara|area|hectare|ha\b|alqueire|comprar|vender|alugar|locacao|arrendar|visita|proposta|financiamento|entrada|parcela|car\b|matricula|ccir|incra|geo|itr|contrato)\b/.test(normalized);
+  }
+
+  _resolveLeadName(...values) {
+    let phoneFallback = '';
+    for (const value of values) {
+      const clean = String(value || '').trim();
+      if (/^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''))) {
+        phoneFallback = clean;
+      }
+      if (!clean || this._isPlaceholderName(clean)) continue;
+      return clean;
+    }
+    return phoneFallback || 'Lead WhatsApp';
+  }
+
+  _isPlaceholderName(value = '') {
+    const clean = String(value).trim().toLowerCase();
+    if (!clean || clean === '~' || clean === 'me' || clean === 'contato sem telefone') return true;
+    return /^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''));
   }
 
   _normalizeStage(stage, messageType) {

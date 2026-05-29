@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { chatApi, formatPhoneDisplay, type Chat, type Message } from './hooks/api';
+import { chatApi, crmContactApi, formatPhoneDisplay, type Chat, type Message } from './hooks/api';
 import MessageBubble from './MessageBubble';
 import {
   Send,
@@ -19,6 +19,7 @@ import {
   Clock3,
   ShieldCheck,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ChatWindowProps {
   chat: Chat;
@@ -47,11 +48,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [editingName, setEditingName] = useState(false);
   const [contactNameDraft, setContactNameDraft] = useState('');
   const [savingContact, setSavingContact] = useState(false);
+  const [crmLead, setCrmLead] = useState<any | null>(null);
+  const [crmTags, setCrmTags] = useState<string[]>([]);
+  const [crmActionLoading, setCrmActionLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const chatPhone = formatPhoneDisplay(chat.chat_jid);
+  const rawPhone = getPhoneFromJid(chat.chat_jid);
   const chatName = chat.is_group
     ? chat.name || 'Grupo sem nome'
     : chat.name && chat.name !== '~'
@@ -62,6 +67,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setContactNameDraft(chatName);
     setEditingName(false);
   }, [chat.id, chatName]);
+
+  useEffect(() => {
+    if (!showContactPanel || chat.is_group || !rawPhone) return;
+    let active = true;
+    crmContactApi
+      .get(rawPhone)
+      .then((result) => {
+        if (!active) return;
+        setCrmLead(result.lead || null);
+        setCrmTags(result.tags || []);
+      })
+      .catch(() => {
+        if (!active) return;
+        setCrmLead(null);
+        setCrmTags([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [showContactPanel, chat.id, chat.is_group, rawPhone]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -110,6 +135,61 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setEditingName(false);
     } finally {
       setSavingContact(false);
+    }
+  };
+
+  const crmPayload = () => ({
+    phone: rawPhone,
+    name: contactNameDraft.trim() || chatName,
+    chat_jid: chat.chat_jid,
+    source: 'WhatsApp',
+  });
+
+  const linkContactToCrm = async () => {
+    if (!rawPhone || chat.is_group) return;
+    setCrmActionLoading(true);
+    try {
+      const result = await crmContactApi.link(crmPayload());
+      setCrmLead(result.lead || null);
+      setCrmTags(result.tags || []);
+      toast.success('Contato vinculado ao CRM.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao vincular contato ao CRM.');
+    } finally {
+      setCrmActionLoading(false);
+    }
+  };
+
+  const addCrmTag = async () => {
+    if (!rawPhone || chat.is_group) return;
+    const tag = window.prompt('Digite a tag para este contato');
+    if (!tag?.trim()) return;
+
+    setCrmActionLoading(true);
+    try {
+      const result = await crmContactApi.addTags({ ...crmPayload(), tags: [tag.trim()] });
+      setCrmLead(result.lead || null);
+      setCrmTags(result.tags || []);
+      toast.success('Tag adicionada ao CRM.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao adicionar tag.');
+    } finally {
+      setCrmActionLoading(false);
+    }
+  };
+
+  const markCrmPriority = async () => {
+    if (!rawPhone || chat.is_group) return;
+    setCrmActionLoading(true);
+    try {
+      const result = await crmContactApi.markPriority(crmPayload());
+      setCrmLead(result.lead || null);
+      setCrmTags(result.tags || []);
+      toast.success('Contato marcado como prioridade.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao marcar prioridade.');
+    } finally {
+      setCrmActionLoading(false);
     }
   };
 
@@ -212,6 +292,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
           <div className="wa-contact-fields">
             <div>
+              <span>CRM</span>
+              <strong>{crmLead ? `Vinculado: ${crmLead.name || crmLead.phone}` : 'Nao vinculado'}</strong>
+            </div>
+            {crmTags.length > 0 && (
+              <div>
+                <span>Tags</span>
+                <div className="wa-contact-tags">
+                  {crmTags.map((tag) => (
+                    <b key={tag}>{tag}</b>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
               <span>WhatsApp</span>
               <strong>{chatPhone || 'Telefone nao identificado'}</strong>
             </div>
@@ -244,11 +338,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
 
           <div className="wa-contact-actions-grid">
-            <button type="button" className="wa-contact-action">
+            <button
+              type="button"
+              className="wa-contact-action"
+              onClick={linkContactToCrm}
+              disabled={crmActionLoading || chat.is_group || !rawPhone}
+            >
               <UserRound size={16} />
-              Vincular ao CRM
+              {crmLead ? 'Atualizar CRM' : 'Vincular ao CRM'}
             </button>
-            <button type="button" className="wa-contact-action">
+            <button
+              type="button"
+              className="wa-contact-action"
+              onClick={addCrmTag}
+              disabled={crmActionLoading || chat.is_group || !rawPhone}
+            >
               <Tag size={16} />
               Adicionar tag
             </button>
@@ -256,7 +360,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <Clock3 size={16} />
               Criar tarefa
             </button>
-            <button type="button" className="wa-contact-action">
+            <button
+              type="button"
+              className="wa-contact-action"
+              onClick={markCrmPriority}
+              disabled={crmActionLoading || chat.is_group || !rawPhone}
+            >
               <ShieldCheck size={16} />
               Marcar prioridade
             </button>
@@ -361,4 +470,8 @@ function isRenderableMessage(message: Message) {
   const content = (message.content || '').trim();
   const hasMedia = Boolean(message.media_url || message.media_filename);
   return message.type !== 'text' || content || hasMedia;
+}
+
+function getPhoneFromJid(jid: string) {
+  return String(jid || '').split('@')[0].replace(/\D/g, '');
 }

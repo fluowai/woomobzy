@@ -1,4 +1,5 @@
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
+import { callApi } from '../../../src/lib/api';
 
 const DEFAULT_WHATSAPP_API_URL = '/api/whatsapp';
 const DEFAULT_WHATSAPP_WS_PATH = '/api/whatsapp/ws';
@@ -269,6 +270,11 @@ export interface MessageListResponse {
   offset: number;
 }
 
+export interface CrmContactResponse {
+  lead: any | null;
+  tags: string[];
+}
+
 const LEGACY_MEDIA_PREVIEWS: Record<string, string> = {
   '[image]': 'Imagem',
   '[audio]': 'Audio',
@@ -341,6 +347,29 @@ export const chatApi = {
       method: 'PATCH',
       body: JSON.stringify({ display_name: displayName }),
     }),
+};
+
+export const crmContactApi = {
+  get: (phone: string) =>
+    callApi(`/api/crm/whatsapp/contact?phone=${encodeURIComponent(phone)}`) as Promise<CrmContactResponse>,
+
+  link: (payload: { phone: string; name?: string; chat_jid?: string; source?: string }) =>
+    callApi('/api/crm/whatsapp/link-contact', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse>,
+
+  addTags: (payload: { phone: string; name?: string; chat_jid?: string; tags: string[]; source?: string }) =>
+    callApi('/api/crm/whatsapp/contact-tags', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse>,
+
+  markPriority: (payload: { phone: string; name?: string; chat_jid?: string; source?: string }) =>
+    callApi('/api/crm/whatsapp/priority', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse>,
 };
 
 // ---- Message API ----

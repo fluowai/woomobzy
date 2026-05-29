@@ -93,6 +93,8 @@
 .wa-main {
   display: flex;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -264,6 +266,7 @@
   background: var(--color-wa-bg);
   position: relative;
   min-width: 0;
+  min-height: 0;
 }
 .wa-chat-window.details-open {
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -588,6 +591,7 @@
   margin: 0;
   color: var(--color-text-primary);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .wa-bubble-meta {
   display: flex;
@@ -1122,7 +1126,12 @@
     display: none;
   }
   .wa-dashboard.wa-chat-open .wa-chat-window {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .wa-dashboard.wa-chat-open .wa-chat-window.details-open {
+    grid-template-columns: minmax(0, 1fr);
   }
   .wa-mobile-back {
     display: flex;
@@ -1158,6 +1167,14 @@
   }
   .wa-chat-header-actions {
     flex-shrink: 0;
+  }
+  .wa-contact-panel {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    width: 100%;
+    min-width: 0;
+    border-left: 0;
+    box-shadow: -8px 0 24px rgba(15, 23, 42, 0.12);
   }
   .wa-messages {
     padding: 12px 10px;

@@ -1343,6 +1343,15 @@ const KanbanBoard: React.FC = () => {
     }
   };
 
+  const handleMobileStageSelect = (stageId: string) => {
+    setMobileStageId(stageId);
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(`kanban-stage-${stageId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    });
+  };
+
   const handleDeleteLead = async (id: string, name: string) => {
     if (!confirm(`Deseja realmente excluir o lead "${name}"? Esta ação não pode ser desfeita.`)) return;
 
@@ -1476,7 +1485,7 @@ const KanbanBoard: React.FC = () => {
               <button
                 key={stage.id}
                 type="button"
-                onClick={() => setMobileStageId(stage.id)}
+                onClick={() => handleMobileStageSelect(stage.id)}
                 className={`h-10 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wide flex items-center gap-2 ${
                   mobileStageId === stage.id
                     ? 'bg-slate-900 text-white border-slate-900'
@@ -1503,9 +1512,10 @@ const KanbanBoard: React.FC = () => {
                 <Droppable key={stage.id} droppableId={stage.id}>
                   {(provided, snapshot) => (
                     <div
+                      id={`kanban-stage-${stage.id}`}
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`${stage.id === mobileStageId ? 'flex' : 'hidden md:flex'} w-full md:w-72 lg:w-80 flex-shrink-0 flex-col rounded-2xl ${snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'} border border-slate-100 max-h-full`}
+                      className={`flex w-[calc(100vw-2rem)] max-w-[22rem] md:w-72 md:max-w-none lg:w-80 flex-shrink-0 flex-col rounded-2xl ${snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'} border border-slate-100 max-h-full`}
                     >
                       {/* Header */}
                       <div className="p-4 border-b border-slate-100 bg-white/50 backdrop-blur rounded-t-2xl sticky top-0 z-10">
@@ -1533,6 +1543,7 @@ const KanbanBoard: React.FC = () => {
                        {/* Cards */}
                        <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3">
                          {stageLeads.map((lead, index) => (
+                           <React.Fragment key={lead.id}>
                            <Draggable draggableId={lead.id} index={index}>
                              {(provided, snapshot) => (
                                <div
@@ -1688,6 +1699,7 @@ const KanbanBoard: React.FC = () => {
                               </div>
                             )}
                           </Draggable>
+                           </React.Fragment>
                         ))}
                         {provided.placeholder}
                       </div>

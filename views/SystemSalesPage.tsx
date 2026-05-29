@@ -31,7 +31,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { leadService } from '../services/leads';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -262,67 +261,28 @@ const DashboardPreview: React.FC = () => (
 
 const HeroAdvisorPanel: React.FC = () => (
   <div className="relative lg:pl-4 xl:pl-8">
-    <div className="relative min-h-[430px] overflow-hidden rounded-[30px] border border-slate-200 bg-slate-100 shadow-[0_28px_80px_rgba(15,23,42,0.12)] sm:min-h-[520px] lg:min-h-[560px]">
+    <div className="relative min-h-[390px] overflow-hidden rounded-[30px] border border-slate-200 bg-slate-100 shadow-[0_28px_80px_rgba(15,23,42,0.12)] sm:min-h-[500px] lg:min-h-[560px]">
       <img
         src="/images/sales/hero-corretores.webp"
         alt="Corretores imobiliários usando tecnologia para acompanhar leads e oportunidades"
         className="absolute inset-0 h-full w-full object-cover object-center"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,23,42,0.68)_0%,rgba(7,23,42,0.28)_34%,rgba(7,23,42,0.04)_66%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,rgba(7,23,42,0)_0%,rgba(7,23,42,0.56)_100%)]" />
-
-      <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/90 px-3 py-2 text-xs font-black text-emerald-700 shadow-lg backdrop-blur">
-        <Bot size={15} />
-        IA comercial ativa
-      </div>
-
-      <div className="absolute left-5 top-20 hidden max-w-[310px] text-white sm:left-7 sm:top-24 sm:block">
-        <h3 className="text-2xl font-black leading-tight sm:text-3xl">
-          Corretores com contexto, prioridade e próximo passo claro.
-        </h3>
-        <p className="mt-3 text-sm font-semibold leading-6 text-white/85">
-          A IMOBZY organiza cada lead para o time agir rápido e vender com previsibilidade.
-        </p>
-      </div>
-
-      <div className="absolute bottom-5 left-5 right-5 grid gap-3 sm:grid-cols-[0.92fr_1.08fr]">
-        <div className="rounded-[20px] border border-white/25 bg-white/90 p-4 shadow-2xl backdrop-blur">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-              <MessageSquare size={20} />
-            </div>
-            <div>
-              <p className="text-sm font-black text-[#07172a]">Novo lead qualificado</p>
-              <p className="mt-1 text-xs font-bold leading-5 text-slate-600">
-                Cliente com intenção alta para imóvel de R$ 680 mil.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            ['00:42', '1º contato'],
-            ['92%', 'próximo passo'],
-          ].map(([value, label]) => (
-            <div key={label} className="rounded-[20px] border border-white/25 bg-[#07172a]/86 p-4 text-white shadow-2xl backdrop-blur">
-              <p className="text-2xl font-black text-emerald-300">{value}</p>
-              <p className="mt-1 text-xs font-bold leading-5 text-slate-200">{label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
 
-    <div className="absolute -bottom-6 right-8 hidden rounded-[18px] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/10 sm:block">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-          <TrendingUp size={19} />
+    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      {[
+        { value: '00:42', label: 'tempo médio de primeiro contato', icon: Clock3 },
+        { value: '92%', label: 'leads com próximo passo sugerido', icon: Bot },
+        { value: '+35%', label: 'operações com playbook ativo', icon: TrendingUp },
+      ].map(({ value, label, icon: Icon }) => (
+        <div key={label} className="rounded-[18px] border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+            <Icon size={18} />
+          </div>
+          <p className="text-xl font-black text-[#07172a]">{value}</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-slate-500">{label}</p>
         </div>
-        <div>
-          <p className="text-sm font-black text-[#07172a]">+35% em conversão</p>
-          <p className="text-xs font-bold text-slate-500">operações com playbook ativo</p>
-        </div>
-      </div>
+      ))}
     </div>
   </div>
 );
@@ -372,24 +332,22 @@ const SystemSalesPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    try {
-      await leadService.create({
+    sessionStorage.setItem(
+      'imobzy_demo_lead',
+      JSON.stringify({
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        source: 'Página de Vendas - Demonstração',
-        notes: `Empresa: ${formData.company} | Objetivo: ${formData.goal || 'Não informado'} | Interesse: Demonstração Completa`,
-      } as any);
+        company: formData.company,
+        goal: formData.goal,
+      })
+    );
 
-      toast.success('Dados recebidos! Redirecionando para agendamento...');
+    toast.success('Vamos qualificar sua operação antes de liberar a agenda.');
 
-      setTimeout(() => {
-        navigate(`/consultoria/qualificacao?name=${encodeURIComponent(formData.name)}&email=${encodeURIComponent(formData.email)}&company=${encodeURIComponent(formData.company)}`);
-      }, 1200);
-    } catch (error) {
-      toast.error('Erro ao enviar solicitação. Tente novamente.');
-      setIsSubmitting(false);
-    }
+    setTimeout(() => {
+      navigate(`/consultoria/qualificacao?name=${encodeURIComponent(formData.name)}&email=${encodeURIComponent(formData.email)}&company=${encodeURIComponent(formData.company)}&phone=${encodeURIComponent(formData.phone)}&goal=${encodeURIComponent(formData.goal)}`);
+    }, 600);
   };
 
   const scrollToForm = () => {

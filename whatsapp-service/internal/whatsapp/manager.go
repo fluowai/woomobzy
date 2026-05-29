@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
@@ -222,6 +223,85 @@ func (m *Manager) GetClient(instanceID uuid.UUID) (*Client, bool) {
 	defer m.mu.RUnlock()
 	client, exists := m.clients[instanceID]
 	return client, exists
+}
+
+// ImportHistory asks WhatsApp for older messages before the oldest stored
+// message in each chat, then starts CRM analysis for the imported/existing chats.
+func (m *Manager) ImportHistory(ctx context.Context, instanceID, tenantID uuid.UUID, chatLimit, perChat int) (*models.HistoryImportResponse, error) {
+	if chatLimit <= 0 {
+		chatLimit = 50
+	}
+	if chatLimit > 200 {
+		chatLimit = 200
+	}
+	if perChat <= 0 {
+		perChat = 50
+	}
+	if perChat > 100 {
+		perChat = 100
+	}
+
+	client, exists := m.GetClient(instanceID)
+	if !exists || !client.IsConnected() {
+		if err := m.ConnectInstance(ctx, instanceID); err != nil {
+			return nil, fmt.Errorf("failed to connect instance for history import: %w", err)
+		}
+
+		deadline := time.After(8 * time.Second)
+		ticker := time.NewTicker(250 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-deadline:
+				return nil, fmt.Errorf("instancia WhatsApp reconectando, tente novamente em alguns segundos")
+			case <-ticker.C:
+				client, exists = m.GetClient(instanceID)
+				if exists && client.IsConnected() {
+					goto connected
+				}
+			}
+		}
+	}
+
+connected:
+	chats, err := m.chatRepo.ListByInstanceForTenant(ctx, instanceID, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	requested := 0
+	chatIDs := make([]uuid.UUID, 0, chatLimit)
+	for _, chat := range chats {
+		if requested >= chatLimit {
+			break
+		}
+		chatIDs = append(chatIDs, chat.ID)
+
+		oldest, err := m.messageRepo.GetOldestByChat(ctx, chat.ID, instanceID)
+		if err != nil || oldest == nil || oldest.MessageID == "" {
+			continue
+		}
+
+		if err := client.RequestAdditionalHistory(ctx, chat, *oldest, perChat); err != nil {
+			m.logger.Warn("Failed to request on-demand history",
+				zap.String("instance", instanceID.String()),
+				zap.String("chat", chat.ID.String()),
+				zap.Error(err),
+			)
+			continue
+		}
+		requested++
+	}
+
+	client.AnalyzeImportedHistory(chatIDs, len(chatIDs))
+
+	return &models.HistoryImportResponse{
+		Message:   "Importacao solicitada. O WhatsApp enviara o historico disponivel em segundo plano e a IA analisara as conversas no CRM.",
+		Requested: requested,
+		Analyzing: true,
+	}, nil
 }
 
 // GetQRCode returns the current QR code for an instance

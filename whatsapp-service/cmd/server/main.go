@@ -133,6 +133,7 @@ func main() {
 			instances.GET("/:id/qrcode", instanceHandler.GetQRCode)
 			instances.POST("/:id/connect", instanceHandler.ConnectInstance)
 			instances.POST("/:id/logout", instanceHandler.LogoutInstance)
+			instances.POST("/:id/import-history", instanceHandler.ImportHistory)
 		}
 
 		// Chat routes

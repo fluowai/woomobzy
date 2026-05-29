@@ -272,7 +272,7 @@ func (c *Client) eventHandler(evt interface{}) {
 		})
 
 	case *events.HistorySync:
-		c.logger.Info("History sync received", zap.String("instance", c.instanceID.String()))
+		c.handleHistorySync(v)
 	}
 }
 

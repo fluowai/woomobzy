@@ -30,6 +30,13 @@ type AutomationMessagePayload struct {
 	Participant  *models.ParticipantInfo `json:"participant,omitempty"`
 }
 
+type AutomationImportPayload struct {
+	InstanceID uuid.UUID   `json:"instance_id"`
+	TenantID   string      `json:"tenant_id,omitempty"`
+	ChatIDs    []uuid.UUID `json:"chat_ids,omitempty"`
+	Limit      int         `json:"limit,omitempty"`
+}
+
 func NewAutomationClient(nodeURL, token string, logger *zap.Logger) *AutomationClient {
 	return &AutomationClient{
 		nodeURL: nodeURL,
@@ -60,6 +67,32 @@ func (a *AutomationClient) ProcessMessage(ctx context.Context, payload Automatio
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("automation endpoint returned status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (a *AutomationClient) AnalyzeImportedHistory(ctx context.Context, payload AutomationImportPayload) error {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.nodeURL+"/api/whatsapp/internal/imports/analyze", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-whatsapp-internal-token", a.token)
+
+	resp, err := a.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("history import analysis endpoint returned status %d", resp.StatusCode)
 	}
 
 	return nil

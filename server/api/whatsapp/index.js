@@ -91,6 +91,23 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     }
   });
 
+  app.post('/api/whatsapp/internal/imports/analyze', async (req, res) => {
+    const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
+    const receivedToken = req.headers['x-whatsapp-internal-token'];
+
+    if (!expectedToken || receivedToken !== expectedToken) {
+      return res.status(401).json({ error: 'Token interno invalido' });
+    }
+
+    try {
+      const result = await aiEngine.handleImportedWhatsAppConversations(req.body);
+      res.json({ success: true, result });
+    } catch (err) {
+      console.error('[WhatsApp AI Import Error]', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   const proxy = createProxyMiddleware({
     target,
     changeOrigin: true,

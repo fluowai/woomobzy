@@ -198,6 +198,244 @@ Formato:
     return { lead_id: lead.id, status: lead.status, tags };
   }
 
+  async handleImportedWhatsAppConversations(payload = {}) {
+    const supabase = getSupabaseServer();
+    const instanceId = payload.instance_id;
+    const organizationId = payload.tenant_id || (await this._resolveOrganizationId(instanceId));
+    const limit = Math.min(Math.max(Number(payload.limit) || 100, 1), 200);
+    const chatIds = Array.isArray(payload.chat_ids)
+      ? payload.chat_ids.filter(Boolean).slice(0, limit)
+      : [];
+
+    if (!organizationId || !instanceId) {
+      return { skipped: true, reason: 'missing organization or instance' };
+    }
+
+    const { data: instance } = await supabase
+      .from('whatsapp_instances')
+      .select('id, tenant_id')
+      .eq('id', instanceId)
+      .maybeSingle();
+
+    if (!instance || instance.tenant_id !== organizationId) {
+      return { skipped: true, reason: 'instance does not belong to organization' };
+    }
+
+    let query = supabase
+      .from('whatsapp_chats')
+      .select('id, instance_id, chat_jid, name, is_group, last_message_at')
+      .eq('instance_id', instanceId)
+      .eq('is_group', false)
+      .order('last_message_at', { ascending: false })
+      .limit(limit);
+
+    if (chatIds.length) {
+      query = query.in('id', chatIds);
+    }
+
+    const { data: chats, error } = await query;
+    if (error) throw error;
+
+    const results = [];
+    for (const chat of chats || []) {
+      try {
+        const result = await this._analyzeImportedChat({
+          supabase,
+          organizationId,
+          instanceId,
+          chat,
+        });
+        if (result) results.push(result);
+      } catch (err) {
+        console.warn('[AIAutomation] Falha ao analisar conversa importada:', chat.id, err.message);
+        results.push({ chat_id: chat.id, error: err.message });
+      }
+    }
+
+    return {
+      analyzed: results.filter((item) => item?.lead_id).length,
+      total: chats?.length || 0,
+      results,
+    };
+  }
+
+  async _analyzeImportedChat({ supabase, organizationId, instanceId, chat }) {
+    const { data: recentMessages, error } = await supabase
+      .from('whatsapp_messages')
+      .select('*')
+      .eq('instance_id', instanceId)
+      .eq('chat_id', chat.id)
+      .order('timestamp', { ascending: false })
+      .limit(80);
+
+    if (error) throw error;
+
+    const messages = (recentMessages || []).reverse();
+    const inboundMessages = messages.filter((msg) => !msg.is_from_me && msg.sender_phone);
+    if (!inboundMessages.length) {
+      return { chat_id: chat.id, skipped: true, reason: 'no client messages' };
+    }
+
+    const normalizedPhone = String(
+      inboundMessages[inboundMessages.length - 1]?.sender_phone || this._phoneFromChatJid(chat.chat_jid)
+    ).replace(/\D/g, '');
+
+    if (!normalizedPhone) {
+      return { chat_id: chat.id, skipped: true, reason: 'missing phone' };
+    }
+
+    const transcript = messages
+      .map((msg) => {
+        const author = msg.is_from_me ? 'Atendente' : 'Cliente';
+        const content = msg.content || this._buildMediaHint(msg) || `[${msg.type || 'mensagem'}]`;
+        const when = msg.timestamp ? new Date(msg.timestamp).toLocaleString('pt-BR') : '';
+        return `${when} - ${author}: ${content}`;
+      })
+      .join('\n')
+      .slice(-12000);
+
+    const aiResult = await this.processConversationImport({
+      transcript,
+      chat,
+      organizationId,
+    });
+
+    const stage = this._normalizeStage(aiResult?.suggestedStage, 'text');
+    const name = aiResult?.leadName || chat.name || inboundMessages[inboundMessages.length - 1]?.sender_name || normalizedPhone;
+    const tags = this._normalizeTags(aiResult?.tags, {});
+    const noteLine = this._buildImportNoteLine({ aiResult, chat, tags, transcript });
+
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('phone', normalizedPhone)
+      .maybeSingle();
+
+    let lead;
+    if (existingLead) {
+      const updates = {
+        name: existingLead.name || name,
+        status: this._shouldAdvance(existingLead.status, stage) ? stage : existingLead.status,
+        classification: aiResult?.classification || existingLead.classification,
+        notes: [existingLead.notes, noteLine].filter(Boolean).join('\n\n'),
+        chat_jid: chat.chat_jid || existingLead.chat_jid,
+        last_contacted_at: new Date().toISOString(),
+      };
+      if (aiResult?.budget && !existingLead.budget) updates.budget = aiResult.budget;
+
+      const { data, error: updateError } = await supabase
+        .from('leads')
+        .update(updates)
+        .eq('id', existingLead.id)
+        .select()
+        .single();
+      if (updateError) throw updateError;
+      lead = data;
+    } else {
+      const { data, error: insertError } = await supabase
+        .from('leads')
+        .insert({
+          organization_id: organizationId,
+          name,
+          phone: normalizedPhone,
+          source: 'WhatsApp Importado IA',
+          status: stage,
+          classification: aiResult?.classification || 'Interessado',
+          notes: noteLine,
+          chat_jid: chat.chat_jid,
+          budget: aiResult?.budget || null,
+          last_contacted_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (insertError) throw insertError;
+      lead = data;
+    }
+
+    await this._insertActivity(supabase, {
+      leadId: lead.id,
+      organizationId,
+      type: 'WhatsApp Importado IA',
+      description: aiResult?.intent || 'Conversa importada e analisada pela IA',
+      metadata: {
+        tags,
+        aiResult,
+        chat_id: chat.id,
+        imported_message_count: messages.length,
+      },
+    });
+
+    await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags });
+    await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult });
+
+    try {
+      lead = await matchLeadProperties({ supabase, lead, organizationId });
+    } catch (error) {
+      console.warn('[AIAutomation] Matchmaking da importacao indisponivel:', error.message);
+    }
+
+    return { chat_id: chat.id, lead_id: lead.id, status: lead.status, tags };
+  }
+
+  async processConversationImport({ transcript, chat, organizationId }) {
+    try {
+      const model = await this._ensureModel(organizationId);
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `
+Analise esta conversa historica de WhatsApp de uma imobiliaria e responda apenas JSON valido.
+
+Chat: ${chat?.name || chat?.chat_jid || 'sem nome'}
+
+Conversa:
+${transcript || 'Sem texto renderizavel.'}
+
+Objetivo:
+- Identificar ou atualizar o lead no CRM.
+- Resumir necessidades, imovel desejado, cidade/regiao, orcamento, urgencia e proximas acoes.
+- Escolher a etapa correta do funil.
+
+Etapas do funil:
+Novo, Qualificacao, Visita, Simulacao, Documentacao, Fechado, Perdido.
+
+Formato:
+{
+  "intent": "resumo comercial curto da conversa",
+  "suggestedStage": "Novo | Qualificacao | Visita | Simulacao | Documentacao | Fechado | Perdido",
+  "classification": "Alta Prioridade | Interessado | Curioso | Documentacao | Financeiro",
+  "tags": ["ate 6 etiquetas curtas"],
+  "leadName": "nome identificado ou vazio",
+  "budget": 0,
+  "followUpAt": "data ISO se houver compromisso claro; senao vazio",
+  "reply": "proxima resposta sugerida ao corretor"
+}`,
+              },
+            ],
+          },
+        ],
+      });
+      const text = result.response.text();
+      return JSON.parse(text.replace(/```json|```/g, '').trim());
+    } catch (err) {
+      console.error('[AIAutomation] Erro ao analisar conversa importada:', err.message);
+      return {
+        intent: 'Conversa importada do WhatsApp para organizacao do CRM.',
+        suggestedStage: 'Novo',
+        classification: 'Interessado',
+        tags: ['whatsapp-importado'],
+        leadName: '',
+        budget: 0,
+        followUpAt: '',
+        reply: '',
+      };
+    }
+  }
+
   async _loadActiveAgent(supabase, organizationId, messageType) {
     const preferredTool = messageType === 'audio' ? 'audio-stt' : messageType === 'document' ? 'pdf-reader' : 'whatsapp';
     const { data, error } = await supabase
@@ -266,6 +504,15 @@ Formato:
   _buildNoteLine({ aiResult, message, chat, tags }) {
     const text = aiResult?.transcricao || message.content || this._buildMediaHint(message) || 'Mensagem sem texto';
     return `[WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]\nChat: ${chat.name || chat.chat_jid || 'sem nome'}\nResumo: ${aiResult?.intent || text}\nEtiquetas: ${tags.join(', ') || 'sem etiquetas'}\nResposta sugerida: ${aiResult?.reply || 'sem sugestao'}`;
+  }
+
+  _buildImportNoteLine({ aiResult, chat, tags, transcript }) {
+    const fallback = transcript ? transcript.split('\n').slice(-5).join('\n') : 'Conversa sem texto renderizavel';
+    return `[Importacao WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]\nChat: ${chat.name || chat.chat_jid || 'sem nome'}\nResumo: ${aiResult?.intent || fallback}\nEtiquetas: ${tags.join(', ') || 'sem etiquetas'}\nProxima acao sugerida: ${aiResult?.reply || 'sem sugestao'}`;
+  }
+
+  _phoneFromChatJid(jid = '') {
+    return String(jid).split('@')[0].replace(/\D/g, '');
   }
 
   async _insertActivity(supabase, activity) {

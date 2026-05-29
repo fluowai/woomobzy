@@ -232,3 +232,36 @@ func (h *InstanceHandler) LogoutInstance(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Instance disconnected"})
 }
+
+// ImportHistory handles POST /api/instances/:id/import-history
+func (h *InstanceHandler) ImportHistory(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance ID"})
+		return
+	}
+
+	if _, err := h.instanceRepo.GetByIDForTenant(c.Request.Context(), id, tenantID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Instance not found for tenant"})
+		return
+	}
+
+	var req models.HistoryImportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		req = models.HistoryImportRequest{}
+	}
+
+	result, err := h.manager.ImportHistory(c.Request.Context(), id, tenantID, req.ChatLimit, req.PerChat)
+	if err != nil {
+		h.logger.Error("Failed to import WhatsApp history", zap.Error(err))
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}

@@ -15,7 +15,8 @@ import {
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import InstanceManager from './InstanceManager';
-import { MessageSquare, Settings, Wifi, WifiOff, Smartphone } from 'lucide-react';
+import { MessageSquare, Settings, Wifi, WifiOff, Smartphone, DownloadCloud, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const WhatsAppDashboard: React.FC = () => {
   // State
@@ -31,6 +32,7 @@ const WhatsAppDashboard: React.FC = () => {
   const [webSocketEnabled, setWebSocketEnabled] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [importingHistory, setImportingHistory] = useState(false);
 
   // WebSocket
   const { isConnected, on } = useWebSocket(webSocketEnabled);
@@ -132,10 +134,17 @@ const WhatsAppDashboard: React.FC = () => {
       );
     });
 
+    const unsubHistoryImported = on('history_imported', (data: any) => {
+      if (!selectedInstance || data.instance_id !== selectedInstance.id) return;
+      loadChats(selectedInstance.id);
+      toast.success(`Histórico importado: ${data.messages || 0} mensagens em ${data.chats || 0} conversas.`);
+    });
+
     return () => {
       unsubMessage();
       unsubStatus();
       unsubQR();
+      unsubHistoryImported();
     };
   }, [on, selectedChat, selectedInstance]);
 
@@ -223,6 +232,25 @@ const WhatsAppDashboard: React.FC = () => {
   const handleChatUpdated = (chat: Chat) => {
     setSelectedChat(chat);
     setChats((prev) => prev.map((c) => (c.id === chat.id ? { ...c, ...chat } : c)));
+  };
+
+  const handleImportHistory = async () => {
+    if (!selectedInstance || importingHistory) return;
+
+    setImportingHistory(true);
+    try {
+      const result = await instanceApi.importHistory(selectedInstance.id, {
+        chat_limit: 100,
+        per_chat: 50,
+      });
+      toast.success(result.message || 'Importação e análise iniciadas.');
+      await loadChats(selectedInstance.id);
+    } catch (err: any) {
+      logger.error('Failed to import WhatsApp history:', err);
+      toast.error(err?.message || 'Erro ao importar conversas.');
+    } finally {
+      setImportingHistory(false);
+    }
   };
 
   const filteredChats = searchQuery
@@ -342,6 +370,16 @@ const WhatsAppDashboard: React.FC = () => {
               {instances.length === 0 && <option value="">Nenhuma instância</option>}
             </select>
           </div>
+
+          <button
+            onClick={handleImportHistory}
+            className="wa-import-btn"
+            disabled={!selectedInstance || selectedInstance.status !== 'connected' || importingHistory}
+            title="Importar conversas e organizar no CRM com IA"
+          >
+            {importingHistory ? <Loader2 size={16} className="animate-spin" /> : <DownloadCloud size={16} />}
+            <span>Importar</span>
+          </button>
 
           <button
             onClick={() => setShowInstanceManager(true)}

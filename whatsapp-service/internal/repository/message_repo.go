@@ -127,3 +127,31 @@ func (r *MessageRepo) CountByChatForTenant(ctx context.Context, chatID, instance
 	).Scan(&count)
 	return count, err
 }
+
+// GetOldestByChat returns the oldest stored message for on-demand history sync.
+func (r *MessageRepo) GetOldestByChat(ctx context.Context, chatID, instanceID uuid.UUID) (*models.Message, error) {
+	query := `
+		SELECT id, instance_id, chat_id, message_id, sender_phone, sender_name,
+		       is_from_me, is_group, type, COALESCE(content, '') as content,
+		       COALESCE(media_url, '') as media_url,
+		       COALESCE(media_mimetype, '') as media_mimetype,
+		       COALESCE(media_filename, '') as media_filename,
+		       COALESCE(quoted_message_id, '') as quoted_message_id,
+		       timestamp, created_at
+		FROM whatsapp_messages
+		WHERE chat_id = $1 AND instance_id = $2
+		ORDER BY timestamp ASC
+		LIMIT 1`
+
+	var msg models.Message
+	err := r.db.QueryRow(ctx, query, chatID, instanceID).Scan(
+		&msg.ID, &msg.InstanceID, &msg.ChatID, &msg.MessageID,
+		&msg.SenderPhone, &msg.SenderName, &msg.IsFromMe, &msg.IsGroup,
+		&msg.Type, &msg.Content, &msg.MediaURL, &msg.MediaMimetype,
+		&msg.MediaFilename, &msg.QuotedMessageID, &msg.Timestamp, &msg.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}

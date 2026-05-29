@@ -106,6 +106,21 @@ type SendMessageRequest struct {
 	Type    MessageType `json:"type" binding:"required"`
 }
 
+// HistoryImportRequest controls an on-demand history import/analysis run.
+type HistoryImportRequest struct {
+	ChatLimit int `json:"chat_limit,omitempty"`
+	PerChat   int `json:"per_chat,omitempty"`
+}
+
+// HistoryImportResponse summarizes a requested import/analysis run.
+type HistoryImportResponse struct {
+	Message       string `json:"message"`
+	Requested     int    `json:"requested"`
+	Analyzing     bool   `json:"analyzing"`
+	ImportedChats int    `json:"imported_chats,omitempty"`
+	ImportedMsgs  int    `json:"imported_messages,omitempty"`
+}
+
 // ---- WebSocket Events ----
 
 // WSEvent represents a WebSocket event sent to the frontend
@@ -144,4 +159,13 @@ type InstanceStatusEvent struct {
 	InstanceID uuid.UUID      `json:"instance_id"`
 	Status     InstanceStatus `json:"status"`
 	Phone      string         `json:"phone,omitempty"`
+}
+
+// HistoryImportedEvent is emitted after a WhatsApp history sync chunk is stored.
+type HistoryImportedEvent struct {
+	InstanceID uuid.UUID `json:"instance_id"`
+	Chats      int       `json:"chats"`
+	Messages   int       `json:"messages"`
+	Progress   uint32    `json:"progress,omitempty"`
+	SyncType   string    `json:"sync_type,omitempty"`
 }

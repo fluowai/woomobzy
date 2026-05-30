@@ -537,8 +537,12 @@ export async function validateStorageMigration({ source, minio, buckets, onLog, 
 
   const bucketObjects = [];
   for (const bucket of buckets) {
-    const objects = await listAllS3Objects(source, bucket);
-    bucketObjects.push({ bucket, objects });
+    try {
+      const objects = await listAllS3Objects(source, bucket);
+      bucketObjects.push({ bucket, objects });
+    } catch (error) {
+      await onLog?.('warn', `Bucket origem [${bucket}] ignorado (inacess\u00edvel ou n\u00e3o encontrado): ${error.message}`);
+    }
   }
 
   const totalFiles = bucketObjects.reduce((sum, item) => sum + item.objects.length, 0);

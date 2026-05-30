@@ -83,6 +83,7 @@ const FluowaiMigration: React.FC = () => {
 
   const canRunActions = Boolean(activeJob?.id);
   const canMigrate = Boolean(activeJob?.id && activeJob.dry_run_approved && form.confirmation.trim() === 'MIGRAR MIDIAS');
+  const migrateBlockedReason = getMigrateBlockedReason(activeJob, form.confirmation);
   const phaseLabel = useMemo(() => {
     if (!activeJob) return 'Nenhum job criado';
     if (activeJob.status === 'running') return `Migrando: ${activeJob.progress || 0}%`;
@@ -93,8 +94,12 @@ const FluowaiMigration: React.FC = () => {
   async function refreshJobs() {
     try {
       const data = await callApi('/api/fluowai-migration/jobs');
-      setJobs(data.jobs || []);
-      if (!activeJob && data.jobs?.[0]) setActiveJob(data.jobs[0]);
+      const nextJobs = data.jobs || [];
+      setJobs(nextJobs);
+      setActiveJob((current) => {
+        if (!current) return nextJobs[0] || null;
+        return nextJobs.find((job: Job) => job.id === current.id) || current;
+      });
     } catch (err: any) {
       setError(err.message);
     }
@@ -288,6 +293,11 @@ const FluowaiMigration: React.FC = () => {
                 {activeAction === 'migrate-storage' ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} />}
                 Iniciar migração de mídias
               </button>
+              {!canMigrate && (
+                <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
+                  {migrateBlockedReason}
+                </p>
+              )}
             </div>
           </div>
 
@@ -449,6 +459,13 @@ function actionMessage(action: string, data: any) {
   }
   if (action === 'migrate-storage') return data.message || 'Migração de mídias iniciada.';
   return 'Relatório carregado.';
+}
+
+function getMigrateBlockedReason(job: Job | null, confirmation: string) {
+  if (!job) return 'Salve as credenciais para criar um job.';
+  if (!job.dry_run_approved) return 'Execute a simulação e aguarde o status Dry-run aprovado.';
+  if (confirmation.trim() !== 'MIGRAR MIDIAS') return 'Digite MIGRAR MIDIAS para liberar a migração.';
+  return 'Migração liberada.';
 }
 
 export default FluowaiMigration;

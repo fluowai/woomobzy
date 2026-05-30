@@ -24,6 +24,38 @@ type Job = {
   created_at: string;
 };
 
+type JobStep = {
+  step: string;
+  status: string;
+  progress: number;
+  metadata?: Record<string, any>;
+  updated_at?: string;
+};
+
+type JobLog = {
+  id: number | string;
+  level: string;
+  step?: string;
+  message: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+};
+
+type JobError = {
+  id: number | string;
+  step?: string;
+  entity_name?: string;
+  error_message: string;
+  created_at: string;
+};
+
+type JobDetails = {
+  job?: Job;
+  steps: JobStep[];
+  logs: JobLog[];
+  errors: JobError[];
+};
+
 type FormState = {
   source: Record<string, any>;
   minio: Record<string, any>;
@@ -79,10 +111,32 @@ const FluowaiMigration: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
+  const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
+  const [lastProgressSync, setLastProgressSync] = useState<string | null>(null);
 
   useEffect(() => {
     refreshJobs();
   }, []);
+
+  useEffect(() => {
+    if (!activeJob?.id) {
+      setJobDetails(null);
+      return;
+    }
+
+    loadJobDetails(activeJob.id);
+  }, [activeJob?.id]);
+
+  useEffect(() => {
+    if (!activeJob?.id || !['running', 'testing'].includes(activeJob.status)) return;
+
+    const interval = window.setInterval(() => {
+      refreshJobs({ silent: true });
+      loadJobDetails(activeJob.id, true);
+    }, 2500);
+
+    return () => window.clearInterval(interval);
+  }, [activeJob?.id, activeJob?.status]);
 
   const canRunActions = Boolean(activeJob?.id);
   const canMigrate = Boolean(activeJob?.id && activeJob.dry_run_approved && form.confirmation.trim() === 'MIGRAR MIDIAS');
@@ -94,7 +148,7 @@ const FluowaiMigration: React.FC = () => {
     return `Status: ${activeJob.status}`;
   }, [activeJob]);
 
-  async function refreshJobs() {
+  async function refreshJobs(options: { silent?: boolean } = {}) {
     try {
       const data = await callApi('/api/fluowai-migration/jobs');
       const nextJobs = data.jobs || [];
@@ -104,7 +158,26 @@ const FluowaiMigration: React.FC = () => {
         return nextJobs.find((job: Job) => job.id === current.id) || current;
       });
     } catch (err: any) {
+      if (options.silent) return;
       setError(err.message);
+    }
+  }
+
+  async function loadJobDetails(jobId: string, silent = false) {
+    try {
+      const data = await callApi(`/api/fluowai-migration/jobs/${jobId}`);
+      setJobDetails({
+        job: data.job,
+        steps: data.steps || [],
+        logs: data.logs || [],
+        errors: data.errors || [],
+      });
+      setLastProgressSync(new Date().toLocaleTimeString('pt-BR'));
+      if (data.job) {
+        setActiveJob((current) => current?.id === data.job.id ? data.job : current);
+      }
+    } catch (err: any) {
+      if (!silent) setError(err.message);
     }
   }
 
@@ -129,6 +202,7 @@ const FluowaiMigration: React.FC = () => {
       setMessage('Job salvo com credenciais S3 criptografadas.');
       setResult(data);
       await refreshJobs();
+      await loadJobDetails(data.job.id, true);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -158,6 +232,7 @@ const FluowaiMigration: React.FC = () => {
       setResult(data.report || data.diagnostic || data.analysis || data);
       setMessage(actionMessage(action, data));
       await refreshJobs();
+      await loadJobDetails(activeJob.id, true);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -340,6 +415,15 @@ const FluowaiMigration: React.FC = () => {
         </div>
       )}
 
+      {activeJob && (
+        <MigrationProgressPanel
+          job={activeJob}
+          details={jobDetails}
+          lastSync={lastProgressSync}
+          onRefresh={() => loadJobDetails(activeJob.id)}
+        />
+      )}
+
       <section className="rounded-lg border border-slate-200 bg-slate-950 p-5">
         <div className="mb-3 flex items-center gap-2 text-sm font-bold text-white">
           <FileJson size={16} />
@@ -352,6 +436,119 @@ const FluowaiMigration: React.FC = () => {
     </div>
   );
 };
+
+const MigrationProgressPanel: React.FC<{
+  job: Job;
+  details: JobDetails | null;
+  lastSync: string | null;
+  onRefresh: () => void;
+}> = ({ job, details, lastSync, onRefresh }) => {
+  const storageStep = details?.steps?.find((step) => step.step === 'storage_migration');
+  const activeStep = storageStep || [...(details?.steps || [])].reverse().find((step) => step.status === 'running') || details?.steps?.[details.steps.length - 1];
+  const progress = Math.max(0, Math.min(100, Number(job.progress || activeStep?.progress || 0)));
+  const metadata = storageStep?.metadata || {};
+  const totalFiles = Number(metadata.totalFiles || 0);
+  const processed = Number(metadata.processed || 0);
+  const copied = Number(metadata.copied || 0);
+  const skipped = Number(metadata.skipped || 0);
+  const failed = Number(metadata.failed || 0);
+  const bytesCopied = Number(metadata.bytesCopied || 0);
+  const recentLogs = (details?.logs || []).slice(0, 8);
+  const recentErrors = (details?.errors || []).slice(0, 5);
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+            {job.status === 'running' ? <RefreshCw size={16} className="animate-spin text-red-600" /> : <CheckCircle2 size={16} className="text-emerald-600" />}
+            Progresso da migração
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Job {job.id} {lastSync ? `- atualizado às ${lastSync}` : ''}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+        >
+          <RefreshCw size={14} />
+          Atualizar agora
+        </button>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+          <span>{activeStep ? stepLabel(activeStep.step) : `Status: ${job.status}`}</span>
+          <span>{progress}%</span>
+        </div>
+        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className={`h-full rounded-full transition-all ${job.status === 'failed' ? 'bg-red-500' : 'bg-red-600'}`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-5">
+        <ProgressStat label="Processados" value={totalFiles ? `${processed}/${totalFiles}` : '-'} />
+        <ProgressStat label="Copiados" value={String(copied || 0)} />
+        <ProgressStat label="Ignorados" value={String(skipped || 0)} />
+        <ProgressStat label="Falhas" value={String(failed || 0)} tone={failed ? 'danger' : 'neutral'} />
+        <ProgressStat label="Dados copiados" value={formatBytes(bytesCopied)} />
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Logs recentes</div>
+          <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
+            {recentLogs.length === 0 && <p className="text-xs text-slate-500">Ainda sem logs para este job.</p>}
+            {recentLogs.map((log) => (
+              <div key={log.id} className="rounded-lg bg-white px-3 py-2 text-xs text-slate-700 ring-1 ring-slate-200">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`font-bold ${log.level === 'error' ? 'text-red-700' : log.level === 'warn' ? 'text-amber-700' : 'text-slate-800'}`}>
+                    {log.level} / {stepLabel(log.step || '')}
+                  </span>
+                  <span className="shrink-0 text-slate-400">{formatTime(log.created_at)}</span>
+                </div>
+                <div className="mt-1">{log.message}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Erros recentes</div>
+          <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
+            {recentErrors.length === 0 && <p className="text-xs text-slate-500">Nenhum erro registrado até agora.</p>}
+            {recentErrors.map((item) => (
+              <div key={item.id} className="rounded-lg bg-white px-3 py-2 text-xs text-red-800 ring-1 ring-red-100">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold">{stepLabel(item.step || '')}</span>
+                  <span className="shrink-0 text-red-300">{formatTime(item.created_at)}</span>
+                </div>
+                {item.entity_name && <div className="mt-1 truncate font-mono text-[11px]">{item.entity_name}</div>}
+                <div className="mt-1">{item.error_message}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const ProgressStat: React.FC<{
+  label: string;
+  value: string;
+  tone?: 'neutral' | 'danger';
+}> = ({ label, value, tone = 'neutral' }) => (
+  <div className={`rounded-lg border px-3 py-3 ${tone === 'danger' ? 'border-red-100 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
+    <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div>
+    <div className={`mt-1 text-sm font-bold ${tone === 'danger' ? 'text-red-700' : 'text-slate-900'}`}>{value}</div>
+  </div>
+);
 
 const SourceS3Panel: React.FC<{
   values: Record<string, any>;
@@ -495,6 +692,38 @@ function splitList(value: string) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function stepLabel(step: string) {
+  const labels: Record<string, string> = {
+    connections: 'Conexões',
+    diagnostic: 'Diagnóstico',
+    media_organization: 'Análise',
+    dry_run: 'Simulação',
+    storage_migration: 'Migração Storage',
+  };
+  return labels[step] || step || 'Job';
+}
+
+function formatTime(value?: string) {
+  if (!value) return '-';
+  return new Date(value).toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function formatBytes(value: number) {
+  if (!value) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let next = value;
+  let unitIndex = 0;
+  while (next >= 1024 && unitIndex < units.length - 1) {
+    next /= 1024;
+    unitIndex++;
+  }
+  return `${next.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
 function actionMessage(action: string, data: any) {

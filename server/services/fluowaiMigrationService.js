@@ -531,6 +531,67 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
   return summary;
 }
 
+export async function validateStorageMigration({ source, minio, buckets, onLog, onProgress }) {
+  validateS3Config(source, 'Storage origem S3');
+  validateMinioConfig(minio);
+
+  const bucketObjects = [];
+  for (const bucket of buckets) {
+    const objects = await listAllS3Objects(source, bucket);
+    bucketObjects.push({ bucket, objects });
+  }
+
+  const totalFiles = bucketObjects.reduce((sum, item) => sum + item.objects.length, 0);
+  let processed = 0;
+  let matched = 0;
+  let missing = 0;
+  let sizeMismatch = 0;
+
+  await onLog?.('info', `Validação storage-only iniciada para ${totalFiles} arquivos.`);
+
+  for (const { bucket, objects } of bucketObjects) {
+    for (const object of objects) {
+      processed++;
+      const destination = resolveDestinationObject({
+        minio,
+        sourceBucket: bucket,
+        sourceKey: object.key,
+      });
+
+      try {
+        const existing = await signedMinioRequest(minio, {
+          method: 'HEAD',
+          bucket: destination.bucket,
+          key: destination.key,
+          allowStatuses: [200, 404],
+        });
+
+        if (existing.status === 404) {
+          missing++;
+          await onLog?.('error', `Arquivo ausente no destino: [${bucket}] ${object.key}`);
+        } else {
+          const destinationSize = Number(existing.headers.get('content-length') || 0);
+          if (destinationSize !== object.size) {
+            sizeMismatch++;
+            await onLog?.('error', `Tamanho divergente para [${bucket}] ${object.key} (Origem: ${object.size}, Destino: ${destinationSize})`);
+          } else {
+            matched++;
+          }
+        }
+      } catch (error) {
+        missing++; // Considere como falha/ausente
+        await onLog?.('error', `Erro ao verificar [${bucket}] ${object.key}: ${error.message}`);
+      }
+
+      await onProgress?.({ processed, totalFiles, matched, missing, sizeMismatch });
+    }
+  }
+
+  const summary = { totalFiles, processed, matched, missing, sizeMismatch };
+  await onLog?.(missing || sizeMismatch ? 'warn' : 'info', 'Validação storage-only finalizada.', summary);
+  return summary;
+}
+
 export async function collectDatabaseDiagnostics(config, schemas = DEFAULT_SCHEMAS) {
   const client = new Client(buildPgConfig(config));
   try {

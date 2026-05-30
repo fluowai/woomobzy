@@ -13,6 +13,7 @@ import {
   sanitizePublicJob,
   testMinioConnection,
   testS3StorageConnection,
+  validateStorageMigration,
 } from '../../services/fluowaiMigrationService.js';
 
 const router = express.Router();
@@ -287,6 +288,33 @@ router.post('/jobs/:id/migrate-storage', async (req, res) => {
   }
 });
 
+router.post('/jobs/:id/validate', async (req, res) => {
+  try {
+    const job = await loadJob(req.params.id);
+    
+    await updateJob(job.id, {
+      status: 'testing',
+      progress: 80,
+    });
+    await upsertStep(job.id, 'validation', 'running', 0);
+    await writeLog(job.id, 'info', 'validation', 'Validacao de integridade iniciada em background.');
+
+    runValidation(job.id).catch(async (error) => {
+      await writeError(job.id, 'validation', 'job', job.id, error.message).catch(() => {});
+      await writeLog(job.id, 'error', 'validation', error.message).catch(() => {});
+      await upsertStep(job.id, 'validation', 'failed', 100, { error: error.message }).catch(() => {});
+      await updateJob(job.id, { status: 'failed', progress: 80 }).catch(() => {});
+    });
+
+    res.status(202).json({
+      success: true,
+      message: 'Validacao iniciada em background. Acompanhe os logs.',
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/jobs/:id/report', async (req, res) => {
   try {
     const job = await loadJob(req.params.id);
@@ -337,6 +365,31 @@ async function runStorageMigration(jobId) {
     status: summary.failed ? 'failed' : 'completed',
     progress: 100,
     finished_at: new Date().toISOString(),
+  });
+}
+
+async function runValidation(jobId) {
+  const job = await loadJob(jobId);
+  const credentials = await loadCredentials(jobId);
+  const summary = await validateStorageMigration({
+    source: credentials.source,
+    minio: credentials.minio,
+    buckets: job.selected_buckets,
+    onLog: (level, message, metadata = {}) => writeLog(jobId, level, 'validation', message, metadata),
+    onProgress: async (progress) => {
+      const percent = progress.totalFiles
+        ? Math.min(99, Math.max(80, Math.round((progress.processed / progress.totalFiles) * 19) + 80))
+        : 80;
+      await updateJob(jobId, { progress: percent });
+      await upsertStep(jobId, 'validation', 'running', progress.totalFiles ? Math.round((progress.processed / progress.totalFiles) * 100) : 0, progress);
+    },
+  });
+
+  const failed = summary.missing > 0 || summary.sizeMismatch > 0;
+  await upsertStep(jobId, 'validation', failed ? 'failed' : 'completed', 100, summary);
+  await updateJob(jobId, {
+    status: failed ? 'failed' : 'completed',
+    progress: 100,
   });
 }
 

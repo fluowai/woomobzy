@@ -211,7 +211,7 @@ const FluowaiMigration: React.FC = () => {
     }
   }
 
-  async function runAction(action: 'test-connections' | 'diagnose' | 'analyze-media-organization' | 'dry-run' | 'migrate-storage' | 'report') {
+  async function runAction(action: 'test-connections' | 'diagnose' | 'analyze-media-organization' | 'dry-run' | 'migrate-storage' | 'validate' | 'report') {
     if (!activeJob) return;
     setLoading(true);
     setActiveAction(action);
@@ -349,6 +349,7 @@ const FluowaiMigration: React.FC = () => {
               <ActionButton disabled={!canRunActions || loading} active={activeAction === 'diagnose'} icon={<Image size={16} />} label="Diagnosticar buckets" onClick={() => runAction('diagnose')} />
               <ActionButton disabled={!canRunActions || loading} active={activeAction === 'analyze-media-organization'} icon={<HardDrive size={16} />} label="Analisar banco e pastas" onClick={() => runAction('analyze-media-organization')} />
               <ActionButton disabled={!canRunActions || loading} active={activeAction === 'dry-run'} icon={<FileJson size={16} />} label="Simular migração" onClick={() => runAction('dry-run')} />
+              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'validate'} icon={<Shield size={16} />} label="Validar integridade" onClick={() => runAction('validate')} />
               <ActionButton disabled={!canRunActions || loading} active={activeAction === 'report'} icon={<Download size={16} />} label="Relatório JSON" onClick={() => runAction('report')} />
             </div>
 
@@ -444,15 +445,21 @@ const MigrationProgressPanel: React.FC<{
   onRefresh: () => void;
 }> = ({ job, details, lastSync, onRefresh }) => {
   const storageStep = details?.steps?.find((step) => step.step === 'storage_migration');
-  const activeStep = storageStep || [...(details?.steps || [])].reverse().find((step) => step.status === 'running') || details?.steps?.[details.steps.length - 1];
+  const validationStep = details?.steps?.find((step) => step.step === 'validation');
+  const activeStep = validationStep || storageStep || [...(details?.steps || [])].reverse().find((step) => step.status === 'running') || details?.steps?.[details.steps.length - 1];
   const progress = Math.max(0, Math.min(100, Number(job.progress || activeStep?.progress || 0)));
-  const metadata = storageStep?.metadata || {};
+  const metadata = activeStep?.metadata || {};
   const totalFiles = Number(metadata.totalFiles || 0);
   const processed = Number(metadata.processed || 0);
   const copied = Number(metadata.copied || 0);
   const skipped = Number(metadata.skipped || 0);
   const failed = Number(metadata.failed || 0);
   const bytesCopied = Number(metadata.bytesCopied || 0);
+  
+  const matched = Number(metadata.matched || 0);
+  const missing = Number(metadata.missing || 0);
+  const sizeMismatch = Number(metadata.sizeMismatch || 0);
+
   const recentLogs = (details?.logs || []).slice(0, 8);
   const recentErrors = (details?.errors || []).slice(0, 5);
 
@@ -493,10 +500,20 @@ const MigrationProgressPanel: React.FC<{
 
       <div className="mt-4 grid gap-3 md:grid-cols-5">
         <ProgressStat label="Processados" value={totalFiles ? `${processed}/${totalFiles}` : '-'} />
-        <ProgressStat label="Copiados" value={String(copied || 0)} />
-        <ProgressStat label="Ignorados" value={String(skipped || 0)} />
-        <ProgressStat label="Falhas" value={String(failed || 0)} tone={failed ? 'danger' : 'neutral'} />
-        <ProgressStat label="Dados copiados" value={formatBytes(bytesCopied)} />
+        {activeStep?.step === 'validation' ? (
+          <>
+            <ProgressStat label="Validados (OK)" value={String(matched || 0)} />
+            <ProgressStat label="Ausentes" value={String(missing || 0)} tone={missing ? 'danger' : 'neutral'} />
+            <ProgressStat label="Div. Tamanho" value={String(sizeMismatch || 0)} tone={sizeMismatch ? 'danger' : 'neutral'} />
+          </>
+        ) : (
+          <>
+            <ProgressStat label="Copiados" value={String(copied || 0)} />
+            <ProgressStat label="Ignorados" value={String(skipped || 0)} />
+            <ProgressStat label="Falhas" value={String(failed || 0)} tone={failed ? 'danger' : 'neutral'} />
+            <ProgressStat label="Dados copiados" value={formatBytes(bytesCopied)} />
+          </>
+        )}
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -701,6 +718,7 @@ function stepLabel(step: string) {
     media_organization: 'Análise',
     dry_run: 'Simulação',
     storage_migration: 'Migração Storage',
+    validation: 'Validação',
   };
   return labels[step] || step || 'Job';
 }
@@ -736,6 +754,7 @@ function actionMessage(action: string, data: any) {
     return data.report?.ready ? 'Pronto para migrar mídias.' : 'Correções necessárias antes da migração.';
   }
   if (action === 'migrate-storage') return data.message || 'Migração de mídias iniciada.';
+  if (action === 'validate') return data.message || 'Validação iniciada.';
   return 'Relatório carregado.';
 }
 

@@ -312,7 +312,7 @@ export async function buildStorageOnlyDryRunReport({ source, minio, buckets }) {
 
   const warnings = [];
   const blockers = [];
-  const missingBuckets = sourceStorage.buckets.filter((bucket) => !bucket.exists);
+  const missingBuckets = sourceStorage.buckets.filter((bucket) => !bucket.exists && !bucket.inaccessible);
   const inaccessibleBuckets = sourceStorage.buckets.filter((bucket) => bucket.inaccessible);
 
   if (missingBuckets.length) {

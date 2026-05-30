@@ -70,6 +70,8 @@ router.post('/jobs', async (req, res) => {
     const body = req.body || {};
     const source = normalizeSourceConfig(body.source || {});
     const minio = normalizeMinioConfig(body.minio || {});
+    validateUnmaskedS3Credentials(source, 'Supabase Storage S3 origem');
+    validateUnmaskedS3Credentials(minio, 'MinIO destino');
     const selectedSchemas = sanitizeList(body.selectedSchemas, getDefaultMigrationSelections().schemas);
     const selectedBuckets = sanitizeList(body.selectedBuckets, getDefaultMigrationSelections().buckets);
     const supabase = getSupabaseServer();
@@ -509,6 +511,16 @@ function normalizeSourceConfig(input) {
     useSsl: input.useSsl !== false,
     buckets: sanitizeList(input.buckets, getDefaultMigrationSelections().buckets),
   };
+}
+
+function validateUnmaskedS3Credentials(config, label) {
+  for (const field of ['accessKey', 'secretKey']) {
+    const value = String(config[field] || '').trim();
+    if (!value) continue;
+    if (/^[•●*]+$/.test(value) || value.includes('••') || value.includes('●●')) {
+      throw new Error(`${label}: cole a chave real em "${field}". Valores mascarados nao podem ser salvos.`);
+    }
+  }
 }
 
 function normalizeMinioConfig(input) {

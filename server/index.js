@@ -28,6 +28,7 @@ import cobrancaRoutes from './api/cobranca/index.js';
 import aiRoutes from './api/ai/index.js';
 import storageRoutes from './api/storage/index.js';
 import demoRoutes from './api/demo/index.js';
+import fluowaiMigrationRoutes from './api/fluowai-migration/index.js';
 import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -185,6 +186,7 @@ app.use('/api/locacao', locacaoRoutes);
 app.use('/api/cobranca', cobrancaRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/demo', demoRoutes);
+app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 

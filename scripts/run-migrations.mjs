@@ -53,6 +53,7 @@ const MIGRATIONS = [
   'sql/fix_landing_pages_rls.sql',
   'sql/setup_landing_pages.sql',
   'migrations/v6_rural_search_logs.sql',
+  'migrations/20260530_fluowai_cloud_migration_control.sql',
 ];
 
 async function executeMigrations() {

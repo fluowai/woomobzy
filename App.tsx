@@ -103,6 +103,7 @@ const AnalyticsDashboard = lazy(() => import('./views/superadmin/AnalyticsDashbo
 const SupportManager = lazy(() => import('./views/superadmin/SupportManager'));
 const TeamManager = lazy(() => import('./views/superadmin/TeamManager'));
 const SmartImporter = lazy(() => import('./views/superadmin/SmartImporter'));
+const FluowaiMigration = lazy(() => import('./views/superadmin/FluowaiMigration'));
 
 // WhatsApp
 const WhatsAppDashboard = lazy(() => import('./views/WhatsApp/WhatsAppDashboard'));
@@ -581,6 +582,7 @@ const AppContent: React.FC = () => {
             <Route path="audit-log" element={<AuditLog />} />
             <Route path="templates" element={<TemplateManager />} />
             <Route path="importer" element={<SmartImporter />} />
+            <Route path="fluowai-migration" element={<FluowaiMigration />} />
             <Route path="settings" element={<GlobalSettings />} />
           </Route>
 

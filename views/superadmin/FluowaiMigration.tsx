@@ -4,13 +4,13 @@ import {
   CheckCircle2,
   ClipboardCheck,
   CloudCog,
-  Database,
   Download,
   FileJson,
   HardDrive,
+  Image,
   LockKeyhole,
+  Play,
   RefreshCw,
-  Server,
   Shield,
 } from 'lucide-react';
 import { callApi } from '../../src/lib/api';
@@ -20,44 +20,30 @@ type Job = {
   status: string;
   progress: number;
   dry_run_approved: boolean;
-  selected_schemas: string[];
   selected_buckets: string[];
   created_at: string;
 };
 
 type FormState = {
   source: Record<string, any>;
-  target: Record<string, any>;
   minio: Record<string, any>;
-  selectedSchemas: string;
   selectedBuckets: string;
+  confirmation: string;
 };
 
 const initialForm: FormState = {
   source: {
+    endpoint: '',
+    region: 'sa-east-1',
+    accessKey: '',
+    secretKey: '',
+    publicBaseUrl: '',
     supabaseUrl: '',
-    anonKey: '',
-    serviceRoleKey: '',
-    dbHost: '',
-    dbPort: 5432,
-    dbName: 'postgres',
-    dbUser: 'postgres',
-    dbPassword: '',
-    sslMode: 'require',
-  },
-  target: {
-    supabaseUrl: '',
-    anonKey: '',
-    serviceRoleKey: '',
-    dbHost: '',
-    dbPort: 5432,
-    dbName: 'postgres',
-    dbUser: 'postgres',
-    dbPassword: '',
-    sslMode: 'require',
+    useSsl: true,
   },
   minio: {
     endpoint: '',
+    region: 'us-east-1',
     port: 443,
     accessKey: '',
     secretKey: '',
@@ -65,20 +51,17 @@ const initialForm: FormState = {
     publicBaseUrl: '',
     useSsl: true,
   },
-  selectedSchemas: 'public, auth',
   selectedBuckets: 'whatsapp-media, imobzyimg, imobzymsg, documents, exports',
+  confirmation: '',
 };
 
 const steps = [
   'Conexões',
   'Diagnóstico',
   'Simulação',
-  'Migração Banco',
   'Migração Storage',
-  'Atualização URLs',
-  'Sincronização final',
   'Validação',
-  'Ativação',
+  'URLs opcionais',
 ];
 
 const fieldClass =
@@ -99,8 +82,10 @@ const FluowaiMigration: React.FC = () => {
   }, []);
 
   const canRunActions = Boolean(activeJob?.id);
+  const canMigrate = Boolean(activeJob?.id && activeJob.dry_run_approved && form.confirmation.trim() === 'MIGRAR MIDIAS');
   const phaseLabel = useMemo(() => {
     if (!activeJob) return 'Nenhum job criado';
+    if (activeJob.status === 'running') return `Migrando: ${activeJob.progress || 0}%`;
     if (activeJob.dry_run_approved) return 'Dry-run aprovado';
     return `Status: ${activeJob.status}`;
   }, [activeJob]);
@@ -128,14 +113,12 @@ const FluowaiMigration: React.FC = () => {
             ...form.source,
             buckets: splitList(form.selectedBuckets),
           },
-          target: form.target,
           minio: form.minio,
-          selectedSchemas: splitList(form.selectedSchemas),
           selectedBuckets: splitList(form.selectedBuckets),
         }),
       });
       setActiveJob(data.job);
-      setMessage('Job salvo com credenciais criptografadas.');
+      setMessage('Job salvo com credenciais S3 criptografadas.');
       setResult(data);
       await refreshJobs();
     } catch (err: any) {
@@ -146,7 +129,7 @@ const FluowaiMigration: React.FC = () => {
     }
   }
 
-  async function runAction(action: 'test-connections' | 'diagnose' | 'dry-run' | 'report') {
+  async function runAction(action: 'test-connections' | 'diagnose' | 'dry-run' | 'migrate-storage' | 'report') {
     if (!activeJob) return;
     setLoading(true);
     setActiveAction(action);
@@ -160,6 +143,9 @@ const FluowaiMigration: React.FC = () => {
           : `/api/fluowai-migration/jobs/${activeJob.id}/${action}`;
       const data = await callApi(path, {
         method: action === 'report' ? 'GET' : 'POST',
+        body: action === 'migrate-storage'
+          ? JSON.stringify({ confirmation: form.confirmation.trim() })
+          : undefined,
       });
       setResult(data.report || data.diagnostic || data);
       setMessage(actionMessage(action, data));
@@ -172,7 +158,7 @@ const FluowaiMigration: React.FC = () => {
     }
   }
 
-  function updateSection(section: 'source' | 'target' | 'minio', key: string, value: any) {
+  function updateSection(section: 'source' | 'minio', key: string, value: any) {
     setForm((current) => ({
       ...current,
       [section]: {
@@ -180,10 +166,6 @@ const FluowaiMigration: React.FC = () => {
         [key]: value,
       },
     }));
-  }
-
-  function updateRoot(key: 'selectedSchemas' | 'selectedBuckets', value: string) {
-    setForm((current) => ({ ...current, [key]: value }));
   }
 
   return (
@@ -196,10 +178,10 @@ const FluowaiMigration: React.FC = () => {
             </span>
             <div>
               <h1 className="text-2xl font-bold text-slate-950">
-                Migração FluowAI Cloud
+                Migração de Mídias para MinIO
               </h1>
               <p className="text-sm text-slate-500">
-                Prepare a troca de Supabase Cloud para Supabase Self-hosted e MinIO.
+                Copie buckets do Supabase Storage via S3 para MinIO sem mover o banco de dados.
               </p>
             </div>
           </div>
@@ -208,74 +190,47 @@ const FluowaiMigration: React.FC = () => {
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <div className="flex items-center gap-2 font-semibold">
             <Shield size={16} />
-            Modo seguro: diagnóstico e dry-run apenas
+            Banco permanece no Supabase atual
           </div>
           <p className="mt-1 text-xs">
-            Esta fase não copia banco, não migra arquivos e não altera a configuração ativa.
+            A migração copia arquivos. Nada é apagado da origem e URLs no banco não são alteradas automaticamente.
           </p>
         </div>
       </div>
 
-      <section className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-9">
-        {steps.map((step, index) => {
-          const unlocked = index < 3;
-          return (
-            <div
-              key={step}
-              className={`rounded-lg px-3 py-2 text-xs font-semibold ${
-                unlocked
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-400'
-              }`}
-            >
-              <div className="text-[10px] opacity-70">{index + 1}</div>
-              {step}
-            </div>
-          );
-        })}
+      <section className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-6">
+        {steps.map((step, index) => (
+          <div
+            key={step}
+            className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+              index < 5 ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'
+            }`}
+          >
+            <div className="text-[10px] opacity-70">{index + 1}</div>
+            {step}
+          </div>
+        ))}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          <CredentialPanel
-            title="Origem Supabase Cloud"
-            icon={<Database size={18} />}
-            section="source"
-            values={form.source}
-            onChange={updateSection}
-          />
-
-          <CredentialPanel
-            title="Destino Supabase Self-hosted"
-            icon={<Server size={18} />}
-            section="target"
-            values={form.target}
-            onChange={updateSection}
-          />
-
+          <SourceS3Panel values={form.source} onChange={updateSection} />
           <MinioPanel values={form.minio} onChange={updateSection} />
 
-          <div className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 md:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-5">
             <label className="space-y-2">
               <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Schemas selecionados
-              </span>
-              <input
-                value={form.selectedSchemas}
-                onChange={(event) => updateRoot('selectedSchemas', event.target.value)}
-                className={fieldClass}
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Buckets selecionados
+                Buckets de mídia
               </span>
               <input
                 value={form.selectedBuckets}
-                onChange={(event) => updateRoot('selectedBuckets', event.target.value)}
+                onChange={(event) => setForm((current) => ({ ...current, selectedBuckets: event.target.value }))}
                 className={fieldClass}
               />
             </label>
+            <p className="mt-2 text-xs text-slate-500">
+              Use vírgula para separar. Se o campo "Bucket único MinIO" ficar vazio, cada bucket será criado com o mesmo nome no MinIO.
+            </p>
           </div>
         </div>
 
@@ -286,8 +241,7 @@ const FluowaiMigration: React.FC = () => {
               Controle
             </div>
             <p className="mt-2 text-xs leading-relaxed text-slate-500">
-              Salve as credenciais para criar um job. As chaves voltam mascaradas e ficam
-              criptografadas no banco.
+              Salve as credenciais S3. As chaves voltam mascaradas e ficam criptografadas no banco.
             </p>
 
             <button
@@ -301,57 +255,46 @@ const FluowaiMigration: React.FC = () => {
 
             <div className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
               <div className="font-bold text-slate-800">{phaseLabel}</div>
-              {activeJob?.id && <div className="mt-1 font-mono">{activeJob.id}</div>}
+              {activeJob?.id && <div className="mt-1 truncate font-mono">{activeJob.id}</div>}
             </div>
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-5">
-            <div className="text-sm font-bold text-slate-900">Ações seguras</div>
+            <div className="text-sm font-bold text-slate-900">Ações</div>
             <div className="mt-3 space-y-2">
-              <ActionButton
-                disabled={!canRunActions || loading}
-                active={activeAction === 'test-connections'}
-                icon={<ClipboardCheck size={16} />}
-                label="Testar conexões"
-                onClick={() => runAction('test-connections')}
-              />
-              <ActionButton
-                disabled={!canRunActions || loading}
-                active={activeAction === 'diagnose'}
-                icon={<Database size={16} />}
-                label="Executar diagnóstico"
-                onClick={() => runAction('diagnose')}
-              />
-              <ActionButton
-                disabled={!canRunActions || loading}
-                active={activeAction === 'dry-run'}
-                icon={<FileJson size={16} />}
-                label="Simular migração"
-                onClick={() => runAction('dry-run')}
-              />
-              <ActionButton
-                disabled={!canRunActions || loading}
-                active={activeAction === 'report'}
-                icon={<Download size={16} />}
-                label="Baixar relatório JSON"
-                onClick={() => runAction('report')}
-              />
+              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'test-connections'} icon={<ClipboardCheck size={16} />} label="Testar conexões" onClick={() => runAction('test-connections')} />
+              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'diagnose'} icon={<Image size={16} />} label="Diagnosticar buckets" onClick={() => runAction('diagnose')} />
+              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'dry-run'} icon={<FileJson size={16} />} label="Simular migração" onClick={() => runAction('dry-run')} />
+              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'report'} icon={<Download size={16} />} label="Relatório JSON" onClick={() => runAction('report')} />
             </div>
 
-            <button
-              disabled
-              className="mt-4 w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-400"
-            >
-              Iniciar migração bloqueado
-            </button>
+            <div className="mt-4 space-y-2">
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Confirmação
+                </span>
+                <input
+                  value={form.confirmation}
+                  onChange={(event) => setForm((current) => ({ ...current, confirmation: event.target.value }))}
+                  placeholder="MIGRAR MIDIAS"
+                  className={fieldClass}
+                />
+              </label>
+              <button
+                onClick={() => runAction('migrate-storage')}
+                disabled={!canMigrate || loading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {activeAction === 'migrate-storage' ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} />}
+                Iniciar migração de mídias
+              </button>
+            </div>
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-5">
             <div className="text-sm font-bold text-slate-900">Jobs recentes</div>
             <div className="mt-3 max-h-56 space-y-2 overflow-y-auto">
-              {jobs.length === 0 && (
-                <p className="text-xs text-slate-500">Nenhum job criado ainda.</p>
-              )}
+              {jobs.length === 0 && <p className="text-xs text-slate-500">Nenhum job criado ainda.</p>}
               {jobs.map((job) => (
                 <button
                   key={job.id}
@@ -362,7 +305,10 @@ const FluowaiMigration: React.FC = () => {
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <div className="font-bold">{job.status}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold">{job.status}</span>
+                    <span>{job.progress || 0}%</span>
+                  </div>
                   <div className="mt-1 truncate font-mono">{job.id}</div>
                 </button>
               ))}
@@ -372,13 +318,7 @@ const FluowaiMigration: React.FC = () => {
       </section>
 
       {(message || error) && (
-        <div
-          className={`rounded-lg border p-4 text-sm ${
-            error
-              ? 'border-red-200 bg-red-50 text-red-800'
-              : 'border-emerald-200 bg-emerald-50 text-emerald-800'
-          }`}
-        >
+        <div className={`rounded-lg border p-4 text-sm ${error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
           <div className="flex items-center gap-2 font-semibold">
             {error ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
             {error || message}
@@ -399,28 +339,22 @@ const FluowaiMigration: React.FC = () => {
   );
 };
 
-const CredentialPanel: React.FC<{
-  title: string;
-  icon: React.ReactNode;
-  section: 'source' | 'target';
+const SourceS3Panel: React.FC<{
   values: Record<string, any>;
-  onChange: (section: 'source' | 'target', key: string, value: any) => void;
-}> = ({ title, icon, section, values, onChange }) => (
+  onChange: (section: 'source', key: string, value: any) => void;
+}> = ({ values, onChange }) => (
   <div className="rounded-lg border border-slate-200 bg-white p-5">
     <div className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
-      {icon}
-      {title}
+      <Image size={18} />
+      Origem Supabase Storage via S3
     </div>
     <div className="grid gap-4 md:grid-cols-2">
-      <Field label="Supabase URL" value={values.supabaseUrl} onChange={(value) => onChange(section, 'supabaseUrl', value)} />
-      <Field label="Supabase anon key" secret value={values.anonKey} onChange={(value) => onChange(section, 'anonKey', value)} />
-      <Field label="Service role key" secret value={values.serviceRoleKey} onChange={(value) => onChange(section, 'serviceRoleKey', value)} />
-      <Field label="Database host" value={values.dbHost} onChange={(value) => onChange(section, 'dbHost', value)} />
-      <Field label="Database port" value={values.dbPort} onChange={(value) => onChange(section, 'dbPort', Number(value))} />
-      <Field label="Database name" value={values.dbName} onChange={(value) => onChange(section, 'dbName', value)} />
-      <Field label="Database user" value={values.dbUser} onChange={(value) => onChange(section, 'dbUser', value)} />
-      <Field label="Database password" secret value={values.dbPassword} onChange={(value) => onChange(section, 'dbPassword', value)} />
-      <Field label="SSL mode" value={values.sslMode} onChange={(value) => onChange(section, 'sslMode', value)} />
+      <Field label="Endpoint S3 Supabase" value={values.endpoint} onChange={(value) => onChange('source', 'endpoint', value)} />
+      <Field label="Região" value={values.region} onChange={(value) => onChange('source', 'region', value)} />
+      <Field label="Access key" secret value={values.accessKey} onChange={(value) => onChange('source', 'accessKey', value)} />
+      <Field label="Secret key" secret value={values.secretKey} onChange={(value) => onChange('source', 'secretKey', value)} />
+      <Field label="Public base URL origem" value={values.publicBaseUrl} onChange={(value) => onChange('source', 'publicBaseUrl', value)} />
+      <Field label="Supabase URL origem" value={values.supabaseUrl} onChange={(value) => onChange('source', 'supabaseUrl', value)} />
     </div>
   </div>
 );
@@ -432,15 +366,16 @@ const MinioPanel: React.FC<{
   <div className="rounded-lg border border-slate-200 bg-white p-5">
     <div className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
       <HardDrive size={18} />
-      Destino MinIO
+      Destino MinIO via S3
     </div>
     <div className="grid gap-4 md:grid-cols-2">
       <Field label="MinIO endpoint" value={values.endpoint} onChange={(value) => onChange('minio', 'endpoint', value)} />
       <Field label="MinIO port" value={values.port} onChange={(value) => onChange('minio', 'port', Number(value))} />
+      <Field label="Região" value={values.region} onChange={(value) => onChange('minio', 'region', value)} />
       <Field label="Access key" secret value={values.accessKey} onChange={(value) => onChange('minio', 'accessKey', value)} />
       <Field label="Secret key" secret value={values.secretKey} onChange={(value) => onChange('minio', 'secretKey', value)} />
-      <Field label="Bucket destino" value={values.bucket} onChange={(value) => onChange('minio', 'bucket', value)} />
-      <Field label="Public base URL" value={values.publicBaseUrl} onChange={(value) => onChange('minio', 'publicBaseUrl', value)} />
+      <Field label="Bucket único MinIO (opcional)" value={values.bucket} onChange={(value) => onChange('minio', 'bucket', value)} />
+      <Field label="Public base URL destino" value={values.publicBaseUrl} onChange={(value) => onChange('minio', 'publicBaseUrl', value)} />
       <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
         <input
           type="checkbox"
@@ -499,12 +434,13 @@ function splitList(value: string) {
 
 function actionMessage(action: string, data: any) {
   if (action === 'test-connections') {
-    return data.ok ? 'Todas as conexões passaram.' : 'Há conexões com falha. Veja o resultado técnico.';
+    return data.ok ? 'Conexões S3 verificadas.' : 'Há conexões com falha. Veja o resultado técnico.';
   }
-  if (action === 'diagnose') return 'Diagnóstico concluído.';
+  if (action === 'diagnose') return 'Diagnóstico de buckets concluído.';
   if (action === 'dry-run') {
-    return data.report?.ready ? 'Pronto para migrar.' : 'Correções necessárias antes da migração real.';
+    return data.report?.ready ? 'Pronto para migrar mídias.' : 'Correções necessárias antes da migração.';
   }
+  if (action === 'migrate-storage') return data.message || 'Migração de mídias iniciada.';
   return 'Relatório carregado.';
 }
 

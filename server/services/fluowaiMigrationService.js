@@ -21,6 +21,7 @@ export function getDefaultMigrationSelections() {
     schemas: DEFAULT_SCHEMAS,
     buckets: DEFAULT_BUCKETS,
     urlColumns: TEXT_URL_COLUMNS,
+    mode: 'storage_only_s3',
   };
 }
 
@@ -214,6 +215,250 @@ export async function testMinioConnection(config) {
     listBucketsStatus: listBuckets.status,
     writeReadDeleteProbe: Boolean(bucket),
   };
+}
+
+export async function testS3StorageConnection(config, label = 'Storage S3') {
+  validateS3Config(config, label);
+  const started = Date.now();
+  const listBuckets = await signedMinioRequest(config, {
+    method: 'GET',
+    allowStatuses: [200],
+  });
+  const xml = await listBuckets.text();
+  const buckets = [...xml.matchAll(/<Bucket>[\s\S]*?<Name>([\s\S]*?)<\/Name>[\s\S]*?<\/Bucket>/g)]
+    .map((match) => decodeXml(match[1]));
+
+  return {
+    ok: true,
+    endpoint: buildMinioBaseUrl(config),
+    region: config.region || 'us-east-1',
+    latencyMs: Date.now() - started,
+    buckets,
+  };
+}
+
+export async function collectS3StorageDiagnostics(config, buckets = DEFAULT_BUCKETS) {
+  validateS3Config(config, 'Storage origem S3');
+  const selected = [];
+
+  for (const bucketName of buckets) {
+    const bucket = {
+      name: bucketName,
+      exists: false,
+      files: 0,
+      totalBytes: 0,
+      largestFiles: [],
+      contentTypes: {},
+      samples: [],
+      inaccessible: false,
+    };
+
+    try {
+      const head = await signedMinioRequest(config, {
+        method: 'HEAD',
+        bucket: bucketName,
+        allowStatuses: [200, 301, 302, 403, 404],
+      });
+
+      if (head.status === 404) {
+        selected.push(bucket);
+        continue;
+      }
+
+      if (head.status >= 400) {
+        bucket.inaccessible = true;
+        bucket.error = `Bucket inacessível via S3 (HTTP ${head.status}).`;
+        selected.push(bucket);
+        continue;
+      }
+
+      bucket.exists = true;
+      const objects = await listAllS3Objects(config, bucketName);
+      bucket.files = objects.length;
+      bucket.totalBytes = objects.reduce((sum, object) => sum + object.size, 0);
+      bucket.largestFiles = [...objects]
+        .sort((a, b) => b.size - a.size)
+        .slice(0, 10);
+      bucket.samples = objects.slice(0, 20);
+      for (const object of objects) {
+        const extension = object.key.includes('.') ? object.key.split('.').pop()?.toLowerCase() : 'sem-extensao';
+        const group = extension || 'sem-extensao';
+        bucket.contentTypes[group] = (bucket.contentTypes[group] || 0) + 1;
+      }
+    } catch (error) {
+      bucket.inaccessible = true;
+      bucket.error = error.message;
+    }
+
+    selected.push(bucket);
+  }
+
+  return {
+    mode: 'storage_only_s3',
+    buckets: selected,
+    totals: {
+      buckets: selected.filter((bucket) => bucket.exists).length,
+      files: selected.reduce((sum, bucket) => sum + bucket.files, 0),
+      bytes: selected.reduce((sum, bucket) => sum + bucket.totalBytes, 0),
+    },
+  };
+}
+
+export async function buildStorageOnlyDryRunReport({ source, minio, buckets }) {
+  const [sourceStorage, minioCheck] = await Promise.all([
+    collectS3StorageDiagnostics(source, buckets),
+    testMinioConnection(minio).catch((error) => ({ ok: false, error: error.message })),
+  ]);
+
+  const warnings = [];
+  const blockers = [];
+  const missingBuckets = sourceStorage.buckets.filter((bucket) => !bucket.exists);
+  const inaccessibleBuckets = sourceStorage.buckets.filter((bucket) => bucket.inaccessible);
+
+  if (missingBuckets.length) {
+    warnings.push({
+      code: 'SOURCE_BUCKETS_MISSING',
+      message: 'Alguns buckets selecionados não existem na origem.',
+      buckets: missingBuckets.map((bucket) => bucket.name),
+    });
+  }
+
+  if (inaccessibleBuckets.length) {
+    blockers.push({
+      code: 'SOURCE_BUCKETS_INACCESSIBLE',
+      message: 'Há buckets de origem inacessíveis via S3.',
+      buckets: inaccessibleBuckets.map((bucket) => ({
+        name: bucket.name,
+        error: bucket.error,
+      })),
+    });
+  }
+
+  if (!minioCheck.ok) {
+    blockers.push({
+      code: 'MINIO_NOT_READY',
+      message: minioCheck.error,
+    });
+  }
+
+  return {
+    status: blockers.length ? 'corrections_required' : 'ready',
+    ready: blockers.length === 0,
+    mode: 'storage_only_s3',
+    sourceStorage,
+    minio: minioCheck,
+    estimates: {
+      buckets: sourceStorage.totals.buckets,
+      files: sourceStorage.totals.files,
+      storageBytes: sourceStorage.totals.bytes,
+    },
+    warnings,
+    blockers,
+  };
+}
+
+export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, onFile, onProgress }) {
+  validateS3Config(source, 'Storage origem S3');
+  validateMinioConfig(minio);
+
+  const bucketObjects = [];
+  for (const bucket of buckets) {
+    const objects = await listAllS3Objects(source, bucket);
+    bucketObjects.push({ bucket, objects });
+  }
+
+  const totalFiles = bucketObjects.reduce((sum, item) => sum + item.objects.length, 0);
+  let processed = 0;
+  let copied = 0;
+  let skipped = 0;
+  let failed = 0;
+  let bytesCopied = 0;
+
+  await onLog?.('info', `Migração storage-only iniciada para ${totalFiles} arquivos.`);
+
+  for (const { bucket, objects } of bucketObjects) {
+    const destinationBucket = minio.bucket || bucket;
+    const destinationPrefix = minio.bucket ? `${bucket}/` : '';
+
+    await ensureDestinationBucket(minio, destinationBucket);
+    await onLog?.('info', `Bucket ${bucket}: ${objects.length} arquivos para processar.`);
+
+    for (const object of objects) {
+      processed++;
+      const destinationKey = `${destinationPrefix}${object.key}`;
+      const oldUrl = buildPublicObjectUrl(source, bucket, object.key);
+      const newUrl = buildPublicObjectUrl(minio, destinationBucket, destinationKey);
+      const basePayload = {
+        old_url: oldUrl,
+        new_url: newUrl,
+        bucket,
+        path: object.key,
+        size: object.size,
+        content_type: null,
+      };
+
+      try {
+        const existing = await signedMinioRequest(minio, {
+          method: 'HEAD',
+          bucket: destinationBucket,
+          key: destinationKey,
+          allowStatuses: [200, 404],
+        });
+
+        if (existing.status === 200 && Number(existing.headers.get('content-length') || 0) === object.size) {
+          skipped++;
+          await onFile?.({ ...basePayload, status: 'skipped' });
+          await onProgress?.({ processed, totalFiles, copied, skipped, failed, bytesCopied });
+          continue;
+        }
+
+        const sourceResponse = await signedMinioRequest(source, {
+          method: 'GET',
+          bucket,
+          key: object.key,
+          allowStatuses: [200],
+        });
+        const buffer = Buffer.from(await sourceResponse.arrayBuffer());
+        const contentType = sourceResponse.headers.get('content-type') || inferContentType(object.key);
+
+        await signedMinioRequest(minio, {
+          method: 'PUT',
+          bucket: destinationBucket,
+          key: destinationKey,
+          body: buffer,
+          headers: {
+            'content-type': contentType,
+          },
+          allowStatuses: [200],
+        });
+
+        const validation = await signedMinioRequest(minio, {
+          method: 'HEAD',
+          bucket: destinationBucket,
+          key: destinationKey,
+          allowStatuses: [200],
+        });
+        const destinationSize = Number(validation.headers.get('content-length') || 0);
+        if (destinationSize !== object.size) {
+          throw new Error(`Tamanho divergente após upload: origem=${object.size}, destino=${destinationSize}.`);
+        }
+
+        copied++;
+        bytesCopied += object.size;
+        await onFile?.({ ...basePayload, content_type: contentType, status: 'copied' });
+      } catch (error) {
+        failed++;
+        await onFile?.({ ...basePayload, status: 'failed', error_message: error.message });
+        await onLog?.('error', `Falha ao migrar ${bucket}/${object.key}: ${error.message}`);
+      }
+
+      await onProgress?.({ processed, totalFiles, copied, skipped, failed, bytesCopied });
+    }
+  }
+
+  const summary = { totalFiles, processed, copied, skipped, failed, bytesCopied };
+  await onLog?.(failed ? 'warn' : 'info', 'Migração storage-only finalizada.', summary);
+  return summary;
 }
 
 export async function collectDatabaseDiagnostics(config, schemas = DEFAULT_SCHEMAS) {
@@ -499,6 +744,12 @@ function validateMinioConfig(config) {
   }
 }
 
+function validateS3Config(config, label) {
+  if (!config?.endpoint || !config?.accessKey || !config?.secretKey) {
+    throw new Error(`${label}: endpoint, access key e secret key são obrigatórios.`);
+  }
+}
+
 function buildPgConfig(config) {
   const sslMode = String(config?.sslMode || '').toLowerCase();
   return {
@@ -539,24 +790,35 @@ async function signedMinioRequest(config, options) {
     method,
     bucket,
     key,
+    query = {},
     body = Buffer.alloc(0),
     headers = {},
     allowStatuses = [200, 204],
   } = options;
   const baseUrl = buildMinioBaseUrl(config);
   const url = new URL(baseUrl);
+  const basePath = url.pathname.replace(/\/+$/, '');
 
   const encodedPath = [bucket, key]
     .filter(Boolean)
     .map((part) => String(part).split('/').map(encodeURIComponent).join('/'))
     .join('/');
-  url.pathname = encodedPath ? `/${encodedPath}` : '/';
+  url.pathname = [basePath, encodedPath]
+    .filter(Boolean)
+    .join('/')
+    .replace(/\/{2,}/g, '/') || '/';
+  for (const [queryKey, queryValue] of Object.entries(query)) {
+    if (queryValue !== undefined && queryValue !== null && queryValue !== '') {
+      url.searchParams.set(queryKey, String(queryValue));
+    }
+  }
 
   const requestHeaders = signS3Request({
     method,
     url,
     accessKey: config.accessKey,
     secretKey: config.secretKey,
+    region: config.region,
     body,
     headers,
   });
@@ -575,11 +837,10 @@ async function signedMinioRequest(config, options) {
   return response;
 }
 
-function signS3Request({ method, url, accessKey, secretKey, body, headers }) {
+function signS3Request({ method, url, accessKey, secretKey, region = 'us-east-1', body, headers }) {
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
   const dateStamp = amzDate.slice(0, 8);
-  const region = 'us-east-1';
   const service = 's3';
   const payloadHash = crypto.createHash('sha256').update(body || '').digest('hex');
   const host = url.host;
@@ -638,4 +899,123 @@ function getSignatureKey(secretKey, dateStamp, regionName, serviceName) {
   const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
   const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
   return crypto.createHmac('sha256', kService).update('aws4_request').digest();
+}
+
+async function listAllS3Objects(config, bucket) {
+  const objects = [];
+  let continuationToken = null;
+
+  do {
+    const query = {
+      'list-type': '2',
+      'max-keys': '1000',
+    };
+    if (continuationToken) query['continuation-token'] = continuationToken;
+
+    const response = await signedMinioRequest(config, {
+      method: 'GET',
+      bucket,
+      query,
+      allowStatuses: [200],
+    });
+    const xml = await response.text();
+    const parsed = parseListBucketResult(xml);
+    objects.push(...parsed.objects);
+    continuationToken = parsed.isTruncated ? parsed.nextContinuationToken : null;
+  } while (continuationToken);
+
+  return objects;
+}
+
+function parseListBucketResult(xml) {
+  const objects = [...xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)].map((match) => {
+    const content = match[1];
+    return {
+      key: decodeXml(readXmlTag(content, 'Key') || ''),
+      lastModified: decodeXml(readXmlTag(content, 'LastModified') || ''),
+      etag: decodeXml(readXmlTag(content, 'ETag') || '').replace(/^"|"$/g, ''),
+      size: Number(readXmlTag(content, 'Size') || 0),
+    };
+  }).filter((object) => object.key);
+
+  return {
+    objects,
+    isTruncated: /<IsTruncated>true<\/IsTruncated>/i.test(xml),
+    nextContinuationToken: decodeXml(readXmlTag(xml, 'NextContinuationToken') || ''),
+  };
+}
+
+function readXmlTag(xml, tagName) {
+  const match = xml.match(new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`));
+  return match?.[1] || '';
+}
+
+function decodeXml(value) {
+  return String(value || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+async function ensureDestinationBucket(config, bucket) {
+  const head = await signedMinioRequest(config, {
+    method: 'HEAD',
+    bucket,
+    allowStatuses: [200, 301, 302, 403, 404],
+  });
+
+  if (head.status === 404) {
+    await signedMinioRequest(config, {
+      method: 'PUT',
+      bucket,
+      allowStatuses: [200, 409],
+    });
+    return;
+  }
+
+  if (head.status >= 400) {
+    throw new Error(`Bucket destino "${bucket}" não está acessível (HTTP ${head.status}).`);
+  }
+}
+
+function buildPublicObjectUrl(config, bucket, key) {
+  const base = String(config.publicBaseUrl || '').trim().replace(/\/+$/, '');
+  if (base) return `${base}/${encodePublicPath(bucket)}/${encodePublicPath(key)}`;
+
+  if (config.supabaseUrl) {
+    return `${String(config.supabaseUrl).replace(/\/+$/, '')}/storage/v1/object/public/${encodePublicPath(bucket)}/${encodePublicPath(key)}`;
+  }
+
+  return `${buildMinioBaseUrl(config)}/${encodePublicPath(bucket)}/${encodePublicPath(key)}`;
+}
+
+function encodePublicPath(value) {
+  return String(value || '')
+    .split('/')
+    .map((part) => encodeURIComponent(part))
+    .join('/');
+}
+
+function inferContentType(key) {
+  const ext = String(key).split('.').pop()?.toLowerCase();
+  const types = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    gif: 'image/gif',
+    svg: 'image/svg+xml',
+    pdf: 'application/pdf',
+    mp3: 'audio/mpeg',
+    ogg: 'audio/ogg',
+    opus: 'audio/ogg',
+    wav: 'audio/wav',
+    mp4: 'video/mp4',
+    mov: 'video/quicktime',
+    csv: 'text/csv',
+    json: 'application/json',
+  };
+  return types[ext] || 'application/octet-stream';
 }

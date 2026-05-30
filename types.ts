@@ -32,7 +32,8 @@ export enum PropertyType {
 
 export enum PropertyPurpose {
   SALE = 'Venda',
-  RENT = 'Aluguel',
+  RENT = 'Aluguel Anual',
+  SEASONAL = 'Temporada',
   BOTH = 'Venda e Aluguel',
 }
 

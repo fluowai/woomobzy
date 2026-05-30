@@ -52,6 +52,7 @@ const DataRoom = lazy(() => import('./views/DataRoom'));
 const LegalContracts = lazy(() => import('./views/LegalContracts'));
 const BIRural = lazy(() => import('./views/BIRural'));
 const CRMLeads = lazy(() => import('./views/CRM/CRMLeads'));
+const ClientsManager = lazy(() => import('./views/CRM/ClientsManager'));
 const KanbanBoard = lazy(() => import('./views/CRM/KanbanBoard'));
 const WaitlistLeads = lazy(() => import('./views/admin/WaitlistLeads'));
 const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
@@ -525,6 +526,7 @@ const AppContent: React.FC = () => {
             <Route path="simulador" element={<Simulator360 />} />
             <Route path="exportador" element={<ExportadorPortais />} />
             <Route path="crm" element={<CRMLeads />} />
+            <Route path="clients" element={<ClientsManager />} />
             <Route path="kanban" element={<KanbanBoard />} />
             <Route path="reports" element={<BIRural />} />
             <Route

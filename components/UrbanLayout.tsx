@@ -65,7 +65,8 @@ const UrbanLayout: React.FC = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
     { icon: MessageSquare, label: 'Mensagens', path: '/urban/whatsapp' },
     { icon: LayoutGrid, label: 'Kanban', path: '/urban/kanban' },
-    { icon: Users, label: 'CRM', path: '/urban/crm' },
+    { icon: Users, label: 'CRM Leads', path: '/urban/crm' },
+    { icon: Users, label: 'Clientes Unificado', path: '/urban/clients' },
   ];
 
   const assetItems: MenuItem[] = [

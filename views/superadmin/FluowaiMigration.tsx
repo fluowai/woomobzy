@@ -349,7 +349,12 @@ const SourceS3Panel: React.FC<{
       Origem Supabase Storage via S3
     </div>
     <div className="grid gap-4 md:grid-cols-2">
-      <Field label="Endpoint S3 Supabase" value={values.endpoint} onChange={(value) => onChange('source', 'endpoint', value)} />
+      <Field
+        label="Endpoint S3 Supabase"
+        placeholder="https://projeto.storage.supabase.co/storage/v1/s3"
+        value={values.endpoint}
+        onChange={(value) => onChange('source', 'endpoint', value)}
+      />
       <Field label="Região" value={values.region} onChange={(value) => onChange('source', 'region', value)} />
       <Field label="Access key" secret value={values.accessKey} onChange={(value) => onChange('source', 'accessKey', value)} />
       <Field label="Secret key" secret value={values.secretKey} onChange={(value) => onChange('source', 'secretKey', value)} />
@@ -369,7 +374,7 @@ const MinioPanel: React.FC<{
       Destino MinIO via S3
     </div>
     <div className="grid gap-4 md:grid-cols-2">
-      <Field label="MinIO endpoint" value={values.endpoint} onChange={(value) => onChange('minio', 'endpoint', value)} />
+      <Field label="MinIO endpoint" placeholder="https://files.fluowai.com.br" value={values.endpoint} onChange={(value) => onChange('minio', 'endpoint', value)} />
       <Field label="MinIO port" value={values.port} onChange={(value) => onChange('minio', 'port', Number(value))} />
       <Field label="Região" value={values.region} onChange={(value) => onChange('minio', 'region', value)} />
       <Field label="Access key" secret value={values.accessKey} onChange={(value) => onChange('minio', 'accessKey', value)} />
@@ -392,8 +397,9 @@ const Field: React.FC<{
   label: string;
   value: any;
   secret?: boolean;
+  placeholder?: string;
   onChange: (value: string) => void;
-}> = ({ label, value, secret, onChange }) => (
+}> = ({ label, value, secret, placeholder, onChange }) => (
   <label className="space-y-2">
     <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
       {label}
@@ -401,6 +407,7 @@ const Field: React.FC<{
     <input
       type={secret ? 'password' : 'text'}
       value={value ?? ''}
+      placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
       className={fieldClass}
       autoComplete="off"
@@ -445,4 +452,3 @@ function actionMessage(action: string, data: any) {
 }
 
 export default FluowaiMigration;
-

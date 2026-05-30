@@ -498,8 +498,9 @@ async function loadFileMap(jobId) {
 }
 
 function normalizeSourceConfig(input) {
+  const endpoint = normalizeSupabaseS3Endpoint(clean(input.endpoint || input.s3Endpoint));
   return {
-    endpoint: clean(input.endpoint || input.s3Endpoint),
+    endpoint,
     region: clean(input.region || input.s3Region || 'sa-east-1'),
     accessKey: clean(input.accessKey || input.s3AccessKey),
     secretKey: clean(input.secretKey || input.s3SecretKey),
@@ -533,6 +534,29 @@ function clean(value) {
   return String(value || '').trim();
 }
 
+function normalizeSupabaseS3Endpoint(endpoint) {
+  const cleanEndpoint = String(endpoint || '').trim().replace(/\/+$/, '');
+  if (!cleanEndpoint) return '';
+
+  if (/\/storage\/v1\/s3$/i.test(cleanEndpoint)) {
+    return cleanEndpoint;
+  }
+
+  if (/\/storage\/v1$/i.test(cleanEndpoint)) {
+    return `${cleanEndpoint}/s3`;
+  }
+
+  try {
+    if (/\.storage\.supabase\.co$/i.test(new URL(cleanEndpoint).host)) {
+      return `${cleanEndpoint}/storage/v1/s3`;
+    }
+  } catch {
+    return cleanEndpoint;
+  }
+
+  return cleanEndpoint;
+}
+
 function summarizeDiagnostic(diagnostic) {
   return {
     mode: diagnostic.mode,
@@ -543,4 +567,3 @@ function summarizeDiagnostic(diagnostic) {
 }
 
 export default router;
-

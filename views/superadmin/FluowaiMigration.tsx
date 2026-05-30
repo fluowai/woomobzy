@@ -48,6 +48,8 @@ const initialForm: FormState = {
     accessKey: '',
     secretKey: '',
     bucket: '',
+    layoutMode: 'preserve_buckets',
+    prefixStrategy: 'bucket',
     publicBaseUrl: '',
     useSsl: true,
   },
@@ -58,6 +60,7 @@ const initialForm: FormState = {
 const steps = [
   'Conexões',
   'Diagnóstico',
+  'Análise',
   'Simulação',
   'Migração Storage',
   'Validação',
@@ -134,7 +137,7 @@ const FluowaiMigration: React.FC = () => {
     }
   }
 
-  async function runAction(action: 'test-connections' | 'diagnose' | 'dry-run' | 'migrate-storage' | 'report') {
+  async function runAction(action: 'test-connections' | 'diagnose' | 'analyze-media-organization' | 'dry-run' | 'migrate-storage' | 'report') {
     if (!activeJob) return;
     setLoading(true);
     setActiveAction(action);
@@ -152,7 +155,7 @@ const FluowaiMigration: React.FC = () => {
           ? JSON.stringify({ confirmation: form.confirmation.trim() })
           : undefined,
       });
-      setResult(data.report || data.diagnostic || data);
+      setResult(data.report || data.diagnostic || data.analysis || data);
       setMessage(actionMessage(action, data));
       await refreshJobs();
     } catch (err: any) {
@@ -203,7 +206,7 @@ const FluowaiMigration: React.FC = () => {
         </div>
       </div>
 
-      <section className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-6">
+      <section className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-7">
         {steps.map((step, index) => (
           <div
             key={step}
@@ -234,7 +237,7 @@ const FluowaiMigration: React.FC = () => {
               />
             </label>
             <p className="mt-2 text-xs text-slate-500">
-              Use vírgula para separar. Se o campo "Bucket único MinIO" ficar vazio, cada bucket será criado com o mesmo nome no MinIO.
+              Use vírgula para separar. A organização do destino é definida no bloco MinIO.
             </p>
           </div>
         </div>
@@ -269,6 +272,7 @@ const FluowaiMigration: React.FC = () => {
             <div className="mt-3 space-y-2">
               <ActionButton disabled={!canRunActions || loading} active={activeAction === 'test-connections'} icon={<ClipboardCheck size={16} />} label="Testar conexões" onClick={() => runAction('test-connections')} />
               <ActionButton disabled={!canRunActions || loading} active={activeAction === 'diagnose'} icon={<Image size={16} />} label="Diagnosticar buckets" onClick={() => runAction('diagnose')} />
+              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'analyze-media-organization'} icon={<HardDrive size={16} />} label="Analisar banco e pastas" onClick={() => runAction('analyze-media-organization')} />
               <ActionButton disabled={!canRunActions || loading} active={activeAction === 'dry-run'} icon={<FileJson size={16} />} label="Simular migração" onClick={() => runAction('dry-run')} />
               <ActionButton disabled={!canRunActions || loading} active={activeAction === 'report'} icon={<Download size={16} />} label="Relatório JSON" onClick={() => runAction('report')} />
             </div>
@@ -389,7 +393,27 @@ const MinioPanel: React.FC<{
       <Field label="Região" value={values.region} onChange={(value) => onChange('minio', 'region', value)} />
       <Field label="Access key" secret value={values.accessKey} onChange={(value) => onChange('minio', 'accessKey', value)} />
       <Field label="Secret key" secret value={values.secretKey} onChange={(value) => onChange('minio', 'secretKey', value)} />
-      <Field label="Bucket único MinIO (opcional)" value={values.bucket} onChange={(value) => onChange('minio', 'bucket', value)} />
+      <Field label="Bucket único MinIO" value={values.bucket} onChange={(value) => onChange('minio', 'bucket', value)} />
+      <SelectField
+        label="Organização no MinIO"
+        value={values.layoutMode}
+        onChange={(value) => onChange('minio', 'layoutMode', value)}
+        options={[
+          ['preserve_buckets', 'Manter buckets separados'],
+          ['single_bucket', 'Bucket único com pastas'],
+        ]}
+      />
+      <SelectField
+        label="Pastas no bucket único"
+        value={values.prefixStrategy}
+        onChange={(value) => onChange('minio', 'prefixStrategy', value)}
+        options={[
+          ['bucket', 'Pasta por bucket'],
+          ['bucket_and_type', 'Bucket e tipo de mídia'],
+          ['type', 'Tipo de mídia e bucket'],
+          ['none', 'Sem prefixo'],
+        ]}
+      />
       <Field label="Public base URL destino" value={values.publicBaseUrl} onChange={(value) => onChange('minio', 'publicBaseUrl', value)} />
       <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
         <input
@@ -425,6 +449,30 @@ const Field: React.FC<{
   </label>
 );
 
+const SelectField: React.FC<{
+  label: string;
+  value: any;
+  options: [string, string][];
+  onChange: (value: string) => void;
+}> = ({ label, value, options, onChange }) => (
+  <label className="space-y-2">
+    <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+      {label}
+    </span>
+    <select
+      value={value ?? ''}
+      onChange={(event) => onChange(event.target.value)}
+      className={fieldClass}
+    >
+      {options.map(([optionValue, optionLabel]) => (
+        <option key={optionValue} value={optionValue}>
+          {optionLabel}
+        </option>
+      ))}
+    </select>
+  </label>
+);
+
 const ActionButton: React.FC<{
   disabled: boolean;
   active: boolean;
@@ -454,6 +502,7 @@ function actionMessage(action: string, data: any) {
     return data.ok ? 'Conexões S3 verificadas.' : 'Há conexões com falha. Veja o resultado técnico.';
   }
   if (action === 'diagnose') return 'Diagnóstico de buckets concluído.';
+  if (action === 'analyze-media-organization') return 'Analise de banco e pastas concluida.';
   if (action === 'dry-run') {
     return data.report?.ready ? 'Pronto para migrar mídias.' : 'Correções necessárias antes da migração.';
   }

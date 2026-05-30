@@ -2,6 +2,7 @@ import express from 'express';
 import { verifySuperAdmin } from '../../middleware/auth.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import {
+  analyzeMediaOrganization,
   buildStorageOnlyDryRunReport,
   collectS3StorageDiagnostics,
   decryptCredentials,
@@ -174,6 +175,38 @@ router.post('/jobs/:id/diagnose', async (req, res) => {
       error: error.message,
     }).catch(() => {});
     await writeError(req.params.id, 'diagnostic', 'job', req.params.id, error.message).catch(() => {});
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/jobs/:id/analyze-media-organization', async (req, res) => {
+  try {
+    const job = await loadJob(req.params.id);
+    const credentials = await loadCredentials(req.params.id);
+    await upsertStep(job.id, 'media_organization', 'running', 10);
+    await writeLog(job.id, 'info', 'media_organization', 'Analise de organizacao de midias iniciada em modo somente leitura.');
+
+    const analysis = await analyzeMediaOrganization({
+      source: credentials.source,
+      minio: credentials.minio,
+      buckets: job.selected_buckets,
+    });
+
+    await upsertStep(job.id, 'media_organization', 'completed', 100, analysis);
+    await updateJob(job.id, { status: 'ready', progress: Math.max(job.progress || 0, 40) });
+    await writeLog(job.id, 'info', 'media_organization', 'Analise de organizacao concluida.', {
+      buckets: analysis.sourceStorage?.totals?.buckets || 0,
+      files: analysis.sourceStorage?.totals?.files || 0,
+      databaseAvailable: Boolean(analysis.database?.available),
+      matchedColumns: analysis.database?.matchedColumns || 0,
+    });
+
+    res.json({ success: true, analysis });
+  } catch (error) {
+    await upsertStep(req.params.id, 'media_organization', 'failed', 100, {
+      error: error.message,
+    }).catch(() => {});
+    await writeError(req.params.id, 'media_organization', 'job', req.params.id, error.message).catch(() => {});
     res.status(500).json({ error: error.message });
   }
 });
@@ -531,6 +564,8 @@ function normalizeMinioConfig(input) {
     accessKey: clean(input.accessKey),
     secretKey: clean(input.secretKey),
     bucket: clean(input.bucket || input.bucketDestino || input.minioBucketDestino),
+    layoutMode: clean(input.layoutMode || input.organizationMode),
+    prefixStrategy: clean(input.prefixStrategy || input.folderStrategy),
     publicBaseUrl: clean(input.publicBaseUrl),
     useSsl: input.useSsl !== false,
   };

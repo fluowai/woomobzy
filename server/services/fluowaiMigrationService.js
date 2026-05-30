@@ -341,6 +341,14 @@ export async function buildStorageOnlyDryRunReport({ source, minio, buckets }) {
     });
   }
 
+  const destinationPlan = buildDestinationPlan({ minio, buckets, sourceStorage });
+  if (destinationPlan.warnings.length) {
+    warnings.push(...destinationPlan.warnings);
+  }
+  if (destinationPlan.blockers.length) {
+    blockers.push(...destinationPlan.blockers);
+  }
+
   return {
     status: blockers.length ? 'corrections_required' : 'ready',
     ready: blockers.length === 0,
@@ -352,8 +360,61 @@ export async function buildStorageOnlyDryRunReport({ source, minio, buckets }) {
       files: sourceStorage.totals.files,
       storageBytes: sourceStorage.totals.bytes,
     },
+    destinationPlan,
     warnings,
     blockers,
+  };
+}
+
+export async function analyzeMediaOrganization({ source, minio, buckets }) {
+  validateS3Config(source, 'Storage origem S3');
+  const sourceStorage = await collectS3StorageDiagnostics(source, buckets);
+  const destinationPlan = buildDestinationPlan({ minio, buckets, sourceStorage });
+  const database = await analyzeDatabaseMediaReferences({ buckets, source });
+  const bucketReferences = new Map(
+    (database.bucketReferences || []).map((item) => [item.bucket, item.references])
+  );
+
+  const recommendations = sourceStorage.buckets
+    .filter((bucket) => bucket.exists)
+    .map((bucket) => {
+      const mediaGroups = Object.entries(bucket.contentTypes || {}).reduce((groups, [extension, count]) => {
+        const group = inferMediaGroup(`file.${extension}`);
+        groups[group] = (groups[group] || 0) + count;
+        return groups;
+      }, {});
+      const target = resolveDestinationObject({
+        minio,
+        sourceBucket: bucket.name,
+        sourceKey: 'exemplo/caminho/arquivo.jpg',
+      });
+      const referenceCount = bucketReferences.get(bucket.name) || 0;
+
+      return {
+        sourceBucket: bucket.name,
+        files: bucket.files,
+        totalBytes: bucket.totalBytes,
+        databaseReferences: referenceCount,
+        dominantMediaGroups: Object.entries(mediaGroups)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5)
+          .map(([group, count]) => ({ group, count })),
+        suggestedDestinationBucket: target.bucket,
+        suggestedFolderPattern: describeDestinationPattern(minio, bucket.name),
+        reason: referenceCount > 0
+          ? 'Bucket aparece em URLs do banco; preservar o nome como bucket ou pasta reduz risco na troca futura de URLs.'
+          : 'Bucket nao apareceu nas colunas analisadas; manter separado ainda facilita auditoria e rollback.',
+      };
+    });
+
+  return {
+    mode: 'storage_only_s3',
+    readonly: true,
+    sourceStorage,
+    destinationPlan,
+    database,
+    recommendations,
+    generatedAt: new Date().toISOString(),
   };
 }
 
@@ -377,17 +438,26 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
   await onLog?.('info', `Migração storage-only iniciada para ${totalFiles} arquivos.`);
 
   for (const { bucket, objects } of bucketObjects) {
-    const destinationBucket = minio.bucket || bucket;
-    const destinationPrefix = minio.bucket ? `${bucket}/` : '';
+    const destinationProbe = resolveDestinationObject({
+      minio,
+      sourceBucket: bucket,
+      sourceKey: 'imobzy-migration-probe.txt',
+    });
+    const destinationBucket = destinationProbe.bucket;
 
     await ensureDestinationBucket(minio, destinationBucket);
     await onLog?.('info', `Bucket ${bucket}: ${objects.length} arquivos para processar.`);
 
     for (const object of objects) {
       processed++;
-      const destinationKey = `${destinationPrefix}${object.key}`;
+      const destination = resolveDestinationObject({
+        minio,
+        sourceBucket: bucket,
+        sourceKey: object.key,
+      });
+      const destinationKey = destination.key;
       const oldUrl = buildPublicObjectUrl(source, bucket, object.key);
-      const newUrl = buildPublicObjectUrl(minio, destinationBucket, destinationKey);
+      const newUrl = buildPublicObjectUrl(minio, destination.bucket, destinationKey);
       const basePayload = {
         old_url: oldUrl,
         new_url: newUrl,
@@ -400,7 +470,7 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
       try {
         const existing = await signedMinioRequest(minio, {
           method: 'HEAD',
-          bucket: destinationBucket,
+          bucket: destination.bucket,
           key: destinationKey,
           allowStatuses: [200, 404],
         });
@@ -423,7 +493,7 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
 
         await signedMinioRequest(minio, {
           method: 'PUT',
-          bucket: destinationBucket,
+          bucket: destination.bucket,
           key: destinationKey,
           body: buffer,
           headers: {
@@ -434,7 +504,7 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
 
         const validation = await signedMinioRequest(minio, {
           method: 'HEAD',
-          bucket: destinationBucket,
+          bucket: destination.bucket,
           key: destinationKey,
           allowStatuses: [200],
         });
@@ -670,6 +740,274 @@ export async function buildDryRunReport({ source, target, minio, schemas, bucket
     warnings,
     blockers,
   };
+}
+
+function buildDestinationPlan({ minio, buckets, sourceStorage }) {
+  const layoutMode = normalizeLayoutMode(minio);
+  const prefixStrategy = normalizePrefixStrategy(minio);
+  const warnings = [];
+  const blockers = [];
+
+  if (layoutMode === 'single_bucket' && !String(minio?.bucket || '').trim()) {
+    blockers.push({
+      code: 'MINIO_BUCKET_REQUIRED_FOR_SINGLE_BUCKET',
+      message: 'Informe o bucket unico do MinIO para organizar os arquivos em pastas.',
+    });
+  }
+
+  if (layoutMode === 'single_bucket' && prefixStrategy === 'none' && (buckets || []).length > 1) {
+    warnings.push({
+      code: 'DESTINATION_COLLISION_RISK',
+      message: 'Usar bucket unico sem prefixo pode causar colisao de caminhos entre buckets diferentes.',
+    });
+  }
+
+  const bucketStats = new Map((sourceStorage?.buckets || []).map((bucket) => [bucket.name, bucket]));
+  const mappings = (buckets || []).map((bucket) => {
+    const stats = bucketStats.get(bucket);
+    const target = resolveDestinationObject({
+      minio,
+      sourceBucket: bucket,
+      sourceKey: 'exemplo/caminho/arquivo.jpg',
+    });
+
+    return {
+      sourceBucket: bucket,
+      destinationBucket: target.bucket,
+      destinationKeyExample: target.key,
+      folderPattern: describeDestinationPattern(minio, bucket),
+      files: stats?.files || 0,
+      totalBytes: stats?.totalBytes || 0,
+    };
+  });
+
+  return {
+    layoutMode,
+    prefixStrategy,
+    mappings,
+    warnings,
+    blockers,
+  };
+}
+
+async function analyzeDatabaseMediaReferences({ buckets, source }) {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    return {
+      available: false,
+      reason: 'DATABASE_URL nao esta configurado no backend; analise limitada aos buckets S3.',
+      scannedColumns: [],
+      bucketReferences: (buckets || []).map((bucket) => ({ bucket, references: 0 })),
+      warnings: ['Configure DATABASE_URL para cruzar URLs de midia com o banco em modo somente leitura.'],
+    };
+  }
+
+  const client = new Client({
+    connectionString,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 10000,
+    statement_timeout: 12000,
+  });
+
+  try {
+    await client.connect();
+    await client.query('SET statement_timeout = 12000');
+    const candidates = await client.query(
+      `
+        SELECT c.table_schema, c.table_name, c.column_name
+        FROM information_schema.columns c
+        JOIN information_schema.tables t
+          ON t.table_schema = c.table_schema
+         AND t.table_name = c.table_name
+        WHERE c.table_schema = 'public'
+          AND t.table_type = 'BASE TABLE'
+          AND c.data_type IN ('text', 'character varying', 'character')
+          AND (
+            c.column_name = ANY($1)
+            OR c.column_name ILIKE '%url%'
+            OR c.column_name ILIKE '%media%'
+            OR c.column_name ILIKE '%image%'
+            OR c.column_name ILIKE '%avatar%'
+            OR c.column_name ILIKE '%file%'
+            OR c.column_name ILIKE '%document%'
+            OR c.column_name ILIKE '%attachment%'
+          )
+        ORDER BY c.table_schema, c.table_name, c.column_name
+        LIMIT 80
+      `,
+      [TEXT_URL_COLUMNS]
+    );
+
+    const bucketTotals = new Map((buckets || []).map((bucket) => [bucket, 0]));
+    const scannedColumns = [];
+
+    for (const column of candidates.rows) {
+      const tableSql = `${quoteIdentifier(column.table_schema)}.${quoteIdentifier(column.table_name)}`;
+      const columnSql = quoteIdentifier(column.column_name);
+      const values = [];
+      const bucketExpressions = (buckets || []).map((bucket, index) => {
+        const patterns = buildDatabaseUrlPatterns(bucket, source);
+        const patternSql = patterns.map((pattern) => {
+          values.push(pattern);
+          return `${columnSql} ILIKE $${values.length}`;
+        }).join(' OR ');
+        return `COUNT(*) FILTER (WHERE ${patternSql})::bigint AS bucket_${index}`;
+      });
+
+      const sql = `
+        SELECT
+          COUNT(*) FILTER (WHERE ${columnSql} IS NOT NULL AND ${columnSql} <> '')::bigint AS non_empty,
+          ${bucketExpressions.join(',\n          ')}
+        FROM ${tableSql}
+      `;
+
+      try {
+        const result = await client.query(sql, values);
+        const row = result.rows[0] || {};
+        const hits = (buckets || []).map((bucket, index) => {
+          const references = Number(row[`bucket_${index}`] || 0);
+          bucketTotals.set(bucket, (bucketTotals.get(bucket) || 0) + references);
+          return { bucket, references };
+        }).filter((item) => item.references > 0);
+
+        if (hits.length) {
+          scannedColumns.push({
+            table: `${column.table_schema}.${column.table_name}`,
+            column: column.column_name,
+            nonEmptyValues: Number(row.non_empty || 0),
+            bucketHits: hits,
+          });
+        }
+      } catch (error) {
+        scannedColumns.push({
+          table: `${column.table_schema}.${column.table_name}`,
+          column: column.column_name,
+          skipped: true,
+          error: error.message,
+        });
+      }
+    }
+
+    return {
+      available: true,
+      readonly: true,
+      candidateColumns: candidates.rows.length,
+      matchedColumns: scannedColumns.filter((column) => !column.skipped && column.bucketHits?.length).length,
+      scannedColumns,
+      bucketReferences: (buckets || []).map((bucket) => ({
+        bucket,
+        references: bucketTotals.get(bucket) || 0,
+      })),
+      warnings: candidates.rows.length >= 80
+        ? ['A analise foi limitada a 80 colunas candidatas para evitar carga excessiva no banco.']
+        : [],
+    };
+  } catch (error) {
+    return {
+      available: false,
+      reason: error.message,
+      scannedColumns: [],
+      bucketReferences: (buckets || []).map((bucket) => ({ bucket, references: 0 })),
+      warnings: ['Nao foi possivel analisar o banco; a migracao de arquivos continua podendo usar o diagnostico S3.'],
+    };
+  } finally {
+    await closePg(client);
+  }
+}
+
+function buildDatabaseUrlPatterns(bucket, source) {
+  const safeBucket = escapeLike(bucket);
+  const patterns = [
+    `%/storage/v1/object/public/${safeBucket}/%`,
+    `%/storage/v1/object/sign/${safeBucket}/%`,
+  ];
+
+  for (const base of [source?.publicBaseUrl, source?.supabaseUrl]) {
+    const cleanBase = String(base || '').trim().replace(/\/+$/, '');
+    if (!cleanBase) continue;
+    patterns.push(`${escapeLike(cleanBase)}/${safeBucket}/%`);
+    patterns.push(`${escapeLike(cleanBase)}/storage/v1/object/public/${safeBucket}/%`);
+  }
+
+  return [...new Set(patterns)];
+}
+
+function resolveDestinationObject({ minio, sourceBucket, sourceKey }) {
+  const layoutMode = normalizeLayoutMode(minio);
+  const prefixStrategy = normalizePrefixStrategy(minio);
+  const destinationBucket = layoutMode === 'single_bucket' && minio?.bucket
+    ? minio.bucket
+    : sourceBucket;
+
+  if (layoutMode !== 'single_bucket') {
+    return { bucket: destinationBucket, key: sourceKey };
+  }
+
+  const mediaGroup = inferMediaGroup(sourceKey);
+  const prefix = {
+    none: '',
+    bucket: sourceBucket,
+    type: `${mediaGroup}/${sourceBucket}`,
+    bucket_and_type: `${sourceBucket}/${mediaGroup}`,
+  }[prefixStrategy] || sourceBucket;
+
+  return {
+    bucket: destinationBucket,
+    key: joinS3Key(prefix, sourceKey),
+  };
+}
+
+function describeDestinationPattern(minio, bucket) {
+  const layoutMode = normalizeLayoutMode(minio);
+  const prefixStrategy = normalizePrefixStrategy(minio);
+  if (layoutMode !== 'single_bucket') {
+    return `${bucket}/{path-original}`;
+  }
+  if (prefixStrategy === 'none') return `{bucket-unico}/{path-original}`;
+  if (prefixStrategy === 'type') return `{bucket-unico}/{tipo}/${bucket}/{path-original}`;
+  if (prefixStrategy === 'bucket_and_type') return `{bucket-unico}/${bucket}/{tipo}/{path-original}`;
+  return `{bucket-unico}/${bucket}/{path-original}`;
+}
+
+function normalizeLayoutMode(minio) {
+  const value = String(minio?.layoutMode || '').trim();
+  if (['preserve_buckets', 'single_bucket'].includes(value)) return value;
+  return minio?.bucket ? 'single_bucket' : 'preserve_buckets';
+}
+
+function normalizePrefixStrategy(minio) {
+  const value = String(minio?.prefixStrategy || '').trim();
+  if (['none', 'bucket', 'type', 'bucket_and_type'].includes(value)) return value;
+  return 'bucket';
+}
+
+function inferMediaGroup(key) {
+  const contentType = inferContentType(key);
+  if (contentType.startsWith('image/')) return 'imagens';
+  if (contentType.startsWith('audio/')) return 'audios';
+  if (contentType.startsWith('video/')) return 'videos';
+  if (contentType === 'application/pdf') return 'documentos';
+  const ext = String(key).split('.').pop()?.toLowerCase();
+  if (['doc', 'docx', 'txt', 'csv', 'json', 'html', 'kml'].includes(ext)) return 'documentos';
+  if (['xls', 'xlsx'].includes(ext)) return 'planilhas';
+  if (['zip', 'rar', '7z'].includes(ext)) return 'compactados';
+  return 'outros';
+}
+
+function joinS3Key(...parts) {
+  return parts
+    .filter(Boolean)
+    .map((part) => String(part).replace(/^\/+|\/+$/g, ''))
+    .filter(Boolean)
+    .join('/');
+}
+
+function quoteIdentifier(value) {
+  return `"${String(value).replace(/"/g, '""')}"`;
+}
+
+function escapeLike(value) {
+  return String(value || '').replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
 async function listSupabaseObjectsSample(supabase, bucket, prefix = '', depth = 0, limit = 250) {

@@ -81,6 +81,10 @@ const PortalLocatario = lazy(() => import('./views/urban/PortalLocatario'));
 const ExportadorPortais = lazy(() => import('./views/urban/ExportadorPortais'));
 const PortalProprietarioUrbano = lazy(() => import('./views/urban/PortalProprietarioUrbano'));
 const PortalCompradorUrbano = lazy(() => import('./views/urban/PortalCompradorUrbano'));
+const AdmCondominios = lazy(() => import('./views/urban/AdmCondominios'));
+const ControleChaves = lazy(() => import('./views/urban/ControleChaves'));
+const FinanceiroUrbano = lazy(() => import('./views/urban/FinanceiroUrbano'));
+const GestaoDocumentos = lazy(() => import('./views/urban/GestaoDocumentos'));
 
 // Super Admin
 const SuperAdminLayout = lazy(() => import('./views/superadmin/SuperAdminLayout'));
@@ -529,6 +533,10 @@ const AppContent: React.FC = () => {
             <Route path="clients" element={<ClientsManager />} />
             <Route path="kanban" element={<KanbanBoard />} />
             <Route path="reports" element={<BIRural />} />
+            <Route path="condominios" element={<AdmCondominios />} />
+            <Route path="chaves" element={<ControleChaves />} />
+            <Route path="financeiro" element={<FinanceiroUrbano />} />
+            <Route path="documentos" element={<GestaoDocumentos />} />
             <Route
               path="portal-proprietario"
               element={<PortalProprietarioUrbano />}

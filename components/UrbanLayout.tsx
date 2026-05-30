@@ -73,12 +73,15 @@ const UrbanLayout: React.FC = () => {
     { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
     { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
     { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
+    { icon: Building2, label: 'Adm. Condomínios', path: '/urban/condominios' },
+    { icon: Key, label: 'Controle de Chaves', path: '/urban/chaves' },
   ];
 
   const managementItems: MenuItem[] = [
+    { icon: DollarSign, label: 'Financeiro & ERP', path: '/urban/financeiro' },
     { icon: Calculator, label: 'Simulador Financeiro', path: '/urban/simulador' },
     { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
-    { icon: DollarSign, label: 'Financeiro & Caixa', path: '/urban/cobranca' },
+    { icon: FileText, label: 'Documentos (GED)', path: '/urban/documentos' },
   ];
 
   const growthItems: MenuItem[] = [

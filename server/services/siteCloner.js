@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import { allowSupabaseStorageFallback, isMinioConfigured, resolveMediaBucket, uploadObject } from '../lib/minio-storage.js';
 
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 import crypto from 'crypto';
@@ -117,17 +118,32 @@ async function callGroq(apiKey, htmlContent) {
 }
 
 /**
- * Downloads an image and uploads it to Supabase Storage
+ * Downloads an image and uploads it to the configured media storage.
  */
 async function processAndUploadImage(imageUrl, organizationId) {
     try {
         console.log(`📸 Processing image: ${imageUrl}`);
         const response = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 5000 });
         const buffer = Buffer.from(response.data);
-        const fileName = `${organizationId}/${crypto.randomUUID()}.${imageUrl.split('.').pop().split('?')[0] || 'jpg'}`;
+        const fileName = `${organizationId}/cloned-sites/${crypto.randomUUID()}.${imageUrl.split('.').pop().split('?')[0] || 'jpg'}`;
+
+        if (isMinioConfigured()) {
+            const result = await uploadObject({
+                bucket: resolveMediaBucket('imobzyimg'),
+                key: fileName,
+                body: buffer,
+                contentType: response.headers['content-type'] || 'application/octet-stream'
+            });
+
+            return result.publicUrl;
+        }
         
+        if (!allowSupabaseStorageFallback()) {
+            throw new Error('MinIO nao configurado para midias.');
+        }
+
         const { data, error } = await supabase.storage
-            .from('properties')
+            .from('imobzyimg')
             .upload(fileName, buffer, {
                 contentType: response.headers['content-type'],
                 upsert: true
@@ -136,7 +152,7 @@ async function processAndUploadImage(imageUrl, organizationId) {
         if (error) throw error;
         
         const { data: { publicUrl } } = supabase.storage
-            .from('properties')
+            .from('imobzyimg')
             .getPublicUrl(fileName);
             
         return publicUrl;

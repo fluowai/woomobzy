@@ -2,6 +2,12 @@ import { Router } from 'express';
 import multer from 'multer';
 
 import { getSupabaseServer } from '../../lib/supabase-server.js';
+import {
+  allowSupabaseStorageFallback,
+  isMinioConfigured,
+  resolveMediaBucket,
+  uploadObject,
+} from '../../lib/minio-storage.js';
 
 const router = Router();
 const upload = multer({
@@ -15,6 +21,7 @@ const BUCKET_MAP = {
   'agency-assets': 'imobzyimg',
   'property-images': 'imobzyimg',
   imobzyimg: 'imobzyimg',
+  'imobzy-media': 'imobzyimg',
   imobzymsg: 'imobzymsg',
   'whatsapp-media': 'whatsapp-media',
 };
@@ -37,31 +44,71 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const fileName = `${randomName()}_${Date.now()}${originalExt}`;
     const filePath = `${req.orgId}/${folder}/${fileName}`;
 
-    const supabase = getSupabaseServer();
-    const { error } = await supabase.storage.from(bucket).upload(filePath, req.file.buffer, {
-      contentType: req.file.mimetype || 'application/octet-stream',
-      upsert: false,
-    });
+    const result = await uploadToConfiguredStorage(bucket, filePath, req.file);
 
-    if (error) {
-      console.error('[Storage Upload Error]', error);
-      return res.status(500).json({ error: error.message || 'Erro ao enviar arquivo.' });
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-    return res.json({
-      bucket,
-      path: filePath,
-      publicUrl,
-    });
+    return res.json(result);
   } catch (error) {
     console.error('[Storage Upload Fatal]', error);
-    return res.status(500).json({ error: 'Erro interno ao enviar arquivo.' });
+    return res.status(500).json({ error: error.message || 'Erro interno ao enviar arquivo.' });
   }
 });
+
+async function uploadToConfiguredStorage(bucket, filePath, file) {
+  if (isMinioConfigured()) {
+    return uploadToMinio(bucket, filePath, file);
+  }
+
+  if (allowSupabaseStorageFallback()) {
+    return uploadToSupabase(bucket, filePath, file);
+  }
+
+  throw new Error('MinIO nao configurado para midias. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.');
+}
+
+async function uploadToMinio(bucket, filePath, file) {
+  const minioBucket = resolveMediaBucket(bucket);
+  if (!minioBucket) {
+    throw new Error('Bucket MinIO invalido.');
+  }
+
+  const result = await uploadObject({
+    bucket: minioBucket,
+    key: filePath,
+    body: file.buffer,
+    contentType: file.mimetype || 'application/octet-stream',
+  });
+
+  return {
+    bucket: minioBucket,
+    path: result.path,
+    publicUrl: result.publicUrl,
+    provider: 'minio',
+  };
+}
+
+async function uploadToSupabase(bucket, filePath, file) {
+  const supabase = getSupabaseServer();
+  const { error } = await supabase.storage.from(bucket).upload(filePath, file.buffer, {
+    contentType: file.mimetype || 'application/octet-stream',
+    upsert: false,
+  });
+
+  if (error) {
+    console.error('[Storage Upload Error]', error);
+    throw new Error(error.message || 'Erro ao enviar arquivo.');
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+  return {
+    bucket,
+    path: filePath,
+    publicUrl,
+    provider: 'supabase',
+  };
+}
 
 function sanitizePath(value) {
   return String(value)

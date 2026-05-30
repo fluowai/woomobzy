@@ -34,6 +34,11 @@ type Manager struct {
 	storageBucket     string
 	supabaseURL       string
 	supabaseKey       string
+	minioEndpoint     string
+	minioPublicURL    string
+	minioAccessKey    string
+	minioSecretKey    string
+	minioRegion       string
 	nodeURL           string
 	internalToken     string
 	automationEnabled bool
@@ -51,6 +56,11 @@ func NewManager(
 	supabaseURL string,
 	supabaseKey string,
 	storageBucket string,
+	minioEndpoint string,
+	minioPublicURL string,
+	minioAccessKey string,
+	minioSecretKey string,
+	minioRegion string,
 	nodeURL string,
 	internalToken string,
 	automationEnabled bool,
@@ -67,6 +77,11 @@ func NewManager(
 		supabaseURL:       supabaseURL,
 		supabaseKey:       supabaseKey,
 		storageBucket:     storageBucket,
+		minioEndpoint:     minioEndpoint,
+		minioPublicURL:    minioPublicURL,
+		minioAccessKey:    minioAccessKey,
+		minioSecretKey:    minioSecretKey,
+		minioRegion:       minioRegion,
 		nodeURL:           nodeURL,
 		internalToken:     internalToken,
 		automationEnabled: automationEnabled,
@@ -153,6 +168,11 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		m.supabaseURL,
 		m.supabaseKey,
 		m.storageBucket,
+		m.minioEndpoint,
+		m.minioPublicURL,
+		m.minioAccessKey,
+		m.minioSecretKey,
+		m.minioRegion,
 		m.nodeURL,
 		m.internalToken,
 		m.automationEnabled,

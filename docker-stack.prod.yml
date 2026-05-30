@@ -42,6 +42,18 @@ services:
       SUPABASE_DB_URL: "TROCAR_AQUI_SUPABASE_DB_URL"
       PGSSLMODE: require
 
+      MEDIA_STORAGE_PROVIDER: "minio"
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_PUBLIC_URL: "https://media.seu-dominio.com"
+      MINIO_ACCESS_KEY: "TROCAR_AQUI_MINIO_ACCESS_KEY"
+      MINIO_SECRET_KEY: "TROCAR_AQUI_MINIO_SECRET_KEY"
+      MINIO_REGION: "us-east-1"
+      MINIO_MEDIA_BUCKET: "imobzy-media"
+      MINIO_WHATSAPP_BUCKET: "whatsapp-media"
+      MINIO_DOCUMENTS_BUCKET: "imobzy-documents"
+      MINIO_EXPORTS_BUCKET: "imobzy-exports"
+      MINIO_BACKUPS_BUCKET: "imobzy-backups"
+
       WHATSAPP_API_URL: "http://whatsapp-service:3100"
       WHATSMEOW_URL: "http://whatsapp-service:3100"
       AGRO_INTEL_URL: "http://agro-intelligence:8000"
@@ -90,6 +102,14 @@ services:
       DATABASE_URL: "TROCAR_AQUI_DATABASE_URL"
       SUPABASE_DB_URL: "TROCAR_AQUI_SUPABASE_DB_URL"
       PGSSLMODE: require
+
+      MEDIA_STORAGE_PROVIDER: "minio"
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_PUBLIC_URL: "https://media.seu-dominio.com"
+      MINIO_ACCESS_KEY: "TROCAR_AQUI_MINIO_ACCESS_KEY"
+      MINIO_SECRET_KEY: "TROCAR_AQUI_MINIO_SECRET_KEY"
+      MINIO_REGION: "us-east-1"
+      MINIO_WHATSAPP_BUCKET: "whatsapp-media"
 
       NODE_URL: "http://api:3002"
       WHATSMEOW_URL: "http://whatsapp-service:3100"

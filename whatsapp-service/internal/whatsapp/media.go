@@ -3,11 +3,17 @@ package whatsapp
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"go.mau.fi/whatsmeow"
@@ -17,7 +23,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// downloadAndUploadMedia downloads media from WhatsApp and uploads it to Supabase Storage
+// downloadAndUploadMedia downloads media from WhatsApp and uploads it to object storage.
 func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message) (mediaURL, mediaMimetype, mediaFilename string, err error) {
 	msg := evt.Message
 
@@ -71,15 +77,24 @@ func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message
 		return "", "", "", fmt.Errorf("failed to download media: %w", err)
 	}
 
-	// Upload to Supabase Storage
 	storagePath := fmt.Sprintf("%s/%s/%s", c.instanceID.String(), time.Now().Format("2006-01-02"), fileName)
 
-	url, err := c.uploadToSupabase(ctx, storagePath, data, mimeType)
+	url, err := c.uploadToStorage(ctx, storagePath, data, mimeType)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to upload to storage: %w", err)
 	}
 
 	return url, mimeType, fileName, nil
+}
+
+func (c *Client) uploadToStorage(ctx context.Context, path string, data []byte, contentType string) (string, error) {
+	if c.isMinIOConfigured() {
+		return c.uploadToMinIO(ctx, path, data, contentType)
+	}
+	if !allowSupabaseStorageFallback() {
+		return "", fmt.Errorf("minio storage is not configured")
+	}
+	return c.uploadToSupabase(ctx, path, data, contentType)
 }
 
 // uploadToSupabase uploads a file to Supabase Storage via REST API
@@ -111,6 +126,111 @@ func (c *Client) uploadToSupabase(ctx context.Context, path string, data []byte,
 	publicURL := fmt.Sprintf("%s/storage/v1/object/public/%s/%s", c.supabaseURL, c.storageBucket, path)
 
 	c.logger.Info("Media uploaded",
+		zap.String("path", path),
+		zap.String("mime", contentType),
+		zap.Int("size", len(data)),
+	)
+
+	return publicURL, nil
+}
+
+func (c *Client) isMinIOConfigured() bool {
+	return strings.TrimSpace(c.minioEndpoint) != "" &&
+		strings.TrimSpace(c.minioAccessKey) != "" &&
+		strings.TrimSpace(c.minioSecretKey) != "" &&
+		strings.TrimSpace(c.storageBucket) != ""
+}
+
+func allowSupabaseStorageFallback() bool {
+	provider := strings.ToLower(strings.TrimSpace(os.Getenv("MEDIA_STORAGE_PROVIDER")))
+	if provider == "" {
+		provider = strings.ToLower(strings.TrimSpace(os.Getenv("STORAGE_PROVIDER")))
+	}
+	return provider == "supabase" || strings.EqualFold(strings.TrimSpace(os.Getenv("ALLOW_SUPABASE_STORAGE_FALLBACK")), "true")
+}
+
+func (c *Client) uploadToMinIO(ctx context.Context, path string, data []byte, contentType string) (string, error) {
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	endpoint := strings.TrimRight(c.minioEndpoint, "/")
+	region := c.minioRegion
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	objectURL, err := url.Parse(fmt.Sprintf("%s/%s/%s", endpoint, url.PathEscape(c.storageBucket), encodeStoragePath(path)))
+	if err != nil {
+		return "", err
+	}
+
+	payloadHash := sha256Hex(data)
+	now := time.Now().UTC()
+	amzDate := now.Format("20060102T150405Z")
+	dateStamp := now.Format("20060102")
+	canonicalHeaders := fmt.Sprintf(
+		"content-type:%s\nhost:%s\nx-amz-content-sha256:%s\nx-amz-date:%s\n",
+		contentType,
+		objectURL.Host,
+		payloadHash,
+		amzDate,
+	)
+	signedHeaders := "content-type;host;x-amz-content-sha256;x-amz-date"
+	canonicalRequest := strings.Join([]string{
+		http.MethodPut,
+		objectURL.EscapedPath(),
+		"",
+		canonicalHeaders,
+		signedHeaders,
+		payloadHash,
+	}, "\n")
+
+	credentialScope := fmt.Sprintf("%s/%s/s3/aws4_request", dateStamp, region)
+	stringToSign := strings.Join([]string{
+		"AWS4-HMAC-SHA256",
+		amzDate,
+		credentialScope,
+		sha256Hex([]byte(canonicalRequest)),
+	}, "\n")
+	signature := hmacHex(signingKey(c.minioSecretKey, dateStamp, region), stringToSign)
+	authorization := fmt.Sprintf(
+		"AWS4-HMAC-SHA256 Credential=%s/%s, SignedHeaders=%s, Signature=%s",
+		c.minioAccessKey,
+		credentialScope,
+		signedHeaders,
+		signature,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, objectURL.String(), bytes.NewReader(data))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", authorization)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("x-amz-content-sha256", payloadHash)
+	req.Header.Set("x-amz-date", amzDate)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("minio upload failed (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	publicBase := c.minioPublicURL
+	if publicBase == "" {
+		publicBase = c.minioEndpoint
+	}
+	publicURL := fmt.Sprintf("%s/%s/%s", strings.TrimRight(publicBase, "/"), url.PathEscape(c.storageBucket), encodeStoragePath(path))
+
+	c.logger.Info("Media uploaded to MinIO",
+		zap.String("bucket", c.storageBucket),
 		zap.String("path", path),
 		zap.String("mime", contentType),
 		zap.Int("size", len(data)),
@@ -253,12 +373,42 @@ func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType s
 	}
 
 	storagePath := fmt.Sprintf("%s/%s/sent_%s", c.instanceID.String(), time.Now().Format("2006-01-02"), fileName)
-	publicURL, uploadErr := c.uploadToSupabase(ctx, storagePath, data, mimeType)
+	publicURL, uploadErr := c.uploadToStorage(ctx, storagePath, data, mimeType)
 	if uploadErr != nil {
 		c.logger.Warn("Media sent but local preview upload failed", zap.Error(uploadErr))
 	}
 
 	return string(resp.ID), publicURL, mimeType, fileName, nil
+}
+
+func encodeStoragePath(value string) string {
+	parts := strings.Split(value, "/")
+	for i, part := range parts {
+		parts[i] = url.PathEscape(part)
+	}
+	return strings.Join(parts, "/")
+}
+
+func sha256Hex(value []byte) string {
+	sum := sha256.Sum256(value)
+	return hex.EncodeToString(sum[:])
+}
+
+func hmacSHA256(key []byte, value string) []byte {
+	mac := hmac.New(sha256.New, key)
+	mac.Write([]byte(value))
+	return mac.Sum(nil)
+}
+
+func hmacHex(key []byte, value string) string {
+	return hex.EncodeToString(hmacSHA256(key, value))
+}
+
+func signingKey(secretKey string, dateStamp string, region string) []byte {
+	kDate := hmacSHA256([]byte("AWS4"+secretKey), dateStamp)
+	kRegion := hmacSHA256(kDate, region)
+	kService := hmacSHA256(kRegion, "s3")
+	return hmacSHA256(kService, "aws4_request")
 }
 
 func mediaTypeForMessage(msgType string) (whatsmeow.MediaType, error) {

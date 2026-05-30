@@ -17,6 +17,11 @@ type Config struct {
 	SupabaseServiceKey string
 	SupabaseDBURL      string
 	StorageBucket      string
+	MinIOEndpoint      string
+	MinIOPublicURL     string
+	MinIOAccessKey     string
+	MinIOSecretKey     string
+	MinIORegion        string
 	CORSOrigins        []string
 	NodeURL            string
 	WhatsMeowURL       string
@@ -61,7 +66,12 @@ func Load(logger *zap.Logger) *Config {
 		SupabaseURL:        getEnvAny([]string{"SUPABASE_URL", "VITE_SUPABASE_URL"}, ""),
 		SupabaseServiceKey: getEnvAny([]string{"SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY"}, ""),
 		SupabaseDBURL:      normalizeDatabaseURL(rawDBURL),
-		StorageBucket:      getEnv("SUPABASE_STORAGE_BUCKET", "whatsapp-media"),
+		StorageBucket:      getEnvAny([]string{"MINIO_WHATSAPP_BUCKET", "S3_WHATSAPP_BUCKET", "SUPABASE_STORAGE_BUCKET"}, "whatsapp-media"),
+		MinIOEndpoint:      normalizeStorageEndpoint(getEnvAny([]string{"MINIO_ENDPOINT", "S3_ENDPOINT", "AWS_ENDPOINT_URL"}, ""), getEnvAny([]string{"MINIO_USE_SSL", "S3_USE_SSL"}, "false")),
+		MinIOPublicURL:     normalizeStorageEndpoint(getEnvAny([]string{"MINIO_PUBLIC_URL", "MINIO_PUBLIC_ENDPOINT", "S3_PUBLIC_URL"}, ""), getEnvAny([]string{"MINIO_PUBLIC_USE_SSL", "MINIO_USE_SSL", "S3_USE_SSL"}, "false")),
+		MinIOAccessKey:     getEnvAny([]string{"MINIO_ACCESS_KEY", "MINIO_ROOT_USER", "AWS_ACCESS_KEY_ID", "S3_ACCESS_KEY_ID"}, ""),
+		MinIOSecretKey:     getEnvAny([]string{"MINIO_SECRET_KEY", "MINIO_ROOT_PASSWORD", "AWS_SECRET_ACCESS_KEY", "S3_SECRET_ACCESS_KEY"}, ""),
+		MinIORegion:        getEnvAny([]string{"MINIO_REGION", "AWS_REGION", "S3_REGION"}, "us-east-1"),
 		NodeURL:            strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
 		WhatsMeowURL:       strings.TrimRight(getEnvAny([]string{"WHATSMEOW_URL", "WHATSAPP_API_URL"}, "http://127.0.0.1:3100"), "/"),
 		InternalToken:      getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
@@ -128,4 +138,19 @@ func normalizeDatabaseURL(raw string) string {
 
 	parsed.RawQuery = query.Encode()
 	return parsed.String()
+}
+
+func normalizeStorageEndpoint(raw string, useSSLRaw string) string {
+	raw = cleanEnvValue(raw)
+	if raw == "" {
+		return ""
+	}
+	raw = strings.TrimRight(raw, "/")
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		return raw
+	}
+	if strings.EqualFold(cleanEnvValue(useSSLRaw), "true") {
+		return "https://" + raw
+	}
+	return "http://" + raw
 }

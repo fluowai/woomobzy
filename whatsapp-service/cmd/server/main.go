@@ -73,6 +73,7 @@ func main() {
 		instanceRepo, chatRepo, contactRepo, messageRepo,
 		hub, log, cfg.SupabaseDBURL,
 		cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.StorageBucket,
+		cfg.MinIOEndpoint, cfg.MinIOPublicURL, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIORegion,
 		cfg.NodeURL, cfg.InternalToken, cfg.AutomationEnabled,
 	)
 

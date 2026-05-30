@@ -39,6 +39,11 @@ type Client struct {
 	supabaseURL    string
 	supabaseKey    string
 	storageBucket  string
+	minioEndpoint  string
+	minioPublicURL string
+	minioAccessKey string
+	minioSecretKey string
+	minioRegion    string
 	automation     *AutomationClient
 }
 
@@ -57,6 +62,11 @@ func NewClient(
 	supabaseURL string,
 	supabaseKey string,
 	storageBucket string,
+	minioEndpoint string,
+	minioPublicURL string,
+	minioAccessKey string,
+	minioSecretKey string,
+	minioRegion string,
 	nodeURL string,
 	internalToken string,
 	automationEnabled bool,
@@ -67,20 +77,25 @@ func NewClient(
 	}
 
 	return &Client{
-		instanceID:    instanceID,
-		tenantID:      tenantID,
-		instanceName:  instanceName,
-		waClient:      waClient,
-		instanceRepo:  instanceRepo,
-		chatRepo:      chatRepo,
-		contactRepo:   contactRepo,
-		messageRepo:   messageRepo,
-		hub:           hub,
-		logger:        logger,
-		supabaseURL:   supabaseURL,
-		supabaseKey:   supabaseKey,
-		storageBucket: storageBucket,
-		automation:    automation,
+		instanceID:     instanceID,
+		tenantID:       tenantID,
+		instanceName:   instanceName,
+		waClient:       waClient,
+		instanceRepo:   instanceRepo,
+		chatRepo:       chatRepo,
+		contactRepo:    contactRepo,
+		messageRepo:    messageRepo,
+		hub:            hub,
+		logger:         logger,
+		supabaseURL:    supabaseURL,
+		supabaseKey:    supabaseKey,
+		storageBucket:  storageBucket,
+		minioEndpoint:  minioEndpoint,
+		minioPublicURL: minioPublicURL,
+		minioAccessKey: minioAccessKey,
+		minioSecretKey: minioSecretKey,
+		minioRegion:    minioRegion,
+		automation:     automation,
 	}
 }
 

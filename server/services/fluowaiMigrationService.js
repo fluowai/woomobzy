@@ -463,12 +463,20 @@ async function listSupabaseObjectsSample(supabase, bucket, prefix = '', depth = 
 }
 
 function getCredentialSecret() {
-  const secret = process.env.MIGRATION_CREDENTIALS_SECRET;
+  const secret = [
+    process.env.MIGRATION_CREDENTIALS_SECRET,
+    process.env.SUPABASE_JWT_SECRET,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  ]
+    .map((value) => String(value || '').trim().replace(/^["']|["']$/g, ''))
+    .find((value) => value.length >= 24);
+
   if (!secret || secret.length < 24) {
     throw new Error(
       'Configure MIGRATION_CREDENTIALS_SECRET com pelo menos 24 caracteres antes de salvar credenciais de migração.'
     );
   }
+
   return secret;
 }
 
@@ -631,4 +639,3 @@ function getSignatureKey(secretKey, dateStamp, regionName, serviceName) {
   const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
   return crypto.createHmac('sha256', kService).update('aws4_request').digest();
 }
-

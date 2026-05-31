@@ -1,4 +1,5 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import jwt from 'jsonwebtoken';
 
 /**
  * Middleware Central de Autenticação e Resolução de Tenant
@@ -18,12 +19,9 @@ export const verifyAuth = async (req, res, next) => {
 
   try {
     const supabase = getSupabaseServer();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
+    const { user, impersonation } = await resolveAuthenticatedUser(supabase, token);
 
-    if (authError || !user) {
+    if (!user) {
       return res.status(401).json({ error: 'Sessão inválida ou expirada' });
     }
 
@@ -44,6 +42,7 @@ export const verifyAuth = async (req, res, next) => {
     req.user = user;
     req.userRole = profile.role;
     req.realOrgId = profile.organization_id;
+    req.impersonation = impersonation;
     // --- LÓGICA DE IMPERSONATION ---
     // Apenas SuperAdmins podem solicitar impersonação via header
     const impersonateId = req.headers['x-impersonate-org-id'];
@@ -84,6 +83,71 @@ export const verifyAuth = async (req, res, next) => {
     res.status(500).json({ error: 'Erro interno de segurança' });
   }
 };
+
+async function resolveAuthenticatedUser(supabase, token) {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token);
+
+  if (!authError && user) {
+    return { user, impersonation: null };
+  }
+
+  const impersonation = await verifyImpersonationToken(supabase, token);
+  if (!impersonation) {
+    return { user: null, impersonation: null };
+  }
+
+  return {
+    user: {
+      id: impersonation.sub,
+      email: impersonation.email,
+      app_metadata: impersonation.app_metadata || {},
+      user_metadata: impersonation.user_metadata || {},
+    },
+    impersonation,
+  };
+}
+
+async function verifyImpersonationToken(supabase, token) {
+  const secret = process.env.SUPABASE_JWT_SECRET;
+  if (!secret) return null;
+
+  try {
+    const payload = jwt.verify(token, secret, {
+      audience: 'authenticated',
+    });
+
+    if (
+      payload?.role !== 'authenticated' ||
+      payload?.app_metadata?.provider !== 'impersonation' ||
+      !payload.sub ||
+      !payload.app_metadata?.impersonation_session
+    ) {
+      return null;
+    }
+
+    const { data: session, error } = await supabase
+      .from('impersonation_sessions')
+      .select('id, status, expires_at')
+      .eq('id', payload.app_metadata.impersonation_session)
+      .maybeSingle();
+
+    if (
+      error ||
+      !session ||
+      session.status !== 'active' ||
+      new Date(session.expires_at).getTime() <= Date.now()
+    ) {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Wrapper para verificar role APÓS autenticação bem-sucedida

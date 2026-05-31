@@ -38,8 +38,8 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: "TROCAR_AQUI_SUPABASE_SERVICE_ROLE_KEY"
       SUPABASE_JWT_SECRET: "TROCAR_AQUI_SUPABASE_JWT_SECRET"
 
-      DATABASE_URL: "TROCAR_AQUI_DATABASE_URL"
-      SUPABASE_DB_URL: "TROCAR_AQUI_SUPABASE_DB_URL"
+      DATABASE_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
+      SUPABASE_DB_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       PGSSLMODE: require
 
       MEDIA_STORAGE_PROVIDER: "minio"
@@ -99,8 +99,8 @@ services:
       VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
       SUPABASE_SERVICE_ROLE_KEY: "TROCAR_AQUI_SUPABASE_SERVICE_ROLE_KEY"
       SUPABASE_JWT_SECRET: "TROCAR_AQUI_SUPABASE_JWT_SECRET"
-      DATABASE_URL: "TROCAR_AQUI_DATABASE_URL"
-      SUPABASE_DB_URL: "TROCAR_AQUI_SUPABASE_DB_URL"
+      DATABASE_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
+      SUPABASE_DB_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       PGSSLMODE: require
 
       MEDIA_STORAGE_PROVIDER: "minio"

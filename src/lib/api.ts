@@ -69,8 +69,8 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     }
 
     if (response.status === 401) {
-      await supabase.auth.signOut();
-      window.location.reload();
+      console.warn('[API] Falha de autenticacao detectada (401). Verifique as chaves de ambiente no servidor.');
+      // Revertido o logout automatico para nao deslogar o usuario se o servidor estiver mal configurado
     }
 
     const errorData = await response.json().catch(() => ({}));

@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { uploadStorageObject } from './lib/storage-client.mjs';
 
 dotenv.config();
 
@@ -57,6 +58,19 @@ async function downloadImage(url) {
 async function uploadToSupabase(buffer, propertyId, index) {
     const fileName = `${Date.now()}_${index}.jpg`;
     const filePath = `properties/${propertyId}/${fileName}`;
+    try {
+        const { publicUrl } = await uploadStorageObject({
+            supabase,
+            bucket: 'property-images',
+            path: filePath,
+            body: buffer,
+            contentType: 'image/jpeg',
+        });
+        return publicUrl;
+    } catch (error) {
+        console.error(`      Erro upload storage:`, error.message);
+        return null;
+    }
     
     const { data, error } = await supabase.storage
         .from('property-images')

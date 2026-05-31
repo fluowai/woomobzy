@@ -40,7 +40,7 @@ func (r *ChatRepo) Upsert(ctx context.Context, chat *models.Chat) error {
 			avatar_url = CASE WHEN EXCLUDED.avatar_url != '' THEN EXCLUDED.avatar_url ELSE whatsapp_chats.avatar_url END,
 			last_message = EXCLUDED.last_message,
 			last_message_at = EXCLUDED.last_message_at,
-			unread_count = whatsapp_chats.unread_count + 1
+			unread_count = COALESCE(whatsapp_chats.unread_count, 0) + 1
 		RETURNING id, created_at, updated_at, unread_count`
 
 	if chat.ID == uuid.Nil {
@@ -101,12 +101,12 @@ func (r *ChatRepo) UpsertImported(ctx context.Context, chat *models.Chat) error 
 // GetByJID retrieves a chat by its JID and instance
 func (r *ChatRepo) GetByJID(ctx context.Context, instanceID uuid.UUID, chatJID string) (*models.Chat, error) {
 	query := `
-		SELECT id, instance_id, chat_jid, name, is_group, 
+		SELECT id, instance_id, chat_jid, COALESCE(name, '') as name, is_group,
 		       COALESCE(last_message, '') as last_message,
-		       last_message_at, unread_count,
+		       last_message_at, COALESCE(unread_count, 0) as unread_count,
 		       COALESCE(avatar_url, '') as avatar_url,
 		       created_at, updated_at
-		FROM whatsapp_chats 
+		FROM whatsapp_chats
 		WHERE instance_id = $1 AND chat_jid = $2`
 
 	var chat models.Chat
@@ -124,9 +124,9 @@ func (r *ChatRepo) GetByJID(ctx context.Context, instanceID uuid.UUID, chatJID s
 // GetByIDForTenant retrieves a chat after proving its instance belongs to the tenant.
 func (r *ChatRepo) GetByIDForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID) (*models.Chat, error) {
 	query := `
-		SELECT c.id, c.instance_id, c.chat_jid, c.name, c.is_group,
+		SELECT c.id, c.instance_id, c.chat_jid, COALESCE(c.name, '') as name, c.is_group,
 		       COALESCE(c.last_message, '') as last_message,
-		       c.last_message_at, c.unread_count,
+		       c.last_message_at, COALESCE(c.unread_count, 0) as unread_count,
 		       COALESCE(c.avatar_url, '') as avatar_url,
 		       c.created_at, c.updated_at
 		FROM whatsapp_chats c
@@ -148,9 +148,9 @@ func (r *ChatRepo) GetByIDForTenant(ctx context.Context, chatID, instanceID, ten
 // ListByInstanceForTenant retrieves chats only when the instance belongs to the tenant.
 func (r *ChatRepo) ListByInstanceForTenant(ctx context.Context, instanceID, tenantID uuid.UUID) ([]models.Chat, error) {
 	query := `
-		SELECT c.id, c.instance_id, c.chat_jid, c.name, c.is_group,
+		SELECT c.id, c.instance_id, c.chat_jid, COALESCE(c.name, '') as name, c.is_group,
 		       COALESCE(c.last_message, '') as last_message,
-		       c.last_message_at, c.unread_count,
+		       c.last_message_at, COALESCE(c.unread_count, 0) as unread_count,
 		       COALESCE(c.avatar_url, '') as avatar_url,
 		       c.created_at, c.updated_at
 		FROM whatsapp_chats c
@@ -175,6 +175,9 @@ func (r *ChatRepo) ListByInstanceForTenant(ctx context.Context, instanceID, tena
 			return nil, fmt.Errorf("failed to scan chat: %w", err)
 		}
 		chats = append(chats, chat)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate chats: %w", err)
 	}
 	return chats, nil
 }
@@ -209,9 +212,9 @@ func (r *ChatRepo) UpdateNameForTenant(ctx context.Context, chatID, instanceID, 
 		  AND c.instance_id = $3
 		  AND wi.id = c.instance_id
 		  AND wi.tenant_id = $4
-		RETURNING c.id, c.instance_id, c.chat_jid, c.name, c.is_group,
+		RETURNING c.id, c.instance_id, c.chat_jid, COALESCE(c.name, '') as name, c.is_group,
 		          COALESCE(c.last_message, '') as last_message,
-		          c.last_message_at, c.unread_count,
+		          c.last_message_at, COALESCE(c.unread_count, 0) as unread_count,
 		          COALESCE(c.avatar_url, '') as avatar_url,
 		          c.created_at, c.updated_at`
 

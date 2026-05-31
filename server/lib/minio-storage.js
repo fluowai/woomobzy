@@ -133,6 +133,48 @@ export async function uploadObject({ bucket, key, body, contentType }) {
   };
 }
 
+export function createPresignedGetUrl({ bucket, key, expiresInSeconds = 300 }) {
+  const cfg = getMinioConfig();
+  if (!cfg.endpoint || !cfg.accessKey || !cfg.secretKey) {
+    throw new Error('MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.');
+  }
+
+  const endpoint = trimSlash(cfg.publicUrl || cfg.endpoint);
+  const region = cfg.region || DEFAULT_REGION;
+  const now = new Date();
+  const amzDate = toAmzDate(now);
+  const dateStamp = amzDate.slice(0, 8);
+  const credentialScope = `${dateStamp}/${region}/s3/aws4_request`;
+  const url = new URL(`${endpoint}/${encodeURIComponent(bucket)}/${encodePath(key)}`);
+  const expires = Math.max(60, Math.min(Number(expiresInSeconds) || 300, 3600));
+
+  url.searchParams.set('X-Amz-Algorithm', 'AWS4-HMAC-SHA256');
+  url.searchParams.set('X-Amz-Credential', `${cfg.accessKey}/${credentialScope}`);
+  url.searchParams.set('X-Amz-Date', amzDate);
+  url.searchParams.set('X-Amz-Expires', String(expires));
+  url.searchParams.set('X-Amz-SignedHeaders', 'host');
+
+  const canonicalQuery = canonicalizeSearchParams(url.searchParams);
+  const canonicalRequest = [
+    'GET',
+    url.pathname,
+    canonicalQuery,
+    `host:${url.host}\n`,
+    'host',
+    'UNSIGNED-PAYLOAD',
+  ].join('\n');
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join('\n');
+  const signature = hmacHex(getSigningKey(cfg.secretKey, dateStamp, region), stringToSign);
+  url.searchParams.set('X-Amz-Signature', signature);
+
+  return url.toString();
+}
+
 function getMinioConfig() {
   const endpoint = normalizeEndpoint(
     firstEnv(['MINIO_ENDPOINT', 'S3_ENDPOINT', 'AWS_ENDPOINT_URL']),
@@ -189,6 +231,13 @@ function encodePath(value) {
     .split('/')
     .map((part) => encodeURIComponent(part))
     .join('/');
+}
+
+function canonicalizeSearchParams(params) {
+  return [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&');
 }
 
 function toAmzDate(date) {

@@ -32,13 +32,18 @@ const Dashboard360: React.FC = () => {
   });
 
   useEffect(() => {
+    if (!profile?.organization_id) return;
+
     const fetchStats = async () => {
+      const organizationId = profile.organization_id;
       const { count: leadsCount } = await supabase
         .from('leads')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId);
       const { count: propsCount } = await supabase
         .from('properties')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId);
       setStats({
         leads: leadsCount || 0,
         properties: propsCount || 0,
@@ -46,7 +51,7 @@ const Dashboard360: React.FC = () => {
       });
     };
     fetchStats();
-  }, []);
+  }, [profile?.organization_id]);
 
   return (
     <div className="min-h-full space-y-8 animate-in fade-in duration-700">

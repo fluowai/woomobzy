@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import IADashboardSummary from '../components/IADashboardSummary';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import {
   XAxis,
@@ -30,6 +31,7 @@ import {
 const BRAND_COLORS = ['#007850', '#f59600', '#7c3aed', '#d97706', '#0891b2'];
 
 const UrbanDashboard: React.FC = () => {
+  const { profile } = useAuth();
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
   const [vgv, setVgv] = useState(0);
@@ -41,17 +43,22 @@ const UrbanDashboard: React.FC = () => {
   });
 
   useEffect(() => {
+    if (!profile?.organization_id) return;
+
     const load = async () => {
+      const organizationId = profile.organization_id;
       // 1. Contagem Total de Imóveis Urbanos
       const { count: pCount } = await supabase
         .from('properties')
         .select('id', { count: 'exact' })
+        .eq('organization_id', organizationId)
         .not('property_type', 'in', '("Rural","Fazenda","Sítio","Chácara")');
 
       // 2. Contagem por Status
       const { data: pByStatus } = await supabase
         .from('properties')
         .select('status')
+        .eq('organization_id', organizationId)
         .not('property_type', 'in', '("Rural","Fazenda","Sítio","Chácara")');
 
       const statsMap = { available: 0, sold: 0, rented: 0 };
@@ -65,6 +72,7 @@ const UrbanDashboard: React.FC = () => {
       const { data: pPrices } = await supabase
         .from('properties')
         .select('price')
+        .eq('organization_id', organizationId)
         .eq('status', 'Disponível');
       
       const totalVgv = pPrices?.reduce((sum, p) => sum + (p.price || 0), 0) || 0;
@@ -72,12 +80,14 @@ const UrbanDashboard: React.FC = () => {
       // 4. Contagem de Leads
       const { count: lCount } = await supabase
         .from('leads')
-        .select('id', { count: 'exact' });
+        .select('id', { count: 'exact' })
+        .eq('organization_id', organizationId);
 
       // 5. Leads Recentes Reais
       const { data: rLeads } = await supabase
         .from('leads')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(4);
 
@@ -88,7 +98,7 @@ const UrbanDashboard: React.FC = () => {
       setRecentLeads(rLeads || []);
     };
     load();
-  }, []);
+  }, [profile?.organization_id]);
 
   const stats = [
     {

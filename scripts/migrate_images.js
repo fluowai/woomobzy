@@ -5,6 +5,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
+import { uploadStorageObject } from './lib/storage-client.mjs';
 
 dotenv.config();
 
@@ -38,6 +39,11 @@ async function loadAllProperties() {
 }
 
 async function ensureBucket() {
+  if ((process.env.MEDIA_STORAGE_PROVIDER || '').toLowerCase() === 'minio') {
+    console.log('Using MinIO/S3 storage; skipping Supabase bucket creation.');
+    return;
+  }
+
   const { data, error } = await supabase.storage.getBucket('properties');
   if (error && error.message.includes('not found')) {
     console.log('Creating "properties" bucket...');
@@ -61,23 +67,19 @@ async function downloadImage(url) {
 }
 
 async function uploadToSupabase(buffer, contentType, filename) {
-  const { data, error } = await supabase.storage
-    .from('properties')
-    .upload(filename, buffer, {
-      contentType: contentType,
-      upsert: true
+  try {
+    const result = await uploadStorageObject({
+      supabase,
+      bucket: 'property-images',
+      path: filename,
+      body: buffer,
+      contentType,
     });
-
-  if (error) {
-    console.error('Supabase upload error:', error);
+    return result.publicUrl;
+  } catch (error) {
+    console.error('Storage upload error:', error.message);
     return null;
   }
-
-  const { data: publicData } = supabase.storage
-    .from('properties')
-    .getPublicUrl(filename);
-    
-  return publicData.publicUrl;
 }
 
 function tokenize(str) {

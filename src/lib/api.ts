@@ -68,6 +68,11 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
       throw new Error(`Backend indisponível em ${url}: resposta HTML (${response.status})`);
     }
 
+    if (response.status === 401) {
+      await supabase.auth.signOut();
+      window.location.reload();
+    }
+
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || `Erro na API: ${response.statusText}`);
   }

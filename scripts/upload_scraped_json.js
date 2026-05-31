@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import { uploadStorageObject } from './lib/storage-client.mjs';
 
 dotenv.config();
 
@@ -78,16 +79,15 @@ async function run() {
 
               const filename = `${bestP.id}/${Date.now()}${finalExt}`;
               
-              const { error: upErr } = await supabase.storage.from('properties').upload(filename, data, {
+              const { publicUrl } = await uploadStorageObject({
+                  supabase,
+                  bucket: 'property-images',
+                  path: filename,
+                  body: data,
                   contentType: headers['content-type'],
-                  upsert: true
               });
-              
-              if (upErr) throw upErr;
-              
-              const { data: pub } = supabase.storage.from('properties').getPublicUrl(filename);
-              
-              await supabase.from('properties').update({ images: [pub.publicUrl] }).eq('id', bestP.id);
+
+              await supabase.from('properties').update({ images: [publicUrl] }).eq('id', bestP.id);
               console.log(`   UPDATED ID ${bestP.id}`);
               
               // Local update to avoid processing again

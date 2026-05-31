@@ -94,6 +94,10 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: res.statusText }));
+    if (res.status === 401) {
+      await supabase.auth.signOut();
+      window.location.reload();
+    }
     if (error.code === 'INVALID_TENANT' || error.code === 'INVALID_IMPERSONATED_ORG') {
       sessionStorage.removeItem('impersonated_org_id');
       tenantIdCache = undefined;
@@ -405,6 +409,10 @@ export const messageApi = {
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: res.statusText }));
+      if (res.status === 401) {
+        await supabase.auth.signOut();
+        window.location.reload();
+      }
       throw new Error(error.error || `API Error: ${res.status}`);
     }
 

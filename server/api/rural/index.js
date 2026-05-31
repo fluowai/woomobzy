@@ -355,13 +355,49 @@ router.get('/car/consultar/:codigo', verifyAuth, requireTenant, async (req, res)
  */
 router.get('/sigef/consultar/:codigo', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { codigo } = req.params;
-    const wfsUrl = `https://geoinfo.incra.gov.br/geoserver/wfs?service=WFS&version=1.1.0&request=GetFeature&typeName=incra:certificada_sigef_particular&outputFormat=application/json&cql_filter=cod_imovel='${codigo}'`;
-    
-    const response = await fetch(wfsUrl);
-    if (!response.ok) throw new Error('Falha ao consultar servidor do SIGEF');
-    
-    const data = await response.json();
+    const codigo = sanitizeInput(req.params.codigo, 80).toUpperCase();
+    if (!codigo) {
+      return res.status(400).json({ success: false, error: 'Codigo SIGEF invalido' });
+    }
+
+    const params = new URLSearchParams({
+      service: 'WFS',
+      version: '1.1.0',
+      request: 'GetFeature',
+      typeName: 'incra:certificada_sigef_particular',
+      outputFormat: 'application/json',
+      cql_filter: `cod_imovel='${codigo}'`,
+    });
+    const wfsUrl = `https://geoinfo.incra.gov.br/geoserver/wfs?${params.toString()}`;
+
+    const response = await fetch(wfsUrl, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(20000),
+    });
+    const rawText = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!response.ok) {
+      const message = extractGeoServerException(rawText) || 'Falha ao consultar servidor do SIGEF';
+      return res.status(502).json({ success: false, error: message, status: response.status });
+    }
+
+    if (!contentType.includes('json') && rawText.trim().startsWith('<')) {
+      const message = extractGeoServerException(rawText) || 'Servidor do SIGEF retornou XML em vez de JSON.';
+      return res.status(200).json({ success: false, error: message, data: null });
+    }
+
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseError) {
+      return res.status(502).json({
+        success: false,
+        error: 'Resposta invalida do servidor do SIGEF.',
+        details: parseError.message,
+      });
+    }
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('SIGEF WFS error:', error);

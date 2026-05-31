@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import path from 'path';
+import { uploadStorageObject } from './lib/storage-client.mjs';
 
 dotenv.config();
 
@@ -51,17 +52,14 @@ async function downloadAndUpload(property, imgSrc) {
     const { data, headers } = await axios.get(imgSrc, { responseType: 'arraybuffer' });
     const ext = path.extname(imgSrc) || '.jpg';
     const filename = `${property.id}/${Date.now()}${ext}`;
-    
-    // Upload
-    const { error: upErr } = await supabase.storage
-      .from('properties')
-      .upload(filename, data, { contentType: headers['content-type'], upsert: true });
 
-    if (upErr) throw upErr;
-
-    // Get URL
-    const { data: pubData } = supabase.storage.from('properties').getPublicUrl(filename);
-    const publicUrl = pubData.publicUrl;
+    const { publicUrl } = await uploadStorageObject({
+      supabase,
+      bucket: 'property-images',
+      path: filename,
+      body: data,
+      contentType: headers['content-type'],
+    });
 
     // Update DB
     await supabase.from('properties')

@@ -16,6 +16,8 @@
     "test:whatsapp": "powershell -ExecutionPolicy Bypass -File scripts/test-whatsapp-service.ps1",
     "type-check": "tsc --noEmit",
     "check-db": "node --env-file=.env scripts/check-db.mjs",
+    "storage:reconcile": "node --env-file=.env scripts/reconcile_minio_urls.mjs",
+    "storage:reconcile:apply": "node --env-file=.env scripts/reconcile_minio_urls.mjs --apply",
     "setup-db": "node --env-file=.env scripts/setup-db.mjs",
     "run-migrations": "node --env-file=.env scripts/run-migrations.mjs",
     "migrate": "node --env-file=.env scripts/auto-migrate.mjs",

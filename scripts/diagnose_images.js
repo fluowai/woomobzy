@@ -10,6 +10,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
+import { isMinioConfigured } from '../server/lib/minio-storage.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -34,6 +35,11 @@ console.log('─'.repeat(60));
 async function checkBuckets() {
   console.log('\n📦 Verificando Buckets de Storage...\n');
   
+  if (isMinioConfigured()) {
+    console.log('  MinIO/S3 configurado. Buckets Supabase legados nao serao validados neste diagnostico.');
+    return true;
+  }
+
   const requiredBuckets = ['agency-assets', 'property-images'];
   
   try {
@@ -69,6 +75,11 @@ async function checkBuckets() {
 async function checkStoragePolicies() {
   console.log('\n🔒 Verificando Políticas de Storage...\n');
   
+  if (isMinioConfigured()) {
+    console.log('  MinIO/S3 configurado. Teste de policies Supabase ignorado.');
+    return true;
+  }
+
   const testFile = new Blob(['test'], { type: 'text/plain' });
   const testFileName = `test_${Date.now()}.txt`;
   
@@ -214,6 +225,11 @@ async function checkDatabaseConnection() {
 async function listStorageFiles() {
   console.log('\n📁 Listando Arquivos no Storage...\n');
   
+  if (isMinioConfigured()) {
+    console.log('  MinIO/S3 configurado. Use o console MinIO ou o inventario de objetos para listar midias.');
+    return;
+  }
+
   const buckets = ['agency-assets', 'property-images'];
   
   for (const bucketName of buckets) {

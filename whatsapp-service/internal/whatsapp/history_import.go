@@ -114,17 +114,16 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 
 	var senderPhone, senderName string
 	if isGroup {
-		if info.Sender.User != "" {
-			senderPhone = phone.Normalize(info.Sender.User)
-		}
-		senderName = firstNonEmpty(info.PushName, c.resolveDisplayName(ctx, info.Sender, info.PushName, senderPhone))
+		senderJID := preferredSenderPhoneJID(info)
+		senderPhone = normalizedBRPhoneFromJID(senderJID)
+		senderName = firstNonEmpty(info.PushName, c.resolveDisplayName(ctx, firstNonEmptyJID(senderJID, info.Sender), info.PushName, senderPhone))
 	} else if info.IsFromMe {
 		if c.waClient.Store.ID != nil {
 			senderPhone = phone.ExtractFromJID(c.waClient.Store.ID.String())
 		}
 		senderName = "Me"
 	} else {
-		senderPhone = phone.Normalize(canonicalJID.User)
+		senderPhone = normalizedBRPhoneFromJID(canonicalJID)
 		senderName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, senderPhone)
 	}
 
@@ -156,7 +155,7 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 
 	previewContent := content
 	if msgType != models.MessageTypeText {
-		previewContent = fmt.Sprintf("[%s]", msgType)
+		previewContent = mediaPreviewContent(msgType, content)
 	}
 	if len(previewContent) > 100 {
 		previewContent = previewContent[:100] + "..."

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { chatApi, crmContactApi, formatPhoneDisplay, type Chat, type Message } from './hooks/api';
+import { chatApi, crmContactApi, formatPhone, formatPhoneDisplay, isValidBrazilianPhone, type Chat, type Message } from './hooks/api';
 import MessageBubble from './MessageBubble';
 import {
   Send,
@@ -47,6 +47,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [showContactPanel, setShowContactPanel] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [contactNameDraft, setContactNameDraft] = useState('');
+  const [avatarError, setAvatarError] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
   const [crmLead, setCrmLead] = useState<any | null>(null);
   const [crmTags, setCrmTags] = useState<string[]>([]);
@@ -223,8 +224,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           onClick={() => setShowContactPanel(true)}
         >
           <div className="wa-chat-header-avatar">
-            {chat.avatar_url ? (
-              <img src={chat.avatar_url} alt="" className="wa-avatar-img" />
+            {chat.avatar_url && !avatarError ? (
+              <img src={chat.avatar_url} alt="" className="wa-avatar-img" onError={() => setAvatarError(true)} />
             ) : chat.is_group ? (
               <Users size={20} />
             ) : (
@@ -259,8 +260,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
           <div className="wa-contact-profile">
             <div className="wa-contact-avatar">
-              {chat.avatar_url ? (
-                <img src={chat.avatar_url} alt="" className="wa-avatar-img" />
+              {chat.avatar_url && !avatarError ? (
+                <img src={chat.avatar_url} alt="" className="wa-avatar-img" onError={() => setAvatarError(true)} />
               ) : chat.is_group ? (
                 <Users size={30} />
               ) : (
@@ -473,5 +474,7 @@ function isRenderableMessage(message: Message) {
 }
 
 function getPhoneFromJid(jid: string) {
-  return String(jid || '').split('@')[0].replace(/\D/g, '');
+  if (String(jid || '').includes('@g.us')) return '';
+  const raw = String(jid || '').split('@')[0].replace(/\D/g, '');
+  return isValidBrazilianPhone(raw) ? formatPhone(raw) : '';
 }

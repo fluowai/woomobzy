@@ -95,8 +95,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: res.statusText }));
     if (res.status === 401) {
-      await supabase.auth.signOut();
-      window.location.reload();
+      console.warn('[WhatsApp API] Falha 401. Servidor Node.js pode estar com a Service Role Key incorreta.');
     }
     if (error.code === 'INVALID_TENANT' || error.code === 'INVALID_IMPERSONATED_ORG') {
       sessionStorage.removeItem('impersonated_org_id');
@@ -410,8 +409,7 @@ export const messageApi = {
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: res.statusText }));
       if (res.status === 401) {
-        await supabase.auth.signOut();
-        window.location.reload();
+        console.warn('[WhatsApp API] Falha 401 na midia. Servidor Node.js pode estar com a Service Role Key incorreta.');
       }
       throw new Error(error.error || `API Error: ${res.status}`);
     }

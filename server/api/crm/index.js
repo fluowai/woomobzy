@@ -9,7 +9,18 @@ const router = Router();
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 
 function normalizePhone(value = '') {
-  return String(value).replace(/\D/g, '');
+  let digits = String(value).replace(/\D/g, '').replace(/^0+/, '');
+  if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
+  return digits;
+}
+
+function isValidBRPhone(value = '') {
+  const phone = normalizePhone(value);
+  return phone.startsWith('55') && (phone.length === 12 || phone.length === 13);
+}
+
+function isGroupChatJid(value = '') {
+  return String(value).includes('@g.us');
 }
 
 function isPlaceholderLeadName(value = '') {
@@ -31,8 +42,14 @@ function resolveLeadName(...values) {
 
 async function findOrCreateWhatsAppLead({ organizationId, phone, name, chatJid, source = 'WhatsApp' }) {
   const normalizedPhone = normalizePhone(phone);
-  if (!normalizedPhone) {
-    const error = new Error('Telefone do WhatsApp e obrigatorio');
+  if (isGroupChatJid(chatJid)) {
+    const error = new Error('Conversas de grupo nao criam lead no Kanban');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!isValidBRPhone(normalizedPhone)) {
+    const error = new Error('Telefone individual do WhatsApp e obrigatorio');
     error.statusCode = 400;
     throw error;
   }
@@ -106,7 +123,7 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
 
     const { data, error, count } = await supabase
       .from('leads')
-      .select('*, properties(title, price, images)', { count: 'exact' })
+      .select('*, properties(title, price, images), lead_tags(tag)', { count: 'exact' })
       .eq('organization_id', req.orgId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -135,7 +152,7 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
 router.get('/whatsapp/contact', verifyAuth, requireTenant, async (req, res) => {
   try {
     const phone = normalizePhone(req.query.phone);
-    if (!phone) return res.status(400).json({ error: 'Telefone e obrigatorio' });
+    if (!isValidBRPhone(phone)) return res.status(400).json({ error: 'Telefone individual e obrigatorio' });
 
     const { data: lead, error } = await supabase
       .from('leads')

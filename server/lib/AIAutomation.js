@@ -121,16 +121,22 @@ Formato:
       return { skipped: true, reason: 'missing organization or sender' };
     }
 
-    if (message.is_group || chat.is_group) {
+    if (message.is_group || chat.is_group || this._isGroupJid(chat.chat_jid)) {
       return { skipped: true, reason: 'group messages are not sent to CRM' };
     }
 
-    const normalizedPhone = String(message.sender_phone).replace(/\D/g, '');
+    const normalizedPhone = this._normalizeBRPhone(message.sender_phone);
+    if (!normalizedPhone) {
+      return { skipped: true, reason: 'invalid sender phone' };
+    }
+
     const mediaHint = this._buildMediaHint(message);
     const content = [message.content, mediaHint].filter(Boolean).join('\n');
     const agent = await this._loadActiveAgent(supabase, organizationId, message.type);
+    const audioData = message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
     const aiResult = await this.processIntent({
       content,
+      audioData,
       organizationId,
       mimeType: message.media_mimetype,
       agent,
@@ -296,9 +302,13 @@ Formato:
       return { chat_id: chat.id, skipped: true, reason: 'no client messages' };
     }
 
-    const normalizedPhone = String(
+    if (chat.is_group || this._isGroupJid(chat.chat_jid)) {
+      return { chat_id: chat.id, skipped: true, reason: 'group chat ignored' };
+    }
+
+    const normalizedPhone = this._normalizeBRPhone(
       inboundMessages[inboundMessages.length - 1]?.sender_phone || this._phoneFromChatJid(chat.chat_jid)
-    ).replace(/\D/g, '');
+    );
 
     if (!normalizedPhone) {
       return { chat_id: chat.id, skipped: true, reason: 'missing phone' };
@@ -569,11 +579,32 @@ Formato:
   _buildMediaHint(message) {
     if (!message?.type || message.type === 'text') return '';
     return {
-      audio: 'Audio recebido para transcricao e qualificacao.',
-      document: `Documento recebido: ${message.media_filename || 'arquivo'}.`,
-      image: 'Imagem recebida no atendimento.',
-      video: 'Video recebido no atendimento.',
+      audio: 'Audio recebido para transcricao e qualificacao, sem criar texto generico no chat.',
+      document: `Documento recebido${message.media_mimetype?.includes('pdf') ? ' em PDF' : ''} para analise, sem criar texto generico no chat.`,
+      image: 'Imagem recebida no atendimento, sem criar texto generico no chat.',
+      video: 'Video recebido no atendimento, sem criar texto generico no chat.',
     }[message.type] || `Midia recebida: ${message.type}.`;
+  }
+
+  async _downloadMediaForAI(message) {
+    if (!message?.media_url) return null;
+
+    try {
+      const response = await fetch(message.media_url, {
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!response.ok) return null;
+      const contentLength = Number(response.headers.get('content-length') || 0);
+      if (contentLength > 12 * 1024 * 1024) return null;
+
+      const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength > 12 * 1024 * 1024) return null;
+      return Buffer.from(arrayBuffer);
+    } catch (error) {
+      console.warn('[AIAutomation] Midia nao baixada para IA:', error.message);
+      return null;
+    }
   }
 
   _normalizeTags(tags = [], message = {}) {
@@ -596,6 +627,18 @@ Formato:
 
   _phoneFromChatJid(jid = '') {
     return String(jid).split('@')[0].replace(/\D/g, '');
+  }
+
+  _isGroupJid(jid = '') {
+    return String(jid).includes('@g.us');
+  }
+
+  _normalizeBRPhone(value = '') {
+    let digits = String(value).replace(/\D/g, '').replace(/^0+/, '');
+    if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
+    if (!digits.startsWith('55')) return '';
+    if (digits.length !== 12 && digits.length !== 13) return '';
+    return digits;
   }
 
   async _insertActivity(supabase, activity) {

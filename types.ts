@@ -278,6 +278,7 @@ export interface Lead {
   source: string;
   status: 'Novo' | 'Em Atendimento' | 'Proposta' | 'Fechado' | 'Perdido';
   classification?: string;
+  tags?: string[];
   aptitude_interest?: PropertyAptitude[];
   budget?: number;
   preferences?: {

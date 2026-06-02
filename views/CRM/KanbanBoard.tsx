@@ -1615,6 +1615,23 @@ const KanbanBoard: React.FC = () => {
                                       <span className="text-[10px] text-slate-400 font-medium">
                                         Via {lead.source}
                                       </span>
+                                      {lead.tags && lead.tags.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                          {lead.tags.slice(0, 3).map((tag) => (
+                                            <span
+                                              key={tag}
+                                              className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-700"
+                                            >
+                                              {tag}
+                                            </span>
+                                          ))}
+                                          {lead.tags.length > 3 && (
+                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500">
+                                              +{lead.tags.length - 3}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                   {/* Botões de ação - sempre visíveis no mobile */}

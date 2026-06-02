@@ -306,12 +306,11 @@ func (c *Client) handleMessage(evt *events.Message) {
 	var participantInfo *models.ParticipantInfo
 
 	if isGroup {
-		if info.Sender.User != "" {
-			senderPhone = phone.Normalize(info.Sender.User)
-		}
+		senderJID := preferredSenderPhoneJID(info)
+		senderPhone = normalizedBRPhoneFromJID(senderJID)
 		pushName := info.PushName
-		senderName = c.resolveDisplayName(ctx, info.Sender, pushName, senderPhone)
-		avatarURL := c.resolveAvatarURL(ctx, info.Sender)
+		senderName = c.resolveDisplayName(ctx, firstNonEmptyJID(senderJID, info.Sender), pushName, senderPhone)
+		avatarURL := c.resolveAvatarURL(ctx, firstNonEmptyJID(senderJID, info.Sender))
 
 		participantInfo = &models.ParticipantInfo{
 			PushName:    pushName,
@@ -326,7 +325,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 			}
 			senderName = "Me"
 		} else {
-			senderPhone = phone.Normalize(canonicalJID.User)
+			senderPhone = normalizedBRPhoneFromJID(canonicalJID)
 			senderName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, senderPhone)
 		}
 	}
@@ -378,7 +377,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 	// Get preview content for last_message
 	previewContent := content
 	if msgType != models.MessageTypeText {
-		previewContent = fmt.Sprintf("[%s]", msgType)
+		previewContent = mediaPreviewContent(msgType, content)
 	}
 	if len(previewContent) > 100 {
 		previewContent = previewContent[:100] + "..."
@@ -473,7 +472,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 		zap.Bool("group", isGroup),
 	)
 
-	if c.automation != nil && !info.IsFromMe && senderPhone != "" {
+	if c.automation != nil && !info.IsFromMe && !isGroup && senderPhone != "" {
 		go func(saved models.Message, savedChat models.Chat, participant *models.ParticipantInfo) {
 			if err := c.automation.ProcessMessage(context.Background(), AutomationMessagePayload{
 				InstanceID:   c.instanceID,
@@ -569,6 +568,31 @@ func canonicalChatJID(info types.MessageInfo) types.JID {
 	return info.Chat.ToNonAD()
 }
 
+func preferredSenderPhoneJID(info types.MessageInfo) types.JID {
+	for _, jid := range []types.JID{info.SenderAlt, info.Sender} {
+		if isPhoneJID(jid) {
+			return types.NewJID(phone.Normalize(jid.User), types.DefaultUserServer)
+		}
+	}
+	return types.JID{}
+}
+
+func firstNonEmptyJID(values ...types.JID) types.JID {
+	for _, value := range values {
+		if !value.IsEmpty() {
+			return value
+		}
+	}
+	return types.JID{}
+}
+
+func normalizedBRPhoneFromJID(jid types.JID) string {
+	if !isPhoneJID(jid) {
+		return ""
+	}
+	return phone.Normalize(jid.User)
+}
+
 func alternateChatJIDs(info types.MessageInfo, canonical string) []string {
 	seen := map[string]bool{canonical: true, "": true}
 	var alternates []string
@@ -592,6 +616,14 @@ func isPhoneJID(jid types.JID) bool {
 		return false
 	}
 	return phone.IsValidBR(jid.User)
+}
+
+func mediaPreviewContent(msgType models.MessageType, content string) string {
+	trimmed := strings.TrimSpace(content)
+	if trimmed != "" {
+		return trimmed
+	}
+	return ""
 }
 
 // extractMessageContent determines the type and text content of a message
@@ -621,7 +653,7 @@ func extractMessageContent(evt *events.Message) (models.MessageType, string) {
 	}
 
 	if doc := msg.GetDocumentMessage(); doc != nil {
-		return models.MessageTypeDocument, doc.GetFileName()
+		return models.MessageTypeDocument, doc.GetCaption()
 	}
 
 	if sticker := msg.GetStickerMessage(); sticker != nil {

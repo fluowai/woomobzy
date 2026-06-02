@@ -597,21 +597,21 @@ const AIAgents: React.FC = () => {
       </header>
 
       <div className="p-4 lg:p-7">
-        <div className="mx-auto max-w-[1740px] grid grid-cols-1 2xl:grid-cols-[310px_minmax(0,1fr)_390px] gap-5 items-start">
-          <aside className="2xl:sticky 2xl:top-28 rounded-lg bg-[#101722] text-white border border-white/10 shadow-xl shadow-slate-950/10 overflow-hidden">
-            <div className="p-5 border-b border-white/10">
+        <div className="mx-auto max-w-[1680px] grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-5 items-start">
+          <aside className="xl:col-span-2 rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-300">Central de Agentes</div>
+                  <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Central de Agentes</div>
                   <h2 className="mt-2 text-xl font-black tracking-tight mb-0">Modelos e operação</h2>
                 </div>
-                <div className="h-10 w-10 rounded-lg bg-white/10 text-slate-200 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <WandSparkles size={20} />
                 </div>
               </div>
             </div>
 
-            <nav className="p-3 border-b border-white/10 space-y-1">
+            <nav className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3">
               <SidebarItem icon={Sparkles} label="Templates prontos" count={presets.length} active />
               <SidebarItem icon={Activity} label="Agentes ativos" count={activeAgents} />
               <SidebarItem icon={Circle} label="Agentes pausados" count={pausedAgents} />
@@ -620,27 +620,27 @@ const AIAgents: React.FC = () => {
               <SidebarItem icon={FileText} label="Logs de execução" />
             </nav>
 
-            <div className="p-4 space-y-3">
+            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-5">
               {presets.map((preset) => (
-                <article key={preset.name} className="rounded-lg border border-white/10 bg-white/[0.06] p-3">
+                <article key={preset.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-start gap-3">
                     <Avatar label={preset.avatar} gradient={preset.accent} />
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-black text-white mb-0 truncate">{preset.name}</h3>
-                      <p className="text-[11px] font-bold text-white/60 mb-0">{preset.role}</p>
+                      <h3 className="text-sm font-black text-slate-950 mb-0 truncate">{preset.name}</h3>
+                      <p className="text-[11px] font-bold text-slate-500 mb-0">{preset.role}</p>
                     </div>
                   </div>
-                  <p className="mt-3 text-xs leading-relaxed text-white/68 mb-0">{preset.description}</p>
+                  <p className="mt-3 text-xs leading-relaxed text-slate-600 mb-0">{preset.description}</p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {preset.tags.map((tag) => (
-                      <span key={tag} className="rounded-md border border-emerald-300/20 bg-emerald-400/10 px-2 py-1 text-[10px] font-black text-emerald-200">
+                      <span key={tag} className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
                         {tag}
                       </span>
                     ))}
                   </div>
                   <button
                     onClick={() => usePreset(preset)}
-                    className="mt-3 h-9 w-full rounded-lg border border-white/10 bg-white/8 text-xs font-black text-white hover:bg-white/14"
+                    className="mt-3 h-9 w-full rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-700 hover:bg-slate-100"
                   >
                     Usar modelo
                   </button>
@@ -649,23 +649,23 @@ const AIAgents: React.FC = () => {
             </div>
 
             {agents.length > 0 && (
-              <div className="p-4 pt-0">
-                <div className="rounded-lg border border-white/10 bg-black/16 p-3">
-                  <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/50 mb-3">Agentes salvos</div>
-                  <div className="space-y-2">
+              <div className="border-t border-slate-100 p-4 pt-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-3">Agentes salvos</div>
+                  <div className="flex gap-2 overflow-x-auto">
                     {agents.slice(0, 5).map((agent) => (
                       <button
                         key={agent.id}
                         onClick={() => setSelectedId(agent.id)}
-                        className={`w-full rounded-lg px-3 py-2 text-left transition ${
-                          selectedId === agent.id ? 'bg-white/12 text-white' : 'bg-white/[0.04] text-white/74 hover:bg-white/[0.08]'
+                        className={`min-w-52 rounded-lg border px-3 py-2 text-left transition ${
+                          selectedId === agent.id ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-xs font-black">{agent.name}</span>
                           <span className={`h-2 w-2 rounded-full ${agent.is_active ? 'bg-emerald-400' : 'bg-slate-500'}`} />
                         </div>
-                        <div className="text-[10px] font-bold text-white/45 truncate">{agent.role}</div>
+                        <div className="text-[10px] font-bold text-slate-500 truncate">{agent.role}</div>
                       </button>
                     ))}
                   </div>
@@ -1212,16 +1212,16 @@ const SidebarItem: React.FC<{
   active?: boolean;
 }> = ({ icon: Icon, label, count, active }) => (
   <button
-    className={`w-full h-10 rounded-lg px-3 flex items-center justify-between gap-3 text-left transition ${
-      active ? 'bg-white/12 text-white' : 'text-white/62 hover:bg-white/[0.06] hover:text-white'
+    className={`h-10 min-w-max rounded-lg border px-3 flex items-center justify-between gap-3 text-left transition ${
+      active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-950'
     }`}
   >
     <span className="min-w-0 flex items-center gap-3">
-      <Icon size={16} className={active ? 'text-slate-200' : 'text-white/38'} />
+      <Icon size={16} className={active ? 'text-emerald-600' : 'text-slate-400'} />
       <span className="truncate text-xs font-black">{label}</span>
     </span>
     {typeof count === 'number' && (
-      <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-black text-white/70">{count}</span>
+      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">{count}</span>
     )}
   </button>
 );

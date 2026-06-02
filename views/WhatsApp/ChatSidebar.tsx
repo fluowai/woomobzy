@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatPhoneDisplay, type Chat } from './hooks/api';
 import { Search, Users, MessageCircle, DownloadCloud, Loader2 } from 'lucide-react';
 
@@ -24,6 +24,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   canImportHistory,
 }) => {
   const [activeType, setActiveType] = React.useState<'direct' | 'group'>('direct');
+  const [erroredAvatars, setErroredAvatars] = useState<Set<string>>(new Set());
   const visibleChats = chats.filter((chat) => (activeType === 'group' ? chat.is_group : !chat.is_group));
 
   const formatTime = (dateStr?: string) => {
@@ -142,8 +143,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 className="wa-avatar"
                 style={{ backgroundColor: getAvatarColor(getChatName(chat)) }}
               >
-                {chat.avatar_url ? (
-                  <img src={chat.avatar_url} alt="" className="wa-avatar-img" />
+                {chat.avatar_url && !erroredAvatars.has(chat.id) ? (
+                  <img
+                    src={chat.avatar_url}
+                    alt=""
+                    className="wa-avatar-img"
+                    onError={() => setErroredAvatars(prev => new Set(prev).add(chat.id))}
+                  />
                 ) : chat.is_group ? (
                   <Users size={18} color="white" />
                 ) : (
@@ -161,7 +167,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   <span className="wa-chat-time">{formatTime(chat.last_message_at)}</span>
                 </div>
                 <div className="wa-chat-bottom">
-                  <p className="wa-chat-preview">{chat.last_message || formatPhoneDisplay(chat.chat_jid) || '...'}</p>
+                  <p className="wa-chat-preview">{formatChatPreview(chat.last_message) || formatPhoneDisplay(chat.chat_jid) || '...'}</p>
                   {chat.unread_count > 0 && (
                     <span className="wa-unread-badge">{chat.unread_count > 99 ? '99+' : chat.unread_count}</span>
                   )}
@@ -176,3 +182,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 };
 
 export default ChatSidebar;
+
+function formatChatPreview(value?: string) {
+  const clean = String(value || '').trim();
+  if (!clean) return '';
+  if (/^\[(image|audio|video|document|sticker)\]$/i.test(clean)) return '';
+  if (/^(imagem|audio|áudio|video|vídeo|pdf|documento)$/i.test(clean)) return '';
+  return clean;
+}

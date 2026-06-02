@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatPhoneDisplay, type Message } from './hooks/api';
 import { Image, FileAudio, FileVideo, FileText, MapPin, Contact, Check, CheckCheck } from 'lucide-react';
 
@@ -9,6 +9,7 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenDetails }) => {
+  const [imgError, setImgError] = useState(false);
   const isSent = message.is_from_me;
   const content = (message.content || '').trim();
   const hasMedia = Boolean(message.media_url || message.media_filename);
@@ -47,7 +48,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
             ) : (
               <div className="wa-bubble-media-placeholder">
                 <Image size={24} />
-                <span>Imagem</span>
               </div>
             )}
             {content && <p className="wa-bubble-caption">{content}</p>}
@@ -97,8 +97,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
           >
             <FileText size={28} />
             <div>
-              <span className="wa-doc-name">{message.media_filename || content || 'Documento'}</span>
-              <span className="wa-doc-type">{message.media_mimetype || 'PDF'}</span>
+              <span className="wa-doc-name">{message.media_filename || 'Arquivo recebido'}</span>
+              {message.media_mimetype && <span className="wa-doc-type">{message.media_mimetype}</span>}
             </div>
           </a>
         );
@@ -139,8 +139,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
     <div className={`wa-bubble-wrapper ${isSent ? 'sent' : 'received'}`}>
       {!isSent && (
         <div className="wa-message-avatar">
-          {message.sender_avatar_url ? (
-            <img src={message.sender_avatar_url} alt="" className="wa-avatar-img" />
+          {message.sender_avatar_url && !imgError ? (
+            <img src={message.sender_avatar_url} alt="" className="wa-avatar-img" onError={() => setImgError(true)} />
           ) : (
             <span>{senderInitial}</span>
           )}

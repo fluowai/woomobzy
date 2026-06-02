@@ -124,6 +124,11 @@ const mapToModel = (dbItem: any): Lead => ({
   aptitude_interest: dbItem.aptitude_interest || [],
   notes: dbItem.notes,
   classification: dbItem.classification,
+  tags: Array.isArray(dbItem.lead_tags)
+    ? dbItem.lead_tags.map((item: any) => item.tag).filter(Boolean)
+    : Array.isArray(dbItem.tags)
+      ? dbItem.tags
+      : [],
   chat_jid: dbItem.chat_jid,
   createdAt: dbItem.created_at,
   propertyId: dbItem.property_id,

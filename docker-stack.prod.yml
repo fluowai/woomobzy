@@ -53,7 +53,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=consultio1"
-        - "traefik.http.routers.imobzy_frontend.rule=Host(`crmimobzy.consultio.com.br`)"
+        - "traefik.http.routers.imobzy_frontend.rule=Host(`crmimobzy.consultio.com.br`) || Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`)"
         - "traefik.http.routers.imobzy_frontend.entrypoints=websecure"
         - "traefik.http.routers.imobzy_frontend.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_frontend.priority=1"
@@ -99,7 +99,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=consultio1"
-        - "traefik.http.routers.imobzy_api.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.imobzy_api.rule=(Host(`crmimobzy.consultio.com.br`) || Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`)) && PathPrefix(`/api`)"
         - "traefik.http.routers.imobzy_api.entrypoints=websecure"
         - "traefik.http.routers.imobzy_api.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_api.priority=10"
@@ -111,8 +111,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3100
-      ALLOWED_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
-      CORS_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
+      ALLOWED_ORIGINS: "https://crmimobzy.consultio.com.br,https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
+      CORS_ORIGINS: "https://crmimobzy.consultio.com.br,https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
       VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
       VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
       SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
@@ -139,7 +139,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=consultio1"
-        - "traefik.http.routers.imobzy_whatsapp_ws.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api/whatsapp/ws`)"
+        - "traefik.http.routers.imobzy_whatsapp_ws.rule=(Host(`crmimobzy.consultio.com.br`) || Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`)) && PathPrefix(`/api/whatsapp/ws`)"
         - "traefik.http.routers.imobzy_whatsapp_ws.entrypoints=websecure"
         - "traefik.http.routers.imobzy_whatsapp_ws.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_whatsapp_ws.priority=20"

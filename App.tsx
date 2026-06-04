@@ -403,7 +403,7 @@ const AppContent: React.FC = () => {
   React.useEffect(() => {
     // 1. Redirecionamento do Domínio Principal (Painel)
     if (
-      window.location.hostname === 'imobzy.consultio.com.br' &&
+      (window.location.hostname === 'imobzy.consultio.com.br' || window.location.hostname === 'crmimobzy.consultio.com.br' || window.location.hostname === 'app.imobfluow.com.br') &&
       window.location.pathname === '/'
     ) {
       window.location.href = '/login';

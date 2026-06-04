@@ -170,6 +170,22 @@ const DomainManager: React.FC = () => {
     }
   };
 
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncAll = async () => {
+    if (!confirm('Deseja sincronizar todos os domínios com o Traefik? Isso irá recriar os arquivos de configuração para todos os domínios cadastrados.')) return;
+    setSyncing(true);
+    try {
+      const response = await callApi('/api/domains/sync-all', { method: 'POST' });
+      alert(response.message);
+      fetchData();
+    } catch (e: any) {
+      alert(`Erro na sincronização: ${e.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
@@ -182,13 +198,24 @@ const DomainManager: React.FC = () => {
             Gerencie os domínios personalizados de todos os clientes.
           </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
-          title="Atualizar Lista"
-        >
-          <RefreshCw size={20} />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSyncAll}
+            disabled={syncing}
+            className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+            title="Recria as rotas do Traefik para todos os domínios"
+          >
+            <RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />
+            {syncing ? 'Sincronizando...' : 'Sincronizar Traefik (Geral)'}
+          </button>
+          <button
+            onClick={fetchData}
+            className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+            title="Atualizar Lista"
+          >
+            <RefreshCw size={20} />
+          </button>
+        </div>
       </div>
 
       {/* Add Domain Form */}

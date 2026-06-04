@@ -187,4 +187,47 @@ router.get('/verify/:domain', verifyAdmin, async (req, res) => {
   }
 });
 
+// ==========================================
+// POST /sync-all — Sync all domains to Traefik
+// ==========================================
+router.post('/sync-all', verifyAdmin, async (req, res) => {
+  if (req.userRole !== 'superadmin') {
+    return res.status(403).json({ error: 'Apenas Super Admins podem sincronizar todos os dominios.' });
+  }
+
+  try {
+    const { data: orgs, error } = await supabase
+      .from('organizations')
+      .select('id, custom_domain')
+      .not('custom_domain', 'is', null);
+
+    if (error) throw error;
+
+    const results = [];
+    for (const org of orgs) {
+      if (!org.custom_domain) continue;
+      
+      try {
+        const cleanDomain = normalizeDomain(org.custom_domain);
+        await addDockerDomain(cleanDomain);
+        results.push({ domain: cleanDomain, status: 'success' });
+      } catch (err) {
+        results.push({ domain: org.custom_domain, status: 'error', error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Sincronizacao concluida. Processados ${results.length} dominios.`,
+      results
+    });
+  } catch (error) {
+    console.error('Domain Sync Route Error:', error);
+    res.status(500).json({
+      error: error.message,
+      code: 'DOMAIN_SYNC_FAILED',
+    });
+  }
+});
+
 export default router;

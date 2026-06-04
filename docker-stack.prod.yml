@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   frontend:
     image: ghcr.io/fluowai/woomobzy-frontend:latest
@@ -5,21 +7,19 @@ services:
       VITE_API_URL: "same-origin"
       VITE_WHATSAPP_API_URL: "/api/whatsapp"
       VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
-      VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
-      VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
-      VITE_PANEL_URL: "https://imobfluow.com.br"
-      VITE_PUBLIC_APP_URL: "https://imobfluow.com.br"
-      VITE_PLATFORM_IP: "IP_DO_SERVIDOR"
+      VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
+      VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
+      VITE_PANEL_URL: "https://crmimobzy.consultio.com.br"
     networks:
-      - network_public
+      - consultio1
       - imobzy_internal
     deploy:
       restart_policy:
         condition: any
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=network_public"
-        - "traefik.http.routers.imobzy_frontend.rule=Host(`imobfluow.com.br`, `www.imobfluow.com.br`, `imobzy.consultio.com.br`)"
+        - "traefik.docker.network=consultio1"
+        - "traefik.http.routers.imobzy_frontend.rule=Host(`crmimobzy.consultio.com.br`)"
         - "traefik.http.routers.imobzy_frontend.entrypoints=websecure"
         - "traefik.http.routers.imobzy_frontend.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_frontend.priority=1"
@@ -31,60 +31,38 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3002
-
-      ALLOWED_ORIGINS: "https://imobfluow.com.br,https://www.imobfluow.com.br"
-      CORS_ORIGINS: "https://imobfluow.com.br,https://www.imobfluow.com.br"
-      PUBLIC_APP_URL: "https://imobfluow.com.br"
-      VITE_PUBLIC_APP_URL: "https://imobfluow.com.br"
-      PLATFORM_PUBLIC_IP: "IP_DO_SERVIDOR"
-
-      VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
-      VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
-      SUPABASE_SERVICE_ROLE_KEY: "TROCAR_AQUI_SUPABASE_SERVICE_ROLE_KEY"
-      SUPABASE_JWT_SECRET: "TROCAR_AQUI_SUPABASE_JWT_SECRET"
-
+      ALLOWED_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
+      CORS_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
+      VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
+      VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
+      SUPABASE_JWT_SECRET: "VUyLyMZTq115g1xIYiXCk2xMJC8c+0twwCHvoP8e6FXICG2T+UcqSDddtTCg0XJMjXCQ3fGHd0FW6QFisrrhcg=="
       DATABASE_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       SUPABASE_DB_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       PGSSLMODE: require
-
-      MEDIA_STORAGE_PROVIDER: "minio"
-      MINIO_ENDPOINT: "http://minio:9000"
-      MINIO_PUBLIC_URL: "https://media.seu-dominio.com"
-      MINIO_ACCESS_KEY: "TROCAR_AQUI_MINIO_ACCESS_KEY"
-      MINIO_SECRET_KEY: "TROCAR_AQUI_MINIO_SECRET_KEY"
-      MINIO_REGION: "us-east-1"
-      MINIO_MEDIA_BUCKET: "imobzy-media"
-      MINIO_WHATSAPP_BUCKET: "whatsapp-media"
-      MINIO_DOCUMENTS_BUCKET: "imobzy-documents"
-      MINIO_EXPORTS_BUCKET: "imobzy-exports"
-      MINIO_BACKUPS_BUCKET: "imobzy-backups"
-
       WHATSAPP_API_URL: "http://whatsapp-service:3100"
       WHATSMEOW_URL: "http://whatsapp-service:3100"
       AGRO_INTEL_URL: "http://agro-intelligence:8000"
       NODE_URL: "http://api:3002"
-
       OPENAI_API_KEY: ""
-      GEMINI_API_KEY: ""
-      GROQ_API_KEY: ""
-
+      GEMINI_API_KEY: "sua-api-key-do-gemini"
+      GROQ_API_KEY: "sua-api-key-do-groq"
       EMAIL_HOST: ""
       EMAIL_PORT: 587
       EMAIL_USER: ""
       EMAIL_PASSWORD: ""
-
-      WHATSAPP_INTERNAL_TOKEN: "TROCAR_AQUI_TOKEN_GRANDE"
+      WHATSAPP_INTERNAL_TOKEN: "k7Pq9zLm2A8xR4vT6nY1cE5bH3sW0dJ"
       WHATSAPP_AI_AUTOMATION: "true"
     networks:
-      - network_public
+      - consultio1
       - imobzy_internal
     deploy:
       restart_policy:
         condition: any
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=network_public"
-        - "traefik.http.routers.imobzy_api.rule=Host(`imobfluow.com.br`, `www.imobfluow.com.br`, `imobzy.consultio.com.br`) && PathPrefix(`/api`)"
+        - "traefik.docker.network=consultio1"
+        - "traefik.http.routers.imobzy_api.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api`)"
         - "traefik.http.routers.imobzy_api.entrypoints=websecure"
         - "traefik.http.routers.imobzy_api.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_api.priority=10"
@@ -96,43 +74,43 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3100
-
-      ALLOWED_ORIGINS: "https://imobfluow.com.br,https://www.imobfluow.com.br"
-      CORS_ORIGINS: "https://imobfluow.com.br,https://www.imobfluow.com.br"
-      PLATFORM_PUBLIC_IP: "IP_DO_SERVIDOR"
-
-      VITE_SUPABASE_URL: "TROCAR_AQUI_SUPABASE_URL"
-      VITE_SUPABASE_ANON_KEY: "TROCAR_AQUI_SUPABASE_ANON_KEY"
-      SUPABASE_SERVICE_ROLE_KEY: "TROCAR_AQUI_SUPABASE_SERVICE_ROLE_KEY"
-      SUPABASE_JWT_SECRET: "TROCAR_AQUI_SUPABASE_JWT_SECRET"
+      ALLOWED_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
+      CORS_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
+      VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
+      VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
+      SUPABASE_JWT_SECRET: "VUyLyMZTq115g1xIYiXCk2xMJC8c+0twwCHvoP8e6FXICG2T+UcqSDddtTCg0XJMjXCQ3fGHd0FW6QFisrrhcg=="
       DATABASE_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       SUPABASE_DB_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       PGSSLMODE: require
-
-      MEDIA_STORAGE_PROVIDER: "minio"
-      MINIO_ENDPOINT: "http://minio:9000"
-      MINIO_PUBLIC_URL: "https://media.seu-dominio.com"
-      MINIO_ACCESS_KEY: "TROCAR_AQUI_MINIO_ACCESS_KEY"
-      MINIO_SECRET_KEY: "TROCAR_AQUI_MINIO_SECRET_KEY"
-      MINIO_REGION: "us-east-1"
-      MINIO_WHATSAPP_BUCKET: "whatsapp-media"
-
       NODE_URL: "http://api:3002"
       WHATSMEOW_URL: "http://whatsapp-service:3100"
       WHATSAPP_API_URL: "http://whatsapp-service:3100"
-
       OPENAI_API_KEY: ""
-      GEMINI_API_KEY: ""
-      GROQ_API_KEY: ""
-      WHATSAPP_INTERNAL_TOKEN: "TROCAR_AQUI_TOKEN_GRANDE"
+      GEMINI_API_KEY: "sua-api-key-do-gemini"
+      GROQ_API_KEY: "sua-api-key-do-groq"
+      WHATSAPP_INTERNAL_TOKEN: "k7Pq9zLm2A8xR4vT6nY1cE5bH3sW0dJ"
       WHATSAPP_AI_AUTOMATION: "true"
     volumes:
       - whatsapp_sessions:/app/.sessions
     networks:
+      - consultio1
       - imobzy_internal
     deploy:
       restart_policy:
         condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=consultio1"
+        - "traefik.http.routers.imobzy_whatsapp_ws.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api/whatsapp/ws`)"
+        - "traefik.http.routers.imobzy_whatsapp_ws.entrypoints=websecure"
+        - "traefik.http.routers.imobzy_whatsapp_ws.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.imobzy_whatsapp_ws.priority=20"
+        - "traefik.http.routers.imobzy_whatsapp_ws.middlewares=imobzy_whatsapp_ws_rewrite"
+        - "traefik.http.routers.imobzy_whatsapp_ws.service=imobzy_whatsapp_ws"
+        - "traefik.http.middlewares.imobzy_whatsapp_ws_rewrite.replacepathregex.regex=^/api/whatsapp/ws(.*)"
+        - "traefik.http.middlewares.imobzy_whatsapp_ws_rewrite.replacepathregex.replacement=/ws$$1"
+        - "traefik.http.services.imobzy_whatsapp_ws.loadbalancer.server.port=3100"
 
   agro-intelligence:
     image: ghcr.io/fluowai/woomobzy-agro:latest
@@ -146,8 +124,9 @@ volumes:
   whatsapp_sessions:
 
 networks:
-  network_public:
+  consultio1:
     external: true
-    name: network_public
+    name: consultio1
+
   imobzy_internal:
     driver: overlay

@@ -137,7 +137,7 @@ const WaitlistLeads: React.FC = () => {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .eq('source', 'Espera Imobzy')
+        .in('source', ['Espera Imobzy', 'Espera ImobFluow'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;

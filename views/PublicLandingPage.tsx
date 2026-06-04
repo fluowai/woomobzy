@@ -77,6 +77,8 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   useEffect(() => {
     if (activeSlug) {
       loadLandingPage(activeSlug);
+    } else if (forceComingSoon) {
+      setLoading(false);
     }
   }, [activeSlug, searchParams.get('page')]);
 
@@ -251,11 +253,6 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const isLive = settings?.is_live === true || settings?.isLive === true;
 
   if ((forceComingSoon || !isLive) && !isSiteOwner) {
-    const isMaintenancePath = location.pathname.includes('/embreve');
-    if (!isMaintenancePath && !forceComingSoon) {
-      window.location.href = '/embreve';
-      return <div className="min-h-screen bg-white" />;
-    }
     const agencyName =
       settings?.agency_name ||
       settings?.agencyName ||

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { createPresignedGetUrl, isMinioConfigured } from '../../lib/minio-storage.js';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
@@ -207,6 +208,8 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   });
 
   app.post(['/api/whatsapp/socket-token', '/api/whatsapp/ws-token'], verifyAuth, requireTenant, issueWsToken);
+  app.get('/api/whatsapp/media/:id/url', verifyAuth, requireTenant, getWhatsAppMediaUrl);
+  app.post('/api/whatsapp/media/:id/retry', verifyAuth, requireTenant, retryWhatsAppMedia);
 
   app.get('/api/whatsapp/instances', verifyAuth, requireTenant, async (req, res) => {
     applyCorsHeaders(req, res);
@@ -302,6 +305,125 @@ function issueWsToken(req, res) {
   );
 
   res.json({ token, expires_in: 300 });
+}
+
+async function getWhatsAppMediaUrl(req, res) {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: media, error } = await supabase
+      .from('whatsapp_media')
+      .select('id, tenant_id, provider, bucket, object_key, public_url, status, mime_type, filename')
+      .eq('id', req.params.id)
+      .eq('tenant_id', req.orgId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!media) {
+      return res.status(404).json({ error: 'Midia nao encontrada.' });
+    }
+
+    if (!media.object_key && media.public_url) {
+      return res.json({
+        id: media.id,
+        url: media.public_url,
+        status: media.status,
+        mime_type: media.mime_type,
+        filename: media.filename,
+        expires_in: null,
+      });
+    }
+
+    if (!media.object_key) {
+      return res.status(409).json({
+        error: 'Midia ainda nao possui arquivo processado.',
+        code: 'MEDIA_NOT_READY',
+        status: media.status,
+      });
+    }
+
+    if (!isMinioConfigured()) {
+      if (media.public_url) {
+        return res.json({
+          id: media.id,
+          url: media.public_url,
+          status: media.status,
+          mime_type: media.mime_type,
+          filename: media.filename,
+          expires_in: null,
+        });
+      }
+      return res.status(503).json({ error: 'Storage MinIO nao configurado para assinar URL.' });
+    }
+
+    const expiresInSeconds = Math.max(60, Math.min(Number(req.query.expiresInSeconds) || 300, 3600));
+    const url = createPresignedGetUrl({
+      bucket: media.bucket,
+      key: media.object_key,
+      expiresInSeconds,
+    });
+
+    return res.json({
+      id: media.id,
+      url,
+      status: media.status,
+      mime_type: media.mime_type,
+      filename: media.filename,
+      expires_in: expiresInSeconds,
+    });
+  } catch (error) {
+    console.error('[WhatsApp Media URL Error]', error.message);
+    return res.status(500).json({ error: error.message || 'Erro ao gerar URL da midia.' });
+  }
+}
+
+async function retryWhatsAppMedia(req, res) {
+  try {
+    const supabase = getSupabaseServer();
+    const { data: media, error: loadError } = await supabase
+      .from('whatsapp_media')
+      .select('id, tenant_id, message_id, retry_count')
+      .eq('id', req.params.id)
+      .eq('tenant_id', req.orgId)
+      .maybeSingle();
+
+    if (loadError) throw loadError;
+    if (!media) {
+      return res.status(404).json({ error: 'Midia nao encontrada.' });
+    }
+
+    const retryCount = Number(media.retry_count || 0) + 1;
+    const { error: mediaError } = await supabase
+      .from('whatsapp_media')
+      .update({
+        status: 'pending',
+        retry_count: retryCount,
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', media.id)
+      .eq('tenant_id', req.orgId);
+
+    if (mediaError) throw mediaError;
+
+    await supabase
+      .from('whatsapp_messages')
+      .update({
+        media_status: 'pending',
+        media_error: null,
+        media_retry_count: retryCount,
+      })
+      .eq('id', media.message_id);
+
+    return res.json({
+      id: media.id,
+      status: 'pending',
+      retry_count: retryCount,
+      message: 'Midia marcada para recuperacao. O worker de media processara o retry.',
+    });
+  } catch (error) {
+    console.error('[WhatsApp Media Retry Error]', error.message);
+    return res.status(500).json({ error: error.message || 'Erro ao solicitar retry da midia.' });
+  }
 }
 
 function getWsTokenFromUrl(rawUrl) {

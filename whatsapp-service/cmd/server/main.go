@@ -62,6 +62,7 @@ func main() {
 	chatRepo := repository.NewChatRepo(pool, log)
 	contactRepo := repository.NewContactRepo(pool, log)
 	messageRepo := repository.NewMessageRepo(pool, log)
+	mediaRepo := repository.NewMediaRepo(pool, log)
 
 	// Initialize WebSocket hub
 	hub := ws.NewHub(log)
@@ -70,7 +71,7 @@ func main() {
 
 	// Initialize WhatsApp manager
 	manager := whatsapp.NewManager(
-		instanceRepo, chatRepo, contactRepo, messageRepo,
+		instanceRepo, chatRepo, contactRepo, messageRepo, mediaRepo,
 		hub, log, cfg.SupabaseDBURL,
 		cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.StorageBucket,
 		cfg.MinIOEndpoint, cfg.MinIOPublicURL, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIORegion,
@@ -83,7 +84,7 @@ func main() {
 	// Initialize handlers
 	instanceHandler := handlers.NewInstanceHandler(manager, instanceRepo, log)
 	chatHandler := handlers.NewChatHandler(chatRepo, contactRepo, log)
-	messageHandler := handlers.NewMessageHandler(messageRepo, chatRepo, manager, log)
+	messageHandler := handlers.NewMessageHandler(messageRepo, mediaRepo, chatRepo, manager, log)
 
 	// Setup Gin router
 	router := gin.New()

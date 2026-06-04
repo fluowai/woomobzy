@@ -703,8 +703,106 @@
   margin: 4px 0 0;
   color: var(--color-text-primary);
 }
-.wa-bubble-audio { min-width: 240px; }
-.wa-audio-player { width: 100%; height: 36px; }
+.wa-bubble-audio {
+  width: min(320px, 72vw);
+  min-width: 260px;
+}
+.wa-audio-modern {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+}
+.wa-audio-main-btn {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.wa-audio-main-btn:hover {
+  transform: scale(1.04);
+}
+.wa-audio-modern.status-failed .wa-audio-main-btn,
+.wa-audio-modern.status-expired .wa-audio-main-btn {
+  background: #ef4444;
+}
+.wa-audio-modern.status-pending .wa-audio-main-btn,
+.wa-audio-modern.status-processing .wa-audio-main-btn,
+.wa-audio-modern.status-downloading .wa-audio-main-btn {
+  opacity: 0.82;
+}
+.wa-audio-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.wa-audio-status-row,
+.wa-audio-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.wa-audio-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.wa-audio-modern.status-failed .wa-audio-status,
+.wa-audio-modern.status-expired .wa-audio-status {
+  color: #b91c1c;
+}
+.wa-audio-speed {
+  min-width: 38px;
+  height: 22px;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.55);
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.wa-audio-waveform {
+  height: 30px;
+  display: grid;
+  grid-template-columns: repeat(32, 1fr);
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.wa-audio-waveform span {
+  display: block;
+  width: 100%;
+  min-height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.22);
+  transition: background 0.1s;
+}
+.wa-audio-waveform span.active {
+  background: var(--color-primary);
+}
+.wa-audio-footer {
+  color: var(--color-text-tertiary);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
 .wa-bubble-document {
   display: flex;
   align-items: center;

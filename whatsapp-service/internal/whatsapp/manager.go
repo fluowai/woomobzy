@@ -28,6 +28,7 @@ type Manager struct {
 	chatRepo          *repository.ChatRepo
 	contactRepo       *repository.ContactRepo
 	messageRepo       *repository.MessageRepo
+	mediaRepo         *repository.MediaRepo
 	hub               *ws.Hub
 	logger            *zap.Logger
 	dbURI             string
@@ -50,6 +51,7 @@ func NewManager(
 	chatRepo *repository.ChatRepo,
 	contactRepo *repository.ContactRepo,
 	messageRepo *repository.MessageRepo,
+	mediaRepo *repository.MediaRepo,
 	hub *ws.Hub,
 	logger *zap.Logger,
 	dbURI string,
@@ -71,6 +73,7 @@ func NewManager(
 		chatRepo:          chatRepo,
 		contactRepo:       contactRepo,
 		messageRepo:       messageRepo,
+		mediaRepo:         mediaRepo,
 		hub:               hub,
 		logger:            logger,
 		dbURI:             dbURI,
@@ -163,6 +166,7 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		m.chatRepo,
 		m.contactRepo,
 		m.messageRepo,
+		m.mediaRepo,
 		m.hub,
 		m.logger,
 		m.supabaseURL,

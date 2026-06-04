@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Image, FileText, FileVideo, MapPin, Contact, CheckCheck } from 'lucide-react';
+import AudioMessagePlayer from './AudioMessagePlayer';
 import { formatPhoneDisplay, type Message } from './hooks/api';
-import { Image, FileAudio, FileVideo, FileText, MapPin, Contact, Check, CheckCheck } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -43,7 +44,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
                 alt="Imagem"
                 className="wa-bubble-image"
                 loading="lazy"
-                onClick={() => window.open(message.media_url, '_blank')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  window.open(message.media_url, '_blank');
+                }}
               />
             ) : (
               <div className="wa-bubble-media-placeholder">
@@ -57,16 +61,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       case 'audio':
         return (
           <div className="wa-bubble-audio">
-            {message.media_url ? (
-              <audio controls preload="none" className="wa-audio-player">
-                <source src={message.media_url} type={message.media_mimetype || 'audio/ogg'} />
-              </audio>
-            ) : (
-              <div className="wa-bubble-media-placeholder">
-                <FileAudio size={24} />
-                <span>Áudio</span>
-              </div>
-            )}
+            <AudioMessagePlayer message={message} />
           </div>
         );
 
@@ -74,13 +69,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
         return (
           <div className="wa-bubble-media">
             {message.media_url ? (
-              <video controls preload="none" className="wa-bubble-video">
+              <video controls preload="none" className="wa-bubble-video" onClick={(event) => event.stopPropagation()}>
                 <source src={message.media_url} type={message.media_mimetype || 'video/mp4'} />
               </video>
             ) : (
               <div className="wa-bubble-media-placeholder">
                 <FileVideo size={24} />
-                <span>Vídeo</span>
+                <span>Video</span>
               </div>
             )}
             {content && <p className="wa-bubble-caption">{content}</p>}
@@ -94,6 +89,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
             target="_blank"
             rel="noopener noreferrer"
             className="wa-bubble-document"
+            onClick={(event) => event.stopPropagation()}
           >
             <FileText size={28} />
             <div>
@@ -107,7 +103,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
         return (
           <div className="wa-bubble-media-placeholder">
             <MapPin size={24} />
-            <span>Localização: {message.content}</span>
+            <span>Localizacao: {message.content}</span>
           </div>
         );
 
@@ -159,21 +155,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
           }
         }}
       >
-        {/* Sender identity */}
-        {showSenderName && (
-          <span className="wa-bubble-sender">{senderName}</span>
-        )}
+        {showSenderName && <span className="wa-bubble-sender">{senderName}</span>}
 
-        {/* Media or text content */}
         {message.type !== 'text' && renderMedia()}
         {message.type === 'text' && <p className="wa-bubble-text">{content}</p>}
 
-        {/* Timestamp + check marks */}
         <div className="wa-bubble-meta">
           <span className="wa-bubble-time">{formatTime(message.timestamp)}</span>
-          {isSent && (
-            <CheckCheck size={14} className="wa-bubble-check read" />
-          )}
+          {isSent && <CheckCheck size={14} className="wa-bubble-check read" />}
         </div>
       </div>
     </div>

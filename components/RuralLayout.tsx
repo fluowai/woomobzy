@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Users,
   MessageSquare,
+  Mail,
   Home,
   Map as MapIcon,
   Globe,
@@ -62,6 +63,7 @@ const RuralLayout: React.FC = () => {
   const operationItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
     { icon: MessageSquare, label: 'Mensagens', path: '/rural/whatsapp' },
+    { icon: Mail, label: 'Email', path: '/rural/email' },
     { icon: Briefcase, label: 'Kanban', path: '/rural/kanban' },
     { icon: Users, label: 'CRM', path: '/rural/crm' },
   ];

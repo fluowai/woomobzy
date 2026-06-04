@@ -30,6 +30,7 @@ import storageRoutes from './api/storage/index.js';
 import demoRoutes from './api/demo/index.js';
 import fluowaiMigrationRoutes from './api/fluowai-migration/index.js';
 import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
+import emailRoutes from './api/email/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -184,6 +185,7 @@ app.use('/api/cobranca', cobrancaRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/demo', demoRoutes);
 app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
+app.use('/api/email', emailRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 

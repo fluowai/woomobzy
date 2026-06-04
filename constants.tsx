@@ -19,7 +19,7 @@ export const MOCK_USER: User = {
 };
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  agencyName: 'IMOBZY',
+  agencyName: 'IMOBFLUOW',
   templateId: 'modern',
   primaryColor: '#16A34A',
   secondaryColor: '#052E1A',

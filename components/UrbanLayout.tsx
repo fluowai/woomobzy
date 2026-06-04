@@ -16,6 +16,7 @@ import {
   X,
   DollarSign,
   MessageSquare,
+  Mail,
   Map as MapIcon,
   ShieldAlert,
   Building2,
@@ -64,6 +65,7 @@ const UrbanLayout: React.FC = () => {
   const operationItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
     { icon: MessageSquare, label: 'Mensagens', path: '/urban/whatsapp' },
+    { icon: Mail, label: 'Email', path: '/urban/email' },
     { icon: LayoutGrid, label: 'Kanban', path: '/urban/kanban' },
     { icon: Users, label: 'CRM Leads', path: '/urban/crm' },
     { icon: Users, label: 'Clientes Unificado', path: '/urban/clients' },

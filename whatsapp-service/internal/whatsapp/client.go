@@ -3,6 +3,8 @@ package whatsapp
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -303,6 +305,22 @@ func (c *Client) eventHandler(evt interface{}) {
 func (c *Client) handleMessage(evt *events.Message) {
 	ctx := context.Background()
 
+	// Unwrap message for ephemeral (disappearing messages), view once and document with caption
+	if evt.Message != nil {
+		if evt.Message.GetEphemeralMessage() != nil {
+			evt.Message = evt.Message.GetEphemeralMessage().GetMessage()
+		}
+		if evt.Message.GetViewOnceMessage() != nil {
+			evt.Message = evt.Message.GetViewOnceMessage().GetMessage()
+		}
+		if evt.Message.GetViewOnceMessageV2() != nil {
+			evt.Message = evt.Message.GetViewOnceMessageV2().GetMessage()
+		}
+		if evt.Message.GetDocumentWithCaptionMessage() != nil {
+			evt.Message = evt.Message.GetDocumentWithCaptionMessage().GetMessage()
+		}
+	}
+
 	info := evt.Info
 	canonicalJID := canonicalChatJID(info)
 	chatJID := canonicalJID.String()
@@ -561,10 +579,58 @@ func (c *Client) resolveAvatarURL(ctx context.Context, jid types.JID) string {
 		return ""
 	}
 	picture, err := c.waClient.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{Preview: true})
-	if err != nil || picture == nil {
+	if err != nil || picture == nil || picture.URL == "" {
 		return ""
 	}
-	return picture.URL
+
+	// Faz o download da imagem do WhatsApp CDN
+	req, err := http.NewRequestWithContext(ctx, "GET", picture.URL, nil)
+	if err != nil {
+		c.logger.Warn("Failed to create request for avatar", zap.Error(err))
+		return picture.URL // fallback para a URL temporária
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.logger.Warn("Failed to download avatar", zap.Error(err))
+		return picture.URL
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.logger.Warn("Failed to download avatar, bad status", zap.Int("status", resp.StatusCode))
+		return picture.URL
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.logger.Warn("Failed to read avatar body", zap.Error(err))
+		return picture.URL
+	}
+
+	// Define o nome do arquivo e o path no MinIO
+	phoneNum := phone.Normalize(jid.User)
+	if phoneNum == "" {
+		phoneNum = jid.User
+	}
+	
+	picID := picture.ID
+	if picID == "" {
+		picID = fmt.Sprintf("%d", time.Now().UnixMilli())
+	}
+
+	fileName := fmt.Sprintf("avatar_%s.jpg", picID)
+	storagePath := fmt.Sprintf("%s/avatars/%s/%s", c.instanceID.String(), phoneNum, fileName)
+
+	// Faz o upload para o MinIO
+	publicURL, err := c.uploadToStorage(ctx, storagePath, data, "image/jpeg")
+	if err != nil {
+		c.logger.Warn("Failed to upload avatar to storage", zap.Error(err))
+		return picture.URL
+	}
+
+	return publicURL
 }
 
 func uuidToString(id *uuid.UUID) string {

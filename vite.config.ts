@@ -35,8 +35,8 @@ export default defineConfig(({ mode }) => {
         includeAssets: ['logo-imobzy.png', 'logo-imobzy-360.svg', 'icons/*.png'],
         manifest: {
           id: '/',
-          name: 'IMOBZY - Gestão Imobiliária Inteligente',
-          short_name: 'IMOBZY',
+          name: 'IMOBFLUOW - Gestão Imobiliária Inteligente',
+          short_name: 'IMOBFLUOW',
           description: 'Sistema de gestão imobiliária completo para mercado rural e urbano.',
           theme_color: '#16a34a',
           background_color: '#f8fafc',
@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => {
           categories: ['business', 'productivity', 'real estate'],
           shortcuts: [
             {
-              name: 'Painel IMOBZY',
+              name: 'Painel IMOBFLUOW',
               short_name: 'Painel',
               description: 'Abrir o painel do sistema',
               url: '/login',

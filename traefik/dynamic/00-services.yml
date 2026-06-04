@@ -1,0 +1,13 @@
+http:
+  services:
+    imobzy_frontend:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://frontend:80"
+
+    imobzy_api:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://api:3002"

@@ -19,7 +19,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=network_public"
-        - "traefik.http.routers.imobzy_frontend.rule=HostRegexp(`{host:.+}`)"
+        - "traefik.http.routers.imobzy_frontend.rule=Host(`imobfluow.com.br`, `www.imobfluow.com.br`, `imobzy.consultio.com.br`)"
         - "traefik.http.routers.imobzy_frontend.entrypoints=websecure"
         - "traefik.http.routers.imobzy_frontend.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_frontend.priority=1"
@@ -84,7 +84,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=network_public"
-        - "traefik.http.routers.imobzy_api.rule=HostRegexp(`{host:.+}`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.imobzy_api.rule=Host(`imobfluow.com.br`, `www.imobfluow.com.br`, `imobzy.consultio.com.br`) && PathPrefix(`/api`)"
         - "traefik.http.routers.imobzy_api.entrypoints=websecure"
         - "traefik.http.routers.imobzy_api.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobzy_api.priority=10"

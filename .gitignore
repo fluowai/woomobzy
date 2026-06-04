@@ -46,6 +46,9 @@ owner-access-repair-*.json
 # WhatsApp Sessions
 .sessions/
 
+# Traefik certificate storage - contains private keys in production
+traefik/acme.json
+
 # Test coverage
 coverage
 

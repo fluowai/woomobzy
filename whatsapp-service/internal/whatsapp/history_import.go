@@ -194,6 +194,25 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 		Content:     content,
 		Timestamp:   messageTime,
 	}
+
+	if isMediaMessageType(msgType) {
+		mediaCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+		url, mime, filename, err := c.downloadAndUploadMedia(mediaCtx, evt)
+		cancel()
+		if err != nil {
+			c.logger.Warn("Failed to handle imported media",
+				zap.String("instance", c.instanceID.String()),
+				zap.String("message_id", info.ID),
+				zap.String("type", string(msgType)),
+				zap.Error(err),
+			)
+		} else {
+			msg.MediaURL = url
+			msg.MediaMimetype = mime
+			msg.MediaFilename = filename
+		}
+	}
+
 	if evt.Message.GetExtendedTextMessage() != nil && evt.Message.GetExtendedTextMessage().ContextInfo != nil {
 		if quotedID := evt.Message.GetExtendedTextMessage().ContextInfo.GetStanzaID(); quotedID != "" {
 			msg.QuotedMessageID = quotedID
@@ -204,6 +223,7 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 		c.logger.Warn("Failed to save imported message", zap.Error(err))
 		return chat.ID, false
 	}
+	c.persistMessageMedia(ctx, msg)
 
 	return chat.ID, true
 }

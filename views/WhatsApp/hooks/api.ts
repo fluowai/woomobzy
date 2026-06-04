@@ -259,8 +259,12 @@ export interface Message {
   type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'sticker' | 'location' | 'contact' | 'unknown';
   content?: string;
   media_url?: string;
+  media_id?: string;
   media_mimetype?: string;
   media_filename?: string;
+  media_status?: 'none' | 'pending' | 'downloading' | 'processing' | 'ready' | 'failed' | 'expired';
+  media_error?: string;
+  media_retry_count?: number;
   quoted_message_id?: string;
   timestamp: string;
   created_at: string;
@@ -276,6 +280,22 @@ export interface MessageListResponse {
 export interface CrmContactResponse {
   lead: any | null;
   tags: string[];
+}
+
+export interface WhatsAppMediaUrlResponse {
+  id: string;
+  url: string;
+  status: string;
+  mime_type?: string;
+  filename?: string;
+  expires_in?: number | null;
+}
+
+export interface WhatsAppMediaRetryResponse {
+  id: string;
+  status: string;
+  retry_count: number;
+  message: string;
 }
 
 const LEGACY_MEDIA_PREVIEWS: Record<string, string> = {
@@ -416,6 +436,14 @@ export const messageApi = {
 
     return res.json();
   },
+};
+
+export const mediaApi = {
+  getUrl: (mediaId: string, expiresInSeconds = 300) =>
+    apiRequest<WhatsAppMediaUrlResponse>(`/media/${mediaId}/url?expiresInSeconds=${expiresInSeconds}`),
+
+  retry: (mediaId: string) =>
+    apiRequest<WhatsAppMediaRetryResponse>(`/media/${mediaId}/retry`, { method: 'POST' }),
 };
 
 // ---- Phone Utils ----

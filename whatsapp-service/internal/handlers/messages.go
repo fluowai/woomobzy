@@ -22,6 +22,7 @@ import (
 // MessageHandler handles message-related API requests
 type MessageHandler struct {
 	messageRepo *repository.MessageRepo
+	mediaRepo   *repository.MediaRepo
 	chatRepo    *repository.ChatRepo
 	manager     *whatsapp.Manager
 	logger      *zap.Logger
@@ -30,12 +31,14 @@ type MessageHandler struct {
 // NewMessageHandler creates a new MessageHandler
 func NewMessageHandler(
 	messageRepo *repository.MessageRepo,
+	mediaRepo *repository.MediaRepo,
 	chatRepo *repository.ChatRepo,
 	manager *whatsapp.Manager,
 	logger *zap.Logger,
 ) *MessageHandler {
 	return &MessageHandler{
 		messageRepo: messageRepo,
+		mediaRepo:   mediaRepo,
 		chatRepo:    chatRepo,
 		manager:     manager,
 		logger:      logger,
@@ -272,6 +275,10 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 
 	if err := h.messageRepo.Create(ctx, msg); err != nil {
 		h.logger.Error("Failed to save sent media message", zap.Error(err))
+	} else if h.mediaRepo != nil {
+		if err := h.mediaRepo.UpsertFromMessage(ctx, msg, tenantID, client.StorageBucket()); err != nil {
+			h.logger.Warn("Failed to persist sent media metadata", zap.Error(err))
+		}
 	}
 
 	now := time.Now()

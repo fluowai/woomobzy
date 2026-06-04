@@ -85,11 +85,35 @@ type Message struct {
 	Type            MessageType `json:"type" db:"type"`
 	Content         string      `json:"content,omitempty" db:"content"`
 	MediaURL        string      `json:"media_url,omitempty" db:"media_url"`
+	MediaID         string      `json:"media_id,omitempty"`
 	MediaMimetype   string      `json:"media_mimetype,omitempty" db:"media_mimetype"`
 	MediaFilename   string      `json:"media_filename,omitempty" db:"media_filename"`
+	MediaStatus     string      `json:"media_status,omitempty" db:"media_status"`
+	MediaError      string      `json:"media_error,omitempty" db:"media_error"`
+	MediaRetryCount int         `json:"media_retry_count,omitempty" db:"media_retry_count"`
 	QuotedMessageID string      `json:"quoted_message_id,omitempty" db:"quoted_message_id"`
 	Timestamp       time.Time   `json:"timestamp" db:"timestamp"`
 	CreatedAt       time.Time   `json:"created_at" db:"created_at"`
+}
+
+// Media represents processing metadata for a WhatsApp message attachment.
+type Media struct {
+	ID         uuid.UUID `json:"id" db:"id"`
+	MessageID  uuid.UUID `json:"message_id" db:"message_id"`
+	InstanceID uuid.UUID `json:"instance_id" db:"instance_id"`
+	TenantID   uuid.UUID `json:"tenant_id" db:"tenant_id"`
+	Type       string    `json:"type" db:"type"`
+	Provider   string    `json:"provider" db:"provider"`
+	Bucket     string    `json:"bucket" db:"bucket"`
+	ObjectKey  string    `json:"object_key" db:"object_key"`
+	PublicURL  string    `json:"public_url,omitempty" db:"public_url"`
+	Filename   string    `json:"filename,omitempty" db:"filename"`
+	MimeType   string    `json:"mime_type,omitempty" db:"mime_type"`
+	Status     string    `json:"status" db:"status"`
+	RetryCount int       `json:"retry_count" db:"retry_count"`
+	LastError  string    `json:"last_error,omitempty" db:"last_error"`
+	CreatedAt  time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // ---- Request/Response DTOs ----

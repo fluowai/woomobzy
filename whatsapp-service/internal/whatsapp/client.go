@@ -29,6 +29,7 @@ type Client struct {
 	chatRepo       *repository.ChatRepo
 	contactRepo    *repository.ContactRepo
 	messageRepo    *repository.MessageRepo
+	mediaRepo      *repository.MediaRepo
 	hub            *ws.Hub
 	logger         *zap.Logger
 	qrCode         string
@@ -57,6 +58,7 @@ func NewClient(
 	chatRepo *repository.ChatRepo,
 	contactRepo *repository.ContactRepo,
 	messageRepo *repository.MessageRepo,
+	mediaRepo *repository.MediaRepo,
 	hub *ws.Hub,
 	logger *zap.Logger,
 	supabaseURL string,
@@ -85,6 +87,7 @@ func NewClient(
 		chatRepo:       chatRepo,
 		contactRepo:    contactRepo,
 		messageRepo:    messageRepo,
+		mediaRepo:      mediaRepo,
 		hub:            hub,
 		logger:         logger,
 		supabaseURL:    supabaseURL,
@@ -232,6 +235,11 @@ func (c *Client) IsConnected() bool {
 // GetWAClient returns the underlying WhatsMeow client (for sending messages)
 func (c *Client) GetWAClient() *whatsmeow.Client {
 	return c.waClient
+}
+
+// StorageBucket returns the configured WhatsApp media bucket.
+func (c *Client) StorageBucket() string {
+	return c.storageBucket
 }
 
 func (c *Client) broadcastEvent(event string, data interface{}) {
@@ -408,9 +416,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	// Handle media download
 	var mediaURL, mediaMimetype, mediaFilename string
-	if msgType == models.MessageTypeImage || msgType == models.MessageTypeAudio ||
-		msgType == models.MessageTypeVideo || msgType == models.MessageTypeDocument ||
-		msgType == models.MessageTypeSticker {
+	if isMediaMessageType(msgType) {
 		url, mime, filename, err := c.downloadAndUploadMedia(ctx, evt)
 		if err != nil {
 			c.logger.Error("Failed to handle media", zap.Error(err))
@@ -450,6 +456,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 		c.logger.Error("Failed to save message", zap.Error(err))
 		return
 	}
+	c.persistMessageMedia(ctx, msg)
 
 	// Broadcast via WebSocket
 	c.broadcastEvent("new_message", models.NewMessageEvent{
@@ -513,6 +520,19 @@ func (c *Client) markConnected(ctx context.Context) {
 		Status:     models.StatusConnected,
 		Phone:      phoneNum,
 	})
+}
+
+func (c *Client) persistMessageMedia(ctx context.Context, msg *models.Message) {
+	if c.mediaRepo == nil || c.tenantID == nil || !isMediaMessageType(msg.Type) {
+		return
+	}
+	if err := c.mediaRepo.UpsertFromMessage(ctx, msg, *c.tenantID, c.storageBucket); err != nil {
+		c.logger.Warn("Failed to persist media metadata",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("message_id", msg.MessageID),
+			zap.Error(err),
+		)
+	}
 }
 
 func (c *Client) resolveDisplayName(ctx context.Context, jid types.JID, pushName, fallbackPhone string) string {
@@ -623,7 +643,38 @@ func mediaPreviewContent(msgType models.MessageType, content string) string {
 	if trimmed != "" {
 		return trimmed
 	}
-	return ""
+
+	switch msgType {
+	case models.MessageTypeImage:
+		return "Imagem"
+	case models.MessageTypeAudio:
+		return "Audio"
+	case models.MessageTypeVideo:
+		return "Video"
+	case models.MessageTypeDocument:
+		return "Documento"
+	case models.MessageTypeSticker:
+		return "Figurinha"
+	case models.MessageTypeLocation:
+		return "Localizacao"
+	case models.MessageTypeContact:
+		return "Contato"
+	default:
+		return ""
+	}
+}
+
+func isMediaMessageType(msgType models.MessageType) bool {
+	switch msgType {
+	case models.MessageTypeImage,
+		models.MessageTypeAudio,
+		models.MessageTypeVideo,
+		models.MessageTypeDocument,
+		models.MessageTypeSticker:
+		return true
+	default:
+		return false
+	}
 }
 
 // extractMessageContent determines the type and text content of a message

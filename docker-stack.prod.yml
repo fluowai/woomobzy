@@ -1,6 +1,40 @@
 version: "3.8"
 
 services:
+  # ========================================================
+  # TRAEFIK 100% IN-CODE (Sem arquivos externos ou comandos)
+  # ========================================================
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.dashboard=false"
+      - "--providers.docker=true"
+      - "--providers.docker.swarmMode=false" # Mude para true se rodar docker swarm init
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/dynamic"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencryptresolver.acme.email=admin@imobfluow.com.br"
+      - "--certificatesresolvers.letsencryptresolver.acme.storage=/certs/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/certs
+      - traefik_dynamic:/dynamic
+    networks:
+      - consultio1
+      - imobzy_internal
+    deploy:
+      restart_policy:
+        condition: any
+
   frontend:
     image: ghcr.io/fluowai/woomobzy-frontend:latest
     environment:
@@ -53,6 +87,9 @@ services:
       EMAIL_PASSWORD: ""
       WHATSAPP_INTERNAL_TOKEN: "k7Pq9zLm2A8xR4vT6nY1cE5bH3sW0dJ"
       WHATSAPP_AI_AUTOMATION: "true"
+      TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
+    volumes:
+      - traefik_dynamic:/app/traefik/dynamic
     networks:
       - consultio1
       - imobzy_internal
@@ -122,11 +159,12 @@ services:
 
 volumes:
   whatsapp_sessions:
+  traefik_certs:
+  traefik_dynamic:
 
 networks:
   consultio1:
     external: true
     name: consultio1
-
   imobzy_internal:
     driver: overlay

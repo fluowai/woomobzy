@@ -28,10 +28,51 @@ export class AIAutomationEngine {
     return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
-  async processIntent({ content, audioData, mimeType, organizationId, agent }) {
+  async _getConversationMemory(organizationId, phone, limit = 10) {
+    try {
+      const supabase = getSupabaseServer();
+      const sessionId = `whatsapp_${phone}`;
+
+      const { data } = await supabase
+        .from('conversation_memory')
+        .select('role, content')
+        .eq('organization_id', organizationId)
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      return (data || []).reverse();
+    } catch (err) {
+      console.warn('[Memory] Erro ao carregar memoria:', err.message);
+      return [];
+    }
+  }
+
+  async _saveConversationMemory(organizationId, agentId, phone, role, content) {
+    try {
+      const supabase = getSupabaseServer();
+      const sessionId = `whatsapp_${phone}`;
+
+      await supabase.from('conversation_memory').insert({
+        organization_id: organizationId,
+        agent_id: agentId || null,
+        session_id: sessionId,
+        role,
+        content: String(content).slice(0, 3000),
+      });
+    } catch (err) {
+      console.warn('[Memory] Erro ao salvar memoria:', err.message);
+    }
+  }
+
+  async processIntent({ content, audioData, mimeType, organizationId, agent, phone }) {
     try {
       const model = await this._ensureModel(organizationId);
       const parts = [];
+
+      const history = phone
+        ? await this._getConversationMemory(organizationId, phone, 8)
+        : [];
 
       if (audioData) {
         parts.push({
@@ -42,12 +83,17 @@ export class AIAutomationEngine {
         });
       }
 
+      const historyBlock = history.length
+        ? `\nHISTORICO DA CONVERSA (NÃO repita perguntas ja respondidas aqui):\n${history.map((m) => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n')}\n`
+        : '\n(Inicio da conversa)\n';
+
       parts.push({
         text: `
 Analise a mensagem de um cliente imobiliario e responda apenas JSON valido.
 
 Mensagem:
 ${content || 'Midia sem texto.'}
+${historyBlock} 
 
 Agente ativo:
 - Nome: ${agent?.name || 'Agente IMOBZY'}
@@ -140,7 +186,14 @@ Formato:
       organizationId,
       mimeType: message.media_mimetype,
       agent,
+      phone: normalizedPhone,
     });
+
+    await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'user', content);
+
+    if (aiResult?.reply) {
+      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', aiResult.reply);
+    }
 
     const { data: existingLead } = await supabase
       .from('leads')

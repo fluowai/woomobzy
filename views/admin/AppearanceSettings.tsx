@@ -137,12 +137,15 @@ const AppearanceSettings: React.FC = () => {
                   formData.isLive ? 'text-emerald-500' : 'text-orange-500'
                 }
               />
-              Status de Visibilidade do Site
+              Publicacao do Site
             </h3>
             <p className="text-sm text-slate-500 mt-1">
               {formData.isLive
                 ? 'Seu site está ONLINE para o público geral.'
                 : 'Seu site está em MODO MANUTENÇÃO. Apenas administradores podem visualizá-lo.'}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-slate-400">
+              Desligado = pagina de lancamento com captura. Ligado = site completo publicado.
             </p>
           </div>
           <button

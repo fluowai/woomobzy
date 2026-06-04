@@ -1,9 +1,11 @@
 import {
   addDockerDomain,
   checkDockerDomainStatus,
+  DomainProvisioningError,
   getPlatformDnsRecords,
   normalizeDomain,
   removeDockerDomain,
+  validateDockerDomainDns,
 } from '../domainService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
@@ -18,7 +20,27 @@ export const addDomain = async (req, res) => {
 
   try {
     const cleanDomain = normalizeDomain(domain);
-    const provisioning = await addDockerDomain(cleanDomain);
+    const { data: existingOrg } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('custom_domain', cleanDomain)
+      .maybeSingle();
+
+    if (existingOrg && existingOrg.id !== organizationId) {
+      return res.status(409).json({
+        error: 'Este dominio ja esta vinculado a outra organizacao.',
+        code: 'DOMAIN_ALREADY_EXISTS',
+      });
+    }
+
+    const { data: targetOrg } = await supabase
+      .from('organizations')
+      .select('custom_domain')
+      .eq('id', organizationId)
+      .maybeSingle();
+    const previousCustomDomain = targetOrg?.custom_domain || null;
+
+    await validateDockerDomainDns(cleanDomain);
 
     const { error: updateError } = await supabase
       .from('organizations')
@@ -27,18 +49,39 @@ export const addDomain = async (req, res) => {
 
     if (updateError) throw updateError;
 
+    let provisioning;
+    try {
+      provisioning = await addDockerDomain(cleanDomain);
+    } catch (provisioningError) {
+      await supabase
+        .from('organizations')
+        .update({ custom_domain: previousCustomDomain })
+        .eq('id', organizationId);
+
+      throw provisioningError;
+    }
+
     res.json({
       success: true,
       domain: {
         name: cleanDomain,
-        status: 'pending',
+        status: 'pending_ssl',
         verified: false,
+        dnsVerified: true,
+        sslVerified: false,
         dnsRecords: provisioning.dnsRecords,
+        configPath: provisioning.configPath,
+        routerNames: provisioning.routerNames,
         provisioned: true,
       },
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const status = error instanceof DomainProvisioningError ? error.statusCode : 400;
+    res.status(status).json({
+      error: error.message,
+      code: error.code || 'DOMAIN_PROVISIONING_FAILED',
+      details: error.details,
+    });
   }
 };
 
@@ -46,7 +89,12 @@ export const verifyDomain = async (req, res) => {
   try {
     res.json(await checkDockerDomainStatus(req.params.domain));
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const status = error instanceof DomainProvisioningError ? error.statusCode : 400;
+    res.status(status).json({
+      success: false,
+      error: error.message,
+      code: error.code || 'DOMAIN_VERIFY_FAILED',
+    });
   }
 };
 
@@ -66,7 +114,11 @@ export const removeDomain = async (req, res) => {
 
     res.json({ success: true, message: 'Dominio removido com sucesso' });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const status = error instanceof DomainProvisioningError ? error.statusCode : 400;
+    res.status(status).json({
+      error: error.message,
+      code: error.code || 'DOMAIN_REMOVE_FAILED',
+    });
   }
 };
 

@@ -1,0 +1,37 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: INFO
+
+accessLog: {}
+
+api:
+  dashboard: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+  websecure:
+    address: ":443"
+
+providers:
+  file:
+    directory: /traefik/dynamic
+    watch: true
+
+certificatesResolvers:
+  letsencryptresolver:
+    acme:
+      email: admin@imobfluow.com.br
+      storage: /traefik/acme.json
+      httpChallenge:
+        entryPoint: web

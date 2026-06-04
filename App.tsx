@@ -109,6 +109,7 @@ const StorageIntelligence = lazy(() => import('./views/superadmin/StorageIntelli
 
 // WhatsApp
 const WhatsAppDashboard = lazy(() => import('./views/WhatsApp/WhatsAppDashboard'));
+const EmailCenter = lazy(() => import('./views/EmailCenter'));
 
 // logger.info('App.tsx: Multi-Panel Architecture Active');
 
@@ -505,6 +506,7 @@ const AppContent: React.FC = () => {
             <Route path="financial" element={<FinanceiroRural />} />
             <Route path="financeiro-advanced" element={<Locacao />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
+            <Route path="email" element={<EmailCenter />} />
             <Route path="connections" element={<ConexoesRural />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
@@ -560,6 +562,7 @@ const AppContent: React.FC = () => {
             <Route path="ai-agents" element={<AIAgents />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
+            <Route path="email" element={<EmailCenter />} />
             <Route path="connections" element={<ConexoesRural />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>

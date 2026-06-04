@@ -27,12 +27,18 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
     setError(null);
 
     try {
+      if (!organizationId) {
+        throw new Error('Organizacao nao identificada para captura de lead.');
+      }
+
       await leadService.create({
         organization_id: organizationId as any,
         name: formData.name,
         email: formData.email,
         phone: formData.whatsapp,
         source: 'Espera ImobFluow',
+        campaign: 'Pagina de Lancamento',
+        organic_channel: window.location.hostname,
       });
       setSuccess(true);
     } catch (err: any) {

@@ -20,8 +20,10 @@ import { PLATFORM_IP } from '../../utils/platform';
 
 interface DomainData {
   name: string;
-  status: 'pending' | 'verifying' | 'verified' | 'active';
+  status: 'pending' | 'pending_ssl' | 'verifying' | 'verified' | 'active';
   verified: boolean;
+  dnsVerified?: boolean;
+  sslVerified?: boolean;
   dnsRecords?: {
     type: string;
     name: string;
@@ -35,6 +37,14 @@ interface DomainData {
   addresses?: string[];
   wikiUrl?: string;
   message?: string;
+  ssl?: {
+    valid: boolean;
+    error?: string | null;
+    commonName?: string;
+    issuer?: string;
+    validFrom?: string | null;
+    validTo?: string | null;
+  };
   provisioned?: boolean;
 }
 
@@ -116,11 +126,14 @@ const DomainSettings: React.FC = () => {
         name: domainName,
         status: data.status || (data.verified ? 'verified' : 'pending'),
         verified: data.verified || false,
+        dnsVerified: data.dnsVerified || false,
+        sslVerified: data.sslVerified || false,
         dnsRecords: data.dnsRecords,
         expectedIp: data.expectedIp,
         addresses: data.addresses || [],
         wikiUrl: data.wikiUrl,
         message: data.message,
+        ssl: data.ssl,
         provisioned: true,
       });
 
@@ -162,8 +175,10 @@ const DomainSettings: React.FC = () => {
 
       setCurrentDomain({
         name: data.domain.name || domain,
-        status: 'pending',
+        status: data.domain.status || 'pending_ssl',
         verified: false,
+        dnsVerified: data.domain.dnsVerified || false,
+        sslVerified: data.domain.sslVerified || false,
         dnsRecords: data.domain.dnsRecords,
         expectedIp: data.domain.dnsRecords?.value || PLATFORM_IP,
         addresses: [],
@@ -296,7 +311,9 @@ const DomainSettings: React.FC = () => {
                         ) : (
                           <>
                             <Clock size={12} className="inline mr-1" />
-                            Aguardando Verificação...
+                            {currentDomain.status === 'pending_ssl'
+                              ? 'DNS ok, SSL pendente'
+                              : 'Aguardando Verificação...'}
                           </>
                         )}
                       </span>
@@ -336,14 +353,127 @@ const DomainSettings: React.FC = () => {
                 </button>
               </div>
 
+              <div className="grid gap-3 md:grid-cols-2">
+                <div
+                  className={`rounded-lg border p-4 ${
+                    currentDomain.dnsVerified
+                      ? 'border-green-200 bg-green-50'
+                      : 'border-red-200 bg-red-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {currentDomain.dnsVerified ? (
+                      <CheckCircle className="text-green-600" size={18} />
+                    ) : (
+                      <AlertCircle className="text-red-600" size={18} />
+                    )}
+                    <span
+                      className={`text-xs font-bold uppercase ${
+                        currentDomain.dnsVerified
+                          ? 'text-green-800'
+                          : 'text-red-800'
+                      }`}
+                    >
+                      DNS {currentDomain.dnsVerified ? 'OK' : 'ERRO'}
+                    </span>
+                  </div>
+                  <p
+                    className={`mt-2 text-xs font-medium ${
+                      currentDomain.dnsVerified
+                        ? 'text-green-700'
+                        : 'text-red-700'
+                    }`}
+                  >
+                    {currentDomain.dnsVerified
+                      ? 'O dominio aponta para o IP da plataforma.'
+                      : 'O dominio ainda nao aponta para o IP esperado.'}
+                  </p>
+                </div>
+
+                <div
+                  className={`rounded-lg border p-4 ${
+                    currentDomain.sslVerified
+                      ? 'border-green-200 bg-green-50'
+                      : 'border-amber-200 bg-amber-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {currentDomain.sslVerified ? (
+                      <CheckCircle className="text-green-600" size={18} />
+                    ) : (
+                      <Clock className="text-amber-600" size={18} />
+                    )}
+                    <span
+                      className={`text-xs font-bold uppercase ${
+                        currentDomain.sslVerified
+                          ? 'text-green-800'
+                          : 'text-amber-800'
+                      }`}
+                    >
+                      SSL {currentDomain.sslVerified ? 'ATIVO' : 'PENDENTE'}
+                    </span>
+                  </div>
+                  <p
+                    className={`mt-2 text-xs font-medium ${
+                      currentDomain.sslVerified
+                        ? 'text-green-700'
+                        : 'text-amber-700'
+                    }`}
+                  >
+                    {currentDomain.sslVerified
+                      ? 'Certificado valido emitido para este dominio.'
+                      : "Aguardando emissao/validacao pelo Let's Encrypt."}
+                  </p>
+                </div>
+              </div>
+
+              {currentDomain.ssl && (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700">
+                  <div className="mb-2 font-bold uppercase text-gray-500">
+                    Certificado atual
+                  </div>
+                  <div className="grid gap-2 md:grid-cols-3">
+                    <div>
+                      <span className="block font-semibold text-gray-500">
+                        Issuer
+                      </span>
+                      <code className="break-all">
+                        {currentDomain.ssl.issuer || 'indisponivel'}
+                      </code>
+                    </div>
+                    <div>
+                      <span className="block font-semibold text-gray-500">
+                        CN
+                      </span>
+                      <code className="break-all">
+                        {currentDomain.ssl.commonName || 'indisponivel'}
+                      </code>
+                    </div>
+                    <div>
+                      <span className="block font-semibold text-gray-500">
+                        Validade
+                      </span>
+                      <code className="break-all">
+                        {currentDomain.ssl.validFrom || '?'} -{' '}
+                        {currentDomain.ssl.validTo || '?'}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {!currentDomain.verified && (
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm">
                   <h4 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
-                    <Info size={16} /> Verificação DNS Pendente
+                    <Info size={16} />{' '}
+                    {currentDomain.status === 'pending_ssl'
+                      ? 'SSL Pendente'
+                      : 'Verificação DNS Pendente'}
                   </h4>
                   <p className="text-blue-700 mb-4">
-                    Configure um registro A no DNS do seu dominio para apontar
-                    para o IP da plataforma:
+                    {currentDomain.status === 'pending_ssl'
+                      ? "O DNS ja aponta para a plataforma. Aguarde a emissao do certificado SSL pelo Traefik/Let's Encrypt ou revise a regra do router para este dominio."
+                      : 'Configure um registro A no DNS do seu dominio para apontar para o IP da plataforma:'}
                   </p>
                   <div className="mb-4 grid gap-3 md:grid-cols-2">
                     <div className="rounded border border-blue-200 bg-white p-3">
@@ -369,6 +499,18 @@ const DomainSettings: React.FC = () => {
                     <p className="mb-4 rounded bg-white px-3 py-2 text-xs font-semibold text-blue-800">
                       {currentDomain.message}
                     </p>
+                  )}
+
+                  {currentDomain.ssl && currentDomain.status === 'pending_ssl' && (
+                    <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                      <div className="font-bold uppercase">Certificado recebido</div>
+                      <div className="mt-1 font-mono">
+                        CN: {currentDomain.ssl.commonName || 'indisponivel'}
+                      </div>
+                      <div className="mt-1 font-mono">
+                        Erro: {currentDomain.ssl.error || 'certificado ainda invalido'}
+                      </div>
+                    </div>
                   )}
 
                   {currentDomain.dnsRecords && (
@@ -467,7 +609,7 @@ const DomainSettings: React.FC = () => {
                       Domínio Verificado!
                     </h4>
                     <p className="text-green-700 text-xs">
-                      Seu dominio esta ativo e funcionando pelo Docker/Traefik.
+                      Seu dominio esta ativo com DNS e SSL validos pelo Docker/Traefik.
                     </p>
                   </div>
                 </div>

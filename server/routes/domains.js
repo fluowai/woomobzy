@@ -2,10 +2,12 @@ import express from 'express';
 import { verifyAdmin } from '../middleware/auth.js';
 import {
   addDockerDomain,
+  DomainProvisioningError,
   removeDockerDomain,
   checkDockerDomainStatus,
   getPlatformDnsRecords,
   normalizeDomain,
+  validateDockerDomainDns,
 } from '../domainService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
@@ -28,7 +30,41 @@ router.post('/add', verifyAdmin, async (req, res) => {
 
   try {
     const cleanDomain = normalizeDomain(domain);
-    const provisioning = await addDockerDomain(cleanDomain);
+    const { data: existingOrg } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .eq('custom_domain', cleanDomain)
+      .maybeSingle();
+
+    if (existingOrg && existingOrg.id !== organizationId) {
+      return res.status(409).json({
+        error: 'Este dominio ja esta vinculado a outra organizacao.',
+        code: 'DOMAIN_ALREADY_EXISTS',
+      });
+    }
+
+    const { data: existingDomain } = await supabase
+      .from('domains')
+      .select('organization_id, domain')
+      .eq('domain', cleanDomain)
+      .maybeSingle();
+
+    if (existingDomain && existingDomain.organization_id !== organizationId) {
+      return res.status(409).json({
+        error: 'Este dominio ja esta cadastrado no Imobzy.',
+        code: 'DOMAIN_ALREADY_EXISTS',
+      });
+    }
+
+    const { data: targetOrg } = await supabase
+      .from('organizations')
+      .select('custom_domain')
+      .eq('id', organizationId)
+      .maybeSingle();
+    const previousCustomDomain = targetOrg?.custom_domain || null;
+    const hadExistingDomain = !!existingDomain;
+
+    await validateDockerDomainDns(cleanDomain);
 
     // 2. Update DB (Organization)
     const { error: orgError } = await supabase
@@ -49,19 +85,49 @@ router.post('/add', verifyAdmin, async (req, res) => {
       onConflict: 'domain',
     });
 
+    let provisioning;
+    try {
+      provisioning = await addDockerDomain(cleanDomain);
+    } catch (provisioningError) {
+      await supabase
+        .from('organizations')
+        .update({ custom_domain: previousCustomDomain })
+        .eq('id', organizationId);
+
+      if (hadExistingDomain) {
+        await supabase
+          .from('domains')
+          .update({ status: 'failed' })
+          .eq('domain', cleanDomain);
+      } else {
+        await supabase.from('domains').delete().eq('domain', cleanDomain);
+      }
+
+      throw provisioningError;
+    }
+
     res.json({
       success: true,
       domain: {
         name: cleanDomain,
-        status: 'pending',
+        status: 'pending_ssl',
         verified: false,
+        dnsVerified: true,
+        sslVerified: false,
         dnsRecords: provisioning.dnsRecords,
+        configPath: provisioning.configPath,
+        routerNames: provisioning.routerNames,
       },
       provisioning,
     });
   } catch (error) {
     console.error('Domain Add Route Error:', error);
-    res.status(500).json({ error: error.message });
+    const status = error instanceof DomainProvisioningError ? error.statusCode : 500;
+    res.status(status).json({
+      error: error.message,
+      code: error.code || 'DOMAIN_PROVISIONING_FAILED',
+      details: error.details,
+    });
   }
 });
 
@@ -94,7 +160,11 @@ router.delete('/remove', verifyAdmin, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const status = error instanceof DomainProvisioningError ? error.statusCode : 500;
+    res.status(status).json({
+      error: error.message,
+      code: error.code || 'DOMAIN_REMOVE_FAILED',
+    });
   }
 });
 
@@ -108,7 +178,12 @@ router.get('/verify/:domain', verifyAdmin, async (req, res) => {
     const status = await checkDockerDomainStatus(domain);
     res.json(status);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const status = error instanceof DomainProvisioningError ? error.statusCode : 500;
+    res.status(status).json({
+      success: false,
+      error: error.message,
+      code: error.code || 'DOMAIN_VERIFY_FAILED',
+    });
   }
 });
 

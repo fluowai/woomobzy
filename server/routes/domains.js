@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifySuperAdmin } from '../middleware/auth.js';
+import { verifyAdmin } from '../middleware/auth.js';
 import {
   addDockerDomain,
   removeDockerDomain,
@@ -15,11 +15,15 @@ const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 // ==========================================
 // POST /add — Link custom domain to Docker/Traefik & DB
 // ==========================================
-router.post('/add', verifySuperAdmin, async (req, res) => {
+router.post('/add', verifyAdmin, async (req, res) => {
   const { domain, organizationId } = req.body;
 
   if (!domain || !organizationId) {
     return res.status(400).json({ error: 'Domínio e Organização são obrigatórios' });
+  }
+
+  if (req.userRole !== 'superadmin' && organizationId !== req.orgId) {
+    return res.status(403).json({ error: 'Voce so pode alterar o dominio da sua propria organizacao.' });
   }
 
   try {
@@ -64,11 +68,15 @@ router.post('/add', verifySuperAdmin, async (req, res) => {
 // ==========================================
 // DELETE /remove — Unlink from Docker/Traefik & DB
 // ==========================================
-router.delete('/remove', verifySuperAdmin, async (req, res) => {
+router.delete('/remove', verifyAdmin, async (req, res) => {
   const { domain, organizationId } = req.body;
 
   if (!domain || !organizationId) {
     return res.status(400).json({ error: 'Dados incompletos' });
+  }
+
+  if (req.userRole !== 'superadmin' && organizationId !== req.orgId) {
+    return res.status(403).json({ error: 'Voce so pode alterar o dominio da sua propria organizacao.' });
   }
 
   try {
@@ -93,7 +101,7 @@ router.delete('/remove', verifySuperAdmin, async (req, res) => {
 // ==========================================
 // GET /verify/:domain — Check DNS A status
 // ==========================================
-router.get('/verify/:domain', verifySuperAdmin, async (req, res) => {
+router.get('/verify/:domain', verifyAdmin, async (req, res) => {
   const { domain } = req.params;
 
   try {

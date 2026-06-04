@@ -31,6 +31,10 @@ interface DomainData {
       pt?: string[];
     };
   };
+  expectedIp?: string;
+  addresses?: string[];
+  wikiUrl?: string;
+  message?: string;
   provisioned?: boolean;
 }
 
@@ -113,6 +117,10 @@ const DomainSettings: React.FC = () => {
         status: data.status || (data.verified ? 'verified' : 'pending'),
         verified: data.verified || false,
         dnsRecords: data.dnsRecords,
+        expectedIp: data.expectedIp,
+        addresses: data.addresses || [],
+        wikiUrl: data.wikiUrl,
+        message: data.message,
         provisioned: true,
       });
 
@@ -157,6 +165,9 @@ const DomainSettings: React.FC = () => {
         status: 'pending',
         verified: false,
         dnsRecords: data.domain.dnsRecords,
+        expectedIp: data.domain.dnsRecords?.value || PLATFORM_IP,
+        addresses: [],
+        wikiUrl: '/ajuda/dns',
         provisioned: true,
       });
 
@@ -304,6 +315,16 @@ const DomainSettings: React.FC = () => {
                             : 'Verificar Agora'}
                         </button>
                       )}
+                      {!currentDomain.verified && currentDomain.wikiUrl && (
+                        <a
+                          href={currentDomain.wikiUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-blue-700 hover:underline"
+                        >
+                          Guia DNS
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -324,6 +345,31 @@ const DomainSettings: React.FC = () => {
                     Configure um registro A no DNS do seu dominio para apontar
                     para o IP da plataforma:
                   </p>
+                  <div className="mb-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded border border-blue-200 bg-white p-3">
+                      <div className="text-xs font-bold uppercase text-gray-500">
+                        IP esperado
+                      </div>
+                      <code className="mt-1 block font-mono text-sm font-bold text-indigo-700">
+                        {currentDomain.expectedIp || PLATFORM_IP}
+                      </code>
+                    </div>
+                    <div className="rounded border border-blue-200 bg-white p-3">
+                      <div className="text-xs font-bold uppercase text-gray-500">
+                        IP encontrado
+                      </div>
+                      <code className="mt-1 block font-mono text-sm text-gray-700">
+                        {currentDomain.addresses?.length
+                          ? currentDomain.addresses.join(', ')
+                          : 'Nenhum registro A encontrado'}
+                      </code>
+                    </div>
+                  </div>
+                  {currentDomain.message && (
+                    <p className="mb-4 rounded bg-white px-3 py-2 text-xs font-semibold text-blue-800">
+                      {currentDomain.message}
+                    </p>
+                  )}
 
                   {currentDomain.dnsRecords && (
                     <div className="bg-white p-4 rounded border border-blue-200">
@@ -394,6 +440,16 @@ const DomainSettings: React.FC = () => {
                   >
                     Ver Instrucoes Completas
                   </button>
+                  {currentDomain.wikiUrl && (
+                    <a
+                      href={currentDomain.wikiUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 block w-full rounded bg-white px-3 py-2 text-center text-sm font-bold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50"
+                    >
+                      Abrir wiki de apontamento DNS
+                    </a>
+                  )}
 
                   {retryCount > 0 && (
                     <p className="text-xs text-gray-500 mt-3">

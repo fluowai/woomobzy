@@ -20,6 +20,10 @@ interface DomainEntry {
   domain: string;
   verified: boolean; // We might need to check this on the fly or store it
   dns_configured: boolean;
+  expectedIp?: string;
+  addresses?: string[];
+  wikiUrl?: string;
+  message?: string;
 }
 
 interface Organization {
@@ -136,6 +140,21 @@ const DomainManager: React.FC = () => {
     setVerifying(domain);
     try {
       const data = await callApi(`/api/domains/verify/${domain}`);
+      setDomains((current) =>
+        current.map((item) =>
+          item.domain === domain
+            ? {
+                ...item,
+                verified: Boolean(data.verified),
+                dns_configured: Boolean(data.verified),
+                expectedIp: data.expectedIp,
+                addresses: data.addresses || [],
+                wikiUrl: data.wikiUrl,
+                message: data.message,
+              }
+            : item
+        )
+      );
 
       if (data.verified) {
         alert(`✅ ${domain}: DNS Configurado Corretamente!`);
@@ -306,6 +325,17 @@ const DomainManager: React.FC = () => {
                       )}
                       Verificar DNS
                     </button>
+                    {domain.expectedIp && (
+                      <div className="mt-2 text-[11px] leading-relaxed text-gray-500">
+                        <div>Esperado: <span className="font-mono">{domain.expectedIp}</span></div>
+                        <div>Encontrado: <span className="font-mono">{domain.addresses?.length ? domain.addresses.join(', ') : 'nenhum A'}</span></div>
+                        {!domain.verified && domain.wikiUrl && (
+                          <a href={domain.wikiUrl} target="_blank" rel="noreferrer" className="font-bold text-blue-700 underline">
+                            Ver wiki DNS
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <button

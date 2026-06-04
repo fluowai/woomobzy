@@ -7,7 +7,8 @@ const PLATFORM_PUBLIC_IP =
   process.env.SERVER_PUBLIC_IP ||
   process.env.APP_PUBLIC_IP ||
   process.env.VITE_PLATFORM_IP ||
-  '';
+  '207.58.153.219';
+const DNS_HELP_PATH = '/ajuda/dns';
 
 export function normalizeDomain(domainName = '') {
   return String(domainName)
@@ -21,7 +22,7 @@ export function normalizeDomain(domainName = '') {
 export function getPlatformDnsRecords(domainName) {
   const normalized = normalizeDomain(domainName);
   const name = normalized.startsWith('www.') ? 'www' : '@';
-  const value = PLATFORM_PUBLIC_IP || 'IP_DO_SERVIDOR';
+  const value = PLATFORM_PUBLIC_IP;
 
   return {
     type: 'A',
@@ -33,6 +34,8 @@ export function getPlatformDnsRecords(domainName) {
         'Acesse o painel DNS onde o dominio foi registrado.',
         'Crie ou edite um registro do tipo A.',
         `Use o nome ${name} e aponte para ${value}.`,
+        'Se quiser usar www, crie outro registro A para www apontando para o mesmo IP ou um CNAME para o dominio principal.',
+        'Nao altere registros MX, TXT, mail, smtp, pop ou webmail para nao afetar e-mails.',
         'Salve a alteracao e aguarde a propagacao do DNS.',
         'Depois clique em Verificar DNS no painel da ImobFluow.',
       ],
@@ -63,19 +66,6 @@ export async function checkDockerDomainStatus(domainName) {
   const domain = normalizeDomain(domainName);
   const dnsRecords = getPlatformDnsRecords(domain);
 
-  if (!PLATFORM_PUBLIC_IP) {
-    return {
-      success: true,
-      configured: false,
-      verified: false,
-      status: 'pending',
-      expectedIp: 'IP_DO_SERVIDOR',
-      addresses: [],
-      dnsRecords,
-      error: 'PLATFORM_PUBLIC_IP_NOT_CONFIGURED',
-    };
-  }
-
   try {
     const addresses = await dns.resolve4(domain);
     const verified = addresses.includes(PLATFORM_PUBLIC_IP);
@@ -88,6 +78,10 @@ export async function checkDockerDomainStatus(domainName) {
       expectedIp: PLATFORM_PUBLIC_IP,
       addresses,
       dnsRecords,
+      wikiUrl: DNS_HELP_PATH,
+      message: verified
+        ? 'DNS apontando corretamente para a ImobFluow.'
+        : `DNS ainda nao aponta para ${PLATFORM_PUBLIC_IP}.`,
     };
   } catch (error) {
     return {
@@ -98,6 +92,8 @@ export async function checkDockerDomainStatus(domainName) {
       expectedIp: PLATFORM_PUBLIC_IP,
       addresses: [],
       dnsRecords,
+      wikiUrl: DNS_HELP_PATH,
+      message: `Nao encontramos registro A para ${domain}.`,
       error: error.message,
     };
   }

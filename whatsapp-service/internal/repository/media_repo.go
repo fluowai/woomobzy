@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"net/url"
 	"regexp"
 	"strings"
@@ -17,6 +18,70 @@ import (
 type MediaRepo struct {
 	db     *pgxpool.Pool
 	logger *zap.Logger
+}
+
+// FindReusableStorageObject returns an existing object key for the same tenant and sha256.
+func (r *MediaRepo) FindReusableStorageObject(ctx context.Context, tenantID uuid.UUID, bucket, sha256Value string) (string, bool, error) {
+	if r == nil || tenantID == uuid.Nil || strings.TrimSpace(bucket) == "" || strings.TrimSpace(sha256Value) == "" {
+		return "", false, nil
+	}
+
+	var objectKey string
+	err := r.db.QueryRow(ctx, `
+		SELECT object_key
+		FROM storage_objects
+		WHERE tenant_id = $1
+		  AND bucket = $2
+		  AND sha256 = $3
+		  AND deleted_at IS NULL
+		ORDER BY created_at ASC
+		LIMIT 1
+	`, tenantID, bucket, sha256Value).Scan(&objectKey)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+
+	return objectKey, objectKey != "", nil
+}
+
+// UpsertStorageObject stores MinIO metadata used by Storage Intelligence.
+func (r *MediaRepo) UpsertStorageObject(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	bucket string,
+	objectKey string,
+	sha256Value string,
+	etag string,
+	sizeBytes int64,
+	mimeType string,
+	source string,
+	entityType string,
+	entityID string,
+) error {
+	if r == nil || tenantID == uuid.Nil || strings.TrimSpace(bucket) == "" || strings.TrimSpace(objectKey) == "" {
+		return nil
+	}
+
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO storage_objects (
+			tenant_id, bucket, object_key, sha256, etag, size_bytes, mime_type,
+			source, entity_type, entity_id, deleted_at
+		) VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), NULLIF($10, ''), NULL)
+		ON CONFLICT (bucket, object_key) DO UPDATE SET
+			tenant_id = EXCLUDED.tenant_id,
+			sha256 = COALESCE(NULLIF(EXCLUDED.sha256, ''), storage_objects.sha256),
+			etag = COALESCE(NULLIF(EXCLUDED.etag, ''), storage_objects.etag),
+			size_bytes = COALESCE(EXCLUDED.size_bytes, storage_objects.size_bytes),
+			mime_type = COALESCE(NULLIF(EXCLUDED.mime_type, ''), storage_objects.mime_type),
+			source = COALESCE(NULLIF(EXCLUDED.source, ''), storage_objects.source),
+			entity_type = COALESCE(NULLIF(EXCLUDED.entity_type, ''), storage_objects.entity_type),
+			entity_id = COALESCE(NULLIF(EXCLUDED.entity_id, ''), storage_objects.entity_id),
+			deleted_at = NULL
+	`, tenantID, bucket, objectKey, sha256Value, etag, sizeBytes, mimeType, source, entityType, entityID)
+	return err
 }
 
 // NewMediaRepo creates a new MediaRepo.

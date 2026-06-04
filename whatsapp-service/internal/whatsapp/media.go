@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.mau.fi/whatsmeow"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types/events"
@@ -38,34 +39,27 @@ func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message
 		img := msg.GetImageMessage()
 		downloadable = img
 		mimeType = img.GetMimetype()
-		fileName = fmt.Sprintf("image_%d%s", time.Now().UnixMilli(), extensionFromMime(mimeType))
 
 	case msg.GetAudioMessage() != nil:
 		audio := msg.GetAudioMessage()
 		downloadable = audio
 		mimeType = audio.GetMimetype()
-		fileName = fmt.Sprintf("audio_%d%s", time.Now().UnixMilli(), extensionFromMime(mimeType))
 
 	case msg.GetVideoMessage() != nil:
 		video := msg.GetVideoMessage()
 		downloadable = video
 		mimeType = video.GetMimetype()
-		fileName = fmt.Sprintf("video_%d%s", time.Now().UnixMilli(), extensionFromMime(mimeType))
 
 	case msg.GetDocumentMessage() != nil:
 		doc := msg.GetDocumentMessage()
 		downloadable = doc
 		mimeType = doc.GetMimetype()
 		fileName = doc.GetFileName()
-		if fileName == "" {
-			fileName = fmt.Sprintf("document_%d%s", time.Now().UnixMilli(), extensionFromMime(mimeType))
-		}
 
 	case msg.GetStickerMessage() != nil:
 		sticker := msg.GetStickerMessage()
 		downloadable = sticker
 		mimeType = sticker.GetMimetype()
-		fileName = fmt.Sprintf("sticker_%d.webp", time.Now().UnixMilli())
 
 	default:
 		return "", "", "", fmt.Errorf("unsupported media type")
@@ -77,14 +71,83 @@ func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message
 		return "", "", "", fmt.Errorf("failed to download media: %w", err)
 	}
 
-	storagePath := fmt.Sprintf("%s/%s/%s", c.instanceID.String(), time.Now().Format("2006-01-02"), fileName)
+	sha := sha256Hex(data)
+	if strings.TrimSpace(fileName) == "" {
+		fileName = sha + extensionFromMime(mimeType)
+	}
 
-	url, err := c.uploadToStorage(ctx, storagePath, data, mimeType)
+	url, _, _, err := c.uploadToStorageWithDedup(ctx, "whatsapp/media", data, mimeType, "whatsapp", "whatsapp_message", evt.Info.ID)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to upload to storage: %w", err)
 	}
 
 	return url, mimeType, fileName, nil
+}
+
+func (c *Client) uploadToStorageWithDedup(ctx context.Context, folder string, data []byte, contentType string, source string, entityType string, entityID string) (string, string, string, error) {
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	sha := sha256Hex(data)
+	storagePath := c.contentAddressedStoragePath(folder, sha, extensionFromMime(contentType))
+
+	if c.isMinIOConfigured() && c.mediaRepo != nil && c.tenantID != nil {
+		existingKey, found, err := c.mediaRepo.FindReusableStorageObject(ctx, *c.tenantID, c.storageBucket, sha)
+		if err != nil {
+			c.logger.Warn("Failed to check reusable storage object", zap.Error(err))
+		} else if found {
+			return c.storagePublicURL(existingKey), existingKey, sha, nil
+		}
+	}
+
+	publicURL, err := c.uploadToStorage(ctx, storagePath, data, contentType)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	if c.mediaRepo != nil && c.tenantID != nil {
+		if err := c.mediaRepo.UpsertStorageObject(
+			ctx,
+			*c.tenantID,
+			c.storageBucket,
+			storagePath,
+			sha,
+			"",
+			int64(len(data)),
+			contentType,
+			source,
+			entityType,
+			entityID,
+		); err != nil {
+			c.logger.Warn("Failed to persist storage object metadata", zap.Error(err))
+		}
+	}
+
+	return publicURL, storagePath, sha, nil
+}
+
+func (c *Client) contentAddressedStoragePath(folder, sha, ext string) string {
+	tenantID := c.instanceID.String()
+	if c.tenantID != nil && *c.tenantID != uuid.Nil {
+		tenantID = c.tenantID.String()
+	}
+	if ext == "" {
+		ext = ".bin"
+	}
+	now := time.Now().UTC()
+	return fmt.Sprintf("%s/%s/%04d/%02d/%s%s", tenantID, strings.Trim(folder, "/"), now.Year(), int(now.Month()), sha, ext)
+}
+
+func (c *Client) storagePublicURL(path string) string {
+	if c.isMinIOConfigured() {
+		publicBase := c.minioPublicURL
+		if publicBase == "" {
+			publicBase = c.minioEndpoint
+		}
+		return fmt.Sprintf("%s/%s/%s", strings.TrimRight(publicBase, "/"), url.PathEscape(c.storageBucket), encodeStoragePath(path))
+	}
+	return fmt.Sprintf("%s/storage/v1/object/public/%s/%s", c.supabaseURL, c.storageBucket, path)
 }
 
 func (c *Client) uploadToStorage(ctx context.Context, path string, data []byte, contentType string) (string, error) {
@@ -308,7 +371,7 @@ func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType s
 		mimeType = "application/octet-stream"
 	}
 	if fileName == "" {
-		fileName = fmt.Sprintf("%s_%d%s", msgType, time.Now().UnixMilli(), extensionFromMime(mimeType))
+		fileName = sha256Hex(data) + extensionFromMime(mimeType)
 	}
 
 	upload, err := c.waClient.Upload(ctx, data, appInfo)
@@ -372,8 +435,7 @@ func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType s
 		return "", "", "", "", fmt.Errorf("failed to send media message: %w", err)
 	}
 
-	storagePath := fmt.Sprintf("%s/%s/sent_%s", c.instanceID.String(), time.Now().Format("2006-01-02"), fileName)
-	publicURL, uploadErr := c.uploadToStorage(ctx, storagePath, data, mimeType)
+	publicURL, _, _, uploadErr := c.uploadToStorageWithDedup(ctx, "whatsapp/media", data, mimeType, "whatsapp", "whatsapp_message", string(resp.ID))
 	if uploadErr != nil {
 		c.logger.Warn("Media sent but local preview upload failed", zap.Error(uploadErr))
 	}

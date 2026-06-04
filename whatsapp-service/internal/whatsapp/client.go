@@ -614,17 +614,8 @@ func (c *Client) resolveAvatarURL(ctx context.Context, jid types.JID) string {
 	if phoneNum == "" {
 		phoneNum = jid.User
 	}
-	
-	picID := picture.ID
-	if picID == "" {
-		picID = fmt.Sprintf("%d", time.Now().UnixMilli())
-	}
 
-	fileName := fmt.Sprintf("avatar_%s.jpg", picID)
-	storagePath := fmt.Sprintf("%s/avatars/%s/%s", c.instanceID.String(), phoneNum, fileName)
-
-	// Faz o upload para o MinIO
-	publicURL, err := c.uploadToStorage(ctx, storagePath, data, "image/jpeg")
+	publicURL, _, _, err := c.uploadToStorageWithDedup(ctx, "whatsapp/avatars", data, "image/jpeg", "avatar", "whatsapp_avatar", phoneNum)
 	if err != nil {
 		c.logger.Warn("Failed to upload avatar to storage", zap.Error(err))
 		return picture.URL

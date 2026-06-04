@@ -15,7 +15,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
-import { getApiUrl } from '../../src/lib/api';
+import { callApi } from '../../src/lib/api';
+import { PLATFORM_IP } from '../../utils/platform';
 
 interface DomainData {
   name: string;
@@ -100,12 +101,9 @@ const DomainSettings: React.FC = () => {
   const checkVerification = async (domainName: string, retries = 0) => {
     setVerifyingDomain(true);
     try {
-      const res = await fetch(
-        getApiUrl(`/api/domains/verify/${domainName}?retries=${retries}`)
-      );
-      const data = await res.json();
+      const data = await callApi(`/api/domains/verify/${domainName}?retries=${retries}`);
 
-      if (!data.success && res.status === 404) {
+      if (!data.success && data.status === 'not_found') {
         setCurrentDomain(null);
         return;
       }
@@ -147,13 +145,11 @@ const DomainSettings: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(getApiUrl('/api/domains'), {
+      const data = await callApi('/api/domains/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain, organizationId }),
       });
 
-      const data = await res.json();
       if (data.error) throw new Error(data.error);
 
       setCurrentDomain({
@@ -184,12 +180,10 @@ const DomainSettings: React.FC = () => {
       return;
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/api/domains'), {
+      const data = await callApi('/api/domains/remove', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: currentDomain?.name, organizationId }),
       });
-      const data = await res.json();
       if (data.error) throw new Error(data.error);
 
       setCurrentDomain(null);
@@ -249,17 +243,17 @@ const DomainSettings: React.FC = () => {
                   className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
                 >
                   {loading ? (
-                    'Provisioning...'
+                    'Salvando...'
                   ) : (
                     <>
-                      <Plus size={18} /> Provisionar
+                      <Plus size={18} /> Salvar dominio
                     </>
                   )}
                 </button>
               </div>
               <p className="text-xs text-gray-500">
-                Recomendamos usar <b>www</b>.meusite.com.br para melhor
-                compatibilidade.
+                O dominio deve apontar para o IP da plataforma:
+                <b> {PLATFORM_IP}</b>.
               </p>
             </div>
           ) : (
@@ -327,8 +321,8 @@ const DomainSettings: React.FC = () => {
                     <Info size={16} /> Verificação DNS Pendente
                   </h4>
                   <p className="text-blue-700 mb-4">
-                    Configure o DNS do seu domínio para que possamos verificar a
-                    propriedade:
+                    Configure um registro A no DNS do seu dominio para apontar
+                    para o IP da plataforma:
                   </p>
 
                   {currentDomain.dnsRecords && (
@@ -398,7 +392,7 @@ const DomainSettings: React.FC = () => {
                     onClick={() => setShowDnsModal(true)}
                     className="mt-4 w-full px-3 py-2 bg-blue-100 text-blue-700 rounded text-sm font-medium hover:bg-blue-200 transition-colors"
                   >
-                    📋 Ver Instruções Completas
+                    Ver Instrucoes Completas
                   </button>
 
                   {retryCount > 0 && (
@@ -417,8 +411,7 @@ const DomainSettings: React.FC = () => {
                       Domínio Verificado!
                     </h4>
                     <p className="text-green-700 text-xs">
-                      Seu domínio está ativo e funcionando. SSL será ativado em
-                      breve.
+                      Seu dominio esta ativo e funcionando pelo Docker/Traefik.
                     </p>
                   </div>
                 </div>

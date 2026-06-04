@@ -32,7 +32,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
         name: formData.name,
         email: formData.email,
         phone: formData.whatsapp,
-        source: 'Espera Imobzy',
+        source: 'Espera ImobFluow',
       });
       setSuccess(true);
     } catch (err: any) {
@@ -58,8 +58,8 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
           <div className="inline-block mb-6 relative">
             <div className="absolute inset-0 bg-orange-500 blur-2xl opacity-20 animate-pulse" />
             <img
-              src="/logo-imobzy.png"
-              alt="Imobzy"
+              src="/logo-imobzy-360.svg"
+              alt="ImobFluow"
               className="h-20 w-auto relative z-10 drop-shadow-2xl"
             />
           </div>
@@ -190,7 +190,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
         <div className="mt-16 text-center">
           <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-4">
             <span className="h-px w-8 bg-slate-800" />
-            Impulsionado por Tecnologia IMOBZY
+            Impulsionado por Tecnologia ImobFluow
             <span className="h-px w-8 bg-slate-800" />
           </p>
         </div>

@@ -17,7 +17,7 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
   const [messages, setMessages] = useState<ChatMessage[]>([
     { 
       role: 'assistant', 
-      content: `Olá! Sou a Clara, especialista da IMOBZY. Posso te mostrar como nossa plataforma ajuda sua imobiliária a centralizar leads, imóveis, atendimentos e processos comerciais em um único sistema.` 
+      content: `Olá! Sou a Clara, especialista da ImobFluow. Posso te mostrar como nossa plataforma ajuda sua imobiliária a centralizar leads, imóveis, atendimentos e processos comerciais em um único sistema.` 
     }
   ]);
   const [input, setInput] = useState('');
@@ -76,7 +76,7 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
               <div className="font-black text-sm uppercase tracking-widest flex items-center gap-2">
                 Clara <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Especialista IMOBZY</div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Especialista ImobFluow</div>
             </div>
           </div>
           <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
@@ -159,7 +159,7 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
           </form>
           <div className="mt-4 flex items-center justify-center gap-4">
             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-              <Bot size={12} className="text-emerald-500" /> Powered by IMOBZY AI
+              <Bot size={12} className="text-emerald-500" /> Powered by ImobFluow AI
             </div>
           </div>
         </div>

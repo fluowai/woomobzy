@@ -23,6 +23,7 @@ import {
   BarChart3,
   Zap,
   CloudCog,
+  HardDrive,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -59,6 +60,7 @@ const SuperAdminLayout: React.FC = () => {
     { icon: Calendar, label: 'Consultoria', path: '/superadmin/consulting' },
     { icon: Zap, label: 'Importador IA', path: '/superadmin/importer' },
     { icon: CloudCog, label: 'Migração FluowAI', path: '/superadmin/fluowai-migration' },
+    { icon: HardDrive, label: 'Storage Intelligence', path: '/superadmin/storage-intelligence' },
     { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
   ];
 

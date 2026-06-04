@@ -31,6 +31,7 @@ import {
   Upload,
   Image as ImageIcon,
 } from 'lucide-react';
+import { getTenantBaseUrl, getTenantSiteUrl } from '../utils/platform';
 
 // ==========================================
 // PLAN DEFINITIONS
@@ -69,7 +70,7 @@ const PLANS = [
       'CRM + Kanban',
       'WhatsApp Integrado',
       'Editor Visual',
-      'Subdomínio .imobzy.com.br',
+      'URL imobfluow.com.br/sua-imobiliaria',
     ],
     limits: { brokers: 5, properties: 100 },
     popular: false,
@@ -556,7 +557,7 @@ const Onboarding: React.FC = () => {
                 <Globe size={12} className="text-emerald-500" />
                 <span className="text-slate-400">Sua URL:</span>
                 <span className="font-mono font-bold text-emerald-600">
-                  crmimobzy.consultio.com.br/{slug}
+                  {getTenantBaseUrl(slug)}
                 </span>
               </div>
             )}
@@ -659,7 +660,7 @@ const Onboarding: React.FC = () => {
               <span className="text-sm text-slate-600">Domínio</span>
             </div>
             <span className="font-mono text-sm font-bold text-emerald-600">
-              crmimobzy.consultio.com.br/{slug}
+              {getTenantBaseUrl(slug)}
             </span>
           </div>
           <div className="flex items-center justify-between">
@@ -695,9 +696,9 @@ const Onboarding: React.FC = () => {
           <p className="text-xs text-emerald-700">
             <Shield size={14} className="inline mr-1" />
             Seu site será publicado em <strong>
-              crmimobzy.consultio.com.br/{slug}
+              {getTenantSiteUrl(slug)}
             </strong>{' '}
-            automaticamente via Vercel.
+            automaticamente pelo Docker/Traefik.
           </p>
         </div>
       </div>
@@ -837,8 +838,8 @@ const Onboarding: React.FC = () => {
         {/* Logo */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-black tracking-tighter">
-            <span className="text-emerald-700">IMOB</span>
-            <span className="text-amber-500">ZY</span>
+            <span className="text-emerald-700">Imob</span>
+            <span className="text-amber-500">Fluow</span>
           </h1>
           <p className="text-slate-400 text-xs uppercase tracking-[0.3em] mt-1">
             Plataforma Imobiliária Inteligente

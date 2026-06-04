@@ -120,7 +120,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         if (!resolvedOrg) {
           const { data: orgDirect } = await supabase
             .from('organizations')
-            .select('id, name, slug')
+            .select('id, name, slug, custom_domain')
             .or(`slug.eq.${slugOrOrg},custom_domain.eq.${slugOrOrg},subdomain.eq.${slugOrOrg}`)
             .maybeSingle();
           resolvedOrg = orgDirect;

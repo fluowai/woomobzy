@@ -461,4 +461,316 @@ async function generateLayoutWithAI(provider, apiKey, prompt, niche) {
   };
 }
 
+// ==========================================
+// CONVERSATION MEMORY ENDPOINTS
+// ==========================================
+
+function buildMemorySystemPrompt(agent, recentHistory) {
+  const historyBlock = recentHistory?.length
+    ? `\nHistorico recente da conversa:\n${recentHistory.map((m) => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n')}\n`
+    : '\n(Inicio da conversa - nenhum historico ainda)\n';
+
+  return `Você é ${agent.name || 'um agente IMOBZY'}, ${agent.role || 'atendente imobiliario'}.
+
+PERSONALIDADE: ${agent.personality || 'Consultiva, clara e objetiva'}
+
+INSTRUCOES: ${agent.instructions || 'Atenda com foco em qualificar o lead'}
+
+ESTILO: ${agent.response_style || 'consultivo'}
+
+CAPACIDADES: ${(agent.capabilities || []).join(', ') || 'Atendimento, Qualificacao, CRM'}
+
+FERRAMENTAS DISPONIVEIS: ${(agent.tools || []).join(', ') || 'WhatsApp, Kanban, CRM'}
+
+NIVEL DE AUTONOMIA: ${agent.autonomy_level || 2} (1=Assistido, 2=Semiautonomo, 3=Autonomo)
+
+REGRAS DE TRANSFERENCIA: ${Object.entries(agent.handoff_rules || {})
+  .filter(([, v]) => v)
+  .map(([k]) => k)
+  .join(', ') || 'Nenhuma'}
+
+${historyBlock}
+
+REGRAS IMPORTANTES:
+- NUNCA repita perguntas que ja foram respondidas no historico acima.
+- Se ja tiver as informacoes do lead, avance na conversa.
+- Mantenha o contexto e nao pergunte a mesma coisa duas vezes.
+- Responda em portugues natural, como um corretor humano faria.`;
+}
+
+router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+    const { message, session_id } = req.body;
+
+    if (!message || !session_id) {
+      return res.status(400).json({ error: 'Mensagem e session_id sao obrigatorios.' });
+    }
+
+    const { data: agent, error: agentError } = await supabase
+      .from('ai_agents')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .maybeSingle();
+
+    if (agentError || !agent) {
+      return res.status(404).json({ error: 'Agente nao encontrado.' });
+    }
+
+    const { error: memError } = await supabase.from('conversation_memory').insert({
+      organization_id: req.orgId,
+      agent_id: id,
+      session_id,
+      role: 'user',
+      content: message,
+    });
+    if (memError) console.warn('[Memory] Erro ao salvar mensagem do usuario:', memError.message);
+
+    const { data: recentHistory } = await supabase
+      .from('conversation_memory')
+      .select('role, content')
+      .eq('organization_id', req.orgId)
+      .eq('session_id', session_id)
+      .order('created_at', { ascending: true })
+      .limit(30);
+
+    const systemInstruction = buildMemorySystemPrompt(agent, recentHistory);
+
+    const config = await getOrgAIConfig(req.orgId);
+    const provider = config?.namoBana?.apiKey ? 'namobana' : (config?.openai?.apiKey ? 'openai' : 'gemini');
+    const apiKey = config?.namoBana?.apiKey || config?.openai?.apiKey || process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(400).json({ error: 'Nenhuma chave de IA configurada.' });
+    }
+
+    let reply = '';
+
+    try {
+      if (provider === 'gemini' || !provider) {
+        const geminiResponse = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          {
+            contents: [{ parts: [{ text: message }] }],
+            generationConfig: { temperature: 0.7 },
+            systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+          }
+        );
+        reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } else if (provider === 'openai') {
+        const openaiResponse = await axios.post(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            model: 'gpt-4o',
+            messages: [
+              { role: 'system', content: systemInstruction },
+              ...(recentHistory || []).map((m) => ({
+                role: m.role === 'assistant' ? 'assistant' : 'user',
+                content: m.content,
+              })),
+              { role: 'user', content: message },
+            ],
+            temperature: 0.7,
+          },
+          { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
+        );
+        reply = openaiResponse.data.choices?.[0]?.message?.content || '';
+      }
+    } catch (aiError) {
+      console.warn('[AgentChat] Primary AI failed, trying Groq:', aiError.message);
+      let groqKey = config?.groq?.apiKey || process.env.GROQ_API_KEY;
+      if (groqKey) {
+        const groqResponse = await axios.post(
+          'https://api.groq.com/openai/v1/chat/completions',
+          {
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: systemInstruction },
+              ...(recentHistory || []).map((m) => ({
+                role: m.role === 'assistant' ? 'assistant' : 'user',
+                content: m.content,
+              })),
+              { role: 'user', content: message },
+            ],
+            temperature: 0.7,
+          },
+          { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
+        );
+        reply = groqResponse.data.choices?.[0]?.message?.content || '';
+      }
+    }
+
+    if (!reply) {
+      reply = 'Desculpe, nao consegui processar sua mensagem agora. Pode repetir?';
+    }
+
+    const { error: memError2 } = await supabase.from('conversation_memory').insert({
+      organization_id: req.orgId,
+      agent_id: id,
+      session_id,
+      role: 'assistant',
+      content: reply,
+    });
+    if (memError2) console.warn('[Memory] Erro ao salvar resposta:', memError2.message);
+
+    res.json({ success: true, reply, agent: { name: agent.name, role: agent.role } });
+  } catch (error) {
+    console.error('[AgentChat] Erro:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/agents/:id/memory', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+    const { session_id, limit = 50 } = req.query;
+
+    let query = supabase
+      .from('conversation_memory')
+      .select('*')
+      .eq('organization_id', req.orgId)
+      .eq('agent_id', id)
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Number(limit) || 50, 200));
+
+    if (session_id) {
+      query = query.eq('session_id', session_id);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    res.json({ success: true, messages: (data || []).reverse() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/agents/:id/memory', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+    const { session_id } = req.body;
+
+    let query = supabase
+      .from('conversation_memory')
+      .delete()
+      .eq('organization_id', req.orgId)
+      .eq('agent_id', id);
+
+    if (session_id) {
+      query = query.eq('session_id', session_id);
+    }
+
+    const { error } = await query;
+    if (error) throw error;
+
+    res.json({ success: true, message: session_id ? 'Sessao limpa.' : 'Memoria do agente limpa.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// NEURAL BRAIN - QUALIFICATION ENDPOINTS
+// ==========================================
+
+router.post('/agents/:id/qualify', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+    const { lead_id, session_id, rating, feedback } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Rating deve ser entre 1 e 5.' });
+    }
+
+    const { data, error } = await supabase.from('agent_qualifications').insert({
+      organization_id: req.orgId,
+      agent_id: id,
+      lead_id: lead_id || null,
+      session_id: session_id || null,
+      rating,
+      feedback: feedback || '',
+    }).select().single();
+
+    if (error) throw error;
+
+    res.status(201).json({ success: true, qualification: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/agents/:id/metrics', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+
+    const [qualifications, memoryCount] = await Promise.all([
+      supabase
+        .from('agent_qualifications')
+        .select('rating, created_at')
+        .eq('organization_id', req.orgId)
+        .eq('agent_id', id),
+      supabase
+        .from('conversation_memory')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', req.orgId)
+        .eq('agent_id', id),
+    ]);
+
+    const ratings = qualifications.data || [];
+    const avgRating = ratings.length
+      ? (ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length).toFixed(2)
+      : 0;
+
+    res.json({
+      success: true,
+      metrics: {
+        total_conversations: memoryCount.count || 0,
+        total_qualifications: ratings.length,
+        average_rating: Number(avgRating),
+        rating_distribution: {
+          1: ratings.filter((r) => r.rating === 1).length,
+          2: ratings.filter((r) => r.rating === 2).length,
+          3: ratings.filter((r) => r.rating === 3).length,
+          4: ratings.filter((r) => r.rating === 4).length,
+          5: ratings.filter((r) => r.rating === 5).length,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/agents/:id/learn', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+    const { input_text, output_text, was_helpful, corrected_output, tags } = req.body;
+
+    const { data, error } = await supabase.from('agent_learning').insert({
+      organization_id: req.orgId,
+      agent_id: id,
+      input_text: input_text || '',
+      output_text: output_text || '',
+      was_helpful: was_helpful ?? null,
+      corrected_output: corrected_output || null,
+      tags: tags || [],
+      learning_score: was_helpful === true ? 1 : was_helpful === false ? -1 : 0,
+    }).select().single();
+
+    if (error) throw error;
+
+    res.status(201).json({ success: true, learning: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

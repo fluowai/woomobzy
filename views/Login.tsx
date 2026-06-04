@@ -109,10 +109,10 @@ const Login: React.FC = () => {
           <div className="max-w-xl">
             <div className="flex items-center gap-3 mb-12">
               <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                <img src="/logo-imobzy.png" alt="IMOBZY" className="w-8 h-8 object-contain brightness-0 invert" />
+                <img src="/logo-imobzy-360.svg" alt="ImobFluow" className="w-8 h-8 object-contain" />
               </div>
               <span className="text-3xl font-bold tracking-tight text-slate-900">
-                IMOB<span className="text-emerald-600">ZY</span>
+                Imob<span className="text-emerald-600">Fluow</span>
               </span>
             </div>
 
@@ -155,9 +155,9 @@ const Login: React.FC = () => {
             {/* Mobile Logo Only */}
             <div className="lg:hidden flex flex-col items-center mb-10">
               <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-200 mb-4">
-                <img src="/logo-imobzy.png" alt="IMOBZY" className="w-10 h-10 object-contain brightness-0 invert" />
+                <img src="/logo-imobzy-360.svg" alt="ImobFluow" className="w-10 h-10 object-contain" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900">IMOBZY</h2>
+              <h2 className="text-2xl font-bold text-slate-900">ImobFluow</h2>
             </div>
 
             <div className="bg-white/70 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-emerald-900/5 border border-white relative overflow-hidden">
@@ -256,7 +256,7 @@ const Login: React.FC = () => {
 
             <div className="mt-8 text-center">
               <p className="text-xs text-slate-400">
-                &copy; {new Date().getFullYear()} IMOBZY Technology. Todos os direitos reservados.
+                &copy; {new Date().getFullYear()} ImobFluow Technology. Todos os direitos reservados.
               </p>
             </div>
           </div>

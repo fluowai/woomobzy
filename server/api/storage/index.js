@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import multer from 'multer';
+import crypto from 'crypto';
 
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import {
   allowSupabaseStorageFallback,
   createPresignedGetUrl,
+  getMinioPublicUrl,
   isMinioConfigured,
   resolveMediaBucket,
   uploadObject,
@@ -101,14 +103,44 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     validateUploadFile(bucket, req.file);
 
-    const folder = sanitizePath(req.body.folder || 'uploads');
+    const minioBucket = resolveMediaBucket(bucket);
+    const sha256 = sha256Hex(req.file.buffer);
+    const existing = minioBucket
+      ? await findReusableStorageObject(req.orgId, minioBucket, sha256)
+      : null;
+
+    if (existing) {
+      return res.json({
+        bucket: existing.bucket,
+        path: existing.object_key,
+        publicUrl: getMinioPublicUrl({ bucket: existing.bucket, key: existing.object_key }),
+        provider: 'minio',
+        reused: true,
+        sha256,
+      });
+    }
+
+    const folder = sanitizePath(req.body.folder || defaultFolderForBucket(bucket));
     const originalExt = getExtensionForFile(req.file);
-    const fileName = `${randomName()}_${Date.now()}${originalExt}`;
-    const filePath = `${req.orgId}/${folder}/${fileName}`;
+    const filePath = buildContentAddressedKey(req.orgId, folder, sha256, originalExt);
 
     const result = await uploadToConfiguredStorage(bucket, filePath, req.file);
+    if (result.provider === 'minio') {
+      await persistStorageObject({
+        tenantId: req.orgId,
+        bucket: result.bucket,
+        objectKey: result.path,
+        sha256,
+        etag: result.etag,
+        sizeBytes: req.file.size,
+        mimeType: req.file.mimetype,
+        source: req.body.source || inferSourceFromFolder(folder),
+        entityType: req.body.entity_type || null,
+        entityId: req.body.entity_id || null,
+      });
+    }
 
-    return res.json(result);
+    return res.json({ ...result, sha256 });
   } catch (error) {
     console.error('[Storage Upload Fatal]', error);
     if (
@@ -187,7 +219,72 @@ async function uploadToMinio(bucket, filePath, file) {
     path: result.path,
     publicUrl: result.publicUrl,
     provider: 'minio',
+    etag: result.etag,
   };
+}
+
+async function findReusableStorageObject(tenantId, bucket, sha256) {
+  try {
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from('storage_objects')
+      .select('bucket, object_key, sha256, size_bytes, mime_type')
+      .eq('tenant_id', tenantId)
+      .eq('bucket', bucket)
+      .eq('sha256', sha256)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      if (/does not exist|schema cache|PGRST/i.test(error.message || '')) return null;
+      throw error;
+    }
+    return data || null;
+  } catch (error) {
+    console.warn('[Storage Upload] Reuse lookup unavailable:', error.message);
+    return null;
+  }
+}
+
+async function persistStorageObject({
+  tenantId,
+  bucket,
+  objectKey,
+  sha256,
+  etag,
+  sizeBytes,
+  mimeType,
+  source,
+  entityType,
+  entityId,
+}) {
+  try {
+    const supabase = getSupabaseServer();
+    const { error } = await supabase
+      .from('storage_objects')
+      .upsert({
+        tenant_id: tenantId,
+        bucket,
+        object_key: objectKey,
+        sha256,
+        etag: etag || null,
+        size_bytes: sizeBytes || null,
+        mime_type: mimeType || null,
+        source: source || null,
+        entity_type: entityType || null,
+        entity_id: entityId || null,
+        deleted_at: null,
+      }, { onConflict: 'bucket,object_key' });
+
+    if (error) {
+      if (/does not exist|schema cache|PGRST/i.test(error.message || '')) return;
+      throw error;
+    }
+  } catch (error) {
+    console.warn('[Storage Upload] Metadata persist unavailable:', error.message);
+  }
 }
 
 async function uploadToSupabase(bucket, filePath, file) {
@@ -231,6 +328,28 @@ function getExtensionForFile(file) {
   return EXTENSION_BY_MIME[file.mimetype] || getExtension(file.originalname);
 }
 
+function buildContentAddressedKey(tenantId, folder, sha256, extension) {
+  const now = new Date();
+  const year = String(now.getUTCFullYear());
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const ext = extension || '.bin';
+  return `${tenantId}/${folder}/${year}/${month}/${sha256}${ext}`;
+}
+
+function defaultFolderForBucket(bucket) {
+  if (bucket === 'imobzymsg' || bucket === 'whatsapp-media') return 'whatsapp/media';
+  if (bucket === 'documents') return 'documents';
+  if (bucket === 'exports') return 'exports';
+  return 'uploads';
+}
+
+function inferSourceFromFolder(folder) {
+  if (String(folder).includes('whatsapp')) return 'whatsapp';
+  if (String(folder).includes('avatar')) return 'avatar';
+  if (String(folder).includes('temp')) return 'temporary';
+  return 'upload';
+}
+
 function validateUploadFile(bucket, file) {
   const allowed = ALLOWED_MIME_BY_BUCKET[bucket];
   if (!allowed) {
@@ -244,6 +363,10 @@ function validateUploadFile(bucket, file) {
 
 function randomName() {
   return Math.random().toString(36).slice(2, 15);
+}
+
+function sha256Hex(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
 }
 
 export default router;

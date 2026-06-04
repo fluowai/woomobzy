@@ -2,12 +2,43 @@ import express from 'express';
 import { verifySuperAdmin, verifyAdmin, verifyAuth } from '../middleware/auth.js';
 import { requireTenant } from '../middleware/tenant.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import {
+  applyLifecycle,
+  deleteDuplicates,
+  deleteExpired,
+  deleteOrphans,
+  getByExtension,
+  getByPrefix,
+  getByTenant,
+  getLargestFiles,
+  getLifecycle,
+  getStorageBuckets,
+  getStorageDuplicates,
+  getStorageFiles,
+  getStorageLogs,
+  getStorageOrphans,
+  getStorageSummary,
+  runStorageScan,
+  signStorageObject,
+  simulateCleanup,
+  suspendVersioning,
+} from '../services/storageIntelligenceService.js';
 
 const router = express.Router();
 
 // Proxy lazy: delega transparentemente para getSupabaseServer() na 1ª chamada
 // Isso permite usar supabase.from(), supabase.auth, etc. sem mudar o resto do código.
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+
+const storageHandler = (fn) => async (req, res) => {
+  try {
+    const result = await fn(req);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('[Storage Intelligence]', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 
 function normalizeNiche(niche, ...signals) {
   const normalized = String(niche || '').toLowerCase().trim();
@@ -99,6 +130,84 @@ async function ensureOrganizationOwner({ organization, ownerName, ownerEmail, pa
   if (profileError) throw profileError;
   return authUser;
 }
+
+// --- Storage Intelligence / MinIO Auditor ---
+
+router.get('/storage/summary', verifySuperAdmin, storageHandler(async () => ({
+  summary: await getStorageSummary(),
+})));
+
+router.get('/storage/buckets', verifySuperAdmin, storageHandler(async () => ({
+  buckets: await getStorageBuckets(),
+})));
+
+router.get('/storage/files', verifySuperAdmin, storageHandler(async (req) => (
+  await getStorageFiles(req.query)
+)));
+
+router.get('/storage/largest-files', verifySuperAdmin, storageHandler(async (req) => ({
+  files: await getLargestFiles(req.query.limit),
+})));
+
+router.get('/storage/by-extension', verifySuperAdmin, storageHandler(async () => ({
+  items: await getByExtension(),
+})));
+
+router.get('/storage/by-prefix', verifySuperAdmin, storageHandler(async () => ({
+  items: await getByPrefix(),
+})));
+
+router.get('/storage/by-tenant', verifySuperAdmin, storageHandler(async () => ({
+  tenants: await getByTenant(),
+})));
+
+router.get('/storage/duplicates', verifySuperAdmin, storageHandler(async () => ({
+  duplicates: await getStorageDuplicates(),
+})));
+
+router.get('/storage/orphans', verifySuperAdmin, storageHandler(async () => ({
+  orphans: await getStorageOrphans(),
+})));
+
+router.get('/storage/lifecycle', verifySuperAdmin, storageHandler(async () => ({
+  lifecycle: await getLifecycle(),
+})));
+
+router.get('/storage/logs', verifySuperAdmin, storageHandler(async (req) => ({
+  logs: await getStorageLogs(req.query.limit),
+})));
+
+router.post('/storage/signed-url', verifySuperAdmin, storageHandler(async (req) => ({
+  signed: await signStorageObject(req.body.bucket, req.body.object_key, req.body.expiresInSeconds),
+})));
+
+router.post('/storage/scan', verifySuperAdmin, storageHandler(async (req) => ({
+  scan: await runStorageScan(req.user?.id),
+})));
+
+router.post('/storage/suspend-versioning', verifySuperAdmin, storageHandler(async (req) => ({
+  result: await suspendVersioning(req.user?.id, req.body.confirmation, req.body.bucket),
+})));
+
+router.post('/storage/apply-lifecycle', verifySuperAdmin, storageHandler(async (req) => ({
+  result: await applyLifecycle(req.user?.id, req.body.bucket),
+})));
+
+router.post('/storage/simulate-cleanup', verifySuperAdmin, storageHandler(async (req) => ({
+  simulation: await simulateCleanup(req.body || {}),
+})));
+
+router.post('/storage/delete-expired', verifySuperAdmin, storageHandler(async (req) => (
+  await deleteExpired(req.user?.id, req.body || {})
+)));
+
+router.post('/storage/delete-orphans', verifySuperAdmin, storageHandler(async (req) => (
+  await deleteOrphans(req.user?.id, req.body || {})
+)));
+
+router.post('/storage/delete-duplicates', verifySuperAdmin, storageHandler(async (req) => (
+  await deleteDuplicates(req.user?.id, req.body || {})
+)));
 
 // --- 🔓 IMPERSONATION (BLOCO 3) ---
 

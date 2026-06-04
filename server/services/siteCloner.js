@@ -1,7 +1,13 @@
+import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from '../lib/supabase-server.js';
-import { allowSupabaseStorageFallback, isMinioConfigured, resolveMediaBucket, uploadObject } from '../lib/minio-storage.js';
+import {
+    collectPropertyImageUrls,
+    migratePropertyImages,
+    normalizeImportUrl,
+    sanitizePropertyImageUrls,
+} from './importImageService.js';
 
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 import crypto from 'crypto';
@@ -118,51 +124,6 @@ async function callGroq(apiKey, htmlContent) {
 }
 
 /**
- * Downloads an image and uploads it to the configured media storage.
- */
-async function processAndUploadImage(imageUrl, organizationId) {
-    try {
-        console.log(`📸 Processing image: ${imageUrl}`);
-        const response = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 5000 });
-        const buffer = Buffer.from(response.data);
-        const fileName = `${organizationId}/cloned-sites/${crypto.randomUUID()}.${imageUrl.split('.').pop().split('?')[0] || 'jpg'}`;
-
-        if (isMinioConfigured()) {
-            const result = await uploadObject({
-                bucket: resolveMediaBucket('imobzyimg'),
-                key: fileName,
-                body: buffer,
-                contentType: response.headers['content-type'] || 'application/octet-stream'
-            });
-
-            return result.publicUrl;
-        }
-        
-        if (!allowSupabaseStorageFallback()) {
-            throw new Error('MinIO nao configurado para midias.');
-        }
-
-        const { data, error } = await supabase.storage
-            .from('imobzyimg')
-            .upload(fileName, buffer, {
-                contentType: response.headers['content-type'],
-                upsert: true
-            });
-
-        if (error) throw error;
-        
-        const { data: { publicUrl } } = supabase.storage
-            .from('imobzyimg')
-            .getPublicUrl(fileName);
-            
-        return publicUrl;
-    } catch (err) {
-        console.warn(`⚠️ Failed to download/upload image ${imageUrl}:`, err.message);
-        return imageUrl; // Fallback to original URL
-    }
-}
-
-/**
  * Extracts property listings from a website
  */
 export const extractProperties = async (url, organizationId) => {
@@ -176,6 +137,8 @@ export const extractProperties = async (url, organizationId) => {
         });
         
         const $ = cheerio.load(html);
+        const listingImageCandidates = collectPropertyImageUrls($, url, 50);
+        absolutizeHtmlUrls($, url);
         $('script, style, svg, iframe, noscript').remove();
         
         // Extract links and basic context
@@ -193,6 +156,7 @@ export const extractProperties = async (url, organizationId) => {
         - type (Rural or Urban)
         - status (Venda or Aluguel)
         - images (array of absolute image URLs)
+        - sourceUrl (absolute URL of the property detail page when available)
         - features (array of strings, e.g. ["500ha", "Sede", "Pasto"])
 
         HTML: ${simplifiedHtml}
@@ -219,19 +183,30 @@ export const extractProperties = async (url, organizationId) => {
         // Limit to 50
         const limitedProperties = properties.slice(0, 50);
 
-        // Process images (Download to Supabase)
-        const processedProperties = await Promise.all(limitedProperties.map(async (prop) => {
-            const images = prop.images || [];
-            // Download only up to 5 images per property for speed
-            const processedImages = await Promise.all(
-                images.slice(0, 5).map(imgUrl => processAndUploadImage(imgUrl, organizationId))
+        // Process images into the configured media storage.
+        const processedProperties = await mapWithConcurrency(limitedProperties, 3, async (prop) => {
+            const sourceUrl = normalizeImportUrl(
+                prop.sourceUrl || prop.url || prop.detailUrl || prop.link || prop.href,
+                url
+            );
+            const detailImages = sourceUrl ? await extractDetailPageImages(sourceUrl) : [];
+            const aiImages = sanitizePropertyImageUrls(prop.images || [], sourceUrl || url, 15);
+            const fallbackImages = limitedProperties.length === 1 ? listingImageCandidates.slice(0, 15) : [];
+            const processedImages = await migratePropertyImages(
+                [...detailImages, ...aiImages, ...fallbackImages],
+                organizationId,
+                {
+                    limit: 10,
+                    folder: 'properties/imported',
+                    sourceUrl: sourceUrl || url,
+                }
             );
             return {
                 ...prop,
                 id: crypto.randomUUID(),
                 images: processedImages
             };
-        }));
+        });
 
         return processedProperties;
 
@@ -240,6 +215,57 @@ export const extractProperties = async (url, organizationId) => {
         throw error;
     }
 };
+
+async function extractDetailPageImages(sourceUrl) {
+    try {
+        const { data: html } = await axios.get(sourceUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 15000,
+        });
+        const $ = cheerio.load(html);
+        return collectPropertyImageUrls($, sourceUrl, 20);
+    } catch (error) {
+        console.warn(`[Import Images] Falha ao abrir pagina do imovel ${sourceUrl}:`, error.message);
+        return [];
+    }
+}
+
+function absolutizeHtmlUrls($, baseUrl) {
+    $('[href], [src], [data-src], [data-original], [data-foto], [srcset], [data-srcset]').each((_, el) => {
+        const node = $(el);
+
+        for (const attr of ['href', 'src', 'data-src', 'data-original', 'data-foto']) {
+            const normalized = normalizeImportUrl(node.attr(attr), baseUrl);
+            if (normalized) node.attr(attr, normalized);
+        }
+
+        for (const attr of ['srcset', 'data-srcset']) {
+            const value = node.attr(attr);
+            if (!value) continue;
+            const normalized = value
+                .split(',')
+                .map((item) => {
+                    const [candidate, descriptor] = item.trim().split(/\s+/, 2);
+                    const absolute = normalizeImportUrl(candidate, baseUrl);
+                    return absolute ? `${absolute}${descriptor ? ` ${descriptor}` : ''}` : '';
+                })
+                .filter(Boolean)
+                .join(', ');
+            if (normalized) node.attr(attr, normalized);
+        }
+    });
+}
+
+async function mapWithConcurrency(items, concurrency, mapper) {
+    const results = [];
+    const workers = Array.from({ length: Math.max(1, Math.min(concurrency, items.length || 1)) }, async (_, workerIndex) => {
+        for (let index = workerIndex; index < items.length; index += concurrency) {
+            results[index] = await mapper(items[index], index);
+        }
+    });
+    await Promise.all(workers);
+    return results;
+}
 
 export const cloneSite = async (url, organizationId) => {
     // ... (rest of the existing cloneSite function)

@@ -47,20 +47,27 @@ router.get('/jobs', async (_req, res) => {
 router.get('/jobs/:id', async (req, res) => {
   try {
     const job = await loadJob(req.params.id);
-    const [credentials, logs, errors, steps] = await Promise.all([
-      loadMaskedCredentials(req.params.id),
-      loadLogs(req.params.id),
-      loadErrors(req.params.id),
-      loadSteps(req.params.id),
+    const [credentialsResult, logsResult, errorsResult, stepsResult] = await Promise.all([
+      loadOptionalJobPart('credentials', () => loadMaskedCredentialsForDetails(req.params.id), {}),
+      loadOptionalJobPart('logs', () => loadLogs(req.params.id), []),
+      loadOptionalJobPart('errors', () => loadErrors(req.params.id), []),
+      loadOptionalJobPart('steps', () => loadSteps(req.params.id), []),
     ]);
+    const warnings = [
+      credentialsResult.warning,
+      logsResult.warning,
+      errorsResult.warning,
+      stepsResult.warning,
+    ].filter(Boolean);
 
     res.json({
       success: true,
       job: sanitizePublicJob(job),
-      credentials,
-      logs,
-      errors,
-      steps,
+      credentials: credentialsResult.value,
+      logs: logsResult.value,
+      errors: errorsResult.value,
+      steps: stepsResult.value,
+      warnings,
     });
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
@@ -451,6 +458,54 @@ async function loadMaskedCredentials(jobId) {
     source: maskCredentials(credentials.source),
     minio: maskCredentials(credentials.minio),
   };
+}
+
+async function loadMaskedCredentialsForDetails(jobId) {
+  const supabase = getSupabaseServer();
+  const { data, error } = await supabase
+    .from('migration_credentials')
+    .select('scope, encrypted_payload')
+    .eq('job_id', jobId);
+
+  if (error) throw error;
+
+  const credentials = {};
+  const warnings = [];
+  for (const row of data || []) {
+    try {
+      credentials[row.scope] = maskCredentials(decryptCredentials(row.encrypted_payload));
+    } catch (error) {
+      credentials[row.scope] = {
+        unavailable: true,
+        error: 'Credencial salva nao pode ser descriptografada no servidor atual.',
+      };
+      warnings.push(`Credencial "${row.scope}" indisponivel: ${error.message}`);
+    }
+  }
+
+  for (const scope of ['source', 'minio']) {
+    if (!credentials[scope]) {
+      credentials[scope] = {
+        unavailable: true,
+        error: 'Credencial nao cadastrada para este job.',
+      };
+      warnings.push(`Credencial "${scope}" nao cadastrada para este job.`);
+    }
+  }
+
+  return { ...credentials, warnings };
+}
+
+async function loadOptionalJobPart(name, loader, fallback) {
+  try {
+    return { value: await loader(), warning: null };
+  } catch (error) {
+    console.warn(`[FluowAI Migration] Failed to load ${name}:`, error.message);
+    return {
+      value: fallback,
+      warning: `${name}: ${error.message}`,
+    };
+  }
 }
 
 async function updateJob(jobId, updates) {

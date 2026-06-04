@@ -10,10 +10,12 @@ import {
   FileSearch,
   Filter,
   HardDrive,
+  KeyRound,
   Layers,
   Link as LinkIcon,
   Play,
   RefreshCw,
+  Server,
   ShieldAlert,
   Trash2,
   Users,
@@ -34,9 +36,37 @@ type OrphanReport = {
   database_without_minio: StorageObject[];
   counts: Record<string, number>;
 };
+type MinioConfig = {
+  endpoint: string;
+  port: string;
+  region: string;
+  accessKey: string;
+  secretKey: string;
+  hasSecretKey?: boolean;
+  singleBucket: string;
+  bucketMode: 'separate' | 'single';
+  folderMode: 'bucket-prefix' | 'tenant-prefix' | 'flat';
+  publicBaseUrl: string;
+  useSsl: boolean;
+};
+
+const defaultMinioConfig: MinioConfig = {
+  endpoint: '',
+  port: '443',
+  region: 'us-east-1',
+  accessKey: '',
+  secretKey: '',
+  hasSecretKey: false,
+  singleBucket: '',
+  bucketMode: 'separate',
+  folderMode: 'bucket-prefix',
+  publicBaseUrl: '',
+  useSsl: true,
+};
 
 const tabs = [
   'Resumo',
+  'Integração',
   'Buckets',
   'Arquivos',
   'Duplicados',
@@ -71,6 +101,7 @@ const StorageIntelligence: React.FC = () => {
   const [lifecycle, setLifecycle] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [simulation, setSimulation] = useState<any>(null);
+  const [minioConfig, setMinioConfig] = useState<MinioConfig>(defaultMinioConfig);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [confirmations, setConfirmations] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -86,6 +117,11 @@ const StorageIntelligence: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      const configData = await callApi('/api/admin/storage/config');
+      if (configData.config) {
+        setMinioConfig({ ...defaultMinioConfig, ...configData.config, secretKey: '' });
+      }
+
       const [
         summaryData,
         bucketData,
@@ -137,6 +173,30 @@ const StorageIntelligence: React.FC = () => {
     } finally {
       setActiveAction(null);
     }
+  }
+
+  async function saveMinioConfig() {
+    setActiveAction('save-minio-config');
+    setError(null);
+    setMessage(null);
+    try {
+      const data = await callApi('/api/admin/storage/config', {
+        method: 'PUT',
+        body: JSON.stringify(minioConfig),
+      });
+      setMinioConfig({ ...defaultMinioConfig, ...data.config, secretKey: '' });
+      setMessage('Integração MinIO salva com sucesso.');
+      await refreshAll();
+      setActiveTab('Integração');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setActiveAction(null);
+    }
+  }
+
+  function updateMinioConfig<K extends keyof MinioConfig>(key: K, value: MinioConfig[K]) {
+    setMinioConfig((current) => ({ ...current, [key]: value }));
   }
 
   async function runAdminAction(action: string, path: string, body: Record<string, any> = {}) {
@@ -240,6 +300,15 @@ const StorageIntelligence: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {activeTab === 'Integração' && (
+        <MinioIntegrationPanel
+          config={minioConfig}
+          saving={activeAction === 'save-minio-config'}
+          onChange={updateMinioConfig}
+          onSave={saveMinioConfig}
+        />
+      )}
 
       {activeTab === 'Resumo' && (
         <section className="space-y-4">
@@ -489,6 +558,146 @@ const MetricCard: React.FC<{ label: string; value: string; icon: React.ReactNode
     <div className="text-xl font-black text-slate-950">{value}</div>
     <div className="mt-1 text-xs font-bold uppercase text-slate-500">{label}</div>
   </div>
+);
+
+const MinioIntegrationPanel: React.FC<{
+  config: MinioConfig;
+  saving: boolean;
+  onChange: <K extends keyof MinioConfig>(key: K, value: MinioConfig[K]) => void;
+  onSave: () => void;
+}> = ({ config, saving, onChange, onSave }) => (
+  <section className="space-y-4">
+    <div className="rounded-lg border border-slate-200 bg-white p-5">
+      <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="rounded-lg bg-slate-100 p-2 text-slate-700">
+            <Server size={18} />
+          </span>
+          <div>
+            <h2 className="text-base font-black text-slate-950">Destino MinIO via S3</h2>
+            <p className="text-sm text-slate-500">Credenciais usadas pelo backend para uploads, auditoria e URLs assinadas.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
+        >
+          {saving ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+          Salvar integração
+        </button>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Field label="MINIO ENDPOINT">
+          <input
+            value={config.endpoint}
+            onChange={(event) => onChange('endpoint', event.target.value)}
+            placeholder="https://files.fluowai.com.br"
+            className={fieldClass}
+          />
+        </Field>
+        <Field label="MINIO PORT">
+          <input
+            value={config.port}
+            onChange={(event) => onChange('port', event.target.value)}
+            placeholder="443"
+            inputMode="numeric"
+            className={fieldClass}
+          />
+        </Field>
+        <Field label="REGIÃO">
+          <input
+            value={config.region}
+            onChange={(event) => onChange('region', event.target.value)}
+            placeholder="us-east-1"
+            className={fieldClass}
+          />
+        </Field>
+        <Field label="ACCESS KEY">
+          <div className="relative">
+            <KeyRound size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={config.accessKey}
+              onChange={(event) => onChange('accessKey', event.target.value)}
+              className={`${fieldClass} pl-9`}
+            />
+          </div>
+        </Field>
+        <Field label="SECRET KEY">
+          <div className="relative">
+            <KeyRound size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={config.secretKey}
+              onChange={(event) => onChange('secretKey', event.target.value)}
+              placeholder={config.hasSecretKey ? 'Secret Key salva. Deixe vazio para manter.' : ''}
+              type="password"
+              className={`${fieldClass} pl-9`}
+            />
+          </div>
+        </Field>
+        <Field label="BUCKET ÚNICO MINIO">
+          <input
+            value={config.singleBucket}
+            onChange={(event) => onChange('singleBucket', event.target.value)}
+            placeholder="imobfluow-media"
+            className={fieldClass}
+          />
+        </Field>
+        <Field label="ORGANIZAÇÃO NO MINIO">
+          <select
+            value={config.bucketMode}
+            onChange={(event) => onChange('bucketMode', event.target.value as MinioConfig['bucketMode'])}
+            className={fieldClass}
+          >
+            <option value="separate">Manter buckets separados</option>
+            <option value="single">Usar bucket único</option>
+          </select>
+        </Field>
+        <Field label="PASTAS NO BUCKET ÚNICO">
+          <select
+            value={config.folderMode}
+            onChange={(event) => onChange('folderMode', event.target.value as MinioConfig['folderMode'])}
+            className={fieldClass}
+          >
+            <option value="bucket-prefix">Pasta por bucket</option>
+            <option value="tenant-prefix">Pasta por cliente</option>
+            <option value="flat">Sem pastas automáticas</option>
+          </select>
+        </Field>
+        <Field label="PUBLIC BASE URL DESTINO">
+          <input
+            value={config.publicBaseUrl}
+            onChange={(event) => onChange('publicBaseUrl', event.target.value)}
+            placeholder="https://files.fluowai.com.br"
+            className={fieldClass}
+          />
+        </Field>
+        <label className="flex min-h-[66px] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+          <input
+            type="checkbox"
+            checked={config.useSsl}
+            onChange={(event) => onChange('useSsl', event.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+          />
+          Usar SSL
+        </label>
+      </div>
+    </div>
+
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      Aponte o domínio público do MinIO para o IP do servidor Docker e use esse domínio em MINIO ENDPOINT/PUBLIC BASE URL.
+      A Secret Key não é exibida depois de salva.
+    </div>
+  </section>
+);
+
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <label className="block">
+    <span className="mb-1.5 block text-xs font-black uppercase text-slate-500">{label}</span>
+    {children}
+  </label>
 );
 
 const Table: React.FC<{ columns: string[]; rows: React.ReactNode[][] }> = ({ columns, rows }) => (

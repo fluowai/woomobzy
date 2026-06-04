@@ -18,6 +18,23 @@ const BUCKET_FALLBACKS = {
   exports: 'imobzy-exports',
 };
 
+let minioRuntimeConfig = {};
+
+export function setMinioRuntimeConfig(config = {}) {
+  minioRuntimeConfig = {
+    endpoint: cleanEnv(config.endpoint),
+    port: cleanEnv(config.port),
+    publicUrl: cleanEnv(config.publicUrl || config.publicBaseUrl),
+    accessKey: cleanEnv(config.accessKey),
+    secretKey: cleanEnv(config.secretKey),
+    region: cleanEnv(config.region) || DEFAULT_REGION,
+    useSsl: typeof config.useSsl === 'boolean' ? config.useSsl : undefined,
+    bucketMode: cleanEnv(config.bucketMode),
+    folderMode: cleanEnv(config.folderMode),
+    singleBucket: cleanEnv(config.singleBucket),
+  };
+}
+
 export function isMinioConfigured() {
   const cfg = getMinioConfig();
   return Boolean(cfg.endpoint && cfg.accessKey && cfg.secretKey);
@@ -64,16 +81,34 @@ export function resolveMediaBucket(requestedBucket = 'imobzyimg') {
   return null;
 }
 
-export async function uploadObject({ bucket, key, body, contentType }) {
+export function resolveMinioObjectKey(logicalBucket, key) {
+  const normalizedKey = String(key || '').replace(/^\/+/, '');
+  if (minioRuntimeConfig.bucketMode !== 'single' || !minioRuntimeConfig.singleBucket) {
+    return normalizedKey;
+  }
+
+  if (minioRuntimeConfig.folderMode === 'flat' || minioRuntimeConfig.folderMode === 'tenant-prefix') {
+    return normalizedKey;
+  }
+
+  const prefix = cleanEnv(logicalBucket || 'media');
+  if (!prefix || normalizedKey.startsWith(`${prefix}/`)) return normalizedKey;
+  return `${prefix}/${normalizedKey}`;
+}
+
+export async function uploadObject({ bucket, key, body, contentType, logicalBucket }) {
   const cfg = getMinioConfig();
   if (!cfg.endpoint || !cfg.accessKey || !cfg.secretKey) {
     throw new Error('MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.');
   }
 
+  const targetKey = logicalBucket
+    ? resolveMinioObjectKey(logicalBucket, key)
+    : String(key || '').replace(/^\/+/, '');
   const payload = Buffer.isBuffer(body) ? body : Buffer.from(body);
   const endpoint = trimSlash(cfg.endpoint);
   const region = cfg.region || DEFAULT_REGION;
-  const encodedKey = encodePath(key);
+  const encodedKey = encodePath(targetKey);
   const url = new URL(`${endpoint}/${encodeURIComponent(bucket)}/${encodedKey}`);
   const host = url.host;
   const payloadHash = sha256Hex(payload);
@@ -128,8 +163,8 @@ export async function uploadObject({ bucket, key, body, contentType }) {
 
   return {
     bucket,
-    path: key,
-    publicUrl: buildPublicUrl(cfg.publicUrl || cfg.endpoint, bucket, key),
+    path: targetKey,
+    publicUrl: buildPublicUrl(cfg.publicUrl || cfg.endpoint, bucket, targetKey),
     etag: cleanEtag(response.headers.get('etag')),
   };
 }
@@ -286,25 +321,33 @@ export function createPresignedGetUrl({ bucket, key, expiresInSeconds = 300 }) {
   return url.toString();
 }
 
-function getMinioConfig() {
+export function getMinioConfig() {
+  const useSSLRaw = typeof minioRuntimeConfig.useSsl === 'boolean'
+    ? String(minioRuntimeConfig.useSsl)
+    : firstEnv(['MINIO_USE_SSL', 'S3_USE_SSL']);
   const endpoint = normalizeEndpoint(
-    firstEnv(['MINIO_ENDPOINT', 'S3_ENDPOINT', 'AWS_ENDPOINT_URL']),
-    firstEnv(['MINIO_USE_SSL', 'S3_USE_SSL'])
+    withPort(minioRuntimeConfig.endpoint || firstEnv(['MINIO_ENDPOINT', 'S3_ENDPOINT', 'AWS_ENDPOINT_URL']), minioRuntimeConfig.port),
+    useSSLRaw
   );
 
   return {
     endpoint,
     publicUrl: normalizeEndpoint(
-      firstEnv(['MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) || endpoint,
-      firstEnv(['MINIO_PUBLIC_USE_SSL', 'MINIO_USE_SSL', 'S3_USE_SSL'])
+      minioRuntimeConfig.publicUrl || firstEnv(['MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) || endpoint,
+      typeof minioRuntimeConfig.useSsl === 'boolean'
+        ? String(minioRuntimeConfig.useSsl)
+        : firstEnv(['MINIO_PUBLIC_USE_SSL', 'MINIO_USE_SSL', 'S3_USE_SSL'])
     ),
-    accessKey: firstEnv(['MINIO_ACCESS_KEY', 'MINIO_ROOT_USER', 'AWS_ACCESS_KEY_ID', 'S3_ACCESS_KEY_ID']),
-    secretKey: firstEnv(['MINIO_SECRET_KEY', 'MINIO_ROOT_PASSWORD', 'AWS_SECRET_ACCESS_KEY', 'S3_SECRET_ACCESS_KEY']),
-    region: firstEnv(['MINIO_REGION', 'AWS_REGION', 'S3_REGION']) || DEFAULT_REGION,
+    accessKey: minioRuntimeConfig.accessKey || firstEnv(['MINIO_ACCESS_KEY', 'MINIO_ROOT_USER', 'AWS_ACCESS_KEY_ID', 'S3_ACCESS_KEY_ID']),
+    secretKey: minioRuntimeConfig.secretKey || firstEnv(['MINIO_SECRET_KEY', 'MINIO_ROOT_PASSWORD', 'AWS_SECRET_ACCESS_KEY', 'S3_SECRET_ACCESS_KEY']),
+    region: minioRuntimeConfig.region || firstEnv(['MINIO_REGION', 'AWS_REGION', 'S3_REGION']) || DEFAULT_REGION,
   };
 }
 
 function getBucketName(kind) {
+  if (minioRuntimeConfig.bucketMode === 'single' && minioRuntimeConfig.singleBucket) {
+    return minioRuntimeConfig.singleBucket;
+  }
   return firstEnv(BUCKET_ENV[kind] || []) || firstEnv(['MINIO_BUCKET', 'S3_BUCKET']) || BUCKET_FALLBACKS[kind];
 }
 
@@ -421,6 +464,20 @@ function normalizeEndpoint(raw, useSSLRaw) {
 
 function trimSlash(value) {
   return String(value || '').replace(/\/+$/, '');
+}
+
+function withPort(raw, port) {
+  const value = cleanEnv(raw);
+  const normalizedPort = cleanEnv(port);
+  if (!value || !normalizedPort) return value;
+  try {
+    const url = new URL(/^https?:\/\//i.test(value) ? value : `http://${value}`);
+    if (!url.port) url.port = normalizedPort;
+    const output = /^https?:\/\//i.test(value) ? url.toString() : `${url.host}${url.pathname}`;
+    return trimSlash(output);
+  } catch {
+    return /:\d+$/.test(value) ? value : `${value}:${normalizedPort}`;
+  }
 }
 
 function buildPublicUrl(baseUrl, bucket, key) {

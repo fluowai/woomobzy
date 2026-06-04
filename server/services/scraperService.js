@@ -1,5 +1,9 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import {
+  collectPropertyImageUrls,
+  migratePropertyImages,
+} from './importImageService.js';
 
 const BASE_URL = 'https://www.fazendasbrasil.com.br';
 
@@ -70,13 +74,11 @@ export async function processPropertyScrapeOnly(url, organizationId) {
       area = val;
     }
     
-    const images = [];
-    $('img').each((i, el) => {
-      const src = $(el).attr('src');
-      if (src && (src.endsWith('.jpg') || src.endsWith('.png') || src.endsWith('.jpeg')) && !src.includes('logo')) {
-        const full = src.startsWith('http') ? src : `${BASE_URL}${src}`;
-        if (images.length < 5 && !images.includes(full)) images.push(full);
-      }
+    const imageCandidates = collectPropertyImageUrls($, url, 20);
+    const images = await migratePropertyImages(imageCandidates, organizationId, {
+      limit: 10,
+      folder: 'properties/imported',
+      sourceUrl: url,
     });
 
     return {

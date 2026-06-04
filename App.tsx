@@ -35,6 +35,7 @@ import Onboarding from './views/Onboarding';
 
 // Lazy Loaded Views
 const Register = lazy(() => import('./views/Register'));
+const DnsHelp = lazy(() => import('./views/DnsHelp'));
 const ImpersonateCallback = lazy(() => import('./views/ImpersonateCallback'));
 const PublicLandingPage = lazy(() => import('./views/PublicLandingPage'));
 const RuralDashboard = lazy(() => import('./views/RuralDashboard'));
@@ -260,6 +261,7 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
       '/vendas',
       '/consultoria',
       '/consultoria/qualificacao',
+      '/ajuda/',
       '/lp/',
       '/site/',
       '/embreve',
@@ -420,6 +422,7 @@ const AppContent: React.FC = () => {
           <Route path="/vendas" element={<SystemSalesPage />} />
           <Route path="/consultoria" element={<SystemSalesPage />} />
           <Route path="/consultoria/qualificacao" element={<ConsultingQualificacao />} />
+          <Route path="/ajuda/dns" element={<DnsHelp />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />
           <Route path="/login" element={<Login />} />

@@ -6,7 +6,7 @@ export const PLATFORM_BASE_URL = getRuntimeEnv(
   'VITE_PUBLIC_APP_URL',
   `https://${PLATFORM_DOMAIN}`
 ).replace(/\/$/, '');
-export const PLATFORM_IP = getRuntimeEnv('VITE_PLATFORM_IP', 'IP_DO_SERVIDOR');
+export const PLATFORM_IP = getRuntimeEnv('VITE_PLATFORM_IP', '207.58.153.219');
 
 export function getTenantBaseUrl(slug?: string | null) {
   const cleanSlug = String(slug || '').replace(/^\/|\/$/g, '');

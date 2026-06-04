@@ -1,104 +1,117 @@
-import axios from 'axios';
+import dns from 'node:dns/promises';
 import { directAdminService } from './directAdminService.js';
 
-const VERCEL_TOKEN = process.env.VERCEL_API_TOKEN;
-const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
-const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
-const MAIN_DOMAIN = process.env.WHM_MAIN_DOMAIN || 'consultio.com.br';
+const MAIN_DOMAIN = process.env.WHM_MAIN_DOMAIN || 'imobfluow.com.br';
+const PLATFORM_PUBLIC_IP =
+  process.env.PLATFORM_PUBLIC_IP ||
+  process.env.SERVER_PUBLIC_IP ||
+  process.env.APP_PUBLIC_IP ||
+  process.env.VITE_PLATFORM_IP ||
+  '';
 
-const vercelApi = axios.create({
-  baseURL: 'https://api.vercel.com',
-  headers: {
-    Authorization: `Bearer ${VERCEL_TOKEN}`,
-    'Content-Type': 'application/json',
-  },
-  params: VERCEL_TEAM_ID ? { teamId: VERCEL_TEAM_ID } : {},
-  timeout: 10000,
-});
-
-// ==========================================
-// Vercel — Domain Addition
-// ==========================================
-export async function addVercelDomain(domainName) {
-  if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) {
-    console.warn('⚠️ Vercel não configurado. Pulando adição de domínio.');
-    return { success: false, reason: 'VERCEL_NOT_CONFIGURED' };
-  }
-
-  try {
-    const response = await vercelApi.post(`/v10/projects/${VERCEL_PROJECT_ID}/domains`, {
-      name: domainName,
-    });
-
-    console.log(`✅ Vercel: Domínio ${domainName} adicionado ao projeto`);
-    return { success: true, domain: domainName, vercelData: response.data };
-  } catch (error) {
-    if (error.response?.status === 409) {
-      console.log(`ℹ️ Vercel: Domínio ${domainName} já existe no projeto`);
-      return { success: true, domain: domainName, alreadyExists: true };
-    }
-    console.error(`❌ Vercel Add Error:`, error.response?.data || error.message);
-    return { success: false, reason: 'API_ERROR', error: error.response?.data || error.message };
-  }
+export function normalizeDomain(domainName = '') {
+  return String(domainName)
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, 'www.')
+    .replace(/\/.*$/, '');
 }
 
-// ==========================================
-// Vercel — Domain Removal
-// ==========================================
-export async function removeVercelDomain(domainName) {
-  if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) return { success: false };
-
-  try {
-    await vercelApi.delete(`/v9/projects/${VERCEL_PROJECT_ID}/domains/${domainName}`);
-    console.log(`🗑️ Vercel: Domínio ${domainName} removido`);
-    return { success: true };
-  } catch (error) {
-    console.error(`❌ Vercel Remove Error:`, error.response?.data || error.message);
-    return { success: false, error: error.response?.data || error.message };
-  }
-}
-
-// ==========================================
-// Vercel — Status / Verification
-// ==========================================
-export async function checkVercelDomainStatus(domainName) {
-  if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) return { success: false };
-
-  try {
-    const response = await vercelApi.get(`/v9/projects/${VERCEL_PROJECT_ID}/domains/${domainName}/config`);
-    const statusRes = await vercelApi.get(`/v6/domains/${domainName}`);
-    
-    return {
-      success: true,
-      configured: response.data?.configured || false,
-      verified: statusRes.data?.verified || false,
-      verification: statusRes.data?.verification || null,
-      error: response.data?.error || null,
-    };
-  } catch (error) {
-    return { success: false, error: error.response?.data || error.message };
-  }
-}
-
-// ==========================================
-// Provisioning Entry Point
-// ==========================================
-export async function provisionTenantDomain(subdomain) {
-  console.log(`🚀 Provisionando domínio para tenant: ${subdomain}`);
-
-  const fullDomain = `${subdomain}.${MAIN_DOMAIN}`;
-  
-  // 1. Avisar a Vercel
-  const vercel = await addVercelDomain(fullDomain);
-
-  // 2. Criar DNS no DirectAdmin (Opcional, se configurado)
-  const dns = await directAdminService.addTenantDNS(subdomain);
+export function getPlatformDnsRecords(domainName) {
+  const normalized = normalizeDomain(domainName);
+  const name = normalized.startsWith('www.') ? 'www' : '@';
+  const value = PLATFORM_PUBLIC_IP || 'IP_DO_SERVIDOR';
 
   return {
-    subdomain,
+    type: 'A',
+    name,
+    value,
+    ttl: 3600,
+    instructions: {
+      pt: [
+        'Acesse o painel DNS onde o dominio foi registrado.',
+        'Crie ou edite um registro do tipo A.',
+        `Use o nome ${name} e aponte para ${value}.`,
+        'Salve a alteracao e aguarde a propagacao do DNS.',
+        'Depois clique em Verificar DNS no painel da ImobFluow.',
+      ],
+    },
+  };
+}
+
+export async function addDockerDomain(domainName) {
+  const domain = normalizeDomain(domainName);
+
+  return {
+    success: true,
+    domain,
+    dnsRecords: getPlatformDnsRecords(domain),
+    provisionedBy: 'docker',
+  };
+}
+
+export async function removeDockerDomain(domainName) {
+  return {
+    success: true,
+    domain: normalizeDomain(domainName),
+    provisionedBy: 'docker',
+  };
+}
+
+export async function checkDockerDomainStatus(domainName) {
+  const domain = normalizeDomain(domainName);
+  const dnsRecords = getPlatformDnsRecords(domain);
+
+  if (!PLATFORM_PUBLIC_IP) {
+    return {
+      success: true,
+      configured: false,
+      verified: false,
+      status: 'pending',
+      expectedIp: 'IP_DO_SERVIDOR',
+      addresses: [],
+      dnsRecords,
+      error: 'PLATFORM_PUBLIC_IP_NOT_CONFIGURED',
+    };
+  }
+
+  try {
+    const addresses = await dns.resolve4(domain);
+    const verified = addresses.includes(PLATFORM_PUBLIC_IP);
+
+    return {
+      success: true,
+      configured: verified,
+      verified,
+      status: verified ? 'verified' : 'pending',
+      expectedIp: PLATFORM_PUBLIC_IP,
+      addresses,
+      dnsRecords,
+    };
+  } catch (error) {
+    return {
+      success: true,
+      configured: false,
+      verified: false,
+      status: 'pending',
+      expectedIp: PLATFORM_PUBLIC_IP,
+      addresses: [],
+      dnsRecords,
+      error: error.message,
+    };
+  }
+}
+
+export async function provisionTenantDomain(subdomain) {
+  const normalizedSubdomain = normalizeDomain(subdomain).replace(/\..*$/, '');
+  const fullDomain = `${normalizedSubdomain}.${MAIN_DOMAIN}`;
+  const dnsProvisioning = await directAdminService.addTenantDNS(normalizedSubdomain);
+
+  return {
+    subdomain: normalizedSubdomain,
     fullDomain,
-    vercel,
-    dns,
-    success: vercel.success,
+    dns: dnsProvisioning,
+    success: true,
   };
 }

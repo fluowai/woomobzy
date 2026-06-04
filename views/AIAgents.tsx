@@ -7,6 +7,7 @@ import {
   BellRing,
   BookOpen,
   Bot,
+  Brain,
   CalendarClock,
   ChevronLeft,
   CheckCircle2,
@@ -19,6 +20,7 @@ import {
   Gauge,
   Headphones,
   Home,
+  Key,
   LayoutGrid,
   Loader2,
   MessageCircle,
@@ -36,8 +38,10 @@ import {
   Settings2,
   ShieldCheck,
   Sparkles,
+  Star,
   Target,
   Trash2,
+  TrendingUp,
   UserCheck,
   UserPlus,
   WandSparkles,
@@ -45,7 +49,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { aiAgentService, type AIAgent, type AIAgentPayload } from '../services/aiAgents';
+import { aiAgentService, type AIAgent, type AIAgentPayload, type AgentMetrics } from '../services/aiAgents';
 
 type BuilderDraft = AIAgentPayload & {
   status?: string;
@@ -182,6 +186,7 @@ const tabs = [
   { id: 'operation', label: 'Operação', icon: Workflow },
   { id: 'tools', label: 'Ferramentas', icon: Settings2 },
   { id: 'rules', label: 'Regras', icon: ShieldCheck },
+  { id: 'brain', label: 'Cérebro Neural', icon: Brain },
   { id: 'test', label: 'Teste', icon: Play },
 ];
 
@@ -326,6 +331,88 @@ const presets: TemplatePreset[] = [
       operation_mode: 'Semiautônomo',
     },
   },
+  {
+    name: 'Zara Vendas',
+    role: 'Fechamento e negociação',
+    description: 'Conduz propostas, negocia valores e fecha contratos com segurança.',
+    tags: ['Vendas', 'Negociação'],
+    accent: 'from-violet-600 to-purple-700',
+    avatar: 'Z',
+    payload: {
+      ...emptyAgent,
+      name: 'Zara Vendas',
+      role: 'Fechamento e negociação',
+      response_style: 'premium',
+      personality: 'Segura, persuasiva e profissional. Conduz negociações com elegância e senso de urgência.',
+      instructions:
+        'Identifique sinais de compra, apresente propostas, lide com objeções de preço e condicione o fechamento. Acione corretor humano para assinatura de contrato.',
+      capabilities: ['Kanban comercial', 'Follow-up', 'Match de imóveis'],
+      tools: ['whatsapp', 'kanban', 'crm', 'matchmaking', 'follow-up', 'notificar-corretor', 'mover-etapa-funil'],
+      autonomy_level: 3,
+      operation_mode: 'Autônomo',
+    },
+  },
+  {
+    name: 'Léo Locação',
+    role: 'Locação de imóveis',
+    description: 'Especialista em aluguel, locação temporária e contratos de locação.',
+    tags: ['Locação', 'Aluguel'],
+    accent: 'from-blue-600 to-cyan-600',
+    avatar: 'L',
+    payload: {
+      ...emptyAgent,
+      name: 'Léo Locação',
+      role: 'Locação de imóveis',
+      personality: 'Paciente, explicativo e focado em encontrar o imóvel ideal para moradia.',
+      instructions:
+        'Entenda prazo, orçamento mensal, tipo de imóvel para locação, documentação necessária e disponibilidade para vistoria. Acione corretor para contratos.',
+      capabilities: ['Atendimento inicial', 'Kanban comercial', 'Agenda', 'Follow-up'],
+      tools: ['whatsapp', 'kanban', 'crm', 'agenda', 'follow-up', 'notificar-corretor'],
+      autonomy_level: 2,
+      operation_mode: 'Semiautônomo',
+    },
+  },
+  {
+    name: 'Sofia Pós-Venda',
+    role: 'Pós-venda e satisfação',
+    description: 'Acompanha clientes após fechamento, mede satisfação e gera novas indicações.',
+    tags: ['Pós-venda', 'Indicação'],
+    accent: 'from-pink-500 to-rose-500',
+    avatar: 'S',
+    payload: {
+      ...emptyAgent,
+      name: 'Sofia Pós-Venda',
+      role: 'Pós-venda e satisfação',
+      personality: 'Acolhedora, grata e atenta. Mantém relacionamento duradouro com clientes.',
+      instructions:
+        'Após fechamento, agende contato para avaliar satisfação, resolva pendencias burocraticas, peça indicacao e mantenha o relacionamento aquecido para futuras oportunidades.',
+      capabilities: ['Pós-venda', 'Follow-up', 'Agenda'],
+      tools: ['whatsapp', 'crm', 'follow-up', 'agenda', 'criar-tarefa'],
+      autonomy_level: 2,
+      operation_mode: 'Semiautônomo',
+    },
+  },
+  {
+    name: 'Igor Documentos',
+    role: 'Análise documental avançada',
+    description: 'Confere documentos jurídicos, contratos e matriculas com precisão.',
+    tags: ['Documentos', 'Jurídico'],
+    accent: 'from-stone-700 to-stone-950',
+    avatar: 'I',
+    payload: {
+      ...emptyAgent,
+      name: 'Igor Documentos',
+      role: 'Análise documental avançada',
+      response_style: 'tecnico',
+      personality: 'Analítico, preciso e criterioso. Verifica cada detalhe documental.',
+      instructions:
+        'Analise documentos como RG, CPF, comprovante de residencia, matricula, ITR, CCIR, CAR e contratos. Aponte inconsistencias, pendencias e prazos. Acione juridico em caso de irregularidades.',
+      capabilities: ['Documentação', 'Kanban comercial'],
+      tools: ['documentos', 'pdf-reader', 'kanban', 'crm', 'notificar-corretor', 'criar-tarefa'],
+      autonomy_level: 2,
+      operation_mode: 'Semiautônomo',
+    },
+  },
 ];
 
 const AIAgents: React.FC = () => {
@@ -337,6 +424,10 @@ const AIAgents: React.FC = () => {
   const [activeTab, setActiveTab] = useState('identity');
   const [testPrompt, setTestPrompt] = useState('Oi, procuro um apartamento até R$350 mil em São José.');
   const [testRan, setTestRan] = useState(false);
+  const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [ratingInput, setRatingInput] = useState(0);
+  const [feedbackInput, setFeedbackInput] = useState('');
   const { pathname } = useLocation();
 
   const selectedAgent = useMemo(
@@ -347,6 +438,7 @@ const AIAgents: React.FC = () => {
   const activeAgents = useMemo(() => agents.filter((agent) => agent.is_active).length, [agents]);
   const pausedAgents = useMemo(() => agents.length - activeAgents, [agents, activeAgents]);
   const propertyPath = pathname.startsWith('/rural') ? '/rural/properties/new' : '/urban/properties/new';
+  const brainTabIndex = 5;
   const activeStepIndex = Math.max(tabs.findIndex((tab) => tab.id === activeTab), 0);
   const activeStep = tabs[activeStepIndex] || tabs[0];
   const isFirstStep = activeStepIndex === 0;
@@ -386,6 +478,14 @@ const AIAgents: React.FC = () => {
     setDraft(emptyAgent);
   }, [selectedAgent]);
 
+  useEffect(() => {
+    if (selectedAgent) {
+      loadMetrics(selectedAgent.id);
+    } else {
+      setMetrics(null);
+    }
+  }, [selectedId]);
+
   const loadAgents = async () => {
     try {
       setLoading(true);
@@ -394,6 +494,37 @@ const AIAgents: React.FC = () => {
       toast.error('Erro ao carregar agentes: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMetrics = async (agentId: string) => {
+    try {
+      setMetricsLoading(true);
+      const data = await aiAgentService.metrics(agentId);
+      setMetrics(data);
+    } catch {
+      setMetrics(null);
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
+
+  const handleQualify = async () => {
+    if (!selectedAgent || ratingInput === 0) {
+      toast.error('Selecione uma nota (1-5) para qualificar.');
+      return;
+    }
+    try {
+      await aiAgentService.qualify(selectedAgent.id, {
+        rating: ratingInput,
+        feedback: feedbackInput,
+      });
+      toast.success('Qualificação registrada! Isso ajuda o cerebro neural do agente.');
+      setRatingInput(0);
+      setFeedbackInput('');
+      await loadMetrics(selectedAgent.id);
+    } catch (error: any) {
+      toast.error('Erro ao qualificar: ' + error.message);
     }
   };
 
@@ -562,7 +693,7 @@ const AIAgents: React.FC = () => {
               <Home className="text-emerald-400" size={21} />
             </div>
             <div className="min-w-0">
-              <div className="text-lg font-black tracking-tight leading-none">IMOBZY</div>
+              <div className="text-lg font-black tracking-tight leading-none">ImobFluow</div>
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 mt-1 truncate">
                 Imobiliária Tradicional
               </div>
@@ -1007,6 +1138,123 @@ const AIAgents: React.FC = () => {
                       </label>
                     ))}
                   </div>
+                </section>
+
+                <section id="agent-brain" className={activeTab === 'brain' ? 'block' : 'hidden'}>
+                  <SectionHeading
+                    eyebrow="Cerebro Neural"
+                    title="Qualificação e aprendizado do agente"
+                    description="Acompanhe metricas, avalie respostas e treine o agente para melhorar continuamente."
+                  />
+
+                  {selectedAgent ? (
+                    <>
+                      <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                          <Brain size={18} className="text-slate-700" />
+                          <div className="mt-2 text-2xl font-black text-slate-950">
+                            {metricsLoading ? '-' : metrics?.total_conversations || 0}
+                          </div>
+                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Conversas</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                          <Star size={18} className="text-amber-500" />
+                          <div className="mt-2 text-2xl font-black text-slate-950">
+                            {metricsLoading ? '-' : metrics?.average_rating ? metrics.average_rating.toFixed(1) : '-'}
+                          </div>
+                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Media avaliações</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                          <Target size={18} className="text-emerald-600" />
+                          <div className="mt-2 text-2xl font-black text-slate-950">
+                            {metricsLoading ? '-' : metrics?.total_qualifications || 0}
+                          </div>
+                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Qualificações</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                          <TrendingUp size={18} className="text-blue-600" />
+                          <div className="mt-2 text-2xl font-black text-slate-950">
+                            {metricsLoading ? '-' : metrics?.rating_distribution?.[5] || 0}
+                          </div>
+                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Notas 5</div>
+                        </div>
+                      </div>
+
+                      {metrics && metrics.total_qualifications > 0 && (
+                        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 mb-3">
+                            Distribuição de notas
+                          </div>
+                          <div className="space-y-2">
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const count = metrics.rating_distribution?.[star] || 0;
+                              const total = metrics.total_qualifications || 1;
+                              const pct = (count / total) * 100;
+                              return (
+                                <div key={star} className="flex items-center gap-3">
+                                  <span className="w-4 text-xs font-bold text-slate-600">{star}</span>
+                                  <div className="flex-1 h-3 rounded-full bg-slate-200 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-amber-500 transition-all"
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span className="w-8 text-xs font-bold text-slate-500 text-right">{count}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-6 rounded-lg border border-amber-100 bg-amber-50 p-4">
+                        <div className="flex items-center gap-2 text-amber-800">
+                          <Star size={16} />
+                          <span className="text-xs font-black uppercase tracking-[0.14em]">Qualificar este agente</span>
+                        </div>
+                        <p className="mt-1 text-xs text-amber-700">
+                          Sua avaliação ajuda o cerebro neural do agente a aprender e melhorar.
+                        </p>
+                        <div className="mt-3 flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              onClick={() => setRatingInput(star)}
+                              className={`h-10 w-10 rounded-lg border flex items-center justify-center transition ${
+                                star <= ratingInput
+                                  ? 'border-amber-300 bg-amber-200 text-amber-800'
+                                  : 'border-slate-200 bg-white text-slate-400 hover:bg-amber-50'
+                              }`}
+                            >
+                              <Star size={18} fill={star <= ratingInput ? 'currentColor' : 'none'} />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={feedbackInput}
+                          onChange={(e) => setFeedbackInput(e.target.value)}
+                          className="mt-3 w-full rounded-lg border border-amber-200 bg-white p-3 text-sm font-semibold text-slate-700 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100 resize-none"
+                          placeholder="Feedback opcional - o que o agente fez bem ou poderia melhorar?"
+                          rows={2}
+                        />
+                        <button
+                          onClick={handleQualify}
+                          disabled={ratingInput === 0}
+                          className="mt-3 h-10 rounded-lg bg-amber-600 px-4 text-sm font-black text-white flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
+                        >
+                          <Star size={15} />
+                          Registrar qualificação
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
+                      <Brain size={32} className="mx-auto text-slate-400" />
+                      <p className="mt-3 text-sm font-bold text-slate-500">
+                        Selecione ou crie um agente para ver as metricas do cerebro neural.
+                      </p>
+                    </div>
+                  )}
                 </section>
 
                 <section id="agent-test" className={activeTab === 'test' ? 'block' : 'hidden'}>

@@ -430,6 +430,7 @@ const AppContent: React.FC = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/portal-locatario" element={<PortalLocatario />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/:slug/site/*" element={<PublicLandingPage />} />
           <Route path="/site/:slug/*" element={<PublicLandingPage />} />
 
           {/* ====== LEGACY /admin → NICHE REDIRECT ====== */}

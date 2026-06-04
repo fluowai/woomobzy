@@ -50,7 +50,7 @@ if (missingVars.length > 0) {
     '\n❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias não encontradas:'
   );
   missingVars.forEach((v) => console.error(`   ❗ ${v}`));
-  console.error('\n → Em produção (Railway/Vercel): adicione em Settings → Variables');
+  console.error('\n → Em producao Docker: adicione no stack/env do servico');
   console.error(' → Em desenvolvimento: verifique o arquivo .env na raiz\n');
 }
 
@@ -71,7 +71,7 @@ app.use(
             "img-src": ["'self'", "data:", "blob:", "https:"],
             "media-src": ["'self'", "data:", "blob:", "https:"],
             "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://crmimobzy.consultio.com.br", "wss://crmimobzy.consultio.com.br"],
+            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://imobfluow.com.br", "wss://imobfluow.com.br"],
             "frame-ancestors": ["'self'"],
           },
         }
@@ -95,12 +95,9 @@ app.use((req, res, next) => {
 
 // --- CORS Configuration ---
 const staticAllowedOrigins = [
-  "https://imobzy.com.br",
-  "https://www.imobzy.com.br",
-  "https://imobzy.consultio.com.br",
-  "https://crmimobzy.consultio.com.br",
+  "https://imobfluow.com.br",
+  "https://www.imobfluow.com.br",
   "https://consultio.com.br",
-  "https://woomobzy-production.up.railway.app",
 ];
 const envAllowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
@@ -125,9 +122,8 @@ const dynamicOriginValidator = (origin, callback) => {
 
   // Permitir subdomínios da empresa e dev/staging
   if (
-    origin.endsWith(".imobzy.com.br") ||
+    origin.endsWith(".imobfluow.com.br") ||
     origin.endsWith(".consultio.com.br") ||
-    origin.endsWith(".vercel.app") ||
     origin.endsWith(".pages.dev") ||
     origin.endsWith(".onrender.com") ||
     origin.endsWith(".up.railway.app") ||
@@ -237,13 +233,13 @@ app.get('/api/system-status', async (req, res) => {
 app.get('/health', (req, res) =>
   res.json({ status: 'ok', uptime: process.uptime() })
 );
-app.get('/', (req, res) => res.send('IMOBZY Production API Online 🚀'));
+app.get('/', (req, res) => res.send('ImobFluow Production API Online'));
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 3002;
 
 const server = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`IMOBZY Server active on port ${PORT}`);
+  console.log(`ImobFluow Server active on port ${PORT}`);
 });
 
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).

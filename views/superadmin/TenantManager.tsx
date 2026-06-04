@@ -15,6 +15,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getTenantBaseUrl, getTenantSiteUrl, PLATFORM_IP } from '../../utils/platform';
 
 interface Organization {
   id: string;
@@ -494,7 +495,8 @@ const TenantManager: React.FC = () => {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Endereco de acesso: crmimobzy.consultio.com.br/{formData.slug || '...'}
+                  Endereco de acesso: {getTenantBaseUrl(formData.slug || '...')}
+                  {' '}| Site: {getTenantSiteUrl(formData.slug || '...')}
                 </p>
               </div>
 
@@ -515,7 +517,7 @@ const TenantManager: React.FC = () => {
                   }
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Aponte o DNS do domínio para o IP da plataforma.
+                  Aponte o registro A do dominio para o IP da plataforma: {PLATFORM_IP}.
                 </p>
               </div>
 

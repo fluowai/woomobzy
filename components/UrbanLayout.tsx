@@ -163,7 +163,7 @@ const UrbanLayout: React.FC = () => {
         >
           <img
             src="/logo-imobzy-360.svg"
-            alt="IMOBZY"
+            alt="ImobFluow"
             className="h-12 w-auto object-contain max-w-[150px] transition-transform group-hover:scale-105"
           />
         </Link>
@@ -258,7 +258,7 @@ const UrbanLayout: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Imobiliária Tradicional</span>
-              <h2 className="text-lg font-black text-slate-900 leading-none">IMOBZY</h2>
+              <h2 className="text-lg font-black text-slate-900 leading-none">ImobFluow</h2>
             </div>
           </div>
 

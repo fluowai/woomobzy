@@ -1,229 +1,231 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { useTexts } from '../context/TextsContext';
 import PublicLandingPage from '../views/PublicLandingPage';
+import { PLATFORM_DOMAIN } from '../utils/platform';
 
 interface DomainRouterProps {
   children: React.ReactNode;
 }
 
+const SYSTEM_ROUTES = [
+  '/login',
+  '/register',
+  '/onboarding',
+  '/admin',
+  '/rural',
+  '/urban',
+  '/urbano',
+  '/superadmin',
+  '/impersonate',
+  '/lp/',
+  '/site/',
+  '/embreve',
+  '/vendas',
+  '/consultoria',
+  '/consultoria/qualificacao',
+  '/chat',
+  '/crm',
+  '/reports',
+  '/settings',
+  '/properties',
+  '/whatsapp-instances',
+  '/geointeligencia',
+  '/cadastro-tecnico',
+  '/due-diligence',
+  '/dataroom',
+  '/waitlist',
+  '/site-setup',
+  '/visual-editor',
+  '/ai-assistant',
+  '/contracts',
+  '/test-messages',
+  '/error',
+];
+
+function isTenantSitePath(path: string) {
+  const segments = path.split('/').filter(Boolean);
+  return segments.length >= 2 && segments[1] === 'site';
+}
+
+function getTenantSlugFromSitePath(path: string) {
+  return path.split('/').filter(Boolean)[0] || '';
+}
+
+function cleanHost(host: string) {
+  return host.replace(/^www\./, '');
+}
+
+function cleanDomain(domain: string) {
+  return domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+
 const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const location = useLocation();
-  const [isSystemPath] = useState(() => {
-    const path = window.location.pathname;
-    const systemRoutes = [
-      '/login',
-      '/register',
-      '/onboarding',
-      '/admin',
-      '/rural',
-      '/urban',
-      '/superadmin',
-      '/impersonate',
-      '/lp/',
-      '/site/',
-      '/embreve',
-    ];
-    return systemRoutes.some((r) => path.startsWith(r)) || path === '/';
-  });
-
-  const [isPublicSite, setIsPublicSite] = useState(false);
-  const [loading, setLoading] = useState(!isSystemPath);
-  const [resolvedSlug, setResolvedSlug] = useState<string | null>(null);
-  const { isVisualMode } = useTexts();
-
-  // A3: Prevent redundant re-execution
-  const lastCheckedPath = React.useRef<string | null>(null);
-
-  // Debug Logic
   const [searchParams] = useSearchParams();
   const debugMode = searchParams.get('debug') === 'true';
+  const initialSystemPath =
+    !isTenantSitePath(window.location.pathname) &&
+    (SYSTEM_ROUTES.some((route) => window.location.pathname.startsWith(route)) ||
+      window.location.pathname === '/');
+
+  const [isPublicSite, setIsPublicSite] = useState(false);
+  const [loading, setLoading] = useState(!initialSystemPath);
+  const [resolvedSlug, setResolvedSlug] = useState<string | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const lastCheckedPath = React.useRef<string | null>(null);
 
   useEffect(() => {
     const currentPath = location.pathname;
-
-    // A3: Skip if we already checked this exact path
     if (lastCheckedPath.current === currentPath) return;
     lastCheckedPath.current = currentPath;
 
     const checkRoute = async () => {
       try {
         const hostname = window.location.hostname;
-        const path = currentPath;
+        const panelUrl = getRuntimeEnv('VITE_PANEL_URL', `https://${PLATFORM_DOMAIN}`);
+        const panelHost = cleanDomain(panelUrl);
+        const currentHost = cleanHost(hostname);
+        const platformHost = cleanHost(PLATFORM_DOMAIN);
+        const panelCleanHost = cleanHost(panelHost);
+        const isPlatformHost =
+          currentHost === platformHost || currentHost === panelCleanHost;
 
         const log = (msg: string) => {
           logger.info(msg);
-          if (debugMode)
+          if (debugMode) {
             setDebugLogs((prev) => [
               ...prev,
               `[${new Date().toLocaleTimeString()}] ${msg}`,
             ]);
+          }
         };
 
-        log(`🌍 [Router] Checking: ${hostname}${path}`);
-
-        // 1. Whitelist (System Domains)
-        const panelUrl = getRuntimeEnv('VITE_PANEL_URL');
-        // Remove protocol and trailing slash
-        const panelHost = panelUrl
-          .replace(/^https?:\/\//, '')
-          .replace(/\/$/, '');
-
-        // Normalize current hostname (remove www.)
-        const cleanHostname = hostname.replace(/^www\./, '');
-        const cleanPanelHost = panelHost.replace(/^www\./, '');
+        log(`[Router] Checking: ${hostname}${currentPath}`);
 
         const isSystemDomain =
           hostname.includes('localhost') ||
-          hostname.includes('vercel.app') ||
-          hostname === 'app.imobisaas.com.br' ||
-          hostname === 'imobzy.consultio.com.br' ||
-          hostname === 'urbano.consultio.com.br' ||
-          hostname === 'consultio.com.br' ||
-          hostname === 'imobs.consulto.com.br' ||
-          hostname === 'consulto.com.br' ||
-          hostname === cleanPanelHost;
+          hostname === 'app.imobfluow.com.br' ||
+          hostname === 'imobfluow.com.br' ||
+          hostname === 'www.imobfluow.com.br' ||
+          isPlatformHost;
 
-        // 2. Custom Domain Logic
         if (!isSystemDomain) {
-          log(`🌍 [Router] Custom Domain detected: ${hostname}`);
+          log(`[Router] Custom domain detected: ${hostname}`);
 
-          // Try to resolve tenant by domain
           try {
             const { data, error } = await supabase
-              .rpc('get_tenant_by_domain', { domain_input: cleanHostname })
+              .rpc('get_tenant_by_domain', { domain_input: currentHost })
               .maybeSingle();
 
             if (data && !error) {
-              log(
-                `✅ [Router] Tenant Found via Domain: ${(data as any).name} (${(data as any).slug})`
-              );
-              setResolvedSlug((data as any).slug);
+              const tenant = data as any;
+              log(`[Router] Tenant found via domain: ${tenant.name} (${tenant.slug})`);
+              setResolvedSlug(tenant.slug);
               setIsPublicSite(true);
               setLoading(false);
               return;
-            } else {
-              log(`❌ [Router] Domain not found in DB: ${hostname}`);
             }
-          } catch (e) {
-            log(`❌ [Router] Exception checking domain: ${e}`);
+
+            log(`[Router] Domain not found in DB: ${hostname}`);
+          } catch (error) {
+            log(`[Router] Exception checking domain: ${error}`);
           }
 
-          // If we didn't return above (domain not found), fallback to Main App
           setIsPublicSite(false);
           setLoading(false);
           return;
         }
 
-        // 3. Sub-path Logic (Slug)
-        const systemRoutes = [
-          '/login',
-          '/register',
-          '/onboarding',
-          '/admin',
-          '/rural',
-          '/urban',
-          '/urbano',
-          '/superadmin',
-          '/impersonate',
-          '/lp/',
-          '/site/',
-          '/embreve',
-          '/vendas',
-          '/consultoria',
-          '/consultoria/qualificacao',
-          '/chat',
-          '/crm',
-          '/reports',
-          '/settings',
-          '/properties',
-          '/whatsapp-instances',
-          '/geointeligencia',
-          '/cadastro-tecnico',
-          '/due-diligence',
-          '/dataroom',
-          '/waitlist',
-          '/site-setup',
-          '/visual-editor',
-          '/ai-assistant',
-          '/contracts',
-          '/test-messages',
-          '/error',
-        ];
-        const isSystemRoute = systemRoutes.some(
-          (r) => path === r || path.startsWith(r + '/') || path.startsWith(r)
+        const isSystemRoute = SYSTEM_ROUTES.some(
+          (route) =>
+            currentPath === route ||
+            currentPath.startsWith(`${route}/`) ||
+            currentPath.startsWith(route)
         );
 
-        if (isSystemRoute || path === '/') {
-          log(`⚡ [Router] System Route Detected: ${path}`);
+        if (!isTenantSitePath(currentPath)) {
+          if (isSystemRoute || currentPath === '/') {
+            log(`[Router] System route detected: ${currentPath}`);
+          } else {
+            log(`[Router] Tenant route ignored because it is not /:slug/site`);
+          }
           setIsPublicSite(false);
           setLoading(false);
           return;
         }
 
-        // Extract potential slug
-        const potentialSlug = path.split('/')[1];
-        log(`🔍 [Router] Potential Slug: ${potentialSlug}`);
+        const potentialSlug = getTenantSlugFromSitePath(currentPath);
+        log(`[Router] Potential tenant slug: ${potentialSlug}`);
 
         if (potentialSlug) {
-          log(`🔄 [Router] Calling RPC get_tenant_public...`);
           try {
             const { data, error } = await supabase
               .rpc('get_tenant_public', { slug_input: potentialSlug })
-              .single();
+              .maybeSingle();
 
             if (data && !error) {
-              log(
-                `✅ [Router] Tenant Found: ${(data as any).name} (${(data as any).slug})`
-              );
-              setResolvedSlug((data as any).slug);
+              const tenant = data as any;
+              let customDomain = tenant.custom_domain;
+
+              if (!customDomain) {
+                const { data: orgDomain } = await supabase
+                  .from('organizations')
+                  .select('custom_domain')
+                  .eq('slug', tenant.slug)
+                  .maybeSingle();
+                customDomain = orgDomain?.custom_domain;
+              }
+
+              if (customDomain && isPlatformHost) {
+                const targetUrl = `https://${cleanDomain(customDomain)}${window.location.search || ''}`;
+                log(`[Router] Redirecting tenant site to custom domain: ${targetUrl}`);
+                window.location.replace(targetUrl);
+                return;
+              }
+
+              log(`[Router] Tenant found: ${tenant.name} (${tenant.slug})`);
+              setResolvedSlug(tenant.slug);
               setIsPublicSite(true);
               setLoading(false);
               return;
-            } else {
-              if (error)
-                log(`❌ [Router] RPC Error: ${error.message} (${error.code})`);
-              else log(`⚠️ [Router] RPC returned no data`);
             }
-          } catch (e) {
-            log(`❌ [Router] Exception: ${e}`);
+
+            if (error) log(`[Router] RPC error: ${error.message} (${error.code})`);
+          } catch (error) {
+            log(`[Router] Exception resolving tenant slug: ${error}`);
           }
-        } else {
-          log(`⚠️ [Router] No slug found in path`);
         }
 
-        log(`🛑 [Router] Fallback to Main App (Not a tenant route)`);
-        // Default: Render main app
+        log('[Router] Fallback to main app');
         setIsPublicSite(false);
         setLoading(false);
-      } catch (err) {
-        logger.info(`❌ [Router] Fatal Error in checkRoute: ${err}`);
+      } catch (error) {
+        logger.info(`[Router] Fatal error in checkRoute: ${error}`);
         setIsPublicSite(false);
         setLoading(false);
       }
     };
 
-    // BUG 5 FIX: The loading = false is now guaranteed by the catch and early returns inside checkRoute
     checkRoute();
   }, [location.pathname, debugMode]);
 
-  if (loading)
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
       </div>
     );
+  }
 
   const renderDebug = () => {
     if (!debugMode) return null;
     return (
       <div className="fixed bottom-4 right-4 bg-black/90 text-white p-4 rounded-lg shadow-xl z-[9999] text-xs font-mono max-w-sm max-h-[80vh] overflow-auto border border-gray-700 pointer-events-auto">
         <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-700">
-          <h3 className="font-bold text-green-400">🔍 Router Debug</h3>
+          <h3 className="font-bold text-green-400">Router Debug</h3>
           <button
             onClick={() => setDebugLogs([])}
             className="text-gray-400 hover:text-white"

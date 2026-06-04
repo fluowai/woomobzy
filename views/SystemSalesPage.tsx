@@ -177,7 +177,7 @@ const DashboardPreview: React.FC = () => (
             <span className="h-3 w-3 rounded-full bg-amber-300" />
             <span className="h-3 w-3 rounded-full bg-emerald-400" />
           </div>
-          <div className="hidden rounded-full bg-slate-100 px-4 py-1 text-xs font-black text-slate-500 sm:block">app.imobzy.com/pipeline</div>
+          <div className="hidden rounded-full bg-slate-100 px-4 py-1 text-xs font-black text-slate-500 sm:block">imobfluow.com.br/pipeline</div>
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
             <Sparkles size={15} />
           </div>
@@ -185,7 +185,7 @@ const DashboardPreview: React.FC = () => (
 
         <div className="grid min-h-[380px] sm:min-h-[520px] lg:grid-cols-[160px_1fr]">
           <aside className="hidden border-r border-slate-200 bg-white p-4 lg:block">
-            <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="mb-7 h-8 w-auto" />
+            <img src="/logo-imobzy-360.svg" alt="ImobFluow" className="mb-7 h-8 w-auto" />
             {['Visão geral', 'Leads', 'Atendimentos', 'Imóveis', 'Agenda', 'Relatórios'].map((item, index) => (
               <div key={item} className={`mb-2 flex items-center gap-2 rounded-xl px-3 py-3 text-xs font-black ${index === 0 ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500'}`}>
                 <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
@@ -316,7 +316,7 @@ const SystemSalesPage: React.FC = () => {
     const handleAppInstalled = () => {
       setInstallPrompt(null);
       setIsStandalone(true);
-      toast.success('IMOBZY instalado com sucesso.');
+      toast.success('ImobFluow instalado com sucesso.');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -375,7 +375,7 @@ const SystemSalesPage: React.FC = () => {
       <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between px-5 2xl:px-8">
           <button type="button" onClick={() => scrollToSection('plataforma')} className="flex items-center">
-            <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-9 w-auto" />
+            <img src="/logo-imobzy-360.svg" alt="ImobFluow" className="h-9 w-auto" />
           </button>
           <nav className="hidden items-center gap-7 lg:flex">
             {menuItems.map((item) => (
@@ -437,7 +437,7 @@ const SystemSalesPage: React.FC = () => {
                 Venda mais imóveis com automação, IA e pipeline previsível.
               </h1>
               <p className="mt-5 max-w-xl text-base font-semibold leading-7 text-slate-600 sm:mt-6 sm:text-lg sm:leading-8">
-                A IMOBZY centraliza leads, imóveis, atendimento e dados comerciais para sua equipe responder rápido, negociar melhor e escalar vendas.
+                A ImobFluow centraliza leads, imóveis, atendimento e dados comerciais para sua equipe responder rápido, negociar melhor e escalar vendas.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
                 <button onClick={scrollToForm} className="inline-flex h-12 items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-8 text-sm font-black text-white shadow-xl shadow-emerald-900/20 transition hover:-translate-y-0.5 hover:bg-emerald-700 sm:h-14">
@@ -454,7 +454,7 @@ const SystemSalesPage: React.FC = () => {
                   ))}
                 </div>
                 <p className="max-w-sm text-sm font-bold leading-6 text-slate-600">
-                  +350 imobiliárias já transformaram sua operação comercial com a IMOBZY.
+                  +350 imobiliárias já transformaram sua operação comercial com a ImobFluow.
                 </p>
               </div>
             </div>
@@ -465,7 +465,7 @@ const SystemSalesPage: React.FC = () => {
             <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Produto em ação</p>
-                <h2 className="mt-2 text-2xl font-black text-[#07172a] sm:text-3xl">Veja o pipeline IMOBZY organizando a operação.</h2>
+                <h2 className="mt-2 text-2xl font-black text-[#07172a] sm:text-3xl">Veja o pipeline ImobFluow organizando a operação.</h2>
               </div>
               <p className="max-w-md text-sm font-semibold leading-6 text-slate-600">
                 Dashboard, funil e automações aparecem como prova concreta depois da promessa principal.
@@ -520,7 +520,7 @@ const SystemSalesPage: React.FC = () => {
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Problema x solução</p>
               <h2 className="mt-3 text-3xl font-black leading-tight text-[#07172a] md:text-4xl">Pare de operar no improviso. Venda com processo.</h2>
               <p className="mt-4 text-base font-semibold leading-7 text-slate-600">
-                A IMOBZY transforma uma rotina espalhada em uma operação comercial com prioridade, contexto e previsibilidade.
+                A ImobFluow transforma uma rotina espalhada em uma operação comercial com prioridade, contexto e previsibilidade.
               </p>
             </div>
             <div className="grid gap-5 md:grid-cols-2">
@@ -534,7 +534,7 @@ const SystemSalesPage: React.FC = () => {
                 ))}
               </div>
               <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/80 p-6">
-                <p className="mb-5 text-sm font-black uppercase text-emerald-700">Com IMOBZY</p>
+                <p className="mb-5 text-sm font-black uppercase text-emerald-700">Com ImobFluow</p>
                 {afterItems.map((item) => (
                   <p key={item} className="mb-4 flex gap-3 text-sm font-bold leading-6 text-slate-700">
                     <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
@@ -616,7 +616,7 @@ const SystemSalesPage: React.FC = () => {
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Próximo passo</p>
                   <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
-                    Veja como a IMOBZY organizaria sua operação comercial.
+                    Veja como a ImobFluow organizaria sua operação comercial.
                   </h2>
                   <p className="mt-4 text-base font-semibold leading-7 text-slate-300">
                     Demonstração personalizada, sem compromisso, com foco nos gargalos da sua imobiliária.
@@ -652,7 +652,7 @@ const SystemSalesPage: React.FC = () => {
       <footer className="bg-[#07172a] px-5 py-10 text-white">
         <div className="mx-auto grid max-w-[1280px] gap-8 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <div>
-            <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-11 w-auto rounded-xl bg-white p-1" />
+            <img src="/logo-imobzy-360.svg" alt="ImobFluow" className="h-11 w-auto rounded-xl bg-white p-1" />
             <p className="mt-4 max-w-sm text-sm font-semibold leading-6 text-slate-300">
               Plataforma SaaS para imobiliárias que precisam vender com organização, velocidade e inteligência comercial.
             </p>
@@ -669,12 +669,12 @@ const SystemSalesPage: React.FC = () => {
           <div>
             <h3 className="mb-4 text-xs font-black uppercase tracking-[0.18em] text-slate-400">Contato</h3>
             <p className="mb-3 flex items-center gap-3 text-sm font-semibold text-slate-300"><Phone size={16} />(11) 4000-1234</p>
-            <p className="mb-3 flex items-center gap-3 text-sm font-semibold text-slate-300"><Mail size={16} />contato@imobzy.com.br</p>
+            <p className="mb-3 flex items-center gap-3 text-sm font-semibold text-slate-300"><Mail size={16} />contato@imobfluow.com.br</p>
             <p className="flex items-center gap-3 text-sm font-semibold text-slate-300"><Building2 size={16} />São Paulo, SP</p>
           </div>
         </div>
         <div className="mx-auto mt-10 flex max-w-[1280px] flex-col gap-4 border-t border-white/10 pt-6 text-xs font-semibold text-slate-400 md:flex-row md:items-center md:justify-between">
-          <p>© {new Date().getFullYear()} IMOBZY. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} ImobFluow. Todos os direitos reservados.</p>
           <div className="flex flex-wrap gap-4 md:gap-8"><span>Privacidade</span><span>Termos</span><span>Status</span></div>
         </div>
       </footer>

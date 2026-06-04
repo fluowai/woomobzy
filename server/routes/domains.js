@@ -1,13 +1,19 @@
 import express from 'express';
 import { verifySuperAdmin } from '../middleware/auth.js';
-import { addVercelDomain, removeVercelDomain, checkVercelDomainStatus } from '../domainService.js';
+import {
+  addDockerDomain,
+  removeDockerDomain,
+  checkDockerDomainStatus,
+  getPlatformDnsRecords,
+  normalizeDomain,
+} from '../domainService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 
 // ==========================================
-// POST /add — Link custom domain to Vercel & DB
+// POST /add — Link custom domain to Docker/Traefik & DB
 // ==========================================
 router.post('/add', verifySuperAdmin, async (req, res) => {
   const { domain, organizationId } = req.body;
@@ -17,29 +23,38 @@ router.post('/add', verifySuperAdmin, async (req, res) => {
   }
 
   try {
-    // 1. Add to Vercel
-    const vercel = await addVercelDomain(domain);
-    if (!vercel.success) {
-      return res.status(500).json({ error: 'Erro ao adicionar na Vercel', details: vercel.error });
-    }
+    const cleanDomain = normalizeDomain(domain);
+    const provisioning = await addDockerDomain(cleanDomain);
 
     // 2. Update DB (Organization)
     const { error: orgError } = await supabase
       .from('organizations')
-      .update({ custom_domain: domain })
+      .update({ custom_domain: cleanDomain })
       .eq('id', organizationId);
 
     if (orgError) throw orgError;
 
     // 3. Add to Domains table for history/tracking
-    await supabase.from('domains').insert({
+    await supabase.from('domains').upsert({
       organization_id: organizationId,
-      domain,
+      domain: cleanDomain,
       is_primary: true,
-      status: 'active'
+      status: 'pending',
+      dns_records: JSON.stringify(getPlatformDnsRecords(cleanDomain)),
+    }, {
+      onConflict: 'domain',
     });
 
-    res.json({ success: true, domain, vercel });
+    res.json({
+      success: true,
+      domain: {
+        name: cleanDomain,
+        status: 'pending',
+        verified: false,
+        dnsRecords: provisioning.dnsRecords,
+      },
+      provisioning,
+    });
   } catch (error) {
     console.error('Domain Add Route Error:', error);
     res.status(500).json({ error: error.message });
@@ -47,7 +62,7 @@ router.post('/add', verifySuperAdmin, async (req, res) => {
 });
 
 // ==========================================
-// DELETE /remove — Unlink from Vercel & DB
+// DELETE /remove — Unlink from Docker/Traefik & DB
 // ==========================================
 router.delete('/remove', verifySuperAdmin, async (req, res) => {
   const { domain, organizationId } = req.body;
@@ -57,8 +72,8 @@ router.delete('/remove', verifySuperAdmin, async (req, res) => {
   }
 
   try {
-    // 1. Remove from Vercel
-    await removeVercelDomain(domain);
+    const cleanDomain = normalizeDomain(domain);
+    await removeDockerDomain(cleanDomain);
 
     // 2. Clear from DB (Organization)
     await supabase
@@ -67,7 +82,7 @@ router.delete('/remove', verifySuperAdmin, async (req, res) => {
       .eq('id', organizationId);
 
     // 3. Delete from Domains table
-    await supabase.from('domains').delete().eq('domain', domain);
+    await supabase.from('domains').delete().eq('domain', cleanDomain);
 
     res.json({ success: true });
   } catch (error) {
@@ -76,13 +91,13 @@ router.delete('/remove', verifySuperAdmin, async (req, res) => {
 });
 
 // ==========================================
-// GET /verify/:domain — Check Vercel Status
+// GET /verify/:domain — Check DNS A status
 // ==========================================
 router.get('/verify/:domain', verifySuperAdmin, async (req, res) => {
   const { domain } = req.params;
 
   try {
-    const status = await checkVercelDomainStatus(domain);
+    const status = await checkDockerDomainStatus(domain);
     res.json(status);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -5,6 +5,7 @@ import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const PUBLIC_APP_URL = (process.env.PUBLIC_APP_URL || process.env.VITE_PUBLIC_APP_URL || 'https://imobfluow.com.br').replace(/\/$/, '');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -107,7 +108,8 @@ router.post('/', authLimiter, async (req, res) => {
     let domain = null;
     if (organization) {
       domain = {
-        fullDomain: `https://crmimobzy.consultio.com.br/${organization.slug}`,
+        fullDomain: `${PUBLIC_APP_URL}/${organization.slug}`,
+        siteUrl: `${PUBLIC_APP_URL}/${organization.slug}/site`,
         slug: organization.slug,
       };
     }

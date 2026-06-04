@@ -101,7 +101,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         >
           <img
             src="/logo-imobzy-360.svg"
-            alt="IMOBZY"
+            alt="ImobFluow"
             className="h-10 md:h-12 w-auto object-contain max-w-[150px]"
           />
         </Link>

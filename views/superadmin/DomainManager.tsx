@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { callApi } from '../../src/lib/api';
+import { PLATFORM_IP } from '../../utils/platform';
 
 // Real Domain Interface
 interface DomainEntry {
@@ -99,7 +100,7 @@ const DomainManager: React.FC = () => {
         }),
       });
 
-      alert(`✅ Domínio ${newDomain} adicionado com sucesso na Vercel!`);
+      alert(`Dominio ${newDomain} salvo. Oriente o cliente a apontar o registro A para ${PLATFORM_IP}.`);
       setNewDomain('');
       setSelectedOrgId('');
 
@@ -140,7 +141,7 @@ const DomainManager: React.FC = () => {
         alert(`✅ ${domain}: DNS Configurado Corretamente!`);
       } else {
         alert(
-          `⚠️ ${domain}: DNS Pendente ou Incorreto.\nVerifique se o CNAME aponta para cname.vercel-dns.com`
+          `${domain}: DNS pendente ou incorreto.\nVerifique se o registro A aponta para ${PLATFORM_IP}.`
         );
       }
     } catch (e) {
@@ -225,7 +226,7 @@ const DomainManager: React.FC = () => {
               'Processando...'
             ) : (
               <>
-                <Plus size={20} /> Adicionar na Vercel
+                <Plus size={20} /> Salvar dominio
               </>
             )}
           </button>
@@ -235,7 +236,7 @@ const DomainManager: React.FC = () => {
           <p>
             <strong>Nota:</strong> Cada organização pode ter apenas 1 domínio
             personalizado. O sistema atualizará automaticamente o banco de dados
-            e a Vercel.
+            e o registro A deve apontar para <strong>{PLATFORM_IP}</strong>.
           </p>
         </div>
       </div>
@@ -328,3 +329,4 @@ const DomainManager: React.FC = () => {
 };
 
 export default DomainManager;
+

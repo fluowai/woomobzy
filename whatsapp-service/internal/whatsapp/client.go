@@ -303,6 +303,22 @@ func (c *Client) eventHandler(evt interface{}) {
 func (c *Client) handleMessage(evt *events.Message) {
 	ctx := context.Background()
 
+	// Unwrap message for ephemeral (disappearing messages), view once and document with caption
+	if evt.Message != nil {
+		if evt.Message.GetEphemeralMessage() != nil {
+			evt.Message = evt.Message.GetEphemeralMessage().GetMessage()
+		}
+		if evt.Message.GetViewOnceMessage() != nil {
+			evt.Message = evt.Message.GetViewOnceMessage().GetMessage()
+		}
+		if evt.Message.GetViewOnceMessageV2() != nil {
+			evt.Message = evt.Message.GetViewOnceMessageV2().GetMessage()
+		}
+		if evt.Message.GetDocumentWithCaptionMessage() != nil {
+			evt.Message = evt.Message.GetDocumentWithCaptionMessage().GetMessage()
+		}
+	}
+
 	info := evt.Info
 	canonicalJID := canonicalChatJID(info)
 	chatJID := canonicalJID.String()

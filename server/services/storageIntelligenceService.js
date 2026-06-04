@@ -8,13 +8,17 @@ import {
   getBucketLifecycle,
   getBucketVersioning,
   getConfiguredBucketName,
+  getMinioConfig,
   isMinioConfigured,
   listMinioBuckets,
   listMinioObjects,
+  setMinioRuntimeConfig,
   suspendBucketVersioning,
 } from '../lib/minio-storage.js';
 
 const DEFAULT_BUCKET = 'whatsapp-media';
+const MINIO_INTEGRATION_PROVIDER = 'minio';
+let storedMinioConfigLoaded = false;
 const DEFAULT_RETENTION_RULES = [
   { type: 'audio', label: 'Audios WhatsApp', days: 15, match: ['audio/'] },
   { type: 'video', label: 'Videos WhatsApp', days: 15, match: ['video/'] },
@@ -24,6 +28,56 @@ const DEFAULT_RETENTION_RULES = [
   { type: 'temporary', label: 'Temporarios', days: 3, match: ['temp', 'temporary'] },
   { type: 'log', label: 'Logs', days: 7, match: ['log'] },
 ];
+
+export async function getStorageConfig() {
+  const config = await loadAndApplyStoredMinioConfig();
+
+  return {
+    configured: Boolean(config.endpoint && config.accessKey && config.secretKey),
+    config: publicMinioConfig(config),
+  };
+}
+
+export async function ensureStorageConfigLoaded() {
+  if (storedMinioConfigLoaded) return;
+  await loadAndApplyStoredMinioConfig();
+}
+
+export async function saveStorageConfig(adminId, payload = {}) {
+  const current = await readStoredMinioIntegration();
+  const config = mergeMinioConfig(payload, current?.config || {});
+  const now = new Date().toISOString();
+  const supabase = getSupabaseServer();
+  const { error } = await supabase
+    .from('storage_integrations')
+    .upsert({
+      provider: MINIO_INTEGRATION_PROVIDER,
+      config,
+      updated_by: adminId || null,
+      updated_at: now,
+    }, { onConflict: 'provider' });
+
+  if (error) throw error;
+
+  setMinioRuntimeConfig(config);
+  storedMinioConfigLoaded = true;
+  await logStorageAction(adminId, 'save_minio_config', null, {
+    endpoint: config.endpoint,
+    port: config.port,
+    region: config.region,
+    public_base_url: config.publicBaseUrl,
+    bucket_mode: config.bucketMode,
+    single_bucket: config.singleBucket,
+    folder_mode: config.folderMode,
+    use_ssl: config.useSsl,
+    secret_changed: Boolean(String(payload.secretKey || '').trim()),
+  });
+
+  return {
+    configured: Boolean(config.endpoint && config.accessKey && config.secretKey),
+    config: publicMinioConfig(config),
+  };
+}
 
 export async function getStorageSummary() {
   const [objects, buckets, duplicates, orphans] = await Promise.all([
@@ -372,6 +426,95 @@ export async function logStorageAction(adminId, action, bucket, details = {}) {
     details,
   });
   if (error) console.warn('[Storage Intelligence] Failed to log action:', error.message);
+}
+
+async function readStoredMinioIntegration() {
+  const supabase = getSupabaseServer();
+  const { data, error } = await supabase
+    .from('storage_integrations')
+    .select('config')
+    .eq('provider', MINIO_INTEGRATION_PROVIDER)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[Storage Intelligence] Failed to load MinIO integration:', error.message);
+    return null;
+  }
+
+  return data || null;
+}
+
+async function loadAndApplyStoredMinioConfig() {
+  const stored = await readStoredMinioIntegration();
+  const config = mergeMinioConfig(stored?.config || {});
+  if (stored?.config) setMinioRuntimeConfig(config);
+  storedMinioConfigLoaded = true;
+  return config;
+}
+
+function mergeMinioConfig(input = {}, previous = {}) {
+  const env = getMinioConfig();
+  const config = { ...previous, ...input };
+  const endpoint = cleanEndpoint(config.endpoint || env.endpoint);
+  const useSsl = typeof config.useSsl === 'boolean' ? config.useSsl : inferUseSsl(endpoint || env.endpoint);
+
+  return {
+    endpoint,
+    port: cleanPort(config.port) || inferPort(endpoint || env.endpoint, useSsl),
+    region: cleanValue(config.region || env.region || 'us-east-1'),
+    accessKey: cleanValue(config.accessKey || env.accessKey),
+    secretKey: cleanValue(config.secretKey || previous.secretKey || env.secretKey),
+    singleBucket: cleanValue(config.singleBucket || process.env.MINIO_BUCKET || process.env.S3_BUCKET),
+    bucketMode: ['single', 'separate'].includes(config.bucketMode) ? config.bucketMode : 'separate',
+    folderMode: ['bucket-prefix', 'tenant-prefix', 'flat'].includes(config.folderMode) ? config.folderMode : 'bucket-prefix',
+    publicBaseUrl: cleanEndpoint(config.publicBaseUrl || config.publicUrl || env.publicUrl),
+    useSsl,
+  };
+}
+
+function publicMinioConfig(config) {
+  return {
+    endpoint: config.endpoint || '',
+    port: config.port || '',
+    region: config.region || 'us-east-1',
+    accessKey: config.accessKey || '',
+    secretKey: '',
+    hasSecretKey: Boolean(config.secretKey),
+    singleBucket: config.singleBucket || '',
+    bucketMode: config.bucketMode || 'separate',
+    folderMode: config.folderMode || 'bucket-prefix',
+    publicBaseUrl: config.publicBaseUrl || '',
+    useSsl: config.useSsl !== false,
+  };
+}
+
+function cleanValue(value) {
+  return String(value || '').trim();
+}
+
+function cleanEndpoint(value) {
+  return cleanValue(value).replace(/\/+$/, '');
+}
+
+function cleanPort(value) {
+  const port = Number(value);
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) return '';
+  return String(port);
+}
+
+function inferUseSsl(endpoint = '') {
+  if (/^http:\/\//i.test(endpoint)) return false;
+  return true;
+}
+
+function inferPort(endpoint = '', useSsl = true) {
+  try {
+    const url = new URL(/^https?:\/\//i.test(endpoint) ? endpoint : `${useSsl ? 'https' : 'http'}://${endpoint}`);
+    if (url.port) return url.port;
+  } catch {
+    // Defaults abaixo cobrem endpoints ainda incompletos digitados no painel.
+  }
+  return useSsl ? '443' : '9000';
 }
 
 function getWhatsappBucketName() {

@@ -9,8 +9,10 @@ import {
   getMinioPublicUrl,
   isMinioConfigured,
   resolveMediaBucket,
+  resolveMinioObjectKey,
   uploadObject,
 } from '../../lib/minio-storage.js';
+import { ensureStorageConfigLoaded } from '../../services/storageIntelligenceService.js';
 
 const router = Router();
 const upload = multer({
@@ -90,6 +92,8 @@ const EXTENSION_BY_MIME = {
 
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
+    await ensureStorageConfigLoaded();
+
     if (!req.file) {
       return res.status(400).json({ error: 'Arquivo nao enviado.' });
     }
@@ -106,7 +110,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const minioBucket = resolveMediaBucket(bucket);
     const sha256 = sha256Hex(req.file.buffer);
     const existing = minioBucket
-      ? await findReusableStorageObject(req.orgId, minioBucket, sha256)
+      ? await findReusableStorageObject(req.orgId, minioBucket, sha256, bucket)
       : null;
 
     if (existing) {
@@ -153,8 +157,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-router.get('/signed-url', (req, res) => {
+router.get('/signed-url', async (req, res) => {
   try {
+    await ensureStorageConfigLoaded();
+
     if (!isMinioConfigured()) {
       return res.status(503).json({ error: 'MinIO nao configurado.' });
     }
@@ -171,7 +177,8 @@ router.get('/signed-url', (req, res) => {
     }
 
     const key = String(req.query.path || '').trim();
-    if (!key || !key.startsWith(`${req.orgId}/`)) {
+    const isTenantPath = key.startsWith(`${req.orgId}/`) || key.startsWith(`${bucket}/${req.orgId}/`);
+    if (!key || !isTenantPath) {
       return res.status(403).json({ error: 'Arquivo fora da organizacao atual.' });
     }
 
@@ -210,6 +217,7 @@ async function uploadToMinio(bucket, filePath, file) {
   const result = await uploadObject({
     bucket: minioBucket,
     key: filePath,
+    logicalBucket: bucket,
     body: file.buffer,
     contentType: file.mimetype || 'application/octet-stream',
   });
@@ -223,16 +231,24 @@ async function uploadToMinio(bucket, filePath, file) {
   };
 }
 
-async function findReusableStorageObject(tenantId, bucket, sha256) {
+async function findReusableStorageObject(tenantId, bucket, sha256, logicalBucket = '') {
   try {
     const supabase = getSupabaseServer();
-    const { data, error } = await supabase
+    let query = supabase
       .from('storage_objects')
       .select('bucket, object_key, sha256, size_bytes, mime_type')
       .eq('tenant_id', tenantId)
       .eq('bucket', bucket)
       .eq('sha256', sha256)
-      .is('deleted_at', null)
+      .is('deleted_at', null);
+
+    const tenantPrefix = `${tenantId}/`;
+    const scopedPrefix = logicalBucket ? resolveMinioObjectKey(logicalBucket, tenantPrefix) : tenantPrefix;
+    if (scopedPrefix !== tenantPrefix) {
+      query = query.like('object_key', `${scopedPrefix}%`);
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle();

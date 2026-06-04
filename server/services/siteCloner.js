@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { allowSupabaseStorageFallback, isMinioConfigured, resolveMediaBucket, uploadObject } from '../lib/minio-storage.js';
+import { ensureStorageConfigLoaded } from './storageIntelligenceService.js';
 
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
 import crypto from 'crypto';
@@ -122,6 +123,8 @@ async function callGroq(apiKey, htmlContent) {
  */
 async function processAndUploadImage(imageUrl, organizationId) {
     try {
+        await ensureStorageConfigLoaded();
+
         console.log(`📸 Processing image: ${imageUrl}`);
         const response = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 5000 });
         const buffer = Buffer.from(response.data);
@@ -131,6 +134,7 @@ async function processAndUploadImage(imageUrl, organizationId) {
             const result = await uploadObject({
                 bucket: resolveMediaBucket('imobzyimg'),
                 key: fileName,
+                logicalBucket: 'imobzyimg',
                 body: buffer,
                 contentType: response.headers['content-type'] || 'application/octet-stream'
             });

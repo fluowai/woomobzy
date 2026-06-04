@@ -13,12 +13,14 @@ import {
   getLargestFiles,
   getLifecycle,
   getStorageBuckets,
+  getStorageConfig,
   getStorageDuplicates,
   getStorageFiles,
   getStorageLogs,
   getStorageOrphans,
   getStorageSummary,
   runStorageScan,
+  saveStorageConfig,
   signStorageObject,
   simulateCleanup,
   suspendVersioning,
@@ -136,6 +138,14 @@ async function ensureOrganizationOwner({ organization, ownerName, ownerEmail, pa
 router.get('/storage/summary', verifySuperAdmin, storageHandler(async () => ({
   summary: await getStorageSummary(),
 })));
+
+router.get('/storage/config', verifySuperAdmin, storageHandler(async () => (
+  await getStorageConfig()
+)));
+
+router.put('/storage/config', verifySuperAdmin, storageHandler(async (req) => (
+  await saveStorageConfig(req.user?.id, req.body || {})
+)));
 
 router.get('/storage/buckets', verifySuperAdmin, storageHandler(async () => ({
   buckets: await getStorageBuckets(),

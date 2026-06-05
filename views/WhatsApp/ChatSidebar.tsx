@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { formatPhoneDisplay, type Chat } from './hooks/api';
-import { Search, Users, MessageCircle, DownloadCloud, Loader2 } from 'lucide-react';
+import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2 } from 'lucide-react';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
@@ -17,6 +17,9 @@ interface ChatSidebarProps {
   onImportHistory: () => void;
   importingHistory: boolean;
   canImportHistory: boolean;
+  onDeleteAllChats: () => void;
+  deletingChats: boolean;
+  canDeleteChats: boolean;
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -28,6 +31,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onImportHistory,
   importingHistory,
   canImportHistory,
+  onDeleteAllChats,
+  deletingChats,
+  canDeleteChats,
 }) => {
   const [activeType, setActiveType] = React.useState<'direct' | 'group'>('direct');
   const [erroredAvatars, setErroredAvatars] = useState<Set<string>>(new Set());
@@ -125,6 +131,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         >
           {importingHistory ? <Loader2 size={16} className="animate-spin" /> : <DownloadCloud size={16} />}
           <span>{importingHistory ? 'Importando...' : 'Importar conversas'}</span>
+        </button>
+        <button
+          type="button"
+          className="wa-sidebar-clear-btn"
+          onClick={onDeleteAllChats}
+          disabled={!canDeleteChats || deletingChats}
+          title="Excluir todas as conversas individuais, grupos e mensagens desta instancia"
+        >
+          {deletingChats ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+          <span>{deletingChats ? 'Excluindo...' : 'Excluir todos os chats'}</span>
         </button>
       </div>
 

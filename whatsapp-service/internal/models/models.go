@@ -145,6 +145,14 @@ type HistoryImportResponse struct {
 	ImportedMsgs  int    `json:"imported_messages,omitempty"`
 }
 
+// DeleteChatsResponse summarizes a bulk chat cleanup.
+type DeleteChatsResponse struct {
+	DeletedChats    int `json:"deleted_chats"`
+	DeletedDirect   int `json:"deleted_direct"`
+	DeletedGroups   int `json:"deleted_groups"`
+	DeletedMessages int `json:"deleted_messages"`
+}
+
 // ---- WebSocket Events ----
 
 // WSEvent represents a WebSocket event sent to the frontend

@@ -277,6 +277,13 @@ export interface MessageListResponse {
   offset: number;
 }
 
+export interface DeleteChatsResponse {
+  deleted_chats: number;
+  deleted_direct: number;
+  deleted_groups: number;
+  deleted_messages: number;
+}
+
 export interface CrmContactResponse {
   lead: any | null;
   tags: string[];
@@ -361,6 +368,9 @@ export const instanceApi = {
 export const chatApi = {
   list: (instanceId: string) =>
     apiRequest<Chat[]>(`/chats?instance_id=${instanceId}`),
+
+  deleteAll: (instanceId: string) =>
+    apiRequest<DeleteChatsResponse>(`/chats?instance_id=${instanceId}`, { method: 'DELETE' }),
 
   markRead: (chatId: string, instanceId: string) =>
     apiRequest(`/chats/${chatId}/read?instance_id=${instanceId}`, { method: 'POST' }),

@@ -1,6 +1,6 @@
 # Configuração de Domínios SaaS na Vercel
 
-Para que o sistema de domínios automáticos (`subdominio.consultio.com.br`) e domínios personalizados (`cliente.com.br`) funcione, você precisa configurar as variáveis no arquivo `.env` do seu servidor:
+Para que o sistema de domínios automáticos (`subdominio.imobfluow.com.br`) e domínios personalizados (`cliente.com.br`) funcione, você precisa configurar as variáveis no arquivo `.env` do seu servidor:
 
 ## 1. Variáveis de Ambiente (.env)
 
@@ -9,7 +9,7 @@ Para que o sistema de domínios automáticos (`subdominio.consultio.com.br`) e d
 VERCEL_API_TOKEN=seu_token_aqui
 VERCEL_PROJECT_ID=id_do_projeto_na_vercel
 VERCEL_TEAM_ID=id_do_seu_time_se_houver
-WHM_MAIN_DOMAIN=consultio.com.br
+WHM_MAIN_DOMAIN=imobfluow.com.br
 ```
 
 ### Como obter:

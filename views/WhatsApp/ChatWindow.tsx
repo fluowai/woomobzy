@@ -21,6 +21,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+/** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
+function isWhatsAppCdnUrl(url?: string): boolean {
+  if (!url) return false;
+  return url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net');
+}
+
 interface ChatWindowProps {
   chat: Chat;
   messages: Message[];
@@ -67,6 +73,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     setContactNameDraft(chatName);
     setEditingName(false);
+    setAvatarError(false);
   }, [chat.id, chatName]);
 
   useEffect(() => {
@@ -224,7 +231,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           onClick={() => setShowContactPanel(true)}
         >
           <div className="wa-chat-header-avatar">
-            {chat.avatar_url && !avatarError ? (
+            {chat.avatar_url && !isWhatsAppCdnUrl(chat.avatar_url) && !avatarError ? (
               <img src={chat.avatar_url} alt="" className="wa-avatar-img" onError={() => setAvatarError(true)} />
             ) : chat.is_group ? (
               <Users size={20} />
@@ -260,7 +267,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
           <div className="wa-contact-profile">
             <div className="wa-contact-avatar">
-              {chat.avatar_url && !avatarError ? (
+              {chat.avatar_url && !isWhatsAppCdnUrl(chat.avatar_url) && !avatarError ? (
                 <img src={chat.avatar_url} alt="" className="wa-avatar-img" onError={() => setAvatarError(true)} />
               ) : chat.is_group ? (
                 <Users size={30} />

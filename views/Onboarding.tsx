@@ -1,954 +1,359 @@
-import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { callApi } from '../src/lib/api';
 import {
   Building2,
-  Palette,
-  User,
-  Check,
-  ArrowRight,
-  ArrowLeft,
-  Loader2,
-  Sparkles,
-  Globe,
-  Wheat,
+  Tractor,
   Home,
-  Crown,
-  Zap,
-  Shield,
-  Star,
-  BarChart3,
-  MessageCircle,
-  Map,
-  FileText,
-  Eye,
-  ChevronDown,
-  Lock,
+  CheckCircle2,
+  ArrowRight,
+  Bot,
+  MessageSquare,
+  Users,
+  Loader2,
   Mail,
-  Phone,
-  Upload,
-  Image as ImageIcon,
+  Lock,
+  User,
+  Zap,
+  Globe
 } from 'lucide-react';
-import { getTenantBaseUrl, getTenantSiteUrl } from '../utils/platform';
+import { getTenantBaseUrl } from '../utils/platform';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// ==========================================
-// PLAN DEFINITIONS
-// ==========================================
-const PLANS = [
-  {
-    id: 'free',
-    name: 'Starter',
-    price: 0,
-    period: 'Grátis para sempre',
-    description: 'Ideal para começar',
-    color: 'from-slate-500 to-slate-700',
-    border: 'border-slate-200',
-    features: [
-      '1 Corretor',
-      'Até 15 Imóveis',
-      'Landing Page Básica',
-      'CRM Simples',
-      'Subdomínio gratuito',
-    ],
-    limits: { brokers: 1, properties: 15 },
-    popular: false,
-  },
-  {
-    id: 'basic',
-    name: 'Profissional',
-    price: 97,
-    period: '/mês',
-    description: 'Para imobiliárias em crescimento',
-    color: 'from-emerald-500 to-emerald-700',
-    border: 'border-emerald-300',
-    features: [
-      'Até 5 Corretores',
-      'Até 100 Imóveis',
-      'Site Premium Completo',
-      'CRM + Kanban',
-      'WhatsApp Integrado',
-      'Editor Visual',
-      'URL imobfluow.com.br/sua-imobiliaria',
-    ],
-    limits: { brokers: 5, properties: 100 },
-    popular: false,
-  },
-  {
-    id: 'pro',
-    name: 'Enterprise',
-    price: 197,
-    period: '/mês',
-    description: 'Para operações avançadas',
-    color: 'from-amber-500 to-amber-700',
-    border: 'border-amber-300',
-    features: [
-      'Corretores Ilimitados',
-      'Imóveis Ilimitados',
-      'IA Integrada (Gemini)',
-      'Geointeligência + Mapas',
-      'Due Diligence Digital',
-      'Portal do Proprietário',
-      'BI + Relatórios',
-      'Domínio Personalizado',
-      'Suporte Prioritário',
-    ],
-    limits: { brokers: -1, properties: -1 },
-    popular: true,
-  },
-];
-
-// ==========================================
-// PROFILE TYPES
-// ==========================================
-const PROFILES = [
-  {
-    id: 'rural',
-    name: 'Imobiliária Rural',
-    icon: Wheat,
-    description:
-      'Fazendas, sítios, chácaras, haras, áreas agrícolas e pecuárias',
-    color: 'from-green-600 to-emerald-800',
-    features: ['Geointeligência', 'Mapas SIGEF/CAR', 'Due Diligence Rural'],
-  },
-  {
-    id: 'traditional',
-    name: 'Imobiliária Tradicional',
-    icon: Home,
-    description: 'Casas, apartamentos, terrenos, lançamentos e locação',
-    color: 'from-blue-600 to-indigo-800',
-    features: ['Catálogo Premium', 'Portais Integrados', 'Gestão de Locação'],
-  },
-  {
-    id: 'hybrid',
-    name: 'Híbrida',
-    icon: Crown,
-    description: 'Comercializa imóveis rurais e urbanos',
-    color: 'from-purple-600 to-violet-800',
-    features: ['Todos os recursos Rural + Urbano', 'Flexibilidade total'],
-  },
-];
-
-// ==========================================
-// MAIN COMPONENT
-// ==========================================
-const ACTIVE_PLANS = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: 0,
-    period: '7 dias',
-    description: 'Teste gratuito por 7 dias',
-    color: 'from-slate-500 to-slate-700',
-    border: 'border-slate-200',
-    features: ['1 corretor', '15 imoveis', 'CRM simples', 'URL da imobiliaria', 'Expira em 7 dias'],
-    limits: { brokers: 1, properties: 15 },
-    popular: false,
-  },
-  {
-    id: 'starter',
-    name: 'Essencial',
-    price: 97,
-    period: '/mes apos 7 dias',
-    description: 'Para operacoes pequenas',
-    color: 'from-emerald-500 to-emerald-700',
-    border: 'border-emerald-300',
-    features: ['5 corretores', '100 imoveis', 'CRM + Kanban', 'WhatsApp integrado', 'Site premium'],
-    limits: { brokers: 5, properties: 100 },
-    popular: false,
-  },
-  {
-    id: 'pro',
-    name: 'Profissional',
-    price: 197,
-    period: '/mes apos 7 dias',
-    description: 'Para operacoes avancadas',
-    color: 'from-amber-500 to-amber-700',
-    border: 'border-amber-300',
-    features: ['Corretores ilimitados', 'Imoveis ilimitados', 'IA integrada', 'BI e relatorios', 'Portal do proprietario'],
-    limits: { brokers: -1, properties: -1 },
-    popular: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 397,
-    period: '/mes apos 7 dias',
-    description: 'Para redes e operacoes completas',
-    color: 'from-blue-600 to-indigo-800',
-    border: 'border-blue-300',
-    features: ['Tudo do Profissional', 'Multi-equipe', 'Suporte prioritario', 'Dominio personalizado', 'Consultoria de implantacao'],
-    limits: { brokers: -1, properties: -1 },
-    popular: false,
-  },
-];
-
-const ACTIVE_PROFILES = PROFILES.filter((profile) => profile.id !== 'hybrid');
+const SITE_TEMPLATES = {
+  rural: [
+    { id: 'r1', name: 'Fazenda Premium', color: 'emerald' },
+    { id: 'r2', name: 'Agro Business', color: 'green' },
+    { id: 'r3', name: 'Haras & Sítios', color: 'amber' },
+  ],
+  urban: [
+    { id: 'u1', name: 'Urbano Minimal', color: 'slate' },
+    { id: 'u2', name: 'City Connect', color: 'blue' },
+    { id: 'u3', name: 'Família & Lar', color: 'indigo' },
+  ]
+};
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [isSystemSetup, setIsSystemSetup] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<any>(null);
 
-  React.useEffect(() => {
-    checkSystem();
-  }, []);
-
-  const checkSystem = async () => {
-    try {
-      const data = await callApi('/api/system-status');
-      logger.info('✅ Backend connected. Fresh system:', data.fresh);
-      logger.info('✅ Backend connected. Fresh system:', data.fresh);
-      if (data.fresh) {
-        setIsSystemSetup(true);
-        setStep(3); // Go straight to account
-      }
-    } catch (e: any) {
-      if (e.name === 'AbortError') {
-        logger.warn('⚠️ Backend check timed out (server may not be running)');
-      } else {
-        logger.warn('⚠️ Backend unavailable:', e.message);
-      }
-    }
-  };
-
   const [formData, setFormData] = useState({
-    // Plan
-    plan: '',
-    // Profile
-    profileType: '',
-    // User
+    // Step 1: Account & Profile
     name: '',
     email: '',
     password: '',
-    // Organization
     agencyName: '',
-    creci: '',
-    phone: '',
-    whatsapp: '',
-    region: '',
-    // Branding
-    primaryColor: '#064e3b',
-    secondaryColor: '#d4af37',
-    logoUrl: '',
+    cnpj: '',
+    niche: 'urban' as 'rural' | 'urban',
+    template: '',
+    
+    // Step 2: AI
+    llmProvider: 'openai',
+    apiKey: '',
+    
+    // Step 3: WhatsApp
+    welcomeMessage: 'Olá! Sou o assistente virtual. Como posso ajudar?',
+    
+    // Step 4: Team
+    teamEmails: ['', '', '']
   });
 
-  const totalSteps = isSystemSetup ? 3 : 5;
-
   const update = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
     setError('');
   };
 
-  const canProceed = () => {
-    switch (step) {
-      case 1:
-        return !!formData.plan || isSystemSetup;
-      case 2:
-        return !!formData.profileType || isSystemSetup;
-      case 3:
-        return (
-          !!formData.email &&
-          !!formData.password &&
-          formData.password.length >= 6
-        );
-      case 4:
-        return !!formData.agencyName || isSystemSetup;
-      case 5:
-        return true;
-      default:
-        return false;
+  const updateTeamEmail = (index: number, value: string) => {
+    const newEmails = [...formData.teamEmails];
+    newEmails[index] = value;
+    update('teamEmails', newEmails);
+  };
+
+  const handleNext = async () => {
+    if (step === 1) {
+      if (!formData.name || !formData.email || !formData.password || !formData.agencyName || !formData.template) {
+        setError('Preencha todos os campos obrigatórios e escolha um template.');
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError('A senha deve ter pelo menos 6 caracteres.');
+        return;
+      }
     }
-  };
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const data = await callApi('/api/onboarding', {
-        method: 'POST',
-        body: JSON.stringify(formData),
-      });
-
-      setSuccess(data);
-      setStep(6); // Success step
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    if (step === 4) {
+      // Final Submit
+      setLoading(true);
+      setError('');
+      try {
+        const data = await callApi('/api/onboarding', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            agencyName: formData.agencyName,
+            profileType: formData.niche === 'rural' ? 'rural' : 'traditional',
+            plan: 'pro' // Defaulting to pro as requested in previous flow to avoid free plan limitations
+          }),
+        });
+        setSuccess(data);
+        setStep(5);
+      } catch (err: any) {
+        setError(err.message || 'Erro ao criar conta. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+      return;
     }
+
+    setStep(s => s + 1);
   };
 
-  // ==========================================
-  // STEP 1: Plan Selection
-  // ==========================================
-  const renderPlanStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-black text-slate-900">
-          Escolha seu Plano
-        </h2>
-        <p className="text-slate-500 mt-1">
-          Comece gratuitamente e escale quando precisar
-        </p>
-        <button
-          onClick={() => {
-            setIsSystemSetup(true);
-            setStep(3);
-          }}
-          className="mt-2 text-xs text-emerald-600 hover:text-emerald-700 font-bold underline"
-        >
-          Eu sou o proprietário do sistema
-        </button>
+  // =====================================
+  // UI STEPS
+  // =====================================
+
+  const renderStep1 = () => (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-black text-slate-900">O Perfil da sua Imobiliária</h2>
+        <p className="text-slate-500 mt-2">Vamos preparar a sua fundação digital.</p>
       </div>
 
-      <div className="grid gap-4">
-        {ACTIVE_PLANS.map((plan) => (
-          <button
-            key={plan.id}
-            onClick={() => update('plan', plan.id)}
-            className={`relative text-left p-5 rounded-2xl border-2 transition-all duration-300 ${
-              formData.plan === plan.id
-                ? `${plan.border} bg-white shadow-lg scale-[1.02]`
-                : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-md'
-            }`}
-          >
-            {plan.popular && (
-              <div className="absolute -top-3 right-4 bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider">
-                Mais Popular
-              </div>
-            )}
-
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-8 h-8 rounded-lg bg-gradient-to-br ${plan.color} flex items-center justify-center`}
-                  >
-                    {plan.id === 'free' ? (
-                      <Zap size={16} className="text-white" />
-                    ) : plan.id === 'starter' ? (
-                      <Star size={16} className="text-white" />
-                    ) : (
-                      <Crown size={16} className="text-white" />
-                    )}
-                  </div>
-                  <h3 className="font-bold text-slate-800">{plan.name}</h3>
-                </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  {plan.description}
-                </p>
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {plan.features.slice(0, 4).map((f, i) => (
-                    <span
-                      key={i}
-                      className="text-[10px] bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full"
-                    >
-                      {f}
-                    </span>
-                  ))}
-                  {plan.features.length > 4 && (
-                    <span className="text-[10px] text-slate-400">
-                      +{plan.features.length - 4} mais
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="text-right ml-4">
-                <div className="text-2xl font-black text-slate-900">
-                  {plan.price === 0 ? 'Grátis' : `R$${plan.price}`}
-                </div>
-                <div className="text-xs text-slate-400">{plan.period}</div>
-              </div>
-            </div>
-
-            {formData.plan === plan.id && (
-              <div className="absolute top-4 left-4">
-                <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                  <Check size={12} className="text-white" />
-                </div>
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  // ==========================================
-  // STEP 2: Profile Type
-  // ==========================================
-  const renderProfileStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-black text-slate-900">Tipo de Operação</h2>
-        <p className="text-slate-500 mt-1">
-          Selecionamos os recursos ideais para você
-        </p>
-      </div>
-
-      <div className="grid gap-4">
-        {ACTIVE_PROFILES.map((profile) => {
-          const Icon = profile.icon;
-          return (
-            <button
-              key={profile.id}
-              onClick={() => update('profileType', profile.id)}
-              className={`text-left p-6 rounded-2xl border-2 transition-all duration-300 ${
-                formData.profileType === profile.id
-                  ? 'border-emerald-300 bg-emerald-50/50 shadow-lg shadow-emerald-50'
-                  : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-md'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${profile.color} flex items-center justify-center flex-shrink-0`}
-                >
-                  <Icon size={24} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-lg">
-                    {profile.name}
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-0.5">
-                    {profile.description}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {profile.features.map((f, i) => (
-                      <span
-                        key={i}
-                        className="text-[10px] bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-full font-medium"
-                      >
-                        {f}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  // ==========================================
-  // STEP 3: Account Creation
-  // ==========================================
-  const renderAccountStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-black text-slate-900">
-          {isSystemSetup ? 'Configuração do Proprietário' : 'Crie sua Conta'}
-        </h2>
-        <p className="text-slate-500 mt-1">
-          {isSystemSetup
-            ? 'Defina os dados de acesso do Dono do Sistema'
-            : 'Dados de acesso ao painel administrativo'}
-        </p>
-      </div>
-
-      <div className="space-y-4">
+      <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-            Seu Nome
-          </label>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Seu Nome *</label>
           <div className="relative">
-            <User
-              size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="text"
-              className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-colors outline-none text-slate-700"
-              placeholder="Seu nome completo"
-              value={formData.name}
-              onChange={(e) => update('name', e.target.value)}
-            />
+            <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={formData.name} onChange={e => update('name', e.target.value)} className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="Nome completo" />
           </div>
         </div>
-
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-            Email
-          </label>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Email Profissional *</label>
           <div className="relative">
-            <Mail
-              size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="email"
-              className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-colors outline-none text-slate-700"
-              placeholder="seu@email.com"
-              value={formData.email}
-              onChange={(e) => update('email', e.target.value)}
-            />
+            <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="email" value={formData.email} onChange={e => update('email', e.target.value)} className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="seu@email.com.br" />
           </div>
         </div>
+      </div>
 
+      <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-            Senha
-          </label>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nome da Imobiliária *</label>
           <div className="relative">
-            <Lock
-              size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="password"
-              className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-colors outline-none text-slate-700"
-              placeholder="Mínimo 6 caracteres"
-              value={formData.password}
-              onChange={(e) => update('password', e.target.value)}
-            />
-          </div>
-          {formData.password && formData.password.length < 6 && (
-            <p className="text-xs text-red-500 mt-1">
-              A senha precisa ter pelo menos 6 caracteres
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  // ==========================================
-  // STEP 4: Organization Details
-  // ==========================================
-  const renderOrgStep = () => {
-    const slug = formData.agencyName
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-
-    return (
-      <div className="space-y-5">
-        <div className="text-center">
-          <h2 className="text-2xl font-black text-slate-900">
-            Sua Imobiliária
-          </h2>
-          <p className="text-slate-500 mt-1">Informações do seu negócio</p>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-              Nome da Imobiliária *
-            </label>
-            <input
-              type="text"
-              className="w-full p-3.5 bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-colors outline-none font-bold text-slate-700"
-              placeholder="Ex: Terra Nobre Imóveis"
-              value={formData.agencyName}
-              onChange={(e) => update('agencyName', e.target.value)}
-            />
-            {slug && (
-              <div className="mt-2 flex items-center gap-2 text-xs">
-                <Globe size={12} className="text-emerald-500" />
-                <span className="text-slate-400">Sua URL:</span>
-                <span className="font-mono font-bold text-emerald-600">
-                  {getTenantBaseUrl(slug)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-                CRECI
-              </label>
-              <input
-                type="text"
-                className="w-full p-3.5 bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-colors outline-none text-slate-700"
-                placeholder="J-12345"
-                value={formData.creci}
-                onChange={(e) => update('creci', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-                Região
-              </label>
-              <input
-                type="text"
-                className="w-full p-3.5 bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-colors outline-none text-slate-700"
-                placeholder="SP, MG..."
-                value={formData.region}
-                onChange={(e) => update('region', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-                Telefone
-              </label>
-              <input
-                type="tel"
-                className="w-full p-3.5 bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-colors outline-none text-slate-700"
-                placeholder="(00) 0000-0000"
-                value={formData.phone}
-                onChange={(e) => update('phone', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
-                WhatsApp
-              </label>
-              <input
-                type="tel"
-                className="w-full p-3.5 bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:bg-white transition-colors outline-none text-slate-700"
-                placeholder="(00) 90000-0000"
-                value={formData.whatsapp}
-                onChange={(e) => update('whatsapp', e.target.value)}
-              />
-            </div>
+            <Building2 size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={formData.agencyName} onChange={e => update('agencyName', e.target.value)} className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="Ex: Nobre Imóveis" />
           </div>
         </div>
-      </div>
-    );
-  };
-
-  // ==========================================
-  // STEP 5: Confirmation
-  // ==========================================
-  const renderConfirmStep = () => {
-    const selectedPlan = ACTIVE_PLANS.find((p) => p.id === formData.plan);
-    const selectedProfile = ACTIVE_PROFILES.find((p) => p.id === formData.profileType);
-    const slug = formData.agencyName
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-
-    return (
-      <div className="space-y-5">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mx-auto mb-4">
-            <Sparkles size={28} className="text-white" />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900">Tudo Pronto!</h2>
-          <p className="text-slate-500 mt-1">Revise e confirme</p>
-        </div>
-
-        <div className="bg-slate-50 rounded-2xl p-5 space-y-4 border border-slate-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Building2 size={18} className="text-slate-400" />
-              <span className="text-sm text-slate-600">Imobiliária</span>
-            </div>
-            <span className="font-bold text-slate-800">
-              {formData.agencyName}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Globe size={18} className="text-slate-400" />
-              <span className="text-sm text-slate-600">Domínio</span>
-            </div>
-            <span className="font-mono text-sm font-bold text-emerald-600">
-              {getTenantBaseUrl(slug)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Crown size={18} className="text-slate-400" />
-              <span className="text-sm text-slate-600">Plano</span>
-            </div>
-            <span className="font-bold text-slate-800">
-              {selectedPlan?.name}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {selectedProfile && (
-                <selectedProfile.icon size={18} className="text-slate-400" />
-              )}
-              <span className="text-sm text-slate-600">Perfil</span>
-            </div>
-            <span className="font-bold text-slate-800">
-              {selectedProfile?.name}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Mail size={18} className="text-slate-400" />
-              <span className="text-sm text-slate-600">Admin</span>
-            </div>
-            <span className="font-bold text-slate-800">{formData.email}</span>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Senha Segura *</label>
+          <div className="relative">
+            <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="password" value={formData.password} onChange={e => update('password', e.target.value)} className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors" placeholder="Mínimo 6 caracteres" />
           </div>
         </div>
-
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-emerald-700">
-            <Shield size={14} className="inline mr-1" />
-            Seu site será publicado em <strong>
-              {getTenantSiteUrl(slug)}
-            </strong>{' '}
-            automaticamente pelo Docker/Traefik.
-          </p>
-        </div>
-      </div>
-    );
-  };
-
-  // ==========================================
-  // STEP 6: Success
-  // ==========================================
-  const renderSuccess = () => (
-    <div className="text-center space-y-6 py-4">
-      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mx-auto shadow-lg shadow-emerald-200">
-        <Check size={40} className="text-white" />
       </div>
 
       <div>
-        <h2 className="text-2xl font-black text-slate-900">Conta Criada!</h2>
-        <p className="text-slate-500 mt-2">
-          Sua imobiliária está pronta para operar
-        </p>
+        <label className="block text-xs font-bold text-slate-500 uppercase mb-3">Qual é o seu foco principal?</label>
+        <div className="grid grid-cols-2 gap-4">
+          <button onClick={() => update('niche', 'urban')} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${formData.niche === 'urban' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+            <Home size={24} className={formData.niche === 'urban' ? 'text-blue-600' : 'text-slate-400'} />
+            <span className={`font-bold ${formData.niche === 'urban' ? 'text-blue-900' : 'text-slate-600'}`}>Urbano</span>
+          </button>
+          <button onClick={() => update('niche', 'rural')} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${formData.niche === 'rural' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+            <Tractor size={24} className={formData.niche === 'rural' ? 'text-emerald-600' : 'text-slate-400'} />
+            <span className={`font-bold ${formData.niche === 'rural' ? 'text-emerald-900' : 'text-slate-600'}`}>Rural</span>
+          </button>
+        </div>
       </div>
 
-      {success && (
-        <div className="bg-slate-50 rounded-2xl p-5 space-y-4 text-left border border-slate-100">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
-              <Lock size={20} className="text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">
-                Seu Painel de Controle
-              </p>
-              <p className="text-sm text-slate-600 mb-2">
-                Acesse com o email <strong>{success.user?.email}</strong>
-              </p>
-              <a
-                href={success.panelUrl}
-                className="inline-flex items-center gap-2 font-bold text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Acessar Admin Agora <ArrowRight size={14} />
-              </a>
-            </div>
-          </div>
-
-          <div className="h-px bg-slate-200 w-full my-4"></div>
-
-          <div className="flex items-start gap-4 opacity-80">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-1">
-              <Globe size={20} className="text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">
-                Site Público (Aguardando Propagação)
-              </p>
-              <div className="font-mono text-sm font-bold text-emerald-700">
-                {success.domain?.fullDomain}
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
-                <Loader2 size={10} className="inline mr-1 animate-spin" />
-                Estamos configurando o certificado SSL. O site pode levar até{' '}
-                <strong>5 minutos</strong> para ficar online.
-              </p>
-            </div>
-          </div>
+      <div>
+        <label className="block text-xs font-bold text-slate-500 uppercase mb-3">Escolha o Tema do seu Site *</label>
+        <div className="grid grid-cols-3 gap-3">
+          {SITE_TEMPLATES[formData.niche].map(t => (
+            <button key={t.id} onClick={() => update('template', t.id)} className={`p-3 rounded-xl border-2 text-left transition-all ${formData.template === t.id ? (formData.niche === 'urban' ? 'border-blue-500 bg-blue-50' : 'border-emerald-500 bg-emerald-50') : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+              <div className={`w-full h-16 rounded-lg bg-${t.color}-100 mb-2 border border-${t.color}-200`} />
+              <p className="text-xs font-bold text-slate-700">{t.name}</p>
+            </button>
+          ))}
         </div>
-      )}
-
-      <button
-        onClick={() => navigate('/login')}
-        className="w-full bg-gradient-to-r from-emerald-500 to-emerald-700 text-white p-4 rounded-xl font-bold text-lg hover:from-emerald-600 hover:to-emerald-800 transition-all shadow-lg shadow-emerald-200"
-      >
-        Acessar Painel →
-      </button>
-    </div>
+      </div>
+    </motion.div>
   );
 
-  // Superadmin & Admin Bypass UI
-  if (profile?.role === 'superadmin' || profile?.role === 'admin' || profile?.role === 'broker') {
+  const renderStep2 = () => (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Bot size={32} className="text-blue-600" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">Inteligência Artificial</h2>
+        <p className="text-slate-500 mt-2">Conecte o "cérebro" que vai atender seus clientes 24h por dia.</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {['openai', 'gemini'].map(llm => (
+          <button key={llm} onClick={() => update('llmProvider', llm)} className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${formData.llmProvider === llm ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+            <span className="font-bold text-slate-700 uppercase">{llm}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sua API Key (Opcional por agora)</label>
+        <input type="password" value={formData.apiKey} onChange={e => update('apiKey', e.target.value)} className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors font-mono text-sm" placeholder="sk-..." />
+        <p className="text-xs text-slate-400 mt-2">Você pode pular e configurar isso mais tarde no painel.</p>
+      </div>
+    </motion.div>
+  );
+
+  const renderStep3 = () => (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <MessageSquare size={32} className="text-emerald-600" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">Conexão WhatsApp</h2>
+        <p className="text-slate-500 mt-2">Onde a mágica do atendimento acontece.</p>
+      </div>
+
+      <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-center space-y-4">
+         <div className="w-48 h-48 bg-white border-2 border-dashed border-slate-300 rounded-2xl flex items-center justify-center">
+            <p className="text-slate-400 font-medium text-sm px-4">O QR Code aparecerá no seu painel administrativo.</p>
+         </div>
+         <p className="text-sm text-slate-600">Conectaremos o WhatsApp diretamente por lá para maior segurança.</p>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Mensagem de Saudação da IA</label>
+        <textarea value={formData.welcomeMessage} onChange={e => update('welcomeMessage', e.target.value)} className="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors resize-none h-24" />
+      </div>
+    </motion.div>
+  );
+
+  const renderStep4 = () => (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Users size={32} className="text-indigo-600" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">Convide sua Equipe</h2>
+        <p className="text-slate-500 mt-2">Convide corretores ou sócios para colaborar com você. (Opcional)</p>
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        {formData.teamEmails.map((email, idx) => (
+          <div key={idx}>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Corretor {idx + 1}</label>
+            <div className="relative">
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input type="email" value={email} onChange={e => updateTeamEmail(idx, e.target.value)} className="w-full pl-11 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 transition-colors" placeholder="email@exemplo.com" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+
+  const renderStep5 = () => {
+    const slug = formData.agencyName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 text-center shadow-2xl">
-          <div className="w-20 h-20 bg-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3">
-            {profile.role === 'superadmin' ? (
-              <Crown size={40} className="text-white -rotate-3" />
-            ) : (
-              <Shield size={40} className="text-white -rotate-3" />
-            )}
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-6 py-8">
+        <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-200">
+          <CheckCircle2 size={48} className="text-white" />
+        </div>
+        
+        <div>
+          <h2 className="text-3xl font-black text-slate-900">Tudo Pronto!</h2>
+          <p className="text-slate-500 mt-2 text-lg">Sua infraestrutura de vendas foi gerada.</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-left space-y-4 max-w-md mx-auto">
+          <div className="flex items-center gap-3">
+            <Zap size={20} className="text-amber-500" />
+            <span className="font-bold text-slate-700">IA Configurada e Pronta</span>
           </div>
-          <h2 className="text-3xl font-black text-slate-900 mb-2">
-            Olá, {profile.role === 'superadmin' ? 'Administrador!' : 'Gestor!'}
-          </h2>
-          <p className="text-slate-500 mb-8 font-medium">
-            Você já possui acesso ao painel. Deseja pular o cadastro de
-            imobiliária e ir para o Dashboard?
-          </p>
-
-          <div className="space-y-4">
-            <button
-              onClick={() =>
-                navigate(
-                  profile.role === 'superadmin' ? '/superadmin' : '/admin'
-                )
-              }
-              className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 group"
-            >
-              Ir para o Painel
-              <ArrowRight className="inline ml-2 group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            <button
-              onClick={() => {
-                // Let them stay if they really want to finish onboarding
-                setStep(1);
-              }}
-              className="w-full text-slate-400 py-2 font-bold text-sm hover:text-slate-600 transition-colors"
-            >
-              Quero cadastrar minha imobiliária agora
-            </button>
+          <div className="flex items-center gap-3">
+            <Globe size={20} className="text-blue-500" />
+            <div>
+              <span className="font-bold text-slate-700 block">Seu Site Oficial</span>
+              <span className="text-xs text-slate-500 font-mono">{getTenantBaseUrl(slug)}</span>
+            </div>
           </div>
         </div>
-      </div>
+
+        <button onClick={() => navigate('/login')} className="w-full max-w-md mx-auto bg-slate-900 text-white p-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20">
+          Acessar Meu Painel →
+        </button>
+      </motion.div>
     );
-  }
+  };
 
-  // ==========================================
-  // RENDER
-  // ==========================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-200/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-amber-200/20 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 selection:bg-blue-100">
+      <div className="w-full max-w-2xl">
+        
+        {/* Header Progress */}
+        {step < 5 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Passo {step} de 4</span>
+              <span className="text-xs font-bold text-blue-600">
+                {step === 1 && 'Fundação'}
+                {step === 2 && 'Inteligência'}
+                {step === 3 && 'Canais'}
+                {step === 4 && 'Equipe'}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${(step / 4) * 100}%` }} />
+            </div>
+          </div>
+        )}
 
-      <div className="max-w-lg w-full relative z-10">
-        {/* Logo */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-black tracking-tighter">
-            <span className="text-emerald-700">Imob</span>
-            <span className="text-amber-500">Fluow</span>
-          </h1>
-          <p className="text-slate-400 text-xs uppercase tracking-[0.3em] mt-1">
-            Plataforma Imobiliária Inteligente
-          </p>
-        </div>
-
-        {/* Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-200/50 border border-white/50 overflow-hidden">
-          {/* Progress Bar */}
-          {step <= totalSteps && (
-            <div className="px-8 pt-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Passo {step} de {totalSteps}
-                </span>
-                <span className="text-[10px] font-bold text-emerald-600">
-                  {Math.round((step / totalSteps) * 100)}%
-                </span>
-              </div>
-              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${(step / totalSteps) * 100}%` }}
-                />
-              </div>
+        {/* Content Box */}
+        <div className={`bg-white rounded-[2rem] shadow-2xl shadow-slate-900/5 p-8 md:p-10 border border-slate-100 ${step === 5 ? 'border-emerald-100 bg-gradient-to-b from-emerald-50/50 to-white' : ''}`}>
+          
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm font-bold border border-red-100 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-600" />
+              {error}
             </div>
           )}
 
-          {/* Content */}
-          <div className="p-8">
-            {isSystemSetup ? (
-              renderAccountStep()
-            ) : (
-              <>
-                {step === 1 && renderPlanStep()}
-                {step === 2 && renderProfileStep()}
-                {step === 3 && renderAccountStep()}
-                {step === 4 && renderOrgStep()}
-                {step === 5 && renderConfirmStep()}
-              </>
-            )}
-            {step === 6 && renderSuccess()}
+          <AnimatePresence mode="wait">
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
+            {step === 4 && renderStep4()}
+            {step === 5 && renderStep5()}
+          </AnimatePresence>
 
-            {/* Error */}
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-center">
-                {error}
-              </div>
-            )}
+          {/* Footer Controls */}
+          {step < 5 && (
+            <div className="mt-10 flex items-center justify-between pt-6 border-t border-slate-100">
+              <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`px-6 py-3 font-bold text-slate-500 hover:text-slate-800 transition-colors ${step === 1 ? 'opacity-0 pointer-events-none' : ''}`}>
+                Voltar
+              </button>
+              
+              <button onClick={handleNext} disabled={loading} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-blue-600/20">
+                {loading ? <Loader2 size={18} className="animate-spin" /> : (
+                  <>
+                    {step === 4 ? 'Concluir Setup' : 'Avançar'}
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
+            </div>
+          )}
 
-            {/* Navigation */}
-            {step <= totalSteps && (
-              <div className="flex gap-3 mt-6">
-                {!isSystemSetup && step > 1 && (
-                  <button
-                    onClick={() => setStep((s) => s - 1)}
-                    className="flex-1 bg-white text-slate-600 border-2 border-slate-200 p-3.5 rounded-xl font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <ArrowLeft size={16} /> Voltar
-                  </button>
-                )}
-                {!isSystemSetup && step < totalSteps ? (
-                  <button
-                    onClick={() => setStep((s) => s + 1)}
-                    disabled={!canProceed()}
-                    className="flex-[2] bg-gradient-to-r from-slate-800 to-slate-900 text-white p-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:from-slate-900 hover:to-black transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Próximo <ArrowRight size={16} />
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading || !canProceed()}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-emerald-700 text-white p-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:from-emerald-600 hover:to-emerald-800 transition-all shadow-lg shadow-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        {isSystemSetup
-                          ? 'Configurando Sistema...'
-                          : 'Criando sua conta...'}
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={18} />
-                        {isSystemSetup
-                          ? 'Finalizar Configuração de Dono'
-                          : 'Criar Minha Conta'}
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
-
-        {/* Footer */}
-        {step <= totalSteps && (
-          <p className="text-center text-xs text-slate-400 mt-6">
-            Já tem conta?{' '}
-            <button
-              onClick={() => navigate('/login')}
-              className="text-emerald-600 font-bold hover:underline"
-            >
-              Faça login
-            </button>
-          </p>
-        )}
       </div>
     </div>
   );

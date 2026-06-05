@@ -54,7 +54,7 @@ const whatsappEnv = compactEnv({
   CORS_ORIGINS:
     process.env.CORS_ORIGINS ||
     process.env.ALLOWED_ORIGINS ||
-    'http://localhost:3006,http://localhost:3002,https://consultio.com.br,https://imobzy.consultio.com.br,https://www.consultio.com.br,https://woomobzy-production.up.railway.app',
+    'http://localhost:3006,http://localhost:3002,https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br',
   WHATSAPP_INTERNAL_TOKEN: process.env.WHATSAPP_INTERNAL_TOKEN,
   WHATSAPP_AI_AUTOMATION: process.env.WHATSAPP_AI_AUTOMATION
 });

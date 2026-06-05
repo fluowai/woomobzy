@@ -1,7 +1,7 @@
 http:
   routers:
     imobzy_platform_api:
-      rule: "Host(`imobfluow.com.br`, `www.imobfluow.com.br`, `imobzy.consultio.com.br`) && PathPrefix(`/api`)"
+      rule: "Host(`app.imobfluow.com.br`, `imobfluow.com.br`, `www.imobfluow.com.br`) && PathPrefix(`/api`)"
       entryPoints:
         - websecure
       priority: 1000
@@ -10,7 +10,7 @@ http:
       service: imobzy_api@file
 
     imobzy_platform_frontend:
-      rule: "Host(`imobfluow.com.br`, `www.imobfluow.com.br`, `imobzy.consultio.com.br`)"
+      rule: "Host(`app.imobfluow.com.br`, `imobfluow.com.br`, `www.imobfluow.com.br`)"
       entryPoints:
         - websecure
       priority: 100

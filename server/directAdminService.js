@@ -25,7 +25,7 @@ export const directAdminService = {
         action: 'add',
         type: 'A',
         name: subdomain,
-        value: PLATFORM_PUBLIC_IP || 'IP_DO_SERVIDOR',
+        value: PLATFORM_PUBLIC_IP || '207.58.153.219',
       });
 
       const response = await axios.post(`${DA_URL}/CMD_API_DNS_CONTROL`, params.toString(), {

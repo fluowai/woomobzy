@@ -3,6 +3,12 @@ import { Image, FileText, FileVideo, MapPin, Contact, CheckCheck } from 'lucide-
 import AudioMessagePlayer from './AudioMessagePlayer';
 import { formatPhoneDisplay, type Message } from './hooks/api';
 
+/** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
+function isWhatsAppCdnUrl(url?: string): boolean {
+  if (!url) return false;
+  return url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net');
+}
+
 interface MessageBubbleProps {
   message: Message;
   isGroup: boolean;
@@ -135,7 +141,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
     <div className={`wa-bubble-wrapper ${isSent ? 'sent' : 'received'}`}>
       {!isSent && (
         <div className="wa-message-avatar">
-          {message.sender_avatar_url && !imgError ? (
+          {message.sender_avatar_url && !isWhatsAppCdnUrl(message.sender_avatar_url) && !imgError ? (
             <img src={message.sender_avatar_url} alt="" className="wa-avatar-img" onError={() => setImgError(true)} />
           ) : (
             <span>{senderInitial}</span>

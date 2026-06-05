@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
-import { Mail, Phone, User, Send, CheckCircle2, Loader2 } from 'lucide-react';
+import { Mail, Phone, User, Send, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { leadService } from '../services/leads';
 
 interface ComingSoonProps {
@@ -50,92 +50,89 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center p-6 text-white overflow-hidden relative font-sans">
-      {/* Background Animated Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-600/20 blur-[120px] rounded-full animate-pulse" />
+    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4 text-white overflow-hidden relative font-sans selection:bg-indigo-500/30">
+      {/* Premium Background Effects */}
+      <div className="absolute top-0 w-full h-[500px] bg-gradient-to-b from-indigo-900/20 to-transparent pointer-events-none" />
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[150px] rounded-full animate-pulse pointer-events-none" />
       <div
-        className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-600/10 blur-[120px] rounded-full animate-pulse"
-        style={{ animationDelay: '2s' }}
+        className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px] rounded-full animate-pulse pointer-events-none"
+        style={{ animationDelay: '3s' }}
       />
+      
+      {/* Grid Pattern */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
 
-      <div className="max-w-2xl w-full z-10">
-        {/* Logo Section */}
-        <div className="text-center mb-12">
-          <div className="inline-block mb-6 relative">
-            <div className="absolute inset-0 bg-orange-500 blur-2xl opacity-20 animate-pulse" />
-            <img
-              src="/logo-imobzy-360.svg"
-              alt="ImobFluow"
-              className="h-20 w-auto relative z-10 drop-shadow-2xl"
-            />
+      <div className="max-w-xl w-full z-10 flex flex-col items-center relative">
+        
+        {/* Header Content */}
+        <div className="text-center mb-10 w-full animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8">
+            <Sparkles size={14} className="text-indigo-400" />
+            <span className="text-xs font-medium tracking-widest uppercase text-slate-300">Em Construção</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter italic uppercase mb-4">
+          
+          <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
             {agencyName}
           </h1>
-          <div className="h-1 w-20 bg-orange-500 mx-auto rounded-full mb-6" />
-          <p className="text-xl md:text-2xl text-slate-400 font-medium max-w-lg mx-auto leading-tight">
-            Uma nova experiência imobiliária de elite está sendo lapidada para
-            você.
+          
+          <p className="text-lg md:text-xl text-slate-400 font-light max-w-md mx-auto leading-relaxed">
+            Estamos preparando uma plataforma imobiliária de alto padrão em parceria com a <strong className="text-indigo-400 font-medium">ImobFluow</strong>.
           </p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none" />
+        <div className="w-full bg-black/40 backdrop-blur-2xl border border-white/10 p-8 sm:p-10 rounded-3xl shadow-2xl relative group animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-150">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent rounded-3xl pointer-events-none" />
+          <div className="absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
           {success ? (
-            <div className="text-center py-8 animate-in zoom-in duration-500">
-              <div className="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 size={40} />
+            <div className="text-center py-10 animate-in zoom-in duration-500">
+              <div className="w-24 h-24 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+                <CheckCircle2 size={48} strokeWidth={1.5} />
               </div>
-              <h2 className="text-2xl font-bold mb-2">Inscrição Confirmada!</h2>
-              <p className="text-slate-400">
-                Você será um dos primeiros a conhecer nossa nova plataforma.
-                Fique atento ao seu e-mail e WhatsApp!
+              <h2 className="text-3xl font-bold mb-3 text-white">Lugar Garantido!</h2>
+              <p className="text-slate-400 leading-relaxed mb-8">
+                Você receberá um convite exclusivo assim que a nova plataforma estiver no ar.
               </p>
               <button
                 onClick={() => setSuccess(false)}
-                className="mt-8 text-sm text-orange-500 font-bold uppercase tracking-widest hover:text-orange-400 transition"
+                className="text-sm text-indigo-400 font-semibold uppercase tracking-wider hover:text-indigo-300 transition-colors"
               >
                 Voltar
               </button>
             </div>
           ) : (
             <>
-              <div className="mb-8">
-                <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                  Seja avisado no lançamento
-                </h2>
+              <div className="mb-8 text-center">
+                <h2 className="text-2xl font-bold mb-2 text-white">Lista VIP</h2>
                 <p className="text-sm text-slate-400">
-                  Deixe seus contatos abaixo para receber acesso prioritário.
+                  Cadastre-se para ser notificado no lançamento oficial.
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="group/input">
-                  <div className="relative">
-                    <User
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-orange-500 transition-colors"
-                      size={20}
-                    />
-                    <input
-                      type="text"
-                      required
-                      placeholder="Seu Nome Completo"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
-                    />
-                  </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="relative group/input">
+                  <User
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors"
+                    size={20}
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Seu Nome Completo"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-6 outline-none focus:border-indigo-500/50 focus:bg-white/10 text-white placeholder:text-slate-500 transition-all font-medium"
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="relative group/input">
                     <Mail
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-orange-500 transition-colors"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors"
                       size={20}
                     />
                     <input
@@ -146,12 +143,12 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
-                      className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-6 outline-none focus:border-indigo-500/50 focus:bg-white/10 text-white placeholder:text-slate-500 transition-all font-medium"
                     />
                   </div>
                   <div className="relative group/input">
                     <Phone
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-orange-500 transition-colors"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors"
                       size={20}
                     />
                     <input
@@ -162,28 +159,30 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                       onChange={(e) =>
                         setFormData({ ...formData, whatsapp: e.target.value })
                       }
-                      className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-6 outline-none focus:border-indigo-500/50 focus:bg-white/10 text-white placeholder:text-slate-500 transition-all font-medium"
                     />
                   </div>
                 </div>
 
                 {error && (
-                  <p className="text-red-400 text-xs font-medium px-2">
-                    {error}
-                  </p>
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                    <p className="text-red-400 text-sm text-center">
+                      {error}
+                    </p>
+                  </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-orange-600 hover:bg-orange-500 text-white py-4 rounded-2xl font-black uppercase text-sm tracking-widest shadow-xl shadow-orange-950/20 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                  className="w-full bg-white text-black hover:bg-slate-200 py-4 rounded-xl font-bold uppercase text-sm tracking-wider shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all flex items-center justify-center gap-3 active:scale-[0.98] mt-2 disabled:opacity-70"
                 >
                   {loading ? (
                     <Loader2 className="animate-spin" size={20} />
                   ) : (
                     <>
-                      <Send size={18} />
-                      Garantir meu Acesso
+                      Quero ser avisado
+                      <Send size={16} className="ml-1" />
                     </>
                   )}
                 </button>
@@ -193,12 +192,15 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="mt-16 text-center">
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-4">
-            <span className="h-px w-8 bg-slate-800" />
-            Impulsionado por Tecnologia ImobFluow
-            <span className="h-px w-8 bg-slate-800" />
-          </p>
+        <div className="mt-12 text-center animate-in fade-in duration-1000 delay-300">
+          <div className="flex flex-col items-center gap-3">
+            <span className="text-xs text-slate-500 uppercase tracking-widest font-medium">Desenvolvido por</span>
+            <img
+              src="/logo-imobzy-360.svg"
+              alt="ImobFluow"
+              className="h-8 opacity-50 hover:opacity-100 transition-opacity cursor-pointer grayscale hover:grayscale-0"
+            />
+          </div>
         </div>
       </div>
     </div>

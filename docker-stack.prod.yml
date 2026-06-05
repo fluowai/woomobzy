@@ -1,40 +1,6 @@
 version: "3.8"
 
 services:
-  # ========================================================
-  # TRAEFIK 100% IN-CODE (Sem arquivos externos ou comandos)
-  # ========================================================
-  traefik:
-    image: traefik:v2.10
-    command:
-      - "--api.dashboard=false"
-      - "--providers.docker=true"
-      - "--providers.docker.swarmMode=false" # Mude para true se rodar docker swarm init
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.file.directory=/dynamic"
-      - "--providers.file.watch=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.letsencryptresolver.acme.email=admin@imobfluow.com.br"
-      - "--certificatesresolvers.letsencryptresolver.acme.storage=/certs/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik_certs:/certs
-      - traefik_dynamic:/dynamic
-    networks:
-      - consultio1
-      - imobzy_internal
-    deploy:
-      restart_policy:
-        condition: any
-
   frontend:
     image: ghcr.io/fluowai/woomobzy-frontend:latest
     environment:
@@ -43,30 +9,30 @@ services:
       VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
       VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
       VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
-      VITE_PANEL_URL: "https://crmimobzy.consultio.com.br"
+      VITE_PANEL_URL: "https://app.imobfluow.com.br"
     networks:
       - consultio1
-      - imobzy_internal
+      - imobfluow_internal
     deploy:
       restart_policy:
         condition: any
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=consultio1"
-        - "traefik.http.routers.imobzy_frontend.rule=Host(`crmimobzy.consultio.com.br`)"
-        - "traefik.http.routers.imobzy_frontend.entrypoints=websecure"
-        - "traefik.http.routers.imobzy_frontend.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.imobzy_frontend.priority=1"
-        - "traefik.http.routers.imobzy_frontend.service=imobzy_frontend"
-        - "traefik.http.services.imobzy_frontend.loadbalancer.server.port=80"
+        - "traefik.http.routers.imobfluow_frontend.rule=Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`)"
+        - "traefik.http.routers.imobfluow_frontend.entrypoints=websecure"
+        - "traefik.http.routers.imobfluow_frontend.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.imobfluow_frontend.priority=1"
+        - "traefik.http.routers.imobfluow_frontend.service=imobfluow_frontend"
+        - "traefik.http.services.imobfluow_frontend.loadbalancer.server.port=80"
 
   api:
     image: ghcr.io/fluowai/woomobzy-api:latest
     environment:
       NODE_ENV: production
       PORT: 3002
-      ALLOWED_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
-      CORS_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
+      ALLOWED_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
+      CORS_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
       VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
       VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
       SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
@@ -89,30 +55,30 @@ services:
       WHATSAPP_AI_AUTOMATION: "true"
       TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
     volumes:
-      - traefik_dynamic:/app/traefik/dynamic
+      - imobzy_traefik_dynamic:/app/traefik/dynamic
     networks:
       - consultio1
-      - imobzy_internal
+      - imobfluow_internal
     deploy:
       restart_policy:
         condition: any
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=consultio1"
-        - "traefik.http.routers.imobzy_api.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api`)"
-        - "traefik.http.routers.imobzy_api.entrypoints=websecure"
-        - "traefik.http.routers.imobzy_api.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.imobzy_api.priority=10"
-        - "traefik.http.routers.imobzy_api.service=imobzy_api"
-        - "traefik.http.services.imobzy_api.loadbalancer.server.port=3002"
+        - "traefik.http.routers.imobfluow_api.rule=(Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`)) && PathPrefix(`/api`)"
+        - "traefik.http.routers.imobfluow_api.entrypoints=websecure"
+        - "traefik.http.routers.imobfluow_api.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.imobfluow_api.priority=10"
+        - "traefik.http.routers.imobfluow_api.service=imobfluow_api"
+        - "traefik.http.services.imobfluow_api.loadbalancer.server.port=3002"
 
   whatsapp-service:
     image: ghcr.io/fluowai/woomobzy-whatsapp:latest
     environment:
       NODE_ENV: production
       PORT: 3100
-      ALLOWED_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
-      CORS_ORIGINS: "https://crmimobzy.consultio.com.br,https://imobzy.com.br,https://www.imobzy.com.br,https://*.imobzy.com.br,https://imobzy.consultio.com.br,https://woomobzy-production.up.railway.app"
+      ALLOWED_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
+      CORS_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
       VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
       VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
       SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
@@ -132,39 +98,39 @@ services:
       - whatsapp_sessions:/app/.sessions
     networks:
       - consultio1
-      - imobzy_internal
+      - imobfluow_internal
     deploy:
       restart_policy:
         condition: any
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=consultio1"
-        - "traefik.http.routers.imobzy_whatsapp_ws.rule=Host(`crmimobzy.consultio.com.br`) && PathPrefix(`/api/whatsapp/ws`)"
-        - "traefik.http.routers.imobzy_whatsapp_ws.entrypoints=websecure"
-        - "traefik.http.routers.imobzy_whatsapp_ws.tls.certresolver=letsencryptresolver"
-        - "traefik.http.routers.imobzy_whatsapp_ws.priority=20"
-        - "traefik.http.routers.imobzy_whatsapp_ws.middlewares=imobzy_whatsapp_ws_rewrite"
-        - "traefik.http.routers.imobzy_whatsapp_ws.service=imobzy_whatsapp_ws"
-        - "traefik.http.middlewares.imobzy_whatsapp_ws_rewrite.replacepathregex.regex=^/api/whatsapp/ws(.*)"
-        - "traefik.http.middlewares.imobzy_whatsapp_ws_rewrite.replacepathregex.replacement=/ws$$1"
-        - "traefik.http.services.imobzy_whatsapp_ws.loadbalancer.server.port=3100"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.rule=(Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`)) && PathPrefix(`/api/whatsapp/ws`)"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.entrypoints=websecure"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.priority=20"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.middlewares=imobfluow_whatsapp_ws_rewrite"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.service=imobfluow_whatsapp_ws"
+        - "traefik.http.middlewares.imobfluow_whatsapp_ws_rewrite.replacepathregex.regex=^/api/whatsapp/ws(.*)"
+        - "traefik.http.middlewares.imobfluow_whatsapp_ws_rewrite.replacepathregex.replacement=/ws$$1"
+        - "traefik.http.services.imobfluow_whatsapp_ws.loadbalancer.server.port=3100"
 
   agro-intelligence:
     image: ghcr.io/fluowai/woomobzy-agro:latest
     networks:
-      - imobzy_internal
+      - imobfluow_internal
     deploy:
       restart_policy:
         condition: any
 
 volumes:
   whatsapp_sessions:
-  traefik_certs:
-  traefik_dynamic:
+  imobzy_traefik_dynamic:
+    external: true
 
 networks:
   consultio1:
     external: true
     name: consultio1
-  imobzy_internal:
+  imobfluow_internal:
     driver: overlay

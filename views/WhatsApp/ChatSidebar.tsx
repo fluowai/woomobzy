@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { formatPhoneDisplay, type Chat } from './hooks/api';
 import { Search, Users, MessageCircle, DownloadCloud, Loader2 } from 'lucide-react';
 
+/** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
+function isWhatsAppCdnUrl(url?: string): boolean {
+  if (!url) return false;
+  return url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net');
+}
+
 interface ChatSidebarProps {
   chats: Chat[];
   selectedChat: Chat | null;
@@ -143,7 +149,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 className="wa-avatar"
                 style={{ backgroundColor: getAvatarColor(getChatName(chat)) }}
               >
-                {chat.avatar_url && !erroredAvatars.has(chat.id) ? (
+                {chat.avatar_url && !isWhatsAppCdnUrl(chat.avatar_url) && !erroredAvatars.has(chat.id) ? (
                   <img
                     src={chat.avatar_url}
                     alt=""

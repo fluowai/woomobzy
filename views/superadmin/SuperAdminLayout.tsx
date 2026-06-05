@@ -24,6 +24,7 @@ import {
   Zap,
   CloudCog,
   HardDrive,
+  Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -61,6 +62,7 @@ const SuperAdminLayout: React.FC = () => {
     { icon: Zap, label: 'Importador IA', path: '/superadmin/importer' },
     { icon: CloudCog, label: 'Migração FluowAI', path: '/superadmin/fluowai-migration' },
     { icon: HardDrive, label: 'Storage Intelligence', path: '/superadmin/storage-intelligence' },
+    { icon: Megaphone, label: 'Marketing & SEO', path: '/superadmin/marketing' },
     { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
   ];
 

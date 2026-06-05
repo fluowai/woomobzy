@@ -14,8 +14,8 @@ Se for subir como Stack estilo Portainer/n8n, use:
 
 Aponte o dominio para o IP do servidor:
 
-- Registro `A`: `seu-dominio.com.br` -> `IP_DO_SERVIDOR`
-- Opcional `A`: `www.seu-dominio.com.br` -> `IP_DO_SERVIDOR`
+- Registro `A`: `seu-dominio.com.br` -> `207.58.153.219`
+- Opcional `A`: `www.seu-dominio.com.br` -> `207.58.153.219`
 
 ## 2. Preparar env no servidor
 

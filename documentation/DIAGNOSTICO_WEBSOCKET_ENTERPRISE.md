@@ -1,6 +1,6 @@
 # 🚀 Guia Corporativo DevOps & Backend: Diagnóstico e Resolução de WebSockets em Produção (Docker + Portainer)
 
-Este guia foi elaborado para diagnosticar, corrigir e evitar falhas de conexão de WebSockets (`wss://crmimobzy.consultio.com.br/api/whatsapp/ws`) em ambientes de produção sob arquitetura de microsserviços rodando em containers Docker.
+Este guia foi elaborado para diagnosticar, corrigir e evitar falhas de conexão de WebSockets (`wss://app.imobfluow.com.br/api/whatsapp/ws`) em ambientes de produção sob arquitetura de microsserviços rodando em containers Docker.
 
 ---
 
@@ -40,18 +40,18 @@ map $http_upgrade $connection_upgrade {
 server {
     listen 80;
     listen [::]:80;
-    server_name crmimobzy.consultio.com.br;
+    server_name app.imobfluow.com.br;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name crmimobzy.consultio.com.br;
+    server_name app.imobfluow.com.br;
 
     # SSL Configs (Let's Encrypt / Cloudflare)
-    ssl_certificate /etc/letsencrypt/live/crmimobzy.consultio.com.br/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/crmimobzy.consultio.com.br/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/app.imobfluow.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/app.imobfluow.com.br/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
 
@@ -474,7 +474,7 @@ Instale o utilitário `wscat` localmente no servidor ou em sua máquina para tes
 npm install -g wscat
 
 # Testa a conexão segura informando o token de teste (Substitua o token completo)
-wscat -c "wss://crmimobzy.consultio.com.br/api/whatsapp/ws?ws_token=SUA_JWT_TOKEN"
+wscat -c "wss://app.imobfluow.com.br/api/whatsapp/ws?ws_token=SUA_JWT_TOKEN"
 ```
 *Se conectar e exibir `Connected (press CTRL+C to quit)`, a infraestrutura e o token estão perfeitos.*
 
@@ -491,9 +491,9 @@ docker exec -it imobzy-api netstat -tulpn | grep 3002
 curl -i -N \
   -H "Connection: Upgrade" \
   -H "Upgrade: websocket" \
-  -H "Host: crmimobzy.consultio.com.br" \
-  -H "Origin: https://crmimobzy.consultio.com.br" \
-  "https://crmimobzy.consultio.com.br/api/whatsapp/ws?ws_token=SEU_TOKEN"
+  -H "Host: app.imobfluow.com.br" \
+  -H "Origin: https://app.imobfluow.com.br" \
+  "https://app.imobfluow.com.br/api/whatsapp/ws?ws_token=SEU_TOKEN"
 ```
 
 ---
@@ -503,7 +503,7 @@ curl -i -N \
 Se você está rodando o ecossistema sob um destes gerenciadores, aplique estes passos específicos:
 
 ### A. Nginx Proxy Manager (NPM)
-1. Vá até a aba **Proxy Hosts** e edite a entrada `crmimobzy.consultio.com.br`.
+1. Vá até a aba **Proxy Hosts** e edite a entrada `app.imobfluow.com.br`.
 2. Localize o botão seletor **Websockets Support** e ative-o (coloque em `ON`).
 3. Clique em **Save**.
    * *Nota*: O NPM gerencia os blocos de upgrade automaticamente em segundo plano ao ativar esta opção.

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   frontend:
     image: ghcr.io/fluowai/woomobzy-frontend:latest
@@ -7,9 +5,11 @@ services:
       VITE_API_URL: "same-origin"
       VITE_WHATSAPP_API_URL: "/api/whatsapp"
       VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
-      VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
-      VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
+      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?set VITE_SUPABASE_URL}"
+      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?set VITE_SUPABASE_ANON_KEY}"
       VITE_PANEL_URL: "https://app.imobfluow.com.br"
+      VITE_PUBLIC_APP_URL: "https://imobfluow.com.br"
+      VITE_PLATFORM_IP: "${PLATFORM_PUBLIC_IP:-207.58.153.219}"
     networks:
       - consultio1
       - imobfluow_internal
@@ -33,12 +33,12 @@ services:
       PORT: 3002
       ALLOWED_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
       CORS_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
-      VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
-      VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
-      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
-      SUPABASE_JWT_SECRET: "VUyLyMZTq115g1xIYiXCk2xMJC8c+0twwCHvoP8e6FXICG2T+UcqSDddtTCg0XJMjXCQ3fGHd0FW6QFisrrhcg=="
-      DATABASE_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
-      SUPABASE_DB_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
+      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?set VITE_SUPABASE_URL}"
+      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?set VITE_SUPABASE_ANON_KEY}"
+      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY}"
+      SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET:?set SUPABASE_JWT_SECRET}"
+      DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL}"
+      SUPABASE_DB_URL: "${SUPABASE_DB_URL:?set SUPABASE_DB_URL}"
       PGSSLMODE: require
       WHATSAPP_API_URL: "http://whatsapp-service:3100"
       WHATSMEOW_URL: "http://whatsapp-service:3100"
@@ -51,7 +51,7 @@ services:
       EMAIL_PORT: 587
       EMAIL_USER: ""
       EMAIL_PASSWORD: ""
-      WHATSAPP_INTERNAL_TOKEN: "k7Pq9zLm2A8xR4vT6nY1cE5bH3sW0dJ"
+      WHATSAPP_INTERNAL_TOKEN: "${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}"
       WHATSAPP_AI_AUTOMATION: "true"
       TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
     volumes:
@@ -79,12 +79,12 @@ services:
       PORT: 3100
       ALLOWED_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
       CORS_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
-      VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
-      VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
-      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
-      SUPABASE_JWT_SECRET: "VUyLyMZTq115g1xIYiXCk2xMJC8c+0twwCHvoP8e6FXICG2T+UcqSDddtTCg0XJMjXCQ3fGHd0FW6QFisrrhcg=="
-      DATABASE_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
-      SUPABASE_DB_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
+      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?set VITE_SUPABASE_URL}"
+      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?set VITE_SUPABASE_ANON_KEY}"
+      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY}"
+      SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET:?set SUPABASE_JWT_SECRET}"
+      DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL}"
+      SUPABASE_DB_URL: "${SUPABASE_DB_URL:?set SUPABASE_DB_URL}"
       PGSSLMODE: require
       NODE_URL: "http://api:3002"
       WHATSMEOW_URL: "http://whatsapp-service:3100"
@@ -92,7 +92,7 @@ services:
       OPENAI_API_KEY: ""
       GEMINI_API_KEY: "sua-api-key-do-gemini"
       GROQ_API_KEY: "sua-api-key-do-groq"
-      WHATSAPP_INTERNAL_TOKEN: "k7Pq9zLm2A8xR4vT6nY1cE5bH3sW0dJ"
+      WHATSAPP_INTERNAL_TOKEN: "${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}"
       WHATSAPP_AI_AUTOMATION: "true"
     volumes:
       - whatsapp_sessions:/app/.sessions

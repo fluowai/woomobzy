@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 
-const baseUrl = 'https://api.consultio.com.br';
+const baseUrl = 'https://app.imobfluow.com.br/api';
 const apiKey = '8b90148caf66df22c8212b810d64270b';
 const instanceName = `test_manual_${Math.floor(Math.random() * 1000)}`;
 

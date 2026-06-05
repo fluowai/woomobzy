@@ -46,9 +46,9 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     : [];
 
   const allowedOrigins = new Set([
-    'https://imobzy.consultio.com.br',
-    'https://crmimobzy.consultio.com.br',
-    'https://woomobzy-production.up.railway.app',
+    'https://app.imobfluow.com.br',
+    'https://imobfluow.com.br',
+    'https://www.imobfluow.com.br',
     ...envAllowedOrigins,
   ]);
 

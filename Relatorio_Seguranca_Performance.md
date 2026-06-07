@@ -18,11 +18,11 @@ Identificamos mais de 1000 chamadas diretas a `console.log`, `console.warn` e `c
 
 ## 3. Auditoria de Segurança (.env e Segredos)
 **Vulnerabilidades Encontradas:**
-- **Vercel API Token:** Encontrado no arquivo `.env` (Crítico).
+- **Token de deploy/infra:** Encontrado no arquivo `.env` (Crítico).
 - **DirectAdmin API Key:** Encontrado no arquivo `.env` (Alta).
 - **Service Role Key:** Presente no `.env`, mas corretamente sem o prefixo `VITE_` (O que impede a exposição automática ao bundle frontend).
 
-**Recomendação:** Mover chaves sensíveis (Vercel, DirectAdmin) para o Dashboard da Vercel/Railway e removê-las do arquivo local `.env` em produção.
+**Recomendação:** Mover chaves sensíveis (deploy/infra, DirectAdmin) para o gerenciador seguro de variáveis do servidor e removê-las do arquivo local `.env` em produção.
 
 ## 4. Performance e Otimização
 **Pontos de Melhoria:**

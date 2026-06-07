@@ -22,14 +22,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const SITE_TEMPLATES = {
   rural: [
-    { id: 'r1', name: 'Fazenda Premium', color: 'emerald' },
-    { id: 'r2', name: 'Agro Business', color: 'green' },
-    { id: 'r3', name: 'Haras & Sítios', color: 'amber' },
+    { id: 'r1', name: 'Fazenda Premium', color: 'emerald', image: '/templates/template_lifestyle.png' },
+    { id: 'r2', name: 'Agro Business', color: 'green', image: '/templates/template_production.png' },
+    { id: 'r3', name: 'Haras & Sítios', color: 'amber', image: '/templates/template_tractor_soil.png' },
   ],
   urban: [
-    { id: 'u1', name: 'Urbano Minimal', color: 'slate' },
-    { id: 'u2', name: 'City Connect', color: 'blue' },
-    { id: 'u3', name: 'Família & Lar', color: 'indigo' },
+    { id: 'u1', name: 'Urbano Minimal', color: 'slate', image: '/templates/urban/urban_apartment_center.png' },
+    { id: 'u2', name: 'City Connect', color: 'blue', image: '/templates/urban/urban_exclusive_launch.png' },
+    { id: 'u3', name: 'Família & Lar', color: 'indigo', image: '/templates/urban/urban_gated_community.png' },
   ]
 };
 
@@ -177,8 +177,14 @@ const Onboarding: React.FC = () => {
         <div className="grid grid-cols-3 gap-3">
           {SITE_TEMPLATES[formData.niche].map(t => (
             <button key={t.id} onClick={() => update('template', t.id)} className={`p-3 rounded-xl border-2 text-left transition-all ${formData.template === t.id ? (formData.niche === 'urban' ? 'border-blue-500 bg-blue-50' : 'border-emerald-500 bg-emerald-50') : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-              <div className={`w-full h-16 rounded-lg bg-${t.color}-100 mb-2 border border-${t.color}-200`} />
-              <p className="text-xs font-bold text-slate-700">{t.name}</p>
+              {t.image ? (
+                <div className={`w-full h-24 rounded-lg mb-2 border overflow-hidden ${formData.template === t.id ? `border-${t.color}-500 ring-2 ring-${t.color}-500/20` : `border-slate-200`}`}>
+                  <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className={`w-full h-24 rounded-lg bg-${t.color}-100 mb-2 border border-${t.color}-200`} />
+              )}
+              <p className="text-xs font-bold text-slate-700 text-center">{t.name}</p>
             </button>
           ))}
         </div>

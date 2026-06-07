@@ -142,6 +142,7 @@ func main() {
 		chats := api.Group("/chats")
 		{
 			chats.GET("", chatHandler.ListChats)
+			chats.DELETE("", chatHandler.DeleteAllChats)
 			chats.POST("/:id/read", chatHandler.MarkChatRead)
 			chats.PATCH("/:id/contact", chatHandler.UpdateContactName)
 		}

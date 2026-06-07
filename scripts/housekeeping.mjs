@@ -51,7 +51,7 @@ filesInRoot.forEach(file => {
     // NUNCA move arquivos vitais
     const isVital = [
       'package.json', 'package-lock.json', '.env', 'App.tsx', 'index.html', 'vite.config.ts', 
-      'tsconfig.json', 'vercel.json', 'ecosystem.config.cjs', 'index.css', 'index.tsx', 'App.tsx'
+      'tsconfig.json', 'ecosystem.config.cjs', 'index.css', 'index.tsx', 'App.tsx'
     ].includes(file);
 
     if (shouldMove && !isVital) {

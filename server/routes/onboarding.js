@@ -31,8 +31,11 @@ const onboardingSchema = z.object({
 });
 
 router.post('/', authLimiter, async (req, res) => {
-  console.log("📥 ONBOARDING RECEIVED");
-  console.log(req.body);
+  console.log('[Onboarding] Request received', {
+    email: maskEmail(req.body?.email),
+    profileType: req.body?.profileType,
+    plan: req.body?.plan,
+  });
 
   const validation = onboardingSchema.safeParse(req.body);
   if (!validation.success) {
@@ -131,5 +134,11 @@ router.post('/', authLimiter, async (req, res) => {
     res.status(500).json({ error: 'Erro no onboarding: ' + error.message });
   }
 });
+
+function maskEmail(email = '') {
+  const [user, domain] = String(email).split('@');
+  if (!user || !domain) return 'invalid-email';
+  return `${user.slice(0, 2)}***@${domain}`;
+}
 
 export default router;

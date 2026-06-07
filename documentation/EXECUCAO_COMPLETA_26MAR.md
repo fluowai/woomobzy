@@ -125,7 +125,7 @@ npm run preview
 
 ### Médio Prazo
 1. Expandir suite de testes (e2e, integration)
-2. Deploy em staging (Vercel)
+2. Deploy em staging no servidor atual
 3. Configurar CI/CD (.github/workflows)
 
 ---
@@ -168,8 +168,7 @@ npm run build
 # Servir localmente
 npm run preview
 
-# Deploy com Vercel
-vercel deploy --prod
+# Deploy no servidor atual
 ```
 
 ---

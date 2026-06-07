@@ -39,7 +39,6 @@ const optional = [
   { key: 'NODE_ENV', desc: 'Ambiente (production/development)' },
   { key: 'PORT', desc: 'Porta do servidor backend' },
   { key: 'VITE_PANEL_URL', desc: 'URL do painel front-end' },
-  { key: 'VERCEL_API_TOKEN', desc: 'Token da API Vercel (domínios)' },
 ];
 
 console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -56,8 +55,7 @@ required.forEach(({ key, desc }) => {
     console.log(`        → ${desc}`);
     hasErrors = true;
   } else {
-    const preview = val.length > 30 ? val.substring(0, 15) + '...' + val.slice(-8) : val;
-    console.log(`   ✅  ${key} = ${preview}`);
+    console.log(`   ✅  ${key} configurada`);
   }
 });
 
@@ -67,8 +65,7 @@ optional.forEach(({ key, desc }) => {
   if (!val) {
     console.log(`   ⚪  ${key} (não configurado — ${desc})`);
   } else {
-    const preview = val.length > 30 ? val.substring(0, 15) + '...' : val;
-    console.log(`   ✅  ${key} = ${preview}`);
+    console.log(`   ✅  ${key} configurada`);
   }
 });
 
@@ -76,10 +73,8 @@ console.log('\n━━━━━━━━━━━━━━━━━━━━━�
 if (hasErrors) {
   console.log('❌  RESULTADO: Variáveis obrigatórias faltando!');
   console.log('');
-  console.log('   👉 Para Railway: acesse seu projeto → Settings → Variables');
-  console.log('      e adicione as variáveis marcadas com ❌ acima.');
-  console.log('');
-  console.log('   👉 Para desenvolvimento local: edite o arquivo .env na raiz.');
+  console.log('   👉 Configure as variáveis marcadas com ❌ no ambiente do servidor.');
+  console.log('   👉 Para desenvolvimento local, edite o arquivo .env na raiz.');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   process.exit(1);
 } else {

@@ -108,6 +108,11 @@ const FluowaiMigration = lazy(() => import('./views/superadmin/FluowaiMigration'
 const StorageIntelligence = lazy(() => import('./views/superadmin/StorageIntelligence'));
 const MarketingManager = lazy(() => import('./views/superadmin/MarketingManager'));
 
+// Site Builder
+const SiteManager = lazy(() => import('./views/SiteManager'));
+const SitePageEditor = lazy(() => import('./views/SitePageEditor'));
+const PublicSite = lazy(() => import('./views/PublicSite'));
+
 // WhatsApp
 const WhatsAppDashboard = lazy(() => import('./views/WhatsApp/WhatsAppDashboard'));
 const EmailCenter = lazy(() => import('./views/EmailCenter'));
@@ -435,8 +440,9 @@ const AppContent: React.FC = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/portal-locatario" element={<PortalLocatario />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/:slug/site/*" element={<PublicLandingPage />} />
-          <Route path="/site/:slug/*" element={<PublicLandingPage />} />
+          <Route path="/:slug/site/*" element={<PublicSite />} />
+          <Route path="/site/:slug/*" element={<PublicSite />} />
+          <Route path="/sites/:slug/*" element={<PublicSite />} />
 
           {/* ====== LEGACY /admin → NICHE REDIRECT ====== */}
           <Route
@@ -498,6 +504,8 @@ const AppContent: React.FC = () => {
             <Route path="portal-comprador" element={<PortalCompradorRural />} />
             <Route path="landing-pages" element={<LandingPageManager />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
+            <Route path="site" element={<SiteManager />} />
+            <Route path="site/pages/:id" element={<SitePageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
             <Route path="site-setup" element={<SiteSetupWizard />} />
             <Route path="visual-editor" element={<VisualSiteEditor />} />
@@ -555,7 +563,10 @@ const AppContent: React.FC = () => {
               element={<PortalCompradorUrbano />}
             />
             <Route path="portal-locatario" element={<PortalLocatario />} />
+            <Route path="landing-pages" element={<LandingPageManager />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
+            <Route path="site" element={<SiteManager />} />
+            <Route path="site/pages/:id" element={<SitePageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
             <Route path="site-setup" element={<SiteSetupWizard />} />
             <Route path="visual-editor" element={<VisualSiteEditor />} />

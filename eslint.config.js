@@ -36,7 +36,6 @@ export default [
       'dist/**',
       'node_modules/**',
       '.sessions/**',
-      '.vercel/**',
       'scratch/**',
       'scripts/**',
       'coverage/**',

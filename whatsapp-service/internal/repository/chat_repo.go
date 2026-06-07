@@ -182,6 +182,58 @@ func (r *ChatRepo) ListByInstanceForTenant(ctx context.Context, instanceID, tena
 	return chats, nil
 }
 
+// DeleteAllByInstanceForTenant removes all chats and messages for a tenant-owned instance.
+func (r *ChatRepo) DeleteAllByInstanceForTenant(ctx context.Context, instanceID, tenantID uuid.UUID) (*models.DeleteChatsResponse, error) {
+	query := `
+		WITH owned_instance AS (
+			SELECT id
+			FROM whatsapp_instances
+			WHERE id = $1 AND tenant_id = $2
+		),
+		owned_chats AS (
+			SELECT c.id, c.is_group
+			FROM whatsapp_chats c
+			JOIN owned_instance wi ON wi.id = c.instance_id
+		),
+		deleted_messages AS (
+			DELETE FROM whatsapp_messages m
+			USING owned_chats c
+			WHERE m.chat_id = c.id
+			  AND m.instance_id = $1
+			RETURNING m.id
+		),
+		deleted_chats AS (
+			DELETE FROM whatsapp_chats c
+			USING owned_chats oc
+			WHERE c.id = oc.id
+			RETURNING c.id, c.is_group
+		)
+		SELECT
+			EXISTS(SELECT 1 FROM owned_instance) AS instance_found,
+			COUNT(dc.id)::int AS deleted_chats,
+			COUNT(dc.id) FILTER (WHERE NOT dc.is_group)::int AS deleted_direct,
+			COUNT(dc.id) FILTER (WHERE dc.is_group)::int AS deleted_groups,
+			(SELECT COUNT(*)::int FROM deleted_messages) AS deleted_messages
+		FROM deleted_chats dc`
+
+	var instanceFound bool
+	result := &models.DeleteChatsResponse{}
+	err := r.db.QueryRow(ctx, query, instanceID, tenantID).Scan(
+		&instanceFound,
+		&result.DeletedChats,
+		&result.DeletedDirect,
+		&result.DeletedGroups,
+		&result.DeletedMessages,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete chats: %w", err)
+	}
+	if !instanceFound {
+		return nil, fmt.Errorf("instance not found")
+	}
+	return result, nil
+}
+
 // MarkReadForTenant resets unread count only for a chat owned by the tenant.
 func (r *ChatRepo) MarkReadForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID) error {
 	query := `

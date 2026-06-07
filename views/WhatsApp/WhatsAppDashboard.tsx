@@ -33,6 +33,7 @@ const WhatsAppDashboard: React.FC = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [importingHistory, setImportingHistory] = useState(false);
+  const [deletingChats, setDeletingChats] = useState(false);
 
   // WebSocket
   const { isConnected, on } = useWebSocket(webSocketEnabled);
@@ -253,7 +254,33 @@ const WhatsAppDashboard: React.FC = () => {
     }
   };
 
+  const handleDeleteAllChats = async () => {
+    if (!selectedInstance || deletingChats) return;
+
+    const confirmed = window.confirm(
+      'Excluir todas as conversas desta instancia? Isso remove conversas individuais, grupos e mensagens importadas do banco. Depois voce pode importar tudo novamente.'
+    );
+    if (!confirmed) return;
+
+    setDeletingChats(true);
+    try {
+      const result = await chatApi.deleteAll(selectedInstance.id);
+      setSelectedChat(null);
+      setMessages([]);
+      setChats([]);
+      toast.success(
+        `Limpeza concluida: ${result.deleted_chats} chats e ${result.deleted_messages} mensagens removidos.`
+      );
+    } catch (err: any) {
+      logger.error('Failed to delete WhatsApp chats:', err);
+      toast.error(err?.message || 'Erro ao excluir conversas.');
+    } finally {
+      setDeletingChats(false);
+    }
+  };
+
   const canImportHistory = Boolean(selectedInstance && selectedInstance.status === 'connected');
+  const canDeleteChats = Boolean(selectedInstance);
 
   const filteredChats = searchQuery
     ? chats.filter(
@@ -316,7 +343,7 @@ const WhatsAppDashboard: React.FC = () => {
             <p className="font-semibold text-text-primary mb-2">Checklist da conexão:</p>
             <ul className="space-y-1.5">
               <li>✅ Frontend chamando /api/whatsapp pelo mesmo domínio</li>
-              <li>✅ Backend Node.js online na Railway</li>
+              <li>✅ Backend Node.js online no servidor</li>
               <li>✅ WhatsMeow (Go) rodando internamente em 127.0.0.1:3100</li>
             </ul>
             {serviceError && (
@@ -405,6 +432,9 @@ const WhatsAppDashboard: React.FC = () => {
           onImportHistory={handleImportHistory}
           importingHistory={importingHistory}
           canImportHistory={canImportHistory}
+          onDeleteAllChats={handleDeleteAllChats}
+          deletingChats={deletingChats}
+          canDeleteChats={canDeleteChats}
         />
 
         {/* Chat Window */}

@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['logo-imobzy.png', 'logo-imobzy-360.svg', 'icons/*.png'],
+        includeAssets: ['logo-imobfluow.png', 'logo-imobfluow.svg', 'icons/imobfluow-*.png'],
         manifest: {
           id: '/',
           name: 'IMOBFLUOW - Gestão Imobiliária Inteligente',
@@ -49,13 +49,13 @@ export default defineConfig(({ mode }) => {
           start_url: '/',
           icons: [
             {
-              src: '/icons/icon-192x192.png',
+              src: '/icons/imobfluow-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any maskable',
             },
             {
-              src: '/icons/icon-512x512.png',
+              src: '/icons/imobfluow-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable',
@@ -68,14 +68,14 @@ export default defineConfig(({ mode }) => {
               short_name: 'Painel',
               description: 'Abrir o painel do sistema',
               url: '/login',
-              icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
+              icons: [{ src: '/icons/imobfluow-192x192.png', sizes: '192x192' }],
             },
             {
               name: 'Agendar demonstração',
               short_name: 'Demo',
               description: 'Solicitar uma demonstração da plataforma',
               url: '/consultoria',
-              icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
+              icons: [{ src: '/icons/imobfluow-192x192.png', sizes: '192x192' }],
             },
           ],
         },

@@ -109,7 +109,7 @@ const Login: React.FC = () => {
           <div className="max-w-xl">
             <div className="flex items-center gap-3 mb-12">
               <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                <img src="/logo-imobzy-360.svg" alt="ImobFluow" className="w-8 h-8 object-contain" />
+                <img src="/logo-imobfluow.svg" alt="ImobFluow" className="w-8 h-8 object-contain" />
               </div>
               <span className="text-3xl font-bold tracking-tight text-slate-900">
                 Imob<span className="text-emerald-600">Fluow</span>
@@ -155,7 +155,7 @@ const Login: React.FC = () => {
             {/* Mobile Logo Only */}
             <div className="lg:hidden flex flex-col items-center mb-10">
               <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-200 mb-4">
-                <img src="/logo-imobzy-360.svg" alt="ImobFluow" className="w-10 h-10 object-contain" />
+                <img src="/logo-imobfluow.svg" alt="ImobFluow" className="w-10 h-10 object-contain" />
               </div>
               <h2 className="text-2xl font-bold text-slate-900">ImobFluow</h2>
             </div>

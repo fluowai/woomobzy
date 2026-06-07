@@ -55,6 +55,32 @@ func (h *ChatHandler) ListChats(c *gin.Context) {
 	c.JSON(http.StatusOK, chats)
 }
 
+// DeleteAllChats handles DELETE /api/chats.
+func (h *ChatHandler) DeleteAllChats(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
+	instanceID, ok := requireInstanceID(c)
+	if !ok {
+		return
+	}
+
+	result, err := h.chatRepo.DeleteAllByInstanceForTenant(c.Request.Context(), instanceID, tenantID)
+	if err != nil {
+		h.logger.Error("Failed to delete all chats", zap.Error(err))
+		if strings.Contains(err.Error(), "instance not found") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Instance not found for tenant"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // MarkChatRead handles POST /api/chats/:id/read
 func (h *ChatHandler) MarkChatRead(c *gin.Context) {
 	tenantID, ok := requireTenantID(c)

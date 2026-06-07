@@ -100,7 +100,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <img
-            src="/logo-imobzy-360.svg"
+            src="/logo-imobfluow.svg"
             alt="ImobFluow"
             className="h-10 md:h-12 w-auto object-contain max-w-[150px]"
           />

@@ -32,6 +32,7 @@ import demoRoutes from './api/demo/index.js';
 import fluowaiMigrationRoutes from './api/fluowai-migration/index.js';
 import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
 import emailRoutes from './api/email/index.js';
+import siteRoutes from './api/sites/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -147,7 +148,7 @@ async function isAllowedCustomOrigin(origin) {
 }
 
 const dynamicOriginValidator = (origin, callback) => {
-  // Permitir requests sem origin (ex: chamadas S2S, cURL, PM2, Railway Healthcheck)
+  // Permitir requests sem origin (ex: chamadas S2S, cURL, PM2, healthcheck interno)
   if (!origin) {
     return callback(null, true);
   }
@@ -173,7 +174,6 @@ const dynamicOriginValidator = (origin, callback) => {
     origin.endsWith(".imobfluow.com.br") ||
     origin.endsWith(".pages.dev") ||
     origin.endsWith(".onrender.com") ||
-    origin.endsWith(".up.railway.app") ||
     origin.startsWith("http://localhost") ||
     origin.startsWith("http://127.0.0.1")
   ) {
@@ -232,6 +232,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/demo', demoRoutes);
 app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/sites', siteRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 

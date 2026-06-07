@@ -8,8 +8,8 @@
  * (routes, middleware, etc.) executam seu código de nível de módulo ANTES
  * que o corpo de server/index.js rode dotenv.config(). Se criássemos o
  * cliente no topo de cada arquivo, o servidor crasharia no boot quando as
- * variáveis de ambiente não estiverem disponíveis (ex: Railway sem vars
- * configuradas). Inicializar sob demanda resolve o problema.
+ * variáveis de ambiente não estiverem disponíveis no boot.
+ * Inicializar sob demanda resolve o problema.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -36,7 +36,7 @@ export function getSupabaseServer() {
     throw new Error(
       '❌ Variáveis de ambiente obrigatórias não configuradas.\n' +
       '   Configure VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.\n' +
-      '   → Em produção (Railway): acesse o dashboard e adicione em "Variables".\n' +
+      '   → Em produção: configure as variáveis no ambiente do servidor.\n' +
       '   → Em desenvolvimento: verifique o arquivo .env na raiz do projeto.'
     );
   }

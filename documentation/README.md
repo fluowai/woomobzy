@@ -58,7 +58,7 @@ Aplicação full-stack para CRM e portal imobiliário com suporte a multi-tenanc
 
 ## Deploy
 
-- Frontend: Vercel
+- Frontend: servidor atual
 - Backend: Supabase Functions ou servidor próprio
 
 ## Contribuição

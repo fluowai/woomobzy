@@ -21,7 +21,7 @@ function walkDir(dir, callback) {
     let dirPath = path.join(dir, f);
     let isDirectory = fs.statSync(dirPath).isDirectory();
     if (isDirectory) {
-      if (f !== 'node_modules' && f !== '.git' && f !== 'dist' && f !== '.vercel') {
+      if (f !== 'node_modules' && f !== '.git' && f !== 'dist') {
         walkDir(dirPath, callback);
       }
     } else {

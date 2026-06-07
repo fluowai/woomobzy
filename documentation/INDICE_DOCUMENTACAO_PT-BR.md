@@ -201,7 +201,7 @@ supabase db push
    - Crie dados de exemplo
 
 2. **Deploy em Staging**
-   - Configure Vercel
+   - Configure o servidor atual
    - Deploy da branch
    - Teste em produção
 

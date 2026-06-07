@@ -11,12 +11,14 @@ import {
   Layout, Palette, Check, X, Loader2, ExternalLink, ArrowLeft,
   Sparkles, PanelRightOpen, PanelRightClose,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 
 const SiteManager: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePanelPath = location.pathname.startsWith('/urban') ? '/urban' : '/rural';
   const [site, setSite] = useState<Site | null>(null);
   const [pages, setPages] = useState<SitePage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +100,7 @@ const SiteManager: React.FC = () => {
       setPages([...pages, page]);
       setNewPageTitle('');
       setShowCreatePage(false);
-      navigate(`/admin/site/pages/${page.id}`);
+      navigate(`${basePanelPath}/site/pages/${page.id}`);
     } catch (error) {
       console.error('Erro ao criar página:', error);
     }
@@ -299,7 +301,7 @@ const SiteManager: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => navigate(`/admin/site/pages/${page.id}`)}
+                    onClick={() => navigate(`${basePanelPath}/site/pages/${page.id}`)}
                     className="flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium transition-colors"
                   >
                     Editar <ChevronRight size={14} />

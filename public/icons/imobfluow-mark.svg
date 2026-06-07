@@ -1,0 +1,9 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ImobFluow</title>
+  <desc id="desc">Icone PWA ImobFluow com casa e movimento.</desc>
+  <rect width="512" height="512" rx="112" fill="#052E1A"/>
+  <circle cx="256" cy="256" r="154" fill="#FFFFFF"/>
+  <path d="M256 139L134 231V365H213V286H299V365H378V231L256 139Z" fill="#052E1A"/>
+  <path d="M342 160C381 187 406 232 406 283C406 366 339 433 256 433C173 433 106 366 106 283C106 200 173 133 256 133" stroke="#16A34A" stroke-width="34" stroke-linecap="round"/>
+  <path d="M356 127C392 132 421 161 426 197" stroke="#14B8A6" stroke-width="28" stroke-linecap="round"/>
+</svg>

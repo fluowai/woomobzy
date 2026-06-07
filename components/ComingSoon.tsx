@@ -196,7 +196,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
           <div className="flex flex-col items-center gap-3">
             <span className="text-xs text-slate-500 uppercase tracking-widest font-medium">Desenvolvido por</span>
             <img
-              src="/logo-imobzy-360.svg"
+              src="/logo-imobfluow.svg"
               alt="ImobFluow"
               className="h-8 opacity-50 hover:opacity-100 transition-opacity cursor-pointer grayscale hover:grayscale-0"
             />

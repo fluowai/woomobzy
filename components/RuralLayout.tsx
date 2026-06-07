@@ -23,6 +23,7 @@ import {
   Search,
   Plus,
   Target,
+  Sparkles,
   Zap,
   Bot,
   Link as LinkIcon,
@@ -77,6 +78,8 @@ const RuralLayout: React.FC = () => {
   const growthItems: MenuItem[] = [
     { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
     { icon: Globe, label: 'Meu Site', path: '/rural/site' },
+    { icon: Sparkles, label: 'Editor Visual', path: '/rural/visual-editor' },
+    { icon: Settings, label: 'Configurar Site', path: '/rural/site-setup' },
     { icon: LayoutTemplate, label: 'Landing Pages', path: '/rural/landing-pages' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
     { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
@@ -163,7 +166,7 @@ const RuralLayout: React.FC = () => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <img
-            src="/logo-imobzy-360.svg"
+            src="/logo-imobfluow.svg"
             alt="ImobFluow"
             className="h-12 w-auto object-contain max-w-[150px] transition-transform group-hover:scale-105"
           />

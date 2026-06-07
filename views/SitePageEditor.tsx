@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useAuth } from '../context/AuthContext';
@@ -23,7 +23,9 @@ type ViewMode = 'desktop' | 'tablet' | 'mobile';
 const SitePageEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile } = useAuth();
+  const basePanelPath = location.pathname.startsWith('/urban') ? '/urban' : '/rural';
 
   const [page, setPage] = useState<SitePage | null>(null);
   const [site, setSite] = useState<Site | null>(null);
@@ -54,7 +56,7 @@ const SitePageEditor: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao carregar página:', error);
-      navigate('/admin/site');
+      navigate(`${basePanelPath}/site`);
     } finally {
       setLoading(false);
     }
@@ -187,7 +189,7 @@ const SitePageEditor: React.FC = () => {
       <div className="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 shrink-0 z-10">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/admin/site')}
+            onClick={() => navigate(`${basePanelPath}/site`)}
             className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
           >
             <ArrowLeft size={18} />

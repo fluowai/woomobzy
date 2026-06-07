@@ -27,6 +27,7 @@ import {
   Bot,
   Link as LinkIcon,
   Globe,
+  Sparkles,
   LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -89,6 +90,8 @@ const UrbanLayout: React.FC = () => {
 
   const growthItems: MenuItem[] = [
     { icon: Globe, label: 'Meu Site', path: '/urban/site' },
+    { icon: Sparkles, label: 'Editor Visual', path: '/urban/visual-editor' },
+    { icon: Settings, label: 'Configurar Site', path: '/urban/site-setup' },
     { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
     { icon: LayoutTemplate, label: 'Landing Pages', path: '/urban/landing-pages' },
     { icon: PieChart, label: 'Relatórios Gerenciais', path: '/urban/reports' },
@@ -166,7 +169,7 @@ const UrbanLayout: React.FC = () => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <img
-            src="/logo-imobzy-360.svg"
+            src="/logo-imobfluow.svg"
             alt="ImobFluow"
             className="h-12 w-auto object-contain max-w-[150px] transition-transform group-hover:scale-105"
           />

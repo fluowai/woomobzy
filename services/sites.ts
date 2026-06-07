@@ -71,6 +71,7 @@ const mapPageFromDB = (dbItem: any): SitePage => ({
 
 const mapPageToDB = (model: Partial<SitePage>): any => {
   const db: any = {};
+  if (model.siteId !== undefined) db.site_id = model.siteId;
   if (model.title !== undefined) db.title = model.title;
   if (model.slug !== undefined) db.slug = model.slug;
   if (model.sortOrder !== undefined) db.sort_order = model.sortOrder;
@@ -205,6 +206,7 @@ export const siteService = {
     }
 
     const payload = mapPageToDB({ ...input, slug });
+    payload.site_id = input.siteId;
 
     const { data, error } = await supabase
       .from('site_pages')

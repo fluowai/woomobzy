@@ -149,7 +149,7 @@ const ConsultingQualificacao: React.FC = () => {
       await demoSchedulerService.createBooking({
         ...formData,
         slotId: selectedSlot,
-        notes: `Qualificação automática IMOBZY | Score: ${score}`,
+        notes: `Qualificação automática ImobFluow | Score: ${score}`,
       });
       setConfirmedSlot(slots.find((slot) => slot.id === selectedSlot) || null);
       setStep('confirmed');
@@ -165,11 +165,11 @@ const ConsultingQualificacao: React.FC = () => {
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-center justify-between">
           <button type="button" onClick={() => navigate('/consultoria')} className="flex items-center gap-3">
-            <img src="/logo-imobzy-360.svg" alt="IMOBZY" className="h-9 w-auto" />
+            <img src="/logo-imobfluow.svg" alt="ImobFluow" className="h-9 w-auto" />
           </button>
           <div className="hidden items-center gap-2 rounded-full border border-emerald-100 bg-white px-4 py-2 text-xs font-black text-emerald-700 shadow-sm sm:flex">
             <ShieldCheck size={15} />
-            Agenda própria IMOBZY
+            Agenda própria ImobFluow
           </div>
         </header>
 
@@ -180,7 +180,7 @@ const ConsultingQualificacao: React.FC = () => {
               Demonstração personalizada
             </div>
             <h1 className="mt-6 text-3xl font-black leading-tight lg:text-4xl">
-              Antes da agenda, entendemos se a IMOBZY faz sentido para sua operação.
+              Antes da agenda, entendemos se a ImobFluow faz sentido para sua operação.
             </h1>
             <p className="mt-4 text-sm font-semibold leading-7 text-slate-300">
               O filtro evita reuniões genéricas. Leads qualificados liberam uma call de 30 minutos direto na agenda interna.
@@ -190,7 +190,7 @@ const ConsultingQualificacao: React.FC = () => {
               {[
                 ['1', 'Qualificação rápida'],
                 ['2', 'Agenda própria de 30 minutos'],
-                ['3', 'Call comercial conduzida pela equipe IMOBZY'],
+                ['3', 'Call comercial conduzida pela equipe ImobFluow'],
               ].map(([number, label]) => (
                 <div key={label} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 text-sm font-black">
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white">{number}</span>
@@ -281,7 +281,7 @@ const ConsultingQualificacao: React.FC = () => {
               <ResultState
                 icon={CheckCircle2}
                 title="Demonstração agendada."
-                text={confirmedSlot ? `Sua call de 30 minutos está marcada para ${formatSlot(confirmedSlot).date} às ${formatSlot(confirmedSlot).time}. A equipe IMOBZY entrará em contato pelo WhatsApp informado.` : 'Sua call de 30 minutos foi confirmada.'}
+                text={confirmedSlot ? `Sua call de 30 minutos está marcada para ${formatSlot(confirmedSlot).date} às ${formatSlot(confirmedSlot).time}. A equipe ImobFluow entrará em contato pelo WhatsApp informado.` : 'Sua call de 30 minutos foi confirmada.'}
               />
             )}
 

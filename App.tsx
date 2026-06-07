@@ -563,6 +563,7 @@ const AppContent: React.FC = () => {
               element={<PortalCompradorUrbano />}
             />
             <Route path="portal-locatario" element={<PortalLocatario />} />
+            <Route path="landing-pages" element={<LandingPageManager />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />

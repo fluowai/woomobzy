@@ -26,6 +26,7 @@ import {
   Headset,
   Bot,
   Link as LinkIcon,
+  Globe,
   LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -87,8 +88,9 @@ const UrbanLayout: React.FC = () => {
   ];
 
   const growthItems: MenuItem[] = [
+    { icon: Globe, label: 'Meu Site', path: '/urban/site' },
     { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
-    { icon: LayoutTemplate, label: 'Marketing & Portais', path: '/urban/landing-pages' },
+    { icon: LayoutTemplate, label: 'Landing Pages', path: '/urban/landing-pages' },
     { icon: PieChart, label: 'Relatórios Gerenciais', path: '/urban/reports' },
   ];
 

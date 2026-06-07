@@ -26,6 +26,7 @@ import {
   Zap,
   Bot,
   Link as LinkIcon,
+  LayoutTemplate,
   LucideIcon,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
@@ -75,7 +76,8 @@ const RuralLayout: React.FC = () => {
 
   const growthItems: MenuItem[] = [
     { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
-    { icon: Globe, label: 'Site & Landing', path: '/rural/landing-pages' },
+    { icon: Globe, label: 'Meu Site', path: '/rural/site' },
+    { icon: LayoutTemplate, label: 'Landing Pages', path: '/rural/landing-pages' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
     { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },

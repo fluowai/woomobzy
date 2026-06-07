@@ -55,7 +55,11 @@ export default async function handler(req, res) {
     }
 
     // Fallback for local development (localhost) ONLY
-    if (!organization && (cleanHost === 'localhost' || cleanHost === '127.0.0.1')) {
+    if (
+      !organization &&
+      process.env.NODE_ENV !== 'production' &&
+      (cleanHost === 'localhost' || cleanHost === '127.0.0.1')
+    ) {
       console.log('⚠️ Local development fallback: using first organization');
       const { data: fbData } = await supabase
         .from('organizations')

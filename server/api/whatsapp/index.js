@@ -59,9 +59,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       (allowedOrigins.has(origin) ||
         (!isProduction &&
           (origin.startsWith('http://localhost') ||
-            origin.startsWith('http://127.0.0.1') ||
-            origin.endsWith('.vercel.app') ||
-            origin.endsWith('.up.railway.app'))))
+            origin.startsWith('http://127.0.0.1'))))
     ) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
@@ -486,14 +484,6 @@ async function organizationExists(orgId) {
 function resolveWhatsAppTarget(rawTarget) {
   const target = (rawTarget || '').trim();
   if (!target) return 'http://127.0.0.1:3100';
-
-  const publicRailwayHost =
-    target.includes('woomobzy-production.up.railway.app') ||
-    target.includes('web-production-7c3f0.up.railway.app');
-
-  if (publicRailwayHost) {
-    return 'http://127.0.0.1:3100';
-  }
 
   return target.replace(/\/$/, '');
 }

@@ -21,10 +21,6 @@ function normalizeApiBaseUrl(url: string): string {
     return '';
   }
 
-  if (/web-production-7c3f0\.up\.railway\.app/i.test(clean)) {
-    return '';
-  }
-
   return clean || '';
 }
 

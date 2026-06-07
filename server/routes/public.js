@@ -33,6 +33,20 @@ const contactSchema = z.object({
   fbc: z.string().optional(),
 });
 
+const leadSchema = z.object({
+  organization_id: z.string().uuid(),
+  name: z.string().min(2).max(100),
+  email: z.string().email().max(255).optional().nullable().or(z.literal('')),
+  phone: z.string().min(8).max(20),
+  source: z.string().max(120).optional(),
+  ad_reference: z.string().max(255).optional(),
+  organic_channel: z.string().max(120).optional(),
+  campaign: z.string().max(120).optional(),
+  notes: z.string().max(2000).optional(),
+  budget: z.union([z.string().max(80), z.number()]).optional().nullable(),
+  aptitude_interest: z.string().max(120).optional(),
+});
+
 // Contact Form
 router.post('/contact', contactLimiter, async (req, res) => {
   // ... (mantido como está)
@@ -45,10 +59,32 @@ router.post('/contact', contactLimiter, async (req, res) => {
  */
 router.post('/leads', contactLimiter, async (req, res) => {
   try {
-    const { name, email, phone, organization_id, source } = req.body;
+    const validation = leadSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: 'Dados invalidos', details: validation.error.errors });
+    }
 
-    if (!organization_id || !name || !phone) {
-      return res.status(400).json({ error: 'Dados insuficientes (nome, telefone e org_id são obrigatórios)' });
+    const {
+      name,
+      email,
+      phone,
+      organization_id,
+      source,
+      ad_reference,
+      organic_channel,
+      campaign,
+      notes,
+      budget,
+      aptitude_interest,
+    } = validation.data;
+    const { data: organization, error: orgError } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('id', organization_id)
+      .maybeSingle();
+
+    if (orgError || !organization) {
+      return res.status(404).json({ error: 'Organizacao nao encontrada ou indisponivel.' });
     }
 
     const { data: leadData, error: leadError } = await supabase
@@ -59,12 +95,12 @@ router.post('/leads', contactLimiter, async (req, res) => {
         email,
         phone,
         source: source || 'Public / Landing Page',
-        ad_reference: req.body.ad_reference,
-        organic_channel: req.body.organic_channel,
-        campaign: req.body.campaign,
-        notes: req.body.notes,
-        budget: req.body.budget,
-        aptitude_interest: req.body.aptitude_interest,
+        ad_reference,
+        organic_channel,
+        campaign,
+        notes,
+        budget,
+        aptitude_interest,
         status: 'Novo'
       }])
       .select().single();

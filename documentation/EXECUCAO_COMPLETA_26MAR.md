@@ -169,7 +169,6 @@ npm run build
 npm run preview
 
 # Deploy com Vercel
-vercel deploy --prod
 ```
 
 ---

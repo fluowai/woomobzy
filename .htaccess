@@ -19,16 +19,6 @@ Options +FollowSymLinks -MultiViews
   RewriteEngine On
   RewriteBase /
 
-  # --- PROXY PARA BACKEND NODE.JS ---
-  # 1. Suporte a WebSockets (Importante para o WhatsApp)
-  RewriteCond %{HTTP:Upgrade} websocket [NC]
-  RewriteCond %{HTTP:Connection} upgrade [NC]
-  RewriteRule ^api/whatsapp/ws(.*)$ wss://woomobzy-production.up.railway.app/api/whatsapp/ws$1 [P,L]
-
-  # 2. Encaminha chamadas /api normais para o backend Railway
-  RewriteCond %{REQUEST_URI} ^/api [NC]
-  RewriteRule ^api/(.*)$ https://woomobzy-production.up.railway.app/api/$1 [P,L]
-
   # Força HTTPS (SSL)
   RewriteCond %{HTTPS} off
   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

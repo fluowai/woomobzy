@@ -173,7 +173,6 @@ const dynamicOriginValidator = (origin, callback) => {
     origin.endsWith(".imobfluow.com.br") ||
     origin.endsWith(".pages.dev") ||
     origin.endsWith(".onrender.com") ||
-    origin.endsWith(".up.railway.app") ||
     origin.startsWith("http://localhost") ||
     origin.startsWith("http://127.0.0.1")
   ) {

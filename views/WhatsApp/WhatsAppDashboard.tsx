@@ -343,7 +343,7 @@ const WhatsAppDashboard: React.FC = () => {
             <p className="font-semibold text-text-primary mb-2">Checklist da conexão:</p>
             <ul className="space-y-1.5">
               <li>✅ Frontend chamando /api/whatsapp pelo mesmo domínio</li>
-              <li>✅ Backend Node.js online na Railway</li>
+              <li>✅ Backend Node.js online no servidor</li>
               <li>✅ WhatsMeow (Go) rodando internamente em 127.0.0.1:3100</li>
             </ul>
             {serviceError && (

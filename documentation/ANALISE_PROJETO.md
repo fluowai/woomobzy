@@ -265,7 +265,7 @@ Tempo estimado: 1-2 horas
 
 2. **Configurar Domínios**
    - WHM/cPanel (se aplicável)
-   - DNS apontando para Frontend (Vercel)
+   - DNS apontando para o frontend no servidor atual
    - SSL certificados
 
 3. **Testar Integrações**
@@ -317,7 +317,7 @@ npm run build # deve completar sem warnings críticos
 - [ ] `npm run build` completa sem erros ✅
 - [ ] Arquivo dist/ gerado (~3.5MB)
 - [ ] `npm run preview` roda localmente
-- [ ] Deploy em Vercel (frontend) configurado
+- [ ] Deploy do frontend no servidor atual configurado
 - [ ] Backend rodando em servidor próprio ou Supabase Functions
 
 ### Qualidade de Código
@@ -351,7 +351,7 @@ npm run build # deve completar sem warnings críticos
 ### Curto Prazo (SEMANA)
 1. Migração SQL completa
 2. Testes e validação
-3. Deploy em staging (Vercel)
+3. Deploy em staging no servidor atual
 
 ### Médio Prazo (MESES)
 1. Implementar suite de testes completa

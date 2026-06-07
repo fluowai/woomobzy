@@ -1,6 +1,6 @@
 # ImobiSaaS - Multi-Tenant Architecture
 
-Monorepo structure for multi-tenant SaaS with Vercel deployment.
+Monorepo structure for multi-tenant SaaS with self-hosted deployment.
 
 ## Project Structure
 
@@ -13,7 +13,7 @@ imobisaas/
 │   ├── database/       # Supabase client & types
 │   ├── ui/            # Shared UI components
 │   └── config/        # Shared configuration
-└── server/            # API (Vercel Serverless Functions)
+└── server/            # API Node.js
 ```
 
 ## Domains

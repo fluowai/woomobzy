@@ -214,7 +214,7 @@ Backend:  http://localhost:3002
 ### Week 2-3
 - [ ] Implement automated tests (Jest/Vitest)
 - [ ] Set up CI/CD (GitHub Actions)
-- [ ] Deploy to staging (Vercel)
+- [ ] Deploy to staging on current server
 - [ ] Performance optimization
 
 ### Week 4+

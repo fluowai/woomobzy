@@ -17,12 +17,11 @@ export default async function handler(req, res) {
 
     console.log(`🚀 Recebida solicitação de migração para: ${startUrl}`);
     
-    // Na Vercel, functions têm timeout (10s default, max 60s Pro).
-    // Scraping longo pode dar timeout. O ideal seria usar background jobs (QStash, Inngest).
+    // Scraping longo pode dar timeout em ambientes com limite de request.
+    // O ideal seria usar background jobs (QStash, Inngest).
     // Para agora, vamos tentar processar o que der ou iniciar/retornar.
     // Como era local antes, rodava indefinidamente. Aqui vamos simplificar.
     
-    // Responde imediatamente? Vercel Functions matam processo ao responder se não usar `waitUntil` (Edge) ou background.
     // Vamos tentar rodar e responder no final se for rápido, ou limitar o scope.
     // Ou simplesmente rodar assincronamente e torcer para dar tempo (não recomendado, mas legacy migration).
     
@@ -59,7 +58,7 @@ async function runScraper(targetUrl) {
         }
     });
 
-    // Limitar batch para não estourar timeout da Vercel
+    // Limitar batch para não estourar timeout do request
     const linksToProcess = propertyLinks.slice(0, 3); 
 
     for (const link of linksToProcess) {

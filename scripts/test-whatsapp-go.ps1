@@ -9,7 +9,7 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $source = Join-Path $repoRoot "whatsapp-service"
 
 if ([string]::IsNullOrWhiteSpace($TempDir)) {
-  $TempDir = "C:\tmp\imobzy-whatsapp-service-build-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+  $TempDir = Join-Path $repoRoot "scratch\imobzy-whatsapp-service-build-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
 }
 
 if (!(Test-Path -LiteralPath $source)) {
@@ -23,7 +23,7 @@ Set-Location -LiteralPath $TempDir
 
 $env:GO111MODULE = "on"
 $env:GOTOOLCHAIN = $GoToolchain
-$env:GOCACHE = "C:\tmp\go-build-cache-imobzy-$($GoToolchain -replace '[^a-zA-Z0-9._-]', '-')"
+$env:GOCACHE = Join-Path $repoRoot "scratch\go-build-cache-imobzy-$($GoToolchain -replace '[^a-zA-Z0-9._-]', '-')"
 
 Write-Host "Running Go validation from $TempDir"
 Write-Host "GOTOOLCHAIN=$env:GOTOOLCHAIN"

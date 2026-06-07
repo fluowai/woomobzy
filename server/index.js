@@ -148,7 +148,7 @@ async function isAllowedCustomOrigin(origin) {
 }
 
 const dynamicOriginValidator = (origin, callback) => {
-  // Permitir requests sem origin (ex: chamadas S2S, cURL, PM2, Railway Healthcheck)
+  // Permitir requests sem origin (ex: chamadas S2S, cURL, PM2, healthcheck interno)
   if (!origin) {
     return callback(null, true);
   }

@@ -236,7 +236,7 @@ npm run setup-db       # Setup inteligente
 ### Médio Prazo (Semanas 2-4)
 1. [ ] Implementar suite de testes
 2. [ ] Setup CI/CD com GitHub Actions
-3. [ ] Deploy em staging (Vercel)
+3. [ ] Deploy em staging no servidor atual
 4. [ ] Testes de integração completos
 
 ### Longo Prazo (Meses)

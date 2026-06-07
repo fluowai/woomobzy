@@ -117,12 +117,12 @@ const PlatformMonitoring: React.FC = () => {
       });
     }
 
-    // Vercel Frontend check
+    // Frontend check
     results.push({
-      name: 'Frontend (Vercel)',
+      name: 'Frontend',
       status: 'healthy',
       latency: 45,
-      message: 'CDN global ativo',
+      message: 'Aplicação web ativa',
       icon: Globe,
     });
 

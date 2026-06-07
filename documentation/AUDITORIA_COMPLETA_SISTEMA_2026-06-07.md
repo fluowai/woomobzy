@@ -47,7 +47,7 @@ console.log("ONBOARDING RECEIVED");
 console.log(req.body);
 ```
 
-Como o schema inclui `password`, isso pode gravar senha em log local, Railway, Docker, PM2 ou observabilidade. E um risco critico de privacidade e compliance.
+Como o schema inclui `password`, isso pode gravar senha em log local, Docker, PM2 ou observabilidade. E um risco critico de privacidade e compliance.
 
 Recomendacao:
 

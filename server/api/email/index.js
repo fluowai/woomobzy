@@ -68,22 +68,44 @@ router.post('/accounts', async (req, res) => {
     const account = normalizeEmailConnectionConfig(accountSchema.parse(req.body));
     await testEmailConnection(account);
 
-    const { data, error } = await supabase
+    const accountPayload = {
+      organization_id: req.orgId,
+      user_id: req.user.id,
+      email: account.email,
+      encrypted_password: encryptEmailSecret(account.password),
+      imap_host: account.imap_host,
+      imap_port: account.imap_port,
+      imap_secure: account.imap_secure,
+      smtp_host: account.smtp_host,
+      smtp_port: account.smtp_port,
+      smtp_secure: account.smtp_secure,
+      auth_method: 'password',
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: existing, error: findError } = await supabase
       .from('email_accounts')
-      .upsert({
-        organization_id: req.orgId,
-        user_id: req.user.id,
-        email: account.email,
-        encrypted_password: encryptEmailSecret(account.password),
-        imap_host: account.imap_host,
-        imap_port: account.imap_port,
-        imap_secure: account.imap_secure,
-        smtp_host: account.smtp_host,
-        smtp_port: account.smtp_port,
-        smtp_secure: account.smtp_secure,
-        auth_method: 'password',
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'organization_id,user_id,email' })
+      .select('id')
+      .eq('organization_id', req.orgId)
+      .eq('user_id', req.user.id)
+      .eq('email', account.email)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (findError) throw findError;
+
+    const query = existing
+      ? supabase
+          .from('email_accounts')
+          .update(accountPayload)
+          .eq('id', existing.id)
+          .eq('organization_id', req.orgId)
+          .eq('user_id', req.user.id)
+      : supabase.from('email_accounts').insert(accountPayload);
+
+    const { data, error } = await query
       .select('id, email, imap_host, imap_port, smtp_host, smtp_port, last_synced_at, sync_status, created_at')
       .single();
 

@@ -28,6 +28,14 @@ create table if not exists email_accounts (
   unique (organization_id, user_id, email)
 );
 
+alter table email_accounts add column if not exists auth_method text not null default 'password';
+alter table email_accounts add column if not exists oauth_provider text;
+alter table email_accounts add column if not exists oauth_account_id text;
+alter table email_accounts add column if not exists last_inbox_uid bigint not null default 0;
+alter table email_accounts add column if not exists sync_status text not null default 'idle';
+alter table email_accounts add column if not exists sync_error text;
+alter table email_accounts add column if not exists updated_at timestamptz not null default now();
+
 create table if not exists emails (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references organizations(id) on delete cascade,
@@ -56,6 +64,9 @@ create table if not exists emails (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table emails add column if not exists ai_metadata jsonb not null default '{}';
+alter table emails add column if not exists updated_at timestamptz not null default now();
 
 create table if not exists email_events (
   id uuid primary key default gen_random_uuid(),

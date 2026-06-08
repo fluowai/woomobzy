@@ -109,7 +109,7 @@ const EmailCenter: React.FC = () => {
       [...thread].sort((a, b) => {
         const aDate = a.date ? new Date(a.date).getTime() : 0;
         const bDate = b.date ? new Date(b.date).getTime() : 0;
-        return aDate - bDate;
+        return bDate - aDate;
       }),
     [thread]
   );
@@ -446,7 +446,7 @@ const EmailCenter: React.FC = () => {
                 <div className="min-w-0">
                   <h1 className="mb-0 truncate text-xl font-black text-slate-950">{selectedEmail.subject || '(sem assunto)'}</h1>
                   <p className="mt-1 text-xs font-semibold text-slate-500">
-                    {sortedThread.length} mensagem{sortedThread.length === 1 ? '' : 's'} em ordem cronologica
+                    {sortedThread.length} mensagem{sortedThread.length === 1 ? '' : 's'} - mais recente primeiro
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -471,7 +471,7 @@ const EmailCenter: React.FC = () => {
 
               <div className="flex-1 space-y-4 overflow-y-auto p-5">
                 {sortedThread.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
+                  <MessageCard key={message.id} message={message} />
                 ))}
               </div>
             </>
@@ -645,28 +645,43 @@ const ActivityColumn: React.FC<{ title: string; icon: React.ElementType; items: 
   </section>
 );
 
-const MessageBubble: React.FC<{ message: EmailMessage }> = ({ message }) => {
+const MessageCard: React.FC<{ message: EmailMessage }> = ({ message }) => {
   const outgoing = message.direction === 'outgoing';
-  const sender = outgoing ? message.from_email : message.from_name || message.from_email;
+  const sender = outgoing ? 'Fluow Ai' : message.from_name || message.from_email;
+  const senderEmail = outgoing ? message.from_email : message.from_email;
   const bodyText = cleanSnippet(message.body_text || message.preview || '');
   const html = message.body_html || '';
 
   return (
-    <article className={`flex ${outgoing ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[78%] rounded-lg border p-4 shadow-sm ${outgoing ? 'border-emerald-100 bg-emerald-50' : 'border-slate-200 bg-white'}`}>
-        <div className="mb-3 flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-black text-slate-950">{sender}</p>
-            <p className="truncate text-xs font-semibold text-slate-500">Para: {message.to_email?.join(', ') || '-'}</p>
+    <article className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-100 px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-black text-slate-700">
+              {sender.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-sm font-black text-slate-950">{sender}</p>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-black uppercase text-slate-500">
+                  {outgoing ? 'Enviado' : 'Recebido'}
+                </span>
+              </div>
+              <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                {senderEmail} para {message.to_email?.join(', ') || '-'}
+              </p>
+            </div>
           </div>
           <span className="shrink-0 text-xs font-bold text-slate-400">{formatDateTime(message.date)}</span>
         </div>
+      </div>
+      <div className="px-5 py-4">
         {html ? (
           <iframe
             title={`email-${message.id}`}
             sandbox=""
-            className="min-h-48 w-full rounded-md border border-slate-100 bg-white"
-            srcDoc={`<!doctype html><html><head><base target="_blank"><style>body{font-family:Arial,sans-serif;color:#0f172a;line-height:1.55;padding:12px;margin:0}img{max-width:100%;height:auto}table{max-width:100%}.gmail_quote,.gmail_attr,blockquote[type=cite]{display:none!important}blockquote{border-left:3px solid #e2e8f0;margin:12px 0 0;padding-left:12px;color:#64748b}</style></head><body>${html}</body></html>`}
+            className="min-h-36 w-full rounded-md border-0 bg-white"
+            srcDoc={`<!doctype html><html><head><base target="_blank"><style>body{font-family:Arial,sans-serif;color:#0f172a;line-height:1.55;padding:0;margin:0;font-size:14px}img{max-width:100%;height:auto}table{max-width:100%}.gmail_quote,.gmail_attr,.yahoo_quoted,blockquote[type=cite]{display:none!important}blockquote{display:none!important}</style></head><body>${html}</body></html>`}
           />
         ) : (
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{bodyText || 'Sem conteudo.'}</p>

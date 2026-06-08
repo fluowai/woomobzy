@@ -25,6 +25,12 @@ function mapToDatabase(model: Partial<Property> & { organization_id?: string; ni
     highlighted: source.highlighted,
     owner_info: source.ownerInfo || source.owner_info,
     total_area_ha: source.total_area_ha || source.features?.areaHectares || null,
+    source: source.source,
+    external_id: source.external_id,
+    external_updated_at: source.external_updated_at,
+    external_listing_status: source.external_listing_status,
+    imported_at: source.imported_at,
+    published_at: source.published_at,
   };
 
   if (model.price && payload.total_area_ha > 0) {
@@ -96,6 +102,12 @@ const mapToModel = (dbItem: any): Property => ({
   aptitude: dbItem.aptitude || [],
   features: dbItem.features || {},
   images: dbItem.images || [],
+  source: dbItem.source,
+  external_id: dbItem.external_id,
+  external_updated_at: dbItem.external_updated_at,
+  external_listing_status: dbItem.external_listing_status,
+  imported_at: dbItem.imported_at,
+  published_at: dbItem.published_at,
   broker_id: dbItem.broker_id || '',
   niche: dbItem.niche || 'urbano',
   total_area_ha: dbItem.total_area_ha || 0,

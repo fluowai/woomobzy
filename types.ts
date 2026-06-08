@@ -226,6 +226,12 @@ export interface Property {
     percentualMata?: number;
   };
   images: string[];
+  source?: string;
+  external_id?: string;
+  external_updated_at?: string;
+  external_listing_status?: string;
+  imported_at?: string;
+  published_at?: string;
   highlighted?: boolean;
   ownerInfo?: {
     name: string;

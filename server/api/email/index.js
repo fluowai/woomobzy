@@ -6,6 +6,7 @@ import { requireTenant } from '../../middleware/tenant.js';
 import { encryptEmailSecret, maskEmailSecret } from '../../services/email/crypto.js';
 import {
   normalizeEmailAddress,
+  normalizeEmailConnectionConfig,
   sanitizeEmailHtml,
   sendEmail,
   syncEmailAccount,
@@ -54,7 +55,7 @@ router.get('/accounts', async (req, res) => {
 
 router.post('/accounts/test', async (req, res) => {
   try {
-    const account = accountSchema.parse(req.body);
+    const account = normalizeEmailConnectionConfig(accountSchema.parse(req.body));
     await testEmailConnection(account);
     res.json({ success: true, message: 'Conexao IMAP/SMTP validada com sucesso.' });
   } catch (error) {
@@ -64,7 +65,7 @@ router.post('/accounts/test', async (req, res) => {
 
 router.post('/accounts', async (req, res) => {
   try {
-    const account = accountSchema.parse(req.body);
+    const account = normalizeEmailConnectionConfig(accountSchema.parse(req.body));
     await testEmailConnection(account);
 
     const { data, error } = await supabase

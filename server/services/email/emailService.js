@@ -43,6 +43,23 @@ export function normalizeEmailAddress(value = '') {
   return String(value || '').trim().toLowerCase();
 }
 
+function isImplicitTlsPort(port, implicitTlsPort) {
+  return Number(port) === implicitTlsPort;
+}
+
+export function normalizeEmailConnectionConfig(account = {}) {
+  const imapPort = Number(account.imap_port || 993);
+  const smtpPort = Number(account.smtp_port || 465);
+
+  return {
+    ...account,
+    imap_port: imapPort,
+    smtp_port: smtpPort,
+    imap_secure: isImplicitTlsPort(imapPort, 993),
+    smtp_secure: isImplicitTlsPort(smtpPort, 465),
+  };
+}
+
 function textPreview(html = '', text = '') {
   const source = text || String(html || '').replace(/<[^>]+>/g, ' ');
   return source.replace(/\s+/g, ' ').trim().slice(0, 180);
@@ -106,12 +123,13 @@ async function findLeadByEmail(supabase, organizationId, email) {
 }
 
 export function createImapClient(account, password) {
+  const config = normalizeEmailConnectionConfig(account);
   return new ImapFlow({
-    host: account.imap_host,
-    port: Number(account.imap_port || 993),
-    secure: account.imap_secure !== false,
+    host: config.imap_host,
+    port: config.imap_port,
+    secure: config.imap_secure,
     auth: {
-      user: account.email,
+      user: config.email,
       pass: password,
     },
     logger: false,
@@ -119,24 +137,37 @@ export function createImapClient(account, password) {
 }
 
 function createSmtpTransport(account, password) {
+  const config = normalizeEmailConnectionConfig(account);
   return nodemailer.createTransport({
-    host: account.smtp_host,
-    port: Number(account.smtp_port || 465),
-    secure: account.smtp_secure !== false,
+    host: config.smtp_host,
+    port: config.smtp_port,
+    secure: config.smtp_secure,
+    requireTLS: !config.smtp_secure,
     auth: {
-      user: account.email,
+      user: config.email,
       pass: password,
     },
   });
 }
 
 export async function testEmailConnection(accountConfig) {
-  const imapClient = createImapClient(accountConfig, accountConfig.password);
-  await imapClient.connect();
-  await imapClient.logout();
+  const config = normalizeEmailConnectionConfig(accountConfig);
 
-  const smtpTransport = createSmtpTransport(accountConfig, accountConfig.password);
-  await smtpTransport.verify();
+  try {
+    const imapClient = createImapClient(config, config.password);
+    await imapClient.connect();
+    await imapClient.logout();
+
+    const smtpTransport = createSmtpTransport(config, config.password);
+    await smtpTransport.verify();
+  } catch (error) {
+    if (String(error?.message || '').includes('wrong version number')) {
+      const friendly = new Error('Falha SSL/TLS: use porta 465 para SMTP SSL direto ou porta 587 com STARTTLS. Para IMAP, use 993 com SSL direto ou 143 sem SSL direto.');
+      friendly.statusCode = 400;
+      throw friendly;
+    }
+    throw error;
+  }
 }
 
 export async function syncEmailAccount({ accountId, organizationId, userId, limit = 50 }) {

@@ -37,6 +37,8 @@ const blankAccount: ConnectEmailPayload = {
   smtp_secure: true,
 };
 
+const isImplicitTlsPort = (port: number, implicitTlsPort: number) => Number(port) === implicitTlsPort;
+
 const EmailCenter: React.FC = () => {
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState('');
@@ -439,17 +441,23 @@ const EmailCenter: React.FC = () => {
               <input className="input-field md:col-span-2" type="email" placeholder="email@dominio.com" value={accountForm.email} onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })} />
               <input className="input-field md:col-span-2" type="password" placeholder="Senha do email" value={accountForm.password} onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })} />
               <input className="input-field" placeholder="Servidor IMAP" value={accountForm.imap_host} onChange={(e) => setAccountForm({ ...accountForm, imap_host: e.target.value })} />
-              <input className="input-field" type="number" placeholder="Porta IMAP" value={accountForm.imap_port} onChange={(e) => setAccountForm({ ...accountForm, imap_port: Number(e.target.value) })} />
+              <input className="input-field" type="number" placeholder="Porta IMAP" value={accountForm.imap_port} onChange={(e) => {
+                const port = Number(e.target.value);
+                setAccountForm({ ...accountForm, imap_port: port, imap_secure: isImplicitTlsPort(port, 993) });
+              }} />
               <input className="input-field" placeholder="Servidor SMTP" value={accountForm.smtp_host} onChange={(e) => setAccountForm({ ...accountForm, smtp_host: e.target.value })} />
-              <input className="input-field" type="number" placeholder="Porta SMTP" value={accountForm.smtp_port} onChange={(e) => setAccountForm({ ...accountForm, smtp_port: Number(e.target.value) })} />
+              <input className="input-field" type="number" placeholder="Porta SMTP" value={accountForm.smtp_port} onChange={(e) => {
+                const port = Number(e.target.value);
+                setAccountForm({ ...accountForm, smtp_port: port, smtp_secure: isImplicitTlsPort(port, 465) });
+              }} />
             </div>
             <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
               <input type="checkbox" checked={accountForm.imap_secure} onChange={(e) => setAccountForm({ ...accountForm, imap_secure: e.target.checked })} />
-              IMAP SSL/TLS
+              IMAP SSL/TLS direto
             </label>
             <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
               <input type="checkbox" checked={accountForm.smtp_secure} onChange={(e) => setAccountForm({ ...accountForm, smtp_secure: e.target.checked })} />
-              SMTP SSL/TLS
+              SMTP SSL/TLS direto
             </label>
             <div className="rounded-lg bg-slate-50 p-3 text-xs font-semibold text-slate-500">
               A senha sera validada antes de salvar e armazenada com AES-256-GCM. OAuth para Gmail/Outlook fica previsto pelos campos de autenticacao.

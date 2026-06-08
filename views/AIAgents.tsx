@@ -944,7 +944,7 @@ const AIAgents: React.FC = () => {
             )}
           </aside>
 
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_440px] items-start">
+          <div className="grid grid-cols-1 gap-5 items-start">
           <main className="min-w-0 space-y-5">
             <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -1400,30 +1400,120 @@ const AIAgents: React.FC = () => {
                 <section id="agent-test" className={activeTab === 'test' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Teste"
-                    title="Simule uma conversa antes de publicar"
-                    description="Envie uma mensagem de exemplo e confira diagnóstico, intenção e próxima ação."
+                    title="Converse e valide o agente"
+                    description="Teste respostas reais do agente salvo ou simule o comportamento enquanto ele ainda esta em rascunho."
                   />
-                  <div className="mt-4 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_180px] gap-3">
-                    <textarea
-                      value={testPrompt}
-                      onChange={(e) => setTestPrompt(e.target.value)}
-                      className="agent-input min-h-20 resize-none"
-                      placeholder="Digite uma mensagem de lead para testar."
-                    />
-                    <button
-                      onClick={() => runTest(testPrompt)}
-                      disabled={chatLoading}
-                      className="h-full min-h-20 rounded-lg bg-slate-950 px-4 text-sm font-black text-white flex items-center justify-center gap-2 hover:bg-slate-800 disabled:opacity-60"
-                    >
-                      {chatLoading ? <Loader2 className="animate-spin" size={17} /> : <Play size={17} />}
-                      Enviar ao chat
-                    </button>
-                  </div>
-                  {testRan && (
-                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
-                      Simulação pronta no painel de Preview & Teste.
+
+                  <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                      <div className="border-b border-slate-200 bg-white p-4 flex items-center gap-3">
+                        <Avatar label={(draft.name || 'A').charAt(0)} gradient="from-slate-700 to-slate-950" />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-black text-slate-950 mb-0 truncate">{draft.name || 'Agente em teste'}</h3>
+                          <p className="text-xs font-bold text-slate-500 mb-0 truncate">{draft.role || 'Atendimento e Qualificacao'}</p>
+                          <div className="mt-1 flex items-center gap-1.5 text-[11px] font-black text-emerald-600">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            {selectedAgent ? 'Resposta real' : 'Simulacao de rascunho'}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={resetChat}
+                          className="h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center"
+                          title="Limpar conversa"
+                        >
+                          <Repeat2 size={15} />
+                        </button>
+                      </div>
+
+                      <div className="agent-whatsapp-bg p-4">
+                        <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-400 shadow-sm">
+                          Hoje
+                        </div>
+                        <div className="mt-3 max-h-[520px] min-h-[420px] space-y-3 overflow-y-auto pr-1">
+                          {chatMessages.map((message) => (
+                            <ChatBubble key={message.id} side={message.side}>
+                              {message.content}
+                            </ChatBubble>
+                          ))}
+                          {chatLoading && (
+                            <div className="w-fit rounded-lg bg-white px-3 py-2 text-slate-400 shadow-sm">
+                              <span className="inline-flex gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                              </span>
+                            </div>
+                          )}
+                          <div ref={chatEndRef} />
+                        </div>
+                      </div>
+
+                      <form
+                        className="border-t border-slate-200 bg-white p-3"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          runTest(chatInput);
+                        }}
+                      >
+                        {!selectedAgent && (
+                          <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
+                            Salve ou publique o agente para testar a resposta real da IA.
+                          </div>
+                        )}
+                        <div className="flex items-end gap-2">
+                          <textarea
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            className="min-h-11 flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                            placeholder="Converse com o agente..."
+                            rows={2}
+                          />
+                          <button
+                            type="submit"
+                            disabled={chatLoading || !chatInput.trim()}
+                            className="h-11 w-11 shrink-0 rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
+                            title="Enviar mensagem"
+                          >
+                            {chatLoading ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
+                          </button>
+                        </div>
+                      </form>
                     </div>
-                  )}
+
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <h3 className="text-sm font-black text-slate-950 mb-0">Diagnostico do teste</h3>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <Diagnostic label="Intencao" value={previewDiagnostics.intent} tone="green" />
+                          <Diagnostic label="Orcamento" value={previewDiagnostics.budget} tone="slate" />
+                          <Diagnostic label="Cidade" value={previewDiagnostics.city} tone="slate" />
+                          <Diagnostic label="Temperatura" value={previewDiagnostics.temperature} tone="orange" />
+                        </div>
+                        <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Proxima acao</div>
+                          <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-950">
+                            <LayoutGrid size={16} />
+                            {previewDiagnostics.nextAction}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-slate-200 bg-white p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="h-9 w-9 rounded-lg bg-slate-950 text-slate-100 flex items-center justify-center">
+                            <Bot size={18} />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-slate-950 mb-0">Resumo de publicacao</h3>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
+                              {draft.channels?.length || 1} canal(is), {draft.tools?.length || 0} ferramenta(s) e autonomia nivel {draft.autonomy_level || 2}.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </section>
               </div>
             </section>
@@ -1475,149 +1565,6 @@ const AIAgents: React.FC = () => {
             </footer>
           </main>
 
-          <aside className="xl:sticky xl:top-24 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-black text-slate-950 mb-0">Preview & Teste</h2>
-                <p className="text-xs font-bold text-slate-500 mb-0 mt-1">Validação antes da publicação</p>
-              </div>
-              <StatusPill status={draft.status || 'Ativo'} compact />
-            </div>
-
-            <div className="mt-5 rounded-lg border border-slate-200 overflow-hidden">
-              <div className="bg-white p-4 flex items-center gap-3">
-                <Avatar label={(draft.name || 'A').charAt(0)} gradient="from-slate-700 to-slate-950" />
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-black text-slate-950 mb-0 truncate">{draft.name || 'Lia Qualificação'}</h3>
-                  <p className="text-xs font-bold text-slate-500 mb-0 truncate">{draft.role || 'SDR Imobiliário'}</p>
-                  <div className="mt-1 flex items-center gap-1.5 text-[11px] font-black text-emerald-600">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    Online
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={resetChat}
-                  className="h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center"
-                  title="Limpar conversa"
-                >
-                  <Repeat2 size={15} />
-                </button>
-              </div>
-
-              <div className="agent-whatsapp-bg p-4 hidden">
-                <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-400 shadow-sm">
-                  Hoje
-                </div>
-                <ChatBubble side="lead">
-                  {testPrompt || 'Oi, procuro um apartamento até R$350 mil em São José.'}
-                </ChatBubble>
-                <ChatBubble side="agent">
-                  Perfeito. Você procura para morar ou investir? Tem preferência por bairro?
-                </ChatBubble>
-                <div className="w-fit rounded-lg bg-white px-3 py-2 text-slate-400 shadow-sm">
-                  <span className="inline-flex gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-lg border border-slate-200 overflow-hidden">
-              <div className="agent-whatsapp-bg p-4">
-                <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-400 shadow-sm">
-                  Hoje
-                </div>
-                <div className="mt-3 max-h-[420px] min-h-[320px] space-y-3 overflow-y-auto pr-1">
-                  {chatMessages.map((message) => (
-                    <ChatBubble key={message.id} side={message.side}>
-                      {message.content}
-                    </ChatBubble>
-                  ))}
-                  {chatLoading && (
-                    <div className="w-fit rounded-lg bg-white px-3 py-2 text-slate-400 shadow-sm">
-                      <span className="inline-flex gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                        <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                        <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                      </span>
-                    </div>
-                  )}
-                  <div ref={chatEndRef} />
-                </div>
-              </div>
-
-              <form
-                className="border-t border-slate-200 bg-white p-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  runTest(chatInput);
-                }}
-              >
-                {!selectedAgent && (
-                  <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
-                    Rascunho: salve ou publique o agente para testar a resposta real da IA.
-                  </div>
-                )}
-                <div className="flex items-end gap-2">
-                  <textarea
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    className="min-h-11 flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                    placeholder="Converse com o agente..."
-                    rows={2}
-                  />
-                  <button
-                    type="submit"
-                    disabled={chatLoading || !chatInput.trim()}
-                    className="h-11 w-11 shrink-0 rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
-                    title="Enviar mensagem"
-                  >
-                    {chatLoading ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <div className="mt-5">
-              <h3 className="text-sm font-black text-slate-950 mb-0">Diagnóstico automático</h3>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Diagnostic label="Intenção" value={previewDiagnostics.intent} tone="green" />
-                <Diagnostic label="Orçamento" value={previewDiagnostics.budget} tone="slate" />
-                <Diagnostic label="Cidade" value={previewDiagnostics.city} tone="slate" />
-                <Diagnostic label="Temperatura" value={previewDiagnostics.temperature} tone="orange" />
-              </div>
-              <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Próxima ação</div>
-                <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-950">
-                  <LayoutGrid size={16} />
-                  {previewDiagnostics.nextAction}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              <PreviewMetric icon={Headphones} label="Leads atendidos" value="1.248" change="+18%" />
-              <PreviewMetric icon={CalendarClock} label="Visitas" value="312" change="+22%" />
-              <PreviewMetric icon={Target} label="Qualificação" value="68%" change="+9%" />
-            </div>
-
-            <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="h-9 w-9 rounded-lg bg-slate-950 text-slate-100 flex items-center justify-center">
-                  <Bot size={18} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-950 mb-0">Resumo de publicação</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
-                    {draft.channels?.length || 1} canal(is), {draft.tools?.length || 0} ferramenta(s) e autonomia nível {draft.autonomy_level || 2}.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </aside>
           </div>
         </div>
       </div>

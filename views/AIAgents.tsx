@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { aiAgentService, type AIAgent, type AIAgentPayload, type AgentMetrics } from '../services/aiAgents';
+import { callApi } from '../src/lib/api';
 
 type BuilderDraft = AIAgentPayload & {
   status?: string;
@@ -85,6 +86,8 @@ type TestMessage = {
   side: 'lead' | 'agent';
   content: string;
 };
+
+type TestMode = 'lead-simulator' | 'agent-reply';
 
 const channels = [
   { id: 'whatsapp', label: 'WhatsApp' },
@@ -459,11 +462,80 @@ function buildDraftAgentReply(draft: BuilderDraft, message: string) {
     return `${intro} Para agendar a visita, me confirme o imovel desejado, melhor dia/horario e se voce prefere atendimento por WhatsApp ou ligacao.`;
   }
 
-  if (diagnostics.intent === 'LocaÃ§Ã£o') {
+  if (diagnostics.intent === 'Locacao') {
     return `${intro} Vou te ajudar com a locacao. Qual cidade/bairro, faixa de aluguel e data desejada para mudanca?`;
   }
 
   return `${intro} Entendi seu interesse. Voce procura para morar ou investir? Tem preferencia de bairro, tipo de imovel e forma de pagamento?`;
+}
+
+function buildLeadSimulatorReply(draft: BuilderDraft, message: string, history: TestMessage[]) {
+  const text = normalizePreviewText(message);
+  const diagnostics = buildPreviewDiagnostics(message);
+  const leadTurns = history.filter((item) => item.side === 'lead').length;
+  const agentName = draft.name || 'corretor';
+
+  if (/\b(visita|visitar|conhecer|horario|agenda)\b/.test(text)) {
+    return 'Pode ser. Tenho disponibilidade no fim da tarde ou sabado de manha. Esse imovel ainda esta disponivel?';
+  }
+
+  if (/\b(entrada|financia|parcela|simular|credito)\b/.test(text)) {
+    return 'Eu consigo dar uma entrada, mas queria entender melhor as parcelas e se aceita financiamento. Voce consegue simular?';
+  }
+
+  if (/\b(bairro|regiao|cidade|localizacao)\b/.test(text)) {
+    return diagnostics.city !== 'A confirmar'
+      ? `Tenho preferencia por ${diagnostics.city}, mas posso ver bairros proximos se forem seguros e com boa estrutura.`
+      : 'Prefiro uma regiao segura, com mercado perto e acesso facil. Ainda estou aberto a bairros parecidos.';
+  }
+
+  if (/\b(valor|orcamento|preco|r\$|mil)\b/.test(text)) {
+    return diagnostics.budget !== 'A confirmar'
+      ? `Meu teto hoje fica perto de R$ ${diagnostics.budget}. Se passar muito disso preciso ver se a negociacao compensa.`
+      : 'Ainda estou ajustando o orcamento, mas queria algo com bom custo-beneficio e possibilidade de negociar.';
+  }
+
+  if (leadTurns === 0) {
+    return `Oi, ${agentName}. Estou procurando um imovel e queria entender quais opcoes fazem sentido para meu perfil.`;
+  }
+
+  return 'Entendi. Pode me mandar uma opcao com valor, bairro e principais diferenciais? Quero comparar antes de marcar visita.';
+}
+
+async function simulateLeadReply(draft: BuilderDraft, brokerMessage: string, history: TestMessage[]) {
+  const systemInstruction = [
+    'Voce simula um lead imobiliario brasileiro real em um chat de validacao de CRM.',
+    'Responda sempre como cliente/lead, nunca como assistente ou corretor.',
+    'Use mensagens naturais, curtas e com variacoes de interesse, duvidas, objecoes e informacoes de perfil.',
+    'Nao use markdown, nao explique o teste e nao ofereca recursos do sistema.',
+  ].join(' ');
+
+  const prompt = JSON.stringify({
+    agent_under_test: {
+      name: draft.name || 'Agente',
+      role: draft.role || 'Atendimento imobiliario',
+      style: draft.response_style || 'consultivo',
+      channels: draft.channels || [draft.channel || 'whatsapp'],
+      instructions: draft.instructions || '',
+    },
+    conversation: history.slice(-10).map((item) => ({
+      role: item.side === 'agent' ? 'broker' : 'lead',
+      content: item.content,
+    })),
+    broker_message: brokerMessage,
+    task: 'Continue a conversa respondendo apenas como o lead.',
+  });
+
+  try {
+    const data = await callApi('/api/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, systemInstruction, temperature: 0.85 }),
+    });
+    const text = String(data?.text || '').trim();
+    return text || buildLeadSimulatorReply(draft, brokerMessage, history);
+  } catch {
+    return buildLeadSimulatorReply(draft, brokerMessage, history);
+  }
 }
 
 const AIAgents: React.FC = () => {
@@ -473,21 +545,9 @@ const AIAgents: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('identity');
-  const [testPrompt, setTestPrompt] = useState('Oi, procuro um apartamento até R$350 mil em São José.');
-  const [testRan, setTestRan] = useState(false);
-  const [chatInput, setChatInput] = useState('Oi, procuro um apartamento ate R$350 mil em Sao Jose.');
-  const [chatMessages, setChatMessages] = useState<TestMessage[]>([
-    {
-      id: 'seed-lead',
-      side: 'lead',
-      content: 'Oi, procuro um apartamento ate R$350 mil em Sao Jose.',
-    },
-    {
-      id: 'seed-agent',
-      side: 'agent',
-      content: 'Perfeito. Voce procura para morar ou investir? Tem preferencia por bairro?',
-    },
-  ]);
+  const [testMode, setTestMode] = useState<TestMode>('lead-simulator');
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<TestMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(() => `agent-preview-${Date.now()}`);
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
@@ -510,7 +570,10 @@ const AIAgents: React.FC = () => {
   const activeStep = tabs[activeStepIndex] || tabs[0];
   const isFirstStep = activeStepIndex === 0;
   const isLastStep = activeStepIndex === tabs.length - 1;
-  const lastLeadMessage = [...chatMessages].reverse().find((message) => message.side === 'lead')?.content || testPrompt;
+  const lastLeadMessage =
+    [...chatMessages].reverse().find((message) => message.side === 'lead')?.content ||
+    chatMessages[chatMessages.length - 1]?.content ||
+    '';
   const previewDiagnostics = useMemo(() => buildPreviewDiagnostics(lastLeadMessage), [lastLeadMessage]);
 
   useEffect(() => {
@@ -742,51 +805,59 @@ const AIAgents: React.FC = () => {
   };
 
   const runTest = async (messageOverride?: string) => {
-    const message = (messageOverride || chatInput || testPrompt).trim();
+    const message = (messageOverride || chatInput).trim();
     if (!message) {
-      toast.error('Digite uma mensagem para testar o agente.');
+      toast.error('Digite uma mensagem para iniciar a conversa.');
       return;
     }
 
-    const leadMessage: TestMessage = {
-      id: `lead-${Date.now()}`,
-      side: 'lead',
+    const outgoingMessage: TestMessage = {
+      id: `${testMode === 'lead-simulator' ? 'agent' : 'lead'}-${Date.now()}`,
+      side: testMode === 'lead-simulator' ? 'agent' : 'lead',
       content: message,
     };
+    const nextHistory = [...chatMessages, outgoingMessage];
 
-    setChatMessages((current) => [...current, leadMessage]);
+    setChatMessages(nextHistory);
     setChatInput('');
-    setTestPrompt(message);
-    setTestRan(true);
     setChatLoading(true);
 
     try {
       let reply = '';
-      if (selectedAgent) {
+      let replySide: TestMessage['side'] = 'agent';
+      let successMessage = 'Resposta gerada.';
+
+      if (testMode === 'lead-simulator') {
+        replySide = 'lead';
+        reply = await simulateLeadReply(draft, message, nextHistory);
+        successMessage = 'Lead simulado respondeu.';
+      } else if (selectedAgent) {
         const response = await aiAgentService.chat(selectedAgent.id, message, chatSessionId);
         reply = response.reply;
+        successMessage = 'Resposta real do agente recebida.';
       } else {
         reply = buildDraftAgentReply(draft, message);
+        successMessage = 'Resposta simulada do rascunho gerada.';
       }
 
       setChatMessages((current) => [
         ...current,
         {
-          id: `agent-${Date.now()}`,
-          side: 'agent',
-          content: reply || 'Nao consegui responder agora. Ajuste as instrucoes do agente e tente novamente.',
+          id: `${replySide}-${Date.now()}`,
+          side: replySide,
+          content: reply || 'Nao consegui responder agora. Ajuste a mensagem e tente novamente.',
         },
       ]);
 
-      toast.success(selectedAgent ? 'Resposta real do agente recebida.' : 'Resposta simulada do rascunho gerada.');
+      toast.success(successMessage);
     } catch (error: any) {
-      toast.error('Erro ao conversar com o agente: ' + error.message);
+      toast.error('Erro ao conversar no teste: ' + error.message);
       setChatMessages((current) => [
         ...current,
         {
-          id: `agent-error-${Date.now()}`,
-          side: 'agent',
-          content: 'Nao consegui conectar ao agente agora. Verifique se ele foi salvo/publicado e se a IA esta configurada.',
+          id: `${testMode === 'lead-simulator' ? 'lead' : 'agent'}-error-${Date.now()}`,
+          side: testMode === 'lead-simulator' ? 'lead' : 'agent',
+          content: 'Nao consegui conectar a IA agora. Ajuste a mensagem ou tente novamente em instantes.',
         },
       ]);
     } finally {
@@ -796,21 +867,9 @@ const AIAgents: React.FC = () => {
 
   const resetChat = () => {
     setChatSessionId(`agent-preview-${Date.now()}`);
-    setChatInput('Oi, procuro um apartamento ate R$350 mil em Sao Jose.');
-    setChatMessages([
-      {
-        id: 'seed-lead-reset',
-        side: 'lead',
-        content: 'Oi, procuro um apartamento ate R$350 mil em Sao Jose.',
-      },
-      {
-        id: 'seed-agent-reset',
-        side: 'agent',
-        content: 'Perfeito. Voce procura para morar ou investir? Tem preferencia por bairro?',
-      },
-    ]);
+    setChatInput('');
+    setChatMessages([]);
   };
-
   if (loading) {
     return (
       <div className="min-h-[540px] bg-[#F5F7FB] -m-3 sm:-m-4 md:-m-6 flex items-center justify-center">
@@ -1406,24 +1465,50 @@ const AIAgents: React.FC = () => {
 
                   <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
                     <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                      <div className="border-b border-slate-200 bg-white p-4 flex items-center gap-3">
+                      <div className="border-b border-slate-200 bg-white p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
                         <Avatar label={(draft.name || 'A').charAt(0)} gradient="from-slate-700 to-slate-950" />
                         <div className="min-w-0 flex-1">
                           <h3 className="text-sm font-black text-slate-950 mb-0 truncate">{draft.name || 'Agente em teste'}</h3>
                           <p className="text-xs font-bold text-slate-500 mb-0 truncate">{draft.role || 'Atendimento e Qualificacao'}</p>
                           <div className="mt-1 flex items-center gap-1.5 text-[11px] font-black text-emerald-600">
                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                            {selectedAgent ? 'Resposta real' : 'Simulacao de rascunho'}
+                            {testMode === 'lead-simulator'
+                              ? 'Voce fala como corretor'
+                              : selectedAgent
+                                ? 'Resposta real do agente'
+                                : 'Simulacao de rascunho'}
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={resetChat}
-                          className="h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center"
-                          title="Limpar conversa"
-                        >
-                          <Repeat2 size={15} />
-                        </button>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                            <button
+                              type="button"
+                              onClick={() => setTestMode('lead-simulator')}
+                              className={`h-8 rounded-md px-3 text-[11px] font-black transition ${
+                                testMode === 'lead-simulator' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'
+                              }`}
+                            >
+                              Eu sou corretor
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTestMode('agent-reply')}
+                              className={`h-8 rounded-md px-3 text-[11px] font-black transition ${
+                                testMode === 'agent-reply' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'
+                              }`}
+                            >
+                              Eu sou lead
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={resetChat}
+                            className="h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center"
+                            title="Limpar conversa"
+                          >
+                            <Repeat2 size={15} />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="agent-whatsapp-bg p-4">
@@ -1431,6 +1516,21 @@ const AIAgents: React.FC = () => {
                           Hoje
                         </div>
                         <div className="mt-3 max-h-[520px] min-h-[420px] space-y-3 overflow-y-auto pr-1">
+                          {chatMessages.length === 0 && (
+                            <div className="flex h-[320px] items-center justify-center text-center">
+                              <div className="max-w-sm rounded-lg border border-white/70 bg-white/80 px-5 py-4 shadow-sm">
+                                <MessageCircle className="mx-auto text-emerald-600" size={22} />
+                                <p className="mt-2 text-sm font-black text-slate-800 mb-0">
+                                  Escreva a primeira mensagem livre.
+                                </p>
+                                <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500 mb-0">
+                                  {testMode === 'lead-simulator'
+                                    ? 'Voce manda como corretor e o lead responde com comportamento realista.'
+                                    : 'Voce manda como lead e valida a resposta do agente.'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                           {chatMessages.map((message) => (
                             <ChatBubble key={message.id} side={message.side}>
                               {message.content}
@@ -1456,7 +1556,11 @@ const AIAgents: React.FC = () => {
                           runTest(chatInput);
                         }}
                       >
-                        {!selectedAgent && (
+                        {testMode === 'lead-simulator' ? (
+                          <div className="mb-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">
+                            Modo livre: voce escreve como corretor e a IA responde como lead simulado.
+                          </div>
+                        ) : !selectedAgent && (
                           <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
                             Salve ou publique o agente para testar a resposta real da IA.
                           </div>
@@ -1466,7 +1570,7 @@ const AIAgents: React.FC = () => {
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
                             className="min-h-11 flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                            placeholder="Converse com o agente..."
+                            placeholder={testMode === 'lead-simulator' ? 'Digite sua mensagem para o lead...' : 'Digite como se fosse o lead...'}
                             rows={2}
                           />
                           <button

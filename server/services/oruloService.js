@@ -213,12 +213,7 @@ export async function importBuildingTypologies({ supabase, organizationId, build
     mapTypologyToProperty({ building, typology, images, organizationId })
   );
 
-  const { data, error } = await supabase
-    .from('properties')
-    .upsert(payload, { onConflict: 'organization_id,source,external_id' })
-    .select('id, title, status, external_id');
-
-  if (error) throw error;
+  const data = await saveOruloProperties(supabase, payload);
 
   return {
     buildingId,
@@ -226,6 +221,51 @@ export async function importBuildingTypologies({ supabase, organizationId, build
     skipped: typologies.length - urbanTypologies.length,
     properties: data || [],
   };
+}
+
+async function saveOruloProperties(supabase, properties) {
+  const saved = [];
+
+  for (const property of properties) {
+    const { data: existing, error: existingError } = await supabase
+      .from('properties')
+      .select('id, status')
+      .eq('organization_id', property.organization_id)
+      .eq('source', property.source)
+      .eq('external_id', property.external_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+
+    if (existing?.id) {
+      const updatePayload = { ...property };
+      delete updatePayload.organization_id;
+      delete updatePayload.status;
+
+      const { data, error } = await supabase
+        .from('properties')
+        .update(updatePayload)
+        .eq('id', existing.id)
+        .select('id, title, status, external_id')
+        .single();
+
+      if (error) throw error;
+      saved.push(data);
+      continue;
+    }
+
+    const { data, error } = await supabase
+      .from('properties')
+      .insert(property)
+      .select('id, title, status, external_id')
+      .single();
+
+    if (error) throw error;
+    saved.push(data);
+  }
+
+  return saved;
 }
 
 export async function syncActiveBuildings({ supabase, organizationId, updatedAfter, maxBuildings = 25, credentials }) {

@@ -3,14 +3,12 @@ const ORULO_TOKEN_URL = `${ORULO_API_BASE_URL}/oauth/token`;
 const DEFAULT_IMAGE_DIMENSIONS = ['1024x1024', '520x280'];
 const RURAL_ORULO_TYPES = new Set(['Fazenda/Sítio', 'Fazenda', 'Sítio', 'Chácara']);
 
-let tokenCache = {
-  accessToken: null,
-  expiresAt: 0,
-};
+const tokenCacheByClient = new Map();
 
-function getCredentials() {
-  const clientId = process.env.ORULO_CLIENT_ID?.trim();
-  const clientSecret = process.env.ORULO_CLIENT_SECRET?.trim();
+function normalizeCredentials(credentials = {}) {
+  const useProvidedCredentials = Object.keys(credentials || {}).length > 0;
+  const clientId = (useProvidedCredentials ? credentials.clientId : process.env.ORULO_CLIENT_ID || '').trim();
+  const clientSecret = (useProvidedCredentials ? credentials.clientSecret : process.env.ORULO_CLIENT_SECRET || '').trim();
 
   if (!clientId || !clientSecret) {
     const error = new Error('Credenciais da Órulo não configuradas no servidor.');
@@ -21,12 +19,15 @@ function getCredentials() {
   return { clientId, clientSecret };
 }
 
-async function getClientToken({ forceRefresh = false } = {}) {
-  if (!forceRefresh && tokenCache.accessToken && tokenCache.expiresAt > Date.now() + 60000) {
-    return tokenCache.accessToken;
+async function getClientToken({ credentials, forceRefresh = false } = {}) {
+  const { clientId, clientSecret } = normalizeCredentials(credentials);
+  const cacheKey = `${clientId}:${clientSecret.slice(-8)}`;
+  const cached = tokenCacheByClient.get(cacheKey);
+
+  if (!forceRefresh && cached?.accessToken && cached.expiresAt > Date.now() + 60000) {
+    return cached.accessToken;
   }
 
-  const { clientId, clientSecret } = getCredentials();
   const body = new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
@@ -48,16 +49,16 @@ async function getClientToken({ forceRefresh = false } = {}) {
   }
 
   const data = await response.json();
-  tokenCache = {
+  tokenCacheByClient.set(cacheKey, {
     accessToken: data.access_token,
     expiresAt: Date.now() + Number(data.expires_in || 3600) * 1000,
-  };
+  });
 
-  return tokenCache.accessToken;
+  return data.access_token;
 }
 
-async function oruloRequest(path, { query, retry = true } = {}) {
-  const token = await getClientToken();
+async function oruloRequest(path, { credentials, query, retry = true } = {}) {
+  const token = await getClientToken({ credentials });
   const url = new URL(path, ORULO_API_BASE_URL);
 
   Object.entries(query || {}).forEach(([key, value]) => {
@@ -73,8 +74,8 @@ async function oruloRequest(path, { query, retry = true } = {}) {
   });
 
   if (response.status === 401 && retry) {
-    await getClientToken({ forceRefresh: true });
-    return oruloRequest(path, { query, retry: false });
+    await getClientToken({ credentials, forceRefresh: true });
+    return oruloRequest(path, { credentials, query, retry: false });
   }
 
   if (!response.ok) {
@@ -183,11 +184,12 @@ function mapTypologyToProperty({ building, typology, images, organizationId }) {
   };
 }
 
-async function fetchBuildingBundle(buildingId) {
+async function fetchBuildingBundle(buildingId, credentials) {
   const [building, typologiesResponse, imagesResponse] = await Promise.all([
-    oruloRequest(`/api/v2/buildings/${buildingId}`),
-    oruloRequest(`/api/v2/buildings/${buildingId}/typologies`),
+    oruloRequest(`/api/v2/buildings/${buildingId}`, { credentials }),
+    oruloRequest(`/api/v2/buildings/${buildingId}/typologies`, { credentials }),
     oruloRequest(`/api/v2/buildings/${buildingId}/images`, {
+      credentials,
       query: { 'dimensions[]': DEFAULT_IMAGE_DIMENSIONS },
     }).catch(() => ({ images: [] })),
   ]);
@@ -199,8 +201,8 @@ async function fetchBuildingBundle(buildingId) {
   };
 }
 
-export async function importBuildingTypologies({ supabase, organizationId, buildingId }) {
-  const { building, typologies, images } = await fetchBuildingBundle(buildingId);
+export async function importBuildingTypologies({ supabase, organizationId, buildingId, credentials }) {
+  const { building, typologies, images } = await fetchBuildingBundle(buildingId, credentials);
   const urbanTypologies = typologies.filter((typology) => !RURAL_ORULO_TYPES.has(typology.type));
 
   if (!urbanTypologies.length) {
@@ -226,13 +228,14 @@ export async function importBuildingTypologies({ supabase, organizationId, build
   };
 }
 
-export async function syncActiveBuildings({ supabase, organizationId, updatedAfter, maxBuildings = 25 }) {
+export async function syncActiveBuildings({ supabase, organizationId, updatedAfter, maxBuildings = 25, credentials }) {
   let page = 1;
   let processed = 0;
   const results = [];
 
   while (processed < maxBuildings) {
     const response = await oruloRequest('/api/v2/buildings/ids/active', {
+      credentials,
       query: {
         updated_after: updatedAfter,
         results_per_page: Math.min(500, Math.max(1, maxBuildings - processed)),
@@ -249,6 +252,7 @@ export async function syncActiveBuildings({ supabase, organizationId, updatedAft
         supabase,
         organizationId,
         buildingId: building.id,
+        credentials,
       });
       results.push(result);
       processed += 1;
@@ -266,8 +270,9 @@ export async function syncActiveBuildings({ supabase, organizationId, updatedAft
   };
 }
 
-export async function markRemovedBuildings({ supabase, organizationId, updatedAfter }) {
+export async function markRemovedBuildings({ supabase, organizationId, updatedAfter, credentials }) {
   const response = await oruloRequest('/api/v2/buildings/ids/removed', {
+    credentials,
     query: { updated_after: updatedAfter, results_per_page: 500, page: 1 },
   });
   const removed = response?.buildings || [];
@@ -287,6 +292,11 @@ export async function markRemovedBuildings({ supabase, organizationId, updatedAf
   return { removed: removed.length };
 }
 
-export function isOruloConfigured() {
-  return Boolean(process.env.ORULO_CLIENT_ID?.trim() && process.env.ORULO_CLIENT_SECRET?.trim());
+export function isOruloConfigured(credentials) {
+  try {
+    normalizeCredentials(credentials);
+    return true;
+  } catch {
+    return false;
+  }
 }

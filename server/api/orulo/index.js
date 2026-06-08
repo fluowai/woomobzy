@@ -27,8 +27,45 @@ function handleError(res, error) {
   });
 }
 
+async function getTenantOruloCredentials(organizationId) {
+  const { data: settings, error } = await supabase
+    .from('site_settings')
+    .select('integrations')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  const orulo = settings?.integrations?.orulo;
+  if (!orulo) return null;
+  if (orulo.enabled === false) return { disabled: true, tenantScoped: true };
+
+  return {
+    clientId: orulo.clientId || orulo.client_id,
+    clientSecret: orulo.clientSecret || orulo.client_secret,
+    tenantScoped: true,
+  };
+}
+
+function ensureUsableCredentials(credentials) {
+  if (credentials?.disabled) {
+    const error = new Error('Integração Órulo desativada para esta organização.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (credentials?.tenantScoped && (!credentials.clientId || !credentials.clientSecret)) {
+    const error = new Error('Credenciais da Órulo incompletas para esta organização.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return credentials;
+}
+
 router.get('/status', verifyAdmin, requireTenant, async (req, res) => {
   try {
+    const credentials = await getTenantOruloCredentials(req.orgId);
     const { count: pendingCount } = await supabase
       .from('properties')
       .select('id', { count: 'exact', head: true })
@@ -38,7 +75,8 @@ router.get('/status', verifyAdmin, requireTenant, async (req, res) => {
 
     res.json({
       success: true,
-      configured: isOruloConfigured(),
+      configured: !credentials?.disabled && isOruloConfigured(credentials?.tenantScoped ? credentials : null),
+      scope: credentials ? 'tenant' : 'server',
       pendingCount: pendingCount || 0,
     });
   } catch (error) {
@@ -50,11 +88,13 @@ router.post('/sync', verifyAdmin, requireTenant, async (req, res) => {
   try {
     const updatedAfter = req.body?.updated_after || defaultUpdatedAfter();
     const maxBuildings = Math.min(Number(req.body?.max_buildings || 25), 100);
+    const credentials = ensureUsableCredentials(await getTenantOruloCredentials(req.orgId));
     const result = await syncActiveBuildings({
       supabase,
       organizationId: req.orgId,
       updatedAfter,
       maxBuildings,
+      credentials,
     });
 
     if (req.body?.sync_removed !== false) {
@@ -62,6 +102,7 @@ router.post('/sync', verifyAdmin, requireTenant, async (req, res) => {
         supabase,
         organizationId: req.orgId,
         updatedAfter,
+        credentials,
       });
     }
 
@@ -77,6 +118,7 @@ router.post('/buildings/:buildingId/import', verifyAdmin, requireTenant, async (
       supabase,
       organizationId: req.orgId,
       buildingId: req.params.buildingId,
+      credentials: ensureUsableCredentials(await getTenantOruloCredentials(req.orgId)),
     });
 
     res.json({ success: true, ...result });

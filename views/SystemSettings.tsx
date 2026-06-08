@@ -15,6 +15,7 @@ import {
   Activity,
   Shield,
   Link,
+  Building2,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
@@ -31,6 +32,9 @@ const SystemSettings: React.FC = () => {
   const [namoBanaKey, setNamoBanaKey] = useState('');
   const [asaasKey, setAsaasKey] = useState('');
   const [zapsignKey, setZapsignKey] = useState('');
+  const [oruloEnabled, setOruloEnabled] = useState(false);
+  const [oruloClientId, setOruloClientId] = useState('');
+  const [oruloClientSecret, setOruloClientSecret] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
@@ -44,6 +48,15 @@ const SystemSettings: React.FC = () => {
     if (settings?.integrations?.namoBana?.apiKey) setNamoBanaKey(settings.integrations.namoBana.apiKey);
     if (settings?.integrations?.asaas?.apiKey) setAsaasKey(settings.integrations.asaas.apiKey);
     if (settings?.integrations?.zapsign?.apiKey) setZapsignKey(settings.integrations.zapsign.apiKey);
+    if (settings?.integrations?.orulo) {
+      setOruloEnabled(settings.integrations.orulo.enabled ?? false);
+      setOruloClientId(settings.integrations.orulo.clientId || '');
+      setOruloClientSecret(settings.integrations.orulo.clientSecret || '');
+    } else {
+      setOruloEnabled(false);
+      setOruloClientId('');
+      setOruloClientSecret('');
+    }
   }, [settings]);
 
   const handleSave = async () => {
@@ -59,6 +72,11 @@ const SystemSettings: React.FC = () => {
           namoBana: { apiKey: namoBanaKey },
           asaas: { apiKey: asaasKey, environment: 'production' },
           zapsign: { apiKey: zapsignKey },
+          orulo: {
+            enabled: oruloEnabled,
+            clientId: oruloClientId.trim(),
+            clientSecret: oruloClientSecret.trim(),
+          },
         },
       });
       setSaved(true);
@@ -215,6 +233,71 @@ const SystemSettings: React.FC = () => {
                       <p className="text-xs text-text-tertiary">{field.desc}</p>
                     </div>
                   ))}
+                </div>
+
+                <div className="h-px bg-border-subtle" />
+
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-5 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-2xl">
+                        <Building2 size={22} className="text-sky-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-text-primary">
+                          Órulo Catálogo Urbano
+                        </h4>
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          Credenciais exclusivas desta imobiliária para importar empreendimentos e tipologias.
+                        </p>
+                      </div>
+                    </div>
+                    <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={oruloEnabled}
+                        onChange={(e) => setOruloEnabled(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${oruloEnabled ? 'bg-primary' : 'bg-slate-300'}`}>
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${oruloEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                      </span>
+                      <span className="text-xs font-semibold text-text-secondary">
+                        {oruloEnabled ? 'Ativa' : 'Inativa'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        Client ID
+                      </label>
+                      <input
+                        type="password"
+                        value={oruloClientId}
+                        onChange={(e) => setOruloClientId(e.target.value)}
+                        placeholder="Client ID fornecido pela Órulo"
+                        className="input-premium font-mono"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        Client Secret
+                      </label>
+                      <input
+                        type="password"
+                        value={oruloClientSecret}
+                        onChange={(e) => setOruloClientSecret(e.target.value)}
+                        placeholder="Client Secret fornecido pela Órulo"
+                        className="input-premium font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-text-tertiary">
+                    Ao clicar em "Importar Órulo" no módulo urbano, o sistema usa estas credenciais apenas para a organização atual.
+                  </p>
                 </div>
 
                 {/* Info Banner */}

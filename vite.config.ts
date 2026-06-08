@@ -80,6 +80,9 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
           globIgnores: ['**/templates/**', '**/images/fazendas-brasil/**', '**/WhatsApp*.jpeg'],
           maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

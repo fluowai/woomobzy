@@ -284,6 +284,32 @@ export interface Lead {
   source: string;
   status: 'Novo' | 'Em Atendimento' | 'Proposta' | 'Fechado' | 'Perdido';
   classification?: string;
+  lead_score?: number;
+  ai_profile?: {
+    temperature?: 'frio' | 'morno' | 'quente';
+    stage?: string;
+    intent?: string;
+    confidence?: number;
+    nextAction?: {
+      type?: string;
+      title?: string;
+      dueAt?: string;
+      reason?: string;
+    };
+    visit?: {
+      requested?: boolean;
+      scheduledAt?: string;
+      propertyHint?: string;
+      notes?: string;
+    };
+    handoffRequired?: boolean;
+    handoffReason?: string;
+  };
+  ai_next_action?: string;
+  ai_last_intent?: string;
+  ai_last_confidence?: number;
+  next_follow_up_at?: string;
+  next_visit_at?: string;
   tags?: string[];
   aptitude_interest?: PropertyAptitude[];
   budget?: number;

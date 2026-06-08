@@ -1615,6 +1615,34 @@ const KanbanBoard: React.FC = () => {
                                       <span className="text-[10px] text-slate-400 font-medium">
                                         Via {lead.source}
                                       </span>
+                                      {(typeof lead.lead_score === 'number' && lead.lead_score > 0) || lead.ai_next_action ? (
+                                        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-wide">
+                                          {typeof lead.lead_score === 'number' && lead.lead_score > 0 && (
+                                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                                              lead.lead_score >= 75
+                                                ? 'bg-orange-100 text-orange-700'
+                                                : lead.lead_score >= 45
+                                                  ? 'bg-emerald-100 text-emerald-700'
+                                                  : 'bg-slate-100 text-slate-600'
+                                            }`}>
+                                              <Target size={9} />
+                                              {lead.lead_score}
+                                            </span>
+                                          )}
+                                          {lead.ai_next_action && (
+                                            <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
+                                              <Sparkles size={9} />
+                                              <span className="truncate">{lead.ai_next_action}</span>
+                                            </span>
+                                          )}
+                                          {lead.next_visit_at && (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
+                                              <Calendar size={9} />
+                                              Visita
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : null}
                                       {lead.tags && lead.tags.length > 0 && (
                                         <div className="mt-2 flex flex-wrap gap-1">
                                           {lead.tags.slice(0, 3).map((tag) => (

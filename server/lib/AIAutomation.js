@@ -2,6 +2,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 
+const ENHANCED_LEAD_COLUMNS = [
+  'lead_score',
+  'ai_profile',
+  'ai_next_action',
+  'ai_last_intent',
+  'ai_last_confidence',
+  'next_follow_up_at',
+  'next_visit_at',
+];
+
 export class AIAutomationEngine {
   constructor(apiKey) {
     this.defaultApiKey = apiKey;
@@ -118,6 +128,14 @@ Filtro obrigatorio:
 - Familia, amigos, assuntos pessoais, fornecedores, spam, grupos, conversas internas, links soltos e mensagens sem intencao imobiliaria devem ser shouldCreateLead=false.
 - Se for apenas saudacao sem contexto, use shouldCreateLead=true somente se houver indicio comercial, nome de imovel, CAR, fazenda, casa, aluguel, compra, venda, visita, proposta ou pergunta imobiliaria.
 
+Modo operacional:
+- Pense como uma equipe de agentes: SDR, matchmaker, agenda, documentos e fechamento.
+- Extraia dados para o CRM, nao apenas uma resposta de chat.
+- leadScore deve ser 0-100, combinando urgencia, orcamento, clareza de interesse, visita/proposta e qualidade do contato.
+- nextAction.type deve ser: qualify, recommend_property, schedule_visit, follow_up, collect_documents, notify_broker, close_deal, mark_lost.
+- Se houver pedido de visita ou horario claro, preencha visit.requested=true e visit.scheduledAt.
+- Se houver promessa de retorno, preencha nextAction.dueAt ou followUpAt em ISO.
+
 Formato:
 {
   "shouldCreateLead": true,
@@ -127,9 +145,34 @@ Formato:
   "intent": "resumo curto",
   "suggestedStage": "Novo | Qualificacao | Visita | Simulacao | Documentacao | Fechado | Perdido",
   "classification": "Alta Prioridade | Interessado | Curioso | Documentacao | Financeiro",
+  "leadScore": 0,
+  "temperature": "frio | morno | quente",
   "tags": ["ate 3 etiquetas curtas"],
   "leadName": "nome identificado ou vazio",
   "budget": 0,
+  "interestProfile": {
+    "operation": "compra | venda | aluguel | arrendamento | captacao | indefinido",
+    "propertyType": "casa | apartamento | terreno | fazenda | sitio | chacara | comercial | indefinido",
+    "city": "",
+    "region": "",
+    "payment": "vista | financiamento | parcelado | indefinido",
+    "timeline": "imediato | 7_dias | 30_dias | 90_dias | indefinido",
+    "missingFields": ["campos que faltam para qualificar"]
+  },
+  "nextAction": {
+    "type": "qualify | recommend_property | schedule_visit | follow_up | collect_documents | notify_broker | close_deal | mark_lost",
+    "title": "acao curta para o CRM",
+    "dueAt": "data ISO se existir prazo",
+    "reason": "por que esta acao e a proxima melhor"
+  },
+  "visit": {
+    "requested": false,
+    "scheduledAt": "data ISO se marcado",
+    "propertyHint": "",
+    "notes": ""
+  },
+  "handoffRequired": false,
+  "handoffReason": "",
   "followUpAt": "data ISO se houver retorno/agendamento; senao vazio",
   "reply": "resposta curta, humana e comercial para o agente enviar"
 }`,
@@ -188,11 +231,12 @@ Formato:
       agent,
       phone: normalizedPhone,
     });
+    const actionPlan = this._buildActionPlan({ aiResult, text: content, messageType: message.type });
 
     await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'user', content);
 
-    if (aiResult?.reply) {
-      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', aiResult.reply);
+    if (actionPlan.reply) {
+      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', actionPlan.reply);
     }
 
     const { data: existingLead } = await supabase
@@ -202,71 +246,74 @@ Formato:
       .eq('phone', normalizedPhone)
       .maybeSingle();
 
-    if (!existingLead && !this._shouldCreateLeadFromAI(aiResult, content)) {
+    if (!existingLead && !this._shouldCreateLeadFromAI(actionPlan, content)) {
       return {
         skipped: true,
-        reason: aiResult?.leadType || 'not a qualified client conversation',
-        aiResult,
+        reason: actionPlan.leadType || 'not a qualified client conversation',
+        aiResult: actionPlan,
       };
     }
 
-    const stage = this._normalizeStage(aiResult?.suggestedStage, message.type);
-    const name = this._resolveLeadName(aiResult?.leadName, message.sender_name, chat.name, normalizedPhone);
-    const tags = this._normalizeTags(aiResult?.tags, message);
-    const noteLine = this._buildNoteLine({ aiResult, message, chat, tags });
+    const stage = actionPlan.stage;
+    const name = this._resolveLeadName(actionPlan.leadName, message.sender_name, chat.name, normalizedPhone);
+    const tags = this._normalizeTags(actionPlan.tags, message);
+    const noteLine = this._buildNoteLine({ aiResult: actionPlan, message, chat, tags });
+    const leadPatch = this._buildLeadAIPatch({
+      actionPlan,
+      stage,
+      tags,
+      existingLead,
+      fallbackClassification: actionPlan.classification,
+    });
 
     let lead;
     if (existingLead) {
       const updates = {
         name: existingLead.name || name,
         status: this._shouldAdvance(existingLead.status, stage) ? stage : existingLead.status,
-        classification: aiResult?.classification || existingLead.classification,
+        classification: actionPlan.classification || existingLead.classification,
         notes: [existingLead.notes, noteLine].filter(Boolean).join('\n\n'),
         chat_jid: chat.chat_jid || existingLead.chat_jid,
         last_contacted_at: new Date().toISOString(),
+        ...leadPatch,
       };
 
-      if (aiResult?.budget && !existingLead.budget) updates.budget = aiResult.budget;
+      if (actionPlan.budget && !existingLead.budget) updates.budget = actionPlan.budget;
 
-      const { data, error } = await supabase
-        .from('leads')
-        .update(updates)
-        .eq('id', existingLead.id)
-        .select()
-        .single();
-      if (error) throw error;
-      lead = data;
+      lead = await this._persistLeadUpdate(supabase, existingLead.id, updates);
     } else {
-      const { data, error } = await supabase
-        .from('leads')
-        .insert({
-          organization_id: organizationId,
-          name,
-          phone: normalizedPhone,
-          source: 'WhatsApp IA',
-          status: stage,
-          classification: aiResult?.classification || 'Interessado',
-          notes: noteLine,
-          chat_jid: chat.chat_jid,
-          budget: aiResult?.budget || null,
-          last_contacted_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      lead = data;
+      lead = await this._persistLeadInsert(supabase, {
+        organization_id: organizationId,
+        name,
+        phone: normalizedPhone,
+        source: 'WhatsApp IA',
+        status: stage,
+        classification: actionPlan.classification || 'Interessado',
+        notes: noteLine,
+        chat_jid: chat.chat_jid,
+        budget: actionPlan.budget || null,
+        last_contacted_at: new Date().toISOString(),
+        ...leadPatch,
+      });
     }
 
     await this._insertActivity(supabase, {
       leadId: lead.id,
       organizationId,
       type: 'WhatsApp IA',
-      description: aiResult?.intent || message.content || mediaHint || 'Mensagem recebida no WhatsApp',
-      metadata: { tags, aiResult, agent_id: agent?.id, message_id: message.message_id, media_url: message.media_url },
+      description: actionPlan.intent || message.content || mediaHint || 'Mensagem recebida no WhatsApp',
+      metadata: {
+        tags,
+        aiResult,
+        actionPlan,
+        agent_id: agent?.id,
+        message_id: message.message_id,
+        media_url: message.media_url,
+      },
     });
 
     await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags });
-    await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult });
+    await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult: actionPlan });
 
     try {
       lead = await matchLeadProperties({ supabase, lead, organizationId });
@@ -274,7 +321,7 @@ Formato:
       console.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
     }
 
-    return { lead_id: lead.id, status: lead.status, tags };
+    return { lead_id: lead.id, status: lead.status, tags, score: actionPlan.leadScore, next_action: actionPlan.nextAction };
   }
 
   async handleImportedWhatsAppConversations(payload = {}) {
@@ -382,6 +429,7 @@ Formato:
       chat,
       organizationId,
     });
+    const actionPlan = this._buildActionPlan({ aiResult, text: transcript, messageType: 'text' });
 
     const { data: existingLead } = await supabase
       .from('leads')
@@ -390,80 +438,77 @@ Formato:
       .eq('phone', normalizedPhone)
       .maybeSingle();
 
-    if (!existingLead && !this._shouldCreateLeadFromAI(aiResult, transcript)) {
+    if (!existingLead && !this._shouldCreateLeadFromAI(actionPlan, transcript)) {
       return {
         chat_id: chat.id,
         skipped: true,
-        reason: aiResult?.leadType || 'not a qualified client conversation',
+        reason: actionPlan.leadType || 'not a qualified client conversation',
       };
     }
 
-    const stage = this._normalizeStage(aiResult?.suggestedStage, 'text');
+    const stage = actionPlan.stage;
     const name = this._resolveLeadName(
-      aiResult?.leadName,
+      actionPlan.leadName,
       chat.name,
       inboundMessages[inboundMessages.length - 1]?.sender_name,
       normalizedPhone
     );
-    const tags = this._normalizeTags(aiResult?.tags, {});
-    const noteLine = this._buildImportNoteLine({ aiResult, chat, tags, transcript });
+    const tags = this._normalizeTags(actionPlan.tags, {});
+    const noteLine = this._buildImportNoteLine({ aiResult: actionPlan, chat, tags, transcript });
+    const leadPatch = this._buildLeadAIPatch({
+      actionPlan,
+      stage,
+      tags,
+      existingLead,
+      fallbackClassification: actionPlan.classification,
+    });
 
     let lead;
     if (existingLead) {
       const updates = {
         name: existingLead.name || name,
         status: this._shouldAdvance(existingLead.status, stage) ? stage : existingLead.status,
-        classification: aiResult?.classification || existingLead.classification,
+        classification: actionPlan.classification || existingLead.classification,
         notes: [existingLead.notes, noteLine].filter(Boolean).join('\n\n'),
         chat_jid: chat.chat_jid || existingLead.chat_jid,
         last_contacted_at: new Date().toISOString(),
+        ...leadPatch,
       };
-      if (aiResult?.budget && !existingLead.budget) updates.budget = aiResult.budget;
+      if (actionPlan.budget && !existingLead.budget) updates.budget = actionPlan.budget;
 
-      const { data, error: updateError } = await supabase
-        .from('leads')
-        .update(updates)
-        .eq('id', existingLead.id)
-        .select()
-        .single();
-      if (updateError) throw updateError;
-      lead = data;
+      lead = await this._persistLeadUpdate(supabase, existingLead.id, updates);
     } else {
-      const { data, error: insertError } = await supabase
-        .from('leads')
-        .insert({
-          organization_id: organizationId,
-          name,
-          phone: normalizedPhone,
-          source: 'WhatsApp Importado IA',
-          status: stage,
-          classification: aiResult?.classification || 'Interessado',
-          notes: noteLine,
-          chat_jid: chat.chat_jid,
-          budget: aiResult?.budget || null,
-          last_contacted_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      if (insertError) throw insertError;
-      lead = data;
+      lead = await this._persistLeadInsert(supabase, {
+        organization_id: organizationId,
+        name,
+        phone: normalizedPhone,
+        source: 'WhatsApp Importado IA',
+        status: stage,
+        classification: actionPlan.classification || 'Interessado',
+        notes: noteLine,
+        chat_jid: chat.chat_jid,
+        budget: actionPlan.budget || null,
+        last_contacted_at: new Date().toISOString(),
+        ...leadPatch,
+      });
     }
 
     await this._insertActivity(supabase, {
       leadId: lead.id,
       organizationId,
       type: 'WhatsApp Importado IA',
-      description: aiResult?.intent || 'Conversa importada e analisada pela IA',
+      description: actionPlan.intent || 'Conversa importada e analisada pela IA',
       metadata: {
         tags,
         aiResult,
+        actionPlan,
         chat_id: chat.id,
         imported_message_count: messages.length,
       },
     });
 
     await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags });
-    await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult });
+    await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult: actionPlan });
 
     try {
       lead = await matchLeadProperties({ supabase, lead, organizationId });
@@ -471,7 +516,7 @@ Formato:
       console.warn('[AIAutomation] Matchmaking da importacao indisponivel:', error.message);
     }
 
-    return { chat_id: chat.id, lead_id: lead.id, status: lead.status, tags };
+    return { chat_id: chat.id, lead_id: lead.id, status: lead.status, tags, score: actionPlan.leadScore };
   }
 
   async processConversationImport({ transcript, chat, organizationId }) {
@@ -509,9 +554,34 @@ Formato:
   "intent": "resumo comercial curto da conversa",
   "suggestedStage": "Novo | Qualificacao | Visita | Simulacao | Documentacao | Fechado | Perdido",
   "classification": "Alta Prioridade | Interessado | Curioso | Documentacao | Financeiro",
+  "leadScore": 0,
+  "temperature": "frio | morno | quente",
   "tags": ["ate 6 etiquetas curtas"],
   "leadName": "nome identificado ou vazio",
   "budget": 0,
+  "interestProfile": {
+    "operation": "compra | venda | aluguel | arrendamento | captacao | indefinido",
+    "propertyType": "casa | apartamento | terreno | fazenda | sitio | chacara | comercial | indefinido",
+    "city": "",
+    "region": "",
+    "payment": "vista | financiamento | parcelado | indefinido",
+    "timeline": "imediato | 7_dias | 30_dias | 90_dias | indefinido",
+    "missingFields": ["campos que faltam para qualificar"]
+  },
+  "nextAction": {
+    "type": "qualify | recommend_property | schedule_visit | follow_up | collect_documents | notify_broker | close_deal | mark_lost",
+    "title": "acao curta para o CRM",
+    "dueAt": "data ISO se existir prazo",
+    "reason": "por que esta acao e a proxima melhor"
+  },
+  "visit": {
+    "requested": false,
+    "scheduledAt": "data ISO se marcado",
+    "propertyHint": "",
+    "notes": ""
+  },
+  "handoffRequired": false,
+  "handoffReason": "",
   "followUpAt": "data ISO se houver compromisso claro; senao vazio",
   "reply": "proxima resposta sugerida ao corretor"
 }`,
@@ -538,6 +608,128 @@ Formato:
         reply: '',
       };
     }
+  }
+
+  _buildActionPlan({ aiResult, text = '', messageType = 'text' }) {
+    const stage = this._normalizeStage(aiResult?.suggestedStage || aiResult?.stage, messageType);
+    const score = this._normalizeLeadScore(aiResult, text, stage);
+    const visit = this._normalizeVisit(aiResult?.visit, aiResult?.followUpAt || aiResult?.nextAction?.dueAt, stage);
+    const nextAction = this._normalizeNextAction(aiResult?.nextAction, {
+      stage,
+      visit,
+      followUpAt: aiResult?.followUpAt,
+      score,
+    });
+    const followUpAt = this._firstValidISO(
+      visit.scheduledAt,
+      nextAction.dueAt,
+      aiResult?.followUpAt
+    );
+
+    return {
+      ...(aiResult || {}),
+      shouldCreateLead: aiResult?.shouldCreateLead,
+      leadType: aiResult?.leadType || (this._hasRealEstateSignal(text) ? 'cliente' : 'outro'),
+      confidence: this._clampDecimal(aiResult?.confidence, 0, 1, this._hasRealEstateSignal(text) ? 0.55 : 0),
+      intent: String(aiResult?.intent || this._inferIntent(text, stage)).slice(0, 500),
+      stage,
+      suggestedStage: stage,
+      classification: this._normalizeClassification(aiResult?.classification, score, stage),
+      leadScore: score,
+      temperature: aiResult?.temperature || (score >= 75 ? 'quente' : score >= 45 ? 'morno' : 'frio'),
+      tags: this._enrichTags(aiResult?.tags, stage, score, visit),
+      leadName: aiResult?.leadName || '',
+      budget: this._normalizeMoney(aiResult?.budget),
+      interestProfile: this._normalizeInterestProfile(aiResult?.interestProfile),
+      nextAction,
+      visit,
+      followUpAt,
+      handoffRequired: Boolean(aiResult?.handoffRequired || score >= 80 || visit.requested),
+      handoffReason: aiResult?.handoffReason || (visit.requested ? 'Lead pediu visita' : score >= 80 ? 'Lead com alta intencao' : ''),
+      reply: String(aiResult?.reply || nextAction.reason || '').slice(0, 1200),
+    };
+  }
+
+  _buildLeadAIPatch({ actionPlan, stage, tags }) {
+    return {
+      lead_score: actionPlan.leadScore,
+      ai_profile: {
+        version: 'imobzy-agent-orchestrator-v1',
+        temperature: actionPlan.temperature,
+        stage,
+        tags,
+        intent: actionPlan.intent,
+        confidence: actionPlan.confidence,
+        interestProfile: actionPlan.interestProfile,
+        nextAction: actionPlan.nextAction,
+        visit: actionPlan.visit,
+        handoffRequired: actionPlan.handoffRequired,
+        handoffReason: actionPlan.handoffReason,
+        updatedAt: new Date().toISOString(),
+      },
+      ai_next_action: actionPlan.nextAction?.title || actionPlan.nextAction?.type || null,
+      ai_last_intent: actionPlan.intent,
+      ai_last_confidence: actionPlan.confidence,
+      next_follow_up_at: actionPlan.followUpAt || null,
+      next_visit_at: actionPlan.visit?.scheduledAt || null,
+    };
+  }
+
+  async _persistLeadUpdate(supabase, leadId, updates) {
+    const { data, error } = await supabase
+      .from('leads')
+      .update(updates)
+      .eq('id', leadId)
+      .select()
+      .single();
+
+    if (!error) return data;
+    if (!this._isMissingEnhancedLeadColumn(error)) throw error;
+
+    const legacyUpdates = this._withoutEnhancedLeadColumns(updates);
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('leads')
+      .update(legacyUpdates)
+      .eq('id', leadId)
+      .select()
+      .single();
+    if (fallbackError) throw fallbackError;
+    return { ...fallbackData, ...this._pickEnhancedLeadColumns(updates) };
+  }
+
+  async _persistLeadInsert(supabase, insert) {
+    const { data, error } = await supabase
+      .from('leads')
+      .insert(insert)
+      .select()
+      .single();
+
+    if (!error) return data;
+    if (!this._isMissingEnhancedLeadColumn(error)) throw error;
+
+    const legacyInsert = this._withoutEnhancedLeadColumns(insert);
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('leads')
+      .insert(legacyInsert)
+      .select()
+      .single();
+    if (fallbackError) throw fallbackError;
+    return { ...fallbackData, ...this._pickEnhancedLeadColumns(insert) };
+  }
+
+  _withoutEnhancedLeadColumns(payload = {}) {
+    return Object.fromEntries(Object.entries(payload).filter(([key]) => !ENHANCED_LEAD_COLUMNS.includes(key)));
+  }
+
+  _pickEnhancedLeadColumns(payload = {}) {
+    return Object.fromEntries(Object.entries(payload).filter(([key]) => ENHANCED_LEAD_COLUMNS.includes(key)));
+  }
+
+  _isMissingEnhancedLeadColumn(error) {
+    const message = String(error?.message || error?.details || '').toLowerCase();
+    return error?.code === 'pgrst204'
+      || message.includes('schema cache')
+      || ENHANCED_LEAD_COLUMNS.some((column) => message.includes(column));
   }
 
   async _loadActiveAgent(supabase, organizationId, messageType) {
@@ -582,6 +774,146 @@ Formato:
     }
 
     return aiResult.shouldCreateLead === true || type === 'cliente' || this._hasRealEstateSignal(text);
+  }
+
+  _normalizeLeadScore(aiResult = {}, text = '', stage = 'Novo') {
+    const explicit = this._clampNumber(aiResult?.leadScore ?? aiResult?.score, 0, 100, null);
+    if (explicit !== null) return explicit;
+
+    let score = this._hasRealEstateSignal(text) ? 35 : 10;
+    const normalized = String(text).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const stageBoosts = {
+      Novo: 5,
+      'QualificaÃ§Ã£o': 18,
+      Visita: 32,
+      'SimulaÃ§Ã£o': 35,
+      'DocumentaÃ§Ã£o': 38,
+      Fechado: 100,
+      Perdido: 0,
+    };
+
+    score += stageBoosts[stage] || 0;
+    if (aiResult?.budget || /\b(r\$|orcamento|entrada|financiamento|parcela|a vista|avista)\b/.test(normalized)) score += 12;
+    if (/\b(hoje|amanha|essa semana|urgente|agora|imediato|quanto antes)\b/.test(normalized)) score += 12;
+    if (/\b(visita|visitar|conhecer|ver o imovel|agendar|horario)\b/.test(normalized)) score += 18;
+    if (/\b(proposta|fechar|contrato|sinal|documentacao|cpf|rg|matricula)\b/.test(normalized)) score += 18;
+
+    return this._clampNumber(score, 0, 100, 0);
+  }
+
+  _normalizeClassification(classification, score, stage) {
+    const clean = String(classification || '').trim();
+    if (clean) return clean;
+    if (stage === 'Perdido') return 'Desqualificado';
+    if (stage === 'DocumentaÃ§Ã£o') return 'Documentacao';
+    if (stage === 'SimulaÃ§Ã£o') return 'Financeiro';
+    if (score >= 75) return 'Alta Prioridade';
+    if (score >= 45) return 'Interessado';
+    return 'Curioso';
+  }
+
+  _normalizeNextAction(nextAction = {}, context = {}) {
+    const type = String(nextAction?.type || '').trim() || this._inferNextActionType(context);
+    const dueAt = this._firstValidISO(nextAction?.dueAt, context.visit?.scheduledAt, context.followUpAt);
+    return {
+      type,
+      title: String(nextAction?.title || this._defaultActionTitle(type)).slice(0, 160),
+      dueAt,
+      reason: String(nextAction?.reason || this._defaultActionReason(type, context)).slice(0, 500),
+    };
+  }
+
+  _inferNextActionType({ stage, visit, score }) {
+    if (stage === 'Perdido') return 'mark_lost';
+    if (stage === 'Fechado') return 'close_deal';
+    if (stage === 'DocumentaÃ§Ã£o') return 'collect_documents';
+    if (visit?.requested || stage === 'Visita') return 'schedule_visit';
+    if (stage === 'SimulaÃ§Ã£o' || score >= 80) return 'notify_broker';
+    if (stage === 'QualificaÃ§Ã£o') return 'qualify';
+    return 'follow_up';
+  }
+
+  _defaultActionTitle(type) {
+    return {
+      qualify: 'Qualificar perfil do lead',
+      recommend_property: 'Recomendar imoveis aderentes',
+      schedule_visit: 'Agendar visita',
+      follow_up: 'Criar retorno comercial',
+      collect_documents: 'Coletar documentos',
+      notify_broker: 'Acionar corretor responsavel',
+      close_deal: 'Conduzir fechamento',
+      mark_lost: 'Marcar oportunidade como perdida',
+    }[type] || 'Proxima acao comercial';
+  }
+
+  _defaultActionReason(type, { score }) {
+    if (type === 'schedule_visit') return 'Lead demonstrou interesse em visita ou etapa de visita foi detectada.';
+    if (type === 'notify_broker') return `Lead com score ${score}/100 precisa de acao humana rapida.`;
+    if (type === 'qualify') return 'Ainda faltam dados para recomendar imoveis com precisao.';
+    return 'Manter cadencia comercial com contexto da conversa.';
+  }
+
+  _normalizeVisit(visit = {}, fallbackDate, stage) {
+    const scheduledAt = this._firstValidISO(visit?.scheduledAt, stage === 'Visita' ? fallbackDate : '');
+    return {
+      requested: Boolean(visit?.requested || scheduledAt || stage === 'Visita'),
+      scheduledAt,
+      propertyHint: String(visit?.propertyHint || '').slice(0, 180),
+      notes: String(visit?.notes || '').slice(0, 500),
+    };
+  }
+
+  _normalizeInterestProfile(profile = {}) {
+    return {
+      operation: profile?.operation || 'indefinido',
+      propertyType: profile?.propertyType || 'indefinido',
+      city: profile?.city || '',
+      region: profile?.region || '',
+      payment: profile?.payment || 'indefinido',
+      timeline: profile?.timeline || 'indefinido',
+      missingFields: Array.isArray(profile?.missingFields) ? profile.missingFields.slice(0, 8) : [],
+    };
+  }
+
+  _enrichTags(tags = [], stage, score, visit) {
+    const base = Array.isArray(tags) ? tags : [];
+    if (score >= 75) base.push('quente');
+    if (visit?.requested) base.push('visita');
+    if (stage) base.push(stage.toLowerCase());
+    return [...new Set(base.map((tag) => String(tag).trim().toLowerCase()).filter(Boolean))].slice(0, 8);
+  }
+
+  _inferIntent(text = '', stage) {
+    if (stage === 'Visita') return 'Lead demonstrou interesse em visita.';
+    if (stage === 'SimulaÃ§Ã£o') return 'Lead demonstrou interesse financeiro ou proposta.';
+    if (stage === 'DocumentaÃ§Ã£o') return 'Lead trouxe ou solicitou documentos.';
+    return this._hasRealEstateSignal(text) ? 'Lead com interesse imobiliario identificado.' : 'Mensagem sem intencao imobiliaria clara.';
+  }
+
+  _normalizeMoney(value) {
+    const number = Number(value || 0);
+    return Number.isFinite(number) && number > 0 ? number : 0;
+  }
+
+  _clampNumber(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.max(min, Math.min(max, Math.round(number)));
+  }
+
+  _clampDecimal(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.max(min, Math.min(max, number));
+  }
+
+  _firstValidISO(...values) {
+    for (const value of values) {
+      if (!value) continue;
+      const date = new Date(value);
+      if (!Number.isNaN(date.getTime())) return date.toISOString();
+    }
+    return '';
   }
 
   _hasRealEstateSignal(text = '') {
@@ -713,15 +1045,22 @@ Formato:
   }
 
   async _upsertFollowUp(supabase, { leadId, organizationId, aiResult }) {
-    if (!aiResult?.followUpAt) return;
-    const dueAt = new Date(aiResult.followUpAt);
+    const dueAtValue = aiResult?.visit?.scheduledAt || aiResult?.nextAction?.dueAt || aiResult?.followUpAt;
+    if (!dueAtValue) return;
+    const dueAt = new Date(dueAtValue);
     if (Number.isNaN(dueAt.getTime())) return;
+    const isVisit = aiResult?.visit?.requested || aiResult?.nextAction?.type === 'schedule_visit';
     const { error } = await supabase.from('lead_followups').insert({
       lead_id: leadId,
       organization_id: organizationId,
       due_at: dueAt.toISOString(),
-      title: 'Retorno sugerido pela IA',
-      notes: aiResult.intent || aiResult.reply || '',
+      title: isVisit ? 'Visita sugerida pela IA' : (aiResult?.nextAction?.title || 'Retorno sugerido pela IA'),
+      notes: [
+        aiResult.intent,
+        aiResult?.nextAction?.reason,
+        aiResult?.visit?.propertyHint ? `Imovel: ${aiResult.visit.propertyHint}` : '',
+        aiResult?.reply ? `Resposta sugerida: ${aiResult.reply}` : '',
+      ].filter(Boolean).join('\n'),
       status: 'pending',
     });
     if (error) console.warn('[AIAutomation] Follow-up nao registrado:', error.message);

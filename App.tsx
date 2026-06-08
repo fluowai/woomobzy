@@ -577,6 +577,7 @@ const AppContent: React.FC = () => {
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="email" element={<EmailCenter />} />
             <Route path="connections" element={<ConexoesRural />} />
+            <Route path="integrations" element={<SystemSettings />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 

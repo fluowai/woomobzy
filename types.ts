@@ -588,6 +588,11 @@ export interface SiteSettings {
     zapsign?: {
       apiKey: string;
     };
+    orulo?: {
+      enabled?: boolean;
+      clientId?: string;
+      clientSecret?: string;
+    };
   };
   // Visual Layout Editor
   layout_config?: LayoutConfig;

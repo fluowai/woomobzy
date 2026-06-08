@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import {
   Save,
@@ -26,6 +27,7 @@ import ChannelsSettings from './admin/ChannelsSettings';
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
+  const location = useLocation();
   const [openaiKey, setOpenaiKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
@@ -39,7 +41,13 @@ const SystemSettings: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'appearance' | 'users' | 'ai' | 'tracking' | 'domains' | 'support' | 'canais'
-  >('appearance');
+  >(location.pathname.endsWith('/integrations') ? 'ai' : 'appearance');
+
+  useEffect(() => {
+    if (location.pathname.endsWith('/integrations')) {
+      setActiveTab('ai');
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     if (settings?.integrations?.openai?.apiKey) setOpenaiKey(settings.integrations.openai.apiKey);

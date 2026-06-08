@@ -99,6 +99,7 @@ const UrbanLayout: React.FC = () => {
 
   const systemItems: MenuItem[] = [
     { icon: LinkIcon, label: 'Conexões', path: '/urban/connections' },
+    { icon: LinkIcon, label: 'Integrações', path: '/urban/integrations' },
     { icon: Settings, label: 'Configurações', path: '/urban/settings' },
   ];
 

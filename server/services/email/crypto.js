@@ -12,10 +12,6 @@ function getEncryptionKey() {
     throw new Error('EMAIL_ENCRYPTION_KEY ausente. Defina uma chave forte para criptografar contas de email.');
   }
 
-  if (!configured && process.env.NODE_ENV === 'production') {
-    throw new Error('EMAIL_ENCRYPTION_KEY e obrigatoria em producao.');
-  }
-
   if (/^[a-f0-9]{64}$/i.test(material)) {
     return Buffer.from(material, 'hex');
   }

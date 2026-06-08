@@ -57,7 +57,9 @@ const MIGRATIONS = [
   'sql/setup_landing_pages.sql',
   'migrations/v6_rural_search_logs.sql',
   'migrations/20260530_fluowai_cloud_migration_control.sql',
+  'migrations/20260516_ai_agents_whatsapp_automation.sql',
   'migrations/20260603_whatsapp_media_pipeline.sql',
+  'migrations/20260604_email_center.sql',
 ];
 
 async function executeMigrations() {

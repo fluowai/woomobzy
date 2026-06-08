@@ -75,6 +75,13 @@ export const propertyService = {
     });
   },
 
+  async regenerateAcp(id: string) {
+    const data = await callApi(`/api/properties/${id}/acp`, {
+      method: 'POST',
+    });
+    return mapToModel(data.property);
+  },
+
   async submit(property: Partial<Property>) {
     const data = await callApi('/api/properties', {
       method: 'POST',

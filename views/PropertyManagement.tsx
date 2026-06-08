@@ -19,6 +19,9 @@ import {
   Check,
   DownloadCloud,
   RefreshCw,
+  Brain,
+  Megaphone,
+  UserCheck,
 } from 'lucide-react';
 import { propertyService } from '../services/properties';
 import { oruloService } from '../services/orulo';
@@ -107,6 +110,8 @@ const PropertyManagement: React.FC = () => {
     if (activeTab === 'pending') return p.status === 'Pendente';
     return p.status !== 'Pendente';
   });
+
+  const getAcp = (property: Property) => (property.features as any)?.acp;
 
   if (loading) {
     return (
@@ -244,6 +249,11 @@ const PropertyManagement: React.FC = () => {
                   key={property.id}
                   className="card card-hover overflow-hidden group animate-slide-up"
                 >
+                  {(() => {
+                    const acp = getAcp(property);
+
+                    return (
+                      <>
                   <div className="relative h-56 -mx-6 -mt-6 mb-6 overflow-hidden">
                     <img
                       src={
@@ -284,6 +294,47 @@ const PropertyManagement: React.FC = () => {
                           {property.location?.city || 'Cidade'}
                         </p>
                       </div>
+                      {acp && (
+                        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-indigo-700">
+                              <Brain size={16} />
+                              <span className="text-xs font-black uppercase tracking-widest">
+                                ACP Comercial
+                              </span>
+                            </div>
+                            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black text-indigo-700 shadow-sm">
+                              ICP {acp.icp?.fit_score || acp.score || 0}%
+                            </span>
+                          </div>
+                          <div className="space-y-2 text-xs text-slate-600">
+                            <p className="flex items-start gap-2">
+                              <UserCheck size={14} className="mt-0.5 shrink-0 text-indigo-500" />
+                              <span>
+                                <strong className="text-slate-800">Persona:</strong>{' '}
+                                {acp.persona?.name || acp.icp?.name || 'Comprador qualificado'}
+                              </span>
+                            </p>
+                            <p>
+                              <strong className="text-slate-800">Oferta:</strong>{' '}
+                              {acp.offer?.positioning || acp.diagnosis?.best_angle}
+                            </p>
+                            {acp.meta_ads?.campaigns?.length > 0 && (
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {acp.meta_ads.campaigns.slice(0, 2).map((campaign: any, index: number) => (
+                                  <span
+                                    key={`${campaign.name || 'meta'}-${index}`}
+                                    className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600"
+                                  >
+                                    <Megaphone size={11} />
+                                    {campaign.angle || campaign.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <span className="text-xl font-black text-primary">
                           {(property.price || 0).toLocaleString('pt-BR', {
@@ -347,6 +398,9 @@ const PropertyManagement: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                      </>
+                    );
+                  })()}
                 </div>
               ))}
             </div>

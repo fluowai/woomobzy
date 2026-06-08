@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { enrichPropertyWithAcp } from '../../services/acpPropertyAgent.js';
 
 const router = Router();
 
@@ -137,6 +138,44 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     if (error || !data) return res.status(404).json({ error: 'Imóvel não encontrado' });
     res.json({ success: true, property: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/properties/:id/acp
+ */
+router.post('/:id/acp', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { data: property, error: loadError } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId)
+      .single();
+
+    if (loadError || !property) {
+      return res.status(404).json({ error: 'Imovel nao encontrado' });
+    }
+
+    const enriched = await enrichPropertyWithAcp({
+      supabase,
+      organizationId: req.orgId,
+      property,
+    });
+
+    const { data, error } = await supabase
+      .from('properties')
+      .update({ features: enriched.features })
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, property: data, acp: data.features?.acp || null });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

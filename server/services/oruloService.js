@@ -1,3 +1,5 @@
+import { enrichPropertyWithAcp } from './acpPropertyAgent.js';
+
 const ORULO_API_BASE_URL = 'https://www.orulo.com.br';
 const ORULO_TOKEN_URL = `${ORULO_API_BASE_URL}/oauth/token`;
 const DEFAULT_IMAGE_DIMENSIONS = ['1024x1024', '520x280'];
@@ -209,9 +211,12 @@ export async function importBuildingTypologies({ supabase, organizationId, build
     return { buildingId, imported: 0, skipped: typologies.length, properties: [] };
   }
 
-  const payload = urbanTypologies.map((typology) =>
-    mapTypologyToProperty({ building, typology, images, organizationId })
-  );
+  const payload = [];
+
+  for (const typology of urbanTypologies) {
+    const property = mapTypologyToProperty({ building, typology, images, organizationId });
+    payload.push(await enrichPropertyWithAcp({ supabase, organizationId, property }));
+  }
 
   const data = await saveOruloProperties(supabase, payload);
 

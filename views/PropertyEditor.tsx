@@ -22,6 +22,9 @@ import {
   ExternalLink,
   Copy,
   DollarSign,
+  Brain,
+  Megaphone,
+  UserCheck,
 } from 'lucide-react';
 import { kml } from '@tmcw/togeojson';
 import { MOCK_PROPERTIES } from '../constants';
@@ -98,6 +101,7 @@ const PropertyEditor: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingCar, setLoadingCar] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [acpGenerating, setAcpGenerating] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   
   logger.debug('[PropertyEditor] State Check', { loading, analyzing, isNew, id });
@@ -200,6 +204,7 @@ const PropertyEditor: React.FC = () => {
   // Detecção dinâmica do tipo de imóvel para exibição de campos
   const isRuralType = formData.type && RURAL_TYPES.includes(formData.type as PropertyType);
   const isUrbanType = formData.type && URBAN_TYPES.includes(formData.type as PropertyType);
+  const acp = (formData.features as any)?.acp;
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -323,6 +328,25 @@ const PropertyEditor: React.FC = () => {
       );
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const handleRegenerateAcp = async () => {
+    if (!id || isNew) {
+      alert('Salve o imovel antes de gerar a estrategia ACP.');
+      return;
+    }
+
+    try {
+      setAcpGenerating(true);
+      const updated = await propertyService.regenerateAcp(id);
+      setFormData(updated);
+      alert('Estrategia ACP atualizada com sucesso.');
+    } catch (error: any) {
+      logger.error('Erro ao gerar ACP', error);
+      alert(`Erro ao gerar ACP: ${error.message || error}`);
+    } finally {
+      setAcpGenerating(false);
     }
   };
 
@@ -1728,6 +1752,114 @@ const PropertyEditor: React.FC = () => {
         )}
 
         {/* Seção 4: Descrição & IA */}
+        {!isNew && (
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+              <div className="flex items-center gap-2 text-indigo-600">
+                <Brain size={20} />
+                <h2 className="font-bold uppercase tracking-wider text-sm">
+                  Maquina ACP do Imovel
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={handleRegenerateAcp}
+                disabled={acpGenerating}
+                className="flex items-center justify-center gap-2 text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              >
+                {acpGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                REGERAR ACP
+              </button>
+            </div>
+
+            {!acp ? (
+              <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <Brain className="mx-auto text-slate-300 mb-3" size={32} />
+                <h3 className="text-slate-900 font-bold mb-1">
+                  Estrategia ACP ainda nao gerada
+                </h3>
+                <p className="text-sm text-slate-500 max-w-md mx-auto">
+                  Gere ICP, persona, oferta, anuncios Meta e roteiro de qualificacao para revisar este imovel com mais precisao.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-black uppercase tracking-widest text-indigo-700">ICP</span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-indigo-700">
+                      {acp.icp?.fit_score || acp.score || 0}%
+                    </span>
+                  </div>
+                  <h3 className="font-black text-slate-900 text-sm mb-2">
+                    {acp.icp?.name || 'Comprador qualificado'}
+                  </h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {acp.icp?.adherence || acp.diagnosis?.best_angle}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5">
+                  <div className="flex items-center gap-2 mb-3 text-emerald-700">
+                    <UserCheck size={16} />
+                    <span className="text-xs font-black uppercase tracking-widest">Persona & Oferta</span>
+                  </div>
+                  <h3 className="font-black text-slate-900 text-sm mb-2">
+                    {acp.persona?.name || 'Persona urbana'}
+                  </h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {acp.offer?.positioning || acp.offer?.central_benefit}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-5">
+                  <div className="flex items-center gap-2 mb-3 text-amber-700">
+                    <Megaphone size={16} />
+                    <span className="text-xs font-black uppercase tracking-widest">Meta Ads</span>
+                  </div>
+                  <div className="space-y-2">
+                    {(acp.meta_ads?.campaigns || []).slice(0, 2).map((campaign: any, index: number) => (
+                      <div key={`${campaign.name || 'campaign'}-${index}`} className="rounded-xl bg-white/70 p-3">
+                        <p className="text-xs font-black text-slate-900">
+                          {campaign.angle || campaign.name}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                          {campaign.primary_text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="lg:col-span-3 rounded-2xl border border-slate-100 bg-slate-50 p-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                        Perguntas SDR
+                      </p>
+                      <ul className="space-y-1 text-xs text-slate-600">
+                        {(acp.qualification?.questions || []).slice(0, 5).map((question: string, index: number) => (
+                          <li key={`${question}-${index}`}>- {question}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                        Ideias de autoridade
+                      </p>
+                      <ul className="space-y-1 text-xs text-slate-600">
+                        {(acp.authority?.content_ideas || []).slice(0, 5).map((idea: string, index: number) => (
+                          <li key={`${idea}-${index}`}>- {idea}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 relative">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2 text-indigo-600">

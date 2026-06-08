@@ -33,6 +33,7 @@ import fluowaiMigrationRoutes from './api/fluowai-migration/index.js';
 import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
 import emailRoutes from './api/email/index.js';
 import siteRoutes from './api/sites/index.js';
+import oruloRoutes from './api/orulo/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -233,6 +234,7 @@ app.use('/api/demo', demoRoutes);
 app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/sites', siteRoutes);
+app.use('/api/orulo', oruloRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 

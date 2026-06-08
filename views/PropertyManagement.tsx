@@ -17,8 +17,11 @@ import {
   MapPin,
   Map,
   Check,
+  DownloadCloud,
+  RefreshCw,
 } from 'lucide-react';
 import { propertyService } from '../services/properties';
+import { oruloService } from '../services/orulo';
 import { Property } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -28,6 +31,7 @@ const PropertyManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [oruloSyncing, setOruloSyncing] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isRural = location.pathname.startsWith('/rural');
@@ -66,11 +70,32 @@ const PropertyManagement: React.FC = () => {
 
   const handleApprove = async (id: string) => {
     try {
-      await propertyService.update(id, { status: 'Disponível' as any });
-      toast.success('Imóvel aprovado com sucesso!');
+      await propertyService.update(id, {
+        status: 'Disponível' as any,
+        published_at: new Date().toISOString(),
+      } as any);
+      toast.success('Imóvel publicado com sucesso!');
       loadProperties();
     } catch (error: any) {
-      toast.error('Erro ao aprovar imóvel: ' + error.message);
+      toast.error('Erro ao publicar imóvel: ' + error.message);
+    }
+  };
+
+  const handleOruloSync = async () => {
+    if (currentNiche !== 'urbano') {
+      toast.info('A integração da Órulo está disponível apenas no urbano.');
+      return;
+    }
+
+    try {
+      setOruloSyncing(true);
+      const result = await oruloService.sync({ max_buildings: 25 });
+      toast.success(`Órulo sincronizada: ${result.imported || 0} fichas para revisão.`);
+      await loadProperties();
+    } catch (error: any) {
+      toast.error('Erro ao sincronizar Órulo: ' + error.message);
+    } finally {
+      setOruloSyncing(false);
     }
   };
 
@@ -123,6 +148,18 @@ const PropertyManagement: React.FC = () => {
             <span className="hidden sm:inline">Cadastrar Imóvel</span>
             <span className="sm:hidden">Novo</span>
           </button>
+          {!isRural && (
+            <button
+              onClick={handleOruloSync}
+              disabled={oruloSyncing}
+              className="bg-slate-900 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition-all font-bold text-sm shadow-lg disabled:opacity-60"
+              title="Importar catálogo urbano da Órulo para revisão"
+            >
+              {oruloSyncing ? <RefreshCw size={18} className="animate-spin" /> : <DownloadCloud size={18} />}
+              <span className="hidden sm:inline">Importar Órulo</span>
+              <span className="sm:hidden">Órulo</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -234,6 +271,11 @@ const PropertyManagement: React.FC = () => {
                         <span className="badge badge-primary mb-2">
                           {property.type}
                         </span>
+                        {(property as any).source === 'orulo' && (
+                          <span className="badge mb-2 ml-2 bg-slate-900 text-white">
+                            Órulo
+                          </span>
+                        )}
                         <h3 className="text-lg font-bold text-text-primary truncate mb-1">
                           {property.title}
                         </h3>
@@ -259,16 +301,22 @@ const PropertyManagement: React.FC = () => {
                         {property.status === 'Pendente' ? (
                           <>
                             <button
-                              onClick={() => handleApprove(property.id)}
+                              onClick={() => navigate(`${property.id}`)}
                               className="btn-primary flex-1 h-10 text-xs uppercase tracking-widest"
                             >
-                              <Check size={14} /> Aprovar
+                              <Edit3 size={14} /> Revisar Copy
+                            </button>
+                            <button
+                              onClick={() => handleApprove(property.id)}
+                              className="btn-secondary flex-1 h-10 text-xs uppercase tracking-widest"
+                            >
+                              <Check size={14} /> Publicar
                             </button>
                             <button
                               onClick={() => handleDelete(property.id!)}
-                              className="btn-secondary flex-1 h-10 text-xs uppercase tracking-widest text-red-400 hover:text-red-500"
+                              className="p-2 text-text-tertiary hover:text-red-500 transition-colors bg-bg-hover rounded-lg"
                             >
-                              <Trash2 size={14} /> Recusar
+                              <Trash2 size={18} />
                             </button>
                           </>
                         ) : (
@@ -411,7 +459,7 @@ const PropertyManagement: React.FC = () => {
                               {property.title}
                             </p>
                             <p className="text-xs text-slate-400">
-                              ID: {property.id?.slice(0, 8)} • {property.features?.areaHectares || 0} ha
+                              ID: {property.id?.slice(0, 8)} • {(property as any).source === 'orulo' ? 'Órulo' : `${property.features?.areaHectares || 0} ha`}
                             </p>
                           </div>
                         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Activity,
@@ -35,6 +35,7 @@ import {
   Rocket,
   Save,
   Search,
+  Send,
   Settings2,
   ShieldCheck,
   Sparkles,
@@ -77,6 +78,12 @@ type Option = {
   label: string;
   description: string;
   icon: React.ElementType;
+};
+
+type TestMessage = {
+  id: string;
+  side: 'lead' | 'agent';
+  content: string;
 };
 
 const channels = [
@@ -415,6 +422,50 @@ const presets: TemplatePreset[] = [
   },
 ];
 
+function normalizePreviewText(value = '') {
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function buildPreviewDiagnostics(message: string) {
+  const text = normalizePreviewText(message);
+  const budget = message.match(/(?:r\$\s*)?(\d{2,3}(?:[.,]\d{3})*|\d+)\s*(milhao|milhoes|mi|m|mil)?/i);
+  const city = message.match(/\bem\s+([^,.!?]{2,32})(?:[,.!?]|$)/i);
+  const isVisit = /\b(visita|visitar|conhecer|agendar|horario)\b/.test(text);
+  const isFinance = /\b(financiamento|entrada|parcela|proposta|r\$|orcamento)\b/.test(text);
+  const isRent = /\b(alugar|aluguel|locacao|locar)\b/.test(text);
+  const isSale = /\b(comprar|compra|procuro|busco|quero)\b/.test(text);
+
+  return {
+    intent: isVisit ? 'Visita' : isRent ? 'Locacao' : isSale ? 'Compra' : 'Qualificacao',
+    budget: budget ? `${budget[1]} ${budget[2] || ''}`.trim() : 'A confirmar',
+    city: city?.[1]?.trim() || 'A confirmar',
+    temperature: isVisit || isFinance ? 'Quente' : isSale || isRent ? 'Morno' : 'Inicial',
+    nextAction: isVisit ? 'Agendar visita' : isFinance ? 'Acionar corretor' : 'Qualificar perfil',
+  };
+}
+
+function buildDraftAgentReply(draft: BuilderDraft, message: string) {
+  const diagnostics = buildPreviewDiagnostics(message);
+  const agentName = draft.name || 'Agente';
+  const style = draft.response_style || 'consultivo';
+  const intro = style === 'curto'
+    ? 'Perfeito.'
+    : `Perfeito, aqui e ${agentName}.`;
+
+  if (diagnostics.intent === 'Visita') {
+    return `${intro} Para agendar a visita, me confirme o imovel desejado, melhor dia/horario e se voce prefere atendimento por WhatsApp ou ligacao.`;
+  }
+
+  if (diagnostics.intent === 'LocaÃ§Ã£o') {
+    return `${intro} Vou te ajudar com a locacao. Qual cidade/bairro, faixa de aluguel e data desejada para mudanca?`;
+  }
+
+  return `${intro} Entendi seu interesse. Voce procura para morar ou investir? Tem preferencia de bairro, tipo de imovel e forma de pagamento?`;
+}
+
 const AIAgents: React.FC = () => {
   const [agents, setAgents] = useState<AIAgent[]>([]);
   const [selectedId, setSelectedId] = useState<string>('new');
@@ -424,10 +475,26 @@ const AIAgents: React.FC = () => {
   const [activeTab, setActiveTab] = useState('identity');
   const [testPrompt, setTestPrompt] = useState('Oi, procuro um apartamento até R$350 mil em São José.');
   const [testRan, setTestRan] = useState(false);
+  const [chatInput, setChatInput] = useState('Oi, procuro um apartamento ate R$350 mil em Sao Jose.');
+  const [chatMessages, setChatMessages] = useState<TestMessage[]>([
+    {
+      id: 'seed-lead',
+      side: 'lead',
+      content: 'Oi, procuro um apartamento ate R$350 mil em Sao Jose.',
+    },
+    {
+      id: 'seed-agent',
+      side: 'agent',
+      content: 'Perfeito. Voce procura para morar ou investir? Tem preferencia por bairro?',
+    },
+  ]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState(() => `agent-preview-${Date.now()}`);
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [ratingInput, setRatingInput] = useState(0);
   const [feedbackInput, setFeedbackInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const { pathname } = useLocation();
 
   const selectedAgent = useMemo(
@@ -443,6 +510,8 @@ const AIAgents: React.FC = () => {
   const activeStep = tabs[activeStepIndex] || tabs[0];
   const isFirstStep = activeStepIndex === 0;
   const isLastStep = activeStepIndex === tabs.length - 1;
+  const lastLeadMessage = [...chatMessages].reverse().find((message) => message.side === 'lead')?.content || testPrompt;
+  const previewDiagnostics = useMemo(() => buildPreviewDiagnostics(lastLeadMessage), [lastLeadMessage]);
 
   useEffect(() => {
     loadAgents();
@@ -485,6 +554,10 @@ const AIAgents: React.FC = () => {
       setMetrics(null);
     }
   }, [selectedId]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [chatMessages, chatLoading]);
 
   const loadAgents = async () => {
     try {
@@ -668,9 +741,74 @@ const AIAgents: React.FC = () => {
     toast.success('Agente removido.');
   };
 
-  const runTest = () => {
+  const runTest = async (messageOverride?: string) => {
+    const message = (messageOverride || chatInput || testPrompt).trim();
+    if (!message) {
+      toast.error('Digite uma mensagem para testar o agente.');
+      return;
+    }
+
+    const leadMessage: TestMessage = {
+      id: `lead-${Date.now()}`,
+      side: 'lead',
+      content: message,
+    };
+
+    setChatMessages((current) => [...current, leadMessage]);
+    setChatInput('');
+    setTestPrompt(message);
     setTestRan(true);
-    toast.success('Teste executado no simulador.');
+    setChatLoading(true);
+
+    try {
+      let reply = '';
+      if (selectedAgent) {
+        const response = await aiAgentService.chat(selectedAgent.id, message, chatSessionId);
+        reply = response.reply;
+      } else {
+        reply = buildDraftAgentReply(draft, message);
+      }
+
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: `agent-${Date.now()}`,
+          side: 'agent',
+          content: reply || 'Nao consegui responder agora. Ajuste as instrucoes do agente e tente novamente.',
+        },
+      ]);
+
+      toast.success(selectedAgent ? 'Resposta real do agente recebida.' : 'Resposta simulada do rascunho gerada.');
+    } catch (error: any) {
+      toast.error('Erro ao conversar com o agente: ' + error.message);
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: `agent-error-${Date.now()}`,
+          side: 'agent',
+          content: 'Nao consegui conectar ao agente agora. Verifique se ele foi salvo/publicado e se a IA esta configurada.',
+        },
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const resetChat = () => {
+    setChatSessionId(`agent-preview-${Date.now()}`);
+    setChatInput('Oi, procuro um apartamento ate R$350 mil em Sao Jose.');
+    setChatMessages([
+      {
+        id: 'seed-lead-reset',
+        side: 'lead',
+        content: 'Oi, procuro um apartamento ate R$350 mil em Sao Jose.',
+      },
+      {
+        id: 'seed-agent-reset',
+        side: 'agent',
+        content: 'Perfeito. Voce procura para morar ou investir? Tem preferencia por bairro?',
+      },
+    ]);
   };
 
   if (loading) {
@@ -697,6 +835,7 @@ const AIAgents: React.FC = () => {
               <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 mt-1 truncate">
                 Imobiliária Tradicional
               </div>
+
             </div>
           </div>
 
@@ -728,8 +867,8 @@ const AIAgents: React.FC = () => {
       </header>
 
       <div className="p-4 lg:p-7">
-        <div className="mx-auto max-w-[1680px] grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-5 items-start">
-          <aside className="xl:col-span-2 rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden">
+        <div className="mx-auto max-w-[1500px] space-y-5">
+          <aside className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden">
             <div className="p-5 border-b border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -751,7 +890,7 @@ const AIAgents: React.FC = () => {
               <SidebarItem icon={FileText} label="Logs de execução" />
             </nav>
 
-            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
               {presets.map((preset) => (
                 <article key={preset.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-start gap-3">
@@ -805,6 +944,7 @@ const AIAgents: React.FC = () => {
             )}
           </aside>
 
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_440px] items-start">
           <main className="min-w-0 space-y-5">
             <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -1271,11 +1411,12 @@ const AIAgents: React.FC = () => {
                       placeholder="Digite uma mensagem de lead para testar."
                     />
                     <button
-                      onClick={runTest}
-                      className="h-full min-h-20 rounded-lg bg-slate-950 px-4 text-sm font-black text-white flex items-center justify-center gap-2 hover:bg-slate-800"
+                      onClick={() => runTest(testPrompt)}
+                      disabled={chatLoading}
+                      className="h-full min-h-20 rounded-lg bg-slate-950 px-4 text-sm font-black text-white flex items-center justify-center gap-2 hover:bg-slate-800 disabled:opacity-60"
                     >
-                      <Play size={17} />
-                      Executar teste
+                      {chatLoading ? <Loader2 className="animate-spin" size={17} /> : <Play size={17} />}
+                      Enviar ao chat
                     </button>
                   </div>
                   {testRan && (
@@ -1334,7 +1475,7 @@ const AIAgents: React.FC = () => {
             </footer>
           </main>
 
-          <aside className="2xl:sticky 2xl:top-28 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <aside className="xl:sticky xl:top-24 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-base font-black text-slate-950 mb-0">Preview & Teste</h2>
@@ -1354,9 +1495,17 @@ const AIAgents: React.FC = () => {
                     Online
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={resetChat}
+                  className="h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center"
+                  title="Limpar conversa"
+                >
+                  <Repeat2 size={15} />
+                </button>
               </div>
 
-              <div className="agent-whatsapp-bg p-4 space-y-3">
+              <div className="agent-whatsapp-bg p-4 hidden">
                 <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-400 shadow-sm">
                   Hoje
                 </div>
@@ -1376,19 +1525,75 @@ const AIAgents: React.FC = () => {
               </div>
             </div>
 
+            <div className="mt-5 rounded-lg border border-slate-200 overflow-hidden">
+              <div className="agent-whatsapp-bg p-4">
+                <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-400 shadow-sm">
+                  Hoje
+                </div>
+                <div className="mt-3 max-h-[420px] min-h-[320px] space-y-3 overflow-y-auto pr-1">
+                  {chatMessages.map((message) => (
+                    <ChatBubble key={message.id} side={message.side}>
+                      {message.content}
+                    </ChatBubble>
+                  ))}
+                  {chatLoading && (
+                    <div className="w-fit rounded-lg bg-white px-3 py-2 text-slate-400 shadow-sm">
+                      <span className="inline-flex gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                      </span>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+              </div>
+
+              <form
+                className="border-t border-slate-200 bg-white p-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  runTest(chatInput);
+                }}
+              >
+                {!selectedAgent && (
+                  <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
+                    Rascunho: salve ou publique o agente para testar a resposta real da IA.
+                  </div>
+                )}
+                <div className="flex items-end gap-2">
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    className="min-h-11 flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    placeholder="Converse com o agente..."
+                    rows={2}
+                  />
+                  <button
+                    type="submit"
+                    disabled={chatLoading || !chatInput.trim()}
+                    className="h-11 w-11 shrink-0 rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
+                    title="Enviar mensagem"
+                  >
+                    {chatLoading ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
+                  </button>
+                </div>
+              </form>
+            </div>
+
             <div className="mt-5">
               <h3 className="text-sm font-black text-slate-950 mb-0">Diagnóstico automático</h3>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <Diagnostic label="Intenção" value="Compra" tone="green" />
-                <Diagnostic label="Orçamento" value="R$350 mil" tone="slate" />
-                <Diagnostic label="Cidade" value="São José" tone="slate" />
-                <Diagnostic label="Temperatura" value="Quente" tone="orange" />
+                <Diagnostic label="Intenção" value={previewDiagnostics.intent} tone="green" />
+                <Diagnostic label="Orçamento" value={previewDiagnostics.budget} tone="slate" />
+                <Diagnostic label="Cidade" value={previewDiagnostics.city} tone="slate" />
+                <Diagnostic label="Temperatura" value={previewDiagnostics.temperature} tone="orange" />
               </div>
               <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Próxima ação</div>
                 <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-950">
                   <LayoutGrid size={16} />
-                  Criar card no Kanban
+                  {previewDiagnostics.nextAction}
                 </div>
               </div>
             </div>
@@ -1413,6 +1618,7 @@ const AIAgents: React.FC = () => {
               </div>
             </div>
           </aside>
+          </div>
         </div>
       </div>
 

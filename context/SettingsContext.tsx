@@ -10,6 +10,7 @@ import { SiteSettings } from '../types';
 import { DEFAULT_SITE_SETTINGS } from '../constants';
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
+import { callApi } from '../src/lib/api';
 
 interface SettingsContextType {
   settings: SiteSettings;
@@ -211,33 +212,12 @@ export const SettingsProvider: React.FC<{
         payload.organization_id = activeOrgId;
       }
 
-      let data: any = null;
-      const ignoredMissingColumns: string[] = [];
-
-      for (let attempt = 0; attempt < 12; attempt += 1) {
-        const { data: saved, error } = await supabase
-          .from('site_settings')
-          .upsert(payload)
-          .select()
-          .single();
-
-        if (!error) {
-          data = saved;
-          break;
-        }
-
-        const missingColumn = getMissingSchemaColumn(error);
-        if (!missingColumn || !(missingColumn in payload)) {
-          throw error;
-        }
-
-        delete payload[missingColumn];
-        ignoredMissingColumns.push(missingColumn);
-      }
-
-      if (!data) {
-        throw new Error('Nao foi possivel salvar configuracoes no Supabase.');
-      }
+      const response = await callApi('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      const data = response.settings;
+      const ignoredMissingColumns = response.ignoredMissingColumns || [];
 
       if (ignoredMissingColumns.length > 0) {
         logger.warn(
@@ -253,12 +233,6 @@ export const SettingsProvider: React.FC<{
       logger.error('Erro ao salvar no Supabase:', e);
       alert(`Erro ao salvar configurações: ${e.message || e}`);
     }
-  };
-
-  const getMissingSchemaColumn = (error: any): string | null => {
-    if (error?.code !== 'PGRST204') return null;
-    const message = String(error?.message || '');
-    return message.match(/'([^']+)' column/)?.[1] || null;
   };
 
   return (

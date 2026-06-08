@@ -148,6 +148,34 @@ router.post('/sync', async (req, res) => {
   }
 });
 
+router.get('/agenda', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('lead_activities')
+      .select('id, type, description, metadata, created_at, leads(id, name, email, phone, status)')
+      .eq('organization_id', req.orgId)
+      .contains('metadata', { source: 'email_agent' })
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    const activities = (data || []).map((activity) => ({
+      ...activity,
+      priority: activity.metadata?.priority || 'medium',
+      title: activity.metadata?.title || activity.type || 'Atividade de email',
+      email_id: activity.metadata?.email_id || null,
+      subject: activity.metadata?.subject || '',
+      from_email: activity.metadata?.from_email || '',
+      status: activity.metadata?.status || 'pending',
+    }));
+
+    res.json({ success: true, activities });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/emails', async (req, res) => {
   try {
     const folder = String(req.query.folder || 'inbox').toLowerCase();

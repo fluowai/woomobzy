@@ -46,6 +46,21 @@ export type ConnectEmailPayload = {
   smtp_secure: boolean;
 };
 
+export type EmailAgendaActivity = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  priority: 'urgent' | 'high' | 'medium' | 'low' | string;
+  status: 'pending' | 'done' | string;
+  subject?: string;
+  from_email?: string;
+  email_id?: string | null;
+  created_at: string;
+  leads?: { id: string; name: string; email?: string | null; phone?: string | null; status?: string | null } | null;
+  metadata?: Record<string, any>;
+};
+
 export const emailService = {
   listAccounts: async () => {
     const data = await callApi('/api/email/accounts');
@@ -79,6 +94,11 @@ export const emailService = {
     if (search) params.set('search', search);
     const data = await callApi(`/api/email/emails?${params.toString()}`);
     return data as { emails: EmailMessage[]; pagination: { total: number; page: number; pages: number } };
+  },
+
+  listAgenda: async () => {
+    const data = await callApi('/api/email/agenda');
+    return data.activities as EmailAgendaActivity[];
   },
 
   getThread: async (emailId: string) => {

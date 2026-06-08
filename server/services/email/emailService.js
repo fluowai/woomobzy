@@ -87,6 +87,113 @@ function createThreadId({ messageId, inReplyTo, references = [], subject = '', f
   return crypto.createHash('sha256').update(String(root || crypto.randomUUID())).digest('hex');
 }
 
+function normalizeTextForIntent(value = '') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function detectEmailAction({ subject = '', text = '', fromEmail = '' }) {
+  const content = normalizeTextForIntent(`${subject}\n${text}`).replace(/\s+/g, ' ').trim();
+  if (!content) return null;
+
+  const rules = [
+    {
+      type: 'Visita',
+      priority: 'high',
+      title: 'Agendar visita',
+      match: /\b(visita|visitar|conhecer o imovel|agenda|agendar|horario|reuniao)\b/,
+    },
+    {
+      type: 'Proposta',
+      priority: 'high',
+      title: 'Responder proposta',
+      match: /\b(proposta|oferta|negociar|contraproposta|entrada|parcelamento)\b/,
+    },
+    {
+      type: 'Documento',
+      priority: 'medium',
+      title: 'Enviar documentos',
+      match: /\b(documento|contrato|matricula|escritura|certidao|comprovante|assinatura)\b/,
+    },
+    {
+      type: 'Email',
+      priority: 'medium',
+      title: 'Responder duvida comercial',
+      match: /\b(preco|valor|condominio|iptu|metragem|area|localizacao|endereco|disponivel|informacao|duvida)\b/,
+    },
+    {
+      type: 'Retorno',
+      priority: 'high',
+      title: 'Retornar cliente',
+      match: /\b(urgente|preciso|pode me ligar|me retorna|retorno|responder|aguardo|manda|envia|quero)\b/,
+    },
+  ];
+
+  const detected = rules.find((rule) => rule.match.test(content));
+  if (!detected) return null;
+
+  const preview = text.replace(/\s+/g, ' ').trim().slice(0, 180);
+  return {
+    type: detected.type,
+    priority: content.includes('urgente') ? 'urgent' : detected.priority,
+    title: detected.title,
+    description: `${detected.title}: email de ${fromEmail || 'cliente'}${preview ? ` - "${preview}"` : ''}`,
+  };
+}
+
+async function createEmailActivity({ supabase, organizationId, userId, emailId, leadId, subject, bodyText, fromEmail }) {
+  if (!leadId) return null;
+
+  const action = detectEmailAction({ subject, text: bodyText, fromEmail });
+  if (!action) return null;
+
+  const { data: existing, error: findError } = await supabase
+    .from('lead_activities')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('lead_id', leadId)
+    .contains('metadata', { source: 'email_agent', email_id: emailId })
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) {
+    console.warn('[EmailAgent] Falha ao verificar atividade existente:', findError.message);
+    return null;
+  }
+
+  if (existing) return existing;
+
+  const { data, error } = await supabase
+    .from('lead_activities')
+    .insert({
+      lead_id: leadId,
+      organization_id: organizationId,
+      created_by: userId,
+      type: action.type,
+      description: action.description,
+      metadata: {
+        source: 'email_agent',
+        email_id: emailId,
+        subject,
+        from_email: fromEmail,
+        priority: action.priority,
+        title: action.title,
+        status: 'pending',
+      },
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.warn('[EmailAgent] Falha ao criar atividade:', error.message);
+    return null;
+  }
+
+  return data;
+}
+
 function headersToJson(headers) {
   const result = {};
   for (const [key, value] of headers || []) {
@@ -267,6 +374,17 @@ export async function syncEmailAccount({ accountId, organizationId, userId, limi
           .single();
 
         if (saveError) throw saveError;
+
+        await createEmailActivity({
+          supabase,
+          organizationId,
+          userId,
+          emailId: saved.id,
+          leadId: saved.lead_id,
+          subject: saved.subject,
+          bodyText: parsed.text || textPreview(parsedHtml),
+          fromEmail: saved.from_email,
+        });
 
         await emitEmailEvent({
           organizationId,

@@ -168,7 +168,7 @@ http:
       priority: 1000
       tls:
         certResolver: letsencryptresolver
-      service: imobzy_api@swarm
+      service: imobzy_api@file
 
     ${routerBaseName}_frontend:
       rule: "Host(\`${domain}\`)"
@@ -177,7 +177,7 @@ http:
       priority: 100
       tls:
         certResolver: letsencryptresolver
-      service: imobzy_frontend@swarm
+      service: imobzy_frontend@file
 `;
 }
 

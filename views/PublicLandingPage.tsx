@@ -31,6 +31,7 @@ import VideoBlock from '../components/LandingPageBlocks/VideoBlock';
 import TestimonialsBlock from '../components/LandingPageBlocks/TestimonialsBlock';
 import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
 import DividerBlock from '../components/LandingPageBlocks/DividerBlock';
+import OkaPublicSite from './OkaPublicSite';
 
 interface PublicLandingPageProps {
   forceSlug?: string;
@@ -251,6 +252,14 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     profile?.organization_id === organization?.id ||
     profile?.role === 'superadmin';
   const isLive = settings?.is_live === true || settings?.isLive === true;
+  const isOkaSite =
+    organization?.slug === 'okaimoveis' ||
+    organization?.custom_domain === 'okaimoveis.com.br' ||
+    organization?.custom_domain === 'www.okaimoveis.com.br';
+
+  if (isOkaSite) {
+    return <OkaPublicSite organizationId={organization?.id} />;
+  }
 
   if ((forceComingSoon || !isLive) && !isSiteOwner) {
     const agencyName =

@@ -62,6 +62,8 @@ function cleanDomain(domain: string) {
   return domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }
 
+const OKA_PUBLIC_DOMAINS = new Set(['okaimoveis.com.br', 'www.okaimoveis.com.br']);
+
 const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -114,6 +116,15 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
         if (!isSystemDomain) {
           log(`[Router] Custom domain detected: ${hostname}`);
+
+          const normalizedHostname = hostname.toLowerCase();
+          if (OKA_PUBLIC_DOMAINS.has(normalizedHostname) || OKA_PUBLIC_DOMAINS.has(currentHost)) {
+            log('[Router] OKA public domain resolved');
+            setResolvedSlug('okaimoveis');
+            setIsPublicSite(true);
+            setLoading(false);
+            return;
+          }
 
           try {
             const { data, error } = await supabase

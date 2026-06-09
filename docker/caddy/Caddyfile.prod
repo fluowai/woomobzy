@@ -1,4 +1,4 @@
-{$APP_DOMAIN} {
+{$APP_DOMAIN}, okaimoveis.com.br, www.okaimoveis.com.br {
   encode gzip zstd
 
   @whatsapp_ws path /api/whatsapp/ws*

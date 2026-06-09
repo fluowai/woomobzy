@@ -35,6 +35,9 @@ import emailRoutes from './api/email/index.js';
 import siteRoutes from './api/sites/index.js';
 import oruloRoutes from './api/orulo/index.js';
 import settingsRoutes from './api/settings/index.js';
+import valuationRoutes from './api/valuation/index.js';
+import documentRoutes from './api/documents/index.js';
+import externalDataRoutes from './api/external-data/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -237,6 +240,9 @@ app.use('/api/email', emailRoutes);
 app.use('/api/sites', siteRoutes);
 app.use('/api/orulo', oruloRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/valuation', valuationRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/external-data', externalDataRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 

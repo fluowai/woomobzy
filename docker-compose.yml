@@ -77,6 +77,8 @@ services:
         condition: service_healthy
       agro-intelligence:
         condition: service_started
+      document-worker:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3002/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 30s
@@ -122,6 +124,27 @@ services:
       dockerfile: Dockerfile.agro
     expose:
       - "8000"
+    networks:
+      - imobzy
+    restart: unless-stopped
+
+  document-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.document-worker
+    env_file:
+      - .env.production
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      WEBHOOK_URL: http://api:3002/api/documents/webhook/worker-result
+    expose:
+      - "8001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8001/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - imobzy
     restart: unless-stopped

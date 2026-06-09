@@ -20,7 +20,7 @@ import {
   Brain,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
-import DocumentUpload from '../components/DocumentUpload';
+import DocumentUpload from '../src/components/DocumentUpload';
 
 interface ApiDocument {
   id: string;

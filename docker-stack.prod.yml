@@ -19,7 +19,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=consultio1"
-        - "traefik.http.routers.imobfluow_frontend.rule=Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`)"
+        - "traefik.http.routers.imobfluow_frontend.rule=Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)"
         - "traefik.http.routers.imobfluow_frontend.entrypoints=websecure"
         - "traefik.http.routers.imobfluow_frontend.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobfluow_frontend.priority=1"
@@ -31,8 +31,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3002
-      ALLOWED_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
-      CORS_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
+      ALLOWED_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br"
+      CORS_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br"
       VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?set VITE_SUPABASE_URL}"
       VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?set VITE_SUPABASE_ANON_KEY}"
       SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY}"
@@ -66,7 +66,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=consultio1"
-        - "traefik.http.routers.imobfluow_api.rule=(Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`)) && PathPrefix(`/api`)"
+        - "traefik.http.routers.imobfluow_api.rule=(Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api`)"
         - "traefik.http.routers.imobfluow_api.entrypoints=websecure"
         - "traefik.http.routers.imobfluow_api.tls.certresolver=letsencryptresolver"
         - "traefik.http.routers.imobfluow_api.priority=10"
@@ -78,8 +78,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3100
-      ALLOWED_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
-      CORS_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br"
+      ALLOWED_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br"
+      CORS_ORIGINS: "https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br"
       VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?set VITE_SUPABASE_URL}"
       VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?set VITE_SUPABASE_ANON_KEY}"
       SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY}"

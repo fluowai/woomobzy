@@ -155,6 +155,8 @@ async function checkDnsRecord(domain) {
 export function buildTraefikDomainConfig(domainName) {
   const domain = assertValidDomain(domainName);
   const routerBaseName = sanitizeTraefikName(domain);
+  const apiServiceName = `${routerBaseName}_api_service`;
+  const frontendServiceName = `${routerBaseName}_frontend_service`;
 
   return `${GENERATED_MARKER}
 # Domain: ${domain}
@@ -168,7 +170,7 @@ http:
       priority: 1000
       tls:
         certResolver: letsencryptresolver
-      service: imobfluow_api@docker
+      service: ${apiServiceName}
 
     ${routerBaseName}_frontend:
       rule: "Host(\`${domain}\`)"
@@ -177,7 +179,22 @@ http:
       priority: 100
       tls:
         certResolver: letsencryptresolver
-      service: imobfluow_frontend@docker
+      service: ${frontendServiceName}
+
+  services:
+    ${apiServiceName}:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://api:3002"
+          - url: "http://imobfluow_api:3002"
+
+    ${frontendServiceName}:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://frontend:80"
+          - url: "http://imobfluow_frontend:80"
 `;
 }
 

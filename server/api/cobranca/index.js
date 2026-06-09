@@ -27,19 +27,21 @@ function isValidUUID(id) {
  */
 router.get('/', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { status, contract_id, mes, ano } = req.query;
+    const { status, contract_id, mes, ano, page = 1, limit = 50 } = req.query;
 
     const supabase = getSupabaseServer();
+    const offset = (Number(page) - 1) * Number(limit);
+
     let query = supabase
       .from('billing')
       .select(
-        `
-      *,
-      contract:rental_contracts(tenant_name, monthly_rent, property:property_id(title, address))
-    `
+        `*,
+        contract:rental_contracts(tenant_name, monthly_rent, property:property_id(title, address))`,
+        { count: 'exact' }
       )
       .eq('organization_id', req.orgId)
-      .order('due_date', { ascending: false });
+      .order('due_date', { ascending: false })
+      .range(offset, offset + Number(limit) - 1);
 
     if (status) query = query.eq('status', status);
     if (contract_id) query = query.eq('contract_id', contract_id);
@@ -51,13 +53,26 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       query = query.gte('due_date', startDate).lte('due_date', endDate);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) throw error;
 
-    res.json({ success: true, data: data || [], count: data?.length || 0 });
+    res.json({
+      success: true,
+      data: data || [],
+      pagination: {
+        total: count,
+        page: Number(page),
+        limit: Number(limit),
+        pages: Math.ceil((count || 0) / Number(limit)),
+      },
+    });
   } catch (error) {
     console.error('List error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(error.code === 'PGRST116' ? 404 : 500).json({
+      success: false,
+      error: error.message,
+      code: error.code || 'LIST_ERROR',
+    });
   }
 });
 
@@ -438,21 +453,21 @@ router.get(
       if (error) throw error;
 
       if (formato === 'csv') {
-        const csvHeader =
-          'Data Vencimento,Data Pagamento,Locatário,CPF,Valor,Status\n';
-        const csvRows = (data || [])
-          .map(
-            (b) =>
-              `${b.due_date},${b.payment_date || ''},${b.contract?.tenant_name || ''},${b.contract?.tenant_cpf || ''},${b.amount},${b.status}`
-          )
-          .join('\n');
-
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader(
-          'Content-Disposition',
-          'attachment; filename=cobrancas.csv'
+        const headers = ['Data Vencimento', 'Data Pagamento', 'Locatário', 'CPF/CNPJ', 'Valor', 'Status'];
+        const csvRows = (data || []).map((b) =>
+          [
+            b.due_date,
+            b.payment_date || '',
+            `"${(b.contract?.tenant_name || '').replace(/"/g, '""')}"`,
+            b.contract?.tenant_cpf || '',
+            String(b.amount || 0).replace('.', ','),
+            b.status,
+          ].join(',')
         );
-        return res.send(csvHeader + csvRows);
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="cobrancas-${ano || new Date().getFullYear()}.csv"`);
+        return res.send('\uFEFF' + headers.join(',') + '\n' + csvRows.join('\n'));
       }
 
       if (formato === 'xml') {

@@ -463,7 +463,13 @@ function isMissingMatchColumnsError(error) {
 }
 
 async function rerankWithGroq(lead, candidates, profile) {
-  if (!process.env.GROQ_API_KEY || candidates.length === 0) return candidates;
+  const apiKey = (process.env.GROQ_API_KEY || '').trim();
+  if (!apiKey || apiKey.includes('YOUR_GROQ') || apiKey.length < 20 || candidates.length === 0) {
+    if (candidates.length > 0) {
+      console.warn('[LeadMatcher] GROQ_API_KEY inválida ou não configurada. Usando ranking local.');
+    }
+    return candidates;
+  }
 
   try {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

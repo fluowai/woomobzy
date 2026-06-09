@@ -336,8 +336,10 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
   
   // Try Gemini first (Global or Org-specific)
   try {
-    const geminiKey = process.env.GEMINI_API_KEY;
-    if (!geminiKey) throw new Error('Gemini Key missing');
+    const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+    if (!geminiKey || geminiKey.includes('YOUR_') || geminiKey.length < 20) {
+      throw new Error('Gemini API key inválida. Configure GEMINI_API_KEY no .env');
+    }
 
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,

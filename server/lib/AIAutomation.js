@@ -14,9 +14,13 @@ const ENHANCED_LEAD_COLUMNS = [
 
 export class AIAutomationEngine {
   constructor(apiKey) {
-    this.defaultApiKey = apiKey;
-    this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+    const validKey = apiKey && !apiKey.includes('YOUR_') && apiKey.length > 20;
+    this.defaultApiKey = validKey ? apiKey : null;
+    this.genAI = validKey ? new GoogleGenerativeAI(apiKey) : null;
     this.model = this.genAI ? this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) : null;
+    if (!validKey) {
+      console.warn('[AIAutomation] GEMINI_API_KEY inválida ou não configurada. Automação de IA desativada.');
+    }
   }
 
   async _ensureModel(organizationId) {

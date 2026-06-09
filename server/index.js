@@ -20,6 +20,7 @@ import publicRoutes from './routes/public.js';
 import onboardingRoutes from './routes/onboarding.js';
 import domainRoutes from './routes/domains.js';
 import crmRoutes from './api/crm/index.js';
+import crmClientsRoutes from './api/crm/clients/index.js';
 import propertyRoutes from './api/properties/index.js';
 import tenantHandler from './api/tenant/index.js';
 import ruralRoutes from './api/rural/index.js';
@@ -231,6 +232,7 @@ app.use('/api/public', publicRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/domains', domainRoutes);
 app.use('/api/crm', crmRoutes);
+app.use('/api/crm/clients', crmClientsRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/rural', ruralRoutes);
 app.use('/api/urban', urbanRoutes);
@@ -318,18 +320,48 @@ app.all(/(.*)/, (req, res) => {
 
 // 7. TRATAMENTO GLOBAL DE ERROS
 app.use((err, req, res, next) => {
-  console.error("GLOBAL ERROR:", err);
+  const isDev = process.env.NODE_ENV !== 'production';
+  console.error("GLOBAL ERROR:", isDev ? err : err.message);
 
   if (err.message && err.message.includes("CORS")) {
     return res.status(403).json({
       success: false,
-      error: err.message
+      error: err.message,
+      code: 'CORS_BLOCKED',
     });
   }
 
-  return res.status(500).json({
+  // Erros de validação do banco
+  if (err.code === '23505') {
+    return res.status(409).json({
+      success: false,
+      error: 'Registro duplicado. Este recurso já existe.',
+      code: 'DUPLICATE_ENTRY',
+    });
+  }
+
+  if (err.code === '23503') {
+    return res.status(409).json({
+      success: false,
+      error: 'Operação não permitida: registro possui vínculos com outros dados.',
+      code: 'FOREIGN_KEY_VIOLATION',
+    });
+  }
+
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      error: 'Arquivo muito grande. O limite é de 10MB.',
+      code: 'PAYLOAD_TOO_LARGE',
+    });
+  }
+
+  const statusCode = err.statusCode || err.status || 500;
+  res.status(statusCode).json({
     success: false,
-    error: "Internal server error"
+    error: isDev ? err.message : 'Erro interno do servidor',
+    ...(isDev && { stack: err.stack?.split('\n').slice(0, 5).join('\n') }),
+    code: err.code || 'INTERNAL_ERROR',
   });
 });
 

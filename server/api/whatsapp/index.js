@@ -49,6 +49,8 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     'https://app.imobfluow.com.br',
     'https://imobfluow.com.br',
     'https://www.imobfluow.com.br',
+    'https://okaimoveis.com.br',
+    'https://www.okaimoveis.com.br',
     ...envAllowedOrigins,
   ]);
 

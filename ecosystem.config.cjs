@@ -54,7 +54,7 @@ const whatsappEnv = compactEnv({
   CORS_ORIGINS:
     process.env.CORS_ORIGINS ||
     process.env.ALLOWED_ORIGINS ||
-    'http://localhost:3006,http://localhost:3002,https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br',
+    'http://localhost:3006,http://localhost:3002,https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br',
   WHATSAPP_INTERNAL_TOKEN: process.env.WHATSAPP_INTERNAL_TOKEN,
   WHATSAPP_AI_AUTOMATION: process.env.WHATSAPP_AI_AUTOMATION
 });

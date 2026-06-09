@@ -79,7 +79,7 @@ app.use(
             "img-src": ["'self'", "data:", "blob:", "https:"],
             "media-src": ["'self'", "data:", "blob:", "https:"],
             "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://app.imobfluow.com.br", "wss://app.imobfluow.com.br", "https://imobfluow.com.br", "wss://imobfluow.com.br"],
+            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://app.imobfluow.com.br", "wss://app.imobfluow.com.br", "https://imobfluow.com.br", "wss://imobfluow.com.br", "https://okaimoveis.com.br", "wss://okaimoveis.com.br", "https://www.okaimoveis.com.br", "wss://www.okaimoveis.com.br"],
             "frame-ancestors": ["'self'"],
           },
         }
@@ -106,6 +106,8 @@ const staticAllowedOrigins = [
   "https://app.imobfluow.com.br",
   "https://imobfluow.com.br",
   "https://www.imobfluow.com.br",
+  "https://okaimoveis.com.br",
+  "https://www.okaimoveis.com.br",
 ];
 const envAllowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
@@ -177,6 +179,7 @@ const dynamicOriginValidator = (origin, callback) => {
   // Permitir subdomínios da empresa e dev/staging
   if (
     origin.endsWith(".imobfluow.com.br") ||
+    origin.endsWith(".okaimoveis.com.br") ||
     origin.endsWith(".pages.dev") ||
     origin.endsWith(".onrender.com") ||
     origin.startsWith("http://localhost") ||

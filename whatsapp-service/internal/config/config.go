@@ -78,7 +78,7 @@ func Load(logger *zap.Logger) *Config {
 		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 	}
 
-	corsStr := getEnvAny([]string{"CORS_ORIGINS", "ALLOWED_ORIGINS"}, "http://localhost:3006,http://localhost:3002,https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br")
+	corsStr := getEnvAny([]string{"CORS_ORIGINS", "ALLOWED_ORIGINS"}, "http://localhost:3006,http://localhost:3002,https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br")
 	cfg.CORSOrigins = strings.Split(corsStr, ",")
 
 	// Validate required fields

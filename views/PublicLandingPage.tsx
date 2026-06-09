@@ -32,6 +32,7 @@ import TestimonialsBlock from '../components/LandingPageBlocks/TestimonialsBlock
 import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
 import DividerBlock from '../components/LandingPageBlocks/DividerBlock';
 import OkaPublicSite from './OkaPublicSite';
+import FazendasBrasilPublicSite from './FazendasBrasilPublicSite';
 
 interface PublicLandingPageProps {
   forceSlug?: string;
@@ -256,9 +257,20 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     organization?.slug === 'okaimoveis' ||
     organization?.custom_domain === 'okaimoveis.com.br' ||
     organization?.custom_domain === 'www.okaimoveis.com.br';
+  const isFazendasBrasilSite =
+    organization?.slug === 'fazendasbrasil' ||
+    organization?.slug === 'fazendas-brasil' ||
+    organization?.custom_domain === 'fazendasbrasil.com' ||
+    organization?.custom_domain === 'www.fazendasbrasil.com' ||
+    organization?.custom_domain === 'fazendasbrasil.com.br' ||
+    organization?.custom_domain === 'www.fazendasbrasil.com.br';
 
   if (isOkaSite) {
     return <OkaPublicSite organizationId={organization?.id} />;
+  }
+
+  if (isFazendasBrasilSite) {
+    return <FazendasBrasilPublicSite organizationId={organization?.id} />;
   }
 
   if ((forceComingSoon || !isLive) && !isSiteOwner) {

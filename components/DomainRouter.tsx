@@ -160,9 +160,43 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         if (!isTenantSitePath(currentPath)) {
           if (isSystemRoute || currentPath === '/') {
             log(`[Router] System route detected: ${currentPath}`);
-          } else {
-            log(`[Router] Tenant route ignored because it is not /:slug/site`);
+            setIsPublicSite(false);
+            setLoading(false);
+            return;
           }
+
+          const pathSegments = currentPath.split('/').filter(Boolean);
+          if (pathSegments.length === 1 && isPlatformHost) {
+            const potentialSlug = pathSegments[0];
+            log(`[Router] Potential tenant slug from path: ${potentialSlug}`);
+
+            if (potentialSlug === 'okaimoveis') {
+              log('[Router] Resolved to OKA via hardcoded slug');
+              setResolvedSlug('okaimoveis');
+              setIsPublicSite(true);
+              setLoading(false);
+              return;
+            }
+
+            try {
+              const { data, error } = await supabase
+                .rpc('get_tenant_public', { slug_input: potentialSlug })
+                .maybeSingle();
+
+              if (data && !error) {
+                const tenant = data as any;
+                log(`[Router] Tenant found via slug: ${tenant.name} (${tenant.slug})`);
+                setResolvedSlug(tenant.slug);
+                setIsPublicSite(true);
+                setLoading(false);
+                return;
+              }
+            } catch (error) {
+              log(`[Router] Exception resolving tenant slug: ${error}`);
+            }
+          }
+
+          log(`[Router] Tenant route ignored because it is not /:slug/site`);
           setIsPublicSite(false);
           setLoading(false);
           return;

@@ -69,6 +69,30 @@
   cursor: pointer;
   max-width: 180px;
 }
+.wa-period-selector {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+}
+.wa-period-select {
+  max-width: 92px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wa-period-select:disabled {
+  cursor: not-allowed;
+}
 .wa-settings-btn {
   display: flex;
   align-items: center;
@@ -109,6 +133,24 @@
 .wa-import-btn:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+.wa-import-status {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(37, 211, 102, 0.25);
+  background: rgba(37, 211, 102, 0.08);
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.wa-import-status strong {
+  color: #128C7E;
+  font-size: 0.86rem;
 }
 .wa-mobile-back {
   display: none;
@@ -187,6 +229,69 @@
   gap: 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--color-border-subtle);
+}
+.wa-history-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.wa-history-period-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+.wa-history-period-select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  padding: 0 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  outline: none;
+}
+.wa-history-period-select:focus {
+  border-color: var(--color-primary);
+}
+.wa-history-period-select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.wa-history-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.wa-history-progress div {
+  min-width: 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-hover);
+  padding: 7px 8px;
+}
+.wa-history-progress span,
+.wa-history-progress strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wa-history-progress span {
+  color: var(--color-text-tertiary);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+.wa-history-progress strong {
+  color: var(--color-text-primary);
+  font-size: 0.84rem;
+  margin-top: 2px;
 }
 .wa-sidebar-import-btn,
 .wa-sidebar-clear-btn {
@@ -1301,6 +1406,10 @@
   }
   .wa-instance-select {
     max-width: 118px;
+  }
+  .wa-period-selector,
+  .wa-import-status {
+    display: none;
   }
   .wa-import-btn {
     width: 36px;

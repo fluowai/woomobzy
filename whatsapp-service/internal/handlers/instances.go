@@ -256,7 +256,7 @@ func (h *InstanceHandler) ImportHistory(c *gin.Context) {
 		req = models.HistoryImportRequest{}
 	}
 
-	result, err := h.manager.ImportHistory(c.Request.Context(), id, tenantID, req.ChatLimit, req.PerChat)
+	result, err := h.manager.ImportHistory(c.Request.Context(), id, tenantID, req.ChatLimit, req.PerChat, req.SinceDays)
 	if err != nil {
 		h.logger.Error("Failed to import WhatsApp history", zap.Error(err))
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})

@@ -251,7 +251,7 @@ func (m *Manager) GetClient(instanceID uuid.UUID) (*Client, bool) {
 
 // ImportHistory asks WhatsApp for older messages before the oldest stored
 // message in each chat, then starts CRM analysis for the imported/existing chats.
-func (m *Manager) ImportHistory(ctx context.Context, instanceID, tenantID uuid.UUID, chatLimit, perChat int) (*models.HistoryImportResponse, error) {
+func (m *Manager) ImportHistory(ctx context.Context, instanceID, tenantID uuid.UUID, chatLimit, perChat, sinceDays int) (*models.HistoryImportResponse, error) {
 	if chatLimit <= 0 {
 		chatLimit = 50
 	}
@@ -263,6 +263,12 @@ func (m *Manager) ImportHistory(ctx context.Context, instanceID, tenantID uuid.U
 	}
 	if perChat > 100 {
 		perChat = 100
+	}
+	if sinceDays < 0 {
+		sinceDays = 0
+	}
+	if sinceDays > 3650 {
+		sinceDays = 3650
 	}
 
 	client, exists := m.GetClient(instanceID)
@@ -290,6 +296,12 @@ func (m *Manager) ImportHistory(ctx context.Context, instanceID, tenantID uuid.U
 	}
 
 connected:
+	var cutoff time.Time
+	if sinceDays > 0 {
+		cutoff = time.Now().AddDate(0, 0, -sinceDays)
+	}
+	client.SetHistoryImportCutoff(cutoff)
+
 	chats, err := m.chatRepo.ListByInstanceForTenant(ctx, instanceID, tenantID)
 	if err != nil {
 		return nil, err
@@ -305,6 +317,9 @@ connected:
 
 		oldest, err := m.messageRepo.GetOldestByChat(ctx, chat.ID, instanceID)
 		if err != nil || oldest == nil || oldest.MessageID == "" {
+			continue
+		}
+		if !cutoff.IsZero() && oldest.Timestamp.Before(cutoff) {
 			continue
 		}
 
@@ -325,6 +340,7 @@ connected:
 		Message:   "Importacao solicitada. O WhatsApp enviara o historico disponivel em segundo plano e a IA analisara as conversas no CRM.",
 		Requested: requested,
 		Analyzing: true,
+		SinceDays: sinceDays,
 	}, nil
 }
 

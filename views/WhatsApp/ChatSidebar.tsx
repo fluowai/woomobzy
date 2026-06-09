@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { formatPhoneDisplay, type Chat } from './hooks/api';
-import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2 } from 'lucide-react';
+import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2, Clock3 } from 'lucide-react';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
@@ -17,6 +17,17 @@ interface ChatSidebarProps {
   onImportHistory: () => void;
   importingHistory: boolean;
   canImportHistory: boolean;
+  historyPeriodDays: number;
+  historyPeriodOptions: Array<{ value: number; label: string }>;
+  onHistoryPeriodChange: (value: number) => void;
+  historyImportStats: {
+    importedMessages: number;
+    importedChats: number;
+    requestedChats: number;
+    elapsedSeconds: number;
+  };
+  historyPeriodLabel: string;
+  formatImportElapsed: (seconds: number) => string;
   onDeleteAllChats: () => void;
   deletingChats: boolean;
   canDeleteChats: boolean;
@@ -31,6 +42,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onImportHistory,
   importingHistory,
   canImportHistory,
+  historyPeriodDays,
+  historyPeriodOptions,
+  onHistoryPeriodChange,
+  historyImportStats,
+  historyPeriodLabel,
+  formatImportElapsed,
   onDeleteAllChats,
   deletingChats,
   canDeleteChats,
@@ -122,6 +139,41 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       </div>
 
       <div className="wa-sidebar-actions">
+        <div className="wa-history-controls">
+          <label className="wa-history-period-label" htmlFor="wa-history-period">
+            <Clock3 size={14} />
+            <span>Periodo</span>
+          </label>
+          <select
+            id="wa-history-period"
+            className="wa-history-period-select"
+            value={historyPeriodDays}
+            onChange={(event) => onHistoryPeriodChange(Number(event.target.value))}
+            disabled={importingHistory}
+          >
+            {historyPeriodOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {(importingHistory || historyImportStats.importedMessages > 0 || historyImportStats.requestedChats > 0) && (
+          <div className="wa-history-progress">
+            <div>
+              <span>Tempo</span>
+              <strong>{formatImportElapsed(historyImportStats.elapsedSeconds)}</strong>
+            </div>
+            <div>
+              <span>Mensagens</span>
+              <strong>{historyImportStats.importedMessages}</strong>
+            </div>
+            <div>
+              <span>Chats</span>
+              <strong>{historyImportStats.importedChats}/{historyImportStats.requestedChats || '-'}</strong>
+            </div>
+          </div>
+        )}
         <button
           type="button"
           className="wa-sidebar-import-btn"
@@ -130,7 +182,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           title="Importar conversas do WhatsApp e organizar no CRM com IA"
         >
           {importingHistory ? <Loader2 size={16} className="animate-spin" /> : <DownloadCloud size={16} />}
-          <span>{importingHistory ? 'Importando...' : 'Importar conversas'}</span>
+          <span>{importingHistory ? `Importando ${historyPeriodLabel}...` : `Importar ${historyPeriodLabel}`}</span>
         </button>
         <button
           type="button"

@@ -15,8 +15,16 @@ import {
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import InstanceManager from './InstanceManager';
-import { MessageSquare, Settings, Wifi, WifiOff, Smartphone, DownloadCloud, Loader2 } from 'lucide-react';
+import { MessageSquare, Settings, Wifi, WifiOff, Smartphone, DownloadCloud, Loader2, Clock3 } from 'lucide-react';
 import { toast } from 'sonner';
+
+const HISTORY_PERIOD_OPTIONS = [
+  { value: 7, label: '7 dias', chatLimit: 80, perChat: 40 },
+  { value: 30, label: '30 dias', chatLimit: 120, perChat: 60 },
+  { value: 90, label: '90 dias', chatLimit: 180, perChat: 80 },
+  { value: 365, label: '1 ano', chatLimit: 200, perChat: 100 },
+  { value: 0, label: 'Tudo', chatLimit: 200, perChat: 100 },
+];
 
 const WhatsAppDashboard: React.FC = () => {
   // State
@@ -33,6 +41,14 @@ const WhatsAppDashboard: React.FC = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [importingHistory, setImportingHistory] = useState(false);
+  const [historyPeriodDays, setHistoryPeriodDays] = useState(30);
+  const [historyImportStats, setHistoryImportStats] = useState({
+    importedMessages: 0,
+    importedChats: 0,
+    requestedChats: 0,
+    elapsedSeconds: 0,
+    startedAt: 0,
+  });
   const [deletingChats, setDeletingChats] = useState(false);
 
   // WebSocket
@@ -51,6 +67,20 @@ const WhatsAppDashboard: React.FC = () => {
       setChats([]);
     }
   }, [selectedInstance]);
+
+  useEffect(() => {
+    const shouldTrackImport = historyImportStats.startedAt && (importingHistory || historyImportStats.requestedChats > 0);
+    if (!shouldTrackImport) return;
+
+    const timer = window.setInterval(() => {
+      setHistoryImportStats((prev) => ({
+        ...prev,
+        elapsedSeconds: Math.max(0, Math.floor((Date.now() - prev.startedAt) / 1000)),
+      }));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [importingHistory, historyImportStats.requestedChats, historyImportStats.startedAt]);
 
   // Load messages when chat changes
   useEffect(() => {
@@ -137,6 +167,11 @@ const WhatsAppDashboard: React.FC = () => {
 
     const unsubHistoryImported = on('history_imported', (data: any) => {
       if (!selectedInstance || data.instance_id !== selectedInstance.id) return;
+      setHistoryImportStats((prev) => ({
+        ...prev,
+        importedMessages: prev.importedMessages + Number(data.messages || 0),
+        importedChats: prev.importedChats + Number(data.chats || 0),
+      }));
       loadChats(selectedInstance.id);
       toast.success(`Histórico importado: ${data.messages || 0} mensagens em ${data.chats || 0} conversas.`);
     });
@@ -239,11 +274,26 @@ const WhatsAppDashboard: React.FC = () => {
     if (!selectedInstance || importingHistory) return;
 
     setImportingHistory(true);
+    setHistoryImportStats({
+      importedMessages: 0,
+      importedChats: 0,
+      requestedChats: 0,
+      elapsedSeconds: 0,
+      startedAt: Date.now(),
+    });
     try {
+      const selectedPeriod = HISTORY_PERIOD_OPTIONS.find((option) => option.value === historyPeriodDays) || HISTORY_PERIOD_OPTIONS[1];
       const result = await instanceApi.importHistory(selectedInstance.id, {
-        chat_limit: 100,
-        per_chat: 50,
+        chat_limit: selectedPeriod.chatLimit,
+        per_chat: selectedPeriod.perChat,
+        since_days: selectedPeriod.value,
       });
+      setHistoryImportStats((prev) => ({
+        ...prev,
+        requestedChats: result.requested || 0,
+        importedMessages: result.imported_messages || prev.importedMessages,
+        importedChats: result.imported_chats || prev.importedChats,
+      }));
       toast.success(result.message || 'Importação e análise iniciadas.');
       await loadChats(selectedInstance.id);
     } catch (err: any) {
@@ -252,6 +302,21 @@ const WhatsAppDashboard: React.FC = () => {
     } finally {
       setImportingHistory(false);
     }
+  };
+
+  const handleHistoryPeriodChange = (value: number) => {
+    if (importingHistory) return;
+    setHistoryPeriodDays(value);
+  };
+
+  const getHistoryPeriodLabel = (value = historyPeriodDays) => {
+    return HISTORY_PERIOD_OPTIONS.find((option) => option.value === value)?.label || '30 dias';
+  };
+
+  const formatElapsed = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
   };
 
   const handleDeleteAllChats = async () => {
@@ -400,6 +465,22 @@ const WhatsAppDashboard: React.FC = () => {
             </select>
           </div>
 
+          <div className="wa-period-selector" title="Periodo do historico a importar">
+            <Clock3 size={14} />
+            <select
+              value={historyPeriodDays}
+              onChange={(e) => handleHistoryPeriodChange(Number(e.target.value))}
+              className="wa-period-select"
+              disabled={importingHistory}
+            >
+              {HISTORY_PERIOD_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             onClick={handleImportHistory}
             className="wa-import-btn"
@@ -409,6 +490,13 @@ const WhatsAppDashboard: React.FC = () => {
             {importingHistory ? <Loader2 size={16} className="animate-spin" /> : <DownloadCloud size={16} />}
             <span>Importar</span>
           </button>
+
+          {(importingHistory || historyImportStats.importedMessages > 0 || historyImportStats.requestedChats > 0) && (
+            <div className="wa-import-status" title="Progresso da importacao">
+              <span>{formatElapsed(historyImportStats.elapsedSeconds)}</span>
+              <strong>{historyImportStats.importedMessages}</strong>
+            </div>
+          )}
 
           <button
             onClick={() => setShowInstanceManager(true)}
@@ -432,6 +520,12 @@ const WhatsAppDashboard: React.FC = () => {
           onImportHistory={handleImportHistory}
           importingHistory={importingHistory}
           canImportHistory={canImportHistory}
+          historyPeriodDays={historyPeriodDays}
+          historyPeriodOptions={HISTORY_PERIOD_OPTIONS}
+          onHistoryPeriodChange={handleHistoryPeriodChange}
+          historyImportStats={historyImportStats}
+          historyPeriodLabel={getHistoryPeriodLabel()}
+          formatImportElapsed={formatElapsed}
           onDeleteAllChats={handleDeleteAllChats}
           deletingChats={deletingChats}
           canDeleteChats={canDeleteChats}

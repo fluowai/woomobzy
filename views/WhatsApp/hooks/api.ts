@@ -228,6 +228,7 @@ export interface HistoryImportResponse {
   message: string;
   requested: number;
   analyzing: boolean;
+  since_days?: number;
   imported_chats?: number;
   imported_messages?: number;
 }
@@ -357,7 +358,7 @@ export const instanceApi = {
   logout: (id: string) =>
     apiRequest(`/instances/${id}/logout`, { method: 'POST' }),
 
-  importHistory: (id: string, options: { chat_limit?: number; per_chat?: number } = {}) =>
+  importHistory: (id: string, options: { chat_limit?: number; per_chat?: number; since_days?: number } = {}) =>
     apiRequest<HistoryImportResponse>(`/instances/${id}/import-history`, {
       method: 'POST',
       body: JSON.stringify(options),

@@ -134,6 +134,7 @@ type SendMessageRequest struct {
 type HistoryImportRequest struct {
 	ChatLimit int `json:"chat_limit,omitempty"`
 	PerChat   int `json:"per_chat,omitempty"`
+	SinceDays int `json:"since_days,omitempty"`
 }
 
 // HistoryImportResponse summarizes a requested import/analysis run.
@@ -141,6 +142,7 @@ type HistoryImportResponse struct {
 	Message       string `json:"message"`
 	Requested     int    `json:"requested"`
 	Analyzing     bool   `json:"analyzing"`
+	SinceDays     int    `json:"since_days,omitempty"`
 	ImportedChats int    `json:"imported_chats,omitempty"`
 	ImportedMsgs  int    `json:"imported_messages,omitempty"`
 }

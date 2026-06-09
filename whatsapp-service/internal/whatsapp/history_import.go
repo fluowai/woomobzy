@@ -107,6 +107,14 @@ func (c *Client) importHistoryConversation(ctx context.Context, rawJID, name, di
 
 func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message, fallbackChatName string) (uuid.UUID, bool) {
 	info := evt.Info
+	messageTime := info.Timestamp
+	if messageTime.IsZero() {
+		messageTime = time.Now()
+	}
+	if cutoff, ok := c.historyImportCutoff(); ok && messageTime.Before(cutoff) {
+		return uuid.Nil, false
+	}
+
 	canonicalJID := canonicalChatJID(info)
 	chatJID := canonicalJID.String()
 	isGroup := phone.IsGroupJID(chatJID)
@@ -159,11 +167,6 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 	}
 	if len(previewContent) > 100 {
 		previewContent = previewContent[:100] + "..."
-	}
-
-	messageTime := info.Timestamp
-	if messageTime.IsZero() {
-		messageTime = time.Now()
 	}
 
 	chat := &models.Chat{
@@ -253,6 +256,18 @@ func (c *Client) RequestAdditionalHistory(ctx context.Context, chat models.Chat,
 
 	_, err = c.waClient.SendPeerMessage(ctx, c.waClient.BuildHistorySyncRequest(msgInfo, count))
 	return err
+}
+
+func (c *Client) SetHistoryImportCutoff(cutoff time.Time) {
+	c.historyMu.Lock()
+	defer c.historyMu.Unlock()
+	c.historyCutoff = cutoff
+}
+
+func (c *Client) historyImportCutoff() (time.Time, bool) {
+	c.historyMu.RLock()
+	defer c.historyMu.RUnlock()
+	return c.historyCutoff, !c.historyCutoff.IsZero()
 }
 
 func (c *Client) AnalyzeImportedHistory(chatIDs []uuid.UUID, limit int) {

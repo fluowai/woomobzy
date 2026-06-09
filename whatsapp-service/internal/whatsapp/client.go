@@ -39,6 +39,8 @@ type Client struct {
 	connected      bool
 	eventHandlerID uint32
 	mu             sync.RWMutex
+	historyMu      sync.RWMutex
+	historyCutoff  time.Time
 	supabaseURL    string
 	supabaseKey    string
 	storageBucket  string

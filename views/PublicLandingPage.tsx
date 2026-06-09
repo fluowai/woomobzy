@@ -132,6 +132,13 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       }
 
       if (!resolvedOrg) {
+        if (activeSlug === 'okaimoveis' || activeSlug === 'fazendasbrasil') {
+          logger.warn(`Organization not found for slug ${activeSlug}, rendering fallback site`);
+          setOrganization(null);
+          setShowMainSite(true);
+          setLoading(false);
+          return;
+        }
         logger.error('Organization not found');
         setLoading(false);
         return;
@@ -254,6 +261,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     profile?.role === 'superadmin';
   const isLive = settings?.is_live === true || settings?.isLive === true;
   const isOkaSite =
+    activeSlug === 'okaimoveis' ||
     organization?.slug === 'okaimoveis' ||
     organization?.custom_domain === 'okaimoveis.com.br' ||
     organization?.custom_domain === 'www.okaimoveis.com.br';

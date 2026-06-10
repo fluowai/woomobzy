@@ -351,14 +351,14 @@ func (c *Client) handleMessage(evt *events.Message) {
 			if c.waClient.Store.ID != nil {
 				senderPhone = phone.ExtractFromJID(c.waClient.Store.ID.String())
 			}
-			senderName = "Me"
+			senderName = c.resolveMyDisplayName(ctx)
 		} else {
 			senderPhone = normalizedBRPhoneFromJID(canonicalJID)
 			senderName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, senderPhone)
 		}
 	}
 
-	// Determine message type and content
+	// Determine message type and content (with mention resolution)
 	msgType, content := extractMessageContent(evt)
 	if (msgType == models.MessageTypeUnknown || msgType == models.MessageTypeText) && strings.TrimSpace(content) == "" {
 		c.logger.Debug("Ignoring WhatsApp event without renderable message content",
@@ -368,18 +368,20 @@ func (c *Client) handleMessage(evt *events.Message) {
 		return
 	}
 
+	// Resolve @mentions to pushnames
+	if evt.Message.GetExtendedTextMessage() != nil && evt.Message.GetExtendedTextMessage().ContextInfo != nil {
+		mentionedJIDs := evt.Message.GetExtendedTextMessage().ContextInfo.MentionedJID
+		if len(mentionedJIDs) > 0 {
+			content = c.resolveMentions(ctx, content, mentionedJIDs)
+		}
+	}
+
 	// Determine chat name
 	chatName := ""
 	if isGroup {
-		groupInfo, err := c.waClient.GetGroupInfo(ctx, info.Chat)
-		if err == nil && groupInfo != nil {
-			chatName = groupInfo.Name
-		} else {
-			chatName = chatJID
-		}
+		chatName = c.resolveGroupName(ctx, info.Chat, chatJID)
 	} else {
 		if info.IsFromMe {
-			// For sent messages, the chat is the recipient
 			chatName = c.resolveDisplayName(ctx, canonicalJID, "", phone.Normalize(canonicalJID.User))
 		} else {
 			chatName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, senderPhone)
@@ -624,6 +626,106 @@ func (c *Client) resolveAvatarURL(ctx context.Context, jid types.JID) string {
 	}
 
 	return publicURL
+}
+
+func (c *Client) resolveMyDisplayName(ctx context.Context) string {
+	if c.waClient.Store.ID == nil {
+		return "Me"
+	}
+	myJID := c.waClient.Store.ID
+	// Try own pushname from store
+	if c.waClient.Store.PushName != "" {
+		return c.waClient.Store.PushName
+	}
+	// Try contact store
+	if c.waClient.Store.Contacts != nil {
+		if contact, err := c.waClient.Store.Contacts.GetContact(ctx, *myJID); err == nil {
+			switch {
+			case contact.FullName != "":
+				return contact.FullName
+			case contact.PushName != "":
+				return contact.PushName
+			case contact.BusinessName != "":
+				return contact.BusinessName
+			case contact.FirstName != "":
+				return contact.FirstName
+			}
+		}
+	}
+	phoneNum := phone.ExtractDisplayFromJID(myJID.String())
+	if phoneNum != "" {
+		return phoneNum
+	}
+	return "Me"
+}
+
+func (c *Client) resolveGroupName(ctx context.Context, chat types.JID, fallbackJID string) string {
+	// Try live group info
+	groupInfo, err := c.waClient.GetGroupInfo(ctx, chat)
+	if err == nil && groupInfo != nil && groupInfo.Name != "" {
+		return groupInfo.Name
+	}
+	// Try contact store for group subject
+	if c.waClient.Store.Contacts != nil {
+		if contact, err := c.waClient.Store.Contacts.GetContact(ctx, chat.ToNonAD()); err == nil {
+			switch {
+			case contact.FullName != "":
+				return contact.FullName
+			case contact.PushName != "":
+				return contact.PushName
+			}
+		}
+	}
+	// Clean fallback: extract meaningful part of JID
+	if strings.Contains(fallbackJID, "@g.us") {
+		parts := strings.Split(fallbackJID, "@")
+		if len(parts) > 0 && parts[0] != "" {
+			return fmt.Sprintf("Grupo (%s...)", parts[0][:min(6, len(parts[0]))])
+		}
+		return "Grupo"
+	}
+	return fallbackJID
+}
+
+// resolveMentions replaces @mentioned JIDs in the content with their pushnames.
+func (c *Client) resolveMentions(ctx context.Context, content string, mentionedJIDs []string) string {
+	if len(mentionedJIDs) == 0 || content == "" {
+		return content
+	}
+
+	result := content
+	for _, rawJID := range mentionedJIDs {
+		if rawJID == "" {
+			continue
+		}
+
+		jid, err := types.ParseJID(rawJID)
+		if err != nil {
+			continue
+		}
+
+		phoneNum := phone.ExtractFromJID(rawJID)
+		pushName := c.resolveDisplayName(ctx, jid, "", phoneNum)
+
+		// Replace @phone_number or @jid in content with @pushname
+		searchJID := rawJID
+		if idx := strings.IndexByte(rawJID, '@'); idx > 0 {
+			searchJID = rawJID[:idx]
+		}
+
+		oldMention := "@" + searchJID
+		newMention := "@" + pushName
+		result = strings.ReplaceAll(result, oldMention, newMention)
+	}
+
+	return result
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func uuidToString(id *uuid.UUID) string {

@@ -143,7 +143,7 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 	chatName := fallbackChatName
 	if chatName == "" || chatName == chatJID {
 		if isGroup {
-			chatName = chatJID
+			chatName = c.resolveGroupName(ctx, canonicalJID, chatJID)
 		} else {
 			chatName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, phone.Normalize(canonicalJID.User))
 		}

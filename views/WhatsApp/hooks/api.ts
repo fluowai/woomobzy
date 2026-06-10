@@ -474,9 +474,36 @@ export function formatPhoneDisplay(phone: string): string {
   return isValidBrazilianPhone(normalized) ? `+${normalized}` : '';
 }
 
+export function formatPhoneFriendly(phone: string): string {
+  const normalized = formatPhone(phone);
+  if (!isValidBrazilianPhone(normalized)) return normalized;
+  const local = normalized.slice(2);
+  if (local.length === 11) {
+    return `+55 (${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
+  }
+  return `+55 (${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+}
+
 export function getDisplayName(pushName: string | null, number: string): string {
   if (pushName && pushName.trim() !== '') return pushName;
-  return isValidBrazilianPhone(number) ? formatPhone(number) : 'Contato sem telefone';
+  if (number) {
+    const cleaned = formatPhone(number);
+    if (isValidBrazilianPhone(cleaned)) return formatPhoneFriendly(cleaned);
+  }
+  return 'Contato sem telefone';
+}
+
+export function getChatDisplayName(chat: Pick<Chat, 'name' | 'chat_jid' | 'is_group'>): string {
+  if (chat.is_group) return chat.name || 'Grupo';
+  const phoneFromJid = getPhoneFromJid(chat.chat_jid);
+  if (chat.name && chat.name !== '~' && chat.name !== phoneFromJid) return chat.name;
+  return phoneFromJid || chat.name || 'Contato sem telefone';
+}
+
+export function getPhoneFromJid(jid: string): string {
+  if (!jid || jid.includes('@g.us') || jid.includes('@lid') || jid.includes('@broadcast')) return '';
+  const raw = jid.split('@')[0]?.replace(/\D/g, '') || '';
+  return isValidBrazilianPhone(raw) ? formatPhoneFriendly(raw) : '';
 }
 
 function mediaTypeFromFile(file: File): string {

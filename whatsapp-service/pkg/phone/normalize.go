@@ -1,6 +1,7 @@
 package phone
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -11,9 +12,7 @@ var nonDigitRegex = regexp.MustCompile(`\D`)
 // Input examples: +5548988003260, (48) 98800-3260, 048988003260
 // Output: 5548988003260
 func Normalize(number string) string {
-	// Remove all non-digit characters
 	cleaned := nonDigitRegex.ReplaceAllString(number, "")
-	// Remove leading zeros
 	cleaned = strings.TrimLeft(cleaned, "0")
 	if len(cleaned) == 10 || len(cleaned) == 11 {
 		cleaned = "55" + cleaned
@@ -30,7 +29,25 @@ func FormatE164(number string) string {
 	return "+" + cleaned
 }
 
-// GetDisplayName returns the pushName if available, otherwise the normalized phone number.
+// FormatDisplay returns a user-friendly formatted Brazilian phone number.
+// Input: 5548988003260 -> Output: +55 48 98800-3260
+// Input: 554833806836 -> Output: +55 48 3306-6836
+func FormatDisplay(number string) string {
+	cleaned := Normalize(number)
+	if !IsValidBR(cleaned) {
+		return cleaned
+	}
+	// Remove 55 prefix for formatting
+	local := cleaned[2:]
+	if len(local) == 11 {
+		// Mobile: DDI + DDD + 9-digit number
+		return fmt.Sprintf("+55 (%s) %s-%s", local[:2], local[2:7], local[7:])
+	}
+	// Landline: DDI + DDD + 8-digit number
+	return fmt.Sprintf("+55 (%s) %s-%s", local[:2], local[2:6], local[6:])
+}
+
+// GetDisplayName returns the pushName if available, otherwise a formatted phone number.
 func GetDisplayName(pushName string, phone string) string {
 	trimmed := strings.TrimSpace(pushName)
 	if trimmed != "" {
@@ -38,9 +55,9 @@ func GetDisplayName(pushName string, phone string) string {
 	}
 	cleaned := Normalize(phone)
 	if IsValidBR(cleaned) {
-		return cleaned
+		return FormatDisplay(cleaned)
 	}
-	return "Contato sem telefone"
+	return cleaned
 }
 
 // ExtractFromJID extracts the phone number from a WhatsApp JID.
@@ -53,9 +70,19 @@ func ExtractFromJID(jid string) string {
 	return ""
 }
 
+// ExtractDisplayFromJID extracts and formats a phone number from a JID for display.
+// Example: 5548988003260@s.whatsapp.net -> +55 48 98800-3260
+func ExtractDisplayFromJID(jid string) string {
+	number := ExtractFromJID(jid)
+	if number == "" {
+		return ""
+	}
+	return FormatDisplay(number)
+}
+
 // IsGroupJID checks if a JID belongs to a group.
 func IsGroupJID(jid string) bool {
-	return strings.Contains(jid, "@g.us")
+	return strings.Contains(jid, "@g.us") || strings.Contains(jid, "@lid")
 }
 
 // IsValidBR checks if the number is a Brazilian phone in canonical digits.
@@ -66,4 +93,13 @@ func IsValidBR(number string) bool {
 		return false
 	}
 	return len(cleaned) == 12 || len(cleaned) == 13
+}
+
+// UserJIDFromString extracts the user portion of a JID (digits before @).
+func UserJIDFromString(jid string) string {
+	parts := strings.Split(jid, "@")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return ""
 }

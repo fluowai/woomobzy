@@ -304,33 +304,72 @@ func (c *Client) uploadToMinIO(ctx context.Context, path string, data []byte, co
 
 // extensionFromMime returns a file extension for a given MIME type
 func extensionFromMime(mimeType string) string {
-	exts, err := mime.ExtensionsByType(mimeType)
-	if err == nil && len(exts) > 0 {
+	if mimeType == "" {
+		return ".bin"
+	}
+
+	// Try standard Go mime package first
+	if exts, err := mime.ExtensionsByType(mimeType); err == nil && len(exts) > 0 {
 		return exts[0]
 	}
 
-	switch mimeType {
-	case "image/jpeg":
-		return ".jpg"
-	case "image/png":
-		return ".png"
-	case "image/webp":
-		return ".webp"
-	case "audio/ogg; codecs=opus", "audio/ogg":
-		return ".ogg"
-	case "audio/mp4", "audio/mpeg":
-		return ".mp3"
-	case "video/mp4":
-		return ".mp4"
-	case "application/pdf":
-		return ".pdf"
+	// Manual mapping for common types
+	var ext string
+	switch {
+	case strings.Contains(mimeType, "image/jpeg") || strings.Contains(mimeType, "image/jpg"):
+		ext = ".jpg"
+	case strings.Contains(mimeType, "image/png"):
+		ext = ".png"
+	case strings.Contains(mimeType, "image/webp"):
+		ext = ".webp"
+	case strings.Contains(mimeType, "image/gif"):
+		ext = ".gif"
+	case strings.Contains(mimeType, "image/"):
+		ext = ".img"
+	case strings.Contains(mimeType, "audio/ogg"):
+		ext = ".ogg"
+	case strings.Contains(mimeType, "audio/mpeg") || strings.Contains(mimeType, "audio/mp3"):
+		ext = ".mp3"
+	case strings.Contains(mimeType, "audio/mp4") || strings.Contains(mimeType, "audio/aac"):
+		ext = ".m4a"
+	case strings.Contains(mimeType, "audio/wav") || strings.Contains(mimeType, "audio/wave"):
+		ext = ".wav"
+	case strings.Contains(mimeType, "audio/"):
+		ext = ".audio"
+	case strings.Contains(mimeType, "video/mp4"):
+		ext = ".mp4"
+	case strings.Contains(mimeType, "video/3gpp"):
+		ext = ".3gp"
+	case strings.Contains(mimeType, "video/webm"):
+		ext = ".webm"
+	case strings.Contains(mimeType, "video/"):
+		ext = ".video"
+	case strings.Contains(mimeType, "application/pdf"):
+		ext = ".pdf"
+	case strings.Contains(mimeType, "application/msword") || strings.Contains(mimeType, "application/vnd.openxmlformats-officedocument.wordprocessingml"):
+		ext = ".docx"
+	case strings.Contains(mimeType, "application/vnd.ms-excel") || strings.Contains(mimeType, "application/vnd.openxmlformats-officedocument.spreadsheetml"):
+		ext = ".xlsx"
+	case strings.Contains(mimeType, "application/vnd.ms-powerpoint") || strings.Contains(mimeType, "application/vnd.openxmlformats-officedocument.presentationml"):
+		ext = ".pptx"
+	case strings.Contains(mimeType, "text/plain"):
+		ext = ".txt"
+	case strings.Contains(mimeType, "text/csv"):
+		ext = ".csv"
+	case strings.Contains(mimeType, "application/zip"):
+		ext = ".zip"
+	case strings.Contains(mimeType, "application/x-rar"):
+		ext = ".rar"
+	case strings.Contains(mimeType, "application/json"):
+		ext = ".json"
 	default:
-		ext := filepath.Ext(mimeType)
-		if ext != "" {
-			return ext
+		// Last resort: try filepath.Ext on the mime type itself
+		ext = filepath.Ext(mimeType)
+		if ext == "" {
+			ext = ".bin"
 		}
-		return ".bin"
 	}
+	return ext
 }
 
 // sendTextMessage sends a text message via WhatsMeow

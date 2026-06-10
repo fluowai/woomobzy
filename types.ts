@@ -618,12 +618,49 @@ export interface SiteSettings {
       enabled?: boolean;
       clientId?: string;
       clientSecret?: string;
+      endUserAuth?: Record<string, {
+        accessToken?: string;
+        refreshToken?: string | null;
+        tokenType?: string;
+        expiresAt?: string;
+        connectedAt?: string;
+      }>;
+    };
+    vivareal?: {
+      enabled?: boolean;
+      apiKey?: string;
+      partnerId?: string;
+    };
+    zap?: {
+      enabled?: boolean;
+      apiKey?: string;
+      partnerId?: string;
+    };
+    quintoandar?: {
+      enabled?: boolean;
+      apiKey?: string;
+      secret?: string;
+    };
+    imovelweb?: {
+      enabled?: boolean;
+      apiKey?: string;
     };
   };
   // Visual Layout Editor
   layout_config?: LayoutConfig;
   custom_css?: string;
   custom_js?: string;
+}
+
+export type PortalName = 'vivareal' | 'zap' | 'quintoandar' | 'imovelweb';
+
+export interface PortalPublishStatus {
+  listingId?: string;
+  url?: string;
+  status: 'pending' | 'published' | 'failed' | 'unpublished';
+  publishedAt?: string;
+  syncedAt?: string;
+  error?: string;
 }
 
 // ============================================

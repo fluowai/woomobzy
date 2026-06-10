@@ -2,6 +2,8 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
+import { oruloService } from '../services/orulo';
+import { portalService } from '../services/portals';
 import {
   Save,
   Brain,
@@ -37,10 +39,19 @@ const SystemSettings: React.FC = () => {
   const [oruloEnabled, setOruloEnabled] = useState(false);
   const [oruloClientId, setOruloClientId] = useState('');
   const [oruloClientSecret, setOruloClientSecret] = useState('');
+  const [oruloBrokerConnected, setOruloBrokerConnected] = useState(false);
+  const [oruloBrokerConnecting, setOruloBrokerConnecting] = useState(false);
+  const [oruloBrokerExpiresAt, setOruloBrokerExpiresAt] = useState<string | null>(null);
+  const [vivarealEnabled, setVivarealEnabled] = useState(false);
+  const [vivarealApiKey, setVivarealApiKey] = useState('');
+  const [vivarealPartnerId, setVivarealPartnerId] = useState('');
+  const [zapEnabled, setZapEnabled] = useState(false);
+  const [zapApiKey, setZapApiKey] = useState('');
+  const [zapPartnerId, setZapPartnerId] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'appearance' | 'users' | 'ai' | 'tracking' | 'domains' | 'support' | 'canais'
+    'appearance' | 'users' | 'ai' | 'tracking' | 'domains' | 'support' | 'canais' | 'portals'
   >(location.pathname.endsWith('/integrations') ? 'ai' : 'appearance');
 
   useEffect(() => {
@@ -65,7 +76,66 @@ const SystemSettings: React.FC = () => {
       setOruloClientId('');
       setOruloClientSecret('');
     }
+    loadPortalConfigs();
   }, [settings]);
+
+  const loadPortalConfigs = async () => {
+    try {
+      const vivarealConfig = await portalService.getConfig('vivareal');
+      if (vivarealConfig) {
+        setVivarealEnabled(vivarealConfig.enabled ?? false);
+        setVivarealApiKey(vivarealConfig.apiKey || '');
+        setVivarealPartnerId(vivarealConfig.partnerId || '');
+      }
+      const zapConfig = await portalService.getConfig('zap');
+      if (zapConfig) {
+        setZapEnabled(zapConfig.enabled ?? false);
+        setZapApiKey(zapConfig.apiKey || '');
+        setZapPartnerId(zapConfig.partnerId || '');
+      }
+    } catch (error) {
+      logger.error('Erro ao carregar configurações de portais', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!location.pathname.endsWith('/integrations')) return;
+
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+
+    const loadStatus = async () => {
+      try {
+        const status = await oruloService.endUserStatus();
+        setOruloBrokerConnected(Boolean(status.connected));
+        setOruloBrokerExpiresAt(status.expiresAt || null);
+      } catch (error) {
+        logger.warn('Erro ao carregar status do corretor Orulo', error);
+      }
+    };
+
+    const connectWithCode = async () => {
+      if (!code) {
+        await loadStatus();
+        return;
+      }
+
+      try {
+        setOruloBrokerConnecting(true);
+        const redirectUri = `${window.location.origin}${location.pathname}`;
+        const result = await oruloService.connectEndUser(code, redirectUri);
+        setOruloBrokerConnected(Boolean(result.connected));
+        setOruloBrokerExpiresAt(result.expiresAt || null);
+        window.history.replaceState({}, document.title, location.pathname);
+      } catch (error) {
+        logger.error('Erro ao conectar corretor Orulo', error);
+      } finally {
+        setOruloBrokerConnecting(false);
+      }
+    };
+
+    connectWithCode();
+  }, [location.pathname, location.search]);
 
   const handleSave = async () => {
     try {
@@ -81,18 +151,44 @@ const SystemSettings: React.FC = () => {
           asaas: { apiKey: asaasKey, environment: 'production' },
           zapsign: { apiKey: zapsignKey },
           orulo: {
+            ...(settings.integrations?.orulo || {}),
             enabled: oruloEnabled,
             clientId: oruloClientId.trim(),
             clientSecret: oruloClientSecret.trim(),
           },
         },
       });
+
+      await portalService.saveConfig('vivareal', {
+        enabled: vivarealEnabled,
+        apiKey: vivarealApiKey.trim(),
+        partnerId: vivarealPartnerId.trim(),
+      });
+      await portalService.saveConfig('zap', {
+        enabled: zapEnabled,
+        apiKey: zapApiKey.trim(),
+        partnerId: zapPartnerId.trim(),
+      });
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       logger.error('Error saving settings:', error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleConnectOruloBroker = async () => {
+    try {
+      setOruloBrokerConnecting(true);
+      const redirectUri = `${window.location.origin}${location.pathname}`;
+      const result = await oruloService.getEndUserAuthorizeUrl(redirectUri);
+      window.location.href = result.authUrl;
+    } catch (error) {
+      logger.error('Erro ao iniciar OAuth do corretor Orulo', error);
+    } finally {
+      setOruloBrokerConnecting(false);
     }
   };
 
@@ -111,6 +207,7 @@ const SystemSettings: React.FC = () => {
     { id: 'ai', label: 'Integrações 360', icon: Brain },
     { id: 'tracking', label: 'Tracking', icon: Activity },
     { id: 'canais', label: 'Canais', icon: Link },
+    { id: 'portals', label: 'Portais', icon: Globe },
     { id: 'support', label: 'Ajuda & Suporte', icon: HelpCircle },
   ];
 
@@ -129,7 +226,7 @@ const SystemSettings: React.FC = () => {
             Controle completo do seu sistema imobiliário e integrações.
           </p>
         </div>
-        {activeTab === 'ai' && (
+        {(activeTab === 'ai' || activeTab === 'portals') && (
           <button
             onClick={handleSave}
             disabled={saving}
@@ -138,7 +235,7 @@ const SystemSettings: React.FC = () => {
             {saving ? 'Salvando...' : saved ? (
               <><Check size={16} /> Salvo!</>
             ) : (
-              <><Save size={16} /> Salvar Chaves</>
+              <><Save size={16} /> Salvar{activeTab === 'portals' ? ' Portais' : ' Chaves'}</>
             )}
           </button>
         )}
@@ -172,6 +269,141 @@ const SystemSettings: React.FC = () => {
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
         {activeTab === 'canais' && <ChannelsSettings />}
+        {activeTab === 'portals' && (
+          <div className="space-y-6">
+            <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                  <Globe size={24} className="text-emerald-500" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-text-primary">
+                    Publicação em Portais
+                  </h3>
+                  <p className="text-sm text-text-secondary mt-0.5">
+                    Publique seus imóveis nos maiores portais do Brasil.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-5 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+                        <Building2 size={22} className="text-blue-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-text-primary">VivaReal</h4>
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          Credenciais de parceiro VivaReal.
+                        </p>
+                      </div>
+                    </div>
+                    <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={vivarealEnabled}
+                        onChange={(e) => setVivarealEnabled(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${vivarealEnabled ? 'bg-primary' : 'bg-slate-300'}`}>
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${vivarealEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                      </span>
+                      <span className="text-xs font-semibold text-text-secondary">
+                        {vivarealEnabled ? 'Ativa' : 'Inativa'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={vivarealApiKey}
+                        onChange={(e) => setVivarealApiKey(e.target.value)}
+                        placeholder="Chave da API VivaReal"
+                        className="input-premium font-mono"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        Partner ID
+                      </label>
+                      <input
+                        type="text"
+                        value={vivarealPartnerId}
+                        onChange={(e) => setVivarealPartnerId(e.target.value)}
+                        placeholder="ID do parceiro"
+                        className="input-premium"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-5 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                        <Building2 size={22} className="text-amber-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-text-primary">Zap Imóveis</h4>
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          Credenciais de parceiro Zap Imóveis.
+                        </p>
+                      </div>
+                    </div>
+                    <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={zapEnabled}
+                        onChange={(e) => setZapEnabled(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${zapEnabled ? 'bg-primary' : 'bg-slate-300'}`}>
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${zapEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                      </span>
+                      <span className="text-xs font-semibold text-text-secondary">
+                        {zapEnabled ? 'Ativa' : 'Inativa'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={zapApiKey}
+                        onChange={(e) => setZapApiKey(e.target.value)}
+                        placeholder="Chave da API Zap Imóveis"
+                        className="input-premium font-mono"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        Partner ID
+                      </label>
+                      <input
+                        type="text"
+                        value={zapPartnerId}
+                        onChange={(e) => setZapPartnerId(e.target.value)}
+                        placeholder="ID do parceiro"
+                        className="input-premium"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {activeTab === 'support' && <SupportPortal />}
 
         {activeTab === 'ai' && (
@@ -307,6 +539,31 @@ const SystemSettings: React.FC = () => {
                     Ao clicar em "Importar Órulo" no módulo urbano, o sistema usa estas credenciais apenas para a organização atual.
                   </p>
                 </div>
+
+                  <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h5 className="text-xs font-black uppercase tracking-widest text-text-primary">
+                        Corretor conectado
+                      </h5>
+                      <p className="mt-1 text-xs text-text-secondary">
+                        {oruloBrokerConnected
+                          ? `Conta Ã“rulo autorizada${oruloBrokerExpiresAt ? ` atÃ© ${new Date(oruloBrokerExpiresAt).toLocaleString('pt-BR')}` : ''}.`
+                          : 'Conecte o corretor para consultar contatos, arquivos e dados protegidos em tempo real.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleConnectOruloBroker}
+                      disabled={oruloBrokerConnecting || !oruloEnabled}
+                      className="btn-secondary text-xs uppercase tracking-widest font-bold disabled:opacity-60"
+                    >
+                      {oruloBrokerConnecting
+                        ? 'Conectando...'
+                        : oruloBrokerConnected
+                          ? 'Reconectar Corretor'
+                          : 'Conectar Corretor'}
+                    </button>
+                  </div>
 
                 {/* Info Banner */}
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-3">

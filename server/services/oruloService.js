@@ -2,8 +2,79 @@ import { enrichPropertyWithAcp } from './acpPropertyAgent.js';
 
 const ORULO_API_BASE_URL = 'https://www.orulo.com.br';
 const ORULO_TOKEN_URL = `${ORULO_API_BASE_URL}/oauth/token`;
+const ORULO_AUTHORIZE_URL = `${ORULO_API_BASE_URL}/oauth/authorize`;
 const DEFAULT_IMAGE_DIMENSIONS = ['1024x1024', '520x280'];
 const RURAL_ORULO_TYPES = new Set(['Fazenda/Sítio', 'Fazenda', 'Sítio', 'Chácara']);
+
+const ARRAY_FILTER_KEYS = new Set([
+  'area',
+  'area[]',
+  'bedrooms',
+  'bedrooms[]',
+  'parking',
+  'parking[]',
+  'suites',
+  'suites[]',
+  'type',
+  'type[]',
+  'status',
+  'status[]',
+  'portfolio',
+  'portfolio[]',
+  'opportunity',
+  'opportunity[]',
+  'commercial_status',
+  'commercial_status[]',
+  'finality',
+  'finality[]',
+  'include',
+  'include[]',
+  'building_ids',
+  'building_ids[]',
+]);
+const ALLOWED_BUILDING_FILTERS = new Set([
+  'state',
+  'city',
+  'area',
+  'area[]',
+  'bedrooms',
+  'bedrooms[]',
+  'suites',
+  'suites[]',
+  'parking',
+  'parking[]',
+  'type',
+  'type[]',
+  'status',
+  'status[]',
+  'portfolio',
+  'portfolio[]',
+  'opportunity',
+  'opportunity[]',
+  'commercial_status',
+  'commercial_status[]',
+  'finality',
+  'finality[]',
+  'min_price',
+  'max_price',
+  'min_private_area',
+  'max_private_area',
+  'min_price_per_private_square_meter',
+  'max_price_per_private_square_meter',
+  'developer_id',
+  'publisher_id',
+  'commercial_partner_id',
+  'updated_after',
+  'price_order',
+  'area_order',
+  'relevancy_order',
+  'last_updated_date_order',
+  'launch_date_order',
+  'building_id_order',
+  'price_per_private_square_meter_order',
+  'include',
+  'include[]',
+]);
 
 const tokenCacheByClient = new Map();
 
@@ -59,25 +130,36 @@ async function getClientToken({ credentials, forceRefresh = false } = {}) {
   return data.access_token;
 }
 
-async function oruloRequest(path, { credentials, query, retry = true } = {}) {
-  const token = await getClientToken({ credentials });
-  const url = new URL(path, ORULO_API_BASE_URL);
-
-  Object.entries(query || {}).forEach(([key, value]) => {
+function appendQuery(url, query = {}) {
+  Object.entries(query || {}).forEach(([rawKey, value]) => {
+    const key = ARRAY_FILTER_KEYS.has(rawKey) && !rawKey.endsWith('[]') ? `${rawKey}[]` : rawKey;
     if (Array.isArray(value)) {
-      value.forEach((item) => url.searchParams.append(key, item));
+      value
+        .filter((item) => item !== undefined && item !== null && item !== '')
+        .forEach((item) => url.searchParams.append(key, String(item)));
     } else if (value !== undefined && value !== null && value !== '') {
       url.searchParams.set(key, String(value));
     }
   });
+}
+
+async function oruloRequest(path, { credentials, query, retry = true, token, method = 'GET', body } = {}) {
+  const accessToken = token || await getClientToken({ credentials });
+  const url = new URL(path, ORULO_API_BASE_URL);
+  appendQuery(url, query);
 
   const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
+    method,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (response.status === 401 && retry) {
+  if (response.status === 401 && retry && !token) {
     await getClientToken({ credentials, forceRefresh: true });
-    return oruloRequest(path, { credentials, query, retry: false });
+    return oruloRequest(path, { credentials, query, retry: false, method, body });
   }
 
   if (!response.ok) {
@@ -88,7 +170,93 @@ async function oruloRequest(path, { credentials, query, retry = true } = {}) {
     throw error;
   }
 
-  return response.json();
+  if (response.status === 204) return {};
+  return response.json().catch(() => ({}));
+}
+
+function sanitizeBuildingFilters(filters = {}) {
+  const query = {};
+
+  Object.entries(filters || {}).forEach(([key, value]) => {
+    if (!ALLOWED_BUILDING_FILTERS.has(key)) return;
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value) && value.length === 0) return;
+    query[key] = value;
+  });
+
+  return query;
+}
+
+function hasCatalogFilters(filters = {}) {
+  return Object.keys(sanitizeBuildingFilters(filters)).length > 0;
+}
+
+export function buildEndUserAuthorizationUrl({ credentials, redirectUri, state }) {
+  const { clientId } = normalizeCredentials(credentials);
+  const url = new URL(ORULO_AUTHORIZE_URL);
+  url.searchParams.set('client_id', clientId);
+  url.searchParams.set('redirect_uri', redirectUri);
+  url.searchParams.set('response_type', 'code');
+  if (state) url.searchParams.set('state', state);
+  return url.toString();
+}
+
+export async function exchangeEndUserCode({ credentials, code, redirectUri }) {
+  const { clientId, clientSecret } = normalizeCredentials(credentials);
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    code,
+    redirect_uri: redirectUri,
+    grant_type: 'authorization_code',
+  });
+
+  const response = await fetch(ORULO_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    const error = new Error(`Falha ao conectar corretor na Ã“rulo (${response.status}).`);
+    error.detail = detail;
+    error.statusCode = response.status >= 500 ? 502 : response.status;
+    throw error;
+  }
+
+  const data = await response.json();
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token || null,
+    tokenType: data.token_type || 'Bearer',
+    expiresAt: new Date(Date.now() + Number(data.expires_in || 3600) * 1000).toISOString(),
+    connectedAt: new Date().toISOString(),
+  };
+}
+
+export async function fetchEndUserProtectedResource({ token, resource }) {
+  if (!token) {
+    const error = new Error('Corretor ainda nÃ£o conectou a conta Ã“rulo.');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const allowList = [
+    /^\/api\/v2\/buildings\/[^/]+$/,
+    /^\/api\/v2\/buildings\/[^/]+\/commercial_contacts\/[^/]+$/,
+    /^\/api\/v2\/buildings\/[^/]+\/files\/[^/]+$/,
+    /^\/api\/v2\/buildings\/[^/]+\/units$/,
+    /^\/api\/v2\/buildings\/[^/]+\/typologies\/[^/]+\/units$/,
+  ];
+
+  if (!allowList.some((pattern) => pattern.test(resource))) {
+    const error = new Error('Recurso Ã“rulo protegido nÃ£o permitido.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return oruloRequest(resource, { token, retry: false });
 }
 
 function buildAddress(address = {}) {
@@ -187,24 +355,29 @@ function mapTypologyToProperty({ building, typology, images, organizationId }) {
 }
 
 async function fetchBuildingBundle(buildingId, credentials) {
-  const [building, typologiesResponse, imagesResponse] = await Promise.all([
+  const [building, typologiesResponse, imagesResponse, floorPlansResponse] = await Promise.all([
     oruloRequest(`/api/v2/buildings/${buildingId}`, { credentials }),
     oruloRequest(`/api/v2/buildings/${buildingId}/typologies`, { credentials }),
     oruloRequest(`/api/v2/buildings/${buildingId}/images`, {
       credentials,
       query: { 'dimensions[]': DEFAULT_IMAGE_DIMENSIONS },
     }).catch(() => ({ images: [] })),
+    oruloRequest(`/api/v2/buildings/${buildingId}/floor_plans`, {
+      credentials,
+      query: { 'dimensions[]': DEFAULT_IMAGE_DIMENSIONS },
+    }).catch(() => ({ floor_plans: [] })),
   ]);
 
   return {
     building,
     typologies: typologiesResponse?.typologies || [],
     images: pickImages(imagesResponse),
+    floorPlans: floorPlansResponse?.floor_plans || [],
   };
 }
 
 export async function importBuildingTypologies({ supabase, organizationId, buildingId, credentials }) {
-  const { building, typologies, images } = await fetchBuildingBundle(buildingId, credentials);
+  const { building, typologies, images, floorPlans } = await fetchBuildingBundle(buildingId, credentials);
   const urbanTypologies = typologies.filter((typology) => !RURAL_ORULO_TYPES.has(typology.type));
 
   if (!urbanTypologies.length) {
@@ -215,6 +388,7 @@ export async function importBuildingTypologies({ supabase, organizationId, build
 
   for (const typology of urbanTypologies) {
     const property = mapTypologyToProperty({ building, typology, images, organizationId });
+    property.features.orulo.floor_plans = floorPlans;
     payload.push(await enrichPropertyWithAcp({ supabase, organizationId, property }));
   }
 
@@ -315,6 +489,81 @@ export async function syncActiveBuildings({ supabase, organizationId, updatedAft
   };
 }
 
+export async function syncBuildingsByFilters({ supabase, organizationId, filters = {}, maxBuildings = 25, credentials }) {
+  let page = 1;
+  let processed = 0;
+  const results = [];
+  const query = sanitizeBuildingFilters(filters);
+
+  while (processed < maxBuildings) {
+    const response = await oruloRequest('/api/v2/buildings', {
+      credentials,
+      query: {
+        ...query,
+        results_per_page: Math.min(100, Math.max(1, maxBuildings - processed)),
+        page,
+      },
+    });
+
+    const buildings = response?.buildings || [];
+    if (!buildings.length) break;
+
+    for (const building of buildings) {
+      if (processed >= maxBuildings) break;
+      const result = await importBuildingTypologies({
+        supabase,
+        organizationId,
+        buildingId: building.id,
+        credentials,
+      });
+      results.push(result);
+      processed += 1;
+    }
+
+    if (!response.total_pages || page >= response.total_pages) break;
+    page += 1;
+  }
+
+  return {
+    mode: 'filters',
+    processed,
+    imported: results.reduce((sum, item) => sum + item.imported, 0),
+    skipped: results.reduce((sum, item) => sum + item.skipped, 0),
+    results,
+  };
+}
+
+export async function listOruloMetadata({ type, credentials, query = {} }) {
+  const paths = {
+    states: '/api/v2/addresses/states',
+    cities: '/api/v2/addresses/cities',
+    areas: '/api/v2/addresses/areas',
+    features: '/api/v2/features',
+    types: '/api/v2/types',
+    partners: '/api/v2/partners',
+    config: '/api/v2/config',
+  };
+
+  const path = paths[type];
+  if (!path) {
+    const error = new Error('Metadado Ã“rulo nÃ£o suportado.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return oruloRequest(path, { credentials, query });
+}
+
+export async function updatePublicationLinks({ credentials, buildingId, publicationLinks }) {
+  return oruloRequest(`/api/v2/buildings/${buildingId}/publication_links`, {
+    credentials,
+    method: 'PUT',
+    body: {
+      publication_links: Array.isArray(publicationLinks) ? publicationLinks : [],
+    },
+  });
+}
+
 export async function markRemovedBuildings({ supabase, organizationId, updatedAfter, credentials }) {
   const response = await oruloRequest('/api/v2/buildings/ids/removed', {
     credentials,
@@ -345,3 +594,5 @@ export function isOruloConfigured(credentials) {
     return false;
   }
 }
+
+export { hasCatalogFilters, sanitizeBuildingFilters };

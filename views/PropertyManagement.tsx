@@ -22,9 +22,13 @@ import {
   Brain,
   Megaphone,
   UserCheck,
+  Globe,
+  Share2,
+  X,
 } from 'lucide-react';
 import { propertyService } from '../services/properties';
 import { oruloService } from '../services/orulo';
+import { portalService } from '../services/portals';
 import { Property } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -35,6 +39,19 @@ const PropertyManagement: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [oruloSyncing, setOruloSyncing] = useState(false);
+  const [showOruloFilters, setShowOruloFilters] = useState(false);
+  const [oruloFilters, setOruloFilters] = useState({
+    state: '',
+    city: '',
+    areas: '',
+    minPrice: '',
+    maxPrice: '',
+    bedrooms: '',
+    parking: '',
+    status: '',
+    portfolio: '',
+    maxBuildings: '25',
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const isRural = location.pathname.startsWith('/rural');
@@ -73,11 +90,18 @@ const PropertyManagement: React.FC = () => {
 
   const handleApprove = async (id: string) => {
     try {
+      const property = properties.find((item) => item.id === id);
       await propertyService.update(id, {
         status: 'Disponível' as any,
         published_at: new Date().toISOString(),
       } as any);
       toast.success('Imóvel publicado com sucesso!');
+      const buildingId = (property?.features as any)?.orulo?.building_id;
+      if ((property as any)?.source === 'orulo' && buildingId) {
+        oruloService.updatePublicationLinks(buildingId, [
+          { url: `${window.location.origin}/property/${id}`, active: true },
+        ]).catch((error) => logger.warn('Falha ao atualizar link de publicacao Orulo', error));
+      }
       loadProperties();
     } catch (error: any) {
       toast.error('Erro ao publicar imóvel: ' + error.message);
@@ -92,7 +116,26 @@ const PropertyManagement: React.FC = () => {
 
     try {
       setOruloSyncing(true);
-      const result = await oruloService.sync({ max_buildings: 25 });
+      const filters: Record<string, any> = {};
+      const areaList = oruloFilters.areas
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      if (oruloFilters.state.trim()) filters.state = oruloFilters.state.trim().toUpperCase();
+      if (oruloFilters.city.trim()) filters.city = oruloFilters.city.trim();
+      if (areaList.length) filters.area = areaList;
+      if (oruloFilters.minPrice) filters.min_price = Number(oruloFilters.minPrice);
+      if (oruloFilters.maxPrice) filters.max_price = Number(oruloFilters.maxPrice);
+      if (oruloFilters.bedrooms) filters.bedrooms = [oruloFilters.bedrooms];
+      if (oruloFilters.parking) filters.parking = [oruloFilters.parking];
+      if (oruloFilters.status) filters.status = [oruloFilters.status];
+      if (oruloFilters.portfolio) filters.portfolio = [oruloFilters.portfolio];
+
+      const result = await oruloService.sync({
+        max_buildings: Math.min(Number(oruloFilters.maxBuildings || 25), 100),
+        filters,
+      });
       toast.success(`Órulo sincronizada: ${result.imported || 0} fichas para revisão.`);
       await loadProperties();
     } catch (error: any) {
@@ -100,6 +143,45 @@ const PropertyManagement: React.FC = () => {
     } finally {
       setOruloSyncing(false);
     }
+  };
+
+  const [portalPublishing, setPortalPublishing] = useState<{ propertyId: string; portal: string } | null>(null);
+  const [portalPublishResult, setPortalPublishResult] = useState<Record<string, any>>({});
+
+  const handlePortalPublish = async (propertyId: string, portal: string) => {
+    try {
+      setPortalPublishing({ propertyId, portal });
+      const result = await portalService.publish(portal, propertyId);
+      setPortalPublishResult((prev) => ({
+        ...prev,
+        [`${propertyId}-${portal}`]: { status: 'published', url: result.url },
+      }));
+      toast.success(`Publicado no ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'} com sucesso!`);
+      loadProperties();
+    } catch (error: any) {
+      toast.error(`Erro ao publicar: ${error.message}`);
+    } finally {
+      setPortalPublishing(null);
+    }
+  };
+
+  const handlePortalUnpublish = async (propertyId: string, portal: string) => {
+    if (!confirm(`Remover anúncio do ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'}?`)) return;
+    try {
+      await portalService.unpublish(portal, propertyId);
+      setPortalPublishResult((prev) => ({
+        ...prev,
+        [`${propertyId}-${portal}`]: { status: 'unpublished' },
+      }));
+      toast.success(`Removido do ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'}.`);
+      loadProperties();
+    } catch (error: any) {
+      toast.error(`Erro ao remover: ${error.message}`);
+    }
+  };
+
+  const getPortalPublishes = (property: Property) => {
+    return (property as any).portal_publishes || {};
   };
 
   const filteredProperties = properties.filter((p) => {
@@ -112,6 +194,10 @@ const PropertyManagement: React.FC = () => {
   });
 
   const getAcp = (property: Property) => (property.features as any)?.acp;
+
+  const updateOruloFilter = (key: keyof typeof oruloFilters, value: string) => {
+    setOruloFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
   if (loading) {
     return (
@@ -155,6 +241,16 @@ const PropertyManagement: React.FC = () => {
           </button>
           {!isRural && (
             <button
+              onClick={() => setShowOruloFilters((value) => !value)}
+              className="bg-white text-slate-700 border border-slate-200 px-3 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-all font-bold text-sm shadow-sm"
+              title="Filtros Orulo"
+            >
+              <Filter size={18} />
+              <span className="hidden sm:inline">Filtros Orulo</span>
+            </button>
+          )}
+          {!isRural && (
+            <button
               onClick={handleOruloSync}
               disabled={oruloSyncing}
               className="bg-slate-900 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition-all font-bold text-sm shadow-lg disabled:opacity-60"
@@ -167,6 +263,126 @@ const PropertyManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      {!isRural && showOruloFilters && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-800">
+                Importacao Orulo por regiao
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                UF e cidade filtram o catalogo antes de trazer as fichas para revisao.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setOruloFilters({
+                  state: '',
+                  city: '',
+                  areas: '',
+                  minPrice: '',
+                  maxPrice: '',
+                  bedrooms: '',
+                  parking: '',
+                  status: '',
+                  portfolio: '',
+                  maxBuildings: '25',
+                })
+              }
+              className="text-xs font-bold text-slate-500 hover:text-slate-900"
+            >
+              Limpar
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+            <input
+              value={oruloFilters.state}
+              onChange={(e) => updateOruloFilter('state', e.target.value)}
+              placeholder="UF ex: SP"
+              maxLength={2}
+              className="input-field"
+            />
+            <input
+              value={oruloFilters.city}
+              onChange={(e) => updateOruloFilter('city', e.target.value)}
+              placeholder="Cidade"
+              className="input-field"
+            />
+            <input
+              value={oruloFilters.areas}
+              onChange={(e) => updateOruloFilter('areas', e.target.value)}
+              placeholder="Bairros separados por virgula"
+              className="input-field sm:col-span-2 xl:col-span-1"
+            />
+            <input
+              type="number"
+              value={oruloFilters.minPrice}
+              onChange={(e) => updateOruloFilter('minPrice', e.target.value)}
+              placeholder="Valor minimo"
+              className="input-field"
+            />
+            <input
+              type="number"
+              value={oruloFilters.maxPrice}
+              onChange={(e) => updateOruloFilter('maxPrice', e.target.value)}
+              placeholder="Valor maximo"
+              className="input-field"
+            />
+            <select
+              value={oruloFilters.bedrooms}
+              onChange={(e) => updateOruloFilter('bedrooms', e.target.value)}
+              className="input-field"
+            >
+              <option value="">Dormitorios</option>
+              <option value="1">1 dorm.</option>
+              <option value="2">2 dorm.</option>
+              <option value="3">3 dorm.</option>
+              <option value="4+">4+ dorm.</option>
+            </select>
+            <select
+              value={oruloFilters.parking}
+              onChange={(e) => updateOruloFilter('parking', e.target.value)}
+              className="input-field"
+            >
+              <option value="">Vagas</option>
+              <option value="1">1 vaga</option>
+              <option value="2">2 vagas</option>
+              <option value="3+">3+ vagas</option>
+            </select>
+            <select
+              value={oruloFilters.status}
+              onChange={(e) => updateOruloFilter('status', e.target.value)}
+              className="input-field"
+            >
+              <option value="">Status obra</option>
+              <option value="under_construction">Em construcao</option>
+              <option value="ready">Pronto novo</option>
+              <option value="used">Usado</option>
+            </select>
+            <select
+              value={oruloFilters.portfolio}
+              onChange={(e) => updateOruloFilter('portfolio', e.target.value)}
+              className="input-field"
+            >
+              <option value="">Carteira</option>
+              <option value="new_development">Lancamento</option>
+              <option value="exchange">Dacao</option>
+              <option value="exclusivity">Exclusividade</option>
+            </select>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={oruloFilters.maxBuildings}
+              onChange={(e) => updateOruloFilter('maxBuildings', e.target.value)}
+              placeholder="Limite"
+              className="input-field"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b border-border-subtle items-center justify-between">
@@ -396,6 +612,35 @@ const PropertyManagement: React.FC = () => {
                           </>
                         )}
                       </div>
+                      {property.status !== 'Pendente' && !isRural && (
+                        <div className="flex items-center gap-2 pt-2 border-t border-border-subtle mt-4">
+                          <Globe size={12} className="text-text-tertiary shrink-0" />
+                          {['vivareal', 'zap'].map((portal) => {
+                            const publishes = getPortalPublishes(property);
+                            const entry = publishes[portal];
+                            const isPublished = entry?.status === 'published';
+                            const isLoading = portalPublishing?.propertyId === property.id && portalPublishing?.portal === portal;
+                            return (
+                              <button
+                                key={portal}
+                                onClick={() =>
+                                  isPublished
+                                    ? handlePortalUnpublish(property.id!, portal)
+                                    : handlePortalPublish(property.id!, portal)
+                                }
+                                disabled={isLoading}
+                                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg transition-all ${
+                                  isPublished
+                                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                } disabled:opacity-50`}
+                              >
+                                {isLoading ? '...' : isPublished ? `✔ ${portal === 'vivareal' ? 'VivaReal' : 'Zap'}` : portal === 'vivareal' ? 'VivaReal' : 'Zap'}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                       </>
@@ -559,6 +804,36 @@ const PropertyManagement: React.FC = () => {
                           >
                             <Trash2 size={16} />
                           </button>
+                          {property.status !== 'Pendente' && !isRural && (
+                            <div className="flex items-center gap-1 ml-2 pl-2 border-l border-slate-200">
+                              {['vivareal', 'zap'].map((portal) => {
+                                const publishes = getPortalPublishes(property);
+                                const entry = publishes[portal];
+                                const isPublished = entry?.status === 'published';
+                                const isLoading = portalPublishing?.propertyId === property.id && portalPublishing?.portal === portal;
+                                return (
+                                  <button
+                                    key={portal}
+                                    onClick={() =>
+                                      isPublished
+                                        ? handlePortalUnpublish(property.id!, portal)
+                                        : handlePortalPublish(property.id!, portal)
+                                    }
+                                    disabled={isLoading}
+                                    className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded transition-all ${
+                                      isPublished
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                    } disabled:opacity-50`}
+                                    title={`${isPublished ? 'Remover do' : 'Publicar no'} ${portal === 'vivareal' ? 'VivaReal' : 'Zap'}`}
+                                  >
+                                    {isLoading ? '...' : isPublished ? '✔' : <Globe size={12} />}
+                                    <span className="ml-0.5">{portal === 'vivareal' ? 'VR' : 'Zap'}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>

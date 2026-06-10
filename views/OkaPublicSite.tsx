@@ -201,6 +201,13 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
     setFilterPerfil('moderado');
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
+
   return (
     <div className="oka-site">
       <style>{`
@@ -217,7 +224,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         }
         .oka-site * { box-sizing: border-box; }
         .hidden { display: none !important; }
-        .oka-shell { width: min(1560px, calc(100% - 48px)); margin: 0 auto; }
+        .oka-shell { width: min(1280px, calc(100% - 48px)); margin: 0 auto; }
         .oka-nav {
           position: sticky; top: 0; z-index: 30; height: 74px; background: rgba(255,255,255,.96);
           border-bottom: 1px solid var(--oka-line); backdrop-filter: blur(18px);
@@ -227,9 +234,11 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         .oka-logo-img { height: 57px; width: 178px; object-fit: contain; object-position: left center; display: block; }
         .oka-logo-fallback { height: 57px; display: flex; align-items: center; font-family: Georgia, serif; font-size: 26px; font-weight: 700; color: var(--oka-charcoal); white-space: nowrap; }
         .oka-logo-fallback span { color: var(--oka-orange); }
-        .oka-menu { display: flex; align-items: center; gap: 32px; font-size: 14px; font-weight: 750; }
+        .oka-menu { display: flex; align-items: center; gap: 26px; font-size: 13px; font-weight: 750; }
         .oka-menu a { color: #1f1f1f; text-decoration: none; }
+        .oka-menu a svg { display: none; }
         .oka-menu a:first-child { color: var(--oka-orange); }
+        .oka-menu-close, .oka-mobile-menu-cta { display: none; }
         .oka-actions { display: flex; align-items: center; gap: 12px; }
         .oka-btn {
           border: 1px solid var(--oka-line); background: #fff; color: #191919; height: 44px; padding: 0 20px;
@@ -238,22 +247,22 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         }
         .oka-btn-primary { background: var(--oka-orange); color: #fff; border-color: var(--oka-orange); box-shadow: 0 14px 30px rgba(240,75,18,.24); }
         .oka-hero {
-          position: relative; min-height: 420px; overflow: visible;
+          position: relative; min-height: 390px; overflow: visible;
           background:
             linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.92) 35%, rgba(255,255,255,.12) 62%, rgba(255,255,255,0) 100%),
             url('/templates/urban/urban_luxury_pool.png') center right / cover no-repeat;
         }
-        .oka-hero-content { width: min(1560px, calc(100% - 48px)); margin: 0 auto; padding: 32px 0 86px; }
-        .oka-kicker { font-size: 11px; letter-spacing: .46em; font-weight: 900; text-transform: uppercase; margin: 0 0 12px; color: #222; }
+        .oka-hero-content { width: min(1280px, calc(100% - 48px)); margin: 0 auto; padding: 38px 0 78px; }
+        .oka-kicker { font-size: 10px; letter-spacing: .34em; font-weight: 900; text-transform: uppercase; margin: 0 0 12px; color: #222; }
         .oka-title {
-          font-family: Georgia, "Times New Roman", serif; font-size: clamp(44px, 5.2vw, 80px); line-height: .94;
-          max-width: 620px; font-weight: 400; margin: 0 0 14px; letter-spacing: 0;
+          font-family: Georgia, "Times New Roman", serif; font-size: clamp(38px, 4vw, 58px); line-height: 1.03;
+          max-width: 660px; font-weight: 400; margin: 0 0 16px; letter-spacing: 0;
         }
         .oka-title span { color: var(--oka-orange); }
-        .oka-subtitle { color: #4a4d52; font-size: 17px; line-height: 1.35; max-width: 470px; margin: 0 0 22px; }
+        .oka-subtitle { color: #4a4d52; font-size: 16px; line-height: 1.45; max-width: 500px; margin: 0 0 22px; }
         .oka-hero-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
         .oka-intelligence {
-          width: min(1560px, calc(100% - 48px)); margin: -52px auto 0; position: relative; z-index: 5;
+          width: min(1280px, calc(100% - 48px)); margin: -46px auto 0; position: relative; z-index: 5;
           background: rgba(255,255,255,.98); border: 1px solid rgba(36,36,36,.08); border-radius: 8px;
           box-shadow: 0 18px 48px rgba(38,31,26,.12); display: grid;
           grid-template-columns: 230px 1fr 1fr 1fr 1.2fr 180px; align-items: stretch;
@@ -287,7 +296,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         .oka-search .oka-btn { width: 100%; }
         .oka-section { padding: 24px 0 0; }
         .oka-section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
-        .oka-heading { font-family: Georgia, "Times New Roman", serif; font-size: 29px; font-weight: 400; margin: 0; }
+        .oka-heading { font-family: Georgia, "Times New Roman", serif; font-size: 27px; font-weight: 400; margin: 0; }
         .oka-heading span { color: var(--oka-orange); }
         .oka-note { color: var(--oka-muted); font-size: 12px; margin-left: 8px; }
         .oka-link { color: var(--oka-orange); font-size: 13px; font-weight: 800; text-decoration: none; display: inline-flex; gap: 8px; align-items: center; }
@@ -401,25 +410,40 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
           .oka-actions .oka-btn { padding: 0 14px; font-size: 13px; }
         }
         @media (max-width: 960px) {
-          .oka-actions .oka-btn:first-child { display: none; }
-          .oka-menu { gap: 12px; font-size: 12px; }
-        }
-        @media (max-width: 820px) {
           .oka-shell, .oka-hero-content, .oka-intelligence { width: min(100% - 28px, 560px); }
-          .oka-nav { height: auto; position: relative; }
-          .oka-nav-inner { padding: 12px 0; flex-wrap: wrap; justify-content: space-between; }
-          .oka-mobile-toggle { display: flex; align-items: center; justify-content: center; order: 3; }
-          .oka-menu { display: none; }
-          .oka-menu.open { display: flex; flex-direction: column; position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(255,255,255,.98); z-index: 100; padding: 80px 28px 28px; gap: 8px; overflow-y: auto; }
-          .oka-menu.open a { padding: 14px 0; font-size: 18px; border-bottom: 1px solid var(--oka-line); width: 100%; display: flex; justify-content: space-between; align-items: center; }
-          .oka-menu-overlay.open { display: block; position: fixed; inset: 0; z-index: 99; background: rgba(0,0,0,.3); }
+          .oka-nav { height: auto; }
+          .oka-nav-inner { min-height: 70px; padding: 10px 0; justify-content: space-between; }
+          .oka-logo-img { height: 52px; width: 154px; }
+          .oka-actions { position: relative; z-index: 130; }
+          .oka-actions .oka-btn { display: none; }
+          .oka-mobile-toggle {
+            display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+            border: 1px solid var(--oka-line); border-radius: 6px; background: #fff;
+          }
+          .oka-menu {
+            display: flex; flex-direction: column; align-items: stretch; position: fixed; top: 0; right: 0;
+            width: min(88vw, 380px); height: 100dvh; background: #fff; z-index: 120;
+            padding: 22px 24px 28px; gap: 0; overflow-y: auto; box-shadow: -18px 0 48px rgba(0,0,0,.18);
+            transform: translateX(104%); transition: transform .22s ease; visibility: hidden;
+          }
+          .oka-menu.open { transform: translateX(0); visibility: visible; }
+          .oka-menu.open a {
+            padding: 17px 0; font-size: 17px; border-bottom: 1px solid var(--oka-line); width: 100%;
+            display: flex; justify-content: space-between; align-items: center; color: #222;
+          }
+          .oka-menu a svg { display: block; }
+          .oka-menu-close {
+            display: inline-flex; align-items: center; justify-content: center; align-self: flex-end;
+            width: 42px; height: 42px; margin-bottom: 14px; border: 1px solid var(--oka-line); border-radius: 6px;
+            background: #fff; color: var(--oka-charcoal); cursor: pointer;
+          }
+          .oka-mobile-menu-cta { display: grid; gap: 10px; margin-top: 22px; }
+          .oka-mobile-menu-cta .oka-btn { display: inline-flex; width: 100%; border-bottom: 0; padding: 0 16px; font-size: 14px; }
+          .oka-menu-overlay.open { display: block; position: fixed; inset: 0; z-index: 110; background: rgba(0,0,0,.34); }
           .oka-menu.open a:first-child { color: var(--oka-orange); }
-          .oka-actions .oka-btn:first-child { display: none; }
-          .oka-actions .oka-btn-primary { display: none; }
-          .oka-menu.open ~ .oka-actions { display: flex; }
           .oka-hero { min-height: auto; background-position: 65% center; }
-          .oka-hero-content { padding: 32px 0 90px; }
-          .oka-title { font-size: clamp(36px, 8vw, 52px); max-width: 100%; letter-spacing: -.01em; }
+          .oka-hero-content { padding: 30px 0 82px; }
+          .oka-title { font-size: clamp(32px, 8vw, 46px); max-width: 100%; letter-spacing: 0; }
           .oka-subtitle { font-size: 15px; max-width: 100%; }
           .oka-kicker { font-size: 10px; }
           .oka-hero-actions { flex-direction: column; align-items: stretch; }
@@ -468,12 +492,25 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
             <span className="oka-logo-fallback hidden">OKA<span>.</span></span>
           </a>
           <div className={`oka-menu${menuOpen ? ' open' : ''}`} aria-label="Menu principal">
+            <button className="oka-menu-close" type="button" onClick={() => setMenuOpen(false)} aria-label="Fechar menu">
+              <X size={22} />
+            </button>
             <a href="#inicio" onClick={() => setMenuOpen(false)}>Início <ChevronRight size={16} /></a>
             <a href="#imoveis" onClick={() => setMenuOpen(false)}>Imóveis <ChevronRight size={16} /></a>
             <a href="#investimento" onClick={() => setMenuOpen(false)}>Investimento <ChevronRight size={16} /></a>
             <a href="#regioes" onClick={() => setMenuOpen(false)}>Regiões <ChevronRight size={16} /></a>
             <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre <ChevronRight size={16} /></a>
             <a href="#contato" onClick={() => setMenuOpen(false)}>Contato <ChevronRight size={16} /></a>
+            <div className="oka-mobile-menu-cta">
+              <a className="oka-btn" href={`tel:${WHATSAPP_NUMBER}`} onClick={() => setMenuOpen(false)}>
+                <Phone size={16} />
+                {PHONE_LABEL}
+              </a>
+              <a className="oka-btn oka-btn-primary" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>
+                <MessageCircle size={17} />
+                Falar com especialista
+              </a>
+            </div>
           </div>
           <div className="oka-actions">
             <a className="oka-btn" href={`tel:${WHATSAPP_NUMBER}`}>
@@ -483,7 +520,13 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
             <a className="oka-btn oka-btn-primary" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
               Falar com especialista
             </a>
-            <button className="oka-mobile-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}>
+            <button
+              className="oka-mobile-toggle"
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-expanded={menuOpen}
+              aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+            >
               {menuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>

@@ -6,14 +6,11 @@ import {
   Building2,
   ChevronDown,
   Heart,
-  Home,
   LayoutGrid,
   List,
   MapPin,
   MessageCircle,
   Phone,
-  Rocket,
-  Scale,
   Search,
   ShieldCheck,
   Sparkles,
@@ -128,12 +125,13 @@ function propertyImage(property: PublicProperty, index: number) {
 }
 
 const CIDADES = ['Itapema', 'Balneário Camboriú', 'Florianópolis', 'Curitiba', 'Maringá', 'Londrina', 'Joinville', 'São Paulo'];
+const PROPERTY_TYPES = ['Apartamento', 'Casa', 'Cobertura', 'Terreno'];
 
 const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
   const [properties, setProperties] = useState<PublicProperty[]>(fallbackProperties);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [filterObjetivo, setFilterObjetivo] = useState<'morar' | 'investir'>('morar');
-  const [filterPerfil, setFilterPerfil] = useState<string>('moderado');
+  const [filterObjetivo, setFilterObjetivo] = useState<'comprar' | 'investir'>('comprar');
+  const [filterType, setFilterType] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterPriceMax, setFilterPriceMax] = useState(0);
   const [showAllProperties, setShowAllProperties] = useState(false);
@@ -180,25 +178,34 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
     if (filterCity) {
       list = list.filter((p) => p.city?.toLowerCase().includes(filterCity.toLowerCase()));
     }
+    if (filterType) {
+      list = list.filter((p) => {
+        const type = `${p.property_type || p.type || p.title}`.toLowerCase();
+        return type.includes(filterType.toLowerCase());
+      });
+    }
     if (filterPriceMax > 0) {
       list = list.filter((p) => (p.price || 0) <= filterPriceMax);
     }
     return list;
-  }, [properties, filterCity, filterPriceMax]);
+  }, [properties, filterCity, filterPriceMax, filterType]);
 
-  const featured = useMemo(() => properties.slice(0, 4), [properties]);
   const displayProperties = showAllProperties ? filtered : filtered.slice(0, 4);
-  const hasActiveFilters = filterCity || filterPriceMax > 0;
+  const hasActiveFilters = filterCity || filterType || filterPriceMax > 0;
   const uniqueCities = useMemo(() => {
     const cities = new Set(properties.map((p) => p.city).filter(Boolean));
     return [...CIDADES, ...cities].filter((v, i, a) => a.indexOf(v) === i);
+  }, [properties]);
+  const uniqueTypes = useMemo(() => {
+    const types = new Set(properties.map((p) => p.property_type || p.type).filter(Boolean));
+    return [...PROPERTY_TYPES, ...types].filter((v, i, a) => a.indexOf(v) === i);
   }, [properties]);
 
   const clearFilters = useCallback(() => {
     setFilterCity('');
     setFilterPriceMax(0);
-    setFilterObjetivo('morar');
-    setFilterPerfil('moderado');
+    setFilterObjetivo('comprar');
+    setFilterType('');
   }, []);
 
   useEffect(() => {
@@ -497,7 +504,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
             </button>
             <a href="#inicio" onClick={() => setMenuOpen(false)}>Início <ChevronRight size={16} /></a>
             <a href="#imoveis" onClick={() => setMenuOpen(false)}>Imóveis <ChevronRight size={16} /></a>
-            <a href="#investimento" onClick={() => setMenuOpen(false)}>Investimento <ChevronRight size={16} /></a>
+            <a href="#imoveis" onClick={() => setMenuOpen(false)}>Investimento <ChevronRight size={16} /></a>
             <a href="#regioes" onClick={() => setMenuOpen(false)}>Regiões <ChevronRight size={16} /></a>
             <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre <ChevronRight size={16} /></a>
             <a href="#contato" onClick={() => setMenuOpen(false)}>Contato <ChevronRight size={16} /></a>
@@ -541,7 +548,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
             Imóveis que fazem sentido para sua <span>vida</span> e para seu <span>patrimônio</span>.
           </h1>
           <p className="oka-subtitle">
-            A OKA seleciona, analisa e apresenta apenas oportunidades reais de valorização.
+            A OKA analisa cada imóvel com olhar consultivo, cruzando localização, padrão construtivo, liquidez e potencial de valorização. Você encontra opções selecionadas para morar bem, investir com clareza e tomar uma decisão sem perder tempo com ofertas sem aderência.
           </p>
           <div className="oka-hero-actions">
             <a className="oka-btn oka-btn-primary" href="#imoveis">
@@ -556,22 +563,22 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         </div>
       </header>
 
-      <section className="oka-intelligence" aria-label="Busca inteligente">
+      <section className="oka-intelligence" aria-label="Filtro de imóveis">
         <div className="oka-intro">
           <h2>
-            Encontre com <span>inteligência</span>
+            Filtre seu <span>imóvel</span>
           </h2>
-          <p>Nosso sistema de curadoria entende seu objetivo e recomenda as melhores oportunidades para você.</p>
+          <p>Escolha finalidade, tipo, cidade e valor. A vitrine abaixo atualiza com os imóveis disponíveis para a OKA apresentar.</p>
         </div>
         <div className="oka-filter">
           <div className="oka-filter-label">
             <span className="oka-step">1</span>
-            Qual seu objetivo?
+            Finalidade
           </div>
           <div className="oka-segments">
-            <button className={`oka-segment${filterObjetivo === 'morar' ? ' active' : ''}`} type="button" onClick={() => setFilterObjetivo('morar')}>
-              <Home size={21} />
-              Morar
+            <button className={`oka-segment${filterObjetivo === 'comprar' ? ' active' : ''}`} type="button" onClick={() => setFilterObjetivo('comprar')}>
+              <Building2 size={21} />
+              Comprar
             </button>
             <button className={`oka-segment${filterObjetivo === 'investir' ? ' active' : ''}`} type="button" onClick={() => setFilterObjetivo('investir')}>
               <BarChart3 size={21} />
@@ -582,27 +589,20 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         <div className="oka-filter">
           <div className="oka-filter-label">
             <span className="oka-step">2</span>
-            Qual seu perfil?
+            Tipo de imóvel
           </div>
-          <div className="oka-segments three">
-            <button className={`oka-segment${filterPerfil === 'conservador' ? ' active' : ''}`} type="button" onClick={() => setFilterPerfil('conservador')}>
-              <ShieldCheck size={20} />
-              Conservador
-            </button>
-            <button className={`oka-segment${filterPerfil === 'moderado' ? ' active' : ''}`} type="button" onClick={() => setFilterPerfil('moderado')}>
-              <Scale size={20} />
-              Moderado
-            </button>
-            <button className={`oka-segment${filterPerfil === 'agressivo' ? ' active' : ''}`} type="button" onClick={() => setFilterPerfil('agressivo')}>
-              <Rocket size={20} />
-              Agressivo
-            </button>
+          <div className="oka-city-list">
+            {uniqueTypes.slice(0, 4).map((type) => (
+              <button key={type} className={`oka-city-btn${filterType === type ? ' active' : ''}`} type="button" onClick={() => setFilterType(filterType === type ? '' : String(type))}>
+                {type}
+              </button>
+            ))}
           </div>
         </div>
         <div className="oka-filter">
           <div className="oka-filter-label">
             <span className="oka-step">3</span>
-            Onde deseja?
+            Cidade
           </div>
           <div className="oka-city-list">
             {uniqueCities.slice(0, 6).map((city) => (
@@ -615,7 +615,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         <div className="oka-filter">
           <div className="oka-filter-label">
             <span className="oka-step">4</span>
-            Qual valor máximo?
+            Valor máximo
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {[0, 500000, 1000000, 2000000, 5000000].map((val) => (
@@ -627,47 +627,12 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         </div>
         <div className="oka-search">
           <a className="oka-btn oka-btn-primary" href="#imoveis">
-            Buscar oportunidades
+            Buscar imóveis
             <Search size={17} />
           </a>
         </div>
       </section>
-
       <main className="oka-shell">
-        <section id="investimento" className="oka-section">
-          <div className="oka-section-head">
-            <div>
-              <h2 className="oka-heading">
-                Coleções <span>OKA</span>
-                <small className="oka-note">Imóveis selecionados com base em análise de valorização, liquidez e oportunidade.</small>
-              </h2>
-            </div>
-            <a className="oka-link" href="#imoveis">
-              Ver todas as coleções
-              <ArrowRight size={16} />
-            </a>
-          </div>
-          <div className="oka-collections">
-            {[
-              ['Oportunidades da Semana', 'Imóveis com preço abaixo do mercado.', '6 imóveis', fallbackImages[3], true],
-              ['Alto Potencial de Valorização', 'Regiões e imóveis com grande perspectiva de crescimento.', '8 imóveis', fallbackImages[0], false],
-              ['Frente Mar / Premium', 'Imóveis exclusivos com vista definitiva para o mar.', '5 imóveis', fallbackImages[1], false],
-              ['Abaixo do Mercado', 'Oportunidades únicas com condições especiais.', '7 imóveis', fallbackImages[2], false],
-            ].map(([title, text, count, image, light]) => (
-              <article key={String(title)} className={`oka-collection ${light ? 'light' : ''}`} style={{ backgroundImage: `url("${image}")` }}>
-                <div>
-                  <h3>{title}</h3>
-                  <p>{text}</p>
-                </div>
-                <strong>{count}</strong>
-                <span className="oka-arrow">
-                  <ArrowRight size={18} />
-                </span>
-              </article>
-            ))}
-          </div>
-        </section>
-
         <section id="imoveis" className="oka-section">
           <div className="oka-section-head">
             <div>
@@ -696,6 +661,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
             <div className="oka-filter-active">
               <AlertCircle size={14} />
               Filtros ativos
+              {filterType && <span> · Tipo: <strong>{filterType}</strong></span>}
               {filterCity && <span> · Cidade: <strong>{filterCity}</strong></span>}
               {filterPriceMax > 0 && <span> · Até <strong>{formatCurrency(filterPriceMax)}</strong></span>}
               <button type="button" onClick={clearFilters}>Limpar</button>
@@ -845,7 +811,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
               <h4>Institucional</h4>
               <ul className="oka-footer-links">
                 <li><a href="#sobre">Sobre Nós <ChevronRight size={12} /></a></li>
-                <li><a href="#investimento">Investimento <ChevronRight size={12} /></a></li>
+                <li><a href="#imoveis">Investimento <ChevronRight size={12} /></a></li>
                 <li><a href="#regioes">Regiões <ChevronRight size={12} /></a></li>
                 <li><a href="#contato">Contato <ChevronRight size={12} /></a></li>
               </ul>

@@ -47,6 +47,6 @@ describe('Error Handling Middleware', () => {
       code: 'INTERNAL_ERROR',
     };
     expect(prodResponse.error).toBe('Erro interno do servidor');
-    expect(prodResponse.stack).toBeUndefined();
+    expect((prodResponse as Record<string, unknown>).stack).toBeUndefined();
   });
 });

@@ -216,14 +216,18 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
         .oka-site * { box-sizing: border-box; }
+        .hidden { display: none !important; }
         .oka-shell { width: min(1560px, calc(100% - 48px)); margin: 0 auto; }
         .oka-nav {
           position: sticky; top: 0; z-index: 30; height: 74px; background: rgba(255,255,255,.96);
           border-bottom: 1px solid var(--oka-line); backdrop-filter: blur(18px);
         }
-        .oka-nav-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-        .oka-logo { height: 57px; width: 178px; object-fit: contain; object-position: left center; }
-        .oka-menu { display: flex; align-items: center; gap: 36px; font-size: 14px; font-weight: 750; }
+        .oka-nav-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .oka-logo-wrap { display: flex; align-items: center; gap: 0; flex-shrink: 0; text-decoration: none; }
+        .oka-logo-img { height: 57px; width: 178px; object-fit: contain; object-position: left center; display: block; }
+        .oka-logo-fallback { height: 57px; display: flex; align-items: center; font-family: Georgia, serif; font-size: 26px; font-weight: 700; color: var(--oka-charcoal); white-space: nowrap; }
+        .oka-logo-fallback span { color: var(--oka-orange); }
+        .oka-menu { display: flex; align-items: center; gap: 32px; font-size: 14px; font-weight: 750; }
         .oka-menu a { color: #1f1f1f; text-decoration: none; }
         .oka-menu a:first-child { color: var(--oka-orange); }
         .oka-actions { display: flex; align-items: center; gap: 12px; }
@@ -391,6 +395,15 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
           .oka-trust { grid-template-columns: repeat(2, minmax(0,1fr)); }
           .oka-footer-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
         }
+        @media (max-width: 1060px) {
+          .oka-menu { gap: 16px; font-size: 13px; }
+          .oka-actions { gap: 8px; }
+          .oka-actions .oka-btn { padding: 0 14px; font-size: 13px; }
+        }
+        @media (max-width: 960px) {
+          .oka-actions .oka-btn:first-child { display: none; }
+          .oka-menu { gap: 12px; font-size: 12px; }
+        }
         @media (max-width: 820px) {
           .oka-shell, .oka-hero-content, .oka-intelligence { width: min(100% - 28px, 560px); }
           .oka-nav { height: auto; position: relative; }
@@ -448,8 +461,11 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
 
       <nav className="oka-nav">
         <div className="oka-shell oka-nav-inner">
-          <a href="/" aria-label="OKA Imóveis">
-            <img className="oka-logo" src="/clients/oka/logo.jpeg" alt="OKA Imóveis" />
+          <a className="oka-logo-wrap" href="/" aria-label="OKA Imóveis">
+            <img className="oka-logo-img" src="/clients/oka/logo.jpeg" alt="OKA Imóveis"
+              onError={(e) => { const t = e.currentTarget; t.style.display = 'none'; t.nextElementSibling?.classList.remove('hidden'); }}
+            />
+            <span className="oka-logo-fallback hidden">OKA<span>.</span></span>
           </a>
           <div className={`oka-menu${menuOpen ? ' open' : ''}`} aria-label="Menu principal">
             <a href="#inicio" onClick={() => setMenuOpen(false)}>Início <ChevronRight size={16} /></a>
@@ -746,7 +762,10 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         <div className="oka-shell">
           <div className="oka-footer-grid">
             <div className="oka-footer-brand">
-              <img className="oka-logo-footer" src="/clients/oka/logo.jpeg" alt="OKA Imóveis" />
+              <img className="oka-logo-footer" src="/clients/oka/logo.jpeg" alt="OKA Imóveis"
+                onError={(e) => { const t = e.currentTarget; t.style.display = 'none'; t.parentElement?.querySelector('.oka-logo-footer-fallback')?.classList.remove('hidden'); }}
+              />
+              <span className="oka-logo-footer-fallback hidden" style={{ height: 42, display: 'inline-flex', alignItems: 'center', fontFamily: 'Georgia, serif', fontSize: 20, fontWeight: 700, color: '#fff' }}>OKA<span style={{ color: 'var(--oka-orange)' }}>.</span></span>
               <p>
                 A OKA Imóveis seleciona, analisa e apresenta apenas oportunidades reais de valorização.
                 Curadoria especializada em imóveis de alto padrão e investimentos inteligentes.

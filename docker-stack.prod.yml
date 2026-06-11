@@ -59,6 +59,13 @@ services:
       EMAIL_PASSWORD: ""
       WHATSAPP_INTERNAL_TOKEN: "${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}"
       WHATSAPP_AI_AUTOMATION: "true"
+      MEDIA_STORAGE_PROVIDER: "minio"
+      MINIO_ENDPOINT: "${MINIO_ENDPOINT:?set MINIO_ENDPOINT}"
+      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:?set MINIO_PUBLIC_URL}"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}"
+      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}"
+      MINIO_REGION: "${MINIO_REGION:-us-east-1}"
+      MINIO_WHATSAPP_BUCKET: "${MINIO_WHATSAPP_BUCKET:-whatsapp-media}"
       TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
     volumes:
       - imobzy_traefik_dynamic:/app/traefik/dynamic
@@ -105,6 +112,13 @@ services:
       GROQ_API_KEY: "sua-api-key-do-groq"
       WHATSAPP_INTERNAL_TOKEN: "${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}"
       WHATSAPP_AI_AUTOMATION: "true"
+      MEDIA_STORAGE_PROVIDER: "minio"
+      MINIO_ENDPOINT: "${MINIO_ENDPOINT:?set MINIO_ENDPOINT}"
+      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:?set MINIO_PUBLIC_URL}"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}"
+      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}"
+      MINIO_REGION: "${MINIO_REGION:-us-east-1}"
+      MINIO_WHATSAPP_BUCKET: "${MINIO_WHATSAPP_BUCKET:-whatsapp-media}"
     volumes:
       - whatsapp_sessions:/app/.sessions
     networks:

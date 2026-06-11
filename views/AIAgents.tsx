@@ -40,6 +40,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  Smartphone,
   Target,
   Trash2,
   TrendingUp,
@@ -52,6 +53,7 @@ import {
 import { toast } from 'sonner';
 import { aiAgentService, type AIAgent, type AIAgentPayload, type AgentMetrics } from '../services/aiAgents';
 import { callApi } from '../src/lib/api';
+import { instanceApi, type Instance as WhatsAppInstance } from './WhatsApp/hooks/api';
 
 type BuilderDraft = AIAgentPayload & {
   status?: string;
@@ -96,8 +98,6 @@ const channels = [
   { id: 'instagram', label: 'Instagram' },
   { id: 'email', label: 'E-mail' },
 ];
-
-const wooInstances = ['WooAPI Principal', 'WooAPI Vendas', 'WooAPI Locação', 'WooAPI Pós-venda'];
 
 const workspaces: Option[] = [
   {
@@ -225,7 +225,7 @@ const emptyAgent: BuilderDraft = {
   role: 'Atendimento e Qualificação de Leads',
   channel: 'whatsapp',
   channels: ['whatsapp'],
-  instances: ['WooAPI Principal'],
+  instances: [],
   is_active: true,
   status: 'Ativo',
   personality: '',
@@ -540,6 +540,8 @@ async function simulateLeadReply(draft: BuilderDraft, brokerMessage: string, his
 
 const AIAgents: React.FC = () => {
   const [agents, setAgents] = useState<AIAgent[]>([]);
+  const [whatsAppInstances, setWhatsAppInstances] = useState<WhatsAppInstance[]>([]);
+  const [instancesLoading, setInstancesLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string>('new');
   const [draft, setDraft] = useState<BuilderDraft>(emptyAgent);
   const [loading, setLoading] = useState(true);
@@ -564,6 +566,14 @@ const AIAgents: React.FC = () => {
 
   const activeAgents = useMemo(() => agents.filter((agent) => agent.is_active).length, [agents]);
   const pausedAgents = useMemo(() => agents.length - activeAgents, [agents, activeAgents]);
+  const connectedWhatsAppInstances = useMemo(
+    () => whatsAppInstances.filter((instance) => instance.status === 'connected').length,
+    [whatsAppInstances]
+  );
+  const selectedWhatsAppInstance = useMemo(
+    () => whatsAppInstances.find((instance) => instance.id === draft.instances?.[0]),
+    [draft.instances, whatsAppInstances]
+  );
   const propertyPath = pathname.startsWith('/rural') ? '/rural/properties/new' : '/urban/properties/new';
   const brainTabIndex = 5;
   const activeStepIndex = Math.max(tabs.findIndex((tab) => tab.id === activeTab), 0);
@@ -588,7 +598,7 @@ const AIAgents: React.FC = () => {
         role: agent.role,
         channel: agent.channel || 'whatsapp',
         channels: agent.channels?.length ? agent.channels : [agent.channel || 'whatsapp'],
-        instances: agent.instances?.length ? agent.instances : ['WooAPI Principal'],
+        instances: agent.instances?.length ? agent.instances : [],
         is_active: agent.is_active,
         status: agent.status || (agent.is_active ? 'Ativo' : 'Pausado'),
         personality: agent.personality || '',
@@ -625,11 +635,30 @@ const AIAgents: React.FC = () => {
   const loadAgents = async () => {
     try {
       setLoading(true);
-      setAgents(await aiAgentService.list());
+      const [loadedAgents] = await Promise.all([
+        aiAgentService.list(),
+        loadWhatsAppInstances(),
+      ]);
+      setAgents(loadedAgents);
     } catch (error: any) {
       toast.error('Erro ao carregar agentes: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadWhatsAppInstances = async () => {
+    try {
+      setInstancesLoading(true);
+      const instances = await instanceApi.list();
+      setWhatsAppInstances(instances);
+      return instances;
+    } catch {
+      setWhatsAppInstances([]);
+      toast.error('Nao foi possivel carregar as instancias do WhatsApp.');
+      return [];
+    } finally {
+      setInstancesLoading(false);
     }
   };
 
@@ -744,7 +773,7 @@ const AIAgents: React.FC = () => {
         ...emptyAgent,
         ...agent,
         channels: agent.channels?.length ? agent.channels : [agent.channel || 'whatsapp'],
-        instances: agent.instances?.length ? agent.instances : ['WooAPI Principal'],
+        instances: agent.instances?.length ? agent.instances : [],
         handoff_rules: {
           ...defaultHandoff,
           ...(agent.handoff_rules || {}),
@@ -1173,8 +1202,8 @@ const AIAgents: React.FC = () => {
                 <section id="agent-channels" className={activeTab === 'channels' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Canais"
-                    title="Canais de atuação e instância WooAPI"
-                    description="Escolha onde o agente pode conversar e vincule a operação a uma instância de atendimento."
+                    title="Canais de atuação e WhatsApp conectado"
+                    description="Escolha onde o agente pode conversar e vincule a operação a uma instância real do WhatsApp."
                   />
                   <div className="mt-4 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4">
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -1194,19 +1223,44 @@ const AIAgents: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <Field label="Instância WooAPI">
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <label className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                          Instancia WhatsApp
+                        </label>
+                        <button
+                          type="button"
+                          onClick={loadWhatsAppInstances}
+                          disabled={instancesLoading}
+                          className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          {instancesLoading ? 'Atualizando...' : 'Atualizar'}
+                        </button>
+                      </div>
                       <select
-                        value={draft.instances?.[0] || 'WooAPI Principal'}
-                        onChange={(e) => setDraft({ ...draft, instances: [e.target.value] })}
+                        value={draft.instances?.[0] || ''}
+                        onChange={(e) => setDraft({ ...draft, instances: e.target.value ? [e.target.value] : [] })}
                         className="agent-input"
                       >
-                        {wooInstances.map((instance) => (
-                          <option key={instance} value={instance}>
-                            {instance}
+                        <option value="">Todas as instancias conectadas</option>
+                        {whatsAppInstances.map((instance) => (
+                          <option key={instance.id} value={instance.id}>
+                            {instance.name} - {instance.status === 'connected' ? 'conectada' : 'desconectada'}
                           </option>
                         ))}
                       </select>
-                    </Field>
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex items-center gap-2 text-xs font-black text-slate-700">
+                          <Smartphone size={15} className={connectedWhatsAppInstances ? 'text-emerald-600' : 'text-amber-600'} />
+                          {connectedWhatsAppInstances} de {whatsAppInstances.length} conectada(s)
+                        </div>
+                        <p className="mt-1 text-[11px] font-semibold leading-relaxed text-slate-500 mb-0">
+                          {selectedWhatsAppInstance
+                            ? `Este agente atende pela instancia ${selectedWhatsAppInstance.name}.`
+                            : 'Sem instancia fixa: o agente pode atender qualquer WhatsApp conectado da organizacao.'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </section>
 

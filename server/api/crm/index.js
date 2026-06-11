@@ -26,6 +26,8 @@ function isGroupChatJid(value = '') {
 function isPlaceholderLeadName(value = '') {
   const clean = String(value).trim().toLowerCase();
   if (!clean || clean === '~' || clean === 'me' || clean === 'contato sem telefone') return true;
+  const raw = String(value).trim();
+  if (/^([A-Z]\.?\s*){1,4}$/.test(raw) || /^([A-Za-z]\.\s*){1,4}$/.test(raw)) return true;
   return /^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''));
 }
 
@@ -112,6 +114,16 @@ async function getLeadTags(organizationId, leadId) {
   return (data || []).map((item) => item.tag);
 }
 
+async function getAssignableUsers(organizationId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name, email, role')
+    .eq('organization_id', organizationId)
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
 /**
  * GET /api/crm/leads
  * Lista leads da organização do usuário logado.
@@ -165,6 +177,27 @@ router.get('/whatsapp/contact', verifyAuth, requireTenant, async (req, res) => {
 
     const tags = lead ? await getLeadTags(req.orgId, lead.id) : [];
     res.json({ success: true, lead, tags });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/crm/whatsapp/assignees
+ * Lista usuarios da organizacao que podem receber atendimento.
+ */
+router.get('/whatsapp/assignees', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const users = await getAssignableUsers(req.orgId);
+    res.json({
+      success: true,
+      users: users.map((user) => ({
+        id: user.id,
+        name: user.name || user.email?.split('@')[0] || 'Usuario',
+        email: user.email || '',
+        role: user.role || '',
+      })),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -230,6 +263,72 @@ router.post('/whatsapp/contact-tags', verifyAuth, requireTenant, async (req, res
     });
 
     res.json({ success: true, lead, tags: await getLeadTags(req.orgId, lead.id) });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/crm/whatsapp/transfer
+ * Transfere o atendimento do lead WhatsApp para um usuario da organizacao.
+ */
+router.post('/whatsapp/transfer', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const assigneeId = String(req.body.assigned_to || '').trim();
+    if (!assigneeId) return res.status(400).json({ error: 'Informe o responsavel pelo atendimento' });
+
+    const { data: assignee, error: assigneeError } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .eq('id', assigneeId)
+      .eq('organization_id', req.orgId)
+      .maybeSingle();
+    if (assigneeError) throw assigneeError;
+    if (!assignee) return res.status(404).json({ error: 'Responsavel nao encontrado nesta organizacao' });
+
+    const lead = await findOrCreateWhatsAppLead({
+      organizationId: req.orgId,
+      phone: req.body.phone,
+      name: req.body.name,
+      chatJid: req.body.chat_jid,
+      source: req.body.source || 'WhatsApp',
+    });
+
+    const { data, error } = await supabase
+      .from('leads')
+      .update({
+        assigned_to: assignee.id,
+        status: 'Em Atendimento',
+        last_contacted_at: new Date().toISOString(),
+      })
+      .eq('id', lead.id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+    if (error) throw error;
+
+    await supabase.from('lead_activities').insert({
+      lead_id: lead.id,
+      organization_id: req.orgId,
+      created_by: req.user.id,
+      type: 'Transferencia',
+      description: `Atendimento transferido para ${assignee.name || assignee.email}`,
+      metadata: {
+        chat_jid: req.body.chat_jid || lead.chat_jid || null,
+        assigned_to: assignee.id,
+      },
+    });
+
+    res.json({
+      success: true,
+      lead: data,
+      assignee: {
+        id: assignee.id,
+        name: assignee.name || assignee.email?.split('@')[0] || 'Usuario',
+        email: assignee.email || '',
+      },
+      tags: await getLeadTags(req.orgId, data.id),
+    });
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
   }

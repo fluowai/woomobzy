@@ -10,6 +10,7 @@ import {
   importBuildingTypologies,
   isOruloConfigured,
   listOruloMetadata,
+  markBuildingRemovedById,
   markRemovedBuildings,
   syncActiveBuildings,
   syncBuildingsByFilters,
@@ -106,6 +107,158 @@ async function updateTenantOruloSettings(organizationId, updater) {
 function getEndUserAuth(oruloSettings, userId) {
   return oruloSettings?.endUserAuth?.[userId] || null;
 }
+
+function getWebhookSecret(req) {
+  return req.headers['x-orulo-webhook-secret']
+    || req.headers['x-webhook-secret']
+    || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+}
+
+function assertWebhookAllowed(req) {
+  const expected = process.env.ORULO_WEBHOOK_SECRET;
+  if (!expected) return;
+
+  if (getWebhookSecret(req) !== expected) {
+    const error = new Error('Webhook Orulo nao autorizado.');
+    error.statusCode = 401;
+    throw error;
+  }
+}
+
+function normalizeWebhookPayload(payload = {}) {
+  const event = String(
+    payload.event
+      || payload.event_type
+      || payload.type
+      || payload.action
+      || payload.status
+      || ''
+  ).toLowerCase();
+
+  const buildingId = payload.building_id
+    || payload.buildingId
+    || payload.id
+    || payload.building?.id
+    || payload.data?.building_id
+    || payload.data?.building?.id;
+
+  const clientId = payload.client_id
+    || payload.clientId
+    || payload.oauth_client_id
+    || payload.data?.client_id;
+
+  return {
+    event,
+    buildingId: buildingId ? String(buildingId) : null,
+    clientId: clientId ? String(clientId) : null,
+  };
+}
+
+function classifyWebhookEvent(event) {
+  if (['removed', 'excluded_from_distribution', 'inactive', 'deleted'].includes(event)) return 'remove';
+  if (['active', 'added_to_distribution', 'updated', 'created'].includes(event)) return 'upsert';
+  return 'unknown';
+}
+
+async function findWebhookTargets(clientId) {
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('organization_id, integrations');
+
+  if (error) throw error;
+
+  return (data || [])
+    .map((settings) => {
+      const orulo = settings.integrations?.orulo;
+      if (!orulo || orulo.enabled === false) return null;
+
+      const credentials = {
+        clientId: orulo.clientId || orulo.client_id,
+        clientSecret: orulo.clientSecret || orulo.client_secret,
+        tenantScoped: true,
+      };
+
+      if (!credentials.clientId || !credentials.clientSecret) return null;
+      if (clientId && credentials.clientId !== clientId) return null;
+
+      return {
+        organizationId: settings.organization_id,
+        credentials,
+      };
+    })
+    .filter(Boolean);
+}
+
+async function processWebhookForTarget({ target, action, event, buildingId }) {
+  if (action === 'remove') {
+    return markBuildingRemovedById({
+      supabase,
+      organizationId: target.organizationId,
+      buildingId,
+      reason: event || 'removed',
+    });
+  }
+
+  if (action === 'upsert') {
+    return importBuildingTypologies({
+      supabase,
+      organizationId: target.organizationId,
+      buildingId,
+      credentials: target.credentials,
+    });
+  }
+
+  return { ignored: true };
+}
+
+router.post('/webhook', async (req, res) => {
+  try {
+    assertWebhookAllowed(req);
+    const normalized = normalizeWebhookPayload(req.body || {});
+    const action = classifyWebhookEvent(normalized.event);
+
+    if (!normalized.buildingId) {
+      return res.status(200).json({
+        success: true,
+        ignored: true,
+        reason: 'missing_building_id',
+      });
+    }
+
+    if (action === 'unknown') {
+      return res.status(200).json({
+        success: true,
+        ignored: true,
+        reason: 'unknown_event',
+        event: normalized.event,
+      });
+    }
+
+    const targets = await findWebhookTargets(normalized.clientId);
+    const results = [];
+
+    for (const target of targets) {
+      const result = await processWebhookForTarget({
+        target,
+        action,
+        event: normalized.event,
+        buildingId: normalized.buildingId,
+      });
+      results.push({ organizationId: target.organizationId, result });
+    }
+
+    res.status(200).json({
+      success: true,
+      action,
+      buildingId: normalized.buildingId,
+      clientScoped: Boolean(normalized.clientId),
+      targets: results.length,
+      results,
+    });
+  } catch (error) {
+    handleError(res, error);
+  }
+});
 
 router.get('/status', verifyAdmin, requireTenant, async (req, res) => {
   try {

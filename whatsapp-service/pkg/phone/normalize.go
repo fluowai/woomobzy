@@ -80,9 +80,9 @@ func ExtractDisplayFromJID(jid string) string {
 	return FormatDisplay(number)
 }
 
-// IsGroupJID checks if a JID belongs to a group.
+// IsGroupJID checks if a JID belongs to a WhatsApp group.
 func IsGroupJID(jid string) bool {
-	return strings.Contains(jid, "@g.us") || strings.Contains(jid, "@lid")
+	return strings.Contains(jid, "@g.us")
 }
 
 // IsValidBR checks if the number is a Brazilian phone in canonical digits.

@@ -438,14 +438,19 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	// Handle media download
 	var mediaURL, mediaMimetype, mediaFilename string
+	mediaStatus := ""
+	mediaError := ""
 	if isMediaMessageType(msgType) {
 		url, mime, filename, err := c.downloadAndUploadMedia(ctx, evt)
 		if err != nil {
 			c.logger.Error("Failed to handle media", zap.Error(err))
+			mediaStatus = "failed"
+			mediaError = err.Error()
 		} else {
 			mediaURL = url
 			mediaMimetype = mime
 			mediaFilename = filename
+			mediaStatus = "ready"
 		}
 	}
 
@@ -464,6 +469,8 @@ func (c *Client) handleMessage(evt *events.Message) {
 		MediaURL:        mediaURL,
 		MediaMimetype:   mediaMimetype,
 		MediaFilename:   mediaFilename,
+		MediaStatus:     mediaStatus,
+		MediaError:      mediaError,
 		Timestamp:       info.Timestamp,
 	}
 
@@ -503,18 +510,42 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	if c.automation != nil && !info.IsFromMe && !isGroup && senderPhone != "" {
 		go func(saved models.Message, savedChat models.Chat, participant *models.ParticipantInfo) {
-			if err := c.automation.ProcessMessage(context.Background(), AutomationMessagePayload{
+			result, err := c.automation.ProcessMessage(context.Background(), AutomationMessagePayload{
 				InstanceID:   c.instanceID,
 				TenantID:     uuidToString(c.tenantID),
 				InstanceName: c.instanceName,
 				Chat:         savedChat,
 				Message:      saved,
 				Participant:  participant,
-			}); err != nil {
+			})
+			if err != nil {
 				c.logger.Warn("AI automation failed",
 					zap.String("instance", c.instanceID.String()),
 					zap.String("message_id", saved.MessageID),
 					zap.Error(err),
+				)
+				return
+			}
+
+			if result != nil && result.ShouldReply && strings.TrimSpace(result.Reply) != "" {
+				replyCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+
+				if err := c.SendTextMessage(replyCtx, savedChat.ChatJID, strings.TrimSpace(result.Reply)); err != nil {
+					c.logger.Warn("AI automatic reply failed",
+						zap.String("instance", c.instanceID.String()),
+						zap.String("message_id", saved.MessageID),
+						zap.String("agent_id", result.AgentID),
+						zap.Error(err),
+					)
+					return
+				}
+
+				c.logger.Info("AI automatic reply sent",
+					zap.String("instance", c.instanceID.String()),
+					zap.String("message_id", saved.MessageID),
+					zap.String("agent_id", result.AgentID),
+					zap.String("agent_name", result.AgentName),
 				)
 			}
 		}(*msg, *chat, participantInfo)

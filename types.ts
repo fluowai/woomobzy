@@ -282,7 +282,17 @@ export interface Lead {
   email: string;
   phone: string;
   source: string;
-  status: 'Novo' | 'Em Atendimento' | 'Proposta' | 'Fechado' | 'Perdido';
+  status:
+    | 'Novo'
+    | 'Qualificação'
+    | 'Visita'
+    | 'Simulação'
+    | 'Documentação'
+    | 'Em Atendimento'
+    | 'Proposta'
+    | 'Fechado'
+    | 'Perdido'
+    | 'Pessoal';
   classification?: string;
   lead_score?: number;
   ai_profile?: {

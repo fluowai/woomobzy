@@ -395,15 +395,15 @@ func (c *Client) SendTextMessage(ctx context.Context, chatJID string, text strin
 }
 
 // SendMediaMessage uploads and sends image, audio, video or document media via WhatsMeow.
-func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType string, data []byte, mimeType, fileName, caption string) (messageID, mediaURL, mediaMimetype, mediaFilename string, err error) {
+func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType string, data []byte, mimeType, fileName, caption string) (messageID, mediaURL, mediaMimetype, mediaFilename, mediaError string, err error) {
 	jid, err := parseJID(chatJID)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("invalid JID: %w", err)
+		return "", "", "", "", "", fmt.Errorf("invalid JID: %w", err)
 	}
 
 	appInfo, err := mediaTypeForMessage(msgType)
 	if err != nil {
-		return "", "", "", "", err
+		return "", "", "", "", "", err
 	}
 
 	if mimeType == "" {
@@ -415,7 +415,7 @@ func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType s
 
 	upload, err := c.waClient.Upload(ctx, data, appInfo)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to upload media to WhatsApp: %w", err)
+		return "", "", "", "", "", fmt.Errorf("failed to upload media to WhatsApp: %w", err)
 	}
 
 	outgoing := &waE2E.Message{}
@@ -466,20 +466,21 @@ func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType s
 			FileLength:    proto.Uint64(upload.FileLength),
 		}
 	default:
-		return "", "", "", "", fmt.Errorf("unsupported media type: %s", msgType)
+		return "", "", "", "", "", fmt.Errorf("unsupported media type: %s", msgType)
 	}
 
 	resp, err := c.waClient.SendMessage(ctx, jid, outgoing, whatsmeow.SendRequestExtra{})
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to send media message: %w", err)
+		return "", "", "", "", "", fmt.Errorf("failed to send media message: %w", err)
 	}
 
 	publicURL, _, _, uploadErr := c.uploadToStorageWithDedup(ctx, "whatsapp/media", data, mimeType, "whatsapp", "whatsapp_message", string(resp.ID))
 	if uploadErr != nil {
 		c.logger.Warn("Media sent but local preview upload failed", zap.Error(uploadErr))
+		mediaError = fmt.Sprintf("media sent but MinIO upload failed: %v", uploadErr)
 	}
 
-	return string(resp.ID), publicURL, mimeType, fileName, nil
+	return string(resp.ID), publicURL, mimeType, fileName, mediaError, nil
 }
 
 func encodeStoragePath(value string) string {

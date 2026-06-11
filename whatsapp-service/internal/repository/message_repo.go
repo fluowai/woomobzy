@@ -49,7 +49,10 @@ func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
 				WHEN EXCLUDED.media_status <> 'none' THEN EXCLUDED.media_status
 				ELSE whatsapp_messages.media_status
 			END,
-			media_error = COALESCE(NULLIF(EXCLUDED.media_error, ''), whatsapp_messages.media_error),
+			media_error = CASE
+				WHEN EXCLUDED.media_status = 'ready' THEN NULL
+				ELSE COALESCE(NULLIF(EXCLUDED.media_error, ''), whatsapp_messages.media_error)
+			END,
 			media_retry_count = GREATEST(EXCLUDED.media_retry_count, whatsapp_messages.media_retry_count),
 			quoted_message_id = COALESCE(NULLIF(EXCLUDED.quoted_message_id, ''), whatsapp_messages.quoted_message_id),
 			timestamp = EXCLUDED.timestamp
@@ -192,6 +195,9 @@ func (r *MessageRepo) GetOldestByChat(ctx context.Context, chatID, instanceID uu
 func inferMessageMediaStatus(msg *models.Message) string {
 	switch msg.Type {
 	case models.MessageTypeImage, models.MessageTypeAudio, models.MessageTypeVideo, models.MessageTypeDocument, models.MessageTypeSticker:
+		if msg.MediaError != "" {
+			return "failed"
+		}
 		if msg.MediaURL != "" {
 			return "ready"
 		}

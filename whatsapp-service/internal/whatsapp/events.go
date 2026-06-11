@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"go.mau.fi/whatsmeow/types"
+
+	"whatsapp-service/pkg/phone"
 )
 
 // parseJID parses a JID string into a whatsmeow JID type
@@ -22,6 +24,10 @@ func parseJID(jidStr string) (types.JID, error) {
 		return jid, nil
 	}
 
-	// If it's just a phone number, make it a user JID
-	return types.NewJID(jidStr, types.DefaultUserServer), nil
+	// If it's just a phone number, normalize to canonical Brazilian digits.
+	normalized := phone.Normalize(jidStr)
+	if normalized == "" {
+		return types.JID{}, fmt.Errorf("empty phone number")
+	}
+	return types.NewJID(normalized, types.DefaultUserServer), nil
 }

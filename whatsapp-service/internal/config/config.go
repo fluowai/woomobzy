@@ -85,8 +85,26 @@ func Load(logger *zap.Logger) *Config {
 	if cfg.SupabaseDBURL == "" {
 		logger.Fatal("Postgres database URL is required. Set SUPABASE_DB_URL, DATABASE_URL, DATABASE_PRIVATE_URL, DIRECT_URL or POSTGRES_URL in server variables")
 	}
+	if !cfg.isMinIOConfigured() && !allowSupabaseStorageFallback() {
+		logger.Fatal("MinIO/S3 media storage is required for WhatsApp media. Set MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY and MINIO_WHATSAPP_BUCKET")
+	}
 
 	return cfg
+}
+
+func (c *Config) isMinIOConfigured() bool {
+	return cleanEnvValue(c.MinIOEndpoint) != "" &&
+		cleanEnvValue(c.MinIOAccessKey) != "" &&
+		cleanEnvValue(c.MinIOSecretKey) != "" &&
+		cleanEnvValue(c.StorageBucket) != ""
+}
+
+func allowSupabaseStorageFallback() bool {
+	provider := strings.ToLower(cleanEnvValue(os.Getenv("MEDIA_STORAGE_PROVIDER")))
+	if provider == "" {
+		provider = strings.ToLower(cleanEnvValue(os.Getenv("STORAGE_PROVIDER")))
+	}
+	return provider == "supabase" || strings.EqualFold(cleanEnvValue(os.Getenv("ALLOW_SUPABASE_STORAGE_FALLBACK")), "true")
 }
 
 func getEnv(key, fallback string) string {

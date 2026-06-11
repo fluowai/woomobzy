@@ -119,7 +119,10 @@ func (r *MediaRepo) UpsertFromMessage(ctx context.Context, msg *models.Message, 
 			mime_type = COALESCE(NULLIF(EXCLUDED.mime_type, ''), whatsapp_media.mime_type),
 			status = EXCLUDED.status,
 			retry_count = GREATEST(EXCLUDED.retry_count, whatsapp_media.retry_count),
-			last_error = COALESCE(NULLIF(EXCLUDED.last_error, ''), whatsapp_media.last_error)`
+			last_error = CASE
+				WHEN EXCLUDED.status = 'ready' THEN NULL
+				ELSE COALESCE(NULLIF(EXCLUDED.last_error, ''), whatsapp_media.last_error)
+			END`
 
 	_, err := r.db.Exec(ctx, query,
 		msg.ID,

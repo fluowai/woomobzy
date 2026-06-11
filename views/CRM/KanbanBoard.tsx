@@ -1113,6 +1113,12 @@ const PIPELINE_STAGES = [
     icon: XCircle,
     color: 'bg-red-100 text-red-700',
   },
+  {
+    id: 'Pessoal',
+    label: 'Pessoal',
+    icon: User,
+    color: 'bg-slate-100 text-slate-700',
+  },
 ];
 
 const buildMatchWhatsappMessage = (lead: Lead, matches: any[]) => {
@@ -1668,13 +1674,13 @@ const KanbanBoard: React.FC = () => {
                                       onMouseDown={(e) => e.stopPropagation()}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        window.open(
-                                          `https://wa.me/${lead.phone.replace(/\D/g, '')}`,
-                                          '_blank'
-                                        );
+                                        const chatUrl = lead.chat_jid
+                                          ? `/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid)}`
+                                          : `https://wa.me/${lead.phone.replace(/\D/g, '')}`;
+                                        window.open(chatUrl, '_blank');
                                       }}
                                       className="text-emerald-500 hover:bg-emerald-50 p-1.5 rounded-lg transition-colors"
-                                      title="Chamar no WhatsApp"
+                                      title={lead.chat_jid ? 'Abrir conversa no painel' : 'Chamar no WhatsApp'}
                                     >
                                       <MessageCircle size={16} />
                                     </button>

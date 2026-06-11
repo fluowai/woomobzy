@@ -37,6 +37,18 @@ type AutomationImportPayload struct {
 	Limit      int         `json:"limit,omitempty"`
 }
 
+type AutomationResult struct {
+	AgentID     string `json:"agent_id,omitempty"`
+	AgentName   string `json:"agent_name,omitempty"`
+	Reply       string `json:"reply,omitempty"`
+	ShouldReply bool   `json:"should_reply"`
+}
+
+type automationResponse struct {
+	Success bool             `json:"success"`
+	Result  AutomationResult `json:"result"`
+}
+
 func NewAutomationClient(nodeURL, token string, logger *zap.Logger) *AutomationClient {
 	return &AutomationClient{
 		nodeURL: nodeURL,
@@ -46,30 +58,35 @@ func NewAutomationClient(nodeURL, token string, logger *zap.Logger) *AutomationC
 	}
 }
 
-func (a *AutomationClient) ProcessMessage(ctx context.Context, payload AutomationMessagePayload) error {
+func (a *AutomationClient) ProcessMessage(ctx context.Context, payload AutomationMessagePayload) (*AutomationResult, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.nodeURL+"/api/whatsapp/internal/messages", bytes.NewReader(body))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-whatsapp-internal-token", a.token)
 
 	resp, err := a.http.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("automation endpoint returned status %d", resp.StatusCode)
+		return nil, fmt.Errorf("automation endpoint returned status %d", resp.StatusCode)
 	}
 
-	return nil
+	var decoded automationResponse
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return nil, fmt.Errorf("decode automation response: %w", err)
+	}
+
+	return &decoded.Result, nil
 }
 
 func (a *AutomationClient) AnalyzeImportedHistory(ctx context.Context, payload AutomationImportPayload) error {

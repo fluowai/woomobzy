@@ -586,6 +586,23 @@ export async function markRemovedBuildings({ supabase, organizationId, updatedAf
   return { removed: removed.length };
 }
 
+export async function markBuildingRemovedById({ supabase, organizationId, buildingId, reason = 'removed' }) {
+  if (!buildingId) return { removed: 0 };
+
+  const { error, count } = await supabase
+    .from('properties')
+    .update({
+      status: 'Vendido',
+      external_listing_status: reason,
+    })
+    .eq('organization_id', organizationId)
+    .eq('source', 'orulo')
+    .like('external_id', `${buildingId}:%`);
+
+  if (error) throw error;
+  return { removed: count || 0 };
+}
+
 export function isOruloConfigured(credentials) {
   try {
     normalizeCredentials(credentials);

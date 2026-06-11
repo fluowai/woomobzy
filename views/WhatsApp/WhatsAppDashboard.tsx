@@ -17,6 +17,7 @@ import ChatWindow from './ChatWindow';
 import InstanceManager from './InstanceManager';
 import { MessageSquare, Settings, Wifi, WifiOff, Smartphone, DownloadCloud, Loader2, Clock3 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
 
 const HISTORY_PERIOD_OPTIONS = [
   { value: 7, label: '7 dias', chatLimit: 80, perChat: 40 },
@@ -27,6 +28,10 @@ const HISTORY_PERIOD_OPTIONS = [
 ];
 
 const WhatsAppDashboard: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const deepLinkInstanceId = searchParams.get('instanceId');
+  const deepLinkChatId = searchParams.get('chatId');
+  const deepLinkChatJid = searchParams.get('chatJid');
   // State
   const [instances, setInstances] = useState<Instance[]>([]);
   const [selectedInstance, setSelectedInstance] = useState<Instance | null>(null);
@@ -192,8 +197,9 @@ const WhatsAppDashboard: React.FC = () => {
       setServiceError('');
       setWebSocketEnabled(true);
       if (data.length > 0 && !selectedInstance) {
+        const linkedInstance = deepLinkInstanceId ? data.find((i) => i.id === deepLinkInstanceId) : null;
         const connected = data.find((i) => i.status === 'connected');
-        setSelectedInstance(connected || data[0]);
+        setSelectedInstance(linkedInstance || connected || data[0]);
       }
     } catch (err: any) {
       if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
@@ -211,10 +217,16 @@ const WhatsAppDashboard: React.FC = () => {
   const loadChats = async (instanceId: string) => {
     try {
       const data = await chatApi.list(instanceId);
-      setChats((data || []).filter(isSupportedChat).map((chat) => ({
+      const normalizedChats = (data || []).filter(isSupportedChat).map((chat) => ({
         ...chat,
         last_message: normalizeMessagePreview(chat.last_message),
-      })));
+      }));
+      setChats(normalizedChats);
+      const linkedChat = normalizedChats.find((chat) =>
+        (deepLinkChatId && chat.id === deepLinkChatId) ||
+        (deepLinkChatJid && chat.chat_jid === deepLinkChatJid)
+      );
+      if (linkedChat) setSelectedChat(linkedChat);
     } catch (err: any) {
       if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         logger.error('Failed to load chats:', err);
@@ -246,13 +258,20 @@ const WhatsAppDashboard: React.FC = () => {
           const result: any = await messageApi.sendMedia(selectedChat.id, selectedInstance.id, file, content);
           appendSentMessage(result?.data);
           updateChatPreview(selectedChat.id, content || `[${resultTypeFromFile(file)}]`);
+          if (result?.data?.media_status === 'failed') {
+            toast.error(result?.data?.media_error || 'Midia enviada, mas nao foi salva no MinIO.');
+          } else {
+            toast.success('Midia enviada.');
+          }
         } else {
           const result: any = await messageApi.send(selectedChat.id, selectedInstance.id, content);
           appendSentMessage(result?.data);
           updateChatPreview(selectedChat.id, content);
         }
-      } catch (err) {
+      } catch (err: any) {
         logger.error('Failed to send message:', err);
+        toast.error(err?.message || 'Erro ao enviar mensagem.');
+        throw err;
       }
     },
     [selectedChat, selectedInstance]

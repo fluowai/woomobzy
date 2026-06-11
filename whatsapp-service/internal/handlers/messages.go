@@ -244,7 +244,7 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 	}
 
 	caption := strings.TrimSpace(c.PostForm("content"))
-	messageID, mediaURL, mediaMimetype, mediaFilename, err := client.SendMediaMessage(ctx, chat.ChatJID, msgType, data, mimeType, header.Filename, caption)
+	messageID, mediaURL, mediaMimetype, mediaFilename, mediaError, err := client.SendMediaMessage(ctx, chat.ChatJID, msgType, data, mimeType, header.Filename, caption)
 	if err != nil {
 		h.logger.Error("Failed to send media message", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -270,6 +270,8 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 		MediaURL:      mediaURL,
 		MediaMimetype: mediaMimetype,
 		MediaFilename: mediaFilename,
+		MediaStatus:   mediaStatusFromSend(mediaURL, mediaError),
+		MediaError:    mediaError,
 		Timestamp:     time.Now(),
 	}
 
@@ -306,6 +308,16 @@ func messageTypeFromMime(mimeType string) string {
 	default:
 		return "document"
 	}
+}
+
+func mediaStatusFromSend(mediaURL, mediaError string) string {
+	if strings.TrimSpace(mediaError) != "" {
+		return "failed"
+	}
+	if strings.TrimSpace(mediaURL) != "" {
+		return "ready"
+	}
+	return "pending"
 }
 
 func (h *MessageHandler) getChatByIDForTenant(ctx context.Context, chatID, instanceID, tenantID uuid.UUID) (*models.Chat, error) {

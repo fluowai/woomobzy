@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { chatApi, crmContactApi, formatPhone, formatPhoneDisplay, isValidBrazilianPhone, type Chat, type Message } from './hooks/api';
+import {
+  chatApi,
+  crmContactApi,
+  formatPhone,
+  formatPhoneDisplay,
+  isValidBrazilianPhone,
+  type Chat,
+  type CrmAssignee,
+  type Message,
+} from './hooks/api';
 import MessageBubble from './MessageBubble';
 import {
   Send,
@@ -18,6 +27,10 @@ import {
   Tag,
   Clock3,
   ShieldCheck,
+  Image as ImageIcon,
+  FileAudio,
+  FileText,
+  FileVideo,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,7 +43,7 @@ function isWhatsAppCdnUrl(url?: string): boolean {
 interface ChatWindowProps {
   chat: Chat;
   messages: Message[];
-  onSendMessage: (content: string, file?: File) => void;
+  onSendMessage: (content: string, file?: File) => Promise<void> | void;
   loading: boolean;
   instanceName: string;
   instanceId: string;
@@ -57,7 +70,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [savingContact, setSavingContact] = useState(false);
   const [crmLead, setCrmLead] = useState<any | null>(null);
   const [crmTags, setCrmTags] = useState<string[]>([]);
+  const [tagDraft, setTagDraft] = useState('');
+  const [assignees, setAssignees] = useState<CrmAssignee[]>([]);
+  const [selectedAssignee, setSelectedAssignee] = useState('');
   const [crmActionLoading, setCrmActionLoading] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,17 +96,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     if (!showContactPanel || chat.is_group || !rawPhone) return;
     let active = true;
-    crmContactApi
-      .get(rawPhone)
-      .then((result) => {
+    Promise.all([crmContactApi.get(rawPhone), crmContactApi.assignees()])
+      .then(([result, assigneeResult]) => {
         if (!active) return;
         setCrmLead(result.lead || null);
         setCrmTags(result.tags || []);
+        setAssignees(assigneeResult.users || []);
+        setSelectedAssignee(result.lead?.assigned_to || '');
       })
       .catch(() => {
         if (!active) return;
         setCrmLead(null);
         setCrmTags([]);
+        setAssignees([]);
+        setSelectedAssignee('');
       });
     return () => {
       active = false;
@@ -111,13 +131,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setShowScrollDown(scrollHeight - scrollTop - clientHeight > 200);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = inputText.trim();
-    if (!text && !pendingFile) return;
-    onSendMessage(text, pendingFile || undefined);
-    setInputText('');
-    setPendingFile(null);
+    if ((!text && !pendingFile) || sendingMessage) return;
+    setSendingMessage(true);
+    try {
+      await onSendMessage(text, pendingFile || undefined);
+      setInputText('');
+      setPendingFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -170,20 +196,54 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const addCrmTag = async () => {
     if (!rawPhone || chat.is_group) return;
-    const tag = window.prompt('Digite a tag para este contato');
-    if (!tag?.trim()) return;
+    const tag = tagDraft.trim();
+    if (!tag) return;
 
     setCrmActionLoading(true);
     try {
-      const result = await crmContactApi.addTags({ ...crmPayload(), tags: [tag.trim()] });
+      const result = await crmContactApi.addTags({ ...crmPayload(), tags: [tag] });
       setCrmLead(result.lead || null);
       setCrmTags(result.tags || []);
+      setTagDraft('');
       toast.success('Tag adicionada ao CRM.');
     } catch (err: any) {
       toast.error(err?.message || 'Erro ao adicionar tag.');
     } finally {
       setCrmActionLoading(false);
     }
+  };
+
+  const transferAttendance = async () => {
+    if (!rawPhone || chat.is_group || !selectedAssignee) return;
+    setCrmActionLoading(true);
+    try {
+      const result = await crmContactApi.transfer({ ...crmPayload(), assigned_to: selectedAssignee });
+      setCrmLead(result.lead || null);
+      setCrmTags(result.tags || []);
+      toast.success(result.assignee?.name ? `Atendimento transferido para ${result.assignee.name}.` : 'Atendimento transferido.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao transferir atendimento.');
+    } finally {
+      setCrmActionLoading(false);
+    }
+  };
+
+  const handleFileSelect = (file?: File | null) => {
+    if (!file) {
+      setPendingFile(null);
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Envie midias de ate 25 MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    setPendingFile(file);
+  };
+
+  const clearPendingFile = () => {
+    setPendingFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const markCrmPriority = async () => {
@@ -333,17 +393,50 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <span className="wa-contact-section-title">Atendimento</span>
             <label className="wa-contact-select-label">
               Responsavel
-              <select className="wa-contact-select" defaultValue="equipe">
-                <option value="equipe">Equipe comercial</option>
-                <option value="renato">Renato Piovesana</option>
-                <option value="admin">Admin imobiliaria</option>
+              <select
+                className="wa-contact-select"
+                value={selectedAssignee}
+                onChange={(event) => setSelectedAssignee(event.target.value)}
+                disabled={crmActionLoading || chat.is_group || !rawPhone}
+              >
+                <option value="">Selecionar responsavel</option>
+                {assignees.map((assignee) => (
+                  <option key={assignee.id} value={assignee.id}>
+                    {assignee.name}
+                  </option>
+                ))}
               </select>
             </label>
-            <button type="button" className="wa-contact-action primary">
+            <button
+              type="button"
+              className="wa-contact-action primary"
+              onClick={transferAttendance}
+              disabled={crmActionLoading || chat.is_group || !rawPhone || !selectedAssignee}
+            >
               <ArrowRightLeft size={16} />
               Transferir atendimento
             </button>
           </div>
+
+          {!chat.is_group && rawPhone && (
+            <div className="wa-contact-tag-editor">
+              <input
+                value={tagDraft}
+                onChange={(event) => setTagDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addCrmTag();
+                  }
+                }}
+                placeholder="Nova tag"
+                disabled={crmActionLoading}
+              />
+              <button type="button" className="wa-icon-btn" onClick={addCrmTag} disabled={crmActionLoading || !tagDraft.trim()} title="Adicionar tag">
+                <Tag size={16} />
+              </button>
+            </div>
+          )}
 
           <div className="wa-contact-actions-grid">
             <button
@@ -359,7 +452,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={addCrmTag}
-              disabled={crmActionLoading || chat.is_group || !rawPhone}
+              disabled={crmActionLoading || chat.is_group || !rawPhone || !tagDraft.trim()}
             >
               <Tag size={16} />
               Adicionar tag
@@ -440,13 +533,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           type="file"
           className="hidden"
           accept="image/*,audio/*,video/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx"
-          onChange={(event) => setPendingFile(event.target.files?.[0] || null)}
+          onChange={(event) => handleFileSelect(event.target.files?.[0])}
         />
         <div className="wa-input-wrapper">
           {pendingFile && (
             <div className="wa-file-chip">
-              <span>{pendingFile.name}</span>
-              <button type="button" onClick={() => setPendingFile(null)}>Remover</button>
+              {fileIconFor(pendingFile)}
+              <span>
+                <strong>{pendingFile.name}</strong>
+                <small>{formatFileSize(pendingFile.size)}</small>
+              </span>
+              <button type="button" onClick={clearPendingFile} title="Remover arquivo" disabled={sendingMessage}>
+                <X size={14} />
+              </button>
             </div>
           )}
           <textarea
@@ -455,6 +554,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
+            disabled={sendingMessage}
             rows={1}
             id="message-input"
           />
@@ -462,10 +562,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <button
           type="submit"
           className={`wa-send-btn ${inputText.trim() || pendingFile ? 'active' : ''}`}
-          disabled={!inputText.trim() && !pendingFile}
+          disabled={sendingMessage || (!inputText.trim() && !pendingFile)}
           title="Enviar"
         >
-          <Send size={20} />
+          {sendingMessage ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
         </button>
       </form>
     </main>
@@ -478,6 +578,18 @@ function isRenderableMessage(message: Message) {
   const content = (message.content || '').trim();
   const hasMedia = Boolean(message.media_url || message.media_filename);
   return message.type !== 'text' || content || hasMedia;
+}
+
+function fileIconFor(file: File) {
+  if (file.type.startsWith('image/')) return <ImageIcon size={18} />;
+  if (file.type.startsWith('audio/')) return <FileAudio size={18} />;
+  if (file.type.startsWith('video/')) return <FileVideo size={18} />;
+  return <FileText size={18} />;
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getPhoneFromJid(jid: string) {

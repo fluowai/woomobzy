@@ -124,6 +124,13 @@ const mapToModel = (dbItem: any): Lead => ({
   aptitude_interest: dbItem.aptitude_interest || [],
   notes: dbItem.notes,
   classification: dbItem.classification,
+  lead_score: dbItem.lead_score,
+  ai_profile: dbItem.ai_profile,
+  ai_next_action: dbItem.ai_next_action,
+  ai_last_intent: dbItem.ai_last_intent,
+  ai_last_confidence: dbItem.ai_last_confidence,
+  next_follow_up_at: dbItem.next_follow_up_at,
+  next_visit_at: dbItem.next_visit_at,
   tags: Array.isArray(dbItem.lead_tags)
     ? dbItem.lead_tags.map((item: any) => item.tag).filter(Boolean)
     : Array.isArray(dbItem.tags)

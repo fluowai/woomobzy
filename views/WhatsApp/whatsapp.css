@@ -690,6 +690,27 @@
   background: var(--color-primary);
   color: white;
 }
+.wa-contact-tag-editor {
+  padding: 10px 16px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 8px;
+}
+.wa-contact-tag-editor input {
+  min-width: 0;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  outline: none;
+}
+.wa-contact-tag-editor input:focus {
+  border-color: var(--color-primary);
+}
 
 /* Messages */
 .wa-messages {
@@ -986,7 +1007,6 @@
 .wa-file-chip {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   margin-bottom: 6px;
   padding: 6px 10px;
@@ -997,9 +1017,21 @@
   font-size: 0.75rem;
 }
 .wa-file-chip span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.wa-file-chip strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--color-text-primary);
+}
+.wa-file-chip small {
+  color: var(--color-text-tertiary);
+  font-size: 0.68rem;
 }
 .wa-file-chip button {
   border: 0;
@@ -1007,6 +1039,12 @@
   color: var(--color-primary);
   font-weight: 700;
   cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .wa-message-input {
   width: 100%;

@@ -290,6 +290,17 @@ export interface CrmContactResponse {
   tags: string[];
 }
 
+export interface CrmAssignee {
+  id: string;
+  name: string;
+  email?: string;
+  role?: string;
+}
+
+export interface CrmAssigneesResponse {
+  users: CrmAssignee[];
+}
+
 export interface WhatsAppMediaUrlResponse {
   id: string;
   url: string;
@@ -331,6 +342,7 @@ export function isTechnicalMediaPlaceholder(value?: string): boolean {
 export function isSupportedChat(chat: Pick<Chat, 'chat_jid' | 'is_group'>): boolean {
   const jid = (chat.chat_jid || '').toLowerCase();
   if (chat.is_group) return jid.includes('@g.us');
+  if (jid.includes('@lid')) return true;
   return jid.includes('@s.whatsapp.net') && Boolean(formatPhoneDisplay(jid));
 }
 
@@ -387,6 +399,9 @@ export const crmContactApi = {
   get: (phone: string) =>
     callApi(`/api/crm/whatsapp/contact?phone=${encodeURIComponent(phone)}`) as Promise<CrmContactResponse>,
 
+  assignees: () =>
+    callApi('/api/crm/whatsapp/assignees') as Promise<CrmAssigneesResponse>,
+
   link: (payload: { phone: string; name?: string; chat_jid?: string; source?: string }) =>
     callApi('/api/crm/whatsapp/link-contact', {
       method: 'POST',
@@ -404,6 +419,12 @@ export const crmContactApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<CrmContactResponse>,
+
+  transfer: (payload: { phone: string; name?: string; chat_jid?: string; source?: string; assigned_to: string }) =>
+    callApi('/api/crm/whatsapp/transfer', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse & { assignee?: CrmAssignee }>,
 };
 
 // ---- Message API ----

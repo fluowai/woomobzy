@@ -12,6 +12,9 @@ const ENHANCED_LEAD_COLUMNS = [
   'next_visit_at',
 ];
 
+const PERSONAL_LEAD_TYPES = ['familia', 'amigo', 'fornecedor', 'interno', 'spam', 'pessoal', 'outro'];
+const PERSONAL_STAGE = 'Pessoal';
+
 export class AIAutomationEngine {
   constructor(apiKey) {
     const validKey = apiKey && !apiKey.includes('YOUR_') && apiKey.length > 20;
@@ -130,7 +133,9 @@ Etapas do kanban:
 Filtro obrigatorio:
 - So marque shouldCreateLead=true quando a conversa for de cliente/prospect imobiliario ou lead ja qualificado.
 - Familia, amigos, assuntos pessoais, fornecedores, spam, grupos, conversas internas, links soltos e mensagens sem intencao imobiliaria devem ser shouldCreateLead=false.
+- Se for conversa pessoal, mantenha shouldCreateLead=false, classifique leadType e crie tags como pessoal/familia/amigo/fornecedor/interno.
 - Se for apenas saudacao sem contexto, use shouldCreateLead=true somente se houver indicio comercial, nome de imovel, CAR, fazenda, casa, aluguel, compra, venda, visita, proposta ou pergunta imobiliaria.
+- leadName deve ser nome por extenso quando houver nome no contato ou na conversa; nao use apenas iniciais.
 
 Modo operacional:
 - Pense como uma equipe de agentes: SDR, matchmaker, agenda, documentos e fechamento.
@@ -225,7 +230,10 @@ Formato:
 
     const mediaHint = this._buildMediaHint(message);
     const content = [message.content, mediaHint].filter(Boolean).join('\n');
-    const agent = await this._loadActiveAgent(supabase, organizationId, message.type);
+    const agent = await this._loadActiveAgent(supabase, organizationId, message.type, {
+      instanceId: payload.instance_id,
+      instanceName: payload.instance_name,
+    });
     const audioData = message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
     const aiResult = await this.processIntent({
       content,
@@ -250,12 +258,35 @@ Formato:
       .eq('phone', normalizedPhone)
       .maybeSingle();
 
-    if (!existingLead && !this._shouldCreateLeadFromAI(actionPlan, content)) {
-      return {
-        skipped: true,
-        reason: actionPlan.leadType || 'not a qualified client conversation',
-        aiResult: actionPlan,
-      };
+    const isCommercialLead = this._shouldCreateLeadFromAI(actionPlan, content);
+    const isPersonalConversation = this._isPersonalConversation(actionPlan, content);
+
+    if (!isCommercialLead) {
+      if (isPersonalConversation) {
+        return this._upsertPersonalConversationCard({
+          supabase,
+          organizationId,
+          existingLead,
+          actionPlan,
+          message,
+          chat,
+          normalizedPhone,
+          agent,
+          tags: this._normalizeTags(actionPlan.tags, message),
+          source: 'WhatsApp Pessoal IA',
+          activityType: 'WhatsApp Pessoal IA',
+        });
+      }
+
+      if (!existingLead) {
+        return {
+          skipped: true,
+          reason: actionPlan.leadType || 'not a qualified client conversation',
+          aiResult: actionPlan,
+        };
+      }
+
+      return { skipped: true, reason: 'existing lead not updated by non-commercial message', aiResult: actionPlan };
     }
 
     const stage = actionPlan.stage;
@@ -313,6 +344,9 @@ Formato:
         agent_id: agent?.id,
         message_id: message.message_id,
         media_url: message.media_url,
+        chat_id: chat.id,
+        chat_jid: chat.chat_jid,
+        chat_link: this._buildChatLink(chat),
       },
     });
 
@@ -325,7 +359,17 @@ Formato:
       console.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
     }
 
-    return { lead_id: lead.id, status: lead.status, tags, score: actionPlan.leadScore, next_action: actionPlan.nextAction };
+    return {
+      lead_id: lead.id,
+      status: lead.status,
+      tags,
+      score: actionPlan.leadScore,
+      next_action: actionPlan.nextAction,
+      agent_id: agent?.id || null,
+      agent_name: agent?.name || '',
+      reply: actionPlan.reply || '',
+      should_reply: this._canAutoReply(agent, actionPlan),
+    };
   }
 
   async handleImportedWhatsAppConversations(payload = {}) {
@@ -442,12 +486,36 @@ Formato:
       .eq('phone', normalizedPhone)
       .maybeSingle();
 
-    if (!existingLead && !this._shouldCreateLeadFromAI(actionPlan, transcript)) {
-      return {
-        chat_id: chat.id,
-        skipped: true,
-        reason: actionPlan.leadType || 'not a qualified client conversation',
-      };
+    const isCommercialLead = this._shouldCreateLeadFromAI(actionPlan, transcript);
+    const isPersonalConversation = this._isPersonalConversation(actionPlan, transcript);
+
+    if (!isCommercialLead) {
+      if (isPersonalConversation) {
+        return this._upsertPersonalConversationCard({
+          supabase,
+          organizationId,
+          existingLead,
+          actionPlan,
+          message: inboundMessages[inboundMessages.length - 1] || {},
+          chat,
+          normalizedPhone,
+          agent: null,
+          tags: this._normalizeTags(actionPlan.tags, {}),
+          source: 'WhatsApp Importado Pessoal IA',
+          activityType: 'WhatsApp Importado Pessoal IA',
+          transcript,
+        });
+      }
+
+      if (!existingLead) {
+        return {
+          chat_id: chat.id,
+          skipped: true,
+          reason: actionPlan.leadType || 'not a qualified client conversation',
+        };
+      }
+
+      return { chat_id: chat.id, skipped: true, reason: 'existing lead not updated by non-commercial import' };
     }
 
     const stage = actionPlan.stage;
@@ -507,6 +575,8 @@ Formato:
         aiResult,
         actionPlan,
         chat_id: chat.id,
+        chat_jid: chat.chat_jid,
+        chat_link: this._buildChatLink(chat),
         imported_message_count: messages.length,
       },
     });
@@ -545,7 +615,9 @@ Objetivo:
 - Resumir necessidades, imovel desejado, cidade/regiao, orcamento, urgencia e proximas acoes.
 - Escolher a etapa correta do funil.
 - Filtrar conversas que nao sao clientes/prospects imobiliarios.
-- Familia, amigos, fornecedores, assuntos pessoais, spam, grupos e conversas internas nao devem criar lead.
+- Familia, amigos, fornecedores, assuntos pessoais, spam, grupos e conversas internas nao devem criar lead comercial.
+- Se for conversa pessoal, mantenha shouldCreateLead=false, classifique leadType e crie tags como pessoal/familia/amigo/fornecedor/interno.
+- leadName deve ser nome por extenso quando houver nome no contato ou na conversa; nao use apenas iniciais.
 
 Etapas do funil:
 Novo, Qualificacao, Visita, Simulacao, Documentacao, Fechado, Perdido.
@@ -679,6 +751,130 @@ Formato:
     };
   }
 
+  async _upsertPersonalConversationCard({
+    supabase,
+    organizationId,
+    existingLead,
+    actionPlan,
+    message,
+    chat,
+    normalizedPhone,
+    agent,
+    tags,
+    source,
+    activityType,
+    transcript = '',
+  }) {
+    const personalTags = this._normalizeTags([...tags, 'pessoal', actionPlan.leadType || 'outro'], message);
+    const personalName = this._resolveLeadName(
+      actionPlan.leadName,
+      message.sender_name,
+      chat.name,
+      normalizedPhone
+    );
+    const noteLine = this._buildPersonalNoteLine({
+      aiResult: actionPlan,
+      message,
+      chat,
+      tags: personalTags,
+      transcript,
+    });
+    const personalPatch = this._buildLeadAIPatch({
+      actionPlan: {
+        ...actionPlan,
+        leadScore: Math.min(actionPlan.leadScore || 0, 35),
+        nextAction: {
+          type: 'follow_up',
+          title: 'Conversa pessoal classificada',
+          dueAt: '',
+          reason: 'Contato separado do funil comercial para nao criar lead imobiliario indevido.',
+        },
+        followUpAt: '',
+        visit: { requested: false, scheduledAt: '', propertyHint: '', notes: '' },
+        handoffRequired: false,
+      },
+      stage: PERSONAL_STAGE,
+      tags: personalTags,
+    });
+
+    const personalExisting = existingLead && this._isPersonalLead(existingLead)
+      ? existingLead
+      : await this._findPersonalLeadByPhone(supabase, organizationId, normalizedPhone);
+
+    let lead;
+    if (personalExisting) {
+      lead = await this._persistLeadUpdate(supabase, personalExisting.id, {
+        name: this._isPlaceholderName(personalExisting.name) ? personalName : personalExisting.name,
+        status: PERSONAL_STAGE,
+        source: personalExisting.source || source,
+        classification: 'Pessoal',
+        notes: [personalExisting.notes, noteLine].filter(Boolean).join('\n\n'),
+        chat_jid: chat.chat_jid || personalExisting.chat_jid,
+        last_contacted_at: new Date().toISOString(),
+        ...personalPatch,
+      });
+    } else {
+      lead = await this._persistLeadInsert(supabase, {
+        organization_id: organizationId,
+        name: personalName,
+        phone: normalizedPhone,
+        source,
+        status: PERSONAL_STAGE,
+        classification: 'Pessoal',
+        notes: noteLine,
+        chat_jid: chat.chat_jid,
+        budget: null,
+        last_contacted_at: new Date().toISOString(),
+        ...personalPatch,
+      });
+    }
+
+    await this._insertActivity(supabase, {
+      leadId: lead.id,
+      organizationId,
+      type: activityType,
+      description: actionPlan.intent || 'Conversa pessoal classificada pela IA',
+      metadata: {
+        tags: personalTags,
+        aiResult: actionPlan,
+        agent_id: agent?.id,
+        message_id: message.message_id,
+        chat_id: chat.id,
+        chat_jid: chat.chat_jid,
+        chat_link: this._buildChatLink(chat),
+        lead_type: actionPlan.leadType || 'pessoal',
+      },
+    });
+
+    await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags: personalTags });
+
+    return {
+      chat_id: chat.id,
+      lead_id: lead.id,
+      status: lead.status,
+      tags: personalTags,
+      score: lead.lead_score || personalPatch.lead_score,
+      personal: true,
+    };
+  }
+
+  async _findPersonalLeadByPhone(supabase, organizationId, phone) {
+    const { data } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('phone', phone)
+      .or(`status.eq.${PERSONAL_STAGE},source.ilike.*Pessoal*`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data || null;
+  }
+
+  _isPersonalLead(lead = {}) {
+    return lead.status === PERSONAL_STAGE || String(lead.source || '').toLowerCase().includes('pessoal');
+  }
+
   async _persistLeadUpdate(supabase, leadId, updates) {
     const { data, error } = await supabase
       .from('leads')
@@ -736,7 +932,7 @@ Formato:
       || ENHANCED_LEAD_COLUMNS.some((column) => message.includes(column));
   }
 
-  async _loadActiveAgent(supabase, organizationId, messageType) {
+  async _loadActiveAgent(supabase, organizationId, messageType, instanceContext = {}) {
     const preferredTool = messageType === 'audio' ? 'audio-stt' : messageType === 'document' ? 'pdf-reader' : 'whatsapp';
     const { data, error } = await supabase
       .from('ai_agents')
@@ -751,7 +947,42 @@ Formato:
       return null;
     }
 
-    return (data || []).find((agent) => (agent.tools || []).includes(preferredTool)) || data?.[0] || null;
+    const candidates = data || [];
+    const toolCandidates = candidates.filter((agent) => (agent.tools || []).includes(preferredTool));
+    const exactCandidate = toolCandidates.find((agent) => this._agentInstanceScope(agent, instanceContext) === 'exact');
+    const globalCandidate = toolCandidates.find((agent) => this._agentInstanceScope(agent, instanceContext) === 'global');
+    const exactFallback = candidates.find((agent) => this._agentInstanceScope(agent, instanceContext) === 'exact');
+    const globalFallback = candidates.find((agent) => this._agentInstanceScope(agent, instanceContext) === 'global');
+    return exactCandidate || globalCandidate || exactFallback || globalFallback || null;
+  }
+
+  _agentInstanceScope(agent, { instanceId, instanceName } = {}) {
+    const config = agent?.handoff_rules?.__operational360 || {};
+    const configuredInstances = Array.isArray(config.instances) ? config.instances.filter(Boolean) : [];
+    if (!configuredInstances.length) return 'global';
+
+    const accepted = new Set([
+      String(instanceId || '').trim(),
+      String(instanceName || '').trim(),
+    ].filter(Boolean));
+
+    return configuredInstances.some((instance) => accepted.has(String(instance).trim())) ? 'exact' : 'none';
+  }
+
+  _canAutoReply(agent, actionPlan) {
+    if (!agent || !actionPlan?.reply || actionPlan.handoffRequired) return false;
+
+    const config = agent?.handoff_rules?.__operational360 || {};
+    const status = config.status || (agent.is_active ? 'Ativo' : 'Pausado');
+    const autonomyLevel = Number(config.autonomy_level || 0);
+    const channels = Array.isArray(config.channels) && config.channels.length
+      ? config.channels
+      : [agent.channel || 'whatsapp'];
+
+    return status === 'Ativo'
+      && autonomyLevel >= 3
+      && channels.includes('whatsapp')
+      && (agent.tools || []).includes('whatsapp');
   }
 
   async _resolveOrganizationId(instanceId) {
@@ -769,7 +1000,7 @@ Formato:
     if (!aiResult) return this._hasRealEstateSignal(text);
 
     const type = String(aiResult.leadType || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    if (['familia', 'amigo', 'fornecedor', 'interno', 'spam'].includes(type)) return false;
+    if (PERSONAL_LEAD_TYPES.includes(type) && type !== 'outro') return false;
     if (aiResult.shouldCreateLead === false) return false;
 
     const confidence = Number(aiResult.confidence);
@@ -777,7 +1008,19 @@ Formato:
       return false;
     }
 
-    return aiResult.shouldCreateLead === true || type === 'cliente' || this._hasRealEstateSignal(text);
+    if (type === 'cliente') return true;
+    if (aiResult.shouldCreateLead === true) {
+      return this._hasRealEstateSignal(text) || (Number.isFinite(confidence) && confidence >= 0.65);
+    }
+    return this._hasRealEstateSignal(text);
+  }
+
+  _isPersonalConversation(aiResult, text = '') {
+    if (!aiResult) return false;
+    const type = String(aiResult.leadType || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (PERSONAL_LEAD_TYPES.includes(type)) return true;
+    if (aiResult.shouldCreateLead === false && !this._hasRealEstateSignal(text)) return true;
+    return false;
   }
 
   _normalizeLeadScore(aiResult = {}, text = '', stage = 'Novo') {
@@ -944,6 +1187,8 @@ Formato:
   _isPlaceholderName(value = '') {
     const clean = String(value).trim().toLowerCase();
     if (!clean || clean === '~' || clean === 'me' || clean === 'contato sem telefone') return true;
+    const raw = String(value).trim();
+    if (/^([A-Z]\.?\s*){1,4}$/.test(raw) || /^([A-Za-z]\.\s*){1,4}$/.test(raw)) return true;
     return /^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''));
   }
 
@@ -1006,12 +1251,66 @@ Formato:
 
   _buildNoteLine({ aiResult, message, chat, tags }) {
     const text = aiResult?.transcricao || message.content || this._buildMediaHint(message) || 'Mensagem sem texto';
-    return `[WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]\nChat: ${chat.name || chat.chat_jid || 'sem nome'}\nResumo: ${aiResult?.intent || text}\nEtiquetas: ${tags.join(', ') || 'sem etiquetas'}\nResposta sugerida: ${aiResult?.reply || 'sem sugestao'}`;
+    return [
+      `[WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]`,
+      `Chat: ${chat.name || chat.chat_jid || 'sem nome'}`,
+      `Link da conversa: ${this._buildChatLink(chat)}`,
+      `Score: ${aiResult?.leadScore ?? 0}/100`,
+      `Resumo: ${aiResult?.intent || text}`,
+      `Perfil buscado: ${this._formatInterestProfile(aiResult?.interestProfile)}`,
+      `Etiquetas: ${tags.join(', ') || 'sem etiquetas'}`,
+      `Resposta sugerida: ${aiResult?.reply || 'sem sugestao'}`,
+    ].join('\n');
   }
 
   _buildImportNoteLine({ aiResult, chat, tags, transcript }) {
     const fallback = transcript ? transcript.split('\n').slice(-5).join('\n') : 'Conversa sem texto renderizavel';
-    return `[Importacao WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]\nChat: ${chat.name || chat.chat_jid || 'sem nome'}\nResumo: ${aiResult?.intent || fallback}\nEtiquetas: ${tags.join(', ') || 'sem etiquetas'}\nProxima acao sugerida: ${aiResult?.reply || 'sem sugestao'}`;
+    return [
+      `[Importacao WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]`,
+      `Chat: ${chat.name || chat.chat_jid || 'sem nome'}`,
+      `Link da conversa: ${this._buildChatLink(chat)}`,
+      `Score: ${aiResult?.leadScore ?? 0}/100`,
+      `Resumo: ${aiResult?.intent || fallback}`,
+      `Perfil buscado: ${this._formatInterestProfile(aiResult?.interestProfile)}`,
+      `Etiquetas: ${tags.join(', ') || 'sem etiquetas'}`,
+      `Proxima acao sugerida: ${aiResult?.reply || 'sem sugestao'}`,
+    ].join('\n');
+  }
+
+  _buildPersonalNoteLine({ aiResult, message, chat, tags, transcript }) {
+    const fallback = transcript
+      ? transcript.split('\n').slice(-5).join('\n')
+      : (message.content || this._buildMediaHint(message) || 'Conversa pessoal sem texto renderizavel');
+    return [
+      `[WhatsApp Pessoal IA - ${new Date().toLocaleString('pt-BR')}]`,
+      `Chat: ${chat.name || chat.chat_jid || 'sem nome'}`,
+      `Link da conversa: ${this._buildChatLink(chat)}`,
+      `Tipo: ${aiResult?.leadType || 'pessoal'}`,
+      `Score: ${Math.min(aiResult?.leadScore || 0, 35)}/100`,
+      `Resumo: ${aiResult?.intent || fallback}`,
+      `Etiquetas: ${tags.join(', ') || 'sem etiquetas'}`,
+    ].join('\n');
+  }
+
+  _formatInterestProfile(profile = {}) {
+    const parts = [
+      profile.operation && profile.operation !== 'indefinido' ? `operacao ${profile.operation}` : '',
+      profile.propertyType && profile.propertyType !== 'indefinido' ? `tipo ${profile.propertyType}` : '',
+      profile.city ? `cidade ${profile.city}` : '',
+      profile.region ? `regiao ${profile.region}` : '',
+      profile.payment && profile.payment !== 'indefinido' ? `pagamento ${profile.payment}` : '',
+      profile.timeline && profile.timeline !== 'indefinido' ? `prazo ${profile.timeline}` : '',
+    ].filter(Boolean);
+    return parts.length ? parts.join('; ') : 'nao identificado';
+  }
+
+  _buildChatLink(chat = {}) {
+    const params = new URLSearchParams();
+    if (chat.instance_id) params.set('instanceId', chat.instance_id);
+    if (chat.id) params.set('chatId', chat.id);
+    if (chat.chat_jid) params.set('chatJid', chat.chat_jid);
+    const query = params.toString();
+    return query ? `/whatsapp?${query}` : '/whatsapp';
   }
 
   _phoneFromChatJid(jid = '') {

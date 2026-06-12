@@ -24,6 +24,17 @@ let userTenantContextCache:
     }
   | undefined;
 
+export class WhatsAppApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string
+  ) {
+    super(message);
+    this.name = 'WhatsAppApiError';
+  }
+}
+
 function normalizeWhatsAppApiUrl(url: string): string {
   const clean = (url || '').trim().replace(/\/$/, '');
   if (!clean) return DEFAULT_WHATSAPP_API_URL;
@@ -107,7 +118,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: res.statusText }));
+    const error = await res.json().catch(() => ({ error: res.statusText, code: undefined }));
     if (res.status === 401) {
       console.warn('[WhatsApp API] Falha 401 apos renovar a sessao.');
     }
@@ -115,7 +126,11 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       sessionStorage.removeItem('impersonated_org_id');
       tenantIdCache = undefined;
     }
-    throw new Error(error.error || `API Error: ${res.status}`);
+
+    const message = error.code === 'TENANT_REQUIRED'
+      ? 'Selecione uma organização antes de acessar o WhatsApp.'
+      : error.error || `API Error: ${res.status}`;
+    throw new WhatsAppApiError(message, res.status, error.code);
   }
 
   return res.json();

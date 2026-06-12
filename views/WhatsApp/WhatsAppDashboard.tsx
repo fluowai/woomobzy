@@ -208,6 +208,9 @@ const WhatsAppDashboard: React.FC = () => {
         setWebSocketEnabled(false);
       } else {
         logger.error('Failed to load instances:', err);
+        if (err?.status === 403) {
+          toast.error(err.message || 'Sua conta não possui uma organização válida para o WhatsApp.');
+        }
       }
     } finally {
       setLoading(false);

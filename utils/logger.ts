@@ -31,9 +31,12 @@ const maskData = (data: any): any => {
   if (typeof data !== 'object' || data === null) return data;
 
   if (data instanceof Error) {
+    const apiError = data as Error & { status?: number; code?: string };
     return {
       name: data.name,
       message: data.message,
+      status: apiError.status,
+      code: apiError.code,
       stack: isDebugMode() ? data.stack : undefined,
     };
   }

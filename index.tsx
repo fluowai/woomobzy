@@ -25,6 +25,13 @@ if (isPublicSiteHost && 'serviceWorker' in navigator) {
     .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
     .catch((error) => logger.warn('Falha ao remover service worker do site público:', error));
 } else {
+  let reloadingForServiceWorkerUpdate = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloadingForServiceWorkerUpdate) return;
+    reloadingForServiceWorkerUpdate = true;
+    window.location.reload();
+  });
+
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {

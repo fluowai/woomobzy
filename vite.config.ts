@@ -25,6 +25,12 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        '/whatsapp-api': {
+          target: 'http://127.0.0.1:3002',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/whatsapp-api/, '/api/whatsapp'),
+        },
       },
     },
     plugins: [

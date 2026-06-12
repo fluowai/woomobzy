@@ -13,9 +13,10 @@ services:
       - "80:80"
       - "443:443"
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic:/traefik/dynamic:ro
-      - ./traefik/acme.json:/traefik/acme.json
+      - traefik_acme:/traefik
     networks:
       - imobzy
 
@@ -24,9 +25,6 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        VITE_API_URL: same-origin
-        VITE_WHATSAPP_API_URL: /api/whatsapp
-        VITE_WHATSAPP_WS_URL: /api/whatsapp/ws
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
         VITE_PANEL_URL: ${APP_URL:-https://app.imobfluow.com.br}
@@ -39,6 +37,8 @@ services:
       VITE_PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://imobfluow.com.br}
       VITE_PANEL_URL: ${APP_URL:-https://app.imobfluow.com.br}
       VITE_PLATFORM_IP: ${PLATFORM_PUBLIC_IP:-207.58.153.219}
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
     expose:
       - "80"
     healthcheck:
@@ -61,11 +61,10 @@ services:
       NODE_ENV: production
       PORT: 3002
       TRAEFIK_DYNAMIC_DIR: /traefik/dynamic
-      PLATFORM_PUBLIC_IP: ${PLATFORM_PUBLIC_IP:-207.58.153.219}
-      VITE_PLATFORM_IP: ${PLATFORM_PUBLIC_IP:-207.58.153.219}
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100
       AGRO_INTEL_URL: http://agro-intelligence:8000
+      NODE_URL: http://api:3002
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}
       CORS_ORIGINS: ${CORS_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}
     volumes:
@@ -151,6 +150,7 @@ services:
 
 volumes:
   whatsapp_sessions:
+  traefik_acme:
 
 networks:
   imobzy:

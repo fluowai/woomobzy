@@ -22,6 +22,7 @@ import {
   Building2,
   Key,
   LayoutTemplate,
+  FileQuestion,
   ChevronRight,
   Headset,
   Bot,
@@ -94,6 +95,7 @@ const UrbanLayout: React.FC = () => {
     { icon: Settings, label: 'Configurar Site', path: '/urban/site-setup' },
     { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
     { icon: LayoutTemplate, label: 'Landing Pages', path: '/urban/landing-pages' },
+    { icon: FileQuestion, label: 'Quiz', path: '/urban/quiz' },
     { icon: PieChart, label: 'Relatórios Gerenciais', path: '/urban/reports' },
   ];
 

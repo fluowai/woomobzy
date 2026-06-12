@@ -26,6 +26,7 @@ const SYSTEM_ROUTES = [
   '/vendas',
   '/consultoria',
   '/consultoria/qualificacao',
+  '/quiz/',
   '/chat',
   '/crm',
   '/reports',
@@ -116,6 +117,13 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
         if (!isSystemDomain) {
           log(`[Router] Custom domain detected: ${hostname}`);
+
+          if (currentPath.startsWith('/quiz/')) {
+            log('[Router] Public quiz route detected');
+            setIsPublicSite(false);
+            setLoading(false);
+            return;
+          }
 
           const normalizedHostname = hostname.toLowerCase();
           if (OKA_PUBLIC_DOMAINS.has(normalizedHostname) || OKA_PUBLIC_DOMAINS.has(currentHost)) {

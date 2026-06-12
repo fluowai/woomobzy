@@ -57,6 +57,8 @@ const ClientsManager = lazy(() => import('./views/CRM/ClientsManager'));
 const KanbanBoard = lazy(() => import('./views/CRM/KanbanBoard'));
 const WaitlistLeads = lazy(() => import('./views/admin/WaitlistLeads'));
 const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
+const QuizCampaigns = lazy(() => import('./views/QuizCampaigns'));
+const PublicQuiz = lazy(() => import('./views/PublicQuiz'));
 
 // Rural-Specific
 const CadastroTecnico = lazy(() => import('./views/rural/CadastroTecnico'));
@@ -268,6 +270,7 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
       '/vendas',
       '/consultoria',
       '/consultoria/qualificacao',
+      '/quiz/',
       '/ajuda/',
       '/lp/',
       '/site/',
@@ -432,6 +435,7 @@ const AppContent: React.FC = () => {
           <Route path="/ajuda/dns" element={<DnsHelp />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />
+          <Route path="/quiz/:slug" element={<PublicQuiz />} />
           <Route path="/login" element={<Login />} />
           <Route
             path="/embreve"
@@ -503,6 +507,7 @@ const AppContent: React.FC = () => {
             />
             <Route path="portal-comprador" element={<PortalCompradorRural />} />
             <Route path="landing-pages" element={<LandingPageManager />} />
+            <Route path="quiz" element={<QuizCampaigns />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />
@@ -565,6 +570,7 @@ const AppContent: React.FC = () => {
             />
             <Route path="portal-locatario" element={<PortalLocatario />} />
             <Route path="landing-pages" element={<LandingPageManager />} />
+            <Route path="quiz" element={<QuizCampaigns />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />

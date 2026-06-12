@@ -10,7 +10,9 @@ import {
   Pause,
   Play,
   Plus,
+  UploadCloud,
   Users,
+  Wand2,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,6 +50,9 @@ const QuizCampaigns: React.FC = () => {
   const [selected, setSelected] = useState<QuizCampaign | null>(null);
   const [submissions, setSubmissions] = useState<QuizSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generatedCampaign, setGeneratedCampaign] = useState<Omit<QuizCampaign, 'id' | 'created_at' | 'quiz_submissions'> | null>(null);
 
   const loadCampaigns = async () => {
     try {
@@ -74,7 +79,15 @@ const QuizCampaigns: React.FC = () => {
     try {
       setSaving(true);
       const slug = slugify(form.title);
-      await quizService.createCampaign({
+      const payload = generatedCampaign ? {
+        ...generatedCampaign,
+        title: form.title,
+        slug: slugify(generatedCampaign.slug || form.title),
+        property_label: form.propertyLabel,
+        status: 'active' as const,
+        whatsapp_number: form.whatsapp,
+        qualification_threshold: form.threshold,
+      } : {
         title: form.title,
         slug,
         property_label: form.propertyLabel,
@@ -93,15 +106,49 @@ const QuizCampaigns: React.FC = () => {
           background: '#faf8f5',
           logo: '/clients/oka/logo.jpeg',
         },
-      });
+      };
+      await quizService.createCampaign(payload);
       toast.success('Campanha criada e publicada.');
       setShowCreate(false);
       setForm(initialForm);
+      setPdfFile(null);
+      setGeneratedCampaign(null);
       await loadCampaigns();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Não foi possível criar a campanha.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const generateCampaignFromPdf = async () => {
+    if (!pdfFile) {
+      toast.error('Selecione um PDF com o ICP/persona antes de gerar.');
+      return;
+    }
+
+    try {
+      setGenerating(true);
+      const campaign = await quizService.generateFromPdf(pdfFile, {
+        title: form.title,
+        property_label: form.propertyLabel,
+        whatsapp_number: form.whatsapp,
+        city: form.city,
+        rent_range: `R$ ${form.minRent} a R$ ${form.maxRent}`,
+      });
+      setGeneratedCampaign(campaign);
+      setForm({
+        ...form,
+        title: campaign.title,
+        propertyLabel: campaign.property_label,
+        whatsapp: campaign.whatsapp_number,
+        threshold: campaign.qualification_threshold,
+      });
+      toast.success(`IA criou ${campaign.questions.length} perguntas de qualificação.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível gerar pelo PDF.');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -220,9 +267,38 @@ const QuizCampaigns: React.FC = () => {
             <div className="flex items-start justify-between border-b border-slate-200 p-6">
               <div>
                 <h2 className="text-2xl font-black text-slate-950">Nova campanha de quiz</h2>
-                <p className="mt-1 text-sm text-slate-500">As perguntas ACP serão adaptadas ao imóvel informado.</p>
+                <p className="mt-1 text-sm text-slate-500">Suba o PDF do ICP/persona para a IA montar as perguntas, ou preencha manualmente.</p>
               </div>
               <button type="button" onClick={() => setShowCreate(false)} className="p-2 text-slate-400 hover:text-slate-900"><X size={22} /></button>
+            </div>
+            <div className="border-b border-slate-200 bg-orange-50/50 p-6">
+              <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+                <label className="space-y-2 text-sm font-black text-slate-700">
+                  <span className="inline-flex items-center gap-2"><UploadCloud size={17} className="text-orange-600" /> PDF do ICP/persona</span>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(event) => {
+                      setPdfFile(event.target.files?.[0] || null);
+                      setGeneratedCampaign(null);
+                    }}
+                    className="block w-full border border-orange-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 file:mr-4 file:border-0 file:bg-orange-600 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={generating || !pdfFile}
+                  onClick={generateCampaignFromPdf}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {generating ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />} Gerar pelo PDF
+                </button>
+              </div>
+              {generatedCampaign && (
+                <div className="mt-4 border border-emerald-200 bg-white p-4 text-sm font-semibold text-emerald-800">
+                  Campanha gerada com {generatedCampaign.questions.length} perguntas. Confira os dados abaixo e publique quando estiver pronto.
+                </div>
+              )}
             </div>
             <div className="grid gap-5 p-6 md:grid-cols-2">
               <Field label="Nome da campanha" value={form.title} onChange={(value) => setForm({ ...form, title: value })} />

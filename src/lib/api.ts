@@ -49,7 +49,8 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   }
 
   const method = (options.method || 'GET').toUpperCase();
-  if (!headers.has('Content-Type') && (options.body || method !== 'GET')) {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  if (!isFormData && !headers.has('Content-Type') && (options.body || method !== 'GET')) {
     headers.set('Content-Type', 'application/json');
   }
 

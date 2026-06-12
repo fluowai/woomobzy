@@ -175,6 +175,20 @@ export const quizService = {
     return response.campaign as QuizCampaign;
   },
 
+  async generateFromPdf(file: File, defaults: Record<string, string | number>) {
+    const formData = new FormData();
+    formData.append('file', file);
+    Object.entries(defaults).forEach(([key, value]) => {
+      formData.append(key, String(value ?? ''));
+    });
+
+    const response = await callApi('/api/quiz/campaigns/generate-from-pdf', {
+      method: 'POST',
+      body: formData,
+    });
+    return response.campaign as Omit<QuizCampaign, 'id' | 'created_at' | 'quiz_submissions'>;
+  },
+
   async updateCampaign(id: string, payload: Partial<QuizCampaign>) {
     const response = await callApi(`/api/quiz/campaigns/${id}`, {
       method: 'PATCH',

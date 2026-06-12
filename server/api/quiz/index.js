@@ -1,11 +1,22 @@
 import express from 'express';
+import axios from 'axios';
 import { rateLimit } from 'express-rate-limit';
+import multer from 'multer';
+import { PDFParse } from 'pdf-parse';
 import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 
 const router = express.Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') return cb(null, true);
+    cb(new Error('Envie um arquivo PDF com o ICP/persona da campanha.'));
+  },
+});
 
 const publicQuizLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -112,6 +123,135 @@ function budgetFromAnswers(answers) {
   return ranges[answers.budget] || null;
 }
 
+async function getOrgAIConfig(orgId) {
+  const supabase = getSupabaseServer();
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('integrations')
+    .eq('organization_id', orgId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data.integrations || {};
+}
+
+async function extractPdfText(file) {
+  const parser = new PDFParse({ data: file.buffer });
+  try {
+    const result = await parser.getText();
+    return String(result?.text || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 26000);
+  } finally {
+    await parser.destroy().catch(() => {});
+  }
+}
+
+function extractJsonObject(text) {
+  const raw = String(text || '').trim();
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced?.[1] || raw;
+  const start = candidate.indexOf('{');
+  const end = candidate.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error('A IA nao retornou um JSON valido.');
+  }
+  return JSON.parse(candidate.slice(start, end + 1));
+}
+
+async function generateQuizWithGroq({ orgId, pdfText, defaults }) {
+  const config = await getOrgAIConfig(orgId);
+  const groqKey = (config?.groq?.apiKey || process.env.GROQ_API_KEY || '').trim();
+  if (!groqKey) {
+    throw new Error('Groq nao configurado. Configure GROQ_API_KEY ou a chave Groq da imobiliaria.');
+  }
+
+  const prompt = `
+Voce e especialista em qualificacao de leads imobiliarios da OKA Imoveis.
+Crie uma campanha de quiz para filtrar leads de um imovel especifico com base no ICP/persona abaixo.
+
+Regras:
+- Responda somente JSON valido.
+- Nao invente termos genericos como conservador/moderado/agressivo.
+- As perguntas devem qualificar aderencia real: cidade, tipo de imovel, quartos, faixa de valor, prazo, renda/cadastro, objetivo e urgencia.
+- Leads fora do perfil devem ter opcoes com disqualify=true e reason claro.
+- Use de 6 a 9 perguntas, todas type="single".
+- Cada pergunta precisa de 2 a 5 opcoes.
+- A soma relativa das melhores respostas deve permitir score 0-100 no backend.
+- O texto deve manter identidade OKA: consultivo, direto, alto padrao sem exagero.
+
+Defaults informados pela equipe:
+${JSON.stringify(defaults, null, 2)}
+
+Documento ICP/persona:
+${pdfText}
+
+Formato exato:
+{
+  "title": "Campanha ...",
+  "slug": "campanha-imovel",
+  "property_label": "Nome do imovel/oferta",
+  "whatsapp_number": "5544999999999",
+  "qualification_threshold": 70,
+  "intro_title": "Titulo curto",
+  "intro_copy": "Texto de ate 500 caracteres",
+  "success_message": "Mensagem para lead qualificado",
+  "disqualification_message": "Mensagem para lead fora do perfil",
+  "questions": [
+    {
+      "id": "cidade",
+      "label": "Pergunta",
+      "type": "single",
+      "required": true,
+      "options": [
+        { "value": "sim", "label": "Resposta", "score": 20 },
+        { "value": "nao", "label": "Resposta", "score": 0, "disqualify": true, "reason": "Motivo" }
+      ]
+    }
+  ],
+  "branding": {
+    "primary": "#f04b12",
+    "charcoal": "#242424",
+    "muted": "#6d7178",
+    "background": "#faf8f5",
+    "logo": "/clients/oka/logo.jpeg"
+  }
+}`;
+
+  const response = await axios.post(
+    'https://api.groq.com/openai/v1/chat/completions',
+    {
+      model: config?.groq?.model || process.env.GROQ_QUIZ_MODEL || 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: 'Voce gera JSON estruturado para campanhas de quiz imobiliario.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.25,
+      response_format: { type: 'json_object' },
+    },
+    { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
+  );
+
+  const text = response.data.choices?.[0]?.message?.content || '';
+  const generated = extractJsonObject(text);
+  return campaignSchema.parse({
+    ...generated,
+    slug: normalizeSlug(generated.slug || generated.title),
+    status: 'active',
+    whatsapp_number: String(generated.whatsapp_number || defaults.whatsapp_number || ''),
+    property_label: generated.property_label || defaults.property_label || generated.title,
+    branding: {
+      primary: '#f04b12',
+      charcoal: '#242424',
+      muted: '#6d7178',
+      background: '#faf8f5',
+      logo: '/clients/oka/logo.jpeg',
+      ...(generated.branding || {}),
+    },
+  });
+}
+
 router.get('/campaigns', verifyAuth, requireTenant, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
@@ -202,7 +342,33 @@ router.get('/campaigns/:id/submissions', verifyAuth, requireTenant, async (req, 
   }
 });
 
-router.get('/public/:slug', publicQuizLimiter, async (req, res) => {
+router.post('/campaigns/generate-from-pdf', verifyAuth, requireTenant, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Envie um PDF com o ICP/persona da campanha.' });
+    }
+
+    const pdfText = await extractPdfText(req.file);
+    if (pdfText.length < 300) {
+      return res.status(400).json({ error: 'Nao foi possivel extrair texto suficiente do PDF.' });
+    }
+
+    const defaults = {
+      title: req.body.title || '',
+      property_label: req.body.property_label || '',
+      whatsapp_number: req.body.whatsapp_number || '',
+      city: req.body.city || '',
+      rent_range: req.body.rent_range || '',
+    };
+    const campaign = await generateQuizWithGroq({ orgId: req.orgId, pdfText, defaults });
+    res.json({ success: true, campaign });
+  } catch (error) {
+    console.error('[Quiz] Erro ao gerar campanha por PDF:', error.response?.data || error.message);
+    res.status(500).json({ error: error.message || 'Nao foi possivel gerar a campanha pelo PDF.' });
+  }
+});
+
+router.get('/public/:slug', async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     const { data, error } = await supabase

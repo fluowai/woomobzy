@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { normalizeDomain } from './domainService.js';
+import { normalizeDomain, syncPlatformTraefikServices } from './domainService.js';
 
 // --- Middlewares & Services ---
 import { getSupabaseServer } from './lib/supabase-server.js';
@@ -312,6 +312,15 @@ const PORT = process.env.PORT || 3002;
 
 const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`ImobFluow Server active on port ${PORT}`);
+
+  try {
+    const traefikSync = await syncPlatformTraefikServices();
+    if (!traefikSync.skipped) {
+      console.log(`[Traefik] Platform services synchronized: ${traefikSync.configPath}`);
+    }
+  } catch (error) {
+    console.error('[Traefik] Failed to synchronize platform services:', error.message);
+  }
 });
 
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).

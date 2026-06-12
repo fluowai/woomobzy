@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ghcr.io/fluowai/woomobzy-frontend:latest
+    image: ghcr.io/fluowai/woomobzy-frontend:987fe852eaed60e8e2c8497b7941083ebcf11e8f
     environment:
       VITE_API_URL: "same-origin"
       VITE_WHATSAPP_API_URL: "/api/whatsapp"

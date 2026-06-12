@@ -30,14 +30,19 @@ export const verifyAuth = async (req, res, next) => {
     );
 
     if (!user) {
+      const authFailure = describeAuthFailure(authError, token);
       console.warn('[Auth] Token rejeitado pelo Supabase', {
         code: authError?.code || null,
         status: authError?.status || null,
         message: authError?.message || 'motivo nao informado',
+        ...authFailure,
       });
       return res.status(401).json({
         error: 'Sessão inválida ou expirada',
         code: 'AUTH_SESSION_INVALID',
+        auth_failure: authFailure.reason,
+        expected_project: authFailure.expectedProject,
+        token_issuer: authFailure.tokenIssuer,
       });
     }
 
@@ -99,6 +104,50 @@ export const verifyAuth = async (req, res, next) => {
     res.status(500).json({ error: 'Erro interno de segurança' });
   }
 };
+
+function describeAuthFailure(authError, token) {
+  const message = String(authError?.message || '').toLowerCase();
+  let reason = 'TOKEN_REJECTED';
+
+  if (message.includes('api key') || message.includes('apikey')) {
+    reason = 'INVALID_SUPABASE_ANON_KEY';
+  } else if (message.includes('expired')) {
+    reason = 'TOKEN_EXPIRED';
+  } else if (message.includes('signature')) {
+    reason = 'TOKEN_SIGNATURE_INVALID';
+  } else if (message.includes('malformed') || message.includes('segments')) {
+    reason = 'TOKEN_MALFORMED';
+  }
+
+  const expectedProject = getProjectRef(process.env.VITE_SUPABASE_URL);
+  const payload = decodeJwtPayload(token);
+  const tokenIssuer = payload?.iss || null;
+
+  if (expectedProject && tokenIssuer && tokenIssuer !== expectedProject) {
+    reason = 'SUPABASE_PROJECT_MISMATCH';
+  }
+
+  return { reason, expectedProject, tokenIssuer };
+}
+
+function getProjectRef(url) {
+  try {
+    return new URL(url).hostname.split('.')[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+function decodeJwtPayload(token) {
+  try {
+    const payload = token.split('.')[1];
+    return payload
+      ? JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'))
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
   const {

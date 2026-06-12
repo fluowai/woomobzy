@@ -136,15 +136,6 @@ Texto do documento:
     }
 
     result = ExtractResponse(**result_dict)
-        document_type=doc_type,
-        classification_confidence=class_conf,
-        raw_text=ocr_text[:10000],
-        ocr_confidence=ocr_conf,
-        extracted_data=extracted,
-        extraction_confidence=extraction_conf,
-        alternatives=alternatives,
-        processing_time_ms=elapsed_ms,
-    )
 
     try:
         requests.post(WEBHOOK_URL, json={

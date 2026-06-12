@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ghcr.io/fluowai/woomobzy-frontend:987fe852eaed60e8e2c8497b7941083ebcf11e8f
+    image: ghcr.io/fluowai/woomobzy-frontend:latest
     environment:
       VITE_API_URL: "same-origin"
       VITE_WHATSAPP_API_URL: "/api/whatsapp"
@@ -32,7 +32,7 @@ services:
         - "traefik.http.services.imobfluow_frontend.loadbalancer.server.port=80"
 
   api:
-    image: ghcr.io/fluowai/woomobzy-api:5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7
+    image: ghcr.io/fluowai/woomobzy-api:latest
     environment:
       NODE_ENV: production
       PORT: 3002

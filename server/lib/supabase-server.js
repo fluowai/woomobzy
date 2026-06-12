@@ -14,6 +14,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k';
+
 let _client = null;
 let _authClient = null;
 
@@ -59,7 +62,7 @@ export function getSupabaseAuthServer() {
   if (_authClient) return _authClient;
 
   const url = getSupabaseUrl();
-  const key = (process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  const key = SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     throw new Error(

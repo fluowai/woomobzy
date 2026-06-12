@@ -4,10 +4,10 @@ http:
       loadBalancer:
         passHostHeader: true
         servers:
-          - url: "http://frontend:80"
+          - url: "http://imobfluow_frontend:80"
 
     imobzy_api:
       loadBalancer:
         passHostHeader: true
         servers:
-          - url: "http://api:3002"
+          - url: "http://imobfluow_api:3002"

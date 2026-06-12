@@ -1,4 +1,5 @@
 import { callApi, getApiUrl } from '../src/lib/api';
+import { supabase } from './supabase';
 
 export type QuizOption = {
   value: string;
@@ -163,8 +164,18 @@ export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
 
 export const quizService = {
   async listCampaigns(): Promise<QuizCampaign[]> {
-    const response = await callApi('/api/quiz/campaigns');
-    return response.campaigns || [];
+    try {
+      const response = await callApi('/api/quiz/campaigns');
+      return response.campaigns || [];
+    } catch (apiError) {
+      const { data, error } = await supabase
+        .from('quiz_campaigns')
+        .select('*, quiz_submissions(count)')
+        .neq('status', 'archived')
+        .order('created_at', { ascending: false });
+      if (error) throw apiError;
+      return (data || []) as QuizCampaign[];
+    }
   },
 
   async createCampaign(payload: Omit<QuizCampaign, 'id' | 'created_at' | 'quiz_submissions'>) {
@@ -198,14 +209,29 @@ export const quizService = {
   },
 
   async listSubmissions(id: string): Promise<QuizSubmission[]> {
-    const response = await callApi(`/api/quiz/campaigns/${id}/submissions`);
-    return response.submissions || [];
+    try {
+      const response = await callApi(`/api/quiz/campaigns/${id}/submissions`);
+      return response.submissions || [];
+    } catch (apiError) {
+      const { data, error } = await supabase
+        .from('quiz_submissions')
+        .select('*')
+        .eq('campaign_id', id)
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw apiError;
+      return (data || []) as QuizSubmission[];
+    }
   },
 
   async getPublicCampaign(slug: string): Promise<QuizCampaign> {
     const response = await fetch(getApiUrl(`/api/quiz/public/${encodeURIComponent(slug)}`));
-    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'Quiz indisponível.');
-    return (await response.json()).campaign;
+    if (response.ok) return (await response.json()).campaign;
+
+    const apiData = await response.json().catch(() => ({}));
+    const { data, error } = await supabase.rpc('get_public_quiz', { p_slug: slug });
+    if (error || !data) throw new Error(error?.message || apiData.error || 'Quiz indisponível.');
+    return data as QuizCampaign;
   },
 
   async submitPublic(slug: string, payload: Record<string, unknown>) {
@@ -215,7 +241,17 @@ export const quizService = {
       body: JSON.stringify(payload),
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Não foi possível concluir o quiz.');
-    return data as { qualified: boolean; score: number; message: string; whatsapp_url?: string | null };
+    if (response.ok) return data as { qualified: boolean; score: number; message: string; whatsapp_url?: string | null };
+
+    const { data: fallback, error } = await supabase.rpc('submit_public_quiz', {
+      p_slug: slug,
+      p_name: payload.name,
+      p_email: payload.email || '',
+      p_phone: payload.phone,
+      p_answers: payload.answers || {},
+      p_utm: payload.utm || {},
+    });
+    if (error || !fallback) throw new Error(error?.message || data.error || 'Não foi possível concluir o quiz.');
+    return fallback as { qualified: boolean; score: number; message: string; whatsapp_url?: string | null };
   },
 };

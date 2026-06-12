@@ -60,7 +60,9 @@ function buildSameOriginWsUrl(path: string): string {
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   let session = await getApiSession();
-  const impersonatedOrgId = await getValidImpersonatedOrgId(session?.user?.id);
+  const impersonatedOrgId = USE_DIRECT_WHATSAPP_API
+    ? await getValidImpersonatedOrgId(session?.user?.id)
+    : getImpersonatedOrgId();
   const tenantId = USE_DIRECT_WHATSAPP_API
     ? impersonatedOrgId || await getTenantId(session?.user?.id)
     : null;

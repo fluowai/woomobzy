@@ -3,8 +3,6 @@ import { callApi } from '../../../src/lib/api';
 
 const DEFAULT_WHATSAPP_API_URL = '/api/whatsapp';
 const DEFAULT_WHATSAPP_WS_PATH = '/api/whatsapp/ws';
-const SAME_ORIGIN_WHATSAPP_GATEWAY = '/whatsapp-api';
-const SAME_ORIGIN_WHATSAPP_WS_GATEWAY = '/whatsapp-api/ws';
 
 const RAW_WHATSAPP_API_URL = getRuntimeEnv('VITE_WHATSAPP_API_URL', DEFAULT_WHATSAPP_API_URL);
 const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
@@ -40,7 +38,6 @@ function normalizeWhatsAppApiUrl(url: string): string {
   if (!clean) return DEFAULT_WHATSAPP_API_URL;
 
   if (!/^https?:\/\//i.test(clean)) {
-    if (clean === '/api/whatsapp') return SAME_ORIGIN_WHATSAPP_GATEWAY;
     return clean || '/api/whatsapp';
   }
 
@@ -55,9 +52,6 @@ function normalizeWhatsAppWsUrl(url: string): string {
   if (!clean) return buildSameOriginWsUrl(DEFAULT_WHATSAPP_WS_PATH);
 
   if (!/^wss?:\/\//i.test(clean)) {
-    if (clean === '/api/whatsapp/ws') {
-      return buildSameOriginWsUrl(SAME_ORIGIN_WHATSAPP_WS_GATEWAY);
-    }
     return buildSameOriginWsUrl(clean || DEFAULT_WHATSAPP_WS_PATH);
   }
 

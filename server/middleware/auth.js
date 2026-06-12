@@ -1,4 +1,7 @@
-import { getSupabaseServer } from '../lib/supabase-server.js';
+import {
+  getSupabaseAuthServer,
+  getSupabaseServer,
+} from '../lib/supabase-server.js';
 import jwt from 'jsonwebtoken';
 
 /**
@@ -19,7 +22,12 @@ export const verifyAuth = async (req, res, next) => {
 
   try {
     const supabase = getSupabaseServer();
-    const { user, impersonation, authError } = await resolveAuthenticatedUser(supabase, token);
+    const supabaseAuth = getSupabaseAuthServer();
+    const { user, impersonation, authError } = await resolveAuthenticatedUser(
+      supabaseAuth,
+      supabase,
+      token
+    );
 
     if (!user) {
       console.warn('[Auth] Token rejeitado pelo Supabase', {
@@ -92,17 +100,17 @@ export const verifyAuth = async (req, res, next) => {
   }
 };
 
-async function resolveAuthenticatedUser(supabase, token) {
+async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser(token);
+  } = await supabaseAuth.auth.getUser(token);
 
   if (!authError && user) {
     return { user, impersonation: null, authError: null };
   }
 
-  const impersonation = await verifyImpersonationToken(supabase, token);
+  const impersonation = await verifyImpersonationToken(supabaseAdmin, token);
   if (!impersonation) {
     return { user: null, impersonation: null, authError };
   }

@@ -48,7 +48,11 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../.env') });
 
 // ── Validação de Variáveis de Ambiente Obrigatórias ───────────────────────
-const REQUIRED_ENV_VARS = ['VITE_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+const REQUIRED_ENV_VARS = [
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+];
 const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
 
 console.log('\n--- WhatsApp Check ---');

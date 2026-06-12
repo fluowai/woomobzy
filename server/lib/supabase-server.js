@@ -15,6 +15,15 @@
 import { createClient } from '@supabase/supabase-js';
 
 let _client = null;
+let _authClient = null;
+
+function getSupabaseUrl() {
+  return (
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    ''
+  ).trim();
+}
 
 /**
  * Retorna o cliente Supabase (service role) singleton.
@@ -24,11 +33,7 @@ let _client = null;
 export function getSupabaseServer() {
   if (_client) return _client;
 
-  const url = (
-    process.env.VITE_SUPABASE_URL ||
-    process.env.SUPABASE_URL ||
-    ''
-  ).trim();
+  const url = getSupabaseUrl();
 
   const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
@@ -43,4 +48,31 @@ export function getSupabaseServer() {
 
   _client = createClient(url, key);
   return _client;
+}
+
+/**
+ * Cliente público usado exclusivamente para validar sessões de usuários.
+ * A autenticação não deve depender da service role, que pode ser rotacionada
+ * separadamente das sessões emitidas pelo Supabase Auth.
+ */
+export function getSupabaseAuthServer() {
+  if (_authClient) return _authClient;
+
+  const url = getSupabaseUrl();
+  const key = (process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+
+  if (!url || !key) {
+    throw new Error(
+      'Variáveis de autenticação obrigatórias não configuradas. ' +
+      'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.'
+    );
+  }
+
+  _authClient = createClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+  return _authClient;
 }

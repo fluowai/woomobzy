@@ -59,7 +59,7 @@ function buildSameOriginWsUrl(path: string): string {
 }
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
+  let session = await getApiSession();
   const impersonatedOrgId = await getValidImpersonatedOrgId(session?.user?.id);
   const tenantId = USE_DIRECT_WHATSAPP_API
     ? impersonatedOrgId || await getTenantId(session?.user?.id)
@@ -73,15 +73,21 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': session ? `Bearer ${session.access_token}` : '',
-        ...(impersonatedOrgId ? { 'x-impersonate-org-id': impersonatedOrgId } : {}),
-        ...options?.headers,
-      },
       ...options,
+      headers: buildApiHeaders(options?.headers, session?.access_token, impersonatedOrgId),
       body,
     });
+
+    if (res.status === 401 && session) {
+      session = await getApiSession(true);
+      if (session) {
+        res = await fetch(url, {
+          ...options,
+          headers: buildApiHeaders(options?.headers, session.access_token, impersonatedOrgId),
+          body,
+        });
+      }
+    }
   } catch (networkErr: any) {
     throw new Error(`WHATSAPP_UNAVAILABLE: Serviço não acessível em ${url} - ${networkErr.message}`);
   }
@@ -95,7 +101,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: res.statusText }));
     if (res.status === 401) {
-      console.warn('[WhatsApp API] Falha 401. Servidor Node.js pode estar com a Service Role Key incorreta.');
+      console.warn('[WhatsApp API] Falha 401 apos renovar a sessao.');
     }
     if (error.code === 'INVALID_TENANT' || error.code === 'INVALID_IMPERSONATED_ORG') {
       sessionStorage.removeItem('impersonated_org_id');
@@ -105,6 +111,36 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return res.json();
+}
+
+function buildApiHeaders(
+  customHeaders: HeadersInit | undefined,
+  accessToken: string | undefined,
+  impersonatedOrgId: string | null
+) {
+  const headers = new Headers(customHeaders);
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  if (impersonatedOrgId) headers.set('x-impersonate-org-id', impersonatedOrgId);
+  return headers;
+}
+
+async function getApiSession(forceRefresh = false) {
+  if (forceRefresh) {
+    const { data, error } = await supabase.auth.refreshSession();
+    return error ? null : data.session;
+  }
+
+  const { data } = await supabase.auth.getSession();
+  const session = data.session;
+  const expiresAtMs = (session?.expires_at || 0) * 1000;
+
+  if (session && expiresAtMs <= Date.now() + 30_000) {
+    const { data: refreshed, error } = await supabase.auth.refreshSession();
+    return error ? session : refreshed.session;
+  }
+
+  return session;
 }
 
 export async function getAuthorizedWhatsAppWsUrl(): Promise<string> {

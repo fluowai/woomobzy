@@ -19,10 +19,18 @@ export const verifyAuth = async (req, res, next) => {
 
   try {
     const supabase = getSupabaseServer();
-    const { user, impersonation } = await resolveAuthenticatedUser(supabase, token);
+    const { user, impersonation, authError } = await resolveAuthenticatedUser(supabase, token);
 
     if (!user) {
-      return res.status(401).json({ error: 'Sessão inválida ou expirada' });
+      console.warn('[Auth] Token rejeitado pelo Supabase', {
+        code: authError?.code || null,
+        status: authError?.status || null,
+        message: authError?.message || 'motivo nao informado',
+      });
+      return res.status(401).json({
+        error: 'Sessão inválida ou expirada',
+        code: 'AUTH_SESSION_INVALID',
+      });
     }
 
     // Buscar perfil real no banco (Fonte de Verdade para Role e Org)
@@ -91,12 +99,12 @@ async function resolveAuthenticatedUser(supabase, token) {
   } = await supabase.auth.getUser(token);
 
   if (!authError && user) {
-    return { user, impersonation: null };
+    return { user, impersonation: null, authError: null };
   }
 
   const impersonation = await verifyImpersonationToken(supabase, token);
   if (!impersonation) {
-    return { user: null, impersonation: null };
+    return { user: null, impersonation: null, authError };
   }
 
   return {
@@ -107,6 +115,7 @@ async function resolveAuthenticatedUser(supabase, token) {
       user_metadata: impersonation.user_metadata || {},
     },
     impersonation,
+    authError: null,
   };
 }
 

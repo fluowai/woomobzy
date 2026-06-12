@@ -46,21 +46,22 @@ export const verifyAuth = async (req, res, next) => {
       });
     }
 
-    // Buscar perfil real no banco (Fonte de Verdade para Role e Org)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, organization_id')
-      .eq('id', user.id)
-      .single();
+    // Buscar perfil real no banco (Fonte de Verdade para Role e Org).
+    // Em algumas bases antigas houve usuarios recriados no Supabase Auth,
+    // mantendo o perfil pelo e-mail antigo. Nesses casos, resolvemos por e-mail.
+    const profile = await resolveProfileForUser(supabase, user);
 
-    if (profileError || !profile) {
+    if (!profile) {
       return res
         .status(403)
-        .json({ error: 'Perfil de usuário não encontrado' });
+        .json({
+          error: 'Perfil de usuário não encontrado',
+          code: 'PROFILE_NOT_FOUND',
+        });
     }
 
     // Injetar dados no request
-    req.user = user;
+    req.user = { ...user, id: profile.id || user.id };
     req.userRole = profile.role;
     req.realOrgId = profile.organization_id;
     req.impersonation = impersonation;
@@ -174,6 +175,78 @@ async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
     impersonation,
     authError: null,
   };
+}
+
+async function resolveProfileForUser(supabase, user) {
+  const { data: profileById, error: profileByIdError } = await supabase
+    .from('profiles')
+    .select('id, email, role, organization_id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!profileByIdError && profileById) {
+    return profileById;
+  }
+
+  const email = String(user.email || '').toLowerCase().trim();
+  if (!email) return null;
+
+  const { data: profileByEmail, error: profileByEmailError } = await supabase
+    .from('profiles')
+    .select('id, email, role, organization_id')
+    .ilike('email', email)
+    .maybeSingle();
+
+  if (!profileByEmailError && profileByEmail) {
+    console.warn('[Auth] Perfil resolvido por e-mail apos mismatch de id', {
+      email,
+      authUserId: user.id,
+      profileId: profileByEmail.id,
+    });
+    return profileByEmail;
+  }
+
+  const { data: organization, error: organizationError } = await supabase
+    .from('organizations')
+    .select('id, name, owner_name, owner_email')
+    .ilike('owner_email', email)
+    .maybeSingle();
+
+  if (organizationError || !organization) {
+    return null;
+  }
+
+  const { data: createdProfile, error: createProfileError } = await supabase
+    .from('profiles')
+    .upsert(
+      {
+        id: user.id,
+        email,
+        name:
+          user.user_metadata?.name ||
+          user.user_metadata?.full_name ||
+          organization.owner_name ||
+          organization.name ||
+          email,
+        role: 'admin',
+        organization_id: organization.id,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    )
+    .select('id, email, role, organization_id')
+    .single();
+
+  if (createProfileError) {
+    console.error('[Auth] Falha ao criar perfil por owner_email:', createProfileError.message);
+    return null;
+  }
+
+  console.warn('[Auth] Perfil criado automaticamente para owner_email', {
+    email,
+    organizationId: organization.id,
+  });
+  return createdProfile;
 }
 
 async function verifyImpersonationToken(supabase, token) {

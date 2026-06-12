@@ -60,12 +60,12 @@ services:
       WHATSAPP_INTERNAL_TOKEN: "${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}"
       WHATSAPP_AI_AUTOMATION: "true"
       MEDIA_STORAGE_PROVIDER: "minio"
-      MINIO_ENDPOINT: "${MINIO_ENDPOINT:?set MINIO_ENDPOINT}"
-      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:?set MINIO_PUBLIC_URL}"
-      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}"
+      MINIO_ENDPOINT: "${MINIO_ENDPOINT:-https://n.woopanel.com.br}"
+      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:-https://n.woopanel.com.br}"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:-imobfluow}"
       MINIO_SECRET_KEY: "${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}"
       MINIO_REGION: "${MINIO_REGION:-us-east-1}"
-      MINIO_WHATSAPP_BUCKET: "${MINIO_WHATSAPP_BUCKET:-whatsapp-media}"
+      MINIO_WHATSAPP_BUCKET: "${MINIO_WHATSAPP_BUCKET:-imobfluow}"
       TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
     volumes:
       - imobzy_traefik_dynamic:/app/traefik/dynamic
@@ -113,12 +113,12 @@ services:
       WHATSAPP_INTERNAL_TOKEN: "${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}"
       WHATSAPP_AI_AUTOMATION: "true"
       MEDIA_STORAGE_PROVIDER: "minio"
-      MINIO_ENDPOINT: "${MINIO_ENDPOINT:?set MINIO_ENDPOINT}"
-      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:?set MINIO_PUBLIC_URL}"
-      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}"
+      MINIO_ENDPOINT: "${MINIO_ENDPOINT:-https://n.woopanel.com.br}"
+      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:-https://n.woopanel.com.br}"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:-imobfluow}"
       MINIO_SECRET_KEY: "${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}"
       MINIO_REGION: "${MINIO_REGION:-us-east-1}"
-      MINIO_WHATSAPP_BUCKET: "${MINIO_WHATSAPP_BUCKET:-whatsapp-media}"
+      MINIO_WHATSAPP_BUCKET: "${MINIO_WHATSAPP_BUCKET:-imobfluow}"
     volumes:
       - whatsapp_sessions:/app/.sessions
     networks:

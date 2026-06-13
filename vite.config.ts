@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: null,
         includeAssets: ['logo-imobfluow.png', 'logo-imobfluow.svg', 'icons/imobfluow-*.png'],
         manifest: {
           id: '/',

@@ -1,7 +1,6 @@
 import { logger } from '@/utils/logger';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import './index.css';
 
@@ -16,31 +15,15 @@ logger.info('Index.tsx: Creating root...');
 const root = ReactDOM.createRoot(rootElement);
 
 logger.info('Index.tsx: Rendering App...');
-const publicSiteHosts = new Set(['okaimoveis.com.br', 'www.okaimoveis.com.br']);
-const isPublicSiteHost = typeof window !== 'undefined' && publicSiteHosts.has(window.location.hostname);
-
-if (isPublicSiteHost && 'serviceWorker' in navigator) {
+if ('serviceWorker' in navigator) {
   navigator.serviceWorker
     .getRegistrations()
-    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
-    .catch((error) => logger.warn('Falha ao remover service worker do site público:', error));
-} else {
-  let reloadingForServiceWorkerUpdate = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloadingForServiceWorkerUpdate) return;
-    reloadingForServiceWorkerUpdate = true;
-    window.location.reload();
-  });
-
-  const updateSW = registerSW({
-    immediate: true,
-    onNeedRefresh() {
-      updateSW(true);
-    },
-    onOfflineReady() {
-      logger.info('PWA pronta para uso offline.');
-    },
-  });
+    .then(async (registrations) => {
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey)));
+    })
+    .catch((error) => logger.warn('Falha ao remover cache antigo do painel:', error));
 }
 
 root.render(

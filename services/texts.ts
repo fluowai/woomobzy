@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import { supabase } from './supabase';
+import { publicSupabase, supabase } from './supabase';
 
 // Removed duplicate client creation and unsafe process.env usage
 
@@ -15,7 +15,7 @@ import { supabase } from './supabase';
  */
 export const getAllTexts = async (category = null, section = null) => {
   try {
-    let query = supabase.from('site_texts').select('*');
+    let query = publicSupabase.from('site_texts').select('*');
 
     if (category) {
       query = query.eq('category', category);
@@ -25,7 +25,7 @@ export const getAllTexts = async (category = null, section = null) => {
       query = query.eq('section', section);
     }
 
-    const { data, error } = await query.order('section', { ascending: true });
+    const { data, error } = await query.order('key', { ascending: true });
 
     if (error) throw error;
 
@@ -54,7 +54,7 @@ export const getAllTexts = async (category = null, section = null) => {
  */
 export const getTextByKey = async (key) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await publicSupabase
       .from('site_texts')
       .select('*')
       .eq('key', key)

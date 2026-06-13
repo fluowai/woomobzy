@@ -84,3 +84,23 @@ jobs:
           curl --fail --show-error --silent \
             --request POST \
             "$PORTAINER_WEBHOOK_URL"
+
+      - name: Verify production API routes
+        run: |
+          for attempt in $(seq 1 12); do
+            system_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+              https://imobfluow.com.br/api/system-status)
+            properties_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+              "https://imobfluow.com.br/api/properties?page=1&limit=1")
+
+            if [ "$system_status" = "200" ] && [ "$properties_status" = "401" ]; then
+              echo "Production API is serving the current route set."
+              exit 0
+            fi
+
+            echo "Attempt $attempt/12: system-status=$system_status properties=$properties_status"
+            sleep 10
+          done
+
+          echo "Production is still routing to an outdated or incorrect API service."
+          exit 1

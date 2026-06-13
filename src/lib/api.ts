@@ -35,11 +35,9 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const token = session?.access_token;
-
   const headers = new Headers(options.headers || {});
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
+  if (session?.access_token) {
+    headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
   // Injetar header de impersonação se ativo
@@ -54,10 +52,21 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  const request = () => fetch(url, { ...options, headers });
+  let response = await request();
+
+  // The stored session can expire between getSession() and the API request.
+  if (response.status === 401 && session?.refresh_token) {
+    const {
+      data: { session: refreshedSession },
+      error: refreshError,
+    } = await supabase.auth.refreshSession();
+
+    if (!refreshError && refreshedSession?.access_token) {
+      headers.set('Authorization', `Bearer ${refreshedSession.access_token}`);
+      response = await request();
+    }
+  }
 
   if (!response.ok) {
     const contentType = response.headers.get('content-type') || '';
@@ -66,7 +75,7 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     }
 
     if (response.status === 401) {
-      console.warn('[API] Falha de autenticacao detectada (401). Verifique as chaves de ambiente no servidor.');
+      console.warn('[API] Falha de autenticacao detectada (401) apos renovar a sessao.');
       // Revertido o logout automatico para nao deslogar o usuario se o servidor estiver mal configurado
     }
 

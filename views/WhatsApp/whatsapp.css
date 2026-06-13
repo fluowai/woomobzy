@@ -828,6 +828,7 @@
 .wa-bubble-sent .wa-bubble-time { color: var(--color-wa-time-sent); }
 .wa-bubble-check { color: var(--color-wa-check-delivered); }
 .wa-bubble-check.read { color: var(--color-wa-check-read); }
+.wa-bubble-check.failed { color: #ef4444; }
 
 /* Media in bubbles */
 .wa-bubble-media { margin-bottom: 4px; }

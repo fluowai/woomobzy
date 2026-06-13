@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"io"
 	"net/http"
@@ -65,7 +66,7 @@ func main() {
 	mediaRepo := repository.NewMediaRepo(pool, log)
 
 	// Initialize WebSocket hub
-	hub := ws.NewHub(log)
+	hub := ws.NewHub(log, cfg.CORSOrigins)
 	go hub.Run()
 	log.Info("✅ WebSocket hub started")
 
@@ -80,6 +81,7 @@ func main() {
 
 	// Auto-reconnect existing sessions
 	go manager.ReconnectAll(ctx)
+	manager.StartMediaWorker()
 
 	// Initialize handlers
 	instanceHandler := handlers.NewInstanceHandler(manager, instanceRepo, log)
@@ -115,7 +117,8 @@ func main() {
 	})
 
 	// WebSocket endpoint
-	router.GET("/ws", func(c *gin.Context) {
+	internalAuth := requireInternalAuth(cfg.ServiceToken)
+	router.GET("/ws", internalAuth, func(c *gin.Context) {
 		hub.HandleWebSocket(c.Writer, c.Request)
 	})
 	router.POST("/ws", func(c *gin.Context) {
@@ -123,7 +126,7 @@ func main() {
 	})
 
 	// API routes
-	api := router.Group("/api")
+	api := router.Group("/api", internalAuth)
 	{
 		// Instance routes
 		instances := api.Group("/instances")
@@ -190,6 +193,21 @@ func main() {
 	}
 
 	log.Info("👋 Server exited")
+}
+
+func requireInternalAuth(expected string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		received := c.GetHeader("x-whatsapp-service-token")
+		if expected == "" || len(received) != len(expected) || subtle.ConstantTimeCompare([]byte(received), []byte(expected)) != 1 {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized internal request"})
+			return
+		}
+		if c.Request.URL.Path != "/health" && c.GetHeader("x-tenant-id") == "" && c.Request.URL.Path != "/ws" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "x-tenant-id is required"})
+			return
+		}
+		c.Next()
+	}
 }
 
 func proxyLegacyWsToken(c *gin.Context, nodeURL string) {

@@ -11,6 +11,8 @@ import {
   type Instance,
   type Chat,
   type Message,
+  type WhatsAppMediaStatusEvent,
+  type WhatsAppMessageReceiptEvent,
 } from './hooks/api';
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
@@ -181,11 +183,55 @@ const WhatsAppDashboard: React.FC = () => {
       toast.success(`Histórico importado: ${data.messages || 0} mensagens em ${data.chats || 0} conversas.`);
     });
 
+    const unsubMediaReady = on('media_ready', (data: WhatsAppMediaStatusEvent) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === data.message_id
+            ? {
+                ...message,
+                media_id: data.media_id || message.media_id,
+                media_status: 'ready',
+                media_url: data.url || message.media_url,
+                media_error: undefined,
+              }
+            : message
+        )
+      );
+    });
+
+    const unsubMediaFailed = on('media_failed', (data: WhatsAppMediaStatusEvent) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === data.message_id
+            ? {
+                ...message,
+                media_id: data.media_id || message.media_id,
+                media_status: 'failed',
+                media_error: data.error || message.media_error,
+              }
+            : message
+        )
+      );
+    });
+
+    const unsubReceipt = on('message_receipt', (data: WhatsAppMessageReceiptEvent) => {
+      if (!selectedInstance || data.instance_id !== selectedInstance.id) return;
+      const ids = new Set(data.message_ids || []);
+      setMessages((prev) =>
+        prev.map((message) =>
+          ids.has(message.message_id) ? { ...message, delivery_status: data.status } : message
+        )
+      );
+    });
+
     return () => {
       unsubMessage();
       unsubStatus();
       unsubQR();
       unsubHistoryImported();
+      unsubMediaReady();
+      unsubMediaFailed();
+      unsubReceipt();
     };
   }, [on, selectedChat, selectedInstance]);
 

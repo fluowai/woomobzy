@@ -3,7 +3,6 @@ package whatsapp
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -17,6 +16,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.mau.fi/whatsmeow"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types/events"
@@ -25,9 +26,11 @@ import (
 )
 
 // downloadAndUploadMedia downloads media from WhatsApp and uploads it to object storage.
-func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message) (mediaURL, mediaMimetype, mediaFilename string, err error) {
-	msg := evt.Message
+func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message) (mediaURL, mediaMimetype, mediaFilename, objectKey string, err error) {
+	return c.downloadAndUploadMediaMessage(ctx, evt.Message, evt.Info.ID)
+}
 
+func (c *Client) downloadAndUploadMediaMessage(ctx context.Context, msg *waE2E.Message, messageID string) (mediaURL, mediaMimetype, mediaFilename, objectKey string, err error) {
 	var (
 		downloadable whatsmeow.DownloadableMessage
 		mimeType     string
@@ -62,13 +65,13 @@ func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message
 		mimeType = sticker.GetMimetype()
 
 	default:
-		return "", "", "", fmt.Errorf("unsupported media type")
+		return "", "", "", "", fmt.Errorf("unsupported media type")
 	}
 
 	// Download media from WhatsApp servers
 	data, err := c.waClient.Download(ctx, downloadable)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to download media: %w", err)
+		return "", "", "", "", fmt.Errorf("failed to download media: %w", err)
 	}
 
 	sha := sha256Hex(data)
@@ -76,12 +79,12 @@ func (c *Client) downloadAndUploadMedia(ctx context.Context, evt *events.Message
 		fileName = sha + extensionFromMime(mimeType)
 	}
 
-	url, _, _, err := c.uploadToStorageWithDedup(ctx, "whatsapp/media", data, mimeType, "whatsapp", "whatsapp_message", evt.Info.ID)
+	url, objectKey, _, err := c.uploadToStorageWithDedup(ctx, "whatsapp/media", data, mimeType, "whatsapp", "whatsapp_message", messageID)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to upload to storage: %w", err)
+		return "", "", "", "", fmt.Errorf("failed to upload to storage: %w", err)
 	}
 
-	return url, mimeType, fileName, nil
+	return url, mimeType, fileName, objectKey, nil
 }
 
 func (c *Client) uploadToStorageWithDedup(ctx context.Context, folder string, data []byte, contentType string, source string, entityType string, entityID string) (string, string, string, error) {
@@ -217,73 +220,26 @@ func (c *Client) uploadToMinIO(ctx context.Context, path string, data []byte, co
 		contentType = "application/octet-stream"
 	}
 
-	endpoint := strings.TrimRight(c.minioEndpoint, "/")
-	region := c.minioRegion
-	if region == "" {
-		region = "us-east-1"
-	}
-
-	objectURL, err := url.Parse(fmt.Sprintf("%s/%s/%s", endpoint, url.PathEscape(c.storageBucket), encodeStoragePath(path)))
+	endpointURL, err := url.Parse(strings.TrimRight(c.minioEndpoint, "/"))
 	if err != nil {
 		return "", err
 	}
+	endpoint := endpointURL.Host
+	if endpoint == "" {
+		endpoint = strings.TrimPrefix(strings.TrimPrefix(strings.TrimRight(c.minioEndpoint, "/"), "https://"), "http://")
+	}
+	secure := endpointURL.Scheme == "https"
 
-	payloadHash := sha256Hex(data)
-	now := time.Now().UTC()
-	amzDate := now.Format("20060102T150405Z")
-	dateStamp := now.Format("20060102")
-	canonicalHeaders := fmt.Sprintf(
-		"content-type:%s\nhost:%s\nx-amz-content-sha256:%s\nx-amz-date:%s\n",
-		contentType,
-		objectURL.Host,
-		payloadHash,
-		amzDate,
-	)
-	signedHeaders := "content-type;host;x-amz-content-sha256;x-amz-date"
-	canonicalRequest := strings.Join([]string{
-		http.MethodPut,
-		objectURL.EscapedPath(),
-		"",
-		canonicalHeaders,
-		signedHeaders,
-		payloadHash,
-	}, "\n")
-
-	credentialScope := fmt.Sprintf("%s/%s/s3/aws4_request", dateStamp, region)
-	stringToSign := strings.Join([]string{
-		"AWS4-HMAC-SHA256",
-		amzDate,
-		credentialScope,
-		sha256Hex([]byte(canonicalRequest)),
-	}, "\n")
-	signature := hmacHex(signingKey(c.minioSecretKey, dateStamp, region), stringToSign)
-	authorization := fmt.Sprintf(
-		"AWS4-HMAC-SHA256 Credential=%s/%s, SignedHeaders=%s, Signature=%s",
-		c.minioAccessKey,
-		credentialScope,
-		signedHeaders,
-		signature,
-	)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, objectURL.String(), bytes.NewReader(data))
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(c.minioAccessKey, c.minioSecretKey, ""),
+		Secure: secure,
+		Region: c.minioRegion,
+	})
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Authorization", authorization)
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("x-amz-content-sha256", payloadHash)
-	req.Header.Set("x-amz-date", amzDate)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("minio upload failed (status %d): %s", resp.StatusCode, string(body))
+	if _, err := client.PutObject(ctx, c.storageBucket, path, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{ContentType: contentType}); err != nil {
+		return "", fmt.Errorf("minio upload failed: %w", err)
 	}
 
 	publicBase := c.minioPublicURL
@@ -494,23 +450,6 @@ func encodeStoragePath(value string) string {
 func sha256Hex(value []byte) string {
 	sum := sha256.Sum256(value)
 	return hex.EncodeToString(sum[:])
-}
-
-func hmacSHA256(key []byte, value string) []byte {
-	mac := hmac.New(sha256.New, key)
-	mac.Write([]byte(value))
-	return mac.Sum(nil)
-}
-
-func hmacHex(key []byte, value string) string {
-	return hex.EncodeToString(hmacSHA256(key, value))
-}
-
-func signingKey(secretKey string, dateStamp string, region string) []byte {
-	kDate := hmacSHA256([]byte("AWS4"+secretKey), dateStamp)
-	kRegion := hmacSHA256(kDate, region)
-	kService := hmacSHA256(kRegion, "s3")
-	return hmacSHA256(kService, "aws4_request")
 }
 
 func mediaTypeForMessage(msgType string) (whatsmeow.MediaType, error) {

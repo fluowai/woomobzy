@@ -43,6 +43,9 @@ services:
       PORT: 3002
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100
+      WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:-local-whatsapp-service-token}
+      WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:-local-whatsapp-internal-token}
+      WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:-local-whatsapp-ws-secret-change-me}
       AGRO_INTEL_URL: http://agro-intelligence:8000
       NODE_URL: http://api:3002
       ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
@@ -80,6 +83,8 @@ services:
       NODE_URL: http://api:3002
       WHATSMEOW_URL: http://whatsapp-service:3100
       WHATSAPP_API_URL: http://whatsapp-service:3100
+      WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:-local-whatsapp-service-token}
+      WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:-local-whatsapp-internal-token}
       PGSSLMODE: require
       CORS_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
       ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006

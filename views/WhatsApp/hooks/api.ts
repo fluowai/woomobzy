@@ -312,6 +312,7 @@ export interface Message {
   is_group: boolean;
   type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'sticker' | 'location' | 'contact' | 'unknown';
   content?: string;
+  delivery_status?: 'sent' | 'delivered' | 'read' | 'played' | 'failed';
   media_url?: string;
   media_id?: string;
   media_mimetype?: string;
@@ -397,6 +398,22 @@ export function isSupportedChat(chat: Pick<Chat, 'chat_jid' | 'is_group'>): bool
   if (chat.is_group) return jid.includes('@g.us');
   if (jid.includes('@lid')) return true;
   return jid.includes('@s.whatsapp.net') && Boolean(formatPhoneDisplay(jid));
+}
+
+export interface WhatsAppMediaStatusEvent {
+  message_id: string;
+  media_id?: string;
+  status: 'pending' | 'downloading' | 'processing' | 'ready' | 'failed' | 'expired';
+  url?: string;
+  error?: string;
+}
+
+export interface WhatsAppMessageReceiptEvent {
+  instance_id: string;
+  chat_jid: string;
+  message_ids: string[];
+  status: 'sent' | 'delivered' | 'read' | 'played' | 'failed';
+  timestamp: string;
 }
 
 // ---- Instance API ----

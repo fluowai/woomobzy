@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,14 +20,6 @@ const (
 	maxMessageSize = 512 * 1024
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true // CORS handled by middleware
-	},
-}
-
 // Client represents a single WebSocket connection
 type Client struct {
 	hub      *Hub
@@ -42,22 +35,30 @@ type outboundMessage struct {
 
 // Hub maintains the set of active clients and broadcasts messages to them
 type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan outboundMessage
-	register   chan *Client
-	unregister chan *Client
-	mu         sync.RWMutex
-	logger     *zap.Logger
+	clients        map[*Client]bool
+	broadcast      chan outboundMessage
+	register       chan *Client
+	unregister     chan *Client
+	mu             sync.RWMutex
+	logger         *zap.Logger
+	allowedOrigins map[string]struct{}
 }
 
 // NewHub creates a new WebSocket hub
-func NewHub(logger *zap.Logger) *Hub {
+func NewHub(logger *zap.Logger, origins []string) *Hub {
+	allowedOrigins := make(map[string]struct{}, len(origins))
+	for _, origin := range origins {
+		if origin = strings.TrimSpace(origin); origin != "" {
+			allowedOrigins[origin] = struct{}{}
+		}
+	}
 	return &Hub{
-		clients:    make(map[*Client]bool),
-		broadcast:  make(chan outboundMessage, 256),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		logger:     logger,
+		clients:        make(map[*Client]bool),
+		broadcast:      make(chan outboundMessage, 256),
+		register:       make(chan *Client),
+		unregister:     make(chan *Client),
+		logger:         logger,
+		allowedOrigins: allowedOrigins,
 	}
 }
 
@@ -81,7 +82,7 @@ func (h *Hub) Run() {
 			h.logger.Info("WebSocket client disconnected", zap.Int("total", len(h.clients)))
 
 		case message := <-h.broadcast:
-			h.mu.RLock()
+			h.mu.Lock()
 			for client := range h.clients {
 				if message.tenantID != "" && client.tenantID != message.tenantID {
 					continue
@@ -93,7 +94,7 @@ func (h *Hub) Run() {
 					delete(h.clients, client)
 				}
 			}
-			h.mu.RUnlock()
+			h.mu.Unlock()
 		}
 	}
 }
@@ -129,12 +130,17 @@ func (h *Hub) ClientCount() int {
 
 // HandleWebSocket upgrades an HTTP connection to WebSocket
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	tenantID := r.URL.Query().Get("tenant_id")
+	tenantID := r.Header.Get("x-tenant-id")
 	if tenantID == "" {
 		http.Error(w, "tenant_id is required", http.StatusUnauthorized)
 		return
 	}
 
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin:     h.isOriginAllowed,
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		h.logger.Error("WebSocket upgrade failed", zap.Error(err))
@@ -152,6 +158,15 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	go client.writePump()
 	go client.readPump()
+}
+
+func (h *Hub) isOriginAllowed(r *http.Request) bool {
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		return true
+	}
+	_, ok := h.allowedOrigins[origin]
+	return ok
 }
 
 // readPump reads messages from the WebSocket (for heartbeat/pong)

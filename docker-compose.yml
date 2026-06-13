@@ -63,6 +63,9 @@ services:
       TRAEFIK_DYNAMIC_DIR: /traefik/dynamic
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100
+      WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:?set WHATSAPP_SERVICE_TOKEN}
+      WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}
+      WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:?set WHATSAPP_WS_JWT_SECRET}
       AGRO_INTEL_URL: http://agro-intelligence:8000
       NODE_URL: http://api:3002
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}
@@ -100,6 +103,8 @@ services:
       NODE_URL: http://api:3002
       WHATSMEOW_URL: http://whatsapp-service:3100
       WHATSAPP_API_URL: http://whatsapp-service:3100
+      WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:?set WHATSAPP_SERVICE_TOKEN}
+      WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}
       PGSSLMODE: require
       CORS_ORIGINS: ${CORS_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}

@@ -84,6 +84,7 @@ type Message struct {
 	IsGroup         bool        `json:"is_group" db:"is_group"`
 	Type            MessageType `json:"type" db:"type"`
 	Content         string      `json:"content,omitempty" db:"content"`
+	DeliveryStatus  string      `json:"delivery_status,omitempty" db:"delivery_status"`
 	MediaURL        string      `json:"media_url,omitempty" db:"media_url"`
 	MediaID         string      `json:"media_id,omitempty"`
 	MediaMimetype   string      `json:"media_mimetype,omitempty" db:"media_mimetype"`
@@ -112,8 +113,27 @@ type Media struct {
 	Status     string    `json:"status" db:"status"`
 	RetryCount int       `json:"retry_count" db:"retry_count"`
 	LastError  string    `json:"last_error,omitempty" db:"last_error"`
+	Payload    []byte    `json:"-" db:"whatsapp_payload"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// MediaStatusEvent is emitted when an attachment changes processing status.
+type MediaStatusEvent struct {
+	MessageID uuid.UUID `json:"message_id"`
+	MediaID   uuid.UUID `json:"media_id,omitempty"`
+	Status    string    `json:"status"`
+	URL       string    `json:"url,omitempty"`
+	Error     string    `json:"error,omitempty"`
+}
+
+// MessageReceiptEvent is emitted when WhatsApp sends delivery/read receipts.
+type MessageReceiptEvent struct {
+	InstanceID uuid.UUID `json:"instance_id"`
+	ChatJID    string    `json:"chat_jid"`
+	MessageIDs []string  `json:"message_ids"`
+	Status     string    `json:"status"`
+	Timestamp  time.Time `json:"timestamp"`
 }
 
 // ---- Request/Response DTOs ----

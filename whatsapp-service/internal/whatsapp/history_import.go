@@ -21,7 +21,8 @@ func (c *Client) handleHistorySync(evt *events.HistorySync) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(c.ctx, 10*time.Minute)
+	defer cancel()
 	importedChats := 0
 	importedMessages := 0
 	importedChatIDs := make([]uuid.UUID, 0)
@@ -200,7 +201,7 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 
 	if isMediaMessageType(msgType) {
 		mediaCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-		url, mime, filename, err := c.downloadAndUploadMedia(mediaCtx, evt)
+		url, mime, filename, _, err := c.downloadAndUploadMedia(mediaCtx, evt)
 		cancel()
 		if err != nil {
 			c.logger.Warn("Failed to handle imported media",
@@ -283,7 +284,9 @@ func (c *Client) analyzeImportedHistory(chatIDs []uuid.UUID, limit int) {
 	}
 
 	go func() {
-		if err := c.automation.AnalyzeImportedHistory(context.Background(), AutomationImportPayload{
+		ctx, cancel := context.WithTimeout(c.ctx, 10*time.Minute)
+		defer cancel()
+		if err := c.automation.AnalyzeImportedHistory(ctx, AutomationImportPayload{
 			InstanceID: c.instanceID,
 			TenantID:   uuidToString(c.tenantID),
 			ChatIDs:    dedupeUUIDs(chatIDs),

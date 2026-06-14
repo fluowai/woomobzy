@@ -15,20 +15,46 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { buildRentalQuestions, quizService, type QuizCampaign, type QuizSubmission } from '../services/quiz';
+import {
+  buildRentalQuestions,
+  buildRuralQuestions,
+  quizService,
+  type QuizCampaign,
+  type QuizSubmission,
+} from '../services/quiz';
 
-const OKA_QUIZ_BASE_URL = 'https://okaimoveis.com.br/quiz';
-
-const initialForm = {
-  title: 'Campanha locação - apartamento',
-  propertyLabel: 'Apartamento para locação',
+const urbanInitialForm = {
+  title: 'Campanha locacao - apartamento',
+  propertyLabel: 'Apartamento para locacao',
   city: 'Colorado/PR',
   bedrooms: 3,
   minRent: 1300,
   maxRent: 3000,
+  minArea: 100,
+  maxArea: 500,
+  minBudget: 1500000,
+  maxBudget: 6000000,
+  aptitude: 'Pecuaria',
   whatsapp: '5544997223030',
   threshold: 70,
+};
+
+const ruralInitialForm = {
+  title: 'Campanha fazenda produtiva',
+  propertyLabel: 'Fazenda rural para venda',
+  city: 'Mato Grosso',
+  bedrooms: 3,
+  minRent: 1300,
+  maxRent: 3000,
+  minArea: 100,
+  maxArea: 500,
+  minBudget: 1500000,
+  maxBudget: 6000000,
+  aptitude: 'Pecuaria',
+  whatsapp: '5544997223030',
+  threshold: 72,
 };
 
 function slugify(value: string) {
@@ -42,6 +68,13 @@ function slugify(value: string) {
 }
 
 const QuizCampaigns: React.FC = () => {
+  const { pathname } = useLocation();
+  const isRural = pathname.startsWith('/rural');
+  const initialForm = isRural ? ruralInitialForm : urbanInitialForm;
+  const publicQuizBaseUrl = `${window.location.origin}/quiz`;
+  const sourceLabel = isRural ? 'Quiz Rural' : 'Quiz Urbano';
+  const matchProfile = isRural ? 'rural' : 'urbano';
+
   const [campaigns, setCampaigns] = useState<QuizCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,11 +92,17 @@ const QuizCampaigns: React.FC = () => {
       setLoading(true);
       setCampaigns(await quizService.listCampaigns());
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível carregar as campanhas.');
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar as campanhas.');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setForm(initialForm);
+    setGeneratedCampaign(null);
+    setPdfFile(null);
+  }, [pathname]);
 
   useEffect(() => {
     loadCampaigns();
@@ -74,39 +113,61 @@ const QuizCampaigns: React.FC = () => {
     [campaigns]
   );
 
+  const manualCampaign = (): Omit<QuizCampaign, 'id' | 'created_at' | 'quiz_submissions'> => ({
+    title: form.title,
+    slug: slugify(form.title),
+    property_label: form.propertyLabel,
+    status: 'active',
+    whatsapp_number: form.whatsapp,
+    qualification_threshold: form.threshold,
+    intro_title: isRural ? 'Esta oportunidade rural combina com sua estrategia?' : 'Este imovel combina com o seu momento?',
+    intro_copy: isRural
+      ? 'Responda algumas perguntas rapidas para confirmar aderencia de area, regiao, orcamento, documentacao e aptidao produtiva antes do atendimento.'
+      : `Responda algumas perguntas rapidas. A imobiliaria usa suas respostas para confirmar se ${form.propertyLabel.toLowerCase()} faz sentido antes do atendimento.`,
+    success_message: isRural
+      ? 'Seu perfil e compativel com esta oportunidade rural. Vamos continuar pelo WhatsApp para alinhar dados tecnicos, disponibilidade e visita.'
+      : 'Seu perfil e compativel com esta oportunidade. Vamos continuar pelo WhatsApp para confirmar disponibilidade e visita.',
+    disqualification_message: isRural
+      ? 'Neste momento, esta oportunidade rural nao corresponde ao seu perfil. Seus dados ficaram registrados para futuras fazendas e areas compativeis.'
+      : 'Neste momento, nao temos um imovel disponivel que corresponda ao seu perfil. Seus dados ficaram registrados para futuras oportunidades.',
+    questions: isRural ? buildRuralQuestions(form) : buildRentalQuestions(form),
+    branding: {
+      primary: isRural ? '#16a34a' : '#f04b12',
+      charcoal: '#242424',
+      muted: '#6d7178',
+      background: '#faf8f5',
+      logo: '/logo-imobfluow.svg',
+      side_image: isRural ? '/templates/template_production.png' : '/templates/urban/urban_luxury_pool.png',
+      footer_text: isRural ? 'Atendimento especializado em propriedades rurais' : 'Atendimento imobiliario especializado',
+      qualification_label: isRural ? 'Pre-qualificacao rural' : 'Pre-qualificacao imobiliaria',
+      lead_source: sourceLabel,
+      match_profile: matchProfile,
+      niche: matchProfile,
+    },
+  });
+
   const createCampaign = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
       setSaving(true);
-      const slug = slugify(form.title);
-      const payload = generatedCampaign ? {
-        ...generatedCampaign,
-        title: form.title,
-        slug: slugify(generatedCampaign.slug || form.title),
-        property_label: form.propertyLabel,
-        status: 'active' as const,
-        whatsapp_number: form.whatsapp,
-        qualification_threshold: form.threshold,
-      } : {
-        title: form.title,
-        slug,
-        property_label: form.propertyLabel,
-        status: 'active',
-        whatsapp_number: form.whatsapp,
-        qualification_threshold: form.threshold,
-        intro_title: `Este imóvel combina com o seu momento?`,
-        intro_copy: `Responda algumas perguntas rápidas. A OKA usa suas respostas para confirmar se ${form.propertyLabel.toLowerCase()} faz sentido antes de encaminhar você ao atendimento.`,
-        success_message: 'Seu perfil é compatível com esta oportunidade. Vamos continuar pelo WhatsApp para confirmar disponibilidade e visita.',
-        disqualification_message: 'Neste momento, não temos um imóvel disponível que corresponda ao seu perfil. Seus dados ficaram registrados para futuras oportunidades da OKA.',
-        questions: buildRentalQuestions(form),
-        branding: {
-          primary: '#f04b12',
-          charcoal: '#242424',
-          muted: '#6d7178',
-          background: '#faf8f5',
-          logo: '/clients/oka/logo.jpeg',
-        },
-      };
+      const payload = generatedCampaign
+        ? {
+            ...generatedCampaign,
+            title: form.title,
+            slug: slugify(generatedCampaign.slug || form.title),
+            property_label: form.propertyLabel,
+            status: 'active' as const,
+            whatsapp_number: form.whatsapp,
+            qualification_threshold: form.threshold,
+            branding: {
+              ...(generatedCampaign.branding || {}),
+              lead_source: sourceLabel,
+              match_profile: matchProfile,
+              niche: matchProfile,
+            },
+          }
+        : manualCampaign();
+
       await quizService.createCampaign(payload);
       toast.success('Campanha criada e publicada.');
       setShowCreate(false);
@@ -115,7 +176,7 @@ const QuizCampaigns: React.FC = () => {
       setGeneratedCampaign(null);
       await loadCampaigns();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível criar a campanha.');
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel criar a campanha.');
     } finally {
       setSaving(false);
     }
@@ -135,6 +196,11 @@ const QuizCampaigns: React.FC = () => {
         whatsapp_number: form.whatsapp,
         city: form.city,
         rent_range: `R$ ${form.minRent} a R$ ${form.maxRent}`,
+        rural_area_range: `${form.minArea} a ${form.maxArea} ha`,
+        investment_range: `R$ ${form.minBudget} a R$ ${form.maxBudget}`,
+        aptitude: form.aptitude,
+        niche: matchProfile,
+        lead_source: sourceLabel,
       });
       setGeneratedCampaign(campaign);
       setForm({
@@ -144,9 +210,9 @@ const QuizCampaigns: React.FC = () => {
         whatsapp: campaign.whatsapp_number,
         threshold: campaign.qualification_threshold,
       });
-      toast.success(`IA criou ${campaign.questions.length} perguntas de qualificação.`);
+      toast.success(`IA criou ${campaign.questions.length} perguntas de qualificacao.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível gerar pelo PDF.');
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel gerar pelo PDF.');
     } finally {
       setGenerating(false);
     }
@@ -159,7 +225,7 @@ const QuizCampaigns: React.FC = () => {
       setCampaigns((current) => current.map((item) => item.id === campaign.id ? { ...item, status } : item));
       toast.success(status === 'active' ? 'Campanha ativada.' : 'Campanha pausada.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar a campanha.');
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel atualizar a campanha.');
     }
   };
 
@@ -169,15 +235,14 @@ const QuizCampaigns: React.FC = () => {
     try {
       setSubmissions(await quizService.listSubmissions(campaign.id));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Não foi possível carregar as respostas.');
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar as respostas.');
     } finally {
       setLoadingSubmissions(false);
     }
   };
 
   const copyLink = async (campaign: QuizCampaign) => {
-    const url = `${OKA_QUIZ_BASE_URL}/${campaign.slug}`;
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(`${publicQuizBaseUrl}/${campaign.slug}`);
     toast.success('Link do quiz copiado.');
   };
 
@@ -185,42 +250,44 @@ const QuizCampaigns: React.FC = () => {
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-10">
       <header className="flex flex-col gap-5 border-b border-slate-200 pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-orange-600">
-            <FileQuestion size={16} /> Qualificação de leads
+          <div className={`mb-3 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] ${isRural ? 'text-emerald-700' : 'text-orange-600'}`}>
+            <FileQuestion size={16} /> Qualificacao de leads
           </div>
           <h1 className="text-3xl font-black text-slate-950">Quiz de campanhas</h1>
           <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-            Crie uma URL por imóvel, qualifique pelo ICP e encaminhe ao WhatsApp somente quem tiver aderência comercial.
+            {isRural
+              ? 'Crie uma URL por fazenda ou area, qualifique por criterios tecnicos rurais e envie ao Kanban apenas leads aderentes.'
+              : 'Crie uma URL por imovel, qualifique pelo ICP e encaminhe ao atendimento somente quem tiver aderencia comercial.'}
           </p>
         </div>
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-orange-600 px-5 text-sm font-black text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700"
+          className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-black text-white shadow-lg transition ${isRural ? 'bg-emerald-700 shadow-emerald-700/20 hover:bg-emerald-800' : 'bg-orange-600 shadow-orange-600/20 hover:bg-orange-700'}`}
         >
           <Plus size={18} /> Nova campanha
         </button>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <Metric icon={FileQuestion} label="Campanhas" value={campaigns.length} />
-        <Metric icon={Users} label="Respostas captadas" value={totalSubmissions} />
-        <Metric icon={CheckCircle2} label="Campanhas ativas" value={campaigns.filter((item) => item.status === 'active').length} />
+        <Metric icon={FileQuestion} label="Campanhas" value={campaigns.length} tone={isRural ? 'rural' : 'urban'} />
+        <Metric icon={Users} label="Respostas captadas" value={totalSubmissions} tone={isRural ? 'rural' : 'urban'} />
+        <Metric icon={CheckCircle2} label="Campanhas ativas" value={campaigns.filter((item) => item.status === 'active').length} tone={isRural ? 'rural' : 'urban'} />
       </section>
 
       {loading ? (
         <div className="flex min-h-72 items-center justify-center text-slate-400"><Loader2 className="animate-spin" size={28} /></div>
       ) : campaigns.length === 0 ? (
         <div className="border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-          <FileQuestion className="mx-auto text-orange-500" size={34} />
+          <FileQuestion className={`mx-auto ${isRural ? 'text-emerald-600' : 'text-orange-500'}`} size={34} />
           <h2 className="mt-4 text-lg font-black text-slate-900">Crie a primeira campanha</h2>
-          <p className="mt-2 text-sm text-slate-500">A campanha gera um quiz público e registra cada resposta no CRM.</p>
+          <p className="mt-2 text-sm text-slate-500">A campanha gera um quiz publico e registra cada resposta no CRM.</p>
         </div>
       ) : (
         <section className="grid gap-4 xl:grid-cols-2">
           {campaigns.map((campaign) => {
             const count = Number(campaign.quiz_submissions?.[0]?.count || 0);
-            const url = `${OKA_QUIZ_BASE_URL}/${campaign.slug}`;
+            const url = `${publicQuizBaseUrl}/${campaign.slug}`;
             return (
               <article key={campaign.id} className="border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
@@ -233,25 +300,28 @@ const QuizCampaigns: React.FC = () => {
                     </div>
                     <h2 className="text-lg font-black text-slate-950">{campaign.title}</h2>
                     <p className="mt-1 text-sm font-medium text-slate-500">{campaign.property_label}</p>
+                    {campaign.branding?.lead_source && (
+                      <p className="mt-2 text-xs font-black uppercase tracking-wider text-slate-400">{campaign.branding.lead_source}</p>
+                    )}
                   </div>
-                  <div className="bg-orange-50 px-3 py-2 text-center text-orange-700">
+                  <div className={`${isRural ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'} px-3 py-2 text-center`}>
                     <strong className="block text-xl font-black">{campaign.qualification_threshold}</strong>
                     <span className="text-[10px] font-black uppercase">nota de corte</span>
                   </div>
                 </div>
 
                 <div className="mt-5 flex min-w-0 items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-2.5">
-                  <Link2 size={15} className="shrink-0 text-orange-600" />
+                  <Link2 size={15} className={`shrink-0 ${isRural ? 'text-emerald-700' : 'text-orange-600'}`} />
                   <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-600">{url}</span>
-                  <button type="button" onClick={() => copyLink(campaign)} title="Copiar link" className="p-1.5 text-slate-400 hover:text-orange-600"><ClipboardCopy size={16} /></button>
-                  <a href={url} target="_blank" rel="noreferrer" title="Abrir quiz" className="p-1.5 text-slate-400 hover:text-orange-600"><ExternalLink size={16} /></a>
+                  <button type="button" onClick={() => copyLink(campaign)} title="Copiar link" className={`p-1.5 text-slate-400 ${isRural ? 'hover:text-emerald-700' : 'hover:text-orange-600'}`}><ClipboardCopy size={16} /></button>
+                  <a href={url} target="_blank" rel="noreferrer" title="Abrir quiz" className={`p-1.5 text-slate-400 ${isRural ? 'hover:text-emerald-700' : 'hover:text-orange-600'}`}><ExternalLink size={16} /></a>
                 </div>
 
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                  <button type="button" onClick={() => openResults(campaign)} className="inline-flex items-center gap-2 text-sm font-black text-slate-700 hover:text-orange-600">
+                  <button type="button" onClick={() => openResults(campaign)} className={`inline-flex items-center gap-2 text-sm font-black text-slate-700 ${isRural ? 'hover:text-emerald-700' : 'hover:text-orange-600'}`}>
                     <BarChart3 size={17} /> {count} resposta{count === 1 ? '' : 's'}
                   </button>
-                  <button type="button" onClick={() => toggleCampaign(campaign)} className="inline-flex h-9 items-center gap-2 border border-slate-200 px-3 text-xs font-black text-slate-600 hover:border-orange-300 hover:text-orange-600">
+                  <button type="button" onClick={() => toggleCampaign(campaign)} className={`inline-flex h-9 items-center gap-2 border border-slate-200 px-3 text-xs font-black text-slate-600 ${isRural ? 'hover:border-emerald-300 hover:text-emerald-700' : 'hover:border-orange-300 hover:text-orange-600'}`}>
                     {campaign.status === 'active' ? <><Pause size={15} /> Pausar</> : <><Play size={15} /> Ativar</>}
                   </button>
                 </div>
@@ -271,10 +341,11 @@ const QuizCampaigns: React.FC = () => {
               </div>
               <button type="button" onClick={() => setShowCreate(false)} className="p-2 text-slate-400 hover:text-slate-900"><X size={22} /></button>
             </div>
-            <div className="border-b border-slate-200 bg-orange-50/50 p-6">
+
+            <div className={`${isRural ? 'bg-emerald-50/50' : 'bg-orange-50/50'} border-b border-slate-200 p-6`}>
               <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
                 <label className="space-y-2 text-sm font-black text-slate-700">
-                  <span className="inline-flex items-center gap-2"><UploadCloud size={17} className="text-orange-600" /> PDF do ICP/persona</span>
+                  <span className="inline-flex items-center gap-2"><UploadCloud size={17} className={isRural ? 'text-emerald-700' : 'text-orange-600'} /> PDF do ICP/persona</span>
                   <input
                     type="file"
                     accept="application/pdf"
@@ -282,7 +353,7 @@ const QuizCampaigns: React.FC = () => {
                       setPdfFile(event.target.files?.[0] || null);
                       setGeneratedCampaign(null);
                     }}
-                    className="block w-full border border-orange-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 file:mr-4 file:border-0 file:bg-orange-600 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
+                    className={`block w-full border bg-white px-3 py-2 text-sm font-semibold text-slate-700 file:mr-4 file:border-0 file:px-4 file:py-2 file:text-sm file:font-black file:text-white ${isRural ? 'border-emerald-200 file:bg-emerald-700' : 'border-orange-200 file:bg-orange-600'}`}
                   />
                 </label>
                 <button
@@ -300,19 +371,35 @@ const QuizCampaigns: React.FC = () => {
                 </div>
               )}
             </div>
+
             <div className="grid gap-5 p-6 md:grid-cols-2">
               <Field label="Nome da campanha" value={form.title} onChange={(value) => setForm({ ...form, title: value })} />
-              <Field label="Nome do imóvel/oferta" value={form.propertyLabel} onChange={(value) => setForm({ ...form, propertyLabel: value })} />
-              <Field label="Cidade/UF" value={form.city} onChange={(value) => setForm({ ...form, city: value })} />
+              <Field label="Nome do imovel/oferta" value={form.propertyLabel} onChange={(value) => setForm({ ...form, propertyLabel: value })} />
+              <Field label={isRural ? 'Regiao/UF' : 'Cidade/UF'} value={form.city} onChange={(value) => setForm({ ...form, city: value })} />
               <Field label="WhatsApp do atendimento" value={form.whatsapp} onChange={(value) => setForm({ ...form, whatsapp: value })} />
-              <NumberField label="Quantidade de quartos" value={form.bedrooms} onChange={(value) => setForm({ ...form, bedrooms: value })} />
-              <NumberField label="Nota mínima (0 a 100)" value={form.threshold} onChange={(value) => setForm({ ...form, threshold: value })} />
-              <NumberField label="Aluguel mínimo" value={form.minRent} onChange={(value) => setForm({ ...form, minRent: value })} />
-              <NumberField label="Aluguel máximo" value={form.maxRent} onChange={(value) => setForm({ ...form, maxRent: value })} />
+              {isRural ? (
+                <>
+                  <NumberField label="Area minima (ha)" value={form.minArea} onChange={(value) => setForm({ ...form, minArea: value })} />
+                  <NumberField label="Area maxima (ha)" value={form.maxArea} onChange={(value) => setForm({ ...form, maxArea: value })} />
+                  <NumberField label="Investimento minimo" value={form.minBudget} onChange={(value) => setForm({ ...form, minBudget: value })} />
+                  <NumberField label="Investimento maximo" value={form.maxBudget} onChange={(value) => setForm({ ...form, maxBudget: value })} />
+                  <Field label="Aptidao principal" value={form.aptitude} onChange={(value) => setForm({ ...form, aptitude: value })} />
+                </>
+              ) : (
+                <>
+                  <NumberField label="Quantidade de quartos" value={form.bedrooms} onChange={(value) => setForm({ ...form, bedrooms: value })} />
+                  <NumberField label="Aluguel minimo" value={form.minRent} onChange={(value) => setForm({ ...form, minRent: value })} />
+                  <NumberField label="Aluguel maximo" value={form.maxRent} onChange={(value) => setForm({ ...form, maxRent: value })} />
+                </>
+              )}
+              <NumberField label="Nota minima (0 a 100)" value={form.threshold} onChange={(value) => setForm({ ...form, threshold: value })} />
             </div>
+
             <div className="flex items-center justify-between gap-4 border-t border-slate-200 bg-slate-50 p-6">
-              <p className="text-xs font-bold text-slate-500">A campanha será publicada em <span className="text-orange-600">{OKA_QUIZ_BASE_URL}/{slugify(form.title) || 'nome-da-campanha'}</span></p>
-              <button disabled={saving} type="submit" className="inline-flex h-11 items-center gap-2 bg-orange-600 px-5 text-sm font-black text-white disabled:opacity-60">
+              <p className="text-xs font-bold text-slate-500">
+                A campanha sera publicada em <span className={isRural ? 'text-emerald-700' : 'text-orange-600'}>{publicQuizBaseUrl}/{slugify(form.title) || 'nome-da-campanha'}</span>
+              </p>
+              <button disabled={saving} type="submit" className={`inline-flex h-11 items-center gap-2 px-5 text-sm font-black text-white disabled:opacity-60 ${isRural ? 'bg-emerald-700' : 'bg-orange-600'}`}>
                 {saving ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />} Criar e publicar
               </button>
             </div>
@@ -324,18 +411,43 @@ const QuizCampaigns: React.FC = () => {
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-200 p-6">
-              <div><h2 className="text-xl font-black text-slate-950">Respostas da campanha</h2><p className="mt-1 text-sm text-slate-500">{selected.title}</p></div>
+              <div>
+                <h2 className="text-xl font-black text-slate-950">Respostas da campanha</h2>
+                <p className="mt-1 text-sm text-slate-500">{selected.title}</p>
+              </div>
               <button type="button" onClick={() => setSelected(null)} className="p-2 text-slate-400 hover:text-slate-900"><X size={22} /></button>
             </div>
             {loadingSubmissions ? (
-              <div className="flex min-h-64 items-center justify-center"><Loader2 className="animate-spin text-orange-600" /></div>
+              <div className="flex min-h-64 items-center justify-center"><Loader2 className={`animate-spin ${isRural ? 'text-emerald-700' : 'text-orange-600'}`} /></div>
             ) : submissions.length === 0 ? (
               <div className="p-14 text-center text-sm font-medium text-slate-500">Nenhuma resposta recebida ainda.</div>
             ) : (
               <div className="overflow-x-auto p-6">
                 <table className="w-full min-w-[720px] text-left">
-                  <thead><tr className="border-b border-slate-200 text-xs font-black uppercase tracking-wider text-slate-400"><th className="pb-3">Lead</th><th className="pb-3">Contato</th><th className="pb-3">Score</th><th className="pb-3">Resultado</th><th className="pb-3">Data</th></tr></thead>
-                  <tbody>{submissions.map((item) => <tr key={item.id} className="border-b border-slate-100 text-sm"><td className="py-4 font-black text-slate-900">{item.name}</td><td className="py-4 text-slate-600">{item.phone}<br /><span className="text-xs text-slate-400">{item.email || 'Sem e-mail'}</span></td><td className="py-4 font-black text-slate-900">{item.score}/100</td><td className="py-4"><span className={`px-2.5 py-1 text-xs font-black ${item.qualification_status === 'qualified' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{item.qualification_status === 'qualified' ? 'Qualificado' : 'Oportunidade futura'}</span></td><td className="py-4 text-slate-500">{new Date(item.created_at).toLocaleString('pt-BR')}</td></tr>)}</tbody>
+                  <thead>
+                    <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-wider text-slate-400">
+                      <th className="pb-3">Lead</th>
+                      <th className="pb-3">Contato</th>
+                      <th className="pb-3">Score</th>
+                      <th className="pb-3">Resultado</th>
+                      <th className="pb-3">Data</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {submissions.map((item) => (
+                      <tr key={item.id} className="border-b border-slate-100 text-sm">
+                        <td className="py-4 font-black text-slate-900">{item.name}</td>
+                        <td className="py-4 text-slate-600">{item.phone}<br /><span className="text-xs text-slate-400">{item.email || 'Sem e-mail'}</span></td>
+                        <td className="py-4 font-black text-slate-900">{item.score}/100</td>
+                        <td className="py-4">
+                          <span className={`px-2.5 py-1 text-xs font-black ${item.qualification_status === 'qualified' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                            {item.qualification_status === 'qualified' ? 'Qualificado' : 'Oportunidade futura'}
+                          </span>
+                        </td>
+                        <td className="py-4 text-slate-500">{new Date(item.created_at).toLocaleString('pt-BR')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             )}
@@ -346,16 +458,28 @@ const QuizCampaigns: React.FC = () => {
   );
 };
 
-const Metric = ({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) => (
-  <div className="flex items-center gap-4 border border-slate-200 bg-white p-4 shadow-sm"><div className="flex h-11 w-11 items-center justify-center bg-orange-50 text-orange-600"><Icon size={21} /></div><div><strong className="block text-2xl font-black text-slate-950">{value}</strong><span className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</span></div></div>
+const Metric = ({ icon: Icon, label, value, tone }: { icon: React.ElementType; label: string; value: number; tone: 'rural' | 'urban' }) => (
+  <div className="flex items-center gap-4 border border-slate-200 bg-white p-4 shadow-sm">
+    <div className={`flex h-11 w-11 items-center justify-center ${tone === 'rural' ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-600'}`}><Icon size={21} /></div>
+    <div>
+      <strong className="block text-2xl font-black text-slate-950">{value}</strong>
+      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</span>
+    </div>
+  </div>
 );
 
 const Field = ({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) => (
-  <label className="space-y-2 text-sm font-black text-slate-700"><span>{label}</span><input required value={value} onChange={(event) => onChange(event.target.value)} className="h-11 w-full border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" /></label>
+  <label className="space-y-2 text-sm font-black text-slate-700">
+    <span>{label}</span>
+    <input required value={value} onChange={(event) => onChange(event.target.value)} className="h-11 w-full border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+  </label>
 );
 
 const NumberField = ({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) => (
-  <label className="space-y-2 text-sm font-black text-slate-700"><span>{label}</span><input required type="number" min={0} value={value} onChange={(event) => onChange(Number(event.target.value))} className="h-11 w-full border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" /></label>
+  <label className="space-y-2 text-sm font-black text-slate-700">
+    <span>{label}</span>
+    <input required type="number" min={0} value={value} onChange={(event) => onChange(Number(event.target.value))} className="h-11 w-full border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+  </label>
 );
 
 export default QuizCampaigns;

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -51,7 +53,9 @@ func (h *InstanceHandler) CreateInstance(c *gin.Context) {
 
 	// Auto-connect (start QR code generation)
 	go func() {
-		if err := h.manager.ConnectInstance(c.Request.Context(), inst.ID); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := h.manager.ConnectInstance(ctx, inst.ID); err != nil {
 			h.logger.Error("Failed to auto-connect instance", zap.Error(err))
 		}
 	}()

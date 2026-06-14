@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -142,6 +143,127 @@ func (r *MediaRepo) UpsertFromMessage(ctx context.Context, msg *models.Message, 
 	return err
 }
 
+// UpsertPendingFromMessage creates a recoverable pending job for incoming WhatsApp media.
+func (r *MediaRepo) UpsertPendingFromMessage(ctx context.Context, msg *models.Message, tenantID uuid.UUID, bucket string, payload []byte) error {
+	if msg == nil || msg.ID == uuid.Nil || tenantID == uuid.Nil || !isMediaType(msg.Type) {
+		return nil
+	}
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO whatsapp_media (
+			message_id, instance_id, tenant_id, type, provider, bucket, object_key,
+			public_url, filename, mime_type, status, retry_count, last_error,
+			whatsapp_payload, source_message_id, next_retry_at
+		) VALUES ($1, $2, $3, $4, 'minio', $5, '', '', $6, $7, 'pending', 0, NULL, $8, $9, now())
+		ON CONFLICT (message_id) DO UPDATE SET
+			whatsapp_payload = COALESCE(EXCLUDED.whatsapp_payload, whatsapp_media.whatsapp_payload),
+			source_message_id = COALESCE(NULLIF(EXCLUDED.source_message_id, ''), whatsapp_media.source_message_id),
+			status = CASE WHEN whatsapp_media.status = 'ready' THEN whatsapp_media.status ELSE 'pending' END,
+			last_error = NULL,
+			next_retry_at = now(),
+			updated_at = now()
+	`, msg.ID, msg.InstanceID, tenantID, string(msg.Type), bucket, msg.MediaFilename, msg.MediaMimetype, payload, msg.MessageID)
+	return err
+}
+
+// ClaimPending claims pending or retryable failed media jobs for this worker.
+func (r *MediaRepo) ClaimPending(ctx context.Context, limit int) ([]models.Media, error) {
+	if limit <= 0 || limit > 25 {
+		limit = 10
+	}
+	rows, err := r.db.Query(ctx, `
+		WITH claimed AS (
+			SELECT id
+			FROM whatsapp_media
+			WHERE status IN ('pending', 'failed')
+			  AND retry_count < 8
+			  AND COALESCE(next_retry_at, now()) <= now()
+			  AND whatsapp_payload IS NOT NULL
+			ORDER BY updated_at ASC
+			LIMIT $1
+			FOR UPDATE SKIP LOCKED
+		)
+		UPDATE whatsapp_media wm
+		SET status = 'downloading',
+		    claimed_at = now(),
+		    updated_at = now()
+		FROM claimed
+		WHERE wm.id = claimed.id
+		RETURNING wm.id, wm.message_id, wm.instance_id, wm.tenant_id, wm.type,
+		          wm.provider, wm.bucket, wm.object_key, COALESCE(wm.public_url, ''),
+		          COALESCE(wm.filename, ''), COALESCE(wm.mime_type, ''), wm.status,
+		          wm.retry_count, COALESCE(wm.last_error, ''), wm.whatsapp_payload,
+		          wm.created_at, wm.updated_at
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]models.Media, 0, limit)
+	for rows.Next() {
+		var media models.Media
+		if err := rows.Scan(&media.ID, &media.MessageID, &media.InstanceID, &media.TenantID, &media.Type,
+			&media.Provider, &media.Bucket, &media.ObjectKey, &media.PublicURL, &media.Filename,
+			&media.MimeType, &media.Status, &media.RetryCount, &media.LastError, &media.Payload,
+			&media.CreatedAt, &media.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, media)
+	}
+	return items, rows.Err()
+}
+
+// MarkReady records a successful media download/upload and updates the legacy message fields.
+func (r *MediaRepo) MarkReady(ctx context.Context, mediaID uuid.UUID, publicURL, objectKey, mimeType, fileName string) error {
+	_, err := r.db.Exec(ctx, `
+		WITH updated AS (
+			UPDATE whatsapp_media
+			SET status = 'ready',
+			    public_url = $2,
+			    object_key = $3,
+			    mime_type = COALESCE(NULLIF($4, ''), mime_type),
+			    filename = COALESCE(NULLIF($5, ''), filename),
+			    last_error = NULL,
+			    updated_at = now()
+			WHERE id = $1
+			RETURNING message_id, public_url, mime_type, filename
+		)
+		UPDATE whatsapp_messages m
+		SET media_status = 'ready',
+		    media_url = updated.public_url,
+		    media_mimetype = COALESCE(NULLIF(updated.mime_type, ''), m.media_mimetype),
+		    media_filename = COALESCE(NULLIF(updated.filename, ''), m.media_filename),
+		    media_error = NULL
+		FROM updated
+		WHERE m.id = updated.message_id
+	`, mediaID, publicURL, objectKey, mimeType, fileName)
+	return err
+}
+
+// MarkFailed stores retry metadata for a failed media job.
+func (r *MediaRepo) MarkFailed(ctx context.Context, mediaID uuid.UUID, reason string, retryCount int) error {
+	nextRetry := time.Now().Add(time.Duration(1<<min(retryCount, 8)) * time.Minute)
+	_, err := r.db.Exec(ctx, `
+		WITH updated AS (
+			UPDATE whatsapp_media
+			SET status = CASE WHEN retry_count + 1 >= 8 THEN 'failed' ELSE 'pending' END,
+			    retry_count = retry_count + 1,
+			    last_error = $2,
+			    next_retry_at = $3,
+			    updated_at = now()
+			WHERE id = $1
+			RETURNING message_id, retry_count, last_error, status
+		)
+		UPDATE whatsapp_messages m
+		SET media_status = updated.status,
+		    media_error = updated.last_error,
+		    media_retry_count = updated.retry_count
+		FROM updated
+		WHERE m.id = updated.message_id
+	`, mediaID, reason, nextRetry)
+	return err
+}
+
 func isMediaType(msgType models.MessageType) bool {
 	switch msgType {
 	case models.MessageTypeImage, models.MessageTypeAudio, models.MessageTypeVideo, models.MessageTypeDocument, models.MessageTypeSticker:
@@ -195,4 +317,11 @@ func decodePath(value string) string {
 		return value
 	}
 	return decoded
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

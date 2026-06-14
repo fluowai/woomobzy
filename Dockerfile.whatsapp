@@ -7,18 +7,23 @@ WORKDIR /app
 COPY whatsapp-service/go.mod whatsapp-service/go.sum ./
 RUN go mod download
 
-COPY whatsapp-service/ ./
-RUN go mod tidy && CGO_ENABLED=1 GOOS=linux go build -o whatsapp-service ./cmd/server
+COPY whatsapp-service/cmd ./cmd
+COPY whatsapp-service/internal ./internal
+COPY whatsapp-service/pkg ./pkg
+RUN CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags="-s -w" -o whatsapp-service ./cmd/server
 
 FROM alpine:3.19
 
 RUN apk add --no-cache ca-certificates curl sqlite-libs
+RUN addgroup -S imobzy && adduser -S -G imobzy imobzy
 
 WORKDIR /app
 
 COPY --from=builder /app/whatsapp-service .
 
-RUN mkdir -p .sessions
+RUN mkdir -p .sessions && chown -R imobzy:imobzy /app
+
+USER imobzy
 
 EXPOSE 3100
 

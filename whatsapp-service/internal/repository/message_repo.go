@@ -27,10 +27,10 @@ func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
 	query := `
 		INSERT INTO whatsapp_messages (
 			id, instance_id, chat_id, message_id, sender_phone, sender_name,
-			is_from_me, is_group, type, content, media_url, media_mimetype,
+			is_from_me, is_group, type, content, delivery_status, media_url, media_mimetype,
 			media_filename, media_status, media_error, media_retry_count,
 			quoted_message_id, timestamp
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULLIF($11, ''), $12, $13, $14, $15, $16, $17, $18, $19)
 		ON CONFLICT (instance_id, message_id) DO UPDATE SET
 			chat_id = EXCLUDED.chat_id,
 			sender_phone = COALESCE(NULLIF(EXCLUDED.sender_phone, ''), whatsapp_messages.sender_phone),
@@ -42,6 +42,7 @@ func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
 				ELSE whatsapp_messages.type
 			END,
 			content = COALESCE(NULLIF(EXCLUDED.content, ''), whatsapp_messages.content),
+			delivery_status = COALESCE(NULLIF(EXCLUDED.delivery_status, ''), whatsapp_messages.delivery_status),
 			media_url = COALESCE(NULLIF(EXCLUDED.media_url, ''), whatsapp_messages.media_url),
 			media_mimetype = COALESCE(NULLIF(EXCLUDED.media_mimetype, ''), whatsapp_messages.media_mimetype),
 			media_filename = COALESCE(NULLIF(EXCLUDED.media_filename, ''), whatsapp_messages.media_filename),
@@ -68,11 +69,25 @@ func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
 	err := r.db.QueryRow(ctx, query,
 		msg.ID, msg.InstanceID, msg.ChatID, msg.MessageID,
 		msg.SenderPhone, msg.SenderName, msg.IsFromMe, msg.IsGroup,
-		msg.Type, msg.Content, msg.MediaURL, msg.MediaMimetype,
+		msg.Type, msg.Content, msg.DeliveryStatus, msg.MediaURL, msg.MediaMimetype,
 		msg.MediaFilename, msg.MediaStatus, msg.MediaError, msg.MediaRetryCount,
 		msg.QuotedMessageID, msg.Timestamp,
 	).Scan(&msg.ID, &msg.CreatedAt)
 
+	return err
+}
+
+// UpdateDeliveryStatus updates outgoing message receipt state by WhatsApp message ids.
+func (r *MessageRepo) UpdateDeliveryStatus(ctx context.Context, instanceID uuid.UUID, messageIDs []string, status string) error {
+	if len(messageIDs) == 0 || status == "" {
+		return nil
+	}
+	_, err := r.db.Exec(ctx, `
+		UPDATE whatsapp_messages
+		SET delivery_status = $3
+		WHERE instance_id = $1
+		  AND message_id = ANY($2)
+	`, instanceID, messageIDs, status)
 	return err
 }
 
@@ -88,6 +103,7 @@ func (r *MessageRepo) ListByChatForTenant(ctx context.Context, chatID, instanceI
 	query := `
 		SELECT m.id, m.instance_id, m.chat_id, m.message_id, m.sender_phone, m.sender_name,
 		       m.is_from_me, m.is_group, m.type, COALESCE(m.content, '') as content,
+		       COALESCE(m.delivery_status, '') as delivery_status,
 		       COALESCE(m.media_url, '') as media_url,
 		       COALESCE(wm.id::text, '') as media_id,
 		       COALESCE(m.media_mimetype, '') as media_mimetype,
@@ -124,7 +140,7 @@ func (r *MessageRepo) ListByChatForTenant(ctx context.Context, chatID, instanceI
 		if err := rows.Scan(
 			&msg.ID, &msg.InstanceID, &msg.ChatID, &msg.MessageID,
 			&msg.SenderPhone, &msg.SenderName, &msg.IsFromMe, &msg.IsGroup,
-			&msg.Type, &msg.Content, &msg.MediaURL, &msg.MediaID, &msg.MediaMimetype,
+			&msg.Type, &msg.Content, &msg.DeliveryStatus, &msg.MediaURL, &msg.MediaID, &msg.MediaMimetype,
 			&msg.MediaFilename, &msg.MediaStatus, &msg.MediaError, &msg.MediaRetryCount,
 			&msg.QuotedMessageID, &msg.Timestamp, &msg.CreatedAt,
 			&msg.SenderAvatarURL,
@@ -164,6 +180,7 @@ func (r *MessageRepo) GetOldestByChat(ctx context.Context, chatID, instanceID uu
 	query := `
 		SELECT id, instance_id, chat_id, message_id, sender_phone, sender_name,
 		       is_from_me, is_group, type, COALESCE(content, '') as content,
+		       COALESCE(delivery_status, '') as delivery_status,
 		       COALESCE(media_url, '') as media_url,
 		       '' as media_id,
 		       COALESCE(media_mimetype, '') as media_mimetype,
@@ -182,7 +199,7 @@ func (r *MessageRepo) GetOldestByChat(ctx context.Context, chatID, instanceID uu
 	err := r.db.QueryRow(ctx, query, chatID, instanceID).Scan(
 		&msg.ID, &msg.InstanceID, &msg.ChatID, &msg.MessageID,
 		&msg.SenderPhone, &msg.SenderName, &msg.IsFromMe, &msg.IsGroup,
-		&msg.Type, &msg.Content, &msg.MediaURL, &msg.MediaID, &msg.MediaMimetype,
+		&msg.Type, &msg.Content, &msg.DeliveryStatus, &msg.MediaURL, &msg.MediaID, &msg.MediaMimetype,
 		&msg.MediaFilename, &msg.MediaStatus, &msg.MediaError, &msg.MediaRetryCount,
 		&msg.QuotedMessageID, &msg.Timestamp, &msg.CreatedAt,
 	)

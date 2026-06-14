@@ -45,6 +45,11 @@ const leadSchema = z.object({
   notes: z.string().max(2000).optional(),
   budget: z.union([z.string().max(80), z.number()]).optional().nullable(),
   aptitude_interest: z.string().max(120).optional(),
+  property_id: z.string().uuid().optional().nullable(),
+  status: z.enum(['Novo', 'Qualificação']).optional(),
+  classification: z.string().max(120).optional(),
+  lead_score: z.number().min(0).max(100).optional(),
+  match_profile: z.enum(['urbano', 'rural', 'misto', 'indefinido']).optional(),
 });
 
 // Contact Form
@@ -76,6 +81,11 @@ router.post('/leads', contactLimiter, async (req, res) => {
       notes,
       budget,
       aptitude_interest,
+      property_id,
+      status,
+      classification,
+      lead_score,
+      match_profile,
     } = validation.data;
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
@@ -101,7 +111,11 @@ router.post('/leads', contactLimiter, async (req, res) => {
         notes,
         budget,
         aptitude_interest,
-        status: 'Novo'
+        property_id,
+        status: status || 'Novo',
+        classification,
+        lead_score,
+        match_profile,
       }])
       .select().single();
 

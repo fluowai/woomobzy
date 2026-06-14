@@ -11,9 +11,13 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
+	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
+	"go.mau.fi/whatsmeow/types"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"whatsapp-service/internal/models"
 	"whatsapp-service/internal/repository"
@@ -23,6 +27,7 @@ import (
 // Manager manages multiple WhatsApp instances
 type Manager struct {
 	clients           map[uuid.UUID]*Client
+	connecting        map[uuid.UUID]bool
 	mu                sync.RWMutex
 	instanceRepo      *repository.InstanceRepo
 	chatRepo          *repository.ChatRepo
@@ -43,6 +48,9 @@ type Manager struct {
 	nodeURL           string
 	internalToken     string
 	automationEnabled bool
+	ctx               context.Context
+	cancel            context.CancelFunc
+	sessionStore      *sqlstore.Container
 }
 
 // NewManager creates a new WhatsApp instance manager
@@ -67,8 +75,10 @@ func NewManager(
 	internalToken string,
 	automationEnabled bool,
 ) *Manager {
+	managerCtx, cancel := context.WithCancel(context.Background())
 	return &Manager{
 		clients:           make(map[uuid.UUID]*Client),
+		connecting:        make(map[uuid.UUID]bool),
 		instanceRepo:      instanceRepo,
 		chatRepo:          chatRepo,
 		contactRepo:       contactRepo,
@@ -88,7 +98,23 @@ func NewManager(
 		nodeURL:           nodeURL,
 		internalToken:     internalToken,
 		automationEnabled: automationEnabled,
+		ctx:               managerCtx,
+		cancel:            cancel,
 	}
+}
+
+func (m *Manager) initializeSessionStore(ctx context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.sessionStore != nil {
+		return nil
+	}
+	container, err := sqlstore.New(ctx, "postgres", m.dbURI, waLog.Noop)
+	if err != nil {
+		return fmt.Errorf("failed to initialize postgres session store: %w", err)
+	}
+	m.sessionStore = container
+	return nil
 }
 
 // CreateInstance creates a new WhatsApp instance and prepares it for connection
@@ -113,17 +139,28 @@ func (m *Manager) CreateInstance(ctx context.Context, name string, tenantID *uui
 // ConnectInstance starts a WhatsApp session for an instance
 func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// Check if already connected
 	if client, exists := m.clients[instanceID]; exists {
 		if client.IsConnected() {
+			m.mu.Unlock()
 			m.logger.Warn("Instance already connected", zap.String("id", instanceID.String()))
 			return nil
 		}
-		// Disconnect stale client
-		client.Disconnect()
+		if m.connecting[instanceID] {
+			m.mu.Unlock()
+			return nil
+		}
 	}
+	if m.connecting[instanceID] {
+		m.mu.Unlock()
+		return nil
+	}
+	m.connecting[instanceID] = true
+	m.mu.Unlock()
+	defer func() {
+		m.mu.Lock()
+		delete(m.connecting, instanceID)
+		m.mu.Unlock()
+	}()
 
 	inst, err := m.instanceRepo.GetByID(ctx, instanceID)
 	if err != nil {
@@ -137,27 +174,18 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		)
 	}
 
-	// Create WhatsMeow store for this instance
-	sessionsDir := filepath.Join(".", ".sessions")
-	os.MkdirAll(sessionsDir, 0755)
-
-	dbPath := filepath.Join(sessionsDir, fmt.Sprintf("%s.db", instanceID.String()))
-	container, err := sqlstore.New(ctx, "sqlite3",
-		fmt.Sprintf("file:%s?_foreign_keys=on", dbPath),
-		waLog.Noop,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create session store: %w", err)
+	if err := m.initializeSessionStore(ctx); err != nil {
+		return err
 	}
-
-	deviceStore, err := container.GetFirstDevice(ctx)
+	deviceStore, err := m.deviceForInstance(ctx, inst)
 	if err != nil {
-		return fmt.Errorf("failed to get device store: %w", err)
+		return err
 	}
 
 	waClient := whatsmeow.NewClient(deviceStore, waLog.Noop)
 
 	client := NewClient(
+		m.ctx,
 		instanceID,
 		inst.TenantID,
 		inst.Name,
@@ -182,16 +210,23 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		m.automationEnabled,
 	)
 
+	m.mu.Lock()
+	if old := m.clients[instanceID]; old != nil {
+		old.Disconnect()
+	}
 	m.clients[instanceID] = client
+	m.mu.Unlock()
 
 	// Start connection in background
 	go func() {
-		if err := client.Connect(context.Background()); err != nil {
+		connectCtx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
+		defer cancel()
+		if err := client.Connect(connectCtx); err != nil {
 			m.logger.Error("Failed to connect instance",
 				zap.String("id", instanceID.String()),
 				zap.Error(err),
 			)
-			if statusErr := m.instanceRepo.UpdateStatus(context.Background(), instanceID, models.StatusDisconnected); statusErr != nil {
+			if statusErr := m.instanceRepo.UpdateStatus(m.ctx, instanceID, models.StatusDisconnected); statusErr != nil {
 				m.logger.Error("Failed to update disconnected status",
 					zap.String("id", instanceID.String()),
 					zap.Error(statusErr),
@@ -201,6 +236,51 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 	}()
 
 	return nil
+}
+
+func (m *Manager) deviceForInstance(ctx context.Context, inst *models.Instance) (*store.Device, error) {
+	if inst.JID != "" {
+		jid, err := types.ParseJID(inst.JID)
+		if err == nil {
+			device, getErr := m.sessionStore.GetDevice(ctx, jid)
+			if getErr != nil {
+				return nil, fmt.Errorf("failed to load postgres device store: %w", getErr)
+			}
+			if device != nil {
+				return device, nil
+			}
+		}
+	}
+	if migrated, err := m.migrateLegacySQLiteSession(ctx, inst.ID); err != nil {
+		m.logger.Warn("Legacy session migration failed", zap.String("instance", inst.ID.String()), zap.Error(err))
+	} else if migrated != nil {
+		return migrated, nil
+	}
+	return m.sessionStore.NewDevice(), nil
+}
+
+func (m *Manager) migrateLegacySQLiteSession(ctx context.Context, instanceID uuid.UUID) (*store.Device, error) {
+	dbPath := filepath.Join(".", ".sessions", instanceID.String()+".db")
+	if _, err := os.Stat(dbPath); err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	legacy, err := sqlstore.New(ctx, "sqlite3", fmt.Sprintf("file:%s?_foreign_keys=on", dbPath), waLog.Noop)
+	if err != nil {
+		return nil, err
+	}
+	defer legacy.Close()
+	device, err := legacy.GetFirstDevice(ctx)
+	if err != nil || device == nil || device.ID == nil {
+		return nil, err
+	}
+	if err := m.sessionStore.PutDevice(ctx, device); err != nil {
+		return nil, err
+	}
+	m.logger.Info("Migrated WhatsApp session from SQLite to PostgreSQL", zap.String("instance", instanceID.String()))
+	return m.sessionStore.GetDevice(ctx, *device.ID)
 }
 
 // DisconnectInstance disconnects a WhatsApp instance
@@ -233,10 +313,15 @@ func (m *Manager) DeleteInstance(ctx context.Context, instanceID uuid.UUID) erro
 	// Disconnect first
 	m.DisconnectInstance(ctx, instanceID)
 
-	// Remove session file
-	sessionsDir := filepath.Join(".", ".sessions")
-	dbPath := filepath.Join(sessionsDir, fmt.Sprintf("%s.db", instanceID.String()))
-	os.Remove(dbPath)
+	if m.sessionStore != nil {
+		if inst, err := m.instanceRepo.GetByID(ctx, instanceID); err == nil && inst.JID != "" {
+			if jid, parseErr := types.ParseJID(inst.JID); parseErr == nil {
+				if device, getErr := m.sessionStore.GetDevice(ctx, jid); getErr == nil && device != nil {
+					_ = m.sessionStore.DeleteDevice(ctx, device)
+				}
+			}
+		}
+	}
 
 	return m.instanceRepo.Delete(ctx, instanceID)
 }
@@ -387,8 +472,67 @@ func (m *Manager) ReconnectAll(ctx context.Context) {
 	}
 }
 
+// StartMediaWorker processes queued incoming WhatsApp media in the background.
+func (m *Manager) StartMediaWorker() {
+	if m.mediaRepo == nil {
+		return
+	}
+	go func() {
+		ticker := time.NewTicker(3 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-m.ctx.Done():
+				return
+			case <-ticker.C:
+				m.processMediaBatch()
+			}
+		}
+	}()
+}
+
+func (m *Manager) processMediaBatch() {
+	ctx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
+	defer cancel()
+	jobs, err := m.mediaRepo.ClaimPending(ctx, 10)
+	if err != nil {
+		m.logger.Warn("Failed to claim media jobs", zap.Error(err))
+		return
+	}
+	for _, job := range jobs {
+		m.processMediaJob(job)
+	}
+}
+
+func (m *Manager) processMediaJob(job models.Media) {
+	client, ok := m.GetClient(job.InstanceID)
+	if !ok || !client.IsConnected() {
+		_ = m.mediaRepo.MarkFailed(m.ctx, job.ID, "WhatsApp instance is not connected", job.RetryCount)
+		return
+	}
+	var waMessage waE2E.Message
+	if err := proto.Unmarshal(job.Payload, &waMessage); err != nil {
+		_ = m.mediaRepo.MarkFailed(m.ctx, job.ID, "invalid stored WhatsApp media payload: "+err.Error(), job.RetryCount)
+		return
+	}
+	ctx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
+	defer cancel()
+	url, mimeType, filename, objectKey, err := client.downloadAndUploadMediaMessage(ctx, &waMessage, job.MessageID.String())
+	if err != nil {
+		_ = m.mediaRepo.MarkFailed(m.ctx, job.ID, err.Error(), job.RetryCount)
+		client.broadcastEvent("media_failed", models.MediaStatusEvent{MessageID: job.MessageID, MediaID: job.ID, Status: "failed", Error: err.Error()})
+		return
+	}
+	if err := m.mediaRepo.MarkReady(ctx, job.ID, url, objectKey, mimeType, filename); err != nil {
+		m.logger.Warn("Failed to mark media ready", zap.String("media_id", job.ID.String()), zap.Error(err))
+		return
+	}
+	client.broadcastEvent("media_ready", models.MediaStatusEvent{MessageID: job.MessageID, MediaID: job.ID, Status: "ready", URL: url})
+}
+
 // Shutdown gracefully disconnects all instances
 func (m *Manager) Shutdown() {
+	m.cancel()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -397,4 +541,7 @@ func (m *Manager) Shutdown() {
 		client.Disconnect()
 	}
 	m.clients = make(map[uuid.UUID]*Client)
+	if m.sessionStore != nil {
+		_ = m.sessionStore.Close()
+	}
 }

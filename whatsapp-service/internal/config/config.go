@@ -26,6 +26,8 @@ type Config struct {
 	NodeURL            string
 	WhatsMeowURL       string
 	InternalToken      string
+	ServiceToken       string
+	WSJWTSecret        string
 	AutomationEnabled  bool
 }
 
@@ -75,6 +77,8 @@ func Load(logger *zap.Logger) *Config {
 		NodeURL:            strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
 		WhatsMeowURL:       strings.TrimRight(getEnvAny([]string{"WHATSMEOW_URL", "WHATSAPP_API_URL"}, "http://127.0.0.1:3100"), "/"),
 		InternalToken:      getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
+		ServiceToken:       getEnv("WHATSAPP_SERVICE_TOKEN", ""),
+		WSJWTSecret:        getEnv("WHATSAPP_WS_JWT_SECRET", ""),
 		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 	}
 
@@ -84,6 +88,9 @@ func Load(logger *zap.Logger) *Config {
 	// Validate required fields
 	if cfg.SupabaseDBURL == "" {
 		logger.Fatal("Postgres database URL is required. Set SUPABASE_DB_URL, DATABASE_URL, DATABASE_PRIVATE_URL, DIRECT_URL or POSTGRES_URL in server variables")
+	}
+	if cfg.ServiceToken == "" {
+		logger.Fatal("WhatsApp service token is required. Set WHATSAPP_SERVICE_TOKEN")
 	}
 	if !cfg.isMinIOConfigured() && !allowSupabaseStorageFallback() {
 		logger.Fatal("MinIO/S3 media storage is required for WhatsApp media. Set MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY and MINIO_WHATSAPP_BUCKET")

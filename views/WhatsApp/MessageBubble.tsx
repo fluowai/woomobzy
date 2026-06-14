@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, FileText, FileVideo, MapPin, Contact, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck, Clock, Contact, FileText, FileVideo, Image, MapPin } from 'lucide-react';
 import AudioMessagePlayer from './AudioMessagePlayer';
 import { formatPhoneDisplay, type Message } from './hooks/api';
 
@@ -31,6 +31,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       : senderPhone || 'Contato sem telefone';
   const senderInitial = (senderName.match(/[A-Za-z0-9]/)?.[0] || '?').toUpperCase();
   const showSenderName = !isSent && isGroup;
+  const deliveryStatus = message.delivery_status || 'sent';
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', {
@@ -168,7 +169,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
 
         <div className="wa-bubble-meta">
           <span className="wa-bubble-time">{formatTime(message.timestamp)}</span>
-          {isSent && <CheckCheck size={14} className="wa-bubble-check read" />}
+          {isSent && (
+            deliveryStatus === 'sent'
+              ? <Check size={14} className="wa-bubble-check" />
+              : deliveryStatus === 'failed'
+                ? <Clock size={14} className="wa-bubble-check failed" />
+                : <CheckCheck size={14} className={`wa-bubble-check ${deliveryStatus === 'read' || deliveryStatus === 'played' ? 'read' : ''}`} />
+          )}
         </div>
       </div>
     </div>

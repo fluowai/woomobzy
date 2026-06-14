@@ -2,24 +2,30 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BadgeCheck,
-  Banknote,
-  BarChart3,
   ChevronDown,
+  CircleDollarSign,
   Facebook,
+  FileText,
+  Gem,
+  Handshake,
+  Headphones,
   Heart,
   Instagram,
   Leaf,
+  Lock,
   Mail,
   MapPin,
   MessageCircle,
-  Ruler,
+  Phone,
   Search,
-  Sprout,
-  Tractor,
+  ShieldCheck,
+  SlidersHorizontal,
+  Star,
+  X,
   UsersRound,
-  Youtube,
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { leadService } from '../services/leads';
 
 interface FazendasBrasilPublicSiteProps {
   organizationId?: string;
@@ -31,93 +37,150 @@ type PublicProperty = {
   price?: number;
   city?: string;
   state?: string;
-  images?: string[];
+  images?: string[] | string;
   property_type?: string;
-  highlighted?: boolean;
   total_area_ha?: number;
   useful_area_ha?: number;
   features?: Record<string, any>;
   aptitude?: string[] | string;
 };
 
-const FAZENDAS_ORG_SLUG = 'fazendasbrasil';
+const FAZENDAS_ORG_SLUGS = [
+  'fazendasbrasil',
+  'fazendas-brasil',
+  'imobiliaria-fazendas-brasil',
+  'imobiliariafazendasbrasil',
+  'fazendasbrasil1',
+];
 const WHATSAPP_NUMBER = '5544998433030';
-const PHONE_LABEL = '(44) 99843-3030';
-const EMAIL = 'ele@fazendasbrasil.com.br';
+const PHONE_LABEL = '(11) 3813-2020';
+const EMAIL = 'contato@fazendasbrasil.com.br';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
-const BROKER_PHOTO_URL = '/images/fazendas-brasil/renato.png';
+const HERO_IMAGE = '/images/fazendas-brasil/reference-hero.webp';
+const PROPERTIES_PER_PAGE = 12;
+const PROPERTIES_PER_GRID = 4;
 
-const fallbackImages = [
-  '/templates/template_livestock.png',
-  '/templates/template_production.png',
-  '/templates/template_investment.png',
-  '/templates/elementor_refs/fazenda-produtiva.png',
-  '/templates/elementor_refs/fazendas-valor.png',
-  '/templates/template_opportunity.png',
+const quizQuestions = [
+  {
+    id: 'objective',
+    label: 'Qual e o objetivo principal?',
+    options: ['Comprar para produzir', 'Investimento patrimonial', 'Expansao rural', 'Reserva familiar'],
+  },
+  {
+    id: 'budgetRange',
+    label: 'Qual faixa de investimento?',
+    options: ['Ate R$ 10 mi', 'R$ 10 mi a R$ 30 mi', 'R$ 30 mi a R$ 70 mi', 'Acima de R$ 70 mi'],
+  },
+  {
+    id: 'timeline',
+    label: 'Quando pretende avançar?',
+    options: ['Imediatamente', 'Em ate 30 dias', 'Em 3 meses', 'Ainda pesquisando'],
+  },
+  {
+    id: 'areaNeed',
+    label: 'Qual tamanho faz sentido?',
+    options: ['Ate 500 ha', '500 a 1.500 ha', '1.500 a 3.000 ha', 'Acima de 3.000 ha'],
+  },
+  {
+    id: 'payment',
+    label: 'Como pretende negociar?',
+    options: ['A vista', 'Entrada e prazo', 'Financiamento', 'Depende da oportunidade'],
+  },
 ];
 
 const fallbackProperties: PublicProperty[] = [
   {
     id: 'fazendas-demo-1',
-    title: 'Fazenda em Jatai - GO',
-    price: 28000000,
-    city: 'Jatai',
+    title: 'Fazenda Santa Helena',
+    price: 85000000,
+    city: 'Goias',
     state: 'GO',
-    images: [fallbackImages[0]],
+    images: ['/images/fazendas-brasil/card-santa-helena.webp'],
     property_type: 'Pecuaria',
-    total_area_ha: 820,
+    total_area_ha: 2350,
   },
   {
     id: 'fazendas-demo-2',
-    title: 'Fazenda em Sorriso - MT',
-    price: 45000000,
-    city: 'Sorriso',
+    title: 'Fazenda Boa Vista',
+    price: 62000000,
+    city: 'Mato Grosso',
     state: 'MT',
-    images: [fallbackImages[1]],
+    images: ['/images/fazendas-brasil/card-boa-vista.webp'],
     property_type: 'Agricultura',
-    total_area_ha: 1200,
+    total_area_ha: 1650,
   },
   {
     id: 'fazendas-demo-3',
-    title: 'Fazenda em Rio Verde - GO',
-    price: 19500000,
-    city: 'Rio Verde',
-    state: 'GO',
-    images: [fallbackImages[2]],
-    property_type: 'Agricultura',
-    total_area_ha: 650,
+    title: 'Fazenda Sao Bento',
+    price: 38000000,
+    city: 'Mato Grosso do Sul',
+    state: 'MS',
+    images: ['/images/fazendas-brasil/card-sao-bento.webp'],
+    property_type: 'Pecuaria',
+    total_area_ha: 1280,
   },
   {
     id: 'fazendas-demo-4',
-    title: 'Fazenda em Cristalina - GO',
-    price: 19500000,
-    city: 'Cristalina',
-    state: 'GO',
-    images: [fallbackImages[3]],
-    property_type: 'Pecuaria',
-    total_area_ha: 430,
-  },
-  {
-    id: 'fazendas-demo-5',
-    title: 'Fazenda em Sao Felix do Araguaia - MT',
-    price: 62000000,
-    city: 'Sao Felix do Araguaia',
-    state: 'MT',
-    images: [fallbackImages[4]],
-    property_type: 'Pecuaria',
-    total_area_ha: 2600,
-  },
-  {
-    id: 'fazendas-demo-6',
-    title: 'Fazenda em Barreiras - BA',
-    price: 35000000,
-    city: 'Barreiras',
+    title: 'Fazenda Conquista',
+    price: 95000000,
+    city: 'Bahia',
     state: 'BA',
-    images: [fallbackImages[5]],
-    property_type: 'Agricultura',
-    total_area_ha: 1500,
+    images: ['/images/fazendas-brasil/card-conquista.webp'],
+    property_type: 'Pecuaria',
+    total_area_ha: 3600,
   },
 ];
+
+const highlights = ['Destaque', 'Exclusivo', 'Oportunidade', 'Destaque'];
+
+const benefits = [
+  {
+    icon: ShieldCheck,
+    title: 'Seguranca total',
+    text: 'Todos os fazendas passam por rigorosa analise documental e juridica.',
+  },
+  {
+    icon: Gem,
+    title: 'Imoveis exclusivos',
+    text: 'Selecao criteriosa das melhores fazendas de alto padrao do mercado.',
+  },
+  {
+    icon: UsersRound,
+    title: 'Atendimento personalizado',
+    text: 'Consultores especialistas para entender e atender suas necessidades.',
+  },
+  {
+    icon: Handshake,
+    title: 'Experiencia e tradicao',
+    text: 'Mais de 25 anos conectando pessoas aos melhores negocios rurais.',
+  },
+  {
+    icon: Leaf,
+    title: 'Atuacao nacional',
+    text: 'Fazendas em todos os estados do Brasil com total cobertura.',
+  },
+];
+
+const footerStats = [
+  { icon: UsersRound, value: '+25 anos', label: 'de experiencia no mercado' },
+  { icon: FileText, value: '+1.000', label: 'fazendas negociadas' },
+  { icon: UsersRound, value: '+10.000', label: 'clientes atendidos' },
+  { icon: MapPin, value: 'Todo o Brasil', label: 'atuacao nacional' },
+  { icon: Star, value: 'Referencia', label: 'em imoveis rurais de alto padrao' },
+];
+
+function normalizeImages(images?: string[] | string) {
+  if (Array.isArray(images)) return images.filter(Boolean);
+  if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {
+      return images ? [images] : [];
+    }
+  }
+  return [];
+}
 
 function formatCurrency(value?: number) {
   if (!value) return 'Sob consulta';
@@ -129,7 +192,7 @@ function formatCurrency(value?: number) {
 }
 
 function formatArea(value?: number) {
-  if (!value) return 'Area sob consulta';
+  if (!value) return 'Sob consulta';
   return `${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} ha`;
 }
 
@@ -160,493 +223,1041 @@ function getAptitude(property: PublicProperty) {
 }
 
 function getPropertyImage(property: PublicProperty, index: number) {
-  return property.images?.[0] || fallbackImages[index % fallbackImages.length];
+  const images = normalizeImages(property.images);
+  return images[0] || normalizeImages(fallbackProperties[index % fallbackProperties.length].images)[0] || HERO_IMAGE;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   organizationId,
 }) => {
   const [properties, setProperties] = useState<PublicProperty[]>(fallbackProperties);
+  const [resolvedOrganizationId, setResolvedOrganizationId] = useState<string | undefined>(organizationId);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProperties, setTotalProperties] = useState(fallbackProperties.length);
+  const [isUsingFallback, setIsUsingFallback] = useState(true);
+  const [selectedProperty, setSelectedProperty] = useState<PublicProperty | null>(null);
+  const [leadStep, setLeadStep] = useState<'contact' | 'quiz' | 'success'>('contact');
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [leadError, setLeadError] = useState('');
+  const [leadForm, setLeadForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+  });
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadProperties = async () => {
       try {
+        setIsUsingFallback(false);
         let orgId = organizationId;
 
         if (!orgId) {
           const { data: org } = await supabase
             .from('organizations')
             .select('id')
-            .eq('slug', FAZENDAS_ORG_SLUG)
+            .in('slug', FAZENDAS_ORG_SLUGS)
+            .limit(1)
             .maybeSingle();
           orgId = org?.id;
         }
 
-        if (!orgId) return;
+        setResolvedOrganizationId(orgId);
 
-        const { data, error } = await supabase
+        if (!orgId) {
+          setProperties(fallbackProperties);
+          setTotalProperties(fallbackProperties.length);
+          setIsUsingFallback(true);
+          return;
+        }
+
+        const from = (currentPage - 1) * PROPERTIES_PER_PAGE;
+        const to = from + PROPERTIES_PER_PAGE - 1;
+
+        const { data, error, count } = await supabase
           .from('properties')
           .select(
-            'id,title,price,city,state,images,property_type,highlighted,total_area_ha,useful_area_ha,features,aptitude'
+            'id,title,price,city,state,images,property_type,total_area_ha,useful_area_ha,features,aptitude',
+            { count: 'exact' }
           )
           .eq('organization_id', orgId)
-          .limit(12);
+          .range(from, to);
 
-        if (!error && data && data.length > 0) setProperties(data);
+        if (!error && data && data.length > 0) {
+          setProperties(data);
+          setTotalProperties(count || data.length);
+          setIsUsingFallback(false);
+          return;
+        }
+
+        setProperties(fallbackProperties);
+        setTotalProperties(fallbackProperties.length);
+        setIsUsingFallback(true);
       } catch (error) {
         console.warn('[Fazendas Brasil] Mantendo vitrine de fallback:', error);
+        setProperties(fallbackProperties);
+        setTotalProperties(fallbackProperties.length);
+        setIsUsingFallback(true);
       }
     };
 
     loadProperties();
-  }, [organizationId]);
+  }, [organizationId, currentPage]);
 
-  const featured = useMemo(() => properties.slice(0, 6), [properties]);
-  const heroImage = getPropertyImage(featured[0] || fallbackProperties[0], 0);
+  const propertyGrids = useMemo(() => {
+    const grids: PublicProperty[][] = [];
+    for (let i = 0; i < properties.length; i += PROPERTIES_PER_GRID) {
+      grids.push(properties.slice(i, i + PROPERTIES_PER_GRID));
+    }
+    return grids;
+  }, [properties]);
+
+  const totalPages = Math.max(1, Math.ceil(totalProperties / PROPERTIES_PER_PAGE));
+  const firstPropertyIndex = isUsingFallback ? 1 : (currentPage - 1) * PROPERTIES_PER_PAGE + 1;
+  const lastPropertyIndex = isUsingFallback
+    ? properties.length
+    : Math.min(currentPage * PROPERTIES_PER_PAGE, totalProperties);
+
+  const goToPage = (page: number) => {
+    const nextPage = Math.min(Math.max(page, 1), totalPages);
+    setCurrentPage(nextPage);
+    window.requestAnimationFrame(() => {
+      document.getElementById('fazendas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const openLeadFlow = (property: PublicProperty) => {
+    setSelectedProperty(property);
+    setLeadStep('contact');
+    setQuizIndex(0);
+    setLeadError('');
+    setQuizAnswers({});
+  };
+
+  const closeLeadFlow = () => {
+    if (leadSubmitting) return;
+    setSelectedProperty(null);
+    setLeadStep('contact');
+    setQuizIndex(0);
+    setLeadError('');
+    setLeadForm({ name: '', phone: '', email: '' });
+    setQuizAnswers({});
+  };
+
+  const qualifyScore = (answers: Record<string, string>) => {
+    let score = 45;
+    if (answers.timeline === 'Imediatamente') score += 20;
+    if (answers.timeline === 'Em ate 30 dias') score += 15;
+    if (answers.budgetRange === 'Acima de R$ 70 mi') score += 15;
+    if (answers.budgetRange === 'R$ 30 mi a R$ 70 mi') score += 12;
+    if (answers.payment === 'A vista') score += 15;
+    if (answers.objective && answers.areaNeed) score += 10;
+    return Math.min(score, 100);
+  };
+
+  const handleContactSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setLeadError('');
+    setLeadStep('quiz');
+  };
+
+  const handleQuizAnswer = (answer: string) => {
+    const question = quizQuestions[quizIndex];
+    const nextAnswers = { ...quizAnswers, [question.id]: answer };
+    setQuizAnswers(nextAnswers);
+
+    if (quizIndex < quizQuestions.length - 1) {
+      setQuizIndex((current) => current + 1);
+      return;
+    }
+
+    submitQualifiedLead(nextAnswers);
+  };
+
+  const submitQualifiedLead = async (answers: Record<string, string>) => {
+    if (!selectedProperty || !resolvedOrganizationId) {
+      setLeadError('Nao foi possivel identificar a Fazendas Brasil para salvar o lead.');
+      return;
+    }
+
+    setLeadSubmitting(true);
+    setLeadError('');
+
+    try {
+      const score = qualifyScore(answers);
+      const area = getPropertyArea(selectedProperty);
+      const notes = [
+        `Lead qualificado pelo site Fazendas Brasil.`,
+        `Imovel de interesse: ${selectedProperty.title}`,
+        selectedProperty.city || selectedProperty.state ? `Localizacao do imovel: ${[selectedProperty.city, selectedProperty.state].filter(Boolean).join(' / ')}` : null,
+        area ? `Area do imovel: ${formatArea(area)}` : null,
+        selectedProperty.price ? `Valor do imovel: ${formatCurrency(selectedProperty.price)}` : null,
+        '',
+        'Respostas do quiz:',
+        ...quizQuestions.map((question) => `- ${question.label} ${answers[question.id] || 'Nao informado'}`),
+      ].filter(Boolean).join('\n');
+
+      await leadService.create({
+        organization_id: resolvedOrganizationId,
+        name: leadForm.name,
+        phone: leadForm.phone,
+        email: leadForm.email || undefined,
+        propertyId: isUuid(selectedProperty.id) ? selectedProperty.id : undefined,
+        source: 'Site Fazendas Brasil',
+        ad_reference: selectedProperty.title,
+        organic_channel: 'Site publico',
+        campaign: 'Qualificacao de imovel rural',
+        notes,
+        budget: answers.budgetRange as any,
+        aptitude_interest: getAptitude(selectedProperty) as any,
+        match_profile: 'rural',
+        status: 'Qualificação',
+        classification: score >= 75 ? 'Lead qualificado - Alta prioridade' : 'Lead qualificado',
+        lead_score: score,
+      } as any);
+
+      setLeadStep('success');
+    } catch (error: any) {
+      setLeadError(error?.message || 'Erro ao cadastrar lead. Tente novamente.');
+    } finally {
+      setLeadSubmitting(false);
+    }
+  };
 
   return (
     <div className="fb-site">
       <style>{`
         .fb-site {
-          --fb-green: #064e2f;
-          --fb-green-2: #0b6a3a;
-          --fb-gold: #c98b16;
-          --fb-gold-2: #f0b11f;
-          --fb-ink: #132018;
-          --fb-muted: #5c665f;
-          --fb-line: #e5e2dc;
+          --fb-green: #006b31;
+          --fb-green-dark: #003f1d;
+          --fb-green-deep: #002f18;
+          --fb-gold: #ffd500;
+          --fb-blue: #06318a;
+          --fb-ink: #052b1c;
+          --fb-muted: #64706b;
+          --fb-line: #dfe8e4;
           min-height: 100vh;
           color: var(--fb-ink);
-          background: #f7f8f4;
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          background: #f4f7f4;
+          font-family: "Arial Narrow", Arial, Helvetica, sans-serif;
         }
         .fb-site * { box-sizing: border-box; }
-        .fb-shell { width: min(1720px, calc(100% - 88px)); margin: 0 auto; }
+        .fb-shell { width: min(100% - 74px, 1700px); margin: 0 auto; }
         .fb-topbar {
-          height: 43px; color: #fff; background: linear-gradient(90deg, #043d25, #022e1d);
-          font-size: 13px; font-weight: 700;
+          height: 40px;
+          color: #fff;
+          background: linear-gradient(90deg, #004c1e, #006f2c);
+          font-size: 12px;
+          font-weight: 800;
         }
-        .fb-topbar .fb-shell { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-        .fb-topbar-group { display: flex; align-items: center; gap: 44px; }
-        .fb-topbar-item, .fb-contact-link { display: inline-flex; align-items: center; gap: 9px; color: #fff; text-decoration: none; white-space: nowrap; }
-        .fb-nav { height: 86px; background: rgba(255,255,255,.98); border-bottom: 1px solid rgba(20,32,24,.12); position: sticky; top: 0; z-index: 30; }
-        .fb-nav .fb-shell { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
-        .fb-logo { width: 150px; height: 86px; object-fit: contain; object-position: left center; }
-        .fb-menu { display: flex; align-items: center; gap: 42px; font-size: 13px; font-weight: 850; text-transform: uppercase; }
-        .fb-menu a { color: #161f19; text-decoration: none; white-space: nowrap; }
-        .fb-menu a:first-child { color: var(--fb-gold); position: relative; }
-        .fb-menu a:first-child:after { content: ""; position: absolute; left: 0; right: 0; bottom: -20px; height: 2px; background: var(--fb-gold); }
-        .fb-btn {
-          border: 1px solid rgba(201,139,22,.7); background: transparent; color: var(--fb-green);
-          height: 48px; min-width: 0; padding: 0 24px; border-radius: 5px; display: inline-flex;
-          align-items: center; justify-content: center; gap: 12px; text-decoration: none; font-size: 13px;
-          font-weight: 900; text-transform: uppercase; letter-spacing: 0; white-space: nowrap;
+        .fb-topbar .fb-shell,
+        .fb-topbar-group,
+        .fb-topbar-item,
+        .fb-top-action {
+          height: 100%;
+          display: flex;
+          align-items: center;
         }
-        .fb-btn-primary { background: linear-gradient(180deg, #d69a23, #bd7c0c); color: #fff; border-color: #c98b16; box-shadow: 0 12px 26px rgba(128,83,8,.22); }
-        .fb-btn-green { background: linear-gradient(180deg, #075d35, #034827); color: #fff; border-color: #034827; }
+        .fb-topbar .fb-shell { justify-content: space-between; gap: 18px; }
+        .fb-topbar-group { gap: 58px; }
+        .fb-topbar-item { gap: 8px; white-space: nowrap; }
+        .fb-topbar svg { color: var(--fb-gold); }
+        .fb-top-actions { display: flex; align-items: center; gap: 6px; height: 100%; }
+        .fb-top-action {
+          min-width: 130px;
+          justify-content: center;
+          gap: 8px;
+          padding: 0 18px;
+          color: #fff;
+          background: #00471f;
+          text-decoration: none;
+          font-weight: 950;
+        }
+        .fb-top-action.yellow { color: #071d0f; background: var(--fb-gold); border-radius: 5px; height: 31px; }
+        .fb-nav {
+          height: 126px;
+          background: #fff;
+          box-shadow: 0 1px 0 rgba(0,0,0,.05);
+          position: relative;
+          z-index: 5;
+        }
+        .fb-nav .fb-shell { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 34px; }
+        .fb-logo { width: 151px; height: 110px; object-fit: contain; object-position: left center; }
+        .fb-menu { display: flex; align-items: center; gap: 44px; font-size: 12px; font-weight: 950; text-transform: uppercase; }
+        .fb-menu a { color: #00130b; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; white-space: nowrap; }
+        .fb-favorites {
+          height: 38px;
+          border-radius: 5px;
+          background: #006b31;
+          color: #fff;
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          padding: 0 16px;
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+          box-shadow: 0 6px 14px rgba(0,80,35,.22);
+        }
+        .fb-favorites svg { color: var(--fb-gold); }
+        .fb-count { width: 20px; height: 20px; border-radius: 999px; background: var(--fb-gold); color: #063013; display: inline-grid; place-items: center; font-size: 11px; }
         .fb-hero {
-          min-height: 444px; position: relative; isolation: isolate; color: #fff;
+          min-height: 512px;
+          color: #fff;
           background:
-            linear-gradient(90deg, rgba(4,43,25,.94), rgba(4,43,25,.58) 38%, rgba(4,43,25,.08) 78%),
-            linear-gradient(0deg, rgba(0,0,0,.32), rgba(0,0,0,.12)),
-            url("${heroImage}") center / cover no-repeat;
+            linear-gradient(90deg, rgba(0,24,13,.95) 0%, rgba(0,45,19,.72) 34%, rgba(0,47,23,.28) 59%, rgba(0,0,0,.05) 100%),
+            url("${HERO_IMAGE}") center / cover no-repeat;
         }
-        .fb-hero .fb-shell { position: relative; min-height: 444px; display: flex; align-items: center; }
-        .fb-hero-content { width: min(690px, 55vw); padding-bottom: 56px; }
-        .fb-kicker { color: var(--fb-gold-2); font-size: 23px; line-height: 1; letter-spacing: .45em; text-transform: uppercase; margin: 0 0 18px; font-weight: 500; }
+        .fb-hero .fb-shell { min-height: 512px; display: flex; align-items: center; }
+        .fb-hero-content { width: min(560px, 55vw); padding: 42px 0 82px; }
+        .fb-kicker {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 0 0 22px;
+          color: var(--fb-gold);
+          font-size: 13px;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+        .fb-kicker:before { content: ""; width: 48px; height: 2px; background: var(--fb-gold); display: block; }
         .fb-title {
-          font-family: Georgia, "Times New Roman", serif; font-size: clamp(48px, 5.1vw, 72px);
-          line-height: .96; font-weight: 700; margin: 0 0 18px; letter-spacing: 0;
+          margin: 0 0 18px;
+          font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+          font-size: clamp(56px, 6.5vw, 78px);
+          line-height: .91;
+          text-transform: uppercase;
+          letter-spacing: 0;
         }
-        .fb-subtitle { font-size: 19px; line-height: 1.42; max-width: 560px; margin: 0 0 28px; color: rgba(255,255,255,.96); }
-        .fb-hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-        .fb-broker {
-          position: absolute; right: 58px; top: 18px; width: 328px; min-height: 386px; border-radius: 8px;
-          background: rgba(255,255,255,.97); color: var(--fb-ink); box-shadow: 0 18px 46px rgba(0,0,0,.24);
-          padding: 24px 22px 20px; text-align: center;
+        .fb-title span { display: block; }
+        .fb-title .gold { color: var(--fb-gold); }
+        .fb-title .green { color: #06a85b; }
+        .fb-subtitle { max-width: 470px; margin: 0 0 25px; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.45; font-weight: 700; }
+        .fb-hero-points { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; margin-bottom: 30px; }
+        .fb-point { display: flex; align-items: center; gap: 11px; min-width: 0; }
+        .fb-point-icon { width: 45px; height: 45px; border-radius: 999px; border: 2px solid var(--fb-gold); color: var(--fb-gold); background: rgba(0,98,43,.5); display: grid; place-items: center; flex: 0 0 auto; }
+        .fb-point strong { display: block; font-size: 11px; font-weight: 950; text-transform: uppercase; }
+        .fb-point span span { display: block; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.35; }
+        .fb-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+        .fb-btn {
+          min-height: 42px;
+          border: 1px solid currentColor;
+          border-radius: 5px;
+          padding: 0 22px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          color: #fff;
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+          white-space: nowrap;
         }
-        .fb-broker-photo { width: 138px; height: 138px; border-radius: 999px; object-fit: cover; border: 7px solid #fff; box-shadow: 0 0 0 5px rgba(201,139,22,.2), 0 10px 28px rgba(0,0,0,.22); margin: 0 auto 15px; display: block; }
-        .fb-help { margin: 0 0 4px; color: var(--fb-green); font-size: 13px; font-weight: 850; font-style: italic; }
-        .fb-broker h2 { margin: 0; font-size: 23px; line-height: 1.05; font-weight: 900; }
-        .fb-broker small { display: block; margin: 8px 0 14px; color: #646d66; font-size: 13px; }
-        .fb-broker-phone { display: inline-flex; align-items: center; gap: 8px; color: var(--fb-green); text-decoration: none; font-size: 21px; font-weight: 500; margin-bottom: 16px; }
-        .fb-broker-actions { display: grid; gap: 11px; }
-        .fb-search-panel {
-          width: min(1280px, calc(100% - 88px)); margin: -48px auto 0; position: relative; z-index: 10;
-          background: rgba(255,255,255,.98); border: 1px solid rgba(22,32,24,.08); border-radius: 7px;
-          box-shadow: 0 16px 34px rgba(41,35,26,.16); min-height: 96px; display: grid;
-          grid-template-columns: 1.05fr 1.05fr 1.05fr 1fr 1.38fr; align-items: stretch;
+        .fb-btn-green { color: #fff; background: var(--fb-green); border-color: var(--fb-green); }
+        .fb-btn-outline { color: #fff; background: rgba(0,0,0,.08); border-color: rgba(255,255,255,.75); }
+        .fb-btn-yellow { color: #051b0d; background: var(--fb-gold); border-color: var(--fb-gold); }
+        .fb-search {
+          width: min(100% - 74px, 1700px);
+          margin: -60px auto 0;
+          position: relative;
+          z-index: 4;
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 16px 38px rgba(9,29,19,.18);
+          padding: 23px 26px 14px;
         }
-        .fb-filter { padding: 23px 26px; border-right: 1px solid var(--fb-line); display: flex; align-items: center; gap: 17px; min-width: 0; }
-        .fb-filter:last-child { border-right: 0; }
-        .fb-filter-icon { color: var(--fb-green-2); flex: 0 0 auto; }
-        .fb-filter-copy { min-width: 0; width: 100%; }
-        .fb-filter-label { color: #424a44; font-size: 11px; text-transform: uppercase; font-weight: 900; margin-bottom: 10px; }
-        .fb-filter-main { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #2b352f; font-size: 14px; }
-        .fb-filter-range { display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; color: #2b352f; font-size: 14px; }
-        .fb-section { padding: 24px 0 0; }
-        .fb-section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 0 0 18px; }
-        .fb-heading { font-family: Georgia, "Times New Roman", serif; font-size: 35px; line-height: 1; font-weight: 500; margin: 0 0 8px; }
-        .fb-section-head p { color: var(--fb-muted); font-size: 13px; margin: 0; }
-        .fb-all-link { color: var(--fb-green); text-decoration: none; display: inline-flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 900; text-transform: uppercase; }
-        .fb-grid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 19px; }
-        .fb-card { background: #fff; border: 1px solid var(--fb-line); border-radius: 7px; overflow: hidden; box-shadow: 0 9px 26px rgba(32,37,31,.08); }
-        .fb-card-image { height: 148px; background-size: cover; background-position: center; position: relative; }
-        .fb-tag { position: absolute; left: 13px; top: 10px; padding: 8px 12px; border-radius: 4px; background: #034827; color: #fff; font-size: 10px; font-weight: 900; text-transform: uppercase; }
-        .fb-tag.gold { background: #c98b16; }
-        .fb-card-heart { position: absolute; right: 12px; bottom: -28px; width: 30px; height: 30px; color: #59625b; background: #fff; border-radius: 999px; padding: 5px; border: 1px solid var(--fb-line); }
-        .fb-card-body { padding: 15px 13px 14px; }
-        .fb-card h3 { font-size: 14px; line-height: 1.22; min-height: 34px; margin: 0 30px 10px 0; font-weight: 900; }
-        .fb-meta { display: flex; flex-wrap: wrap; gap: 12px; color: #565f58; font-size: 12px; margin-bottom: 12px; }
-        .fb-meta span { display: inline-flex; align-items: center; gap: 5px; }
-        .fb-price { display: block; color: #065c33; font-size: 18px; font-weight: 950; margin-bottom: 13px; }
-        .fb-card .fb-btn { width: 100%; height: 31px; justify-content: flex-end; padding: 0 12px; font-size: 10px; border-color: #b9c3bd; box-shadow: none; }
-        .fb-stats {
-          margin: 22px auto 0; background: rgba(255,255,255,.88); border: 1px solid var(--fb-line); border-radius: 7px;
-          display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); box-shadow: 0 8px 28px rgba(26,34,27,.06);
+        .fb-search-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 180px; align-items: center; }
+        .fb-filter { min-height: 58px; border-right: 1px solid var(--fb-line); padding: 0 22px 0 0; display: flex; align-items: center; gap: 16px; min-width: 0; }
+        .fb-filter svg { color: #0c3520; flex: 0 0 auto; }
+        .fb-filter-label { color: #163327; font-size: 10px; font-weight: 950; text-transform: uppercase; margin-bottom: 7px; }
+        .fb-filter-main { color: #68736f; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+        .fb-search-button { height: 56px; border: 0; border-radius: 5px; background: var(--fb-green); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-size: 12px; font-weight: 950; text-transform: uppercase; }
+        .fb-search-button svg { color: var(--fb-gold); }
+        .fb-advanced { border-top: 1px solid var(--fb-line); margin-top: 16px; padding-top: 13px; text-align: center; color: #0e2d1c; font-size: 11px; font-weight: 950; text-transform: uppercase; }
+        .fb-section { padding: 30px 0 24px; }
+        .fb-section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 21px; }
+        .fb-heading { margin: 0; color: var(--fb-green-dark); font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: 27px; line-height: 1; text-transform: uppercase; }
+        .fb-heading:after { content: ""; width: 40px; height: 2px; background: var(--fb-gold); display: block; margin-top: 9px; }
+        .fb-all-link { color: var(--fb-green-dark); display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font-size: 11px; font-weight: 950; text-transform: uppercase; }
+        .fb-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+        .fb-grid-group { margin-bottom: 18px; }
+        .fb-grid-group:last-of-type { margin-bottom: 0; }
+        .fb-grid-title { margin: 0 0 12px; color: #244437; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 950; text-transform: uppercase; letter-spacing: .04em; }
+        .fb-card { background: #fff; border: 1px solid rgba(0,88,42,.1); border-radius: 6px; overflow: hidden; box-shadow: 0 10px 26px rgba(7,36,20,.08); }
+        .fb-card-image { height: 132px; background-position: center; background-size: cover; position: relative; }
+        .fb-sale { position: absolute; left: 13px; top: 12px; border-radius: 4px; background: var(--fb-green); color: #fff; padding: 7px 11px; font-size: 10px; font-weight: 950; text-transform: uppercase; }
+        .fb-card-body { padding: 17px 15px 14px; }
+        .fb-card h3 { margin: 0 0 8px; color: var(--fb-blue); font-size: 15px; line-height: 1.2; font-weight: 950; }
+        .fb-location { color: #46645a; display: flex; align-items: center; gap: 6px; font-family: Arial, Helvetica, sans-serif; font-size: 11px; margin-bottom: 16px; }
+        .fb-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 17px; font-family: Arial, Helvetica, sans-serif; color: #1c3c2d; font-size: 12px; }
+        .fb-spec { display: flex; align-items: center; gap: 7px; min-width: 0; }
+        .fb-price { display: block; color: var(--fb-green); font-family: Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 950; margin-bottom: 17px; }
+        .fb-card-link { width: 100%; border: 0; border-top: 1px solid #b8ded0; padding: 12px 0 0; color: var(--fb-green); background: transparent; display: flex; justify-content: space-between; align-items: center; text-decoration: none; font-size: 11px; font-weight: 950; text-transform: uppercase; cursor: pointer; }
+        .fb-pagination {
+          margin-top: 26px;
+          border-top: 1px solid var(--fb-line);
+          padding-top: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          font-family: Arial, Helvetica, sans-serif;
         }
-        .fb-stat { min-height: 74px; padding: 13px 18px; display: flex; justify-content: center; align-items: center; gap: 14px; border-right: 1px solid var(--fb-line); }
+        .fb-page-summary { color: #52635b; font-size: 12px; font-weight: 800; }
+        .fb-page-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .fb-page-button {
+          min-width: 36px;
+          height: 36px;
+          border: 1px solid #bed5cb;
+          border-radius: 5px;
+          background: #fff;
+          color: var(--fb-green-dark);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 12px;
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .fb-page-button.active { background: var(--fb-green); border-color: var(--fb-green); color: #fff; }
+        .fb-page-button:disabled { opacity: .45; cursor: not-allowed; }
+        .fb-lead-modal {
+          position: fixed;
+          inset: 0;
+          z-index: 80;
+          background: rgba(0, 20, 10, .72);
+          backdrop-filter: blur(12px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        .fb-lead-dialog {
+          width: min(100%, 560px);
+          max-height: min(92vh, 760px);
+          overflow: hidden;
+          border-radius: 12px;
+          background: #fff;
+          box-shadow: 0 30px 80px rgba(0,0,0,.35);
+          display: flex;
+          flex-direction: column;
+        }
+        .fb-lead-head {
+          padding: 20px 22px;
+          color: #fff;
+          background: linear-gradient(135deg, #00491f, #007b39);
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+        }
+        .fb-lead-head small { color: var(--fb-gold); display: block; margin-bottom: 6px; font-size: 11px; font-weight: 950; text-transform: uppercase; }
+        .fb-lead-head h2 { margin: 0; font-size: 22px; line-height: 1.08; font-weight: 950; }
+        .fb-lead-close {
+          width: 38px;
+          height: 38px;
+          border: 1px solid rgba(255,255,255,.35);
+          border-radius: 999px;
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          flex: 0 0 auto;
+        }
+        .fb-lead-body { padding: 22px; overflow-y: auto; font-family: Arial, Helvetica, sans-serif; }
+        .fb-lead-property {
+          border: 1px solid #dce9e1;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 18px;
+          display: grid;
+          grid-template-columns: 88px 1fr;
+          gap: 13px;
+          align-items: center;
+          background: #f7fbf8;
+        }
+        .fb-lead-thumb { height: 66px; border-radius: 6px; background-position: center; background-size: cover; }
+        .fb-lead-property strong { display: block; color: var(--fb-blue); font-size: 14px; line-height: 1.2; }
+        .fb-lead-property span { display: block; color: #52635b; font-size: 12px; margin-top: 4px; }
+        .fb-lead-form { display: grid; gap: 12px; }
+        .fb-field label { display: block; color: #294238; font-size: 11px; font-weight: 950; text-transform: uppercase; margin-bottom: 7px; }
+        .fb-field input {
+          width: 100%;
+          min-height: 48px;
+          border: 1px solid #cfe0d7;
+          border-radius: 7px;
+          background: #fff;
+          padding: 0 14px;
+          color: #102b1d;
+          font-size: 16px;
+          font-weight: 800;
+          outline: 0;
+        }
+        .fb-field input:focus { border-color: var(--fb-green); box-shadow: 0 0 0 3px rgba(0,107,49,.12); }
+        .fb-lead-primary {
+          min-height: 50px;
+          border: 0;
+          border-radius: 7px;
+          background: var(--fb-green);
+          color: #fff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 0 18px;
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .fb-quiz-progress { color: #607168; font-size: 12px; font-weight: 900; margin-bottom: 9px; }
+        .fb-quiz-question { margin: 0 0 16px; color: #082a18; font-size: 22px; line-height: 1.15; font-weight: 950; }
+        .fb-quiz-options { display: grid; gap: 10px; }
+        .fb-quiz-option {
+          min-height: 50px;
+          border: 1px solid #cfe0d7;
+          border-radius: 8px;
+          background: #fff;
+          color: #123622;
+          padding: 12px 14px;
+          text-align: left;
+          font-size: 14px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+        .fb-quiz-option:hover { border-color: var(--fb-green); background: #f3fbf6; }
+        .fb-quiz-back {
+          margin-top: 14px;
+          border: 0;
+          background: transparent;
+          color: var(--fb-green-dark);
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .fb-lead-error { margin-top: 12px; color: #b42318; font-size: 12px; font-weight: 800; }
+        .fb-success-box {
+          padding: 20px;
+          border-radius: 10px;
+          background: #f0fbf4;
+          color: #063f1d;
+          text-align: center;
+        }
+        .fb-success-box h3 { margin: 12px 0 8px; font-size: 22px; font-weight: 950; }
+        .fb-success-box p { margin: 0 0 18px; color: #315344; font-size: 14px; line-height: 1.5; }
+        .fb-why {
+          margin: 0 auto 0;
+          background: #fff;
+          border-radius: 7px;
+          box-shadow: 0 10px 28px rgba(8,35,18,.08);
+          padding: 26px 20px;
+          display: grid;
+          grid-template-columns: 1.05fr repeat(5, 1fr);
+          align-items: center;
+        }
+        .fb-intro { padding: 0 15px; }
+        .fb-intro h2 { margin: 0; color: var(--fb-blue); font-size: 18px; line-height: 1.16; font-weight: 950; text-transform: uppercase; }
+        .fb-intro h2 span { color: var(--fb-green); display: block; }
+        .fb-benefit { min-height: 108px; border-left: 1px solid #ccd8d2; padding: 0 20px; text-align: center; font-family: Arial, Helvetica, sans-serif; }
+        .fb-benefit svg { color: var(--fb-green); margin-bottom: 12px; stroke-width: 1.8; }
+        .fb-benefit h3 { margin: 0 0 8px; color: #092218; font-size: 11px; line-height: 1.2; font-weight: 950; text-transform: uppercase; }
+        .fb-benefit p { margin: 0; color: #55635e; font-size: 10.5px; line-height: 1.45; }
+        .fb-stats-strip {
+          margin: -1px auto 0;
+          width: min(100% - 74px, 1700px);
+          border-radius: 6px;
+          background: linear-gradient(90deg, #006d32, #004e24);
+          color: #fff;
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          overflow: hidden;
+        }
+        .fb-stat { min-height: 73px; padding: 13px 24px; display: flex; align-items: center; gap: 17px; border-right: 1px solid rgba(255,255,255,.2); }
         .fb-stat:last-child { border-right: 0; }
-        .fb-stat svg { color: var(--fb-green-2); }
-        .fb-stat strong { display: block; color: var(--fb-ink); font-size: 22px; line-height: 1; }
-        .fb-stat span { display: block; color: #525d56; font-size: 12px; margin-top: 4px; }
-        .fb-footer { margin-top: 0; color: rgba(255,255,255,.86); background: radial-gradient(circle at left top, rgba(8,107,58,.55), transparent 28%), linear-gradient(90deg, #043d25, #022c1c); }
-        .fb-footer .fb-shell { padding: 26px 0 20px; display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.25fr 1.4fr; gap: 42px; }
-        .fb-footer-logo { width: 138px; height: auto; object-fit: contain; margin-bottom: 12px; }
-        .fb-footer p, .fb-footer a { color: rgba(255,255,255,.82); font-size: 13px; line-height: 1.5; text-decoration: none; }
-        .fb-footer h3 { color: #fff; font-size: 13px; margin: 0 0 10px; text-transform: uppercase; }
-        .fb-footer-links { display: grid; gap: 6px; }
-        .fb-newsletter { display: flex; align-items: center; border: 1px solid rgba(255,255,255,.28); border-radius: 4px; overflow: hidden; height: 38px; }
-        .fb-newsletter input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: #fff; padding: 0 13px; outline: 0; font-size: 12px; }
-        .fb-newsletter button { width: 48px; height: 100%; border: 0; background: var(--fb-gold); color: #fff; display: inline-flex; align-items: center; justify-content: center; }
-        .fb-footer-bottom { border-top: 1px solid rgba(255,255,255,.12); padding: 13px 0; font-size: 11px; color: rgba(255,255,255,.72); }
-        .fb-footer-bottom .fb-shell { padding: 0; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-        .fb-social { display: flex; align-items: center; gap: 18px; }
-        @media (max-width: 1380px) {
-          .fb-menu { gap: 22px; }
-          .fb-broker { right: 24px; width: 300px; }
-          .fb-hero-content { width: min(620px, 52vw); }
-          .fb-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+        .fb-stat svg { color: var(--fb-gold); flex: 0 0 auto; }
+        .fb-stat strong { display: block; font-size: 16px; line-height: 1; text-transform: uppercase; }
+        .fb-stat span { display: block; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.15; }
+        .fb-footer { margin-top: -36px; padding-top: 58px; background: linear-gradient(90deg, #003717, #005d2b); color: #fff; font-family: Arial, Helvetica, sans-serif; }
+        .fb-footer .fb-shell { padding: 0 0 20px; display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 48px; }
+        .fb-footer-logo { width: 118px; margin-bottom: 10px; }
+        .fb-footer p,
+        .fb-footer a { color: rgba(255,255,255,.9); text-decoration: none; font-size: 12px; line-height: 1.5; }
+        .fb-footer h3 { margin: 0 0 14px; color: #fff; font-size: 12px; font-weight: 950; text-transform: uppercase; }
+        .fb-footer-links { display: grid; align-content: start; gap: 8px; }
+        .fb-social { display: flex; gap: 12px; margin-top: 10px; }
+        .fb-social span { width: 24px; height: 24px; border-radius: 999px; background: rgba(255,255,255,.16); display: grid; place-items: center; }
+        .fb-contact-row { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 10px; }
+        .fb-footer-bottom { border-top: 1px solid rgba(255,255,255,.16); padding: 10px 0; color: rgba(255,255,255,.75); font-size: 11px; }
+        .fb-footer-bottom .fb-shell { padding: 0; display: flex; justify-content: space-between; gap: 16px; }
+        .fb-footer-bottom .heart { color: #ff3c3c; }
+        @media (max-width: 1240px) {
+          .fb-menu { gap: 20px; }
+          .fb-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .fb-why { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 0; }
+          .fb-intro { padding-bottom: 12px; }
+          .fb-benefit:nth-child(2n) { border-left: 0; }
+          .fb-stats-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
-        @media (max-width: 1020px) {
-          .fb-shell, .fb-search-panel { width: min(100% - 32px, 760px); }
+        @media (max-width: 900px) {
+          .fb-shell,
+          .fb-search,
+          .fb-stats-strip { width: min(100% - 28px, 760px); }
           .fb-topbar { display: none; }
-          .fb-nav { height: auto; position: relative; }
-          .fb-nav .fb-shell { padding: 10px 0; flex-wrap: wrap; }
-          .fb-logo { width: 128px; height: 66px; }
-          .fb-menu { order: 3; width: 100%; overflow-x: auto; padding: 4px 0 7px; }
-          .fb-nav .fb-btn-primary { height: 42px; padding: 0 16px; }
-          .fb-hero .fb-shell { min-height: auto; display: block; padding: 42px 0 0; }
-          .fb-hero-content { width: 100%; padding: 0 0 34px; }
-          .fb-broker { position: relative; right: auto; top: auto; width: 100%; max-width: 380px; margin: 0 0 -42px auto; }
-          .fb-search-panel { margin-top: 66px; grid-template-columns: repeat(2, minmax(0,1fr)); }
-          .fb-filter:nth-child(2n) { border-right: 0; }
-          .fb-filter:last-child { grid-column: 1 / -1; }
-          .fb-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
-          .fb-stat { border-bottom: 1px solid var(--fb-line); }
-          .fb-footer .fb-shell { grid-template-columns: repeat(2, minmax(0,1fr)); }
+          .fb-nav { height: auto; }
+          .fb-nav .fb-shell { padding: 10px 0 12px; flex-wrap: wrap; gap: 12px; }
+          .fb-logo { width: 138px; height: 92px; }
+          .fb-menu { order: 3; width: 100%; overflow-x: auto; padding: 8px 0 10px; gap: 18px; scrollbar-width: none; }
+          .fb-menu::-webkit-scrollbar { display: none; }
+          .fb-favorites { margin-left: auto; }
+          .fb-hero .fb-shell { min-height: auto; }
+          .fb-hero-content { width: 100%; padding: 46px 0 92px; }
+          .fb-search { margin-top: -58px; }
+          .fb-search-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+          .fb-filter { border: 1px solid var(--fb-line); border-radius: 5px; padding: 10px 12px; }
+          .fb-search-button { grid-column: 1 / -1; }
+          .fb-hero-points { grid-template-columns: 1fr; }
+          .fb-footer .fb-shell { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
-        @media (max-width: 680px) {
-          .fb-menu { gap: 18px; font-size: 12px; }
-          .fb-nav .fb-btn-primary { width: 100%; }
-          .fb-kicker { font-size: 15px; letter-spacing: .32em; }
-          .fb-title { font-size: 43px; }
-          .fb-subtitle { font-size: 16px; }
-          .fb-hero-actions .fb-btn { width: 100%; }
-          .fb-search-panel, .fb-grid, .fb-stats, .fb-footer .fb-shell { grid-template-columns: 1fr; }
-          .fb-filter { border-right: 0; border-bottom: 1px solid var(--fb-line); }
-          .fb-filter:last-child { border-bottom: 0; }
-          .fb-section-head { align-items: start; flex-direction: column; }
-          .fb-card-image { height: 190px; }
-          .fb-stat { justify-content: flex-start; border-right: 0; }
+        @media (max-width: 620px) {
+          .fb-site { background: #f6faf7; }
+          .fb-shell,
+          .fb-search,
+          .fb-stats-strip { width: calc(100% - 24px); }
+          .fb-nav { position: sticky; top: 0; z-index: 30; box-shadow: 0 8px 22px rgba(0,0,0,.08); }
+          .fb-logo { width: 124px; height: 78px; }
+          .fb-menu { font-size: 11px; }
+          .fb-hero { min-height: 620px; background-position: 61% center; }
+          .fb-hero-content { padding: 36px 0 108px; }
+          .fb-title { font-size: 46px; }
+          .fb-subtitle { font-size: 15px; }
+          .fb-point { align-items: flex-start; }
+          .fb-actions .fb-btn,
+          .fb-favorites,
+          .fb-all-link { width: 100%; }
+          .fb-section-head,
+          .fb-pagination,
           .fb-footer-bottom .fb-shell { align-items: flex-start; flex-direction: column; }
+          .fb-page-controls { justify-content: flex-start; }
+          .fb-search-row,
+          .fb-cards,
+          .fb-why,
+          .fb-stats-strip,
+          .fb-footer .fb-shell { grid-template-columns: 1fr; }
+          .fb-benefit { border-left: 0; border-top: 1px solid #ccd8d2; padding-top: 22px; }
+          .fb-stat { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.2); }
+          .fb-card-image { height: 175px; }
+          .fb-card { border-radius: 10px; }
+          .fb-card-body { padding: 18px 16px 16px; }
+          .fb-card h3 { font-size: 17px; }
+          .fb-card-link { min-height: 42px; }
+          .fb-page-button { min-width: 42px; height: 42px; }
+          .fb-lead-modal { align-items: flex-end; padding: 0; }
+          .fb-lead-dialog { width: 100%; max-height: 94vh; border-radius: 18px 18px 0 0; }
+          .fb-lead-head { padding: 18px 16px; }
+          .fb-lead-body { padding: 16px; }
+          .fb-lead-property { grid-template-columns: 76px 1fr; }
+          .fb-lead-thumb { height: 62px; }
         }
       `}</style>
 
       <div className="fb-topbar">
         <div className="fb-shell">
           <div className="fb-topbar-group">
-            <span className="fb-topbar-item">
-              <BadgeCheck size={15} />
-              Atendimento em todo o Brasil
-            </span>
-            <span className="fb-topbar-item">
-              <Leaf size={15} />
-              Especialistas em imoveis rurais
-            </span>
+            <span className="fb-topbar-item"><Star size={14} />Especialistas em fazendas de alto padrao</span>
+            <span className="fb-topbar-item"><Headphones size={14} />Atendimento personalizado</span>
+            <span className="fb-topbar-item"><Lock size={14} />Sigilo absoluto</span>
+            <span className="fb-topbar-item"><Handshake size={14} />Experiencia e tradicao</span>
           </div>
-          <div className="fb-topbar-group">
-            <a className="fb-contact-link" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={15} />
-              {PHONE_LABEL}
+          <div className="fb-top-actions">
+            <a className="fb-top-action" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
+              <MessageCircle size={15} />{PHONE_LABEL}
             </a>
-            <a className="fb-contact-link" href={`mailto:${EMAIL}`}>
-              <Mail size={15} />
-              {EMAIL}
+            <a className="fb-top-action yellow" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
+              <MessageCircle size={14} />Fale conosco
             </a>
           </div>
         </div>
       </div>
 
-      <nav className="fb-nav">
+      <nav className="fb-nav" id="inicio">
         <div className="fb-shell">
           <a href="#inicio" aria-label="Fazendas Brasil">
             <img className="fb-logo" src={LOGO_URL} alt="Fazendas Brasil" />
           </a>
           <div className="fb-menu" aria-label="Menu principal">
-            <a href="#inicio">Inicio</a>
-            <a href="#fazendas">Fazendas a venda</a>
+            <a href="#fazendas">Fazendas a venda <ChevronDown size={13} /></a>
             <a href="#quem-somos">Quem somos</a>
-            <a href="#servicos">Servicos</a>
-            <a href="#regioes">Regioes</a>
-            <a href="#blog">Blog</a>
+            <a href="#servicos">Servicos <ChevronDown size={13} /></a>
+            <a href="#localizacoes">Localizacoes <ChevronDown size={13} /></a>
+            <a href="#noticias">Noticias</a>
             <a href="#contato">Contato</a>
           </div>
-          <a className="fb-btn fb-btn-primary" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-            <UsersRound size={17} />
-            Fale com um especialista
+          <a className="fb-favorites" href="#fazendas">
+            <Heart size={17} />
+            Favoritos
+            <span className="fb-count">0</span>
           </a>
         </div>
       </nav>
 
-      <header id="inicio" className="fb-hero">
+      <header className="fb-hero">
         <div className="fb-shell">
           <div className="fb-hero-content">
-            <p className="fb-kicker">As melhores</p>
-            <h1 className="fb-title">Fazendas do Brasil em um so lugar</h1>
+            <p className="fb-kicker">Excelencia em negocios rurais</p>
+            <h1 className="fb-title">
+              <span>As melhores</span>
+              <span className="gold">fazendas</span>
+              <span>do Brasil</span>
+              <span className="green">estao aqui!</span>
+            </h1>
             <p className="fb-subtitle">
-              Conectamos investidores e produtores as melhores oportunidades rurais do pais.
+              Conectamos compradores exigentes as melhores oportunidades. Fazendas selecionadas com rigor e total seguranca.
             </p>
-            <div className="fb-hero-actions">
+            <div className="fb-hero-points">
+              <div className="fb-point">
+                <span className="fb-point-icon"><ShieldCheck size={23} /></span>
+                <span><strong>Seguranca</strong><span>Negocios com total seguranca juridica</span></span>
+              </div>
+              <div className="fb-point">
+                <span className="fb-point-icon"><Gem size={23} /></span>
+                <span><strong>Exclusividade</strong><span>Imoveis rurais de alto padrao selecionados</span></span>
+              </div>
+              <div className="fb-point">
+                <span className="fb-point-icon"><UsersRound size={23} /></span>
+                <span><strong>Atendimento</strong><span>Consultores especialistas ao seu lado</span></span>
+              </div>
+            </div>
+            <div className="fb-actions">
               <a className="fb-btn fb-btn-green" href="#fazendas">
-                Ver fazendas disponiveis
-                <ArrowRight size={18} />
+                Ver fazendas a venda <ArrowRight size={18} />
               </a>
-              <a className="fb-btn" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-                Como podemos ajudar?
-                <MessageCircle size={18} />
+              <a className="fb-btn fb-btn-outline" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
+                Falar com especialista <MessageCircle size={17} />
               </a>
             </div>
           </div>
-
-          <aside className="fb-broker" id="contato" aria-label="Especialista Fazendas Brasil">
-            <img className="fb-broker-photo" src={BROKER_PHOTO_URL} alt="Renato Vilmar Piovesana" />
-            <p className="fb-help">Ola, posso te ajudar?</p>
-            <h2>Renato Vilmar Piovesana</h2>
-            <small>CRECI 16644F</small>
-            <a className="fb-broker-phone" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={22} />
-              {PHONE_LABEL}
-            </a>
-            <div className="fb-broker-actions">
-              <a className="fb-btn fb-btn-green" href="#fazendas">
-                Ver meus imoveis
-                <ArrowRight size={17} />
-              </a>
-              <a className="fb-btn" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-                Falar no WhatsApp
-                <MessageCircle size={17} />
-              </a>
-            </div>
-          </aside>
         </div>
       </header>
 
-      <section className="fb-search-panel" aria-label="Filtros de busca">
-        <div className="fb-filter">
-          <Sprout className="fb-filter-icon" size={28} />
-          <div className="fb-filter-copy">
-            <div className="fb-filter-label">Tipo de imovel</div>
-            <div className="fb-filter-main">
-              Fazenda
-              <ChevronDown size={16} />
+      <section className="fb-search" aria-label="Busca de fazendas">
+        <div className="fb-search-row">
+          <div className="fb-filter">
+            <MapPin size={24} />
+            <div>
+              <div className="fb-filter-label">Localizacao</div>
+              <div className="fb-filter-main">Selecione o estado <ChevronDown size={14} /></div>
             </div>
           </div>
-        </div>
-        <div className="fb-filter">
-          <Leaf className="fb-filter-icon" size={28} />
-          <div className="fb-filter-copy">
-            <div className="fb-filter-label">Aptidao</div>
-            <div className="fb-filter-main">
-              Selecione
-              <ChevronDown size={16} />
+          <div className="fb-filter">
+            <SlidersHorizontal size={24} />
+            <div>
+              <div className="fb-filter-label">Area total</div>
+              <div className="fb-filter-main">Selecione a area <ChevronDown size={14} /></div>
             </div>
           </div>
-        </div>
-        <div className="fb-filter">
-          <MapPin className="fb-filter-icon" size={28} />
-          <div className="fb-filter-copy">
-            <div className="fb-filter-label">Estado</div>
-            <div className="fb-filter-main">
-              Selecione
-              <ChevronDown size={16} />
+          <div className="fb-filter">
+            <Leaf size={24} />
+            <div>
+              <div className="fb-filter-label">Atividade principal</div>
+              <div className="fb-filter-main">Selecione a atividade <ChevronDown size={14} /></div>
             </div>
           </div>
-        </div>
-        <div className="fb-filter">
-          <Ruler className="fb-filter-icon" size={28} />
-          <div className="fb-filter-copy">
-            <div className="fb-filter-label">Hectares</div>
-            <div className="fb-filter-range">
-              <span>De</span>
-              <span>ate</span>
-              <span />
+          <div className="fb-filter">
+            <CircleDollarSign size={24} />
+            <div>
+              <div className="fb-filter-label">Valor</div>
+              <div className="fb-filter-main">Selecione o valor <ChevronDown size={14} /></div>
             </div>
           </div>
+          <button className="fb-search-button" type="button">Buscar fazendas <Search size={17} /></button>
         </div>
-        <div className="fb-filter">
-          <Banknote className="fb-filter-icon" size={29} />
-          <div className="fb-filter-copy">
-            <div className="fb-filter-label">Valor (R$)</div>
-            <div className="fb-filter-range">
-              <span>Min.</span>
-              <span />
-              <span>Max.</span>
-            </div>
-          </div>
-        </div>
+        <div className="fb-advanced"><Search size={14} /> Busca avancada <ChevronDown size={14} /></div>
       </section>
 
       <main className="fb-shell">
-        <section id="fazendas" className="fb-section">
+        <section className="fb-section" id="fazendas">
           <div className="fb-section-head">
-            <div>
-              <h2 className="fb-heading">Fazendas disponiveis</h2>
-              <p>Selecionamos as melhores oportunidades para voce investir.</p>
-            </div>
-            <a className="fb-all-link" href="#fazendas">
-              Ver todas as fazendas
-              <ArrowRight size={18} />
-            </a>
+            <h2 className="fb-heading">Imoveis em destaque</h2>
+            <a className="fb-all-link" href="#fazendas">Ver todos os imoveis <ArrowRight size={17} /></a>
           </div>
 
-          <div className="fb-grid">
-            {featured.map((property, index) => {
-              const tag = index === 0 ? 'Exclusivo' : index === 3 ? 'Destaque' : index % 2 === 0 ? 'Alta produtividade' : 'Oportunidade';
-              const area = getPropertyArea(property);
+          {propertyGrids.map((grid, gridIndex) => (
+            <div className="fb-grid-group" key={`grade-${gridIndex + 1}`}>
+              <h3 className="fb-grid-title">Grade {gridIndex + 1}</h3>
+              <div className="fb-cards">
+                {grid.map((property, index) => {
+                  const absoluteIndex = gridIndex * PROPERTIES_PER_GRID + index;
+                  const area = getPropertyArea(property);
+                  return (
+                    <article className="fb-card" key={property.id}>
+                      <div className="fb-card-image" style={{ backgroundImage: `url("${getPropertyImage(property, absoluteIndex)}")` }}>
+                        <span className="fb-sale">{highlights[absoluteIndex % highlights.length]}</span>
+                      </div>
+                      <div className="fb-card-body">
+                        <h3>{property.title}</h3>
+                        <div className="fb-location"><MapPin size={12} />{property.city || property.state || 'Brasil'}</div>
+                        <div className="fb-specs">
+                          <span className="fb-spec"><BadgeCheck size={14} />{formatArea(area)}</span>
+                          <span className="fb-spec"><Heart size={14} />{getAptitude(property)}</span>
+                        </div>
+                        <strong className="fb-price">{formatCurrency(property.price)}</strong>
+                        <button className="fb-card-link" type="button" onClick={() => openLeadFlow(property)}>
+                          Ver detalhes <ArrowRight size={16} />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
-              return (
-                <article className="fb-card" key={property.id}>
-                  <div className="fb-card-image" style={{ backgroundImage: `url("${getPropertyImage(property, index)}")` }}>
-                    <span className={`fb-tag ${index % 2 ? 'gold' : ''}`}>{tag}</span>
-                    <Heart className="fb-card-heart" size={30} />
-                  </div>
-                  <div className="fb-card-body">
-                    <h3>{property.title}</h3>
-                    <div className="fb-meta">
-                      <span>
-                        <Ruler size={13} />
-                        {formatArea(area)}
-                      </span>
-                      <span>
-                        <Sprout size={13} />
-                        {getAptitude(property)}
-                      </span>
-                    </div>
-                    <strong className="fb-price">{formatCurrency(property.price)}</strong>
-                    <a className="fb-btn" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-                      Ver detalhes
-                      <ArrowRight size={14} />
-                    </a>
-                  </div>
-                </article>
-              );
-            })}
+          <div className="fb-pagination" aria-label="Paginacao de imoveis">
+            <div className="fb-page-summary">
+              Mostrando {firstPropertyIndex} a {lastPropertyIndex} de {totalProperties} imoveis
+            </div>
+            <div className="fb-page-controls">
+              <button
+                className="fb-page-button"
+                type="button"
+                disabled={currentPage === 1 || isUsingFallback}
+                onClick={() => goToPage(currentPage - 1)}
+              >
+                Anterior
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <button
+                  className={`fb-page-button ${page === currentPage ? 'active' : ''}`}
+                  type="button"
+                  key={page}
+                  disabled={isUsingFallback}
+                  onClick={() => goToPage(page)}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                className="fb-page-button"
+                type="button"
+                disabled={currentPage === totalPages || isUsingFallback}
+                onClick={() => goToPage(currentPage + 1)}
+              >
+                Proxima
+              </button>
+            </div>
           </div>
         </section>
 
-        <section className="fb-stats" id="quem-somos">
-          <div className="fb-stat">
-            <Tractor size={34} />
-            <div>
-              <strong>+120</strong>
-              <span>Fazendas disponiveis</span>
-            </div>
+        <section className="fb-why" id="quem-somos">
+          <div className="fb-intro">
+            <h2>Por que escolher a <span>Fazendas Brasil?</span></h2>
           </div>
-          <div className="fb-stat">
-            <MapPin size={34} />
-            <div>
-              <strong>+10</strong>
-              <span>Estados atendidos</span>
-            </div>
-          </div>
-          <div className="fb-stat">
-            <BadgeCheck size={34} />
-            <div>
-              <strong>+20 anos</strong>
-              <span>De experiencia</span>
-            </div>
-          </div>
-          <div className="fb-stat">
-            <UsersRound size={34} />
-            <div>
-              <strong>+1.500</strong>
-              <span>Clientes atendidos</span>
-            </div>
-          </div>
-          <div className="fb-stat">
-            <BarChart3 size={34} />
-            <div>
-              <strong>+R$ 2 bi</strong>
-              <span>Em negocios realizados</span>
-            </div>
-          </div>
+          {benefits.map((benefit) => {
+            const Icon = benefit.icon;
+            return (
+              <div className="fb-benefit" key={benefit.title}>
+                <Icon size={35} />
+                <h3>{benefit.title}</h3>
+                <p>{benefit.text}</p>
+              </div>
+            );
+          })}
         </section>
       </main>
 
-      <footer className="fb-footer" id="servicos">
+      <section className="fb-stats-strip" id="servicos">
+        {footerStats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div className="fb-stat" key={stat.value}>
+              <Icon size={38} />
+              <span><strong>{stat.value}</strong>{stat.label}</span>
+            </div>
+          );
+        })}
+      </section>
+
+      <footer className="fb-footer" id="localizacoes">
         <div className="fb-shell">
           <div>
             <img className="fb-footer-logo" src={LOGO_URL} alt="Fazendas Brasil" />
-            <p>Ha mais de 20 anos conectando pessoas as melhores oportunidades rurais do Brasil.</p>
+            <p>Conectamos compradores exigentes as melhores fazendas do Brasil, com seguranca, sigilo e excelencia em cada negociacao.</p>
+            <div className="fb-social">
+              <span><Facebook size={14} /></span>
+              <span><Instagram size={14} /></span>
+              <span><MessageCircle size={14} /></span>
+              <span><Mail size={14} /></span>
+            </div>
           </div>
           <div className="fb-footer-links">
             <h3>Navegacao</h3>
             <a href="#fazendas">Fazendas a venda</a>
             <a href="#quem-somos">Quem somos</a>
             <a href="#servicos">Servicos</a>
-            <a href="#blog">Blog</a>
+            <a href="#localizacoes">Localizacoes</a>
+            <a href="#noticias">Noticias</a>
             <a href="#contato">Contato</a>
-          </div>
-          <div className="fb-footer-links" id="regioes">
-            <h3>Regioes</h3>
-            <a href="#fazendas">Centro-Oeste</a>
-            <a href="#fazendas">Norte</a>
-            <a href="#fazendas">Nordeste</a>
-            <a href="#fazendas">Sudeste</a>
-            <a href="#fazendas">Sul</a>
           </div>
           <div className="fb-footer-links">
             <h3>Servicos</h3>
             <a href="#contato">Avaliacao de imoveis</a>
             <a href="#contato">Consultoria rural</a>
-            <a href="#contato">Compra e venda</a>
-            <a href="#contato">Administracao de fazendas</a>
+            <a href="#contato">Intermediacao de negocios</a>
+            <a href="#contato">Regularizacao fundiaria</a>
+            <a href="#contato">Laudos e vistorias</a>
           </div>
-          <div id="blog">
-            <h3>Newsletter</h3>
-            <p>Receba oportunidades exclusivas diretamente no seu e-mail.</p>
-            <div className="fb-newsletter">
-              <input aria-label="Seu melhor e-mail" placeholder="Seu melhor e-mail" />
-              <button type="button" aria-label="Cadastrar e-mail">
-                <ArrowRight size={18} />
-              </button>
-            </div>
+          <div className="fb-footer-links" id="noticias">
+            <h3>Informacoes</h3>
+            <a href="#contato">Perguntas frequentes</a>
+            <a href="#contato">Politica de privacidade</a>
+            <a href="#contato">Termos de uso</a>
+            <a href="#contato">Trabalhe conosco</a>
+          </div>
+          <div id="contato">
+            <h3>Contato</h3>
+            <div className="fb-contact-row"><Phone size={14} /> <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">{PHONE_LABEL}</a></div>
+            <div className="fb-contact-row"><Mail size={14} /> <a href={`mailto:${EMAIL}`}>{EMAIL}</a></div>
+            <div className="fb-contact-row"><MapPin size={14} /> <p>Av. Brigadeiro Faria Lima, 2369<br />Jardim Paulistano - Sao Paulo/SP<br />CEP 01452-000</p></div>
           </div>
         </div>
         <div className="fb-footer-bottom">
           <div className="fb-shell">
             <span>© 2024 Fazendas Brasil. Todos os direitos reservados.</span>
-            <div className="fb-social">
-              <a href="#privacidade">Politica de Privacidade</a>
-              <a href="#termos">Termos de Uso</a>
-              <Instagram size={16} />
-              <Facebook size={16} />
-              <Youtube size={17} />
-            </div>
+            <span>Desenvolvido com amor por Agencia Rural</span>
           </div>
         </div>
       </footer>
+
+      {selectedProperty && (
+        <div className="fb-lead-modal" role="dialog" aria-modal="true" aria-label="Cadastro de interesse">
+          <div className="fb-lead-dialog">
+            <div className="fb-lead-head">
+              <div>
+                <small>Atendimento especializado</small>
+                <h2>{leadStep === 'success' ? 'Lead qualificado' : 'Receba informacoes deste imovel'}</h2>
+              </div>
+              <button className="fb-lead-close" type="button" onClick={closeLeadFlow} aria-label="Fechar">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="fb-lead-body">
+              <div className="fb-lead-property">
+                <div
+                  className="fb-lead-thumb"
+                  style={{ backgroundImage: `url("${getPropertyImage(selectedProperty, 0)}")` }}
+                />
+                <div>
+                  <strong>{selectedProperty.title}</strong>
+                  <span>
+                    {[selectedProperty.city, selectedProperty.state].filter(Boolean).join(' / ') || 'Fazendas Brasil'} - {formatCurrency(selectedProperty.price)}
+                  </span>
+                </div>
+              </div>
+
+              {leadStep === 'contact' && (
+                <form className="fb-lead-form" onSubmit={handleContactSubmit}>
+                  <div className="fb-field">
+                    <label>Nome completo</label>
+                    <input
+                      required
+                      value={leadForm.name}
+                      onChange={(event) => setLeadForm({ ...leadForm, name: event.target.value })}
+                      placeholder="Seu nome"
+                    />
+                  </div>
+                  <div className="fb-field">
+                    <label>Telefone / WhatsApp</label>
+                    <input
+                      required
+                      type="tel"
+                      value={leadForm.phone}
+                      onChange={(event) => setLeadForm({ ...leadForm, phone: event.target.value })}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  <div className="fb-field">
+                    <label>Email opcional</label>
+                    <input
+                      type="email"
+                      value={leadForm.email}
+                      onChange={(event) => setLeadForm({ ...leadForm, email: event.target.value })}
+                      placeholder="voce@email.com"
+                    />
+                  </div>
+                  <button className="fb-lead-primary" type="submit">
+                    Continuar qualificacao <ArrowRight size={17} />
+                  </button>
+                  {leadError && <div className="fb-lead-error">{leadError}</div>}
+                </form>
+              )}
+
+              {leadStep === 'quiz' && (
+                <div>
+                  <div className="fb-quiz-progress">
+                    Pergunta {quizIndex + 1} de {quizQuestions.length}
+                  </div>
+                  <h3 className="fb-quiz-question">{quizQuestions[quizIndex].label}</h3>
+                  <div className="fb-quiz-options">
+                    {quizQuestions[quizIndex].options.map((option) => (
+                      <button
+                        className="fb-quiz-option"
+                        type="button"
+                        key={option}
+                        disabled={leadSubmitting}
+                        onClick={() => handleQuizAnswer(option)}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    className="fb-quiz-back"
+                    type="button"
+                    disabled={leadSubmitting}
+                    onClick={() => {
+                      if (quizIndex === 0) {
+                        setLeadStep('contact');
+                        return;
+                      }
+                      setQuizIndex((current) => current - 1);
+                    }}
+                  >
+                    Voltar
+                  </button>
+                  {leadSubmitting && <div className="fb-quiz-progress">Salvando lead qualificado no Kanban...</div>}
+                  {leadError && <div className="fb-lead-error">{leadError}</div>}
+                </div>
+              )}
+
+              {leadStep === 'success' && (
+                <div className="fb-success-box">
+                  <ShieldCheck size={42} />
+                  <h3>Cadastro enviado com sucesso</h3>
+                  <p>
+                    Seu perfil foi qualificado e um card foi criado no Kanban da equipe Fazendas Brasil para atendimento consultivo.
+                  </p>
+                  <button className="fb-lead-primary" type="button" onClick={closeLeadFlow}>
+                    Concluir
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

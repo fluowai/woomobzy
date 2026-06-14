@@ -8,7 +8,7 @@ import (
 )
 
 func requireTenantID(c *gin.Context) (uuid.UUID, bool) {
-	tenantIDStr := c.Query("tenant_id")
+	tenantIDStr := c.GetHeader("x-tenant-id")
 	if tenantIDStr == "" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "tenant_id is required"})
 		return uuid.Nil, false

@@ -1,10 +1,11 @@
 import { logger } from '@/utils/logger';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import PublicLandingPage from '../views/PublicLandingPage';
 import { PLATFORM_DOMAIN } from '../utils/platform';
+
+const PublicLandingPage = lazy(() => import('../views/PublicLandingPage'));
 
 interface DomainRouterProps {
   children: React.ReactNode;
@@ -303,7 +304,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   if (isPublicSite && resolvedSlug) {
     return (
       <>
-        <PublicLandingPage forceSlug={resolvedSlug} />
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+          <PublicLandingPage forceSlug={resolvedSlug} />
+        </Suspense>
         {renderDebug()}
       </>
     );

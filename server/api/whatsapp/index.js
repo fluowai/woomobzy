@@ -122,7 +122,8 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         // The browser Origin is already validated by the Node API. Do not pass it
         // to the internal WooAPI service, otherwise Gin CORS can reject localhost
         // ports that are only meant to hit the public proxy.
-        proxyReq.removeHeader('origin');
+        const serviceToken = process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_INTERNAL_TOKEN;
+        if (serviceToken) proxyReq.setHeader('x-whatsapp-service-token', serviceToken);
 
         const whatsappUserId = req.user?.id;
         const whatsappTenantId = req.orgId;
@@ -131,6 +132,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
           const url = new URL(proxyReq.path, 'http://localhost');
           url.searchParams.set('tenant_id', whatsappTenantId);
           proxyReq.path = url.pathname + url.search;
+          proxyReq.setHeader('x-tenant-id', whatsappTenantId);
 
           if (req.body && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
             const bodyData = { ...req.body, tenant_id: whatsappTenantId };
@@ -151,7 +153,8 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         );
       },
       proxyReqWs: (proxyReq, req) => {
-        proxyReq.removeHeader('origin');
+        const serviceToken = process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_INTERNAL_TOKEN;
+        if (serviceToken) proxyReq.setHeader('x-whatsapp-service-token', serviceToken);
         console.log(
           `[WhatsApp WS Proxy] ${req.url} -> ${target} (Org: ${req.orgId || 'none'})`
         );
@@ -264,7 +267,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
 };
 
 function getWsTokenSecret() {
-  return process.env.WHATSAPP_INTERNAL_TOKEN || process.env.SUPABASE_JWT_SECRET || '';
+  return process.env.WHATSAPP_WS_JWT_SECRET || '';
 }
 
 function verifyWsToken(token) {
@@ -468,6 +471,9 @@ function prepareWsProxyRequest(req, payload) {
   url.searchParams.delete('ws_token');
   url.searchParams.set('tenant_id', payload.org_id);
   req.url = url.pathname + url.search;
+  req.headers['x-tenant-id'] = payload.org_id;
+  const serviceToken = process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_INTERNAL_TOKEN;
+  if (serviceToken) req.headers['x-whatsapp-service-token'] = serviceToken;
 }
 
 async function organizationExists(orgId) {

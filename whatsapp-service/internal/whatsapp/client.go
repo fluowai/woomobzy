@@ -11,9 +11,11 @@ import (
 
 	"github.com/google/uuid"
 	"go.mau.fi/whatsmeow"
+	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"whatsapp-service/internal/models"
 	"whatsapp-service/internal/repository"
@@ -23,6 +25,8 @@ import (
 
 // Client wraps a WhatsMeow client with business logic
 type Client struct {
+	ctx            context.Context
+	cancel         context.CancelFunc
 	instanceID     uuid.UUID
 	tenantID       *uuid.UUID
 	instanceName   string
@@ -50,10 +54,14 @@ type Client struct {
 	minioSecretKey string
 	minioRegion    string
 	automation     *AutomationClient
+	reconnectMu    sync.Mutex
+	reconnectTry   int
+	manualStop     bool
 }
 
 // NewClient creates a new WhatsApp client wrapper
 func NewClient(
+	parentCtx context.Context,
 	instanceID uuid.UUID,
 	tenantID *uuid.UUID,
 	instanceName string,
@@ -77,12 +85,15 @@ func NewClient(
 	internalToken string,
 	automationEnabled bool,
 ) *Client {
+	clientCtx, cancel := context.WithCancel(parentCtx)
 	var automation *AutomationClient
 	if automationEnabled && nodeURL != "" && internalToken != "" {
 		automation = NewAutomationClient(nodeURL, internalToken, logger)
 	}
 
 	return &Client{
+		ctx:            clientCtx,
+		cancel:         cancel,
 		instanceID:     instanceID,
 		tenantID:       tenantID,
 		instanceName:   instanceName,
@@ -222,11 +233,51 @@ func (c *Client) Connect(ctx context.Context) error {
 func (c *Client) Disconnect() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.manualStop = true
+	c.cancel()
 
 	if c.waClient != nil {
 		c.waClient.Disconnect()
 	}
 	c.connected = false
+}
+
+func (c *Client) scheduleReconnect() {
+	c.reconnectMu.Lock()
+	if c.manualStop || c.ctx.Err() != nil || c.reconnectTry >= 10 {
+		c.reconnectMu.Unlock()
+		return
+	}
+	c.reconnectTry++
+	attempt := c.reconnectTry
+	c.reconnectMu.Unlock()
+
+	delay := time.Second * time.Duration(1<<min(attempt-1, 8))
+	if delay > 5*time.Minute {
+		delay = 5 * time.Minute
+	}
+	go func() {
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-timer.C:
+		}
+		connectCtx, cancel := context.WithTimeout(c.ctx, 90*time.Second)
+		defer cancel()
+		c.logger.Info("Attempting auto-reconnect", zap.String("instance", c.instanceID.String()), zap.Int("attempt", attempt), zap.Duration("delay", delay))
+		if err := c.Connect(connectCtx); err != nil {
+			c.logger.Error("Auto-reconnect failed", zap.String("instance", c.instanceID.String()), zap.Int("attempt", attempt), zap.Error(err))
+			c.scheduleReconnect()
+		}
+	}()
+}
+
+func (c *Client) resetReconnect() {
+	c.reconnectMu.Lock()
+	c.reconnectTry = 0
+	c.reconnectMu.Unlock()
 }
 
 // IsConnected returns whether the client is currently connected
@@ -261,7 +312,8 @@ func (c *Client) eventHandler(evt interface{}) {
 		c.connected = true
 		c.mu.Unlock()
 		c.logger.Info("WhatsApp connected event", zap.String("instance", c.instanceID.String()))
-		c.markConnected(context.Background())
+		c.resetReconnect()
+		c.markConnected(c.ctx)
 
 	case *events.Disconnected:
 		c.mu.Lock()
@@ -269,30 +321,23 @@ func (c *Client) eventHandler(evt interface{}) {
 		c.mu.Unlock()
 		c.logger.Warn("WhatsApp disconnected event", zap.String("instance", c.instanceID.String()))
 
-		c.instanceRepo.UpdateStatus(context.Background(), c.instanceID, models.StatusDisconnected)
+		c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusDisconnected)
 		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 			InstanceID: c.instanceID,
 			Status:     models.StatusDisconnected,
 		})
 
-		// Auto-reconnect after delay
-		go func() {
-			time.Sleep(5 * time.Second)
-			c.logger.Info("Attempting auto-reconnect", zap.String("instance", c.instanceID.String()))
-			if err := c.Connect(context.Background()); err != nil {
-				c.logger.Error("Auto-reconnect failed",
-					zap.String("instance", c.instanceID.String()),
-					zap.Error(err),
-				)
-			}
-		}()
+		c.scheduleReconnect()
 
 	case *events.LoggedOut:
 		c.mu.Lock()
 		c.connected = false
 		c.mu.Unlock()
 		c.logger.Warn("WhatsApp logged out", zap.String("instance", c.instanceID.String()))
-		c.instanceRepo.UpdateStatus(context.Background(), c.instanceID, models.StatusDisconnected)
+		c.reconnectMu.Lock()
+		c.manualStop = true
+		c.reconnectMu.Unlock()
+		c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusDisconnected)
 		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 			InstanceID: c.instanceID,
 			Status:     models.StatusDisconnected,
@@ -300,12 +345,16 @@ func (c *Client) eventHandler(evt interface{}) {
 
 	case *events.HistorySync:
 		c.handleHistorySync(v)
+
+	case *events.Receipt:
+		c.handleReceipt(v)
 	}
 }
 
 // handleMessage processes an incoming WhatsApp message
 func (c *Client) handleMessage(evt *events.Message) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(c.ctx, 2*time.Minute)
+	defer cancel()
 
 	// Unwrap message for ephemeral (disappearing messages), view once and document with caption
 	if evt.Message != nil {
@@ -436,22 +485,13 @@ func (c *Client) handleMessage(evt *events.Message) {
 		)
 	}
 
-	// Handle media download
+	// Queue media download without blocking message persistence.
 	var mediaURL, mediaMimetype, mediaFilename string
 	mediaStatus := ""
 	mediaError := ""
 	if isMediaMessageType(msgType) {
-		url, mime, filename, err := c.downloadAndUploadMedia(ctx, evt)
-		if err != nil {
-			c.logger.Error("Failed to handle media", zap.Error(err))
-			mediaStatus = "failed"
-			mediaError = err.Error()
-		} else {
-			mediaURL = url
-			mediaMimetype = mime
-			mediaFilename = filename
-			mediaStatus = "ready"
-		}
+		mediaStatus = "pending"
+		mediaMimetype, mediaFilename = mediaMetadata(evt.Message)
 	}
 
 	// Create message record
@@ -485,7 +525,11 @@ func (c *Client) handleMessage(evt *events.Message) {
 		c.logger.Error("Failed to save message", zap.Error(err))
 		return
 	}
-	c.persistMessageMedia(ctx, msg)
+	if isMediaMessageType(msgType) {
+		c.queueMessageMedia(ctx, msg, evt.Message)
+	} else {
+		c.persistMessageMedia(ctx, msg)
+	}
 
 	// Broadcast via WebSocket
 	c.broadcastEvent("new_message", models.NewMessageEvent{
@@ -510,7 +554,9 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	if c.automation != nil && !info.IsFromMe && !isGroup && senderPhone != "" {
 		go func(saved models.Message, savedChat models.Chat, participant *models.ParticipantInfo) {
-			result, err := c.automation.ProcessMessage(context.Background(), AutomationMessagePayload{
+			automationCtx, cancel := context.WithTimeout(c.ctx, 60*time.Second)
+			defer cancel()
+			result, err := c.automation.ProcessMessage(automationCtx, AutomationMessagePayload{
 				InstanceID:   c.instanceID,
 				TenantID:     uuidToString(c.tenantID),
 				InstanceName: c.instanceName,
@@ -528,7 +574,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 			}
 
 			if result != nil && result.ShouldReply && strings.TrimSpace(result.Reply) != "" {
-				replyCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				replyCtx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
 				defer cancel()
 
 				if err := c.SendTextMessage(replyCtx, savedChat.ChatJID, strings.TrimSpace(result.Reply)); err != nil {
@@ -549,6 +595,74 @@ func (c *Client) handleMessage(evt *events.Message) {
 				)
 			}
 		}(*msg, *chat, participantInfo)
+	}
+}
+
+func (c *Client) queueMessageMedia(ctx context.Context, msg *models.Message, waMessage *waE2E.Message) {
+	if c.mediaRepo == nil || c.tenantID == nil || waMessage == nil {
+		return
+	}
+	payload, err := proto.Marshal(waMessage)
+	if err != nil {
+		c.logger.Warn("Failed to marshal WhatsApp media payload", zap.String("message_id", msg.MessageID), zap.Error(err))
+		return
+	}
+	if err := c.mediaRepo.UpsertPendingFromMessage(ctx, msg, *c.tenantID, c.storageBucket, payload); err != nil {
+		c.logger.Warn("Failed to queue media job", zap.String("message_id", msg.MessageID), zap.Error(err))
+	}
+}
+
+func (c *Client) handleReceipt(receipt *events.Receipt) {
+	if receipt == nil || len(receipt.MessageIDs) == 0 {
+		return
+	}
+	status := receiptStatus(receipt.Type)
+	ids := make([]string, 0, len(receipt.MessageIDs))
+	for _, id := range receipt.MessageIDs {
+		ids = append(ids, string(id))
+	}
+	ctx, cancel := context.WithTimeout(c.ctx, 10*time.Second)
+	defer cancel()
+	if err := c.messageRepo.UpdateDeliveryStatus(ctx, c.instanceID, ids, status); err != nil {
+		c.logger.Warn("Failed to update receipt status", zap.String("instance", c.instanceID.String()), zap.Error(err))
+		return
+	}
+	c.broadcastEvent("message_receipt", models.MessageReceiptEvent{
+		InstanceID: c.instanceID,
+		ChatJID:    receipt.Chat.String(),
+		MessageIDs: ids,
+		Status:     status,
+		Timestamp:  receipt.Timestamp,
+	})
+}
+
+func receiptStatus(receiptType types.ReceiptType) string {
+	switch receiptType {
+	case types.ReceiptTypeRead, types.ReceiptTypeReadSelf:
+		return "read"
+	case types.ReceiptTypePlayed, types.ReceiptTypePlayedSelf:
+		return "played"
+	case types.ReceiptTypeServerError, types.ReceiptTypeInactive:
+		return "failed"
+	default:
+		return "delivered"
+	}
+}
+
+func mediaMetadata(msg *waE2E.Message) (mimeType, fileName string) {
+	switch {
+	case msg.GetImageMessage() != nil:
+		return msg.GetImageMessage().GetMimetype(), ""
+	case msg.GetAudioMessage() != nil:
+		return msg.GetAudioMessage().GetMimetype(), ""
+	case msg.GetVideoMessage() != nil:
+		return msg.GetVideoMessage().GetMimetype(), ""
+	case msg.GetDocumentMessage() != nil:
+		return msg.GetDocumentMessage().GetMimetype(), msg.GetDocumentMessage().GetFileName()
+	case msg.GetStickerMessage() != nil:
+		return msg.GetStickerMessage().GetMimetype(), ""
+	default:
+		return "", ""
 	}
 }
 

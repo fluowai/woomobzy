@@ -124,8 +124,22 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     resolve: {
-      alias: {
-        '@': path.resolve(process.cwd(), '.'),
+      alias: [
+        { find: '@', replacement: path.resolve(process.cwd(), '.') },
+        { find: /^leaflet-draw$/, replacement: path.resolve(process.cwd(), 'src/shims/leaflet-draw-default.ts') },
+      ],
+    },
+    build: {
+      chunkSizeWarningLimit: 900,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ['react', 'react-dom', 'react-router-dom'],
+            charts: ['recharts'],
+            maps: ['leaflet', 'react-leaflet', 'react-leaflet-draw'],
+            supabase: ['@supabase/supabase-js'],
+          },
+        },
       },
     },
     test: {

@@ -28,6 +28,7 @@ import {
   Bot,
   Link as LinkIcon,
   LayoutTemplate,
+  FileQuestion,
   LucideIcon,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
@@ -81,6 +82,7 @@ const RuralLayout: React.FC = () => {
     { icon: Sparkles, label: 'Editor Visual', path: '/rural/visual-editor' },
     { icon: Settings, label: 'Configurar Site', path: '/rural/site-setup' },
     { icon: LayoutTemplate, label: 'Landing Pages', path: '/rural/landing-pages' },
+    { icon: FileQuestion, label: 'Quiz', path: '/rural/quiz' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
     { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },

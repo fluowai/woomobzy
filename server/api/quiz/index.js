@@ -119,8 +119,26 @@ function budgetFromAnswers(answers) {
     '1300-2000': 2000,
     '2001-3000': 3000,
     'above-3000': 3001,
+    below: null,
+    compatible: null,
+    above: null,
   };
   return ranges[answers.budget] || null;
+}
+
+function campaignBranding(campaign) {
+  return campaign?.branding && typeof campaign.branding === 'object' ? campaign.branding : {};
+}
+
+function leadSourceForCampaign(campaign) {
+  const branding = campaignBranding(campaign);
+  if (branding.lead_source) return String(branding.lead_source);
+  return branding.niche === 'rural' || branding.match_profile === 'rural' ? 'Quiz Rural' : 'Quiz Urbano';
+}
+
+function matchProfileForCampaign(campaign) {
+  const branding = campaignBranding(campaign);
+  return branding.match_profile === 'rural' ? 'rural' : 'urbano';
 }
 
 async function getOrgAIConfig(orgId) {
@@ -167,19 +185,20 @@ async function generateQuizWithGroq({ orgId, pdfText, defaults }) {
     throw new Error('Groq nao configurado. Configure GROQ_API_KEY ou a chave Groq da imobiliaria.');
   }
 
+  const isRural = defaults.niche === 'rural';
   const prompt = `
-Voce e especialista em qualificacao de leads imobiliarios da OKA Imoveis.
+Voce e especialista em qualificacao de leads imobiliarios ${isRural ? 'rurais e agroimobiliarios' : 'urbanos'}.
 Crie uma campanha de quiz para filtrar leads de um imovel especifico com base no ICP/persona abaixo.
 
 Regras:
 - Responda somente JSON valido.
 - Nao invente termos genericos como conservador/moderado/agressivo.
-- As perguntas devem qualificar aderencia real: cidade, tipo de imovel, quartos, faixa de valor, prazo, renda/cadastro, objetivo e urgencia.
+- As perguntas devem qualificar aderencia real: ${isRural ? 'regiao, area em hectares, orcamento, aptidao produtiva, documentacao rural, agua/infraestrutura, prazo, papel na decisao e visita tecnica' : 'cidade, tipo de imovel, quartos, faixa de valor, prazo, renda/cadastro, objetivo e urgencia'}.
 - Leads fora do perfil devem ter opcoes com disqualify=true e reason claro.
 - Use de 6 a 9 perguntas, todas type="single".
 - Cada pergunta precisa de 2 a 5 opcoes.
 - A soma relativa das melhores respostas deve permitir score 0-100 no backend.
-- O texto deve manter identidade OKA: consultivo, direto, alto padrao sem exagero.
+- O texto deve ser consultivo, direto e sem exagero.
 
 Defaults informados pela equipe:
 ${JSON.stringify(defaults, null, 2)}
@@ -211,11 +230,15 @@ Formato exato:
     }
   ],
   "branding": {
-    "primary": "#f04b12",
+    "primary": "${isRural ? '#16a34a' : '#f04b12'}",
     "charcoal": "#242424",
     "muted": "#6d7178",
     "background": "#faf8f5",
-    "logo": "/clients/oka/logo.jpeg"
+    "logo": "/logo-imobfluow.svg",
+    "lead_source": "${defaults.lead_source || (isRural ? 'Quiz Rural' : 'Quiz Urbano')}",
+    "match_profile": "${isRural ? 'rural' : 'urbano'}",
+    "niche": "${isRural ? 'rural' : 'urbano'}",
+    "side_image": "${isRural ? '/templates/template_production.png' : '/templates/urban/urban_luxury_pool.png'}"
   }
 }`;
 
@@ -242,11 +265,15 @@ Formato exato:
     whatsapp_number: String(generated.whatsapp_number || defaults.whatsapp_number || ''),
     property_label: generated.property_label || defaults.property_label || generated.title,
     branding: {
-      primary: '#f04b12',
+      primary: defaults.niche === 'rural' ? '#16a34a' : '#f04b12',
       charcoal: '#242424',
       muted: '#6d7178',
       background: '#faf8f5',
-      logo: '/clients/oka/logo.jpeg',
+      logo: '/logo-imobfluow.svg',
+      lead_source: defaults.lead_source || (defaults.niche === 'rural' ? 'Quiz Rural' : 'Quiz Urbano'),
+      match_profile: defaults.niche === 'rural' ? 'rural' : 'urbano',
+      niche: defaults.niche === 'rural' ? 'rural' : 'urbano',
+      side_image: defaults.niche === 'rural' ? '/templates/template_production.png' : '/templates/urban/urban_luxury_pool.png',
       ...(generated.branding || {}),
     },
   });
@@ -359,6 +386,11 @@ router.post('/campaigns/generate-from-pdf', verifyAuth, requireTenant, upload.si
       whatsapp_number: req.body.whatsapp_number || '',
       city: req.body.city || '',
       rent_range: req.body.rent_range || '',
+      rural_area_range: req.body.rural_area_range || '',
+      investment_range: req.body.investment_range || '',
+      aptitude: req.body.aptitude || '',
+      niche: req.body.niche === 'rural' ? 'rural' : 'urbano',
+      lead_source: req.body.lead_source || '',
     };
     const campaign = await generateQuizWithGroq({ orgId: req.orgId, pdfText, defaults });
     res.json({ success: true, campaign });
@@ -419,6 +451,8 @@ router.post('/public/:slug/submissions', publicQuizLimiter, async (req, res) => 
       Number(campaign.qualification_threshold || 70)
     );
     const classification = result.qualified ? 'qualified' : 'nurture';
+    const leadSource = leadSourceForCampaign(campaign);
+    const matchProfile = matchProfileForCampaign(campaign);
     const notes = [
       `Quiz: ${campaign.title}`,
       `Resultado: ${result.qualified ? 'Qualificado' : 'Nutrição futura'} (${result.score}/100)`,
@@ -434,15 +468,18 @@ router.post('/public/:slug/submissions', publicQuizLimiter, async (req, res) => 
         email: validation.data.email || null,
         phone: validation.data.phone,
         status: result.qualified ? 'Novo' : 'Nutrição Quiz',
-        source: 'Quiz OKA',
+        source: leadSource,
         campaign: campaign.title,
         notes,
         budget: budgetFromAnswers(validation.data.answers),
         classification,
         lead_score: result.score,
+        match_profile: matchProfile,
         ai_profile: {
           quiz_campaign_id: campaign.id,
           quiz_slug: campaign.slug,
+          lead_source: leadSource,
+          match_profile: matchProfile,
           qualification_status: classification,
           answers: result.answerSummary,
           reasons: result.reasons,
@@ -471,9 +508,11 @@ router.post('/public/:slug/submissions', publicQuizLimiter, async (req, res) => 
     if (result.qualified) {
       const message = [
         `Olá! Sou ${validation.data.name}.`,
-        `Fui pré-qualificado pelo Quiz OKA para: ${campaign.property_label}.`,
+        `Fui pre-qualificado pelo ${leadSource} para: ${campaign.property_label}.`,
         `Pontuação: ${result.score}/100.`,
-        'Quero confirmar a disponibilidade e agendar uma visita.',
+        matchProfile === 'rural'
+          ? 'Quero confirmar os dados tecnicos, disponibilidade e visita.'
+          : 'Quero confirmar a disponibilidade e agendar uma visita.',
       ].join('\n');
       whatsappUrl = `https://wa.me/${String(campaign.whatsapp_number).replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     }

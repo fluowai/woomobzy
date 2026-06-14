@@ -1621,6 +1621,11 @@ const KanbanBoard: React.FC = () => {
                                       <span className="text-[10px] text-slate-400 font-medium">
                                         Via {lead.source}
                                       </span>
+                                      {lead.campaign && (
+                                        <span className="mt-1 block truncate text-[10px] font-bold text-slate-500" title={lead.campaign}>
+                                          Campanha: {lead.campaign}
+                                        </span>
+                                      )}
                                       {(typeof lead.lead_score === 'number' && lead.lead_score > 0) || lead.ai_next_action ? (
                                         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-wide">
                                           {typeof lead.lead_score === 'number' && lead.lead_score > 0 && (

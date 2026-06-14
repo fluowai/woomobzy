@@ -30,7 +30,7 @@ export type QuizCampaign = {
   success_message: string;
   disqualification_message: string;
   questions: QuizQuestion[];
-  branding: Record<string, string>;
+  branding: Record<string, any>;
   created_at: string;
   quiz_submissions?: Array<{ count: number }>;
 };
@@ -51,6 +51,15 @@ export type RentalQuizInput = {
   bedrooms: number;
   minRent: number;
   maxRent: number;
+};
+
+export type RuralQuizInput = {
+  city: string;
+  minArea: number;
+  maxArea: number;
+  minBudget: number;
+  maxBudget: number;
+  aptitude: string;
 };
 
 export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
@@ -157,6 +166,108 @@ export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
         { value: 'yes', label: 'Sim, quero visitar', score: 2 },
         { value: 'details', label: 'Quero receber mais detalhes primeiro', score: 1 },
         { value: 'no', label: 'Ainda não', score: 0 },
+      ],
+    },
+  ];
+}
+
+export function buildRuralQuestions(input: RuralQuizInput): QuizQuestion[] {
+  const region = input.city.trim() || 'região de interesse';
+  const minArea = Math.max(1, input.minArea || 1);
+  const maxArea = Math.max(minArea, input.maxArea || minArea);
+  const minBudget = Math.max(0, input.minBudget || 0);
+  const maxBudget = Math.max(minBudget, input.maxBudget || minBudget);
+  const aptitude = input.aptitude.trim() || 'atividade rural';
+
+  return [
+    {
+      id: 'intent',
+      label: `Qual é o seu objetivo principal com este imóvel rural em ${region}?`,
+      type: 'single',
+      required: true,
+      options: [
+        { value: 'production', label: `Produção ligada a ${aptitude}`, score: 18 },
+        { value: 'investment', label: 'Investimento patrimonial ou expansão de carteira', score: 16 },
+        { value: 'leisure', label: 'Lazer, moradia rural ou uso familiar', score: 10 },
+        { value: 'curiosity', label: 'Ainda estou apenas pesquisando mercado', score: 0, reason: 'Lead em fase inicial de pesquisa' },
+      ],
+    },
+    {
+      id: 'region',
+      label: `A localização em ${region} atende sua estratégia?`,
+      type: 'single',
+      required: true,
+      options: [
+        { value: 'yes', label: 'Sim, é a região que procuro', score: 16 },
+        { value: 'nearby', label: 'Pode ser em municípios próximos', score: 12 },
+        { value: 'other', label: 'Procuro em outra região', score: 0, disqualify: true, reason: `Busca fora da região ${region}` },
+      ],
+    },
+    {
+      id: 'area',
+      label: `Qual faixa de área faz sentido para você?`,
+      type: 'single',
+      required: true,
+      options: [
+        { value: 'below', label: `Abaixo de ${minArea.toLocaleString('pt-BR')} ha`, score: 0, disqualify: true, reason: 'Área desejada abaixo do perfil da campanha' },
+        { value: 'compatible', label: `Entre ${minArea.toLocaleString('pt-BR')} e ${maxArea.toLocaleString('pt-BR')} ha`, score: 18 },
+        { value: 'above', label: `Acima de ${maxArea.toLocaleString('pt-BR')} ha`, score: 14 },
+      ],
+    },
+    {
+      id: 'budget',
+      label: 'Qual faixa de investimento está aprovada para a compra?',
+      type: 'single',
+      required: true,
+      options: [
+        { value: 'below', label: `Abaixo de R$ ${Math.max(0, minBudget - 1).toLocaleString('pt-BR')}`, score: 0, disqualify: true, reason: 'Orçamento abaixo do perfil da campanha' },
+        { value: 'compatible', label: `De R$ ${minBudget.toLocaleString('pt-BR')} a R$ ${maxBudget.toLocaleString('pt-BR')}`, score: 18 },
+        { value: 'above', label: `Acima de R$ ${maxBudget.toLocaleString('pt-BR')}`, score: 18 },
+      ],
+    },
+    {
+      id: 'documentation',
+      label: 'Você precisa que a propriedade tenha documentação rural validada?',
+      type: 'single',
+      required: true,
+      options: [
+        { value: 'complete', label: 'Sim, CAR, matrícula e documentação em ordem são essenciais', score: 12 },
+        { value: 'analyze', label: 'Aceito analisar pendências com due diligence', score: 8 },
+        { value: 'unknown', label: 'Não tenho clareza sobre documentação rural', score: 2, reason: 'Precisa de orientação documental' },
+      ],
+    },
+    {
+      id: 'water_infra',
+      label: 'Recursos hídricos e infraestrutura produtiva são decisivos?',
+      type: 'single',
+      required: true,
+      options: [
+        { value: 'essential', label: 'Sim, água, acesso e estrutura impactam a decisão', score: 10 },
+        { value: 'flexible', label: 'São importantes, mas posso avaliar caso a caso', score: 7 },
+        { value: 'not_required', label: 'Não são prioridade para este momento', score: 3 },
+      ],
+    },
+    {
+      id: 'purchase_time',
+      label: 'Em quanto tempo pretende avançar para proposta ou visita técnica?',
+      type: 'single',
+      required: true,
+      options: [
+        { value: 'now', label: 'Agora, quero avançar nos próximos dias', score: 12 },
+        { value: '30', label: 'Em até 30 dias', score: 10 },
+        { value: '90', label: 'Entre 30 e 90 dias', score: 6 },
+        { value: 'later', label: 'Sem prazo definido', score: 0, reason: 'Sem prazo de compra definido' },
+      ],
+    },
+    {
+      id: 'decision',
+      label: 'Você participa diretamente da decisão de compra?',
+      type: 'single',
+      required: true,
+      options: [
+        { value: 'decision_maker', label: 'Sim, sou decisor ou coproprietário do investimento', score: 6 },
+        { value: 'advisor', label: 'Sou consultor, familiar ou representante do comprador', score: 4 },
+        { value: 'no', label: 'Não participo da decisão', score: 0, disqualify: true, reason: 'Não participa da decisão de compra' },
       ],
     },
   ];

@@ -7,6 +7,11 @@ import { publicSupabase, supabase } from './supabase';
 // SITE TEXTS SERVICE
 // ============================================
 
+const isPublicReadAuthError = (error: any) =>
+  error?.message?.includes('JWT expired') ||
+  error?.message?.includes('Invalid API key') ||
+  error?.code === 'PGRST303';
+
 /**
  * Busca todos os textos do site
  * @param {string} category - Filtrar por categoria (opcional)
@@ -37,6 +42,13 @@ export const getAllTexts = async (category = null, section = null) => {
 
     return { texts: textsMap, raw: data };
   } catch (error: any) {
+    if (isPublicReadAuthError(error)) {
+      logger.warn(
+        '[texts.ts] Public site texts unavailable, using fallback texts'
+      );
+      return { texts: {}, raw: [] };
+    }
+
     // Only log as error if it's NOT a JWT issue (those are handled upstream)
     if (error?.message?.includes('JWT expired') || error?.code === 'PGRST303') {
       logger.warn('⚠️ [texts.ts] JWT expired, skipping fetch');

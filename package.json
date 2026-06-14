@@ -8,7 +8,7 @@
     "dev": "vite --port 3006 --strictPort",
     "server": "node --env-file=.env server/index.js",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "format": "prettier --write .",
@@ -21,7 +21,8 @@
     "setup-db": "node --env-file=.env scripts/setup-db.mjs",
     "run-migrations": "node --env-file=.env scripts/run-migrations.mjs",
     "migrate": "node --env-file=.env scripts/auto-migrate.mjs",
-    "start:prod": "node server/index.js"
+    "start:prod": "node server/index.js",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -74,6 +75,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.40.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^22.14.0",
@@ -93,7 +95,8 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "wrangler": "^4.100.0"
   },
   "engines": {
     "node": ">=20.0.0"

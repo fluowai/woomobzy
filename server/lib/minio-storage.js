@@ -263,6 +263,33 @@ export async function applyBucketLifecycle(bucket, rulesXml = defaultLifecycleXm
   return { bucket, enabled: true };
 }
 
+export async function getBucketPolicy(bucket) {
+  try {
+    const policy = await signedMinioRequest({
+      method: 'GET',
+      bucket,
+      query: { policy: '' },
+    });
+    return JSON.parse(policy);
+  } catch (error) {
+    if (error.statusCode === 404 || /NoSuchBucketPolicy/i.test(error.body || error.message || '')) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function applyBucketPolicy(bucket, policy) {
+  await signedMinioRequest({
+    method: 'PUT',
+    bucket,
+    query: { policy: '' },
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(policy),
+  });
+  return { bucket, applied: true };
+}
+
 export async function deleteMinioObjects({ bucket, keys = [] }) {
   const uniqueKeys = [...new Set(keys.map((key) => String(key || '').trim()).filter(Boolean))];
   const results = [];

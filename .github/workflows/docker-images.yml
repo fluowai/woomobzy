@@ -92,15 +92,27 @@ jobs:
               https://imobfluow.com.br/api/system-status)
             properties_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
               "https://imobfluow.com.br/api/properties?page=1&limit=1")
+            runtime_config=$(curl --fail --silent --show-error \
+              -H "Cache-Control: no-cache" \
+              https://app.imobfluow.com.br/env-config.js || true)
+            supabase_url=$(printf '%s' "$runtime_config" | sed -n 's/.*VITE_SUPABASE_URL: "\([^"]*\)".*/\1/p')
+            supabase_key=$(printf '%s' "$runtime_config" | sed -n 's/.*VITE_SUPABASE_ANON_KEY: "\([^"]*\)".*/\1/p')
+            supabase_status="000"
+            if [ -n "$supabase_url" ] && [ -n "$supabase_key" ]; then
+              supabase_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+                -H "apikey: $supabase_key" \
+                -H "Authorization: Bearer $supabase_key" \
+                "$supabase_url/rest/v1/site_texts?select=key&limit=1" || true)
+            fi
 
-            if [ "$system_status" = "200" ] && [ "$properties_status" = "401" ]; then
-              echo "Production API is serving the current route set."
+            if [ "$system_status" = "200" ] && [ "$properties_status" = "401" ] && [ "$supabase_status" = "200" ]; then
+              echo "Production API and public Supabase access are healthy."
               exit 0
             fi
 
-            echo "Attempt $attempt/12: system-status=$system_status properties=$properties_status"
+            echo "Attempt $attempt/12: system-status=$system_status properties=$properties_status supabase=$supabase_status"
             sleep 10
           done
 
-          echo "Production is still routing to an outdated or incorrect API service."
+          echo "Production API routes or public Supabase credentials are invalid."
           exit 1

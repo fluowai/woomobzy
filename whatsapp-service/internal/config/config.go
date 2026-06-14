@@ -77,7 +77,7 @@ func Load(logger *zap.Logger) *Config {
 		NodeURL:            strings.TrimRight(getEnv("NODE_URL", "http://localhost:3002"), "/"),
 		WhatsMeowURL:       strings.TrimRight(getEnvAny([]string{"WHATSMEOW_URL", "WHATSAPP_API_URL"}, "http://127.0.0.1:3100"), "/"),
 		InternalToken:      getEnv("WHATSAPP_INTERNAL_TOKEN", ""),
-		ServiceToken:       getEnv("WHATSAPP_SERVICE_TOKEN", ""),
+		ServiceToken:       getEnvAny([]string{"WHATSAPP_SERVICE_TOKEN", "WHATSAPP_INTERNAL_TOKEN"}, ""),
 		WSJWTSecret:        getEnv("WHATSAPP_WS_JWT_SECRET", ""),
 		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 	}
@@ -90,7 +90,10 @@ func Load(logger *zap.Logger) *Config {
 		logger.Fatal("Postgres database URL is required. Set SUPABASE_DB_URL, DATABASE_URL, DATABASE_PRIVATE_URL, DIRECT_URL or POSTGRES_URL in server variables")
 	}
 	if cfg.ServiceToken == "" {
-		logger.Fatal("WhatsApp service token is required. Set WHATSAPP_SERVICE_TOKEN")
+		logger.Fatal("WhatsApp service token is required. Set WHATSAPP_SERVICE_TOKEN or WHATSAPP_INTERNAL_TOKEN")
+	}
+	if cleanEnvValue(os.Getenv("WHATSAPP_SERVICE_TOKEN")) == "" {
+		logger.Warn("WHATSAPP_SERVICE_TOKEN is not set; using WHATSAPP_INTERNAL_TOKEN as a legacy fallback")
 	}
 	if !cfg.isMinIOConfigured() && !allowSupabaseStorageFallback() {
 		logger.Fatal("MinIO/S3 media storage is required for WhatsApp media. Set MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY and MINIO_WHATSAPP_BUCKET")

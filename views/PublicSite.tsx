@@ -23,6 +23,7 @@ import TestimonialsBlock from '../components/LandingPageBlocks/TestimonialsBlock
 import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
 import { Loader2, Menu, X, Phone, Mail, MapPin, Instagram, Facebook, Youtube, Linkedin, MessageCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import FazendasBrasilPublicSite from './FazendasBrasilPublicSite';
 
 interface PublicSiteProps {
   forceOrgSlug?: string;
@@ -232,6 +233,12 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
   const textColor = theme.textColor || '#1e293b';
 
   const siteName = organization?.name || site?.name || 'Site';
+  const isFazendasBrasilSite =
+    orgSlug === 'fazendasbrasil' || orgSlug === 'fazendas-brasil';
+
+  if (isFazendasBrasilSite) {
+    return <FazendasBrasilPublicSite organizationId={organization?.id} />;
+  }
 
   if (loading) {
     return (

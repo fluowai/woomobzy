@@ -28,6 +28,9 @@ export const leadService = {
         budget: lead.budget,
         aptitude_interest: lead.aptitude_interest,
         match_profile: (lead as any).match_profile,
+        status: (lead as any).status,
+        classification: (lead as any).classification,
+        lead_score: (lead as any).lead_score,
       }),
     });
 

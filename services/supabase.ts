@@ -60,6 +60,7 @@ export const publicSupabase = createClient(
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
+      storageKey: 'imobfluow-public-supabase-auth',
     },
     global: {
       headers: {

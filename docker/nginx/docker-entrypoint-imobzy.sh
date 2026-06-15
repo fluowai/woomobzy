@@ -34,11 +34,17 @@ validate_supabase_config() {
     --timeout=10 \
     --header="apikey: $key" \
     --header="Authorization: Bearer $key" \
-    "$url/rest/v1/site_texts?select=key&limit=1"
+    "$url/rest/v1/"
 }
 
 if [ "$runtime_supabase_config_provided" -eq 1 ] && ! validate_supabase_config "$supabase_url" "$supabase_anon_key"; then
-  echo "WARNING: runtime Supabase validation failed; starting frontend with provided public config." >&2
+  if validate_supabase_config "$default_supabase_url" "$default_supabase_anon_key"; then
+    echo "WARNING: runtime Supabase credentials are invalid; using packaged public credentials." >&2
+    supabase_url="$default_supabase_url"
+    supabase_anon_key="$default_supabase_anon_key"
+  else
+    echo "WARNING: runtime Supabase validation failed; starting frontend with provided public config." >&2
+  fi
 fi
 
 if [ "$runtime_supabase_config_provided" -eq 0 ] && ! validate_supabase_config "$supabase_url" "$supabase_anon_key"; then

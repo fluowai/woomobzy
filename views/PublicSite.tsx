@@ -32,7 +32,15 @@ interface PublicSiteProps {
 const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
   const { slug: routeSlug } = useParams<{ slug: string }>();
   const location = useLocation();
-  const orgSlug = forceOrgSlug || routeSlug;
+  const pathSegments = location.pathname.split('/').filter(Boolean);
+  const siteSegmentIndex = pathSegments.indexOf('site');
+  const nestedSiteSlug =
+    siteSegmentIndex >= 0 &&
+    ['rural', 'urban', 'admin'].includes(routeSlug || '') &&
+    pathSegments[siteSegmentIndex + 1]
+      ? pathSegments[siteSegmentIndex + 1]
+      : undefined;
+  const orgSlug = forceOrgSlug || nestedSiteSlug || routeSlug;
 
   const [site, setSite] = useState<Site | null>(null);
   const [pages, setPages] = useState<SitePage[]>([]);

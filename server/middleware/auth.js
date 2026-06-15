@@ -52,6 +52,12 @@ export const verifyAuth = async (req, res, next) => {
     const profile = await resolveProfileForUser(supabase, user);
 
     if (!profile) {
+      console.warn('[Auth] Perfil de usuario nao encontrado', {
+        userId: user.id,
+        email: maskEmail(user.email),
+        issuer: decodeJwtPayload(token)?.iss || null,
+        expectedProject: getProjectRef(process.env.VITE_SUPABASE_URL),
+      });
       return res
         .status(403)
         .json({
@@ -148,6 +154,12 @@ function decodeJwtPayload(token) {
   } catch {
     return null;
   }
+}
+
+function maskEmail(email = '') {
+  const [user, domain] = String(email).split('@');
+  if (!user || !domain) return null;
+  return `${user.slice(0, 2)}***@${domain}`;
 }
 
 async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {

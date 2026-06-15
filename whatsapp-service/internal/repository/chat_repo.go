@@ -33,6 +33,10 @@ func (r *ChatRepo) Upsert(ctx context.Context, chat *models.Chat) error {
 			name = CASE
 				WHEN COALESCE(whatsapp_chats.name, '') = '' THEN EXCLUDED.name
 				WHEN lower(whatsapp_chats.name) IN ('~', 'contato sem telefone') THEN EXCLUDED.name
+				WHEN whatsapp_chats.is_group
+					AND EXCLUDED.name != ''
+					AND EXCLUDED.name !~ '^Grupo \([^)]+\.\.\.\)$'
+					THEN EXCLUDED.name
 				WHEN regexp_replace(whatsapp_chats.name, '\D', '', 'g') = split_part(whatsapp_chats.chat_jid, '@', 1)
 					AND EXCLUDED.name != '' THEN EXCLUDED.name
 				ELSE whatsapp_chats.name
@@ -69,6 +73,10 @@ func (r *ChatRepo) UpsertImported(ctx context.Context, chat *models.Chat) error 
 			name = CASE
 				WHEN COALESCE(whatsapp_chats.name, '') = '' THEN EXCLUDED.name
 				WHEN lower(whatsapp_chats.name) IN ('~', 'contato sem telefone') THEN EXCLUDED.name
+				WHEN whatsapp_chats.is_group
+					AND EXCLUDED.name != ''
+					AND EXCLUDED.name !~ '^Grupo \([^)]+\.\.\.\)$'
+					THEN EXCLUDED.name
 				WHEN regexp_replace(whatsapp_chats.name, '\D', '', 'g') = split_part(whatsapp_chats.chat_jid, '@', 1)
 					AND EXCLUDED.name != '' THEN EXCLUDED.name
 				ELSE whatsapp_chats.name

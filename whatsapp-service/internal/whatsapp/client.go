@@ -428,7 +428,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 	// Determine chat name
 	chatName := ""
 	if isGroup {
-		chatName = c.resolveGroupName(ctx, info.Chat, chatJID)
+		chatName = c.resolveGroupName(ctx, canonicalJID, chatJID)
 	} else {
 		if info.IsFromMe {
 			chatName = c.resolveDisplayName(ctx, canonicalJID, "", phone.Normalize(canonicalJID.User))
@@ -928,6 +928,13 @@ func alternateChatJIDs(info types.MessageInfo, canonical string) []string {
 		if !seen[value] {
 			seen[value] = true
 			alternates = append(alternates, value)
+		}
+		if isPhoneJID(jid) {
+			normalized := types.NewJID(phone.Normalize(jid.User), types.DefaultUserServer).String()
+			if !seen[normalized] {
+				seen[normalized] = true
+				alternates = append(alternates, normalized)
+			}
 		}
 	}
 

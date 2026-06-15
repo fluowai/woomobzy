@@ -21,6 +21,13 @@ func parseJID(jidStr string) (types.JID, error) {
 		if err != nil {
 			return types.JID{}, fmt.Errorf("invalid JID format: %w", err)
 		}
+		if jid.Server == types.DefaultUserServer || jid.Server == types.LegacyUserServer {
+			normalized := phone.Normalize(jid.User)
+			if normalized == "" {
+				return types.JID{}, fmt.Errorf("empty phone number")
+			}
+			return types.NewJID(normalized, types.DefaultUserServer), nil
+		}
 		return jid, nil
 	}
 

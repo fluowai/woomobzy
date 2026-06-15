@@ -20,12 +20,22 @@ func TestParseJIDNormalizesPhoneNumbers(t *testing.T) {
 	}
 }
 
-func TestParseJIDPreservesFullJID(t *testing.T) {
+func TestParseJIDPreservesGroupJID(t *testing.T) {
 	jid, err := parseJID("120363366882241499@g.us")
 	if err != nil {
 		t.Fatalf("parseJID returned error: %v", err)
 	}
 	if jid.User != "120363366882241499" || jid.Server != "g.us" {
+		t.Fatalf("unexpected JID: %s", jid.String())
+	}
+}
+
+func TestParseJIDCanonicalizesFullUserJID(t *testing.T) {
+	jid, err := parseJID("+55 (48) 98800-3260@s.whatsapp.net")
+	if err != nil {
+		t.Fatalf("parseJID returned error: %v", err)
+	}
+	if jid.User != "5548988003260" || jid.Server != types.DefaultUserServer {
 		t.Fatalf("unexpected JID: %s", jid.String())
 	}
 }

@@ -336,6 +336,17 @@ async function getWhatsAppMediaUrl(req, res) {
       });
     }
 
+    if (String(media.provider || '').toLowerCase() !== 'minio' && media.public_url) {
+      return res.json({
+        id: media.id,
+        url: media.public_url,
+        status: media.status,
+        mime_type: media.mime_type,
+        filename: media.filename,
+        expires_in: null,
+      });
+    }
+
     if (!media.object_key) {
       return res.status(409).json({
         error: 'Midia ainda nao possui arquivo processado.',

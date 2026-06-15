@@ -10,6 +10,11 @@ read_default_config() {
 
 supabase_url="${VITE_SUPABASE_URL:-}"
 supabase_anon_key="${VITE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-}}"
+runtime_supabase_config_provided=0
+
+if [ -n "$supabase_url" ] || [ -n "$supabase_anon_key" ]; then
+  runtime_supabase_config_provided=1
+fi
 
 if [ -f "$DEFAULT_CONFIG" ]; then
   default_supabase_url="$(read_default_config VITE_SUPABASE_URL)"
@@ -32,9 +37,14 @@ validate_supabase_config() {
     "$url/rest/v1/site_texts?select=key&limit=1"
 }
 
-if ! validate_supabase_config "$supabase_url" "$supabase_anon_key"; then
+if [ "$runtime_supabase_config_provided" -eq 1 ] && ! validate_supabase_config "$supabase_url" "$supabase_anon_key"; then
+  echo "ERROR: runtime Supabase credentials are invalid. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY." >&2
+  exit 1
+fi
+
+if [ "$runtime_supabase_config_provided" -eq 0 ] && ! validate_supabase_config "$supabase_url" "$supabase_anon_key"; then
   if validate_supabase_config "$default_supabase_url" "$default_supabase_anon_key"; then
-    echo "WARNING: runtime Supabase credentials are invalid; using packaged public credentials." >&2
+    echo "WARNING: runtime Supabase credentials are missing; using packaged public credentials." >&2
     supabase_url="$default_supabase_url"
     supabase_anon_key="$default_supabase_anon_key"
   else

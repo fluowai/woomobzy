@@ -129,12 +129,13 @@ function describeAuthFailure(authError, token) {
   const expectedProject = getProjectRef(process.env.VITE_SUPABASE_URL);
   const payload = decodeJwtPayload(token);
   const tokenIssuer = payload?.iss || null;
+  const tokenProject = getProjectRef(tokenIssuer);
 
-  if (expectedProject && tokenIssuer && tokenIssuer !== expectedProject) {
+  if (expectedProject && tokenIssuer && tokenProject !== expectedProject) {
     reason = 'SUPABASE_PROJECT_MISMATCH';
   }
 
-  return { reason, expectedProject, tokenIssuer };
+  return { reason, expectedProject, tokenIssuer, tokenProject };
 }
 
 function getProjectRef(url) {

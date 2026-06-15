@@ -33,11 +33,11 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
 
   // Obter token da sessão atual do Supabase
   const {
-    data: { session },
+    data: { session: initialSession },
   } = await supabase.auth.getSession();
   const headers = new Headers(options.headers || {});
-  if (session?.access_token) {
-    headers.set('Authorization', `Bearer ${session.access_token}`);
+  if (initialSession?.access_token) {
+    headers.set('Authorization', `Bearer ${initialSession.access_token}`);
   }
 
   // Injetar header de impersonação se ativo
@@ -56,15 +56,20 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   let response = await request();
 
   // The stored session can expire between getSession() and the API request.
-  if (response.status === 401 && session?.refresh_token) {
+  let refreshErrorMessage = '';
+  if (response.status === 401 && initialSession?.refresh_token) {
     const {
       data: { session: refreshedSession },
       error: refreshError,
-    } = await supabase.auth.refreshSession();
+    } = await supabase.auth.refreshSession({
+      refresh_token: initialSession.refresh_token,
+    });
 
     if (!refreshError && refreshedSession?.access_token) {
       headers.set('Authorization', `Bearer ${refreshedSession.access_token}`);
       response = await request();
+    } else {
+      refreshErrorMessage = refreshError?.message || 'nao foi possivel renovar a sessao';
     }
   }
 
@@ -75,7 +80,11 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     }
 
     if (response.status === 401) {
-      console.warn('[API] Falha de autenticacao detectada (401) apos renovar a sessao.');
+      console.warn(
+        refreshErrorMessage
+          ? `[API] Falha de autenticacao detectada (401); renovacao falhou: ${refreshErrorMessage}`
+          : '[API] Falha de autenticacao detectada (401) apos renovar a sessao.'
+      );
       // Revertido o logout automatico para nao deslogar o usuario se o servidor estiver mal configurado
     }
 

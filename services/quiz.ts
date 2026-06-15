@@ -276,16 +276,16 @@ export function buildRuralQuestions(input: RuralQuizInput): QuizQuestion[] {
 export const quizService = {
   async listCampaigns(): Promise<QuizCampaign[]> {
     try {
-      const response = await callApi('/api/quiz/campaigns');
-      return response.campaigns || [];
-    } catch (apiError) {
       const { data, error } = await supabase
         .from('quiz_campaigns')
         .select('*, quiz_submissions(count)')
         .neq('status', 'archived')
         .order('created_at', { ascending: false });
-      if (error) throw apiError;
+      if (error) throw error;
       return (data || []) as QuizCampaign[];
+    } catch (supabaseError) {
+      const response = await callApi('/api/quiz/campaigns');
+      return response.campaigns || [];
     }
   },
 
@@ -321,17 +321,17 @@ export const quizService = {
 
   async listSubmissions(id: string): Promise<QuizSubmission[]> {
     try {
-      const response = await callApi(`/api/quiz/campaigns/${id}/submissions`);
-      return response.submissions || [];
-    } catch (apiError) {
       const { data, error } = await supabase
         .from('quiz_submissions')
         .select('*')
         .eq('campaign_id', id)
         .order('created_at', { ascending: false })
         .limit(200);
-      if (error) throw apiError;
+      if (error) throw error;
       return (data || []) as QuizSubmission[];
+    } catch (supabaseError) {
+      const response = await callApi(`/api/quiz/campaigns/${id}/submissions`);
+      return response.submissions || [];
     }
   },
 

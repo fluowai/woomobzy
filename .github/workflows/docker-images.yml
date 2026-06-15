@@ -73,28 +73,35 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Redeploy Portainer stack
+        id: redeploy
         env:
           PORTAINER_WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
         run: |
           if [ -z "$PORTAINER_WEBHOOK_URL" ]; then
             echo "PORTAINER_WEBHOOK_URL is not configured. Images were published, but Portainer redeploy was skipped."
+            echo "triggered=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           curl --fail --show-error --silent \
             --request POST \
             "$PORTAINER_WEBHOOK_URL"
+          echo "triggered=true" >> "$GITHUB_OUTPUT"
 
       - name: Verify production API routes
+        if: steps.redeploy.outputs.triggered == 'true'
+        env:
+          PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL || 'https://imobfluow.com.br' }}
+          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL || 'https://app.imobfluow.com.br' }}
         run: |
           for attempt in $(seq 1 12); do
             system_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
-              https://imobfluow.com.br/api/system-status)
+              "$PRODUCTION_API_URL/api/system-status")
             properties_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
-              "https://imobfluow.com.br/api/properties?page=1&limit=1")
+              "$PRODUCTION_API_URL/api/properties?page=1&limit=1")
             runtime_config=$(curl --fail --silent --show-error \
               -H "Cache-Control: no-cache" \
-              https://app.imobfluow.com.br/env-config.js || true)
+              "$PRODUCTION_APP_URL/env-config.js" || true)
             supabase_url=$(printf '%s' "$runtime_config" | sed -n 's/.*VITE_SUPABASE_URL: "\([^"]*\)".*/\1/p')
             supabase_key=$(printf '%s' "$runtime_config" | sed -n 's/.*VITE_SUPABASE_ANON_KEY: "\([^"]*\)".*/\1/p')
             supabase_status="000"

@@ -218,6 +218,32 @@ async function resolveProfileForUser(supabase, user) {
     return profileByEmail;
   }
 
+  const metadataOrgId = String(user.app_metadata?.organization_id || '').trim();
+  if (metadataOrgId) {
+    const { data: metadataOrg, error: metadataOrgError } = await supabase
+      .from('organizations')
+      .select('id, name, owner_name')
+      .eq('id', metadataOrgId)
+      .maybeSingle();
+
+    if (!metadataOrgError && metadataOrg) {
+      const profile = await createProfileForUser(supabase, user, {
+        email,
+        organizationId: metadataOrg.id,
+        name: metadataOrg.owner_name || metadataOrg.name,
+        source: 'auth_metadata.organization_id',
+      });
+
+      if (profile) return profile;
+    } else {
+      console.warn('[Auth] organization_id do auth metadata nao existe', {
+        authUserId: user.id,
+        organizationId: metadataOrgId,
+        error: metadataOrgError?.message || null,
+      });
+    }
+  }
+
   const { data: organization, error: organizationError } = await supabase
     .from('organizations')
     .select('id, name, owner_name, owner_email')
@@ -228,6 +254,15 @@ async function resolveProfileForUser(supabase, user) {
     return null;
   }
 
+  return createProfileForUser(supabase, user, {
+    email,
+    organizationId: organization.id,
+    name: organization.owner_name || organization.name,
+    source: 'organization.owner_email',
+  });
+}
+
+async function createProfileForUser(supabase, user, { email, organizationId, name, source }) {
   const { data: createdProfile, error: createProfileError } = await supabase
     .from('profiles')
     .upsert(
@@ -237,11 +272,10 @@ async function resolveProfileForUser(supabase, user) {
         name:
           user.user_metadata?.name ||
           user.user_metadata?.full_name ||
-          organization.owner_name ||
-          organization.name ||
+          name ||
           email,
         role: 'admin',
-        organization_id: organization.id,
+        organization_id: organizationId,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'id' }
@@ -254,9 +288,10 @@ async function resolveProfileForUser(supabase, user) {
     return null;
   }
 
-  console.warn('[Auth] Perfil criado automaticamente para owner_email', {
+  console.warn('[Auth] Perfil criado automaticamente', {
     email,
-    organizationId: organization.id,
+    organizationId,
+    source,
   });
   return createdProfile;
 }

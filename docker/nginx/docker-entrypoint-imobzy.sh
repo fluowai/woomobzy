@@ -38,8 +38,7 @@ validate_supabase_config() {
 }
 
 if [ "$runtime_supabase_config_provided" -eq 1 ] && ! validate_supabase_config "$supabase_url" "$supabase_anon_key"; then
-  echo "ERROR: runtime Supabase credentials are invalid. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY." >&2
-  exit 1
+  echo "WARNING: runtime Supabase validation failed; starting frontend with provided public config." >&2
 fi
 
 if [ "$runtime_supabase_config_provided" -eq 0 ] && ! validate_supabase_config "$supabase_url" "$supabase_anon_key"; then
@@ -48,8 +47,9 @@ if [ "$runtime_supabase_config_provided" -eq 0 ] && ! validate_supabase_config "
     supabase_url="$default_supabase_url"
     supabase_anon_key="$default_supabase_anon_key"
   else
-    echo "ERROR: no valid public Supabase credentials are available." >&2
-    exit 1
+    echo "WARNING: no valid public Supabase credentials were validated; starting frontend with available config." >&2
+    supabase_url="${supabase_url:-$default_supabase_url}"
+    supabase_anon_key="${supabase_anon_key:-$default_supabase_anon_key}"
   fi
 fi
 

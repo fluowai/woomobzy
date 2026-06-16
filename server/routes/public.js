@@ -445,20 +445,31 @@ router.get('/texts', async (req, res) => {
     data?.forEach(text => { textsMap[text.key] = text.value; });
     res.json({ success: true, texts: textsMap, raw: data || [] });
   } catch (error) {
-    console.error('[Public API] Erro ao buscar textos:', error);
-    res.status(500).json({ error: error.message });
+    console.warn('[Public API] Erro nao critico ao buscar textos; retornando vazio:', error?.message || error);
+    res.json({ success: true, texts: {}, raw: [] });
   }
 });
 
 function isOptionalTextsTableError(error) {
+  if (!error) return false;
   const message = String(error?.message || '').toLowerCase();
   return (
     error?.code === '42P01' ||
     error?.code === '42703' ||
     error?.code === 'PGRST205' ||
+    error?.code === 'PGRST116' ||
+    error?.status === 404 ||
     message.includes('site_texts') ||
+    message.includes('relation') ||
     message.includes("could not find the table") ||
-    message.includes("could not find the column")
+    message.includes("could not find the column") ||
+    message.includes('does not exist') ||
+    message.includes('not found') ||
+    message.includes('network error') ||
+    message.includes('fetch failed') ||
+    message.includes('timeout') ||
+    message.includes('econnrefused') ||
+    message.includes('enotfound')
   );
 }
 

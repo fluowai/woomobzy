@@ -278,7 +278,17 @@ async function resolveProfileForUser(supabase, user) {
     .maybeSingle();
 
   if (organizationError || !organization) {
-    return null;
+    console.warn('[Auth] Nenhuma organizacao encontrada pelo email do usuario; criando perfil minimo', {
+      email,
+      authUserId: user.id,
+    });
+    return createProfileForUser(supabase, user, {
+      email,
+      organizationId: null,
+      name: user.user_metadata?.name || user.user_metadata?.full_name || email.split('@')[0] || email,
+      role: 'user',
+      source: 'fallback_minimo',
+    });
   }
 
   return createProfileForUser(supabase, user, {

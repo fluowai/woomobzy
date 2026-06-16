@@ -27,11 +27,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-};
-
 const menuItems = [
   { label: 'Funcionalidades', target: 'funcionalidades' },
   { label: 'WhatsApp + IA', target: 'whatsapp-ia' },
@@ -194,7 +189,6 @@ const newWay = [
 const SystemSalesPage: React.FC = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [, setIsStandalone] = useState(false);
   const [billing, setBilling] = useState<'annual' | 'monthly'>('monthly');
   const [formData, setFormData] = useState({
@@ -212,14 +206,6 @@ const SystemSalesPage: React.FC = () => {
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
     setIsStandalone(standalone);
-
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,8 +214,15 @@ const SystemSalesPage: React.FC = () => {
     sessionStorage.setItem('imobfluow_demo_lead', JSON.stringify(formData));
     toast.success('Vamos qualificar sua operacao antes de liberar a agenda.');
     setTimeout(() => {
+      const params = new URLSearchParams({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        company: formData.company,
+        goal: formData.goal,
+      });
       navigate(
-        `/consultoria/qualificacao?name=${encodeURIComponent(formData.name)}&email=${encodeURIComponent(formData.email)}`
+        `/consultoria/qualificacao?${params.toString()}`
       );
     }, 600);
   };

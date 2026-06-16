@@ -1,10 +1,12 @@
 import express from 'express';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifySuperAdmin } from '../../middleware/auth.js';
+import { db } from '../../lib/pg.js';
 
 const router = express.Router();
 
 const REQUIRED_SCORE = 4;
+let schemaEnsurePromise = null;
 
 function calculateScore(data = {}) {
   let score = 0;
@@ -51,6 +53,111 @@ function dateFromLocalParts(date, time, timezoneOffsetMinutes = 0) {
   const [hour, minute] = time.split(':').map(Number);
   return new Date(Date.UTC(year, month - 1, day, hour, minute, 0) + Number(timezoneOffsetMinutes || 0) * 60 * 1000);
 }
+
+function isMissingSchedulerTableError(error) {
+  const text = [
+    error?.code,
+    error?.message,
+    error?.details,
+    error?.hint,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return (
+    text.includes('demo_availability_slots') &&
+    (text.includes('does not exist') ||
+      text.includes('could not find') ||
+      text.includes('pgrst205') ||
+      text.includes('42p01'))
+  );
+}
+
+async function ensureDemoSchedulerSchema() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL ausente para provisionar a agenda automaticamente.');
+  }
+
+  if (!schemaEnsurePromise) {
+    schemaEnsurePromise = db.query(`
+      create extension if not exists pgcrypto;
+
+      create table if not exists public.demo_availability_slots (
+        id uuid primary key default gen_random_uuid(),
+        starts_at timestamptz not null,
+        ends_at timestamptz not null,
+        status text not null default 'open' check (status in ('open', 'booked', 'blocked')),
+        created_by uuid references public.profiles(id) on delete set null,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now(),
+        constraint demo_slot_time_order check (ends_at > starts_at)
+      );
+
+      create unique index if not exists demo_availability_slots_starts_at_idx
+        on public.demo_availability_slots (starts_at);
+
+      create table if not exists public.demo_bookings (
+        id uuid primary key default gen_random_uuid(),
+        slot_id uuid references public.demo_availability_slots(id) on delete set null,
+        name text not null,
+        email text not null,
+        phone text,
+        company text,
+        team_size text,
+        monthly_leads text,
+        main_goal text,
+        urgency text,
+        score integer not null default 0,
+        status text not null default 'scheduled' check (status in ('scheduled', 'completed', 'cancelled', 'no_show')),
+        notes text,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      );
+
+      create index if not exists demo_bookings_slot_id_idx on public.demo_bookings (slot_id);
+      create index if not exists demo_bookings_created_at_idx on public.demo_bookings (created_at desc);
+      select pg_notify('pgrst', 'reload schema');
+    `).catch((error) => {
+      schemaEnsurePromise = null;
+      throw error;
+    });
+  }
+
+  return schemaEnsurePromise;
+}
+
+async function listOpenSlots(supabase) {
+  return supabase
+    .from('demo_availability_slots')
+    .select('id, starts_at, ends_at, status')
+    .eq('status', 'open')
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true })
+    .limit(80);
+}
+
+router.get('/slots', async (_req, res, next) => {
+  try {
+    const supabase = getSupabaseServer();
+    let { data, error } = await listOpenSlots(supabase);
+
+    if (isMissingSchedulerTableError(error)) {
+      await ensureDemoSchedulerSchema();
+      ({ data, error } = await listOpenSlots(supabase));
+    }
+
+    if (error) throw error;
+    return res.json({ slots: (data || []).map(normalizeSlot), agendaProvisioned: true });
+  } catch (error) {
+    console.error('[DemoScheduler] slots error:', error);
+    if (isMissingSchedulerTableError(error) || /DATABASE_URL ausente/.test(error?.message || '')) {
+      return res.json({
+        slots: [],
+        agendaProvisioned: false,
+        warning: 'Agenda ainda nao provisionada no banco de dados.',
+      });
+    }
+    return next(error);
+  }
+});
 
 router.get('/slots', async (_req, res) => {
   try {
@@ -150,6 +257,7 @@ router.post('/bookings', async (req, res) => {
 router.get('/admin/overview', verifySuperAdmin, async (_req, res) => {
   try {
     const supabase = getSupabaseServer();
+    await ensureDemoSchedulerSchema().catch(() => undefined);
     const [slotsResult, bookingsResult] = await Promise.all([
       supabase
         .from('demo_availability_slots')
@@ -180,6 +288,7 @@ router.get('/admin/overview', verifySuperAdmin, async (_req, res) => {
 router.post('/admin/slots', verifySuperAdmin, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
+    await ensureDemoSchedulerSchema().catch(() => undefined);
     const { date, startTime, endTime, timezoneOffsetMinutes } = req.body || {};
     if (!date || !startTime || !endTime) {
       return res.status(400).json({ error: 'Informe data, início e fim.' });

@@ -62,7 +62,7 @@ const formatSlot = (slot: DemoSlot) => {
 const getInitialData = (searchParams: URLSearchParams): DemoQualification => {
   let stored: any = {};
   try {
-    stored = JSON.parse(sessionStorage.getItem('imobzy_demo_lead') || '{}');
+    stored = JSON.parse(sessionStorage.getItem('imobfluow_demo_lead') || '{}');
   } catch {
     stored = {};
   }

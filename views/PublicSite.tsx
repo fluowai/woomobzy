@@ -49,10 +49,12 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
+  const isFazendasBrasilSite =
+    orgSlug === 'fazendasbrasil' || orgSlug === 'fazendas-brasil';
 
   useEffect(() => {
-    if (orgSlug) loadSite();
-  }, [orgSlug]);
+    if (orgSlug && !isFazendasBrasilSite) loadSite();
+  }, [orgSlug, isFazendasBrasilSite]);
 
   useEffect(() => {
     if (pages.length > 0) {
@@ -241,9 +243,6 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
   const textColor = theme.textColor || '#1e293b';
 
   const siteName = organization?.name || site?.name || 'Site';
-  const isFazendasBrasilSite =
-    orgSlug === 'fazendasbrasil' || orgSlug === 'fazendas-brasil';
-
   if (isFazendasBrasilSite) {
     return <FazendasBrasilPublicSite organizationId={organization?.id} />;
   }

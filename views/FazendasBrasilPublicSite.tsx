@@ -52,6 +52,7 @@ const FAZENDAS_ORG_SLUGS = [
   'imobiliariafazendasbrasil',
   'fazendasbrasil1',
 ];
+const FAZENDAS_ORG_ID = 'ee2eafa9-929a-460e-a38a-2e13d259e7cb';
 const WHATSAPP_NUMBER = '5544998433030';
 const PHONE_LABEL = '(11) 3813-2020';
 const EMAIL = 'contato@fazendasbrasil.com.br';
@@ -183,8 +184,9 @@ function normalizeImages(images?: string[] | string) {
 }
 
 function formatCurrency(value?: number) {
-  if (!value) return 'Sob consulta';
-  return value.toLocaleString('pt-BR', {
+  const amount = toNumber(value);
+  if (!amount) return 'Sob consulta';
+  return amount.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     maximumFractionDigits: 0,
@@ -192,20 +194,40 @@ function formatCurrency(value?: number) {
 }
 
 function formatArea(value?: number) {
-  if (!value) return 'Sob consulta';
-  return `${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} ha`;
+  const area = toNumber(value);
+  if (!area) return 'Sob consulta';
+  return `${area.toLocaleString('pt-BR', { maximumFractionDigits: area < 100 ? 1 : 0 })} ha`;
+}
+
+function toNumber(value: unknown) {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const normalized = value
+      .replace(/[^\d.,-]/g, '')
+      .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+      .replace(',', '.');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
 }
 
 function getFeatureNumber(property: PublicProperty, keys: string[]) {
   for (const key of keys) {
     const rawValue = property.features?.[key] ?? (property as any)[key];
-    if (typeof rawValue === 'number') return rawValue;
-    if (typeof rawValue === 'string') {
-      const parsed = Number(rawValue.replace(/[^\d.,]/g, '').replace(',', '.'));
-      if (!Number.isNaN(parsed)) return parsed;
-    }
+    const parsed = toNumber(rawValue);
+    if (parsed) return parsed;
   }
   return 0;
+}
+
+function normalizeProperty(property: any): PublicProperty {
+  return {
+    ...property,
+    price: toNumber(property.price),
+    total_area_ha: toNumber(property.total_area_ha),
+    useful_area_ha: toNumber(property.useful_area_ha),
+  };
 }
 
 function getPropertyArea(property: PublicProperty) {
@@ -235,7 +257,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   organizationId,
 }) => {
   const [properties, setProperties] = useState<PublicProperty[]>(fallbackProperties);
-  const [resolvedOrganizationId, setResolvedOrganizationId] = useState<string | undefined>(organizationId);
+  const [resolvedOrganizationId, setResolvedOrganizationId] = useState<string | undefined>(organizationId || FAZENDAS_ORG_ID);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProperties, setTotalProperties] = useState(fallbackProperties.length);
   const [isUsingFallback, setIsUsingFallback] = useState(true);
@@ -255,16 +277,19 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     const loadProperties = async () => {
       try {
         setIsUsingFallback(false);
-        let orgId = organizationId;
+        let orgId = organizationId || FAZENDAS_ORG_ID;
+        setResolvedOrganizationId(orgId);
 
-        if (!orgId) {
+        if (!organizationId) {
           const { data: org } = await supabase
             .from('organizations')
-            .select('id')
-            .in('slug', FAZENDAS_ORG_SLUGS)
+            .select('id, slug, custom_domain')
+            .or(
+              `id.eq.${FAZENDAS_ORG_ID},slug.in.(${FAZENDAS_ORG_SLUGS.join(',')}),custom_domain.ilike.*fazendasbrasil*`
+            )
             .limit(1)
             .maybeSingle();
-          orgId = org?.id;
+          orgId = org?.id || FAZENDAS_ORG_ID;
         }
 
         setResolvedOrganizationId(orgId);
@@ -289,7 +314,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .range(from, to);
 
         if (!error && data && data.length > 0) {
-          setProperties(data);
+          setProperties(data.map(normalizeProperty));
           setTotalProperties(count || data.length);
           setIsUsingFallback(false);
           return;
@@ -300,6 +325,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         setIsUsingFallback(true);
       } catch (error) {
         console.warn('[Fazendas Brasil] Mantendo vitrine de fallback:', error);
+        setResolvedOrganizationId(organizationId || FAZENDAS_ORG_ID);
         setProperties(fallbackProperties);
         setTotalProperties(fallbackProperties.length);
         setIsUsingFallback(true);
@@ -775,21 +801,41 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         .fb-benefit h3 { margin: 0 0 8px; color: #092218; font-size: 11px; line-height: 1.2; font-weight: 950; text-transform: uppercase; }
         .fb-benefit p { margin: 0; color: #55635e; font-size: 10.5px; line-height: 1.45; }
         .fb-stats-strip {
-          margin: -1px auto 0;
+          margin: 24px auto 0;
           width: min(100% - 74px, 1700px);
-          border-radius: 6px;
-          background: linear-gradient(90deg, #006d32, #004e24);
-          color: #fff;
+          border: 1px solid rgba(0,107,49,.18);
+          border-top: 4px solid var(--fb-gold);
+          border-radius: 8px;
+          background:
+            linear-gradient(135deg, rgba(255,213,0,.12), rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, #ffffff, #f3faf6);
+          color: #06351f;
           display: grid;
           grid-template-columns: repeat(5, minmax(0, 1fr));
           overflow: hidden;
+          box-shadow: 0 18px 45px rgba(6,49,26,.1);
         }
-        .fb-stat { min-height: 73px; padding: 13px 24px; display: flex; align-items: center; gap: 17px; border-right: 1px solid rgba(255,255,255,.2); }
+        .fb-stat { min-height: 82px; padding: 16px 24px; display: flex; align-items: center; gap: 17px; border-right: 1px solid #d9e7df; }
         .fb-stat:last-child { border-right: 0; }
-        .fb-stat svg { color: var(--fb-gold); flex: 0 0 auto; }
-        .fb-stat strong { display: block; font-size: 16px; line-height: 1; text-transform: uppercase; }
-        .fb-stat span { display: block; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.15; }
-        .fb-footer { margin-top: -36px; padding-top: 58px; background: linear-gradient(90deg, #003717, #005d2b); color: #fff; font-family: Arial, Helvetica, sans-serif; }
+        .fb-stat svg {
+          color: #006b31;
+          flex: 0 0 auto;
+          padding: 7px;
+          border-radius: 999px;
+          background: var(--fb-gold);
+          box-shadow: 0 8px 18px rgba(255,213,0,.28);
+        }
+        .fb-stat strong { display: block; color: var(--fb-blue); font-size: 16px; line-height: 1; text-transform: uppercase; }
+        .fb-stat span { display: block; color: #214033; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.15; font-weight: 800; }
+        .fb-footer {
+          margin-top: 34px;
+          padding-top: 42px;
+          background:
+            radial-gradient(circle at 14% 0%, rgba(255,213,0,.12), transparent 30%),
+            linear-gradient(135deg, #002f18 0%, #004d24 55%, #06318a 140%);
+          color: #fff;
+          font-family: Arial, Helvetica, sans-serif;
+        }
         .fb-footer .fb-shell { padding: 0 0 20px; display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 48px; }
         .fb-footer-logo { width: 118px; margin-bottom: 10px; }
         .fb-footer p,
@@ -856,7 +902,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-stats-strip,
           .fb-footer .fb-shell { grid-template-columns: 1fr; }
           .fb-benefit { border-left: 0; border-top: 1px solid #ccd8d2; padding-top: 22px; }
-          .fb-stat { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.2); }
+          .fb-stat { border-right: 0; border-bottom: 1px solid #d9e7df; }
           .fb-card-image { height: 175px; }
           .fb-card { border-radius: 10px; }
           .fb-card-body { padding: 18px 16px 16px; }

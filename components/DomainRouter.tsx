@@ -47,9 +47,15 @@ const SYSTEM_ROUTES = [
   '/error',
 ];
 
+const NESTED_SITE_ROUTE_PREFIXES = new Set(['admin', 'rural', 'urban']);
+
 function isTenantSitePath(path: string) {
   const segments = path.split('/').filter(Boolean);
-  return segments.length >= 2 && segments[1] === 'site';
+  return (
+    segments.length >= 2 &&
+    segments[1] === 'site' &&
+    !NESTED_SITE_ROUTE_PREFIXES.has(segments[0])
+  );
 }
 
 function getTenantSlugFromSitePath(path: string) {

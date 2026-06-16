@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import { publicSupabase, supabase } from './supabase';
+import { getApiUrl } from '../src/lib/api';
 
 // Removed duplicate client creation and unsafe process.env usage
 
@@ -20,6 +21,25 @@ const isPublicReadAuthError = (error: any) =>
  */
 export const getAllTexts = async (category = null, section = null) => {
   try {
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (section) params.set('section', section);
+
+    try {
+      const apiResponse = await fetch(
+        getApiUrl(`/api/public/texts${params.toString() ? `?${params}` : ''}`)
+      );
+      if (apiResponse.ok) {
+        const payload = await apiResponse.json();
+        return { texts: payload.texts || {}, raw: [] };
+      }
+    } catch (apiError: any) {
+      logger.warn(
+        '[texts.ts] Public texts API unavailable, trying Supabase fallback:',
+        apiError?.message || apiError
+      );
+    }
+
     let query = publicSupabase.from('site_texts').select('*');
 
     if (category) {

@@ -330,7 +330,13 @@ async function createProfileForUser(supabase, user, { email, organizationId, nam
     .single();
 
   if (createProfileError) {
-    console.error('[Auth] Falha ao criar perfil por owner_email:', createProfileError.message);
+    console.error(`[Auth] Falha ao criar perfil (source: ${source}):`, createProfileError.message, {
+      email,
+      source,
+      organizationId,
+      role,
+      userId: user.id,
+    });
     return null;
   }
 

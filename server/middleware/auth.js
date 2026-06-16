@@ -198,7 +198,10 @@ async function resolveProfileForUser(supabase, user) {
     .maybeSingle();
 
   if (!profileByIdError && profileById) {
-    return profileById;
+    return completeProfileOrganization(supabase, user, profileById, {
+      email: String(profileById.email || user.email || '').toLowerCase().trim(),
+      source: 'profile.id',
+    });
   }
 
   const email = String(user.email || '').toLowerCase().trim();
@@ -216,7 +219,10 @@ async function resolveProfileForUser(supabase, user) {
       authUserId: user.id,
       profileId: profileByEmail.id,
     });
-    return profileByEmail;
+    return completeProfileOrganization(supabase, user, profileByEmail, {
+      email,
+      source: 'profile.email',
+    });
   }
 
   const metadataRole = normalizeRole(
@@ -347,6 +353,93 @@ async function resolveProfileForUser(supabase, user) {
     role: 'admin',
     organization_id: organization.id,
   };
+}
+
+async function completeProfileOrganization(supabase, user, profile, { email, source }) {
+  if (profile.organization_id || profile.role === 'superadmin') {
+    return profile;
+  }
+
+  const metadataOrgId = String(
+    user.app_metadata?.organization_id ||
+      user.user_metadata?.organization_id ||
+      user.app_metadata?.org_id ||
+      user.user_metadata?.org_id ||
+      ''
+  ).trim();
+
+  let organization = null;
+
+  if (metadataOrgId) {
+    const { data: metadataOrg, error: metadataOrgError } = await supabase
+      .from('organizations')
+      .select('id, name, owner_name, owner_email')
+      .eq('id', metadataOrgId)
+      .maybeSingle();
+
+    if (!metadataOrgError && metadataOrg) {
+      organization = metadataOrg;
+    } else {
+      console.warn('[Auth] organization_id do auth metadata nao existe para perfil existente', {
+        authUserId: user.id,
+        profileId: profile.id,
+        organizationId: metadataOrgId,
+        source,
+        error: metadataOrgError?.message || null,
+      });
+    }
+  }
+
+  if (!organization && email) {
+    const { data: ownerOrg, error: ownerOrgError } = await supabase
+      .from('organizations')
+      .select('id, name, owner_name, owner_email')
+      .ilike('owner_email', email)
+      .maybeSingle();
+
+    if (!ownerOrgError && ownerOrg) {
+      organization = ownerOrg;
+    }
+  }
+
+  if (!organization && email) {
+    organization = await ensureOrganizationForUser(supabase, user, email);
+  }
+
+  if (!organization?.id) {
+    return profile;
+  }
+
+  const { data: updatedProfile, error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      organization_id: organization.id,
+      role: normalizeRole(profile.role) || 'admin',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', profile.id)
+    .select('id, email, role, organization_id')
+    .single();
+
+  if (updateError) {
+    console.warn('[Auth] Falha ao completar organization_id do perfil existente', {
+      authUserId: user.id,
+      profileId: profile.id,
+      organizationId: organization.id,
+      source,
+      error: updateError.message,
+    });
+    return { ...profile, organization_id: organization.id };
+  }
+
+  console.warn('[Auth] Perfil existente vinculado automaticamente a organizacao', {
+    authUserId: user.id,
+    profileId: profile.id,
+    organizationId: organization.id,
+    source,
+  });
+
+  return updatedProfile;
 }
 
 function normalizeRole(role) {

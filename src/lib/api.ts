@@ -24,14 +24,37 @@ function normalizeApiBaseUrl(url: string): string {
   return clean || '';
 }
 
-/**
- * Cliente de API Seguro:
- * Injeta automaticamente Authorization e x-impersonate-org-id
- */
+let _activeOrganizationId: string | null = null;
+let _activeOrganizationUserId: string | null = null;
+
+export function setActiveOrganizationId(id: string | null, userId?: string | null) {
+  _activeOrganizationId = id;
+  _activeOrganizationUserId = id && userId ? userId : null;
+}
+
+export function getActiveOrganizationId(): string | null {
+  if (!_activeOrganizationUserId) return null;
+  return _activeOrganizationId;
+}
+
+export function clearStaleOrganizationData(userId?: string | null) {
+  const storedUserId = sessionStorage.getItem('active_organization_user_id');
+  const storedOrgId = sessionStorage.getItem('active_organization_id');
+
+  if (storedUserId && userId && storedUserId !== userId) {
+    sessionStorage.removeItem('active_organization_id');
+    sessionStorage.removeItem('active_organization_user_id');
+    setActiveOrganizationId(null);
+  }
+
+  if (!storedUserId && storedOrgId) {
+    sessionStorage.removeItem('active_organization_id');
+  }
+}
+
 export const callApi = async (path: string, options: RequestInit = {}) => {
   const url = getApiUrl(path);
 
-  // Obter token da sessão atual do Supabase
   const {
     data: { session: initialSession },
   } = await supabase.auth.getSession();
@@ -40,12 +63,11 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     headers.set('Authorization', `Bearer ${initialSession.access_token}`);
   }
 
-  // Injetar header de impersonação se ativo
   const impId = getImpersonatedOrgId();
   if (impId && impId !== 'null') {
     headers.set('x-impersonate-org-id', impId);
   } else {
-    const activeOrgId = getActiveOrganizationId(initialSession?.user?.id);
+    const activeOrgId = getActiveOrganizationId();
     if (activeOrgId) {
       headers.set('x-organization-id', activeOrgId);
     }
@@ -120,23 +142,4 @@ function getImpersonatedOrgId(): string | null {
   return null;
 }
 
-function getActiveOrganizationId(userId?: string): string | null {
-  if (typeof window === 'undefined') return null;
 
-  const current = sessionStorage.getItem('active_organization_id');
-  const ownerUserId = sessionStorage.getItem('active_organization_user_id');
-
-  if (userId && ownerUserId && ownerUserId !== userId) {
-    sessionStorage.removeItem('active_organization_id');
-    sessionStorage.removeItem('active_organization_user_id');
-    return null;
-  }
-
-  if (!current || current === 'null' || current === 'undefined') return null;
-
-  if (!ownerUserId) {
-    return null;
-  }
-
-  return current;
-}

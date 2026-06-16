@@ -71,16 +71,27 @@ export const verifyAuth = async (req, res, next) => {
     req.userRole = profile.role;
     req.realOrgId = profile.organization_id;
     req.impersonation = impersonation;
-    // --- LÓGICA DE IMPERSONATION ---
-    // Apenas SuperAdmins podem solicitar impersonação via header
+
     const impersonateId = req.headers['x-impersonate-org-id'];
     const requestedOrgId = req.headers['x-organization-id'];
     const tokenImpersonationOrgId = getImpersonationTenantId(impersonation);
 
+    console.log('[AUTH DEBUG] verifyAuth', {
+      userId: profile.id,
+      email: maskEmail(profile.email),
+      role: profile.role,
+      profileOrg: profile.organization_id,
+      requestedOrg: requestedOrgId,
+      impersonateId: impersonateId || null,
+      authorizationExists: !!req.headers.authorization,
+    });
+
     if (tokenImpersonationOrgId) {
       req.orgId = tokenImpersonationOrgId;
       req.isImpersonating = true;
+      console.log('[AUTH DEBUG] Token impersonation ativo', { orgId: req.orgId });
     } else if (impersonateId && profile.role === 'superadmin') {
+      console.log('[AUTH DEBUG] Superadmin impersonando via header', { impersonateId });
       const { data: impersonatedOrg, error: impersonatedOrgError } = await supabase
         .from('organizations')
         .select('id')
@@ -102,36 +113,66 @@ export const verifyAuth = async (req, res, next) => {
       );
       req.orgId = impersonatedOrg.id;
       req.isImpersonating = true;
-    } else if (requestedOrgId) {
-      const requestedOrg = await resolveRequestedOrganization(
-        supabase,
-        requestedOrgId,
-        profile
-      );
-
+    } else if (profile.role === 'superadmin' && requestedOrgId) {
+      console.log('[AUTH DEBUG] Superadmin acessando org via header', { requestedOrgId });
+      const requestedOrg = await resolveOrganizationById(supabase, requestedOrgId);
       if (!requestedOrg) {
-        console.warn('[Auth] Organization header invalido ou nao permitido', {
+        console.warn('[Auth] Organizacao solicitada no header nao encontrada', {
           userId: user.id,
           email: maskEmail(user.email),
           requestedOrgId,
-          profileOrgId: profile.organization_id || null,
-          role: profile.role,
         });
         return res.status(403).json({
           error: 'Organizacao solicitada nao permitida para este usuario.',
           code: 'INVALID_REQUESTED_ORG',
         });
       }
-
       req.orgId = requestedOrg.id;
-      req.isImpersonating = profile.role === 'superadmin';
-    } else {
-      req.orgId = profile.organization_id;
+      req.isImpersonating = true;
+    } else if (profile.organization_id) {
+      // Usuario comum/admin: usa APENAS a organizacao do perfil.
+      // Ignora completamente o header x-organization-id para evitar erros com dados stale.
+      console.log('[AUTH DEBUG] Usuario admin, usando org do profile', {
+        profileOrg: profile.organization_id,
+        requestedOrgIgnored: requestedOrgId || null,
+      });
+      const org = await resolveOrganizationById(supabase, profile.organization_id);
+      if (!org) {
+        console.warn('[Auth] Organizacao do perfil nao encontrada no banco', {
+          userId: user.id,
+          email: maskEmail(user.email),
+          profileOrgId: profile.organization_id,
+        });
+        return res.status(403).json({
+          error: 'Organizacao do perfil nao encontrada.',
+          code: 'PROFILE_ORG_NOT_FOUND',
+        });
+      }
+      if (org.status && org.status !== 'active') {
+        console.warn('[Auth] Organizacao do perfil esta inativa', {
+          userId: user.id,
+          email: maskEmail(user.email),
+          profileOrgId: profile.organization_id,
+          status: org.status,
+        });
+        return res.status(403).json({
+          error: 'Organizacao do perfil esta inativa.',
+          code: 'PROFILE_ORG_INACTIVE',
+        });
+      }
+      req.orgId = org.id;
       req.isImpersonating = false;
+    } else {
+      console.warn('[Auth] Perfil sem organizacao vinculada', {
+        userId: user.id,
+        email: maskEmail(user.email),
+        role: profile.role,
+      });
+      return res.status(403).json({
+        error: 'Perfil sem organizacao vinculada.',
+        code: 'PROFILE_NO_ORG',
+      });
     }
-
-    // Se for superadmin e não estiver impersonando, req.orgId pode ser nulo para rotas globais
-    // Mas para rotas de tenant (leads, props), next middlewares farão o check se necessário
 
     next();
   } catch (e) {
@@ -185,25 +226,21 @@ function decodeJwtPayload(token) {
   }
 }
 
-async function resolveRequestedOrganization(supabase, requestedOrgId, profile) {
-  const cleanOrgId = String(requestedOrgId || '').trim();
-  if (!cleanOrgId) return null;
-
-  if (profile.role !== 'superadmin' && profile.organization_id !== cleanOrgId) {
-    return profile.organization_id
-      ? resolveOrganizationById(supabase, profile.organization_id)
-      : null;
-  }
-
-  return resolveOrganizationById(supabase, cleanOrgId);
-}
-
 async function resolveOrganizationById(supabase, organizationId) {
+  if (!organizationId) return null;
+  console.log('[AUTH DEBUG] resolveOrganizationById', { organizationId });
   const { data: organization, error } = await supabase
     .from('organizations')
-    .select('id')
+    .select('id, status')
     .eq('id', organizationId)
     .maybeSingle();
+
+  console.log('[AUTH DEBUG] ORG LOOKUP', {
+    orgId: organizationId,
+    found: !!organization,
+    status: organization?.status || null,
+    error: error?.message || null,
+  });
 
   if (error || !organization) return null;
   return organization;

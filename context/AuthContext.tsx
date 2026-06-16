@@ -6,6 +6,7 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
+import { setActiveOrganizationId, clearStaleOrganizationData } from '../src/lib/api';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -117,8 +118,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const fetchInProgress = React.useRef<string | null>(null);
 
   const loadProfile = async (userId: string) => {
-    // If already fetching THIS user, don't repeat
     if (fetchInProgress.current === userId) return;
+
+    clearStaleOrganizationData(userId);
 
     try {
       fetchInProgress.current = userId;
@@ -245,8 +247,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const signIn = async (email: string, password: string) => {
-    // Clear any existing impersonation data on new login
     clearImpersonationStorage();
+    clearStaleOrganizationData();
     setIsImpersonating(false);
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -408,6 +410,7 @@ function clearImpersonationStorage() {
 }
 
 function syncActiveOrganization(organizationId: string | null, userId?: string | null) {
+  setActiveOrganizationId(organizationId, userId);
   if (typeof window === 'undefined') return;
   if (organizationId && organizationId !== 'null' && organizationId !== 'undefined') {
     sessionStorage.setItem('active_organization_id', organizationId);

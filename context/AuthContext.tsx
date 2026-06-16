@@ -154,7 +154,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       );
 
       if (profileError) {
-        // Auto-retry on 401 (token refresh race condition)
         if (profileError.code === '401' || profileError.status === 401) {
           logger.warn('[AuthContext] 401 detected, retrying after token refresh...');
           await new Promise(r => setTimeout(r, 1000));
@@ -162,6 +161,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           return loadProfile(userId);
         }
         logger.error('❌ [AuthContext] Error loading profile:', profileError);
+        syncActiveOrganization(null, userId);
         setProfile((prev) => (prev && prev.id === userId ? prev : null));
         if (!profile) setIsImpersonating(false);
       } else if (profileData) {
@@ -171,7 +171,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         );
         let finalProfile = { ...profileData };
 
-        // Handle impersonation
         const impOrgId = getImpersonatedOrgId();
 
         if (
@@ -215,6 +214,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setProfile(finalProfile);
       } else {
         logger.warn('⚠️ [AuthContext] Profile query returned no data.');
+        syncActiveOrganization(null, userId);
         setProfile((prev) => (prev && prev.id === userId ? prev : null));
       }
     } catch (err: any) {
@@ -235,6 +235,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         return loadProfile(userId);
       }
 
+      syncActiveOrganization(null, userId);
       setProfile((prev) => (prev && prev.id === userId ? prev : null));
     } finally {
       logger.info('🏁 [AuthContext] loadProfile finished.');

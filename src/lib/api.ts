@@ -125,12 +125,18 @@ function getActiveOrganizationId(userId?: string): string | null {
 
   const current = sessionStorage.getItem('active_organization_id');
   const ownerUserId = sessionStorage.getItem('active_organization_user_id');
+
   if (userId && ownerUserId && ownerUserId !== userId) {
     sessionStorage.removeItem('active_organization_id');
     sessionStorage.removeItem('active_organization_user_id');
     return null;
   }
-  if (current && current !== 'null' && current !== 'undefined') return current;
 
-  return null;
+  if (!current || current === 'null' || current === 'undefined') return null;
+
+  if (!ownerUserId) {
+    return null;
+  }
+
+  return current;
 }

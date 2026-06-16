@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
 import { 
   Lock, 
   Mail, 
@@ -18,22 +17,44 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
-  const { signIn, user } = useAuth();
-  const { settings } = useSettings();
-  const navigate = useNavigate();
+  const { signIn, user, profile, loading: authLoading } = useAuth();
 
-  // Redirect if already logged in
-  if (user) {
+  useEffect(() => {
+    if (
+      user &&
+      !authLoading &&
+      !profile?.organization_id &&
+      profile?.role !== 'superadmin' &&
+      isSuccess
+    ) {
+      setIsSuccess(false);
+      setError(
+        'Sua conta ainda nao esta vinculada a uma empresa. Fale com o administrador para liberar o acesso ao CRM.'
+      );
+    }
+  }, [authLoading, isSuccess, profile?.organization_id, profile?.role, user]);
+
+  // Redirect only when the current session has a valid CRM destination.
+  // A stale/incomplete session must keep /login visible instead of falling into onboarding.
+  if (user && authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600" />
+      </div>
+    );
+  }
+
+  if (user && (profile?.organization_id || profile?.role === 'superadmin')) {
     return <Navigate to="/admin" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       await signIn(email, password);
@@ -41,7 +62,7 @@ const Login: React.FC = () => {
       // O redirecionamento acontece via AuthContext/App.tsx
     } catch (err: any) {
       setError(getLoginErrorMessage(err));
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -227,10 +248,10 @@ const Login: React.FC = () => {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={submitting}
                   className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-emerald-200 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed group"
                 >
-                  {loading ? (
+                  {submitting ? (
                     <Loader2 className="animate-spin" size={24} />
                   ) : (
                     <>

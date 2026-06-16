@@ -282,22 +282,52 @@ async function resolveProfileForUser(supabase, user) {
       email,
       authUserId: user.id,
     });
-    return createProfileForUser(supabase, user, {
+
+    const createdProfile = await createProfileForUser(supabase, user, {
       email,
       organizationId: null,
       name: user.user_metadata?.name || user.user_metadata?.full_name || email.split('@')[0] || email,
       role: 'user',
       source: 'fallback_minimo',
     });
+
+    if (createdProfile) return createdProfile;
+
+    console.warn('[Auth] Criação de perfil no banco falhou; usando perfil virtual para nao bloquear usuario', {
+      email,
+      authUserId: user.id,
+    });
+
+    return {
+      id: user.id,
+      email,
+      role: 'user',
+      organization_id: null,
+    };
   }
 
-  return createProfileForUser(supabase, user, {
+  const createdProfile = await createProfileForUser(supabase, user, {
     email,
     organizationId: organization.id,
     name: organization.owner_name || organization.name,
     role: 'admin',
     source: 'organization.owner_email',
   });
+
+  if (createdProfile) return createdProfile;
+
+  console.warn('[Auth] Criação de perfil no banco falhou apos encontrar organizacao; usando perfil virtual', {
+    email,
+    authUserId: user.id,
+    organizationId: organization.id,
+  });
+
+  return {
+    id: user.id,
+    email,
+    role: 'admin',
+    organization_id: organization.id,
+  };
 }
 
 function normalizeRole(role) {

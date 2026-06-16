@@ -130,7 +130,8 @@ async function getAssignableUsers(organizationId) {
  */
 router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
+    const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 200);
     const offset = (page - 1) * limit;
 
     const { data, error, count } = await supabase
@@ -147,9 +148,9 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
       leads: data,
       pagination: {
         total: count,
-        page: Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(count / limit)
+        page,
+        limit,
+        pages: Math.ceil((count || 0) / limit)
       }
     });
   } catch (err) {

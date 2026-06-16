@@ -58,7 +58,7 @@ export const leadService = {
       leads.push(...(data.leads || []));
     }
 
-    return leads.map(mapToModel);
+    return dedupeById(leads).map(mapToModel);
   },
 
   // Update lead status (Now Backend-Driven)
@@ -130,6 +130,16 @@ export const leadService = {
     });
     return data;
   },
+};
+
+const dedupeById = (items: any[]) => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!item?.id) return true;
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 };
 
 const mapToModel = (dbItem: any): Lead => ({

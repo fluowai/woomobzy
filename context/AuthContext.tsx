@@ -172,7 +172,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         let finalProfile = { ...profileData };
 
         // Handle impersonation
-        const impOrgId = sessionStorage.getItem('impersonated_org_id');
+        const impOrgId = getImpersonatedOrgId();
 
         if (
           profileData.role === 'superadmin' &&
@@ -200,13 +200,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
               '⚠️ [AuthContext] Impersonation failed or org not found:',
               orgError
             );
-            sessionStorage.removeItem('impersonated_org_id');
+            clearImpersonationStorage();
             setIsImpersonating(false);
           }
         } else {
           setIsImpersonating(false);
           if (impOrgId === 'null' || impOrgId === 'undefined') {
-            sessionStorage.removeItem('impersonated_org_id');
+            clearImpersonationStorage();
           }
         }
 
@@ -244,7 +244,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const signIn = async (email: string, password: string) => {
     // Clear any existing impersonation data on new login
-    sessionStorage.removeItem('impersonated_org_id');
+    clearImpersonationStorage();
     setIsImpersonating(false);
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -278,7 +278,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const signOut = async () => {
-    sessionStorage.removeItem('impersonated_org_id');
+    clearImpersonationStorage();
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err: any) {
@@ -315,12 +315,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     logger.info('🚀 Starting impersonation of:', orgId);
     sessionStorage.setItem('impersonated_org_id', orgId);
+    localStorage.removeItem('impersonatedOrgId');
     await loadProfile(user!.id);
   };
 
   const stopImpersonation = () => {
     logger.info('🛑 Stopping impersonation');
-    sessionStorage.removeItem('impersonated_org_id');
+    clearImpersonationStorage();
     if (user) loadProfile(user.id);
   };
 
@@ -378,3 +379,25 @@ export const useAuth = () => {
   }
   return context;
 };
+
+function getImpersonatedOrgId(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  const current = sessionStorage.getItem('impersonated_org_id');
+  if (current && current !== 'null' && current !== 'undefined') return current;
+
+  const legacy = localStorage.getItem('impersonatedOrgId');
+  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
+    sessionStorage.setItem('impersonated_org_id', legacy);
+    return legacy;
+  }
+
+  return null;
+}
+
+function clearImpersonationStorage() {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem('impersonated_org_id');
+  localStorage.removeItem('impersonatedOrgId');
+  localStorage.removeItem('isImpersonating');
+}

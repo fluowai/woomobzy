@@ -33,7 +33,7 @@ const getHeaders = () => {
   };
 
   if (typeof window !== 'undefined') {
-    const impId = sessionStorage.getItem('impersonated_org_id');
+    const impId = getImpersonatedOrgId();
     if (impId && impId !== 'null') {
       headers['x-impersonate-org-id'] = impId;
     }
@@ -41,6 +41,21 @@ const getHeaders = () => {
 
   return headers;
 };
+
+function getImpersonatedOrgId(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  const current = sessionStorage.getItem('impersonated_org_id');
+  if (current && current !== 'null' && current !== 'undefined') return current;
+
+  const legacy = localStorage.getItem('impersonatedOrgId');
+  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
+    sessionStorage.setItem('impersonated_org_id', legacy);
+    return legacy;
+  }
+
+  return null;
+}
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',

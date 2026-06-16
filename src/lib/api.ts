@@ -41,7 +41,7 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   }
 
   // Injetar header de impersonação se ativo
-  const impId = sessionStorage.getItem('impersonated_org_id');
+  const impId = getImpersonatedOrgId();
   if (impId && impId !== 'null') {
     headers.set('x-impersonate-org-id', impId);
   }
@@ -99,3 +99,18 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
 
   return response.json();
 };
+
+function getImpersonatedOrgId(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  const current = sessionStorage.getItem('impersonated_org_id');
+  if (current && current !== 'null' && current !== 'undefined') return current;
+
+  const legacy = localStorage.getItem('impersonatedOrgId');
+  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
+    sessionStorage.setItem('impersonated_org_id', legacy);
+    return legacy;
+  }
+
+  return null;
+}

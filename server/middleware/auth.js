@@ -74,8 +74,12 @@ export const verifyAuth = async (req, res, next) => {
     // --- LÓGICA DE IMPERSONATION ---
     // Apenas SuperAdmins podem solicitar impersonação via header
     const impersonateId = req.headers['x-impersonate-org-id'];
+    const tokenImpersonationOrgId = getImpersonationTenantId(impersonation);
 
-    if (impersonateId && profile.role === 'superadmin') {
+    if (tokenImpersonationOrgId) {
+      req.orgId = tokenImpersonationOrgId;
+      req.isImpersonating = true;
+    } else if (impersonateId && profile.role === 'superadmin') {
       const { data: impersonatedOrg, error: impersonatedOrgError } = await supabase
         .from('organizations')
         .select('id')
@@ -559,7 +563,7 @@ async function verifyImpersonationToken(supabase, token) {
 
     const { data: session, error } = await supabase
       .from('impersonation_sessions')
-      .select('id, status, expires_at')
+      .select('id, status, expires_at, tenant_id')
       .eq('id', payload.app_metadata.impersonation_session)
       .maybeSingle();
 
@@ -572,10 +576,20 @@ async function verifyImpersonationToken(supabase, token) {
       return null;
     }
 
+    const tokenTenantId = String(payload.app_metadata?.tenant_id || '').trim();
+    if (!tokenTenantId || session.tenant_id !== tokenTenantId) {
+      return null;
+    }
+
     return payload;
   } catch {
     return null;
   }
+}
+
+function getImpersonationTenantId(impersonation) {
+  const tenantId = String(impersonation?.app_metadata?.tenant_id || '').trim();
+  return tenantId || null;
 }
 
 /**

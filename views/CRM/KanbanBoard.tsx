@@ -1284,19 +1284,23 @@ const KanbanBoard: React.FC = () => {
   const [allProperties, setAllProperties] = useState<any[]>([]);
   const [mobileStageId, setMobileStageId] = useState(PIPELINE_STAGES[0].id);
 
-  const { profile } = useAuth();
-  const isImpersonating = !!localStorage.getItem('impersonatedOrgId');
+  const { profile, isImpersonating } = useAuth();
   const isSuperAdmin = profile?.role === 'superadmin';
 
   const targetOrgId =
     isSuperAdmin && !isImpersonating ? undefined : profile?.organization_id;
 
   useEffect(() => {
-    if (targetOrgId || (isSuperAdmin && !isImpersonating)) {
-      loadLeads();
-      loadAllProperties();
+    if (!targetOrgId) {
+      setLeads([]);
+      setAllProperties([]);
+      setLoading(false);
+      return;
     }
-  }, [targetOrgId, isSuperAdmin, isImpersonating]);
+
+    loadLeads();
+    loadAllProperties();
+  }, [targetOrgId]);
 
   const loadAllProperties = async () => {
     try {
@@ -1420,6 +1424,14 @@ const KanbanBoard: React.FC = () => {
   };
 
   if (loading) return <div className="p-10 text-center">Carregando CRM...</div>;
+
+  if (!targetOrgId) {
+    return (
+      <div className="p-10 text-center text-slate-600">
+        Selecione uma imobiliaria no painel de Super Admin para acessar o CRM.
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">

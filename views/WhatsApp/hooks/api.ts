@@ -117,7 +117,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       console.warn('[WhatsApp API] Falha 401 apos renovar a sessao.');
     }
     if (error.code === 'INVALID_TENANT' || error.code === 'INVALID_IMPERSONATED_ORG') {
-      sessionStorage.removeItem('impersonated_org_id');
+      clearImpersonationStorage();
       tenantIdCache = undefined;
     }
 
@@ -187,7 +187,15 @@ function decodeJwtPayload(token: string): { org_id?: string } | null {
 
 function getImpersonatedOrgId(): string | null {
   const value = sessionStorage.getItem('impersonated_org_id');
-  return value && value !== 'null' && value !== 'undefined' ? value : null;
+  if (value && value !== 'null' && value !== 'undefined') return value;
+
+  const legacy = localStorage.getItem('impersonatedOrgId');
+  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
+    sessionStorage.setItem('impersonated_org_id', legacy);
+    return legacy;
+  }
+
+  return null;
 }
 
 async function getValidImpersonatedOrgId(userId?: string): Promise<string | null> {
@@ -196,7 +204,7 @@ async function getValidImpersonatedOrgId(userId?: string): Promise<string | null
 
   const context = await getUserTenantContext(userId);
   if (context?.role !== 'superadmin') {
-    sessionStorage.removeItem('impersonated_org_id');
+    clearImpersonationStorage();
     return null;
   }
 
@@ -207,11 +215,17 @@ async function getValidImpersonatedOrgId(userId?: string): Promise<string | null
     .maybeSingle();
 
   if (!data?.id) {
-    sessionStorage.removeItem('impersonated_org_id');
+    clearImpersonationStorage();
     return null;
   }
 
   return data.id;
+}
+
+function clearImpersonationStorage() {
+  sessionStorage.removeItem('impersonated_org_id');
+  localStorage.removeItem('impersonatedOrgId');
+  localStorage.removeItem('isImpersonating');
 }
 
 async function getTenantId(userId?: string): Promise<string | null> {

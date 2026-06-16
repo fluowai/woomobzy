@@ -10,6 +10,7 @@ const outputDir = path.resolve("outputs", "fazendas-crm-leads");
 const reportPath = path.join(outputDir, "fazendas-crm49-sync-report.json");
 const contactsSnapshotPath = path.join(outputDir, "fazendas-crm-leads.raw.json");
 const attendanceSnapshotPath = path.join(outputDir, "fazendas-crm-atendimentos.raw.json");
+const interactionsSnapshotPath = path.join(outputDir, "fazendas-crm-interacoes.raw.json");
 
 const CRM_USER = process.env.CRM_USER;
 const CRM_PASS = process.env.CRM_PASS;
@@ -158,6 +159,21 @@ function attendanceNotes(attendance) {
   ].filter(Boolean).join("\n");
 }
 
+function stripHtml(value) {
+  return String(value || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\[char0\]/g, "\n")
+    .replace(/\r/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 async function fetchContacts(cookie) {
   const filters = JSON.stringify([{
     input: "situacao",
@@ -228,6 +244,21 @@ async function fetchAttendances(cookie) {
   return { total, data: [...byId.values()] };
 }
 
+async function fetchChatMessages(cookie, chatId) {
+  if (!chatId) return [];
+  const qs = new URLSearchParams({ chat: String(chatId) });
+  const response = await fetch(`${CRM_BASE}/md/php/ajax/messages.ajax.php?${qs.toString()}`, {
+    method: "GET",
+    headers: { cookie },
+  });
+  if (!response.ok) throw new Error(`CRM messages request failed ${response.status} for chat ${chatId}`);
+  const parsed = await response.json();
+  return (parsed.messages || []).map((message) => ({
+    ...message,
+    mensagem_texto: stripHtml(message.mensagem),
+  }));
+}
+
 async function findOrganization() {
   const { data, error } = await supabase
     .from("organizations")
@@ -255,7 +286,7 @@ function keepKnownColumns(payload, columns) {
 async function getExistingLeads(organizationId) {
   const { data, error } = await supabase
     .from("leads")
-    .select("id,name,email,phone,notes,status,source,created_at")
+    .select("id,name,email,phone,notes,status,source,created_at,next_follow_up_at")
     .eq("organization_id", organizationId);
   if (error) throw error;
   return data || [];
@@ -281,7 +312,7 @@ async function upsertTag(organizationId, leadId, tag) {
   if (error) throw error;
 }
 
-async function insertActivity(organizationId, leadId, type, description, metadata) {
+async function insertActivity(organizationId, leadId, type, description, metadata, createdAt = null) {
   const { data: existing, error: findError } = await supabase
     .from("lead_activities")
     .select("id")
@@ -292,34 +323,165 @@ async function insertActivity(organizationId, leadId, type, description, metadat
   if (findError) throw findError;
   if (existing) return false;
 
-  const { error } = await supabase.from("lead_activities").insert({
+  const payload = {
     organization_id: organizationId,
     lead_id: leadId,
     type,
     description,
     metadata: metadata || {},
-  });
+  };
+  if (createdAt) payload.created_at = createdAt;
+
+  const { error } = await supabase.from("lead_activities").insert(payload);
   if (error) throw error;
   return true;
+}
+
+async function folouwup(organizationId, lead, dueAt, reason, metadata = {}) {
+  if (!APPLY || !lead?.id) return false;
+
+  const { data: existing, error: findError } = await supabase
+    .from("lead_followups")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("lead_id", lead.id)
+    .eq("status", "pending")
+    .eq("kind", "folouwup")
+    .maybeSingle();
+  if (findError) throw findError;
+
+  const payload = {
+    organization_id: organizationId,
+    lead_id: lead.id,
+    title: "Retomar contato - lead antigo CRM49",
+    notes: reason,
+    due_at: dueAt,
+    status: "pending",
+    kind: "folouwup",
+    metadata,
+  };
+
+  if (existing) {
+    const { error } = await supabase
+      .from("lead_followups")
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("lead_followups").insert(payload);
+    if (error) throw error;
+  }
+
+  const { error: leadError } = await supabase
+    .from("leads")
+    .update({
+      next_follow_up_at: dueAt,
+      ai_next_action: "Retomar contato do lead antigo importado do CRM49",
+    })
+    .eq("id", lead.id)
+    .eq("organization_id", organizationId);
+  if (leadError) throw leadError;
+
+  await upsertTag(organizationId, lead.id, "folouwup");
+  await upsertTag(organizationId, lead.id, "retomar-contato");
+  return !existing;
+}
+
+const followup = folouwup;
+
+function attendanceChatId(attendance) {
+  return String(attendance?.tags?.mensagens?.data?.id_chat || "").trim();
+}
+
+function messageId(message) {
+  return String(message.id_mensagem || message.id || message.codigo || "").trim();
+}
+
+function messageDate(message) {
+  return isoOrNull(message.data || message.created_at || message.createdAt);
+}
+
+function messageText(message) {
+  return stripHtml(message.mensagem_texto || message.mensagem || message.message || message.text || "");
+}
+
+function messageDescription(attendance, message, index) {
+  const id = messageId(message);
+  const sender = String(message.id_remetente || "").trim();
+  const origin = String(message.id_origem || "").trim();
+  const date = validText(message.data) || validText(message.created_at) || "";
+  const text = messageText(message);
+  return [
+    `Interacao CRM49 #${id || `${attendance.id_atendimento}-${index + 1}`} importada do atendimento #${attendance.id_atendimento}.`,
+    date ? `Data original: ${date}.` : "",
+    sender || origin ? `Remetente/origem CRM49: ${[sender, origin].filter(Boolean).join(" / ")}.` : "",
+    text ? `Mensagem:\n${text.slice(0, 6000)}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+async function fetchAttendanceInteractions(cookie, attendances) {
+  const rows = [];
+  for (const attendance of attendances) {
+    const chatId = attendanceChatId(attendance);
+    if (!chatId) continue;
+    try {
+      const messages = await fetchChatMessages(cookie, chatId);
+      rows.push({ attendanceId: attendance.id_atendimento, clientId: attendance.id_cliente, chatId, messages });
+      console.log(`chat=${chatId} attendance=${attendance.id_atendimento} messages=${messages.length}`);
+    } catch (error) {
+      rows.push({ attendanceId: attendance.id_atendimento, clientId: attendance.id_cliente, chatId, error: error.message, messages: [] });
+      console.warn(`Could not fetch chat ${chatId} for attendance ${attendance.id_atendimento}: ${error.message}`);
+    }
+  }
+  return rows;
+}
+
+function latestInteractionIso(contact, attendance, interactions = []) {
+  const candidates = [
+    isoOrNull(attendance?.ultima_interacao || attendance?.lastMessageDate),
+    isoOrNull(contact?.ultima_interacao),
+    ...interactions.flatMap((item) => (item.messages || []).map(messageDate)),
+    isoOrNull(contact?.datacadastro),
+  ].filter(Boolean);
+  return candidates.sort().at(-1) || null;
+}
+
+function isLostContactCandidate(contact, attendance, interactions = []) {
+  const latest = latestInteractionIso(contact, attendance, interactions);
+  if (!latest) return true;
+  const daysWithoutContact = (Date.now() - new Date(latest).getTime()) / (1000 * 60 * 60 * 24);
+  return daysWithoutContact >= 7 || String(attendance?.situacao || "") === "1";
+}
+
+function followupDueAt(index) {
+  const due = new Date();
+  due.setHours(9, 0, 0, 0);
+  due.setDate(due.getDate() + Math.floor(index / 10));
+  return due.toISOString();
 }
 
 await fs.mkdir(outputDir, { recursive: true });
 const cookie = await crmLogin();
 const [contacts, attendancesResult] = await Promise.all([fetchContacts(cookie), fetchAttendances(cookie)]);
+const interactions = await fetchAttendanceInteractions(cookie, attendancesResult.data);
 await fs.writeFile(contactsSnapshotPath, JSON.stringify({ exportedAt: new Date().toISOString(), rows: contacts }, null, 2), "utf8");
 await fs.writeFile(attendanceSnapshotPath, JSON.stringify({ exportedAt: new Date().toISOString(), ...attendancesResult }, null, 2), "utf8");
+await fs.writeFile(interactionsSnapshotPath, JSON.stringify({ exportedAt: new Date().toISOString(), rows: interactions }, null, 2), "utf8");
 
 const organization = await findOrganization();
 const leadColumns = await listLeadColumns();
 const existingStart = await getExistingLeads(organization.id);
 const existing = [...existingStart];
 const contactsById = new Map(contacts.map((contact) => [String(contact.id), contact]));
+const interactionsByAttendanceId = new Map(interactions.map((item) => [String(item.attendanceId), item]));
 
 const report = {
   mode: APPLY ? "apply" : "dry-run",
   organization,
   contactsFetched: contacts.length,
   attendancesFetched: attendancesResult.data.length,
+  chatsFetched: interactions.length,
+  messagesFetched: interactions.reduce((sum, item) => sum + (item.messages || []).length, 0),
   contactsCreated: 0,
   contactsUpdated: 0,
   contactsSkippedNoPhone: 0,
@@ -327,10 +489,17 @@ const report = {
   attendancesUpdated: 0,
   tagsWritten: 0,
   activitiesWritten: 0,
+  messageActivitiesWritten: 0,
+  followupCandidates: 0,
+  followupsScheduled: 0,
   statusCounts: {},
   samples: [],
   generatedAt: new Date().toISOString(),
 };
+
+let followupIndex = 0;
+const followupLeadIds = new Set();
+const attendanceClientIds = new Set(attendancesResult.data.map((attendance) => String(attendance.id_cliente)));
 
 async function createOrUpdateLead(baseLead, externalId, extra = {}) {
   if (!baseLead.phone) {
@@ -396,10 +565,29 @@ for (const contact of contacts) {
     await upsertTag(organization.id, lead.id, "crm49");
     report.tagsWritten += 2;
   }
+
+  if (lead && !attendanceClientIds.has(String(contact.id)) && isLostContactCandidate(contact, null, [])) {
+    report.followupCandidates += 1;
+    const dueAt = followupDueAt(followupIndex);
+    followupIndex += 1;
+    const reason = [
+      "Lead antigo importado do CRM49 sem atendimento recente vinculado.",
+      validText(contact.ultima_interacao) ? `Ultima interacao no CRM49: ${contact.ultima_interacao}.` : "",
+      "Retomar contato para requalificar interesse em fazendas e areas rurais.",
+    ].filter(Boolean).join("\n");
+    const created = await folouwup(organization.id, lead, dueAt, reason, {
+      crm49_contact_id: contact.id,
+      source: "crm49_contact",
+      latest_interaction_at: latestInteractionIso(contact, null, []),
+    });
+    followupLeadIds.add(lead.id);
+    if (APPLY || created) report.followupsScheduled += 1;
+  }
 }
 
 for (const attendance of attendancesResult.data) {
   const contact = contactsById.get(String(attendance.id_cliente)) || {};
+  const interactionBatch = interactionsByAttendanceId.get(String(attendance.id_atendimento)) || { messages: [] };
   const baseLead = contactToLead({ ...contact, id: attendance.id_cliente, nome: attendance.cliente_nome || contact.nome });
   const status = attendanceToStatus(attendance);
   const { lead, action } = await createOrUpdateLead(baseLead, attendance.id_cliente, {
@@ -424,7 +612,48 @@ for (const attendance of attendancesResult.data) {
     );
     report.tagsWritten += 2;
     if (activityInserted) report.activitiesWritten += 1;
+
+    for (const [index, message] of (interactionBatch.messages || []).entries()) {
+      const description = messageDescription(attendance, message, index);
+      if (!description) continue;
+      const messageInserted = await insertActivity(
+        organization.id,
+        lead.id,
+        "WhatsApp",
+        description,
+        {
+          crm49_attendance_id: attendance.id_atendimento,
+          crm49_chat_id: interactionBatch.chatId,
+          crm49_message_id: messageId(message) || null,
+          crm49_message: message,
+        },
+        messageDate(message)
+      );
+      if (messageInserted) report.messageActivitiesWritten += 1;
+    }
   }
+
+  if (lead && !followupLeadIds.has(lead.id) && isLostContactCandidate(contact, attendance, [interactionBatch])) {
+    report.followupCandidates += 1;
+    const dueAt = followupDueAt(followupIndex);
+    followupIndex += 1;
+    const latest = latestInteractionIso(contact, attendance, [interactionBatch]);
+    const reason = [
+      `Lead antigo com atendimento CRM49 #${attendance.id_atendimento}.`,
+      latest ? `Ultima interacao encontrada: ${latest}.` : "",
+      `Status importado no kanban: ${status}.`,
+      "Retomar contato e registrar nova tentativa de qualificacao.",
+    ].filter(Boolean).join("\n");
+    const created = await folouwup(organization.id, lead, dueAt, reason, {
+      crm49_contact_id: attendance.id_cliente,
+      crm49_attendance_id: attendance.id_atendimento,
+      crm49_chat_id: interactionBatch.chatId || null,
+      latest_interaction_at: latest,
+    });
+    followupLeadIds.add(lead.id);
+    if (APPLY || created) report.followupsScheduled += 1;
+  }
+
   if (report.samples.length < 8) {
     report.samples.push({
       name: baseLead.name,

@@ -16,6 +16,11 @@ export const leadService = {
       method: 'POST',
       body: JSON.stringify({
         organization_id: lead.organization_id, // Incluído para rotas públicas
+        organization_slug: (lead as any).organization_slug,
+        organization_domain: (lead as any).organization_domain,
+        owner_email: (lead as any).owner_email,
+        site_key: (lead as any).site_key,
+        referrer_url: (lead as any).referrer_url,
         name: lead.name,
         phone: lead.phone,
         email: lead.email,

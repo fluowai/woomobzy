@@ -434,6 +434,11 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
       await leadService.create({
         organization_id: resolvedOrganizationId,
+        organization_slug: 'fazendasbrasil',
+        organization_domain: 'fazendasbrasil.com.br',
+        owner_email: EMAIL,
+        site_key: 'fazendasbrasil',
+        referrer_url: window.location.href,
         name: leadForm.name,
         phone: leadForm.phone,
         email: leadForm.email || undefined,

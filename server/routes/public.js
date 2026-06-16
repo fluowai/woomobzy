@@ -34,7 +34,11 @@ const contactSchema = z.object({
 });
 
 const leadSchema = z.object({
-  organization_id: z.string().uuid(),
+  organization_id: z.string().uuid().optional().nullable(),
+  organization_slug: z.string().max(120).optional().nullable(),
+  organization_domain: z.string().max(255).optional().nullable(),
+  owner_email: z.string().email().max(255).optional().nullable(),
+  site_key: z.string().max(120).optional().nullable(),
   name: z.string().min(2).max(100),
   email: z.string().email().max(255).optional().nullable().or(z.literal('')),
   phone: z.string().min(8).max(20),
@@ -74,6 +78,10 @@ router.post('/leads', contactLimiter, async (req, res) => {
       email,
       phone,
       organization_id,
+      organization_slug,
+      organization_domain,
+      owner_email,
+      site_key,
       source,
       ad_reference,
       organic_channel,
@@ -87,20 +95,28 @@ router.post('/leads', contactLimiter, async (req, res) => {
       lead_score,
       match_profile,
     } = validation.data;
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('id', organization_id)
-      .maybeSingle();
+    const organization = await resolvePublicLeadOrganization({
+      supabase,
+      organizationId: organization_id,
+      slug: organization_slug,
+      domain: organization_domain,
+      ownerEmail: owner_email,
+      siteKey: site_key,
+      source,
+      campaign,
+      referrerUrl: req.body?.referrer_url,
+      origin: req.headers.origin,
+      host: req.headers.host,
+    });
 
-    if (orgError || !organization) {
+    if (!organization) {
       return res.status(404).json({ error: 'Organizacao nao encontrada ou indisponivel.' });
     }
 
     const { data: leadData, error: leadError } = await supabase
       .from('leads')
       .insert([{
-        organization_id,
+        organization_id: organization.id,
         name,
         email,
         phone,
@@ -124,7 +140,7 @@ router.post('/leads', contactLimiter, async (req, res) => {
     matchLeadProperties({
       supabase,
       lead: leadData,
-      organizationId: organization_id,
+      organizationId: organization.id,
     }).catch((matchError) => {
       console.warn('[Public API] Erro ao gerar matches do lead:', matchError.message);
     });
@@ -135,6 +151,277 @@ router.post('/leads', contactLimiter, async (req, res) => {
     res.status(500).json({ error: 'Erro ao processar cadastro' });
   }
 });
+
+async function resolvePublicLeadOrganization({
+  supabase,
+  organizationId,
+  slug,
+  domain,
+  ownerEmail,
+  siteKey,
+  source,
+  campaign,
+  referrerUrl,
+  origin,
+  host,
+}) {
+  if (organizationId) {
+    const organization = await findOrganizationById(supabase, organizationId);
+    if (organization) return organization;
+
+    console.warn('[Public API] organization_id publico invalido; tentando resolver por sinais', {
+      organizationId,
+      source,
+      campaign,
+    });
+  }
+
+  const hostname = extractHostname(referrerUrl) || extractHostname(origin) || extractHostname(host);
+  const domainSignals = uniqueNonEmpty([
+    domain,
+    hostname,
+    hostname?.replace(/^www\./, ''),
+  ]);
+
+  for (const value of domainSignals) {
+    const organization = await findOrganizationByDomain(supabase, value);
+    if (organization) return organization;
+  }
+
+  const slugSignals = uniqueNonEmpty([
+    slug,
+    siteKey,
+    ...inferPublicOrgSlugs({ source, campaign, referrerUrl, origin, host }),
+  ]);
+
+  for (const value of slugSignals) {
+    const organization = await findOrganizationBySlug(supabase, value);
+    if (organization) return organization;
+  }
+
+  const nameSignals = uniqueNonEmpty([
+    ...inferPublicOrgNames({ source, campaign, referrerUrl, origin, host }),
+  ]);
+
+  for (const value of nameSignals) {
+    const organization = await findOrganizationByName(supabase, value);
+    if (organization) return organization;
+  }
+
+  const emailSignals = uniqueNonEmpty([
+    ownerEmail,
+    ...inferPublicOrgOwnerEmails({ source, campaign, referrerUrl, origin, host }),
+  ]);
+
+  for (const value of emailSignals) {
+    const organization = await findOrganizationByOwnerEmail(supabase, value);
+    if (organization) return organization;
+  }
+
+  if (isFazendasBrasilSignal({ source, campaign, referrerUrl, origin, host, slug, siteKey, domain })) {
+    return ensureFazendasBrasilOrganization(supabase);
+  }
+
+  return null;
+}
+
+async function findOrganizationById(supabase, id) {
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[Public API] Erro ao resolver organizacao por id:', error.message);
+    return null;
+  }
+  return data || null;
+}
+
+async function findOrganizationBySlug(supabase, slug) {
+  const normalized = normalizePublicOrgSignal(slug);
+  if (!normalized) return null;
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id')
+    .ilike('slug', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[Public API] Erro ao resolver organizacao por slug:', error.message);
+    return null;
+  }
+  return data || null;
+}
+
+async function findOrganizationByDomain(supabase, domain) {
+  const normalized = normalizeDomainSignal(domain);
+  if (!normalized) return null;
+
+  const { data: organization, error: orgError } = await supabase
+    .from('organizations')
+    .select('id')
+    .ilike('custom_domain', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (!orgError && organization) return organization;
+  if (orgError) console.warn('[Public API] Erro ao resolver organizacao por dominio:', orgError.message);
+
+  const { data: domainEntry, error: domainError } = await supabase
+    .from('domains')
+    .select('organization_id')
+    .ilike('domain', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (domainError) {
+    console.warn('[Public API] Erro ao resolver dominio publico:', domainError.message);
+    return null;
+  }
+  return domainEntry?.organization_id ? { id: domainEntry.organization_id } : null;
+}
+
+async function findOrganizationByName(supabase, name) {
+  const normalized = String(name || '').trim();
+  if (!normalized) return null;
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id')
+    .ilike('name', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[Public API] Erro ao resolver organizacao por nome:', error.message);
+    return null;
+  }
+  return data || null;
+}
+
+async function findOrganizationByOwnerEmail(supabase, email) {
+  const normalized = String(email || '').toLowerCase().trim();
+  if (!normalized) return null;
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id')
+    .ilike('owner_email', normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[Public API] Erro ao resolver organizacao por owner_email:', error.message);
+    return null;
+  }
+  return data || null;
+}
+
+function inferPublicOrgSlugs(signals) {
+  const text = stringifySignals(signals);
+  if (isFazendasBrasilText(text)) {
+    return ['fazendasbrasil', 'fazendas-brasil', 'fazendasbrasil1', 'imobiliariafazendasbrasil'];
+  }
+  return [];
+}
+
+function inferPublicOrgOwnerEmails(signals) {
+  const text = stringifySignals(signals);
+  if (isFazendasBrasilText(text)) {
+    return ['contato@fazendasbrasil.com.br'];
+  }
+  return [];
+}
+
+function inferPublicOrgNames(signals) {
+  const text = stringifySignals(signals);
+  if (isFazendasBrasilText(text)) {
+    return ['Fazendas Brasil'];
+  }
+  return [];
+}
+
+async function ensureFazendasBrasilOrganization(supabase) {
+  const payload = {
+    name: 'Fazendas Brasil',
+    slug: 'fazendasbrasil',
+    custom_domain: 'fazendasbrasil.com.br',
+    status: 'active',
+    niche: 'rural',
+    owner_name: 'Fazendas Brasil',
+    owner_email: 'contato@fazendasbrasil.com.br',
+    subscription_status: 'active',
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (!error && data) {
+    console.warn('[Public API] Organizacao Fazendas Brasil criada automaticamente para lead publico', {
+      organizationId: data.id,
+    });
+    return data;
+  }
+
+  if (error?.code !== '23505') {
+    console.warn('[Public API] Falha ao criar organizacao Fazendas Brasil:', error?.message || error);
+  }
+
+  return (
+    (await findOrganizationBySlug(supabase, 'fazendasbrasil')) ||
+    (await findOrganizationByOwnerEmail(supabase, 'contato@fazendasbrasil.com.br')) ||
+    (await findOrganizationByName(supabase, 'Fazendas Brasil'))
+  );
+}
+
+function isFazendasBrasilSignal(signals) {
+  return isFazendasBrasilText(stringifySignals(signals));
+}
+
+function isFazendasBrasilText(text) {
+  return String(text || '').includes('fazendasbrasil') || String(text || '').includes('fazendas brasil');
+}
+
+function stringifySignals(signals) {
+  return Object.values(signals || {})
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function extractHostname(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  try {
+    return new URL(raw.includes('://') ? raw : `https://${raw}`).hostname.toLowerCase();
+  } catch {
+    return raw.split('/')[0]?.split(':')[0]?.toLowerCase() || null;
+  }
+}
+
+function normalizeDomainSignal(value) {
+  return extractHostname(value)?.replace(/^www\./, '') || null;
+}
+
+function normalizePublicOrgSignal(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/^@+/, '')
+    .replace(/\s+/g, '-');
+}
+
+function uniqueNonEmpty(values) {
+  return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+}
 
 // Texts management
 router.get('/texts', async (req, res) => {

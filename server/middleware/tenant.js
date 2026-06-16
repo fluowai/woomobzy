@@ -2,24 +2,58 @@ import { getSupabaseServer } from '../lib/supabase-server.js';
 
 /**
  * server/middleware/tenant.js
- * 
- * Middleware de Garantia de Tenant.
- * Deve ser usado após verifyAuth/verifyAdmin.
+ *
+ * Middleware de garantia de tenant.
+ * Deve ser usado apos verifyAuth/verifyAdmin.
  */
 export const requireTenant = async (req, res, next) => {
   if (!req.orgId) {
-    console.error(`[TenantMiddleware] ❌ Bloqueio: Requisição sem OrganizationID para ${req.method} ${req.path}`);
-    return res.status(403).json({ 
-      error: 'Acesso negado: Organização não identificada.',
-      code: 'TENANT_REQUIRED'
+    const recoveredOrgId = await recoverTenantFromAuthenticatedUser(req);
+    if (recoveredOrgId) {
+      req.orgId = recoveredOrgId;
+      console.warn('[TenantMiddleware] Tenant recuperado apos auth sem orgId', {
+        method: req.method,
+        path: req.path,
+        userId: req.user?.id || null,
+        email: maskEmail(req.user?.email),
+        role: req.userRole || null,
+        organizationId: recoveredOrgId,
+      });
+    }
+  }
+
+  if (!req.orgId) {
+    console.error(
+      `[TenantMiddleware] Bloqueio: requisicao sem OrganizationID para ${req.method} ${req.path}`,
+      {
+        userId: req.user?.id || null,
+        email: maskEmail(req.user?.email),
+        role: req.userRole || null,
+        realOrgId: req.realOrgId || null,
+        impersonating: !!req.isImpersonating,
+      }
+    );
+    return res.status(403).json({
+      error: 'Acesso negado: Organizacao nao identificada.',
+      code: 'TENANT_REQUIRED',
+      auth_context: {
+        user_id: req.user?.id || null,
+        email: maskEmail(req.user?.email),
+        role: req.userRole || null,
+        real_org_id: req.realOrgId || null,
+        impersonating: !!req.isImpersonating,
+      },
     });
   }
 
-  // Garantir que ninguém sobrescreva o orgId no body/query (Imutabilidade do req)
   if (req.body && req.body.organization_id && req.body.organization_id !== req.orgId) {
     if (!req.isImpersonating) {
-      console.warn(`[Security] ⚠️ Tentativa de spoofing de OrgID detectada do usuário ${req.user.email}`);
-      return res.status(400).json({ error: 'Operação inválida: Tentativa de manipulação de Tenant detectada.' });
+      console.warn(
+        `[Security] Tentativa de spoofing de OrgID detectada do usuario ${req.user.email}`
+      );
+      return res.status(400).json({
+        error: 'Operacao invalida: Tentativa de manipulacao de Tenant detectada.',
+      });
     }
   }
 
@@ -52,3 +86,60 @@ export const requireTenant = async (req, res, next) => {
 
   next();
 };
+
+async function recoverTenantFromAuthenticatedUser(req) {
+  try {
+    const supabase = getSupabaseServer();
+    const userId = req.user?.id;
+    const email = String(req.user?.email || '').toLowerCase().trim();
+
+    if (userId) {
+      const { data: profileById, error: profileByIdError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!profileByIdError && profileById?.organization_id) {
+        return profileById.organization_id;
+      }
+    }
+
+    if (email) {
+      const { data: profileByEmail, error: profileByEmailError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .ilike('email', email)
+        .not('organization_id', 'is', null)
+        .limit(1)
+        .maybeSingle();
+
+      if (!profileByEmailError && profileByEmail?.organization_id) {
+        return profileByEmail.organization_id;
+      }
+
+      const { data: organization, error: organizationError } = await supabase
+        .from('organizations')
+        .select('id')
+        .ilike('owner_email', email)
+        .maybeSingle();
+
+      if (!organizationError && organization?.id) {
+        return organization.id;
+      }
+    }
+  } catch (error) {
+    console.error(
+      '[TenantMiddleware] Erro ao recuperar tenant do usuario autenticado:',
+      error.message
+    );
+  }
+
+  return null;
+}
+
+function maskEmail(email = '') {
+  const [user, domain] = String(email).split('@');
+  if (!user || !domain) return null;
+  return `${user.slice(0, 2)}***@${domain}`;
+}

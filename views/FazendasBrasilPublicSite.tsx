@@ -58,6 +58,7 @@ const WHATSAPP_NUMBER = '5544998433030';
 const PHONE_LABEL = '(11) 3813-2020';
 const EMAIL = 'contato@fazendasbrasil.com.br';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
+const BROKER_IMAGE = '/images/fazendas-brasil/broker-renato.jpeg';
 const HERO_IMAGE = '/images/fazendas-brasil/reference-hero.webp';
 const PROPERTIES_PER_PAGE = 12;
 const PROPERTIES_PER_GRID = 4;
@@ -522,7 +523,13 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           z-index: 5;
         }
         .fb-nav .fb-shell { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 34px; }
-        .fb-logo { width: 151px; height: 110px; object-fit: contain; object-position: left center; }
+        .fb-logo {
+          width: 176px;
+          height: 106px;
+          object-fit: contain;
+          object-position: left center;
+          filter: drop-shadow(0 8px 14px rgba(0,0,0,.1));
+        }
         .fb-menu { display: flex; align-items: center; gap: 44px; font-size: 12px; font-weight: 950; text-transform: uppercase; }
         .fb-menu a { color: #00130b; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; white-space: nowrap; }
         .fb-menu-toggle {
@@ -823,6 +830,69 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         .fb-benefit svg { color: var(--fb-green); margin-bottom: 12px; stroke-width: 1.8; }
         .fb-benefit h3 { margin: 0 0 8px; color: #092218; font-size: 11px; line-height: 1.2; font-weight: 950; text-transform: uppercase; }
         .fb-benefit p { margin: 0; color: #55635e; font-size: 10.5px; line-height: 1.45; }
+        .fb-broker {
+          margin: 24px auto 0;
+          border: 1px solid rgba(0,107,49,.16);
+          border-radius: 8px;
+          background:
+            linear-gradient(110deg, #fff 0%, #fff 48%, rgba(255,213,0,.12) 48%, rgba(255,213,0,.06) 100%),
+            #fff;
+          box-shadow: 0 14px 36px rgba(8,35,18,.08);
+          overflow: hidden;
+          display: grid;
+          grid-template-columns: 260px 1fr auto;
+          align-items: center;
+          gap: 28px;
+          padding: 22px 28px;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+        .fb-broker-photo-wrap { display: flex; align-items: center; gap: 18px; min-width: 0; }
+        .fb-broker-photo {
+          width: 112px;
+          height: 112px;
+          border-radius: 999px;
+          border: 5px solid #fff;
+          outline: 3px solid var(--fb-gold);
+          object-fit: cover;
+          object-position: 50% 18%;
+          box-shadow: 0 12px 26px rgba(0,49,24,.18);
+          background: #fff;
+          flex: 0 0 auto;
+        }
+        .fb-broker-logo { width: 92px; height: 70px; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,.12)); }
+        .fb-broker small { display: block; color: var(--fb-green); font-size: 12px; font-weight: 950; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 7px; }
+        .fb-broker h2 { margin: 0 0 8px; color: var(--fb-blue); font-size: clamp(22px, 2.2vw, 32px); line-height: 1; font-weight: 950; text-transform: uppercase; }
+        .fb-broker p { margin: 0; max-width: 680px; color: #355447; font-size: 14px; line-height: 1.5; font-weight: 700; }
+        .fb-broker-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 13px; }
+        .fb-broker-meta span {
+          min-height: 30px;
+          border-radius: 999px;
+          background: #f0f8f3;
+          color: #0a3a21;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 0 12px;
+          font-size: 12px;
+          font-weight: 950;
+        }
+        .fb-broker-action {
+          min-height: 46px;
+          border-radius: 6px;
+          background: var(--fb-blue);
+          color: #fff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 0 18px;
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+          white-space: nowrap;
+          box-shadow: 0 10px 22px rgba(6,49,138,.18);
+        }
         .fb-stats-strip {
           margin: 24px auto 0;
           width: min(100% - 74px, 1700px);
@@ -860,7 +930,14 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           font-family: Arial, Helvetica, sans-serif;
         }
         .fb-footer .fb-shell { padding: 0 0 20px; display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 48px; }
-        .fb-footer-logo { width: 118px; margin-bottom: 10px; }
+        .fb-footer-logo {
+          width: 150px;
+          margin-bottom: 12px;
+          padding: 8px;
+          border-radius: 10px;
+          background: rgba(255,255,255,.96);
+          box-shadow: 0 10px 24px rgba(0,0,0,.18);
+        }
         .fb-footer p,
         .fb-footer a { color: rgba(255,255,255,.9); text-decoration: none; font-size: 12px; line-height: 1.5; }
         .fb-footer h3 { margin: 0 0 14px; color: #fff; font-size: 12px; font-weight: 950; text-transform: uppercase; }
@@ -878,6 +955,8 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-intro { padding-bottom: 12px; }
           .fb-benefit:nth-child(2n) { border-left: 0; }
           .fb-stats-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .fb-broker { grid-template-columns: 1fr; align-items: start; }
+          .fb-broker-action { width: fit-content; }
         }
         @media (max-width: 900px) {
           .fb-shell,
@@ -932,6 +1011,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-search-button { grid-column: 1 / -1; }
           .fb-hero-points { grid-template-columns: 1fr; }
           .fb-footer .fb-shell { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .fb-broker { padding: 20px; gap: 18px; }
         }
         @media (max-width: 620px) {
           .fb-site { background: #f6faf7; }
@@ -973,8 +1053,13 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-search-row,
           .fb-cards,
           .fb-why,
+          .fb-broker,
           .fb-stats-strip,
           .fb-footer .fb-shell { grid-template-columns: 1fr; }
+          .fb-broker-photo-wrap { justify-content: space-between; }
+          .fb-broker-photo { width: 96px; height: 96px; }
+          .fb-broker-logo { width: 82px; }
+          .fb-broker-action { width: 100%; }
           .fb-benefit { border-left: 0; border-top: 1px solid #ccd8d2; padding-top: 22px; }
           .fb-stat { border-right: 0; border-bottom: 1px solid #d9e7df; }
           .fb-card-image { height: 175px; }
@@ -1218,6 +1303,27 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
               </div>
             );
           })}
+        </section>
+
+        <section className="fb-broker" aria-label="Especialista responsavel">
+          <div className="fb-broker-photo-wrap">
+            <img className="fb-broker-photo" src={BROKER_IMAGE} alt="Renato Vilmar Piovesana" />
+            <img className="fb-broker-logo" src={LOGO_URL} alt="Fazendas Brasil" />
+          </div>
+          <div>
+            <small>Especialista responsavel</small>
+            <h2>Renato Vilmar Piovesana</h2>
+            <p>
+              Atendimento consultivo para compradores e investidores que buscam fazendas, areas rurais e oportunidades selecionadas em todo o Brasil.
+            </p>
+            <div className="fb-broker-meta">
+              <span><BadgeCheck size={14} />CRECI 16644F</span>
+              <span><Phone size={14} />44 99843-3030</span>
+            </div>
+          </div>
+          <a className="fb-broker-action" href="#fazendas">
+            Ver imoveis <ArrowRight size={17} />
+          </a>
         </section>
       </main>
 

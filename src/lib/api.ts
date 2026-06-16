@@ -44,6 +44,11 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   const impId = getImpersonatedOrgId();
   if (impId && impId !== 'null') {
     headers.set('x-impersonate-org-id', impId);
+  } else {
+    const activeOrgId = getActiveOrganizationId();
+    if (activeOrgId) {
+      headers.set('x-organization-id', activeOrgId);
+    }
   }
 
   const method = (options.method || 'GET').toUpperCase();
@@ -111,6 +116,15 @@ function getImpersonatedOrgId(): string | null {
     sessionStorage.setItem('impersonated_org_id', legacy);
     return legacy;
   }
+
+  return null;
+}
+
+function getActiveOrganizationId(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  const current = sessionStorage.getItem('active_organization_id');
+  if (current && current !== 'null' && current !== 'undefined') return current;
 
   return null;
 }

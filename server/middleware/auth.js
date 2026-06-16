@@ -74,6 +74,7 @@ export const verifyAuth = async (req, res, next) => {
     // --- LÓGICA DE IMPERSONATION ---
     // Apenas SuperAdmins podem solicitar impersonação via header
     const impersonateId = req.headers['x-impersonate-org-id'];
+    const requestedOrgId = req.headers['x-organization-id'];
     const tokenImpersonationOrgId = getImpersonationTenantId(impersonation);
 
     if (tokenImpersonationOrgId) {
@@ -101,6 +102,29 @@ export const verifyAuth = async (req, res, next) => {
       );
       req.orgId = impersonatedOrg.id;
       req.isImpersonating = true;
+    } else if (requestedOrgId) {
+      const requestedOrg = await resolveRequestedOrganization(
+        supabase,
+        requestedOrgId,
+        profile
+      );
+
+      if (!requestedOrg) {
+        console.warn('[Auth] Organization header invalido ou nao permitido', {
+          userId: user.id,
+          email: maskEmail(user.email),
+          requestedOrgId,
+          profileOrgId: profile.organization_id || null,
+          role: profile.role,
+        });
+        return res.status(403).json({
+          error: 'Organizacao solicitada nao permitida para este usuario.',
+          code: 'INVALID_REQUESTED_ORG',
+        });
+      }
+
+      req.orgId = requestedOrg.id;
+      req.isImpersonating = profile.role === 'superadmin';
     } else {
       req.orgId = profile.organization_id;
       req.isImpersonating = false;
@@ -159,6 +183,24 @@ function decodeJwtPayload(token) {
   } catch {
     return null;
   }
+}
+
+async function resolveRequestedOrganization(supabase, requestedOrgId, profile) {
+  const cleanOrgId = String(requestedOrgId || '').trim();
+  if (!cleanOrgId) return null;
+
+  if (profile.role !== 'superadmin' && profile.organization_id !== cleanOrgId) {
+    return null;
+  }
+
+  const { data: organization, error } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', cleanOrgId)
+    .maybeSingle();
+
+  if (error || !organization) return null;
+  return organization;
 }
 
 function maskEmail(email = '') {

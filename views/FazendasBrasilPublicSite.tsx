@@ -14,6 +14,7 @@ import {
   Leaf,
   Lock,
   Mail,
+  Menu,
   MapPin,
   MessageCircle,
   Phone,
@@ -266,6 +267,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   const [quizIndex, setQuizIndex] = useState(0);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [leadForm, setLeadForm] = useState({
     name: '',
     phone: '',
@@ -351,6 +353,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
   const goToPage = (page: number) => {
     const nextPage = Math.min(Math.max(page, 1), totalPages);
+    setMobileMenuOpen(false);
     setCurrentPage(nextPage);
     window.requestAnimationFrame(() => {
       document.getElementById('fazendas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -358,6 +361,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   };
 
   const openLeadFlow = (property: PublicProperty) => {
+    setMobileMenuOpen(false);
     setSelectedProperty(property);
     setLeadStep('contact');
     setQuizIndex(0);
@@ -516,6 +520,19 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         .fb-logo { width: 151px; height: 110px; object-fit: contain; object-position: left center; }
         .fb-menu { display: flex; align-items: center; gap: 44px; font-size: 12px; font-weight: 950; text-transform: uppercase; }
         .fb-menu a { color: #00130b; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; white-space: nowrap; }
+        .fb-menu-toggle {
+          display: none;
+          width: 44px;
+          height: 44px;
+          border: 1px solid #d3e2da;
+          border-radius: 6px;
+          background: #fff;
+          color: var(--fb-green-dark);
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .fb-mobile-contact { display: none; }
         .fb-favorites {
           height: 38px;
           border-radius: 5px;
@@ -586,6 +603,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           font-weight: 950;
           text-transform: uppercase;
           white-space: nowrap;
+          text-align: center;
         }
         .fb-btn-green { color: #fff; background: var(--fb-green); border-color: var(--fb-green); }
         .fb-btn-outline { color: #fff; background: rgba(0,0,0,.08); border-color: rgba(255,255,255,.75); }
@@ -861,17 +879,51 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-search,
           .fb-stats-strip { width: min(100% - 28px, 760px); }
           .fb-topbar { display: none; }
-          .fb-nav { height: auto; }
-          .fb-nav .fb-shell { padding: 10px 0 12px; flex-wrap: wrap; gap: 12px; }
+          .fb-nav { height: 84px; position: sticky; top: 0; z-index: 30; box-shadow: 0 8px 22px rgba(0,0,0,.08); }
+          .fb-nav .fb-shell { position: relative; padding: 0; gap: 10px; }
           .fb-logo { width: 138px; height: 92px; }
-          .fb-menu { order: 3; width: 100%; overflow-x: auto; padding: 8px 0 10px; gap: 18px; scrollbar-width: none; }
-          .fb-menu::-webkit-scrollbar { display: none; }
-          .fb-favorites { margin-left: auto; }
+          .fb-menu-toggle { display: inline-flex; order: 3; margin-left: 0; flex: 0 0 auto; }
+          .fb-menu {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 8px);
+            display: none;
+            grid-template-columns: 1fr;
+            gap: 0;
+            overflow: hidden;
+            border: 1px solid #dce8e1;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 22px 46px rgba(3,36,18,.18);
+          }
+          .fb-menu.is-open { display: grid; }
+          .fb-menu a {
+            min-height: 48px;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid #edf3ef;
+            font-size: 12px;
+          }
+          .fb-menu a:last-child { border-bottom: 0; }
+          .fb-mobile-contact {
+            display: inline-flex;
+            min-height: 50px;
+            align-items: center;
+            justify-content: center !important;
+            gap: 8px;
+            margin: 8px;
+            border-radius: 7px;
+            background: var(--fb-green);
+            color: #fff !important;
+          }
+          .fb-favorites { order: 2; margin-left: auto; }
           .fb-hero .fb-shell { min-height: auto; }
           .fb-hero-content { width: 100%; padding: 46px 0 92px; }
           .fb-search { margin-top: -58px; }
           .fb-search-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
           .fb-filter { border: 1px solid var(--fb-line); border-radius: 5px; padding: 10px 12px; }
+          .fb-filter-main { min-width: 0; }
           .fb-search-button { grid-column: 1 / -1; }
           .fb-hero-points { grid-template-columns: 1fr; }
           .fb-footer .fb-shell { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -881,17 +933,34 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-shell,
           .fb-search,
           .fb-stats-strip { width: calc(100% - 24px); }
-          .fb-nav { position: sticky; top: 0; z-index: 30; box-shadow: 0 8px 22px rgba(0,0,0,.08); }
-          .fb-logo { width: 124px; height: 78px; }
-          .fb-menu { font-size: 11px; }
-          .fb-hero { min-height: 620px; background-position: 61% center; }
-          .fb-hero-content { padding: 36px 0 108px; }
-          .fb-title { font-size: 46px; }
+          .fb-nav { height: 74px; }
+          .fb-logo { width: 112px; height: 68px; }
+          .fb-favorites { display: none; }
+          .fb-menu-toggle { margin-left: auto; }
+          .fb-hero {
+            min-height: auto;
+            background:
+              linear-gradient(180deg, rgba(0,24,13,.95) 0%, rgba(0,45,19,.82) 52%, rgba(0,47,23,.42) 100%),
+              url("${HERO_IMAGE}") 61% center / cover no-repeat;
+          }
+          .fb-hero-content { padding: 34px 0 96px; }
+          .fb-kicker { margin-bottom: 16px; font-size: 11px; }
+          .fb-kicker:before { width: 34px; }
+          .fb-title { font-size: clamp(38px, 12vw, 46px); line-height: .94; }
           .fb-subtitle { font-size: 15px; }
+          .fb-hero-points { gap: 12px; margin-bottom: 22px; }
           .fb-point { align-items: flex-start; }
+          .fb-point-icon { width: 40px; height: 40px; }
+          .fb-actions { gap: 10px; }
           .fb-actions .fb-btn,
           .fb-favorites,
           .fb-all-link { width: 100%; }
+          .fb-btn { min-height: 48px; padding: 0 14px; white-space: normal; }
+          .fb-search { margin-top: -52px; padding: 14px; border-radius: 10px; }
+          .fb-filter { min-height: 54px; gap: 12px; }
+          .fb-filter svg { width: 20px; height: 20px; }
+          .fb-filter-main { font-size: 12px; overflow-wrap: anywhere; }
+          .fb-heading { font-size: 24px; }
           .fb-section-head,
           .fb-pagination,
           .fb-footer-bottom .fb-shell { align-items: flex-start; flex-direction: column; }
@@ -907,14 +976,21 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-card { border-radius: 10px; }
           .fb-card-body { padding: 18px 16px 16px; }
           .fb-card h3 { font-size: 17px; }
+          .fb-specs { grid-template-columns: 1fr; gap: 9px; }
           .fb-card-link { min-height: 42px; }
-          .fb-page-button { min-width: 42px; height: 42px; }
+          .fb-page-button { min-width: 42px; height: 42px; padding: 0 10px; }
           .fb-lead-modal { align-items: flex-end; padding: 0; }
           .fb-lead-dialog { width: 100%; max-height: 94vh; border-radius: 18px 18px 0 0; }
           .fb-lead-head { padding: 18px 16px; }
           .fb-lead-body { padding: 16px; }
           .fb-lead-property { grid-template-columns: 76px 1fr; }
           .fb-lead-thumb { height: 62px; }
+          .fb-quiz-question { font-size: 19px; }
+        }
+        @media (max-width: 380px) {
+          .fb-title { font-size: 36px; }
+          .fb-page-controls { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .fb-page-button { width: 100%; padding: 0 6px; font-size: 10px; }
         }
       `}</style>
 
@@ -942,13 +1018,30 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           <a href="#inicio" aria-label="Fazendas Brasil">
             <img className="fb-logo" src={LOGO_URL} alt="Fazendas Brasil" />
           </a>
-          <div className="fb-menu" aria-label="Menu principal">
-            <a href="#fazendas">Fazendas a venda <ChevronDown size={13} /></a>
-            <a href="#quem-somos">Quem somos</a>
-            <a href="#servicos">Servicos <ChevronDown size={13} /></a>
-            <a href="#localizacoes">Localizacoes <ChevronDown size={13} /></a>
-            <a href="#noticias">Noticias</a>
-            <a href="#contato">Contato</a>
+          <button
+            className="fb-menu-toggle"
+            type="button"
+            aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="fazendas-mobile-menu"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+          >
+            {mobileMenuOpen ? <X size={23} /> : <Menu size={24} />}
+          </button>
+          <div
+            className={`fb-menu ${mobileMenuOpen ? 'is-open' : ''}`}
+            id="fazendas-mobile-menu"
+            aria-label="Menu principal"
+          >
+            <a href="#fazendas" onClick={() => setMobileMenuOpen(false)}>Fazendas a venda <ChevronDown size={13} /></a>
+            <a href="#quem-somos" onClick={() => setMobileMenuOpen(false)}>Quem somos</a>
+            <a href="#servicos" onClick={() => setMobileMenuOpen(false)}>Servicos <ChevronDown size={13} /></a>
+            <a href="#localizacoes" onClick={() => setMobileMenuOpen(false)}>Localizacoes <ChevronDown size={13} /></a>
+            <a href="#noticias" onClick={() => setMobileMenuOpen(false)}>Noticias</a>
+            <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>
+            <a className="fb-mobile-contact" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" onClick={() => setMobileMenuOpen(false)}>
+              <MessageCircle size={16} />Fale conosco
+            </a>
           </div>
           <a className="fb-favorites" href="#fazendas">
             <Heart size={17} />

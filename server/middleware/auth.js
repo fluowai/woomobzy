@@ -278,7 +278,26 @@ async function resolveProfileForUser(supabase, user) {
     .maybeSingle();
 
   if (organizationError || !organization) {
-    console.warn('[Auth] Nenhuma organizacao encontrada pelo email do usuario; criando perfil minimo', {
+    console.warn('[Auth] Nenhuma organizacao encontrada pelo email; tentando criar organizacao automaticamente', {
+      email,
+      authUserId: user.id,
+    });
+
+    const resolvedOrg = await ensureOrganizationForUser(supabase, user, email);
+
+    if (resolvedOrg) {
+      const profile = await createProfileForUser(supabase, user, {
+        email,
+        organizationId: resolvedOrg.id,
+        name: resolvedOrg.owner_name || resolvedOrg.name || email,
+        role: 'admin',
+        source: 'auto_org_fallback',
+      });
+
+      if (profile) return profile;
+    }
+
+    console.warn('[Auth] Todas as tentativas de organizacao falharam; criando perfil minimo sem org', {
       email,
       authUserId: user.id,
     });
@@ -336,6 +355,54 @@ function normalizeRole(role) {
   if (normalized === 'admin') return 'admin';
   if (normalized === 'user') return 'user';
   return null;
+}
+
+async function ensureOrganizationForUser(supabase, user, email) {
+  const userName =
+    user.user_metadata?.name ||
+    user.user_metadata?.full_name ||
+    email.split('@')[0] ||
+    'Usuario';
+
+  const slugBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const orgName = `${userName} Imobiliaria`;
+
+  const { data: existingOrg } = await supabase
+    .from('organizations')
+    .select('id, name, owner_name, owner_email')
+    .or(`owner_email.ilike.${email},slug.ilike.${slugBase}`)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingOrg) return existingOrg;
+
+  const { data: newOrg, error: createError } = await supabase
+    .from('organizations')
+    .insert({
+      name: orgName,
+      slug: slugBase,
+      owner_email: email,
+      owner_name: userName,
+      status: 'active',
+      subscription_status: 'active',
+      niche: 'urbano',
+      updated_at: new Date().toISOString(),
+    })
+    .select('id, name, owner_name, owner_email')
+    .single();
+
+  if (createError) {
+    console.warn('[Auth] Falha ao criar organizacao automatica:', createError.message, { email, authUserId: user.id });
+    return null;
+  }
+
+  console.warn('[Auth] Organizacao criada automaticamente', {
+    email,
+    organizationId: newOrg.id,
+    orgName,
+  });
+
+  return newOrg;
 }
 
 async function createProfileForUser(supabase, user, { email, organizationId, name, role, source }) {

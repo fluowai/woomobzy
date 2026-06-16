@@ -211,7 +211,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         }
 
         logger.info('✅ [AuthContext] Final profile set.');
-        syncActiveOrganization(finalProfile.organization_id || null);
+        syncActiveOrganization(finalProfile.organization_id || null, finalProfile.id || userId);
         setProfile(finalProfile);
       } else {
         logger.warn('⚠️ [AuthContext] Profile query returned no data.');
@@ -401,15 +401,18 @@ function clearImpersonationStorage() {
   if (typeof window === 'undefined') return;
   sessionStorage.removeItem('impersonated_org_id');
   sessionStorage.removeItem('active_organization_id');
+  sessionStorage.removeItem('active_organization_user_id');
   localStorage.removeItem('impersonatedOrgId');
   localStorage.removeItem('isImpersonating');
 }
 
-function syncActiveOrganization(organizationId: string | null) {
+function syncActiveOrganization(organizationId: string | null, userId?: string | null) {
   if (typeof window === 'undefined') return;
   if (organizationId && organizationId !== 'null' && organizationId !== 'undefined') {
     sessionStorage.setItem('active_organization_id', organizationId);
+    if (userId) sessionStorage.setItem('active_organization_user_id', userId);
   } else {
     sessionStorage.removeItem('active_organization_id');
+    sessionStorage.removeItem('active_organization_user_id');
   }
 }

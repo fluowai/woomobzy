@@ -45,7 +45,7 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   if (impId && impId !== 'null') {
     headers.set('x-impersonate-org-id', impId);
   } else {
-    const activeOrgId = getActiveOrganizationId();
+    const activeOrgId = getActiveOrganizationId(initialSession?.user?.id);
     if (activeOrgId) {
       headers.set('x-organization-id', activeOrgId);
     }
@@ -120,10 +120,16 @@ function getImpersonatedOrgId(): string | null {
   return null;
 }
 
-function getActiveOrganizationId(): string | null {
+function getActiveOrganizationId(userId?: string): string | null {
   if (typeof window === 'undefined') return null;
 
   const current = sessionStorage.getItem('active_organization_id');
+  const ownerUserId = sessionStorage.getItem('active_organization_user_id');
+  if (userId && ownerUserId && ownerUserId !== userId) {
+    sessionStorage.removeItem('active_organization_id');
+    sessionStorage.removeItem('active_organization_user_id');
+    return null;
+  }
   if (current && current !== 'null' && current !== 'undefined') return current;
 
   return null;

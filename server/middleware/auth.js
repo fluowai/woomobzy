@@ -190,13 +190,19 @@ async function resolveRequestedOrganization(supabase, requestedOrgId, profile) {
   if (!cleanOrgId) return null;
 
   if (profile.role !== 'superadmin' && profile.organization_id !== cleanOrgId) {
-    return null;
+    return profile.organization_id
+      ? resolveOrganizationById(supabase, profile.organization_id)
+      : null;
   }
 
+  return resolveOrganizationById(supabase, cleanOrgId);
+}
+
+async function resolveOrganizationById(supabase, organizationId) {
   const { data: organization, error } = await supabase
     .from('organizations')
     .select('id')
-    .eq('id', cleanOrgId)
+    .eq('id', organizationId)
     .maybeSingle();
 
   if (error || !organization) return null;

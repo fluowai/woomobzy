@@ -144,14 +144,36 @@ router.get('/texts', async (req, res) => {
     if (category) query = query.eq('category', category);
     if (section) query = query.eq('section', section);
     const { data, error } = await query.order('section', { ascending: true });
-    if (error) throw error;
+    if (error) {
+      if (isOptionalTextsTableError(error)) {
+        console.warn('[Public API] site_texts indisponivel; usando textos padrao do frontend:', {
+          code: error.code,
+          message: error.message,
+        });
+        return res.json({ success: true, texts: {}, raw: [] });
+      }
+      throw error;
+    }
     const textsMap = {};
     data?.forEach(text => { textsMap[text.key] = text.value; });
-    res.json({ success: true, texts: textsMap });
+    res.json({ success: true, texts: textsMap, raw: data || [] });
   } catch (error) {
+    console.error('[Public API] Erro ao buscar textos:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
+function isOptionalTextsTableError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    error?.code === '42P01' ||
+    error?.code === '42703' ||
+    error?.code === 'PGRST205' ||
+    message.includes('site_texts') ||
+    message.includes("could not find the table") ||
+    message.includes("could not find the column")
+  );
+}
 
 router.put('/texts/:key', verifyAdmin, requireTenant, async (req, res) => {
   try {

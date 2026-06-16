@@ -219,7 +219,32 @@ async function resolveProfileForUser(supabase, user) {
     return profileByEmail;
   }
 
-  const metadataOrgId = String(user.app_metadata?.organization_id || '').trim();
+  const metadataRole = normalizeRole(
+    user.app_metadata?.role ||
+      user.user_metadata?.role ||
+      user.app_metadata?.user_role ||
+      user.user_metadata?.user_role
+  );
+  const metadataOrgId = String(
+    user.app_metadata?.organization_id ||
+      user.user_metadata?.organization_id ||
+      user.app_metadata?.org_id ||
+      user.user_metadata?.org_id ||
+      ''
+  ).trim();
+
+  if (metadataRole === 'superadmin') {
+    const profile = await createProfileForUser(supabase, user, {
+      email,
+      organizationId: null,
+      name: user.user_metadata?.name || user.user_metadata?.full_name || email,
+      role: 'superadmin',
+      source: 'auth_metadata.role',
+    });
+
+    if (profile) return profile;
+  }
+
   if (metadataOrgId) {
     const { data: metadataOrg, error: metadataOrgError } = await supabase
       .from('organizations')
@@ -232,6 +257,7 @@ async function resolveProfileForUser(supabase, user) {
         email,
         organizationId: metadataOrg.id,
         name: metadataOrg.owner_name || metadataOrg.name,
+        role: metadataRole || 'admin',
         source: 'auth_metadata.organization_id',
       });
 
@@ -259,11 +285,20 @@ async function resolveProfileForUser(supabase, user) {
     email,
     organizationId: organization.id,
     name: organization.owner_name || organization.name,
+    role: 'admin',
     source: 'organization.owner_email',
   });
 }
 
-async function createProfileForUser(supabase, user, { email, organizationId, name, source }) {
+function normalizeRole(role) {
+  const normalized = String(role || '').toLowerCase().trim();
+  if (normalized === 'superadmin') return 'superadmin';
+  if (normalized === 'admin') return 'admin';
+  if (normalized === 'user') return 'user';
+  return null;
+}
+
+async function createProfileForUser(supabase, user, { email, organizationId, name, role, source }) {
   const { data: createdProfile, error: createProfileError } = await supabase
     .from('profiles')
     .upsert(
@@ -275,7 +310,7 @@ async function createProfileForUser(supabase, user, { email, organizationId, nam
           user.user_metadata?.full_name ||
           name ||
           email,
-        role: 'admin',
+        role: normalizeRole(role) || 'admin',
         organization_id: organizationId,
         updated_at: new Date().toISOString(),
       },
@@ -292,6 +327,7 @@ async function createProfileForUser(supabase, user, { email, organizationId, nam
   console.warn('[Auth] Perfil criado automaticamente', {
     email,
     organizationId,
+    role: normalizeRole(role) || 'admin',
     source,
   });
   return createdProfile;

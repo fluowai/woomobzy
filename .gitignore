@@ -37,6 +37,7 @@ dist-ssr
 debug_scrape.html
 *.debug
 scratch/
+outputs/
 scripts/debug/
 imobzy-message-isolation-report-*.json
 owner-access-repair-*.json

@@ -43,9 +43,22 @@ export const leadService = {
   },
 
   // List leads for Kanban (Implicitly Isolated by Backend)
-  async list(page: number = 1, limit: number = 100) {
-    const data = await callApi(`/api/crm/leads?page=${page}&limit=${limit}`);
-    return data.leads.map(mapToModel);
+  async list(page?: number, limit: number = 100) {
+    if (page) {
+      const data = await callApi(`/api/crm/leads?page=${page}&limit=${limit}`);
+      return data.leads.map(mapToModel);
+    }
+
+    const firstPage = await callApi(`/api/crm/leads?page=1&limit=${limit}`);
+    const leads = firstPage.leads || [];
+    const totalPages = firstPage.pagination?.pages || 1;
+
+    for (let currentPage = 2; currentPage <= totalPages; currentPage += 1) {
+      const data = await callApi(`/api/crm/leads?page=${currentPage}&limit=${limit}`);
+      leads.push(...(data.leads || []));
+    }
+
+    return leads.map(mapToModel);
   },
 
   // Update lead status (Now Backend-Driven)

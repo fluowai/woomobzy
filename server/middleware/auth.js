@@ -163,6 +163,47 @@ export const verifyAuth = async (req, res, next) => {
       req.orgId = org.id;
       req.isImpersonating = false;
     } else {
+      console.warn('[Auth] Perfil sem organizacao vinculada, tentando criar automaticamente', {
+        userId: user.id,
+        email: maskEmail(user.email),
+        role: profile.role,
+      });
+
+      const profileEmail = profile.email || user.email;
+      if (profileEmail) {
+        const createdOrg = await ensureOrganizationForUser(
+          supabase,
+          user,
+          String(profileEmail).toLowerCase().trim()
+        );
+
+        if (createdOrg?.id) {
+          const { data: updatedProfile, error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              organization_id: createdOrg.id,
+              role: 'admin',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', profile.id)
+            .select('id, email, role, organization_id')
+            .single();
+
+          if (!updateError && updatedProfile) {
+            req.user = { ...user, id: updatedProfile.id || user.id };
+            req.userRole = updatedProfile.role;
+            req.realOrgId = updatedProfile.organization_id;
+            req.orgId = createdOrg.id;
+            req.isImpersonating = false;
+            console.log('[Auth] Organizacao criada e vinculada automaticamente', {
+              userId: user.id,
+              orgId: createdOrg.id,
+            });
+            return next();
+          }
+        }
+      }
+
       console.warn('[Auth] Perfil sem organizacao vinculada', {
         userId: user.id,
         email: maskEmail(user.email),

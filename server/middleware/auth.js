@@ -357,6 +357,13 @@ async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
 }
 
 async function resolveProfileForUser(supabase, user) {
+  const metadataRole = normalizeRole(
+    user.app_metadata?.role ||
+      user.user_metadata?.role ||
+      user.app_metadata?.user_role ||
+      user.user_metadata?.user_role
+  );
+
   const { data: profileById, error: profileByIdError } = await supabase
     .from('profiles')
     .select('id, email, role, organization_id')
@@ -364,6 +371,11 @@ async function resolveProfileForUser(supabase, user) {
     .maybeSingle();
 
   if (!profileByIdError && profileById) {
+    // FIX: Se o metadata diz que o usuário é superadmin, nós forçamos o role
+    // caso ele tenha sido rebaixado por engano pelo bug de auto-criação anterior.
+    if (metadataRole === 'superadmin' && profileById.role !== 'superadmin') {
+      profileById.role = 'superadmin';
+    }
     return completeProfileOrganization(supabase, user, profileById, {
       email: String(profileById.email || user.email || '').toLowerCase().trim(),
       source: 'profile.id',
@@ -385,18 +397,15 @@ async function resolveProfileForUser(supabase, user) {
       authUserId: user.id,
       profileId: profileByEmail.id,
     });
+    if (metadataRole === 'superadmin' && profileByEmail.role !== 'superadmin') {
+      profileByEmail.role = 'superadmin';
+    }
     return completeProfileOrganization(supabase, user, profileByEmail, {
       email,
       source: 'profile.email',
     });
   }
 
-  const metadataRole = normalizeRole(
-    user.app_metadata?.role ||
-      user.user_metadata?.role ||
-      user.app_metadata?.user_role ||
-      user.user_metadata?.user_role
-  );
   const metadataOrgId = String(
     user.app_metadata?.organization_id ||
       user.user_metadata?.organization_id ||
@@ -623,11 +632,10 @@ async function ensureOrganizationForUser(supabase, user, email) {
     email.split('@')[0] ||
     'Usuario';
 
-  const slugBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  const orgName = `${userName} Imobiliaria`;
+  let slugBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  let orgName = `${userName} Imobiliaria`;
 
-  // Search by owner_email first, then by slug separately to avoid
-  // PostgREST .or() issues with special characters in email
+  // Search by owner_email first
   const { data: orgByEmail } = await supabase
     .from('organizations')
     .select('id, name, owner_name, owner_email')
@@ -637,16 +645,10 @@ async function ensureOrganizationForUser(supabase, user, email) {
 
   if (orgByEmail) return orgByEmail;
 
-  if (slugBase) {
-    const { data: orgBySlug } = await supabase
-      .from('organizations')
-      .select('id, name, owner_name, owner_email')
-      .ilike('slug', slugBase)
-      .limit(1)
-      .maybeSingle();
-
-    if (orgBySlug) return orgBySlug;
-  }
+  // We must NOT search by slug and attach this user to another user's organization!
+  // Instead, to prevent unique constraint errors during insert, we append a short unique ID to the slug.
+  const uniqueSuffix = user.id.split('-')[0];
+  slugBase = `${slugBase}-${uniqueSuffix}`;
 
   const { data: newOrg, error: createError } = await supabase
     .from('organizations')

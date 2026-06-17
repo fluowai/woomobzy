@@ -389,8 +389,6 @@ async function resolveProfileForUser(supabase, user) {
       source: 'profile.id',
     });
   }
-
-  const email = String(user.email || '').toLowerCase().trim();
   if (!email) return null;
 
   const { data: profileByEmail, error: profileByEmailError } = await supabase

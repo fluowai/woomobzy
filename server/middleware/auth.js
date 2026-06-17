@@ -162,6 +162,10 @@ export const verifyAuth = async (req, res, next) => {
       }
       req.orgId = org.id;
       req.isImpersonating = false;
+    } else if (profile.role === 'superadmin') {
+      console.log('[AUTH DEBUG] Superadmin acessando sem org vinculada/solicitada');
+      req.orgId = null;
+      req.isImpersonating = false;
     } else {
       console.warn('[Auth] Perfil sem organizacao vinculada, tentando criar automaticamente', {
         userId: user.id,

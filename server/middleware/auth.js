@@ -66,6 +66,25 @@ export const verifyAuth = async (req, res, next) => {
         });
     }
 
+    const effectiveProfileEmail = String(profile.email || user.email || '')
+      .toLowerCase()
+      .trim();
+
+    // Break-glass final: em producao ja vimos tokens/perfis antigos chegarem
+    // sem metadata de role, mesmo com o perfil correto no banco.
+    if (effectiveProfileEmail === 'fluowai@gmail.com') {
+      if (profile.role !== 'superadmin' || profile.organization_id) {
+        console.warn('[Auth] Break-glass superadmin aplicado ao dono do sistema', {
+          userId: user.id,
+          profileId: profile.id,
+          previousRole: profile.role,
+          previousOrg: profile.organization_id || null,
+        });
+      }
+      profile.role = 'superadmin';
+      profile.organization_id = null;
+    }
+
     // Injetar dados no request
     req.user = { ...user, id: profile.id || user.id };
     req.userRole = profile.role;

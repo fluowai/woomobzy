@@ -165,19 +165,27 @@ export const verifyAuth = async (req, res, next) => {
     } else {
       console.warn('[Auth] Perfil sem organizacao vinculada, tentando criar automaticamente', {
         userId: user.id,
+        profileId: profile.id,
         email: maskEmail(user.email),
         role: profile.role,
       });
 
       const profileEmail = profile.email || user.email;
       if (profileEmail) {
+        const normalizedEmail = String(profileEmail).toLowerCase().trim();
         const createdOrg = await ensureOrganizationForUser(
           supabase,
           user,
-          String(profileEmail).toLowerCase().trim()
+          normalizedEmail
         );
 
         if (createdOrg?.id) {
+          console.log('[Auth] Org encontrada/criada, vinculando ao perfil', {
+            userId: user.id,
+            profileId: profile.id,
+            orgId: createdOrg.id,
+          });
+
           const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
             .update({
@@ -201,10 +209,34 @@ export const verifyAuth = async (req, res, next) => {
             });
             return next();
           }
+
+          // Profile update failed but org exists — proceed anyway to avoid blocking user
+          console.warn('[Auth] Profile update falhou mas org existe, prosseguindo', {
+            userId: user.id,
+            profileId: profile.id,
+            orgId: createdOrg.id,
+            updateError: updateError?.message || 'sem dados retornados',
+          });
+          req.user = { ...user, id: profile.id || user.id };
+          req.userRole = profile.role || 'admin';
+          req.realOrgId = createdOrg.id;
+          req.orgId = createdOrg.id;
+          req.isImpersonating = false;
+          return next();
+        } else {
+          console.warn('[Auth] ensureOrganizationForUser retornou null', {
+            userId: user.id,
+            email: maskEmail(normalizedEmail),
+          });
         }
+      } else {
+        console.warn('[Auth] Perfil sem email para criar organizacao', {
+          userId: user.id,
+          profileId: profile.id,
+        });
       }
 
-      console.warn('[Auth] Perfil sem organizacao vinculada', {
+      console.warn('[Auth] Perfil sem organizacao vinculada - todas tentativas falharam', {
         userId: user.id,
         email: maskEmail(user.email),
         role: profile.role,
@@ -590,14 +622,27 @@ async function ensureOrganizationForUser(supabase, user, email) {
   const slugBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   const orgName = `${userName} Imobiliaria`;
 
-  const { data: existingOrg } = await supabase
+  // Search by owner_email first, then by slug separately to avoid
+  // PostgREST .or() issues with special characters in email
+  const { data: orgByEmail } = await supabase
     .from('organizations')
     .select('id, name, owner_name, owner_email')
-    .or(`owner_email.ilike.${email},slug.ilike.${slugBase}`)
+    .ilike('owner_email', email)
     .limit(1)
     .maybeSingle();
 
-  if (existingOrg) return existingOrg;
+  if (orgByEmail) return orgByEmail;
+
+  if (slugBase) {
+    const { data: orgBySlug } = await supabase
+      .from('organizations')
+      .select('id, name, owner_name, owner_email')
+      .ilike('slug', slugBase)
+      .limit(1)
+      .maybeSingle();
+
+    if (orgBySlug) return orgBySlug;
+  }
 
   const { data: newOrg, error: createError } = await supabase
     .from('organizations')

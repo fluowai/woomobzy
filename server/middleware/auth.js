@@ -357,12 +357,20 @@ async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
 }
 
 async function resolveProfileForUser(supabase, user) {
-  const metadataRole = normalizeRole(
+  const email = String(user.email || '').toLowerCase().trim();
+
+  let metadataRole = normalizeRole(
     user.app_metadata?.role ||
       user.user_metadata?.role ||
       user.app_metadata?.user_role ||
       user.user_metadata?.user_role
   );
+
+  // BREAK-GLASS RECOVERY: Se for o dono do sistema, garantir que é superadmin
+  // mesmo que o token ou o banco de dados tenham se corrompido ou sido rebaixados.
+  if (email === 'fluowai@gmail.com') {
+    metadataRole = 'superadmin';
+  }
 
   const { data: profileById, error: profileByIdError } = await supabase
     .from('profiles')

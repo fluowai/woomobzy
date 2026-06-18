@@ -119,8 +119,13 @@ func (r *MessageRepo) ListByChatForTenant(ctx context.Context, chatID, instanceI
 		JOIN whatsapp_instances wi ON wi.id = wc.instance_id
 		LEFT JOIN whatsapp_contacts c
 		  ON c.instance_id = m.instance_id AND c.phone = m.sender_phone
-		LEFT JOIN whatsapp_media wm
-		  ON wm.message_id = m.id
+		LEFT JOIN LATERAL (
+		  SELECT id
+		  FROM whatsapp_media
+		  WHERE message_id = m.id
+		  ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST
+		  LIMIT 1
+		) wm ON TRUE
 		WHERE m.chat_id = $1
 		  AND m.instance_id = $4
 		  AND wc.instance_id = $4

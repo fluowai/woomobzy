@@ -410,7 +410,6 @@ export function isTechnicalMediaPlaceholder(value?: string): boolean {
 export function isSupportedChat(chat: Pick<Chat, 'chat_jid' | 'is_group'>): boolean {
   const jid = (chat.chat_jid || '').toLowerCase();
   if (chat.is_group) return jid.includes('@g.us');
-  if (jid.includes('@lid')) return true;
   return jid.includes('@s.whatsapp.net') && Boolean(formatPhoneDisplay(jid));
 }
 

@@ -164,6 +164,15 @@ func (r *ChatRepo) ListByInstanceForTenant(ctx context.Context, instanceID, tena
 		FROM whatsapp_chats c
 		JOIN whatsapp_instances wi ON wi.id = c.instance_id
 		WHERE c.instance_id = $1 AND wi.tenant_id = $2
+		  AND (
+		    (c.is_group AND c.chat_jid ILIKE '%@g.us')
+		    OR (
+		      NOT c.is_group
+		      AND c.chat_jid ILIKE '%@s.whatsapp.net'
+		      AND regexp_replace(split_part(c.chat_jid, '@', 1), '\D', '', 'g') LIKE '55%'
+		      AND length(regexp_replace(split_part(c.chat_jid, '@', 1), '\D', '', 'g')) IN (12, 13)
+		    )
+		  )
 		ORDER BY c.last_message_at DESC NULLS LAST`
 
 	rows, err := r.db.Query(ctx, query, instanceID, tenantID)

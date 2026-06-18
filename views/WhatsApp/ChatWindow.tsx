@@ -593,7 +593,7 @@ function formatFileSize(size: number) {
 }
 
 function getPhoneFromJid(jid: string) {
-  if (String(jid || '').includes('@g.us')) return '';
+  if (String(jid || '').includes('@g.us') || String(jid || '').includes('@lid')) return '';
   const raw = String(jid || '').split('@')[0].replace(/\D/g, '');
   return isValidBrazilianPhone(raw) ? formatPhone(raw) : '';
 }

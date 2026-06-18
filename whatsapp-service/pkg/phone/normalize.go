@@ -85,6 +85,21 @@ func IsGroupJID(jid string) bool {
 	return strings.Contains(jid, "@g.us")
 }
 
+// IsLIDJID checks if a JID is WhatsApp's internal LID identifier.
+// LIDs are not phone numbers and must not be displayed as contacts.
+func IsLIDJID(jid string) bool {
+	return strings.Contains(strings.ToLower(jid), "@lid")
+}
+
+// IsUserPhoneJID checks if a JID is a canonical one-to-one WhatsApp phone JID.
+func IsUserPhoneJID(jid string) bool {
+	lower := strings.ToLower(jid)
+	if !strings.Contains(lower, "@s.whatsapp.net") && !strings.Contains(lower, "@c.us") {
+		return false
+	}
+	return IsValidBR(ExtractFromJID(jid))
+}
+
 // IsValidBR checks if the number is a Brazilian phone in canonical digits.
 // Accepted examples: 5548988003260, 554833806836.
 func IsValidBR(number string) bool {

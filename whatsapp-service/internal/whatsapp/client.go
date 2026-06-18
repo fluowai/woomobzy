@@ -413,6 +413,14 @@ func (c *Client) handleMessage(evt *events.Message) {
 	canonicalJID := canonicalChatJID(info)
 	chatJID := canonicalJID.String()
 	isGroup := phone.IsGroupJID(chatJID)
+	if !isGroup && !isPhoneJID(canonicalJID) {
+		c.logger.Debug("Ignoring one-to-one WhatsApp message without canonical phone JID",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("chat_jid", chatJID),
+			zap.String("message_id", info.ID),
+		)
+		return
+	}
 	alternateJIDs := alternateChatJIDs(info, chatJID)
 
 	// Determine sender info

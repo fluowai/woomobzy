@@ -119,6 +119,14 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 	canonicalJID := canonicalChatJID(info)
 	chatJID := canonicalJID.String()
 	isGroup := phone.IsGroupJID(chatJID)
+	if !isGroup && !isPhoneJID(canonicalJID) {
+		c.logger.Debug("Skipping imported one-to-one message without canonical phone JID",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("chat_jid", chatJID),
+			zap.String("message_id", info.ID),
+		)
+		return uuid.Nil, false
+	}
 	alternateJIDs := alternateChatJIDs(info, chatJID)
 
 	var senderPhone, senderName string

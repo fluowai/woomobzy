@@ -30,3 +30,24 @@ func TestIsGroupJID(t *testing.T) {
 		t.Fatal("expected user JID to be treated as non-group")
 	}
 }
+
+func TestIsLIDJID(t *testing.T) {
+	if !IsLIDJID("84388272410703@lid") {
+		t.Fatal("expected @lid to be identified as internal LID")
+	}
+	if IsLIDJID("5548988003260@s.whatsapp.net") {
+		t.Fatal("expected phone JID not to be identified as LID")
+	}
+}
+
+func TestIsUserPhoneJID(t *testing.T) {
+	if !IsUserPhoneJID("5548988003260@s.whatsapp.net") {
+		t.Fatal("expected canonical phone JID to be supported")
+	}
+	if IsUserPhoneJID("84388272410703@lid") {
+		t.Fatal("expected LID not to be supported as phone JID")
+	}
+	if IsUserPhoneJID("120363366882241499@g.us") {
+		t.Fatal("expected group JID not to be supported as phone JID")
+	}
+}

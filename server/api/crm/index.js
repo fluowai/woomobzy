@@ -7,6 +7,44 @@ import { matchLeadProperties } from '../../services/leadPropertyMatcher.js';
 const router = Router();
 
 const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const KANBAN_CARD_SELECT = `
+  id,
+  organization_id,
+  name,
+  email,
+  phone,
+  source,
+  status,
+  classification,
+  lead_score,
+  ai_next_action,
+  next_follow_up_at,
+  next_visit_at,
+  chat_jid,
+  campaign,
+  property_id,
+  created_at,
+  properties(title, price, images),
+  lead_tags(tag)
+`;
+
+function serializeKanbanLead(row) {
+  if (!row) return row;
+  const property = row.properties
+    ? {
+        title: row.properties.title,
+        price: row.properties.price,
+        thumbnail: Array.isArray(row.properties.images)
+          ? row.properties.images[0] || null
+          : null,
+      }
+    : null;
+
+  return {
+    ...row,
+    properties: property,
+  };
+}
 
 function normalizePhone(value = '') {
   let digits = String(value).replace(/\D/g, '').replace(/^0+/, '');
@@ -130,29 +168,94 @@ async function getAssignableUsers(organizationId) {
  */
 router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
   try {
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 100);
     const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 200);
-    const offset = (page - 1) * limit;
+    const status = String(req.query.status || '').trim();
+    const cursorCreatedAt = String(req.query.cursor_created_at || '').trim();
+    const cursorId = String(req.query.cursor_id || '').trim();
+    const includeCount = req.query.include_count !== 'false';
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from('leads')
-      .select('*, properties(title, price, images), lead_tags(tag)', { count: 'exact' })
+      .select(KANBAN_CARD_SELECT, { count: includeCount ? 'exact' : undefined })
       .eq('organization_id', req.orgId)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('id', { ascending: false });
 
+    if (status) query = query.eq('status', status);
+
+    if (cursorCreatedAt && cursorId) {
+      query = query.or(
+        `created_at.lt.${cursorCreatedAt},and(created_at.eq.${cursorCreatedAt},id.lt.${cursorId})`
+      );
+    } else if (page > 1) {
+      const offset = (page - 1) * limit;
+      query = query.range(offset, offset + limit);
+    } else {
+      query = query.limit(limit + 1);
+    }
+
+    const { data, error, count } = await query;
     if (error) throw error;
+
+    const hasMore = (data || []).length > limit;
+    const leads = (hasMore ? data.slice(0, limit) : (data || []))
+      .map(serializeKanbanLead);
+    const lastLead = leads.at(-1);
 
     res.json({ 
       success: true, 
-      leads: data,
+      leads,
+      next_cursor: hasMore && lastLead
+        ? { created_at: lastLead.created_at, id: lastLead.id }
+        : null,
       pagination: {
-        total: count,
+        total: includeCount ? (count || 0) : undefined,
         page,
         limit,
-        pages: Math.ceil((count || 0) / limit)
+        pages: includeCount ? Math.ceil((count || 0) / limit) : undefined,
+        has_more: hasMore,
       }
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/crm/leads/:id
+ * Retorna os dados pesados somente quando o usuario abre o lead.
+ */
+router.get('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const activitiesLimit = Math.min(
+      Math.max(Number.parseInt(req.query.activities_limit, 10) || 50, 1),
+      100
+    );
+
+    const [{ data: lead, error: leadError }, { data: activities, error: activitiesError }] =
+      await Promise.all([
+        supabase
+          .from('leads')
+          .select('*, properties(title, price, images), lead_tags(tag)')
+          .eq('id', req.params.id)
+          .eq('organization_id', req.orgId)
+          .single(),
+        supabase
+          .from('lead_activities')
+          .select('id, lead_id, type, description, metadata, created_at, profiles(name)')
+          .eq('lead_id', req.params.id)
+          .eq('organization_id', req.orgId)
+          .order('created_at', { ascending: false })
+          .limit(activitiesLimit),
+      ]);
+
+    if (leadError || !lead) {
+      return res.status(404).json({ error: 'Lead nao encontrado' });
+    }
+    if (activitiesError) throw activitiesError;
+
+    res.json({ success: true, lead, activities: activities || [] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -579,13 +682,15 @@ router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) =>
 router.get('/leads/:id/activities', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 100);
 
     const { data, error } = await supabase
       .from('lead_activities')
       .select('*, profiles(name)')
       .eq('lead_id', id)
       .eq('organization_id', req.orgId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
 

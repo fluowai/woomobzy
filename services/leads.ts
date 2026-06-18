@@ -43,22 +43,42 @@ export const leadService = {
   },
 
   // List leads for Kanban (Implicitly Isolated by Backend)
-  async list(page?: number, limit: number = 100) {
-    if (page) {
-      const data = await callApi(`/api/crm/leads?page=${page}&limit=${limit}`);
-      return data.leads.map(mapToModel);
+  async list(page: number = 1, limit: number = 50) {
+    const data = await callApi(`/api/crm/leads?page=${page}&limit=${limit}`);
+    return (data.leads || []).map(mapToModel);
+  },
+
+  async listPage(params: {
+    status: string;
+    limit?: number;
+    cursor?: { created_at: string; id: string } | null;
+    includeCount?: boolean;
+  }) {
+    const search = new URLSearchParams({
+      status: params.status,
+      limit: String(params.limit || 50),
+      include_count: String(params.includeCount !== false),
+    });
+    if (params.cursor) {
+      search.set('cursor_created_at', params.cursor.created_at);
+      search.set('cursor_id', params.cursor.id);
     }
 
-    const firstPage = await callApi(`/api/crm/leads?page=1&limit=${limit}`);
-    const leads = firstPage.leads || [];
-    const totalPages = firstPage.pagination?.pages || 1;
+    const data = await callApi(`/api/crm/leads?${search.toString()}`);
+    return {
+      leads: dedupeById(data.leads || []).map(mapToModel),
+      nextCursor: data.next_cursor || null,
+      total: data.pagination?.total || 0,
+      hasMore: Boolean(data.pagination?.has_more),
+    };
+  },
 
-    for (let currentPage = 2; currentPage <= totalPages; currentPage += 1) {
-      const data = await callApi(`/api/crm/leads?page=${currentPage}&limit=${limit}`);
-      leads.push(...(data.leads || []));
-    }
-
-    return dedupeById(leads).map(mapToModel);
+  async getById(id: string) {
+    const data = await callApi(`/api/crm/leads/${id}`);
+    return {
+      lead: mapToModel(data.lead),
+      activities: data.activities || [],
+    };
   },
 
   // Update lead status (Now Backend-Driven)
@@ -183,7 +203,7 @@ const mapToModel = (dbItem: any): Lead => ({
     ? {
         title: dbItem.properties.title,
         price: dbItem.properties.price,
-        image: dbItem.properties.images?.[0],
+        image: dbItem.properties.thumbnail || dbItem.properties.images?.[0],
       }
     : undefined,
 });

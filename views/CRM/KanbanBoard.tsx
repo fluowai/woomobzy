@@ -1,11 +1,14 @@
 import { logger } from '@/utils/logger';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DragDropContext,
   Droppable,
   Draggable,
   DropResult,
+  DraggableProvided,
+  DraggableStateSnapshot,
 } from '@hello-pangea/dnd';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { leadService } from '../../services/leads';
 import { Lead } from '../../types';
 import {
@@ -29,12 +32,10 @@ import {
   Tag,
   Building2,
 } from 'lucide-react';
-import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, X, Sparkles, TrendingUp, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
-import { propertyService } from '../../services/properties';
 
 interface NewLeadModalProps {
   isOpen: boolean;
@@ -1191,88 +1192,300 @@ const isWithinLeadBudget = (lead: Lead, price?: number) => {
   return true;
 };
 
-const PropertyMatches: React.FC<{ lead: Lead; allProperties: any[]; matchProfile: 'urbano' | 'rural' }> = ({
+interface LeadCardProps {
+  lead: Lead;
+  selected: boolean;
+  onOpen: (lead: Lead) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string, name: string) => void;
+  onMove: (id: string, status: string) => void;
+}
+
+const LeadCard = React.memo(({
   lead,
-  allProperties,
-  matchProfile,
-}) => {
-  // Matching heurístico rápido para a superfície do card
-  const storedMatches = (lead.matched_properties || [])
-    .filter((match: any) => !match.engine || match.engine === matchProfile)
-    .filter((match: any) => isWithinLeadBudget(lead, match.price));
-  const heuristicMatches = allProperties
-    .filter((p) => {
-      // 1. Orçamento (30% de margem)
-      const budgetMatch = isWithinLeadBudget(lead, p.price);
-      
-      // 2. Tipo/Nicho conforme o módulo atual
-      const typeText = `${p.property_type || p.type || ''} ${p.niche || ''}`.toLowerCase();
-      const isRuralProperty = typeText.includes('rural') || typeText.includes('fazenda') || typeText.includes('sítio') || typeText.includes('chácara') || typeText.includes('sitio') || typeText.includes('chacara');
-      const typeMatch = matchProfile === 'rural' ? isRuralProperty : !isRuralProperty;
+  selected,
+  onOpen,
+  onToggle,
+  onDelete,
+  onMove,
+}: LeadCardProps) => (
+  <div
+    onClick={() => onOpen(lead)}
+    className={`cursor-pointer rounded-xl border bg-white p-3 shadow-sm transition-shadow hover:shadow-md ${
+      selected ? 'border-indigo-400 bg-indigo-50/30 ring-2 ring-indigo-500' : 'border-slate-200'
+    }`}
+  >
+    <div className="flex items-start gap-2">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold uppercase text-slate-500">
+        {getLeadInitials(lead)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h4 className="truncate text-sm font-bold text-slate-800" title={getLeadDisplayName(lead)}>
+            {getLeadDisplayName(lead)}
+          </h4>
+          {lead.classification && (
+            <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-slate-600">
+              {lead.classification}
+            </span>
+          )}
+        </div>
+        <p className="mt-1 truncate text-[10px] font-medium text-slate-400">
+          Via {lead.source || 'CRM'}
+          {lead.campaign ? ` · ${lead.campaign}` : ''}
+        </p>
+      </div>
+      <input
+        type="checkbox"
+        checked={selected}
+        onClick={(event) => event.stopPropagation()}
+        onChange={() => onToggle(lead.id)}
+        className="h-4 w-4 cursor-pointer rounded border-slate-300 text-indigo-600"
+      />
+    </div>
 
-      // 3. Estado (se especificado nas notas)
-      const stateMatch = true; // Simplificado por enquanto
+    {(lead.lead_score || lead.ai_next_action || lead.next_visit_at) && (
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {!!lead.lead_score && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700">
+            <Target size={9} /> {lead.lead_score}
+          </span>
+        )}
+        {lead.ai_next_action && (
+          <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[9px] font-black text-indigo-700">
+            <Sparkles size={9} />
+            <span className="truncate">{lead.ai_next_action}</span>
+          </span>
+        )}
+        {lead.next_visit_at && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[9px] font-black text-blue-700">
+            <Calendar size={9} /> Visita
+          </span>
+        )}
+      </div>
+    )}
 
-      return budgetMatch && typeMatch;
-    })
-    .sort((a, b) => b.price - a.price)
-    .slice(0, 2)
-    .map((p) => ({
-      property_id: p.id,
-      title: p.title,
-      price: p.price,
-      city: p.location?.city,
-      state: p.location?.state,
-      score: 60,
-      engine: matchProfile,
-      reasons: ['compativel pelo cadastro'],
-    }));
+    {lead.property && (
+      <div className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 p-2">
+        <Home size={13} className="shrink-0 text-slate-400" />
+        <div className="min-w-0">
+          <p className="truncate text-[10px] font-bold text-slate-700">{lead.property.title}</p>
+          <p className="text-[9px] font-semibold text-slate-500">
+            {Number(lead.property.price || 0).toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
+          </p>
+        </div>
+      </div>
+    )}
 
-  const matches = storedMatches.length > 0 ? storedMatches.slice(0, 3) : heuristicMatches;
-
-  if (matches.length === 0) return null;
-
-  return (
-    <div className="mt-3 pt-3 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-500">
-      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-2 block flex items-center gap-1">
-        <Sparkles size={10} className="animate-pulse" /> Match {matchProfile === 'rural' ? 'Rural' : 'Urbano'}
+    <div className="mt-3 flex items-center justify-between">
+      <span className="flex items-center gap-1 text-[9px] font-bold uppercase text-slate-400">
+        <Clock3 size={10} />
+        {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '—'}
       </span>
-      <div className="space-y-1.5">
-        {matches.map((p) => (
-          <div
-            key={p.property_id}
-            className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors group/match"
-          >
-            <div className="w-7 h-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm group-hover/match:text-indigo-600 transition-colors">
-              <Home size={12} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold text-slate-700 truncate group-hover/match:text-indigo-600 transition-colors">
-                {p.title}
-              </p>
-              <p className="text-[9px] text-slate-500 font-bold">
-                {p.price?.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                })}
-              </p>
-              {p.score ? (
-                <p className="text-[8px] text-emerald-600 font-black">
-                  {p.score}% match{p.city || p.state ? ` - ${[p.city, p.state].filter(Boolean).join(' / ')}` : ''}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            const chatUrl = lead.chat_jid
+              ? `/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid)}`
+              : `https://wa.me/${lead.phone.replace(/\D/g, '')}`;
+            window.open(chatUrl, '_blank');
+          }}
+          className="rounded-lg p-1.5 text-emerald-500 hover:bg-emerald-50"
+          title="Abrir WhatsApp"
+        >
+          <MessageCircle size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(lead.id, lead.name);
+          }}
+          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+          title="Excluir lead"
+        >
+          <Trash2 size={15} />
+        </button>
       </div>
     </div>
+
+    <select
+      value={lead.status}
+      onClick={(event) => event.stopPropagation()}
+      onChange={(event) => onMove(lead.id, event.target.value)}
+      className="mt-3 h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-700 md:hidden"
+    >
+      {PIPELINE_STAGES.map((stage) => (
+        <option key={stage.id} value={stage.id}>{stage.label}</option>
+      ))}
+    </select>
+  </div>
+));
+LeadCard.displayName = 'LeadCard';
+
+interface KanbanColumnProps {
+  stage: (typeof PIPELINE_STAGES)[number];
+  leads: Lead[];
+  total: number;
+  selectedIds: Set<string>;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: (stageId: string) => void;
+  onOpen: (lead: Lead) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string, name: string) => void;
+  onMove: (id: string, status: string) => void;
+}
+
+const KanbanColumn = React.memo(({
+  stage,
+  leads,
+  total,
+  selectedIds,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  onOpen,
+  onToggle,
+  onDelete,
+  onMove,
+}: KanbanColumnProps) => {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const virtualizer = useVirtualizer({
+    count: leads.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 190,
+    overscan: 4,
+    getItemKey: (index) => leads[index]?.id || index,
+  });
+
+  const renderDraggable = (
+    lead: Lead,
+    provided: DraggableProvided,
+    snapshot: DraggableStateSnapshot
+  ) => (
+    <div
+      ref={provided.innerRef}
+      {...provided.draggableProps}
+      {...provided.dragHandleProps}
+      className={snapshot.isDragging ? 'rotate-1 opacity-95 shadow-xl' : ''}
+    >
+      <LeadCard
+        lead={lead}
+        selected={selectedIds.has(lead.id)}
+        onOpen={onOpen}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onMove={onMove}
+      />
+    </div>
   );
-};
+
+  return (
+    <Droppable
+      droppableId={stage.id}
+      mode="virtual"
+      renderClone={(provided, snapshot, rubric) =>
+        renderDraggable(leads[rubric.source.index], provided, snapshot)
+      }
+    >
+      {(provided, snapshot) => (
+        <section
+          id={`kanban-stage-${stage.id}`}
+          className={`flex w-[calc(100vw-2rem)] max-w-[22rem] shrink-0 flex-col rounded-2xl border border-slate-100 md:w-72 md:max-w-none lg:w-80 ${
+            snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'
+          }`}
+        >
+          <header className="rounded-t-2xl border-b border-slate-100 bg-white/80 p-4 backdrop-blur">
+            <div className="flex items-center justify-between">
+              <span className={`flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-bold uppercase ${stage.color}`}>
+                <stage.icon size={12} /> {stage.label}
+              </span>
+              <span className="text-xs font-bold text-slate-400">{total}</span>
+            </div>
+          </header>
+
+          <div
+            ref={(element) => {
+              scrollRef.current = element;
+              provided.innerRef(element);
+            }}
+            {...provided.droppableProps}
+            className="h-[calc(100vh-18rem)] min-h-[28rem] overflow-y-auto p-2 sm:p-3"
+          >
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                position: 'relative',
+                width: '100%',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const lead = leads[virtualRow.index];
+                return (
+                  <div
+                    key={lead.id}
+                    data-index={virtualRow.index}
+                    ref={virtualizer.measureElement}
+                    className="pb-3"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <Draggable draggableId={lead.id} index={virtualRow.index}>
+                      {(dragProvided, dragSnapshot) =>
+                        renderDraggable(lead, dragProvided, dragSnapshot)
+                      }
+                    </Draggable>
+                  </div>
+                );
+              })}
+            </div>
+
+            {hasMore && (
+              <button
+                type="button"
+                onClick={() => onLoadMore(stage.id)}
+                disabled={loadingMore}
+                className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase text-slate-600 disabled:opacity-50"
+              >
+                {loadingMore ? 'Carregando...' : 'Carregar mais'}
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+    </Droppable>
+  );
+});
+KanbanColumn.displayName = 'KanbanColumn';
+
+type StagePageState = Record<string, {
+  nextCursor: { created_at: string; id: string } | null;
+  hasMore: boolean;
+  total: number;
+  loadingMore: boolean;
+}>;
+
+const createEmptyStageState = (): StagePageState =>
+  Object.fromEntries(PIPELINE_STAGES.map((stage) => [
+    stage.id,
+    { nextCursor: null, hasMore: false, total: 0, loadingMore: false },
+  ]));
 
 const KanbanBoard: React.FC = () => {
-  const { settings } = useSettings();
   const matchProfile: 'urbano' | 'rural' = window.location.pathname.startsWith('/rural') ? 'rural' : 'urbano';
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [stageState, setStageState] = useState<StagePageState>(createEmptyStageState);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1281,150 +1494,227 @@ const KanbanBoard: React.FC = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [allProperties, setAllProperties] = useState<any[]>([]);
   const [mobileStageId, setMobileStageId] = useState(PIPELINE_STAGES[0].id);
 
   const { profile, isImpersonating } = useAuth();
   const isSuperAdmin = profile?.role === 'superadmin';
-
   const targetOrgId =
     isSuperAdmin && !isImpersonating ? undefined : profile?.organization_id;
 
-  useEffect(() => {
-    if (!targetOrgId) {
-      setLeads([]);
-      setAllProperties([]);
-      setLoading(false);
-      return;
-    }
-
-    loadLeads();
-    loadAllProperties();
-  }, [targetOrgId]);
-
-  const loadAllProperties = async () => {
-    try {
-      const data = await propertyService.list();
-      setAllProperties(data);
-    } catch (error) {
-      console.error('Failed to load properties for matching', error);
-    }
-  };
-
-  const loadLeads = async () => {
+  const loadLeads = useCallback(async () => {
+    if (!targetOrgId) return;
     try {
       setLoading(true);
-      const data = await leadService.list();
-      setLeads(data);
+      const pages = await Promise.all(
+        PIPELINE_STAGES.map((stage) =>
+          leadService.listPage({ status: stage.id, limit: 50, includeCount: true })
+        )
+      );
+
+      setLeads(pages.flatMap((page) => page.leads));
+      setStageState(Object.fromEntries(
+        PIPELINE_STAGES.map((stage, index) => [
+          stage.id,
+          {
+            nextCursor: pages[index].nextCursor,
+            hasMore: pages[index].hasMore,
+            total: pages[index].total,
+            loadingMore: false,
+          },
+        ])
+      ));
     } catch (error: any) {
-      logger.error('Failed to load leads', error);
+      logger.error('Failed to load Kanban leads', error);
       toast.error('Erro ao carregar leads: ' + error.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [targetOrgId]);
 
-  const onDragEnd = async (result: DropResult) => {
-    if (!result.destination) return;
+  useEffect(() => {
+    if (!targetOrgId) {
+      setLeads([]);
+      setStageState(createEmptyStageState());
+      setLoading(false);
+      return;
+    }
+    loadLeads();
+  }, [loadLeads, targetOrgId]);
 
-    const { source, destination, draggableId } = result;
+  const loadMoreStage = useCallback(async (stageId: string) => {
+    const current = stageState[stageId];
+    if (!current?.hasMore || !current.nextCursor || current.loadingMore) return;
 
-    if (source.droppableId === destination.droppableId) return;
-
-    // Optimistic UI Update
-    const updatedLeads = leads.map((lead) =>
-      lead.id === draggableId
-        ? { ...lead, status: destination.droppableId as any }
-        : lead
-    );
-    setLeads(updatedLeads);
+    setStageState((prev) => ({
+      ...prev,
+      [stageId]: { ...prev[stageId], loadingMore: true },
+    }));
 
     try {
-      await leadService.updateStatus(draggableId, destination.droppableId);
-    } catch (error) {
-      logger.error('Failed to update status', error);
-      // Revert on failure
-      loadLeads();
+      const page = await leadService.listPage({
+        status: stageId,
+        limit: 50,
+        cursor: current.nextCursor,
+        includeCount: false,
+      });
+      setLeads((prev) => {
+        const existing = new Set(prev.map((lead) => lead.id));
+        return [...prev, ...page.leads.filter((lead) => !existing.has(lead.id))];
+      });
+      setStageState((prev) => ({
+        ...prev,
+        [stageId]: {
+          ...prev[stageId],
+          nextCursor: page.nextCursor,
+          hasMore: page.hasMore,
+          loadingMore: false,
+        },
+      }));
+    } catch (error: any) {
+      setStageState((prev) => ({
+        ...prev,
+        [stageId]: { ...prev[stageId], loadingMore: false },
+      }));
+      toast.error('Erro ao carregar mais leads: ' + error.message);
     }
-  };
+  }, [stageState]);
 
-  const handleMoveLeadStage = async (leadId: string, nextStageId: string) => {
+  const normalizedSearch = useMemo(
+    () => searchTerm.trim().toLocaleLowerCase('pt-BR'),
+    [searchTerm]
+  );
+
+  const leadsByStage = useMemo(() => {
+    const grouped = new Map<string, Lead[]>(
+      PIPELINE_STAGES.map((stage) => [stage.id, []])
+    );
+    for (const lead of leads) {
+      const matchesSearch =
+        !normalizedSearch ||
+        getLeadDisplayName(lead).toLocaleLowerCase('pt-BR').includes(normalizedSearch) ||
+        lead.property?.title?.toLocaleLowerCase('pt-BR').includes(normalizedSearch);
+      if (matchesSearch) grouped.get(lead.status)?.push(lead);
+    }
+    return grouped;
+  }, [leads, normalizedSearch]);
+
+  const selectedIds = useMemo(() => new Set(selectedLeadIds), [selectedLeadIds]);
+
+  const handleOpenLead = useCallback(async (lead: Lead) => {
+    setSelectedLead(lead);
+    setIsDetailsOpen(true);
+    try {
+      const detail = await leadService.getById(lead.id);
+      setSelectedLead(detail.lead);
+    } catch (error) {
+      logger.error('Failed to load lead detail', error);
+    }
+  }, []);
+
+  const moveLeadOptimistically = useCallback((leadId: string, nextStageId: string) => {
+    let previousStage = '';
+    setLeads((prev) => prev.map((lead) => {
+      if (lead.id !== leadId) return lead;
+      previousStage = lead.status;
+      return { ...lead, status: nextStageId as Lead['status'] };
+    }));
+    if (previousStage && previousStage !== nextStageId) {
+      setStageState((prev) => ({
+        ...prev,
+        [previousStage]: {
+          ...prev[previousStage],
+          total: Math.max(0, (prev[previousStage]?.total || 0) - 1),
+        },
+        [nextStageId]: {
+          ...prev[nextStageId],
+          total: (prev[nextStageId]?.total || 0) + 1,
+        },
+      }));
+    }
+    return previousStage;
+  }, []);
+
+  const handleMoveLeadStage = useCallback(async (leadId: string, nextStageId: string) => {
     const currentLead = leads.find((lead) => lead.id === leadId);
     if (!currentLead || currentLead.status === nextStageId) return;
-
-    setLeads((prev) =>
-      prev.map((lead) =>
-        lead.id === leadId ? { ...lead, status: nextStageId as any } : lead
-      )
-    );
+    moveLeadOptimistically(leadId, nextStageId);
     setMobileStageId(nextStageId);
-
     try {
       await leadService.updateStatus(leadId, nextStageId);
     } catch (error) {
       logger.error('Failed to update status', error);
-      loadLeads();
+      await loadLeads();
     }
-  };
+  }, [leads, loadLeads, moveLeadOptimistically]);
 
-  const handleMobileStageSelect = (stageId: string) => {
+  const onDragEnd = useCallback(async (result: DropResult) => {
+    if (!result.destination) return;
+    const { source, destination, draggableId } = result;
+    if (source.droppableId === destination.droppableId) return;
+    moveLeadOptimistically(draggableId, destination.droppableId);
+    try {
+      await leadService.updateStatus(draggableId, destination.droppableId);
+    } catch (error) {
+      logger.error('Failed to update status', error);
+      await loadLeads();
+    }
+  }, [loadLeads, moveLeadOptimistically]);
+
+  const handleMobileStageSelect = useCallback((stageId: string) => {
     setMobileStageId(stageId);
     window.requestAnimationFrame(() => {
       document
         .getElementById(`kanban-stage-${stageId}`)
         ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
     });
-  };
+  }, []);
 
-  const handleDeleteLead = async (id: string, name: string) => {
+  const handleDeleteLead = useCallback(async (id: string, name: string) => {
     if (!confirm(`Deseja realmente excluir o lead "${name}"? Esta ação não pode ser desfeita.`)) return;
-
+    const lead = leads.find((item) => item.id === id);
     try {
       await leadService.delete(id);
-      setLeads(prev => prev.filter(l => l.id !== id));
-      setSelectedLeadIds(prev => prev.filter(item => item !== id));
+      setLeads((prev) => prev.filter((item) => item.id !== id));
+      setSelectedLeadIds((prev) => prev.filter((item) => item !== id));
+      if (lead) {
+        setStageState((prev) => ({
+          ...prev,
+          [lead.status]: {
+            ...prev[lead.status],
+            total: Math.max(0, (prev[lead.status]?.total || 0) - 1),
+          },
+        }));
+      }
       toast.success('Lead excluído com sucesso');
     } catch (error: any) {
       toast.error('Erro ao excluir lead: ' + error.message);
     }
-  };
+  }, [leads]);
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = useCallback(async () => {
     if (!selectedLeadIds.length) return;
     if (!confirm(`Deseja realmente excluir ${selectedLeadIds.length} leads selecionados? Esta ação não pode ser desfeita.`)) return;
-
     setIsBulkDeleting(true);
     try {
       await leadService.bulkDelete(selectedLeadIds);
-      setLeads(prev => prev.filter(l => !selectedLeadIds.includes(l.id)));
+      setLeads((prev) => prev.filter((lead) => !selectedIds.has(lead.id)));
       setSelectedLeadIds([]);
+      await loadLeads();
       toast.success(`${selectedLeadIds.length} leads excluídos com sucesso`);
     } catch (error: any) {
       toast.error('Erro ao excluir leads em massa: ' + error.message);
     } finally {
       setIsBulkDeleting(false);
     }
-  };
+  }, [loadLeads, selectedIds, selectedLeadIds]);
 
-  const toggleLeadSelection = (id: string) => {
-    setSelectedLeadIds(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+  const toggleLeadSelection = useCallback((id: string) => {
+    setSelectedLeadIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
-  };
-
-  const getLeadsByStage = (stageId: string) => {
-    return leads.filter(
-      (lead) =>
-        lead.status === stageId &&
-        (lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          lead.property?.title
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()))
-    );
-  };
+  }, []);
 
   if (loading) return <div className="p-10 text-center">Carregando CRM...</div>;
-
   if (!targetOrgId) {
     return (
       <div className="p-10 text-center text-slate-600">
@@ -1434,37 +1724,30 @@ const KanbanBoard: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+    <div className="flex h-full flex-col">
+      <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase italic tracking-tighter">
+          <h1 className="text-2xl font-black uppercase italic tracking-tighter text-slate-900 sm:text-3xl">
             Processo de Vendas
           </h1>
-          <p className="text-slate-500 font-medium text-sm">Gestão inteligente de funil e leads.</p>
+          <p className="text-sm font-medium text-slate-500">Gestão inteligente de funil e leads.</p>
         </div>
-
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
           <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
-            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
               type="text"
-              placeholder="Buscar lead..."
+              placeholder="Buscar nos cards carregados..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none w-full sm:w-56 md:w-64 text-sm"
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 sm:w-64"
             />
           </div>
-
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-indigo-600 text-white px-4 sm:px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20"
+            className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 sm:px-6"
           >
-            <Plus size={18} />
-            <span className="hidden sm:inline">NOVO LEAD</span>
-            <span className="sm:hidden">NOVO</span>
+            <Plus size={18} /> NOVO LEAD
           </button>
         </div>
       </div>
@@ -1472,11 +1755,10 @@ const KanbanBoard: React.FC = () => {
       <NewLeadModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={() => loadLeads()}
+        onSuccess={loadLeads}
         orgId={targetOrgId}
         matchProfile={matchProfile}
       />
-
       <LeadDetailsModal
         lead={selectedLead}
         isOpen={isDetailsOpen}
@@ -1484,336 +1766,86 @@ const KanbanBoard: React.FC = () => {
           setIsDetailsOpen(false);
           setSelectedLead(null);
         }}
-        onEdit={() => {
-          setIsEditOpen(true);
-        }}
-        onRefresh={() => loadLeads()}
+        onEdit={() => setIsEditOpen(true)}
+        onRefresh={loadLeads}
         onLeadUpdated={(updatedLead) => {
-          setLeads((prev) => prev.map((item) => (item.id === updatedLead.id ? updatedLead : item)));
+          setLeads((prev) => prev.map((item) => item.id === updatedLead.id ? updatedLead : item));
           setSelectedLead(updatedLead);
         }}
         matchProfile={matchProfile}
       />
-
       <EditLeadModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
-        onSuccess={() => {
-          loadLeads();
-          // Update selected lead to reflect changes in details modal if open
-          if (selectedLead) {
-             const updated = leads.find(l => l.id === selectedLead.id);
-             if (updated) setSelectedLead(updated);
-          }
-        }}
+        onSuccess={loadLeads}
         lead={selectedLead}
       />
 
-      <div className="md:hidden -mx-4 px-4 pb-3 overflow-x-auto">
-        <div className="flex gap-2 min-w-max">
-          {PIPELINE_STAGES.map((stage) => {
-            const count = getLeadsByStage(stage.id).length;
-            return (
-              <button
-                key={stage.id}
-                type="button"
-                onClick={() => handleMobileStageSelect(stage.id)}
-                className={`h-10 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wide flex items-center gap-2 ${
-                  mobileStageId === stage.id
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'bg-white text-slate-500 border-slate-200'
-                }`}
-              >
-                <stage.icon size={12} />
-                {stage.label}
-                <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+      <div className="-mx-4 overflow-x-auto px-4 pb-3 md:hidden">
+        <div className="flex min-w-max gap-2">
+          {PIPELINE_STAGES.map((stage) => (
+            <button
+              key={stage.id}
+              type="button"
+              onClick={() => handleMobileStageSelect(stage.id)}
+              className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-[11px] font-black uppercase ${
+                mobileStageId === stage.id
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-white text-slate-500'
+              }`}
+            >
+              <stage.icon size={12} /> {stage.label}
+              <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
+                {normalizedSearch
+                  ? (leadsByStage.get(stage.id)?.length || 0)
+                  : (stageState[stage.id]?.total || 0)}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto pb-4 -mx-4 px-4">
+      <div className="-mx-4 flex-1 overflow-x-auto px-4 pb-4">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex gap-3 sm:gap-4 h-full pb-2">
-            {PIPELINE_STAGES.map((stage) => {
-              const stageLeads = getLeadsByStage(stage.id);
-              return (
-                <Droppable key={stage.id} droppableId={stage.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      id={`kanban-stage-${stage.id}`}
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`flex w-[calc(100vw-2rem)] max-w-[22rem] md:w-72 md:max-w-none lg:w-80 flex-shrink-0 flex-col rounded-2xl ${snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'} border border-slate-100 max-h-full`}
-                    >
-                      {/* Header */}
-                      <div className="p-4 border-b border-slate-100 bg-white/50 backdrop-blur rounded-t-2xl sticky top-0 z-10">
-                        <div className="flex items-center justify-between mb-2">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2 ${stage.color}`}
-                          >
-                            <stage.icon size={12} />
-                            {stage.label}
-                          </span>
-                          <span className="text-xs font-bold text-slate-400">
-                            {stageLeads.length}
-                          </span>
-                        </div>
-                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-slate-300 rounded-full"
-                            style={{
-                              width: `${(stageLeads.length / (leads.length || 1)) * 100}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                       {/* Cards */}
-                       <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3">
-                         {stageLeads.map((lead, index) => (
-                           <React.Fragment key={lead.id}>
-                           <Draggable draggableId={lead.id} index={index}>
-                             {(provided, snapshot) => (
-                               <div
-                                 ref={provided.innerRef}
-                                 {...provided.draggableProps}
-                                 {...provided.dragHandleProps}
-                                 onClick={() => {
-                                   setSelectedLead(lead);
-                                   setIsDetailsOpen(true);
-                                 }}
-                                 className={`bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group cursor-pointer relative ${snapshot.isDragging ? 'rotate-2 shadow-xl ring-2 ring-indigo-500/20' : ''} ${selectedLeadIds.includes(lead.id) ? 'ring-2 ring-indigo-500 bg-indigo-50/30' : ''}`}
-                               >
-                                 <div 
-                                   className="absolute top-2 right-2 z-20"
-                                   onClick={(e) => e.stopPropagation()}
-                                 >
-                                   <input
-                                     type="checkbox"
-                                     checked={selectedLeadIds.includes(lead.id)}
-                                     onChange={() => toggleLeadSelection(lead.id)}
-                                     className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                                   />
-                                 </div>
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase shrink-0">
-                                      {getLeadInitials(lead)}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-bold text-slate-800 text-sm leading-tight truncate" title={getLeadDisplayName(lead)}>
-                                          {getLeadDisplayName(lead)}
-                                        </h4>
-                                        {lead.notes && (
-                                          <Sparkles size={10} className="text-indigo-500 animate-pulse shrink-0" />
-                                        )}
-                                        {lead.classification && (
-                                          <span
-                                            className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shrink-0 ${
-                                              lead.classification.includes(
-                                                'Alta'
-                                              )
-                                                ? 'bg-orange-100 text-orange-600'
-                                                : lead.classification.includes(
-                                                      'Interessado'
-                                                    )
-                                                  ? 'bg-emerald-100 text-emerald-600'
-                                                  : 'bg-slate-100 text-slate-500'
-                                            }`}
-                                          >
-                                            {lead.classification}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <span className="text-[10px] text-slate-400 font-medium">
-                                        Via {lead.source}
-                                      </span>
-                                      {lead.campaign && (
-                                        <span className="mt-1 block truncate text-[10px] font-bold text-slate-500" title={lead.campaign}>
-                                          Campanha: {lead.campaign}
-                                        </span>
-                                      )}
-                                      {(typeof lead.lead_score === 'number' && lead.lead_score > 0) || lead.ai_next_action ? (
-                                        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-wide">
-                                          {typeof lead.lead_score === 'number' && lead.lead_score > 0 && (
-                                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
-                                              lead.lead_score >= 75
-                                                ? 'bg-orange-100 text-orange-700'
-                                                : lead.lead_score >= 45
-                                                  ? 'bg-emerald-100 text-emerald-700'
-                                                  : 'bg-slate-100 text-slate-600'
-                                            }`}>
-                                              <Target size={9} />
-                                              {lead.lead_score}
-                                            </span>
-                                          )}
-                                          {lead.ai_next_action && (
-                                            <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
-                                              <Sparkles size={9} />
-                                              <span className="truncate">{lead.ai_next_action}</span>
-                                            </span>
-                                          )}
-                                          {lead.next_visit_at && (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                                              <Calendar size={9} />
-                                              Visita
-                                            </span>
-                                          )}
-                                        </div>
-                                      ) : null}
-                                      {lead.tags && lead.tags.length > 0 && (
-                                        <div className="mt-2 flex flex-wrap gap-1">
-                                          {lead.tags.slice(0, 3).map((tag) => (
-                                            <span
-                                              key={tag}
-                                              className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-700"
-                                            >
-                                              {tag}
-                                            </span>
-                                          ))}
-                                          {lead.tags.length > 3 && (
-                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500">
-                                              +{lead.tags.length - 3}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {/* Botões de ação - sempre visíveis no mobile */}
-                                  <div className="flex items-center gap-1 shrink-0 ml-1">
-                                    <button
-                                      onMouseDown={(e) => e.stopPropagation()}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const chatUrl = lead.chat_jid
-                                          ? `/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid)}`
-                                          : `https://wa.me/${lead.phone.replace(/\D/g, '')}`;
-                                        window.open(chatUrl, '_blank');
-                                      }}
-                                      className="text-emerald-500 hover:bg-emerald-50 p-1.5 rounded-lg transition-colors"
-                                      title={lead.chat_jid ? 'Abrir conversa no painel' : 'Chamar no WhatsApp'}
-                                    >
-                                      <MessageCircle size={16} />
-                                    </button>
-                                    <button
-                                      onMouseDown={(e) => e.stopPropagation()}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteLead(lead.id, lead.name);
-                                      }}
-                                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                                      title="Excluir Lead"
-                                    >
-                                      <Trash2 size={16} />
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {lead.property && (
-                                  <div className="bg-slate-50 rounded-lg p-2 flex items-center gap-3 mb-3 hover:bg-slate-100 transition-colors cursor-pointer group/prop">
-                                    <img
-                                      src={
-                                        lead.property.image ||
-                                        'https://via.placeholder.com/40'
-                                      }
-                                      className="w-10 h-10 rounded-md object-cover"
-                                    />
-                                    <div className="flex-1 overflow-hidden">
-                                      <p className="text-xs font-bold text-slate-700 truncate">
-                                        {lead.property.title}
-                                      </p>
-                                      <p className="text-[10px] text-slate-500 truncate">
-                                        {lead.property.price?.toLocaleString(
-                                          'pt-BR',
-                                          { style: 'currency', currency: 'BRL' }
-                                        )}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <PropertyMatches lead={lead} allProperties={allProperties} matchProfile={matchProfile} />
-
-                                <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-3">
-                                  <span className="flex items-center gap-1">
-                                    <Clock3 size={10} />
-                                    {new Date(
-                                      lead.createdAt
-                                    ).toLocaleDateString()}
-                                  </span>
-                                </div>
-                                <div
-                                  className="mt-3 md:hidden"
-                                  onClick={(e) => e.stopPropagation()}
-                                  onMouseDown={(e) => e.stopPropagation()}
-                                >
-                                  <label className="mb-1 block text-[9px] font-black uppercase tracking-widest text-slate-400">
-                                    Mover etapa
-                                  </label>
-                                  <select
-                                    value={lead.status}
-                                    onChange={(e) =>
-                                      handleMoveLeadStage(lead.id, e.target.value)
-                                    }
-                                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500"
-                                  >
-                                    {PIPELINE_STAGES.map((option) => (
-                                      <option key={option.id} value={option.id}>
-                                        {option.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                           </React.Fragment>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    </div>
-                  )}
-                </Droppable>
-              );
-            })}
+          <div className="flex h-full gap-3 pb-2 sm:gap-4">
+            {PIPELINE_STAGES.map((stage) => (
+              <KanbanColumn
+                key={stage.id}
+                stage={stage}
+                leads={leadsByStage.get(stage.id) || []}
+                total={normalizedSearch
+                  ? (leadsByStage.get(stage.id)?.length || 0)
+                  : (stageState[stage.id]?.total || 0)}
+                selectedIds={selectedIds}
+                hasMore={!normalizedSearch && Boolean(stageState[stage.id]?.hasMore)}
+                loadingMore={Boolean(stageState[stage.id]?.loadingMore)}
+                onLoadMore={loadMoreStage}
+                onOpen={handleOpenLead}
+                onToggle={toggleLeadSelection}
+                onDelete={handleDeleteLead}
+                onMove={handleMoveLeadStage}
+              />
+            ))}
           </div>
         </DragDropContext>
       </div>
 
-      {/* Bulk Actions Bar */}
       {selectedLeadIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-8 duration-300 border border-white/10">
-          <div className="flex items-center gap-3 pr-6 border-r border-white/10">
-            <span className="bg-indigo-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-black">
-              {selectedLeadIds.length}
-            </span>
-            <span className="text-sm font-bold uppercase tracking-widest text-slate-300">
-              Leads Selecionados
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSelectedLeadIds([])}
-              className="text-xs font-bold uppercase tracking-widest hover:text-indigo-400 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleBulkDelete}
-              disabled={isBulkDeleting}
-              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-red-500/20 disabled:opacity-50"
-            >
-              <Trash2 size={14} />
-              {isBulkDeleting ? 'Excluindo...' : 'Excluir em Massa'}
-            </button>
-          </div>
+        <div className="fixed bottom-6 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-6 rounded-2xl border border-white/10 bg-slate-900 px-6 py-4 text-white shadow-2xl">
+          <span className="text-sm font-bold uppercase tracking-widest text-slate-300">
+            {selectedLeadIds.length} selecionado(s)
+          </span>
+          <button onClick={() => setSelectedLeadIds([])} className="text-xs font-bold uppercase hover:text-indigo-400">
+            Cancelar
+          </button>
+          <button
+            onClick={handleBulkDelete}
+            disabled={isBulkDeleting}
+            className="flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-xs font-black uppercase hover:bg-red-600 disabled:opacity-50"
+          >
+            <Trash2 size={14} />
+            {isBulkDeleting ? 'Excluindo...' : 'Excluir'}
+          </button>
         </div>
       )}
     </div>

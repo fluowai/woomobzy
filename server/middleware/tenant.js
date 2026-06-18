@@ -1,4 +1,7 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import { TtlCache } from '../lib/ttl-cache.js';
+
+const tenantCache = new TtlCache(60_000);
 
 /**
  * server/middleware/tenant.js
@@ -57,15 +60,22 @@ export const requireTenant = async (req, res, next) => {
     }
   }
 
+  if (req.tenantValidated) return next();
+
   try {
     const supabase = getSupabaseServer();
-    const { data: organization, error } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('id', req.orgId)
-      .maybeSingle();
+    let tenantLookupError = null;
+    const organization = await tenantCache.getOrLoad(req.orgId, async () => {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('id', req.orgId)
+        .maybeSingle();
+      tenantLookupError = error;
+      return data || undefined;
+    });
 
-    if (error || !organization) {
+    if (tenantLookupError || !organization) {
       console.error(
         `[TenantMiddleware] Tenant inexistente bloqueado: ${req.orgId} em ${req.method} ${req.path}`
       );
@@ -76,6 +86,7 @@ export const requireTenant = async (req, res, next) => {
     }
 
     req.orgId = organization.id;
+    req.tenantValidated = true;
   } catch (error) {
     console.error('[TenantMiddleware] Erro ao validar tenant:', error.message);
     return res.status(500).json({

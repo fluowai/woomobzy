@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import { normalizeDomain, syncPlatformTraefikServices } from './domainService.js';
 
 // --- Middlewares & Services ---
@@ -72,6 +73,41 @@ if (missingVars.length > 0) {
 const app = express();
 app.set('trust proxy', 1);
 const isProduction = process.env.NODE_ENV === 'production';
+
+app.use((req, res, next) => {
+  const startedAt = process.hrtime.bigint();
+  const originalJson = res.json.bind(res);
+  const originalEnd = res.end.bind(res);
+  let timingRecorded = false;
+
+  const recordTimingHeaders = () => {
+    if (timingRecorded || res.headersSent) return;
+    timingRecorded = true;
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+    const currentTiming = res.getHeader('Server-Timing');
+    const appTiming = `app;dur=${durationMs.toFixed(1)}`;
+    res.setHeader('Server-Timing', currentTiming ? `${currentTiming}, ${appTiming}` : appTiming);
+    res.setHeader('X-Response-Time', `${durationMs.toFixed(1)}ms`);
+    res.setHeader('X-Process-Memory-Rss', String(process.memoryUsage().rss));
+  };
+
+  res.json = (body) => {
+    if (!res.headersSent) {
+      res.setHeader('X-Response-Bytes', Buffer.byteLength(JSON.stringify(body), 'utf8'));
+      recordTimingHeaders();
+    }
+    return originalJson(body);
+  };
+
+  res.end = (...args) => {
+    recordTimingHeaders();
+    return originalEnd(...args);
+  };
+
+  next();
+});
+
+app.use(compression({ threshold: 1024 }));
 
 // --- Global Security & Setup ---
 app.use(

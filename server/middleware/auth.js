@@ -3,6 +3,18 @@ import {
   getSupabaseServer,
 } from '../lib/supabase-server.js';
 import jwt from 'jsonwebtoken';
+import { createHash } from 'node:crypto';
+import { TtlCache } from '../lib/ttl-cache.js';
+
+const AUTH_CACHE_TTL_MS = 60_000;
+const authenticatedUserCache = new TtlCache(AUTH_CACHE_TTL_MS);
+const profileCache = new TtlCache(AUTH_CACHE_TTL_MS);
+const organizationCache = new TtlCache(AUTH_CACHE_TTL_MS);
+const isProduction = process.env.NODE_ENV === 'production';
+
+function authDebug(message, data) {
+  if (!isProduction) console.debug(`[AUTH DEBUG] ${message}`, data);
+}
 
 /**
  * Middleware Central de Autenticação e Resolução de Tenant
@@ -49,7 +61,11 @@ export const verifyAuth = async (req, res, next) => {
     // Buscar perfil real no banco (Fonte de Verdade para Role e Org).
     // Em algumas bases antigas houve usuarios recriados no Supabase Auth,
     // mantendo o perfil pelo e-mail antigo. Nesses casos, resolvemos por e-mail.
-    const profile = await resolveProfileForUser(supabase, user);
+    const profileCacheKey = `${user.id}:${String(user.email || '').toLowerCase()}`;
+    const profile = await profileCache.getOrLoad(
+      profileCacheKey,
+      () => resolveProfileForUser(supabase, user)
+    );
 
     if (!profile) {
       console.warn('[Auth] Perfil de usuario nao encontrado', {
@@ -95,7 +111,7 @@ export const verifyAuth = async (req, res, next) => {
     const requestedOrgId = req.headers['x-organization-id'];
     const tokenImpersonationOrgId = getImpersonationTenantId(impersonation);
 
-    console.log('[AUTH DEBUG] verifyAuth', {
+    authDebug('verifyAuth', {
       userId: profile.id,
       email: maskEmail(profile.email),
       role: profile.role,
@@ -108,9 +124,9 @@ export const verifyAuth = async (req, res, next) => {
     if (tokenImpersonationOrgId) {
       req.orgId = tokenImpersonationOrgId;
       req.isImpersonating = true;
-      console.log('[AUTH DEBUG] Token impersonation ativo', { orgId: req.orgId });
+      authDebug('Token impersonation ativo', { orgId: req.orgId });
     } else if (impersonateId && profile.role === 'superadmin') {
-      console.log('[AUTH DEBUG] Superadmin impersonando via header', { impersonateId });
+      authDebug('Superadmin impersonando via header', { impersonateId });
       const { data: impersonatedOrg, error: impersonatedOrgError } = await supabase
         .from('organizations')
         .select('id')
@@ -132,8 +148,9 @@ export const verifyAuth = async (req, res, next) => {
       );
       req.orgId = impersonatedOrg.id;
       req.isImpersonating = true;
+      req.tenantValidated = true;
     } else if (profile.role === 'superadmin' && requestedOrgId) {
-      console.log('[AUTH DEBUG] Superadmin acessando org via header', { requestedOrgId });
+      authDebug('Superadmin acessando org via header', { requestedOrgId });
       const requestedOrg = await resolveOrganizationById(supabase, requestedOrgId);
       if (!requestedOrg) {
         console.warn('[Auth] Organizacao solicitada no header nao encontrada', {
@@ -148,10 +165,11 @@ export const verifyAuth = async (req, res, next) => {
       }
       req.orgId = requestedOrg.id;
       req.isImpersonating = true;
+      req.tenantValidated = true;
     } else if (profile.organization_id) {
       // Usuario comum/admin: usa APENAS a organizacao do perfil.
       // Ignora completamente o header x-organization-id para evitar erros com dados stale.
-      console.log('[AUTH DEBUG] Usuario admin, usando org do profile', {
+      authDebug('Usuario admin, usando org do profile', {
         profileOrg: profile.organization_id,
         requestedOrgIgnored: requestedOrgId || null,
       });
@@ -181,8 +199,9 @@ export const verifyAuth = async (req, res, next) => {
       }
       req.orgId = org.id;
       req.isImpersonating = false;
+      req.tenantValidated = true;
     } else if (profile.role === 'superadmin') {
-      console.log('[AUTH DEBUG] Superadmin acessando sem org vinculada/solicitada');
+      authDebug('Superadmin acessando sem org vinculada/solicitada');
       req.orgId = null;
       req.isImpersonating = false;
     } else {
@@ -203,7 +222,7 @@ export const verifyAuth = async (req, res, next) => {
         );
 
         if (createdOrg?.id) {
-          console.log('[Auth] Org encontrada/criada, vinculando ao perfil', {
+          authDebug('Org encontrada/criada, vinculando ao perfil', {
             userId: user.id,
             profileId: profile.id,
             orgId: createdOrg.id,
@@ -226,7 +245,7 @@ export const verifyAuth = async (req, res, next) => {
             req.realOrgId = updatedProfile.organization_id;
             req.orgId = createdOrg.id;
             req.isImpersonating = false;
-            console.log('[Auth] Organizacao criada e vinculada automaticamente', {
+            authDebug('Organizacao criada e vinculada automaticamente', {
               userId: user.id,
               orgId: createdOrg.id,
             });
@@ -324,22 +343,24 @@ function decodeJwtPayload(token) {
 
 async function resolveOrganizationById(supabase, organizationId) {
   if (!organizationId) return null;
-  console.log('[AUTH DEBUG] resolveOrganizationById', { organizationId });
-  const { data: organization, error } = await supabase
-    .from('organizations')
-    .select('id, status')
-    .eq('id', organizationId)
-    .maybeSingle();
+  return organizationCache.getOrLoad(organizationId, async () => {
+    authDebug('resolveOrganizationById', { organizationId });
+    const { data: organization, error } = await supabase
+      .from('organizations')
+      .select('id, status')
+      .eq('id', organizationId)
+      .maybeSingle();
 
-  console.log('[AUTH DEBUG] ORG LOOKUP', {
-    orgId: organizationId,
-    found: !!organization,
-    status: organization?.status || null,
-    error: error?.message || null,
+    authDebug('ORG LOOKUP', {
+      orgId: organizationId,
+      found: !!organization,
+      status: organization?.status || null,
+      error: error?.message || null,
+    });
+
+    if (error || !organization) return undefined;
+    return organization;
   });
-
-  if (error || !organization) return null;
-  return organization;
 }
 
 function maskEmail(email = '') {
@@ -349,14 +370,20 @@ function maskEmail(email = '') {
 }
 
 async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabaseAuth.auth.getUser(token);
+  const tokenKey = createHash('sha256').update(token).digest('hex');
+  let authError = null;
+  const authenticated = await authenticatedUserCache.getOrLoad(tokenKey, async () => {
+    const result = await supabaseAuth.auth.getUser(token);
+    authError = result.error;
+    if (result.error || !result.data.user) return undefined;
+    return {
+      user: result.data.user,
+      impersonation: null,
+      authError: null,
+    };
+  });
 
-  if (!authError && user) {
-    return { user, impersonation: null, authError: null };
-  }
+  if (authenticated) return authenticated;
 
   const impersonation = await verifyImpersonationToken(supabaseAdmin, token);
   if (!impersonation) {

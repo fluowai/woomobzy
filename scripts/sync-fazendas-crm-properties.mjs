@@ -7,6 +7,12 @@ import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
 import { uploadStorageObject } from './lib/storage-client.mjs';
+import {
+  applyBucketPolicy,
+  getBucketPolicy,
+  getConfiguredBucketName,
+  isMinioConfigured,
+} from '../server/lib/minio-storage.js';
 
 dotenv.config({ path: '.env' });
 dotenv.config({ path: '.env.production', override: false });
@@ -365,11 +371,44 @@ async function uploadImages(row, organizationId, sourceImages) {
   return uploaded;
 }
 
+async function ensurePublicImagePrefix(organizationId) {
+  if (!isMinioConfigured()) return;
+
+  const bucket = getConfiguredBucketName('media');
+  const resource = `arn:aws:s3:::${bucket}/${organizationId}/fazendasbrasil-crm49/*`;
+  const policy = await getBucketPolicy(bucket) || {
+    Version: '2012-10-17',
+    Statement: [],
+  };
+  const statementId = 'PublicReadFazendasBrasilProperties';
+  let statement = policy.Statement.find((item) => item.Sid === statementId);
+
+  if (!statement) {
+    statement = {
+      Sid: statementId,
+      Effect: 'Allow',
+      Principal: { AWS: ['*'] },
+      Action: ['s3:GetObject'],
+      Resource: [],
+    };
+    policy.Statement.push(statement);
+  }
+
+  const resources = Array.isArray(statement.Resource)
+    ? statement.Resource
+    : [statement.Resource].filter(Boolean);
+  if (resources.includes(resource)) return;
+
+  statement.Resource = [...new Set([...resources, resource])];
+  await applyBucketPolicy(bucket, policy);
+}
+
 const outputDir = path.resolve('outputs', 'fazendas-crm-properties');
 await fs.mkdir(outputDir, { recursive: true });
 
 const cookie = await crmLogin();
 const organization = await findOrganization();
+if (APPLY) await ensurePublicImagePrefix(organization.id);
 const existing = await getExistingProperties(organization.id);
 const crmRows = await fetchCrmProperties(cookie);
 

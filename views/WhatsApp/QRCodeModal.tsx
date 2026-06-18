@@ -3,6 +3,7 @@ import './whatsapp.css';
 import { useWebSocket } from './hooks/useWebSocket';
 import { instanceApi, type Instance } from './hooks/api';
 import { X, QrCode, Loader2, CheckCircle2, RefreshCw, Smartphone } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface QRCodeModalProps {
   instance: Instance;
@@ -13,6 +14,8 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const [qrCode, setQrCode] = useState<string>(instance.qr_code || '');
   const [status, setStatus] = useState<Instance['status']>(instance.status);
   const [loading, setLoading] = useState(!instance.qr_code);
+  const [pairingError, setPairingError] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const { on } = useWebSocket();
   const pollingRef = useRef<ReturnType<typeof setInterval>>();
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -30,6 +33,8 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         setQrCode(data.qr_code);
         setLoading(false);
         setStatus('qr_pending');
+        setPairingError('');
+        setExpiresAt(data.expires_at || '');
       }
     });
 
@@ -37,6 +42,11 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
     const unsubStatus = on('instance_status', (data: any) => {
       if (data.instance_id === instance.id) {
         setStatus(data.status);
+        if (data.error) {
+          setPairingError(data.error);
+          setQrCode('');
+          setLoading(false);
+        }
         if (data.status === 'connected') {
           // Auto-close after successful connection
           closeTimeoutRef.current = setTimeout(onClose, 1800);
@@ -68,10 +78,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         return;
       }
 
-      const shouldRefreshQR =
-        !qrCodeRef.current ||
-        freshInstance.status === 'disconnected' ||
-        Date.now() - lastQRFetchRef.current > 15000;
+      const shouldRefreshQR = Date.now() - lastQRFetchRef.current > 2500;
 
       if (shouldRefreshQR) {
         lastQRFetchRef.current = Date.now();
@@ -79,18 +86,20 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         if (data.qr_code) {
           setQrCode(data.qr_code);
           setLoading(false);
+          setPairingError('');
+          setExpiresAt(data.expires_at || '');
+        } else if (!qrCodeRef.current) {
+          setLoading(true);
         }
       }
-    } catch {
+    } catch (error: any) {
+      if (error?.status && error.status !== 404) {
+        setPairingError(error.message || 'Não foi possível gerar o QR Code.');
+        setLoading(false);
+      }
       // QR not ready yet, keep polling
     }
   };
-
-  // Generate QR code as an image using a simple canvas-free approach
-  // We'll use Google Charts API for QR rendering (simple and reliable)
-  const qrImageUrl = qrCode
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`
-    : '';
 
   return (
     <div className="modal-overlay" style={{ zIndex: 110 }} onClick={onClose}>
@@ -143,11 +152,29 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                   <p>Gerando QR Code...</p>
                   <span>Aguarde alguns segundos</span>
                 </div>
+              ) : pairingError ? (
+                <div className="wa-qr-error">
+                  <p>{pairingError}</p>
+                  <button
+                    onClick={() => {
+                      setPairingError('');
+                      setLoading(true);
+                      setQrCode('');
+                      fetchQR();
+                    }}
+                    className="wa-qr-retry"
+                  >
+                    <RefreshCw size={14} /> Gerar novo QR Code
+                  </button>
+                </div>
               ) : qrCode ? (
                 <div className="wa-qr-image-wrapper">
-                  <img
-                    src={qrImageUrl}
-                    alt="QR Code para WhatsApp"
+                  <QRCodeSVG
+                    value={qrCode}
+                    size={280}
+                    level="M"
+                    marginSize={2}
+                    title="QR Code para conectar o WhatsApp"
                     className="wa-qr-image"
                   />
                   <div className="wa-qr-phone-icon">
@@ -166,7 +193,8 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
 
             {qrCode && (
               <p className="wa-qr-note">
-                O QR Code expira em 60 segundos. Um novo será gerado automaticamente.
+                O QR Code é renovado automaticamente
+                {expiresAt ? ` até ${new Date(expiresAt).toLocaleTimeString('pt-BR')}` : ''}.
               </p>
             )}
           </>

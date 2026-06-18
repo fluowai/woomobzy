@@ -206,6 +206,7 @@ type ParticipantInfo struct {
 type QRCodeEvent struct {
 	InstanceID uuid.UUID `json:"instance_id"`
 	QRCode     string    `json:"qr_code"`
+	ExpiresAt  time.Time `json:"expires_at"`
 }
 
 // InstanceStatusEvent is emitted when an instance status changes
@@ -213,6 +214,7 @@ type InstanceStatusEvent struct {
 	InstanceID uuid.UUID      `json:"instance_id"`
 	Status     InstanceStatus `json:"status"`
 	Phone      string         `json:"phone,omitempty"`
+	Error      string         `json:"error,omitempty"`
 }
 
 // HistoryImportedEvent is emitted after a WhatsApp history sync chunk is stored.

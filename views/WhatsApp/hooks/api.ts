@@ -446,7 +446,7 @@ export const instanceApi = {
     apiRequest(`/instances/${id}`, { method: 'DELETE' }),
 
   getQRCode: (id: string) =>
-    apiRequest<{ qr_code?: string; status: string }>(`/instances/${id}/qrcode`),
+    apiRequest<{ qr_code?: string; status: string; expires_at?: string }>(`/instances/${id}/qrcode`),
 
   connect: (id: string) =>
     apiRequest(`/instances/${id}/connect`, { method: 'POST' }),

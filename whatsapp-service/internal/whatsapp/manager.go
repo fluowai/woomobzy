@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
@@ -109,7 +110,7 @@ func (m *Manager) initializeSessionStore(ctx context.Context) error {
 	if m.sessionStore != nil {
 		return nil
 	}
-	container, err := sqlstore.New(ctx, "postgres", m.dbURI, waLog.Noop)
+	container, err := sqlstore.New(ctx, "pgx", m.dbURI, waLog.Noop)
 	if err != nil {
 		return fmt.Errorf("failed to initialize postgres session store: %w", err)
 	}
@@ -219,9 +220,7 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 
 	// Start connection in background
 	go func() {
-		connectCtx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
-		defer cancel()
-		if err := client.Connect(connectCtx); err != nil {
+		if err := client.Connect(client.ctx); err != nil {
 			m.logger.Error("Failed to connect instance",
 				zap.String("id", instanceID.String()),
 				zap.Error(err),
@@ -435,8 +434,10 @@ func (m *Manager) GetQRCode(ctx context.Context, instanceID uuid.UUID) (string, 
 	client, exists := m.clients[instanceID]
 	m.mu.RUnlock()
 
-	if exists && client.qrCode != "" {
-		return client.qrCode, nil
+	if exists {
+		if qrCode := client.CurrentQRCode(); qrCode != "" {
+			return qrCode, nil
+		}
 	}
 
 	// Try from database

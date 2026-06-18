@@ -144,8 +144,21 @@ func (r *InstanceRepo) List(ctx context.Context, tenantID *uuid.UUID) ([]models.
 
 // UpdateStatus updates an instance's status
 func (r *InstanceRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status models.InstanceStatus) error {
-	query := `UPDATE whatsapp_instances SET status = $1 WHERE id = $2`
+	query := `
+		UPDATE whatsapp_instances
+		SET status = $1,
+		    qr_code = CASE
+		        WHEN $1 IN ('connecting', 'disconnected') THEN ''
+		        ELSE qr_code
+		    END
+		WHERE id = $2`
 	_, err := r.db.Exec(ctx, query, status, id)
+	return err
+}
+
+// ClearQRCode invalidates any previously generated pairing code.
+func (r *InstanceRepo) ClearQRCode(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.Exec(ctx, `UPDATE whatsapp_instances SET qr_code = '' WHERE id = $1`, id)
 	return err
 }
 

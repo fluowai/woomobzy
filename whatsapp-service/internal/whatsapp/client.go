@@ -151,7 +151,7 @@ func (c *Client) Connect(ctx context.Context) error {
 		// Process QR codes
 		for evt := range qrChan {
 			switch evt.Event {
-			case "code":
+			case whatsmeow.QRChannelEventCode:
 				c.mu.Lock()
 				c.qrCode = evt.Code
 				c.mu.Unlock()
@@ -167,36 +167,21 @@ func (c *Client) Connect(ctx context.Context) error {
 				c.broadcastEvent("qr_code", models.QRCodeEvent{
 					InstanceID: c.instanceID,
 					QRCode:     evt.Code,
+					ExpiresAt:  time.Now().Add(evt.Timeout),
 				})
 
-			case "login":
+			case whatsmeow.QRChannelSuccess.Event:
 				c.mu.Lock()
 				c.connected = true
 				c.qrCode = ""
 				c.mu.Unlock()
 
-				jid := c.waClient.Store.ID.String()
-				phoneNum := phone.ExtractFromJID(jid)
+				c.markConnected(ctx)
 
-				c.instanceRepo.UpdateConnected(ctx, c.instanceID, phoneNum, jid)
-
-				c.logger.Info("Instance connected via QR",
-					zap.String("instance", c.instanceID.String()),
-					zap.String("phone", phoneNum),
-				)
-
-				c.broadcastEvent("instance_status", models.InstanceStatusEvent{
-					InstanceID: c.instanceID,
-					Status:     models.StatusConnected,
-					Phone:      phoneNum,
-				})
-
-			case "timeout":
-				c.logger.Warn("QR code timeout", zap.String("instance", c.instanceID.String()))
-				c.instanceRepo.UpdateStatus(ctx, c.instanceID, models.StatusDisconnected)
-
-			case "error":
-				c.logger.Error("QR code error", zap.String("instance", c.instanceID.String()))
+			default:
+				if message, isFailure := pairingFailureMessage(evt.Event); isFailure {
+					c.finishPairingWithError(ctx, message, evt.Error)
+				}
 			}
 		}
 	} else {
@@ -227,6 +212,51 @@ func (c *Client) Connect(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func pairingFailureMessage(event string) (string, bool) {
+	switch event {
+	case whatsmeow.QRChannelTimeout.Event:
+		return "O QR Code expirou. Gere um novo código e tente novamente.", true
+	case whatsmeow.QRChannelEventError:
+		return "O WhatsApp recusou o pareamento. Gere um novo QR Code.", true
+	case whatsmeow.QRChannelClientOutdated.Event:
+		return "A versão do conector WhatsApp está desatualizada.", true
+	case whatsmeow.QRChannelScannedWithoutMultidevice.Event:
+		return "Ative Aparelhos Conectados no WhatsApp e tente novamente.", true
+	case whatsmeow.QRChannelErrUnexpectedEvent.Event:
+		return "A sessão mudou durante o pareamento. Gere um novo QR Code.", true
+	default:
+		return "", false
+	}
+}
+
+func (c *Client) finishPairingWithError(ctx context.Context, message string, err error) {
+	c.mu.Lock()
+	c.connected = false
+	c.qrCode = ""
+	c.mu.Unlock()
+
+	fields := []zap.Field{
+		zap.String("instance", c.instanceID.String()),
+		zap.String("pairing_error", message),
+	}
+	if err != nil {
+		fields = append(fields, zap.Error(err))
+	}
+	c.logger.Warn("WhatsApp pairing finished with error", fields...)
+
+	if updateErr := c.instanceRepo.UpdateStatus(ctx, c.instanceID, models.StatusDisconnected); updateErr != nil {
+		c.logger.Error("Failed to clear QR pairing state",
+			zap.String("instance", c.instanceID.String()),
+			zap.Error(updateErr),
+		)
+	}
+	c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+		InstanceID: c.instanceID,
+		Status:     models.StatusDisconnected,
+		Error:      message,
+	})
 }
 
 // Disconnect cleanly disconnects the WhatsApp client
@@ -285,6 +315,13 @@ func (c *Client) IsConnected() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.connected
+}
+
+// CurrentQRCode returns the current in-memory QR code without a data race.
+func (c *Client) CurrentQRCode() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.qrCode
 }
 
 // GetWAClient returns the underlying WhatsMeow client (for sending messages)

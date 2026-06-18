@@ -39,6 +39,7 @@ export default [
       'scratch/**',
       'scripts/**',
       'coverage/**',
+      'outputs/**',
       'whatsapp-service/**',
       'ai_worker/**',
       'server/agro-intelligence/**',

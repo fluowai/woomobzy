@@ -25,5 +25,17 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "exclude": [
+    "dist",
+    "node_modules",
+    ".sessions",
+    "scratch",
+    "scripts",
+    "coverage",
+    "outputs",
+    "whatsapp-service",
+    "ai_worker",
+    "server/agro-intelligence"
+  ]
 }

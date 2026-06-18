@@ -1356,6 +1356,7 @@ const KanbanColumn = React.memo(({
   onMove,
 }: KanbanColumnProps) => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual is intentionally used here to avoid rendering hundreds of Kanban cards at once.
   const virtualizer = useVirtualizer({
     count: leads.length,
     getScrollElement: () => scrollRef.current,

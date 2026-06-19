@@ -235,6 +235,43 @@ export async function exchangeEndUserCode({ credentials, code, redirectUri }) {
   };
 }
 
+export async function refreshEndUserToken({ credentials, refreshToken }) {
+  if (!refreshToken) {
+    const error = new Error('A autorização Órulo do corretor expirou. Conecte a conta novamente.');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const { clientId, clientSecret } = normalizeCredentials(credentials);
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: refreshToken,
+    grant_type: 'refresh_token',
+  });
+
+  const response = await fetch(ORULO_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+
+  if (!response.ok) {
+    const error = new Error('Não foi possível renovar a autorização Órulo do corretor.');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const data = await response.json();
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token || refreshToken,
+    tokenType: data.token_type || 'Bearer',
+    expiresAt: new Date(Date.now() + Number(data.expires_in || 3600) * 1000).toISOString(),
+    connectedAt: new Date().toISOString(),
+  };
+}
+
 export async function fetchEndUserProtectedResource({ token, resource }) {
   if (!token) {
     const error = new Error('Corretor ainda nÃ£o conectou a conta Ã“rulo.');

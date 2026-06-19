@@ -465,6 +465,12 @@ export const chatApi = {
   list: (instanceId: string) =>
     apiRequest<Chat[]>(`/chats?instance_id=${instanceId}`),
 
+  ensureDirect: (instanceId: string, payload: { phone: string; name?: string }) =>
+    apiRequest<Chat>(`/chats/ensure?instance_id=${instanceId}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   deleteAll: (instanceId: string) =>
     apiRequest<DeleteChatsResponse>(`/chats?instance_id=${instanceId}`, { method: 'DELETE' }),
 

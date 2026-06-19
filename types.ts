@@ -626,15 +626,6 @@ export interface SiteSettings {
     };
     orulo?: {
       enabled?: boolean;
-      clientId?: string;
-      clientSecret?: string;
-      endUserAuth?: Record<string, {
-        accessToken?: string;
-        refreshToken?: string | null;
-        tokenType?: string;
-        expiresAt?: string;
-        connectedAt?: string;
-      }>;
     };
     vivareal?: {
       enabled?: boolean;

@@ -27,9 +27,20 @@ const SITE_SETTING_FIELDS = new Set([
 ]);
 
 function pickSiteSettingsPayload(body = {}) {
-  return Object.fromEntries(
+  const payload = Object.fromEntries(
     Object.entries(body).filter(([key]) => SITE_SETTING_FIELDS.has(key))
   );
+
+  if (payload.integrations?.orulo) {
+    payload.integrations = {
+      ...payload.integrations,
+      orulo: {
+        enabled: payload.integrations.orulo.enabled,
+      },
+    };
+  }
+
+  return payload;
 }
 
 function getMissingSchemaColumn(error) {

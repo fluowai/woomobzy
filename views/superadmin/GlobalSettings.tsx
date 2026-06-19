@@ -1,7 +1,8 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { Key, Save, Server, AlertTriangle } from 'lucide-react';
+import { oruloService } from '../../services/orulo';
+import { Key, Save, Server, AlertTriangle, Building2, CheckCircle2 } from 'lucide-react';
 
 const GlobalSettings: React.FC = () => {
   const [settings, setSettings] = useState({
@@ -11,6 +12,14 @@ const GlobalSettings: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [oruloClientId, setOruloClientId] = useState('');
+  const [oruloClientSecret, setOruloClientSecret] = useState('');
+  const [oruloStatus, setOruloStatus] = useState<{
+    configured: boolean;
+    clientId?: string;
+    source?: string;
+    updatedAt?: string | null;
+  }>({ configured: false });
 
   useEffect(() => {
     fetchSettings();
@@ -18,12 +27,15 @@ const GlobalSettings: React.FC = () => {
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('saas_settings')
-        .select('*')
-        .single();
+      const [{ data }, masterStatus] = await Promise.all([
+        supabase.from('saas_settings').select('*').single(),
+        oruloService.getMasterCredentials().catch(() => ({
+          configured: false,
+        })),
+      ]);
 
       if (data) setSettings(data);
+      setOruloStatus(masterStatus);
     } catch (error) {
       logger.error('Error fetching global settings:', error);
     } finally {
@@ -45,6 +57,20 @@ const GlobalSettings: React.FC = () => {
         .select();
 
       if (error) throw error;
+
+      if (oruloClientId.trim() || oruloClientSecret.trim()) {
+        if (!oruloClientId.trim() || !oruloClientSecret.trim()) {
+          throw new Error('Preencha Client ID e Client Secret da Órulo.');
+        }
+
+        const masterStatus = await oruloService.saveMasterCredentials(
+          oruloClientId.trim(),
+          oruloClientSecret.trim()
+        );
+        setOruloStatus(masterStatus);
+        setOruloClientId('');
+        setOruloClientSecret('');
+      }
 
       alert('Configurações salvas com sucesso! ✅');
     } catch (error: any) {
@@ -145,6 +171,67 @@ const GlobalSettings: React.FC = () => {
                     global_groq_key: e.target.value,
                   } as any)
                 }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+            <Building2 size={20} /> Órulo — credencial mestre da plataforma
+          </h3>
+
+          <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-4">
+            <div className="flex items-start gap-3">
+              {oruloStatus.configured ? (
+                <CheckCircle2 className="mt-0.5 text-emerald-600" size={20} />
+              ) : (
+                <AlertTriangle className="mt-0.5 text-amber-600" size={20} />
+              )}
+              <div>
+                <p className="font-semibold text-gray-800">
+                  {oruloStatus.configured
+                    ? 'Credencial mestre configurada'
+                    : 'Credencial mestre ainda não configurada'}
+                </p>
+                <p className="mt-1 text-sm text-gray-600">
+                  Esta credencial libera o catálogo para todas as imobiliárias. Cada corretor conecta
+                  a própria conta separadamente para acessar dados protegidos.
+                </p>
+                {oruloStatus.clientId && (
+                  <p className="mt-2 text-xs font-mono text-gray-500">
+                    Client ID atual: {oruloStatus.clientId}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client ID mestre
+              </label>
+              <input
+                type="password"
+                value={oruloClientId}
+                onChange={(event) => setOruloClientId(event.target.value)}
+                placeholder={oruloStatus.configured ? 'Informe para substituir' : 'Client ID da Órulo'}
+                autoComplete="off"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Client Secret mestre
+              </label>
+              <input
+                type="password"
+                value={oruloClientSecret}
+                onChange={(event) => setOruloClientSecret(event.target.value)}
+                placeholder={oruloStatus.configured ? 'Informe para substituir' : 'Client Secret da Órulo'}
+                autoComplete="new-password"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
               />
             </div>

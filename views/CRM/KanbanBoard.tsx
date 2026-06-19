@@ -894,6 +894,14 @@ const PIPELINE_STAGES = [
   },
 ];
 
+type PipelineStage = {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  custom?: boolean;
+};
+
 type IntentFilter = 'todos' | 'comprador' | 'vendedor' | 'parceria';
 
 const INTENT_FILTERS: Array<{
@@ -1076,14 +1084,128 @@ const openLeadWhatsAppConversation = async (
 // ─── Score Badge ─────────────────────────────────────────────────────────────
 const getScoreBadge = (score?: number | null) => {
   if (!score) return null;
-  if (score >= 80) return { icon: '🔥', bg: 'bg-orange-50 text-orange-600' };
-  if (score >= 60) return { icon: '🟢', bg: 'bg-emerald-50 text-emerald-700' };
-  if (score >= 40) return { icon: '🟡', bg: 'bg-amber-50 text-amber-700' };
-  return { icon: '⚪', bg: 'bg-slate-100 text-slate-500' };
+  if (score >= 80) return { label: 'Alto', bg: 'bg-orange-50 text-orange-600 ring-orange-100' };
+  if (score >= 60) return { label: 'Bom', bg: 'bg-emerald-50 text-emerald-700 ring-emerald-100' };
+  if (score >= 40) return { label: 'Medio', bg: 'bg-amber-50 text-amber-700 ring-amber-100' };
+  return { label: 'Baixo', bg: 'bg-slate-100 text-slate-500 ring-slate-200' };
+};
+
+const getCustomStageStorageKey = (profile: 'urbano' | 'rural') =>
+  `imobzy:crm:${profile}:custom-kanban-stages`;
+
+const normalizeStageId = (label: string) =>
+  label
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, 32);
+
+const loadCustomStages = (profile: 'urbano' | 'rural'): PipelineStage[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const saved = window.localStorage.getItem(getCustomStageStorageKey(profile));
+    const parsed = saved ? JSON.parse(saved) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((stage) => ({
+        id: String(stage.id || '').trim(),
+        label: String(stage.label || stage.id || '').trim(),
+        icon: LayoutGrid,
+        color: 'bg-slate-100 text-slate-700',
+        custom: true,
+      }))
+      .filter((stage) => stage.id && stage.label);
+  } catch {
+    return [];
+  }
+};
+
+const saveCustomStages = (profile: 'urbano' | 'rural', stages: PipelineStage[]) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(
+    getCustomStageStorageKey(profile),
+    JSON.stringify(stages.map(({ id, label }) => ({ id, label })))
+  );
+};
+
+const NewStageModal: React.FC<{
+  isOpen: boolean;
+  existingStages: PipelineStage[];
+  onClose: () => void;
+  onCreate: (stage: PipelineStage) => void;
+}> = ({ isOpen, existingStages, onClose, onCreate }) => {
+  const [label, setLabel] = useState('');
+
+  useEffect(() => {
+    if (isOpen) setLabel('');
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextLabel = normalizeStageId(label);
+    if (!nextLabel) {
+      toast.error('Informe o nome da etapa.');
+      return;
+    }
+    const alreadyExists = existingStages.some(
+      (stage) => stage.id.toLocaleLowerCase('pt-BR') === nextLabel.toLocaleLowerCase('pt-BR')
+    );
+    if (alreadyExists) {
+      toast.error('Essa etapa ja existe no Kanban.');
+      return;
+    }
+    onCreate({
+      id: nextLabel,
+      label: nextLabel,
+      icon: LayoutGrid,
+      color: 'bg-slate-100 text-slate-700',
+      custom: true,
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-950">Nova etapa</h3>
+            <p className="text-xs font-semibold text-slate-400">Adicione outra coluna ao funil.</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4 p-5">
+          <div>
+            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Nome da etapa
+            </label>
+            <input
+              autoFocus
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+              placeholder="Ex: Negociacao"
+              maxLength={32}
+            />
+          </div>
+          <button
+            type="submit"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-black text-white hover:bg-indigo-700"
+          >
+            <Plus size={16} /> Criar etapa
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 interface LeadCardProps {
   lead: Lead;
+  stages: PipelineStage[];
   selected: boolean;
   onOpen: (lead: Lead) => void;
   onToggle: (id: string) => void;
@@ -1094,6 +1216,7 @@ interface LeadCardProps {
 
 const LeadCard = React.memo(({
   lead,
+  stages,
   selected,
   onOpen,
   onToggle,
@@ -1114,14 +1237,14 @@ const LeadCard = React.memo(({
   return (
     <div
       onClick={() => onOpen(lead)}
-      className={`group relative cursor-pointer overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg ${
+      className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md ${
         selected
           ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50/20'
           : `border-slate-200 ${sla.borderClass}`
       }`}
     >
-      <div className="flex items-start gap-3 p-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[11px] font-black uppercase text-slate-700 ring-1 ring-slate-200">
+      <div className="flex items-start gap-2.5 p-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-black uppercase text-slate-700 ring-1 ring-slate-200">
           {getLeadInitials(lead)}
         </div>
 
@@ -1136,8 +1259,8 @@ const LeadCard = React.memo(({
               </p>
             </div>
             {scoreBadge && (
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide ${scoreBadge.bg}`}>
-                {scoreBadge.icon} {lead.lead_score}
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide ring-1 ${scoreBadge.bg}`}>
+                {scoreBadge.label} {lead.lead_score}
               </span>
             )}
           </div>
@@ -1157,7 +1280,7 @@ const LeadCard = React.memo(({
           </div>
 
           {lead.property && (
-            <div className="mt-2 flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-2">
+            <div className="mt-2 flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
               <Home size={12} className="shrink-0 text-slate-400" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[10px] font-bold text-slate-700">{lead.property.title}</p>
@@ -1279,7 +1402,7 @@ const LeadCard = React.memo(({
           </div>
           {scoreBadge && (
             <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black ${scoreBadge.bg}`}>
-              {scoreBadge.icon} {lead.lead_score}
+              {scoreBadge.label} {lead.lead_score}
             </span>
           )}
         </div>
@@ -1345,7 +1468,7 @@ const LeadCard = React.memo(({
         onChange={(e) => onMove(lead.id, e.target.value)}
         className="mx-2.5 mb-2 h-8 w-[calc(100%-1.25rem)] rounded-lg border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-700 md:hidden"
       >
-        {PIPELINE_STAGES.map((stage) => (
+        {stages.map((stage) => (
           <option key={stage.id} value={stage.id}>{stage.label}</option>
         ))}
       </select>
@@ -1355,7 +1478,8 @@ const LeadCard = React.memo(({
 LeadCard.displayName = 'LeadCard';
 
 interface KanbanColumnProps {
-  stage: (typeof PIPELINE_STAGES)[number];
+  stage: PipelineStage;
+  stages: PipelineStage[];
   leads: Lead[];
   total: number;
   selectedIds: Set<string>;
@@ -1371,6 +1495,7 @@ interface KanbanColumnProps {
 
 const KanbanColumn = React.memo(({
   stage,
+  stages,
   leads,
   total,
   selectedIds,
@@ -1418,6 +1543,7 @@ const KanbanColumn = React.memo(({
     >
       <LeadCard
         lead={lead}
+        stages={stages}
         selected={selectedIds.has(lead.id)}
         onOpen={onOpen}
         onToggle={onToggle}
@@ -1439,11 +1565,11 @@ const KanbanColumn = React.memo(({
       {(provided, snapshot) => (
         <section
           id={`kanban-stage-${stage.id}`}
-          className={`flex w-[calc(100vw-2rem)] max-w-[22rem] shrink-0 flex-col rounded-2xl border border-slate-100 md:w-72 md:max-w-none lg:w-80 ${
-            snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'
+          className={`flex h-full min-w-[17rem] flex-col overflow-hidden rounded-xl border border-slate-200 ${
+            snapshot.isDraggingOver ? 'bg-indigo-50/70 ring-2 ring-indigo-200' : 'bg-slate-50'
           }`}
         >
-          <header className="rounded-t-2xl border-b border-slate-100 bg-white/80 p-3 backdrop-blur">
+          <header className="border-b border-slate-200 bg-white px-3 py-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold uppercase ${stage.color}`}>
                 <stage.icon size={11} /> {stage.label}
@@ -1465,7 +1591,7 @@ const KanbanColumn = React.memo(({
               provided.innerRef(element);
             }}
             {...provided.droppableProps}
-            className="h-[calc(100vh-18rem)] min-h-[28rem] overflow-y-auto p-2 sm:p-3"
+            className="h-[calc(100vh-18rem)] min-h-[28rem] overflow-y-auto p-2"
           >
             <div
               style={{
@@ -1525,8 +1651,8 @@ type StagePageState = Record<string, {
   loadingMore: boolean;
 }>;
 
-const createEmptyStageState = (): StagePageState =>
-  Object.fromEntries(PIPELINE_STAGES.map((stage) => [
+const createEmptyStageState = (stages: PipelineStage[] = PIPELINE_STAGES): StagePageState =>
+  Object.fromEntries(stages.map((stage) => [
     stage.id,
     { nextCursor: null, hasMore: false, total: 0, loadingMore: false },
   ]));
@@ -1534,17 +1660,23 @@ const createEmptyStageState = (): StagePageState =>
 const KanbanBoard: React.FC = () => {
   const matchProfile: 'urbano' | 'rural' = window.location.pathname.startsWith('/rural') ? 'rural' : 'urbano';
   const navigate = useNavigate();
+  const [customStages, setCustomStages] = useState<PipelineStage[]>(() => loadCustomStages(matchProfile));
+  const pipelineStages = useMemo(
+    () => [...PIPELINE_STAGES, ...customStages],
+    [customStages]
+  );
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [stageState, setStageState] = useState<StagePageState>(createEmptyStageState);
+  const [stageState, setStageState] = useState<StagePageState>(() => createEmptyStageState(pipelineStages));
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStageModalOpen, setIsStageModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [mobileStageId, setMobileStageId] = useState(PIPELINE_STAGES[0].id);
+  const [mobileStageId, setMobileStageId] = useState(pipelineStages[0].id);
   const [intentFilter, setIntentFilter] = useState<IntentFilter>('todos');
 
   const { profile, isImpersonating } = useAuth();
@@ -1552,20 +1684,39 @@ const KanbanBoard: React.FC = () => {
   const targetOrgId =
     isSuperAdmin && !isImpersonating ? undefined : profile?.organization_id;
 
+  useEffect(() => {
+    setCustomStages(loadCustomStages(matchProfile));
+    setMobileStageId(PIPELINE_STAGES[0].id);
+  }, [matchProfile]);
+
+  const handleCreateStage = useCallback((stage: PipelineStage) => {
+    setCustomStages((prev) => {
+      const next = [...prev, stage];
+      saveCustomStages(matchProfile, next);
+      return next;
+    });
+    setStageState((prev) => ({
+      ...prev,
+      [stage.id]: { nextCursor: null, hasMore: false, total: 0, loadingMore: false },
+    }));
+    setMobileStageId(stage.id);
+    toast.success('Etapa criada no Kanban.');
+  }, [matchProfile]);
+
   const loadLeads = useCallback(async () => {
     if (!targetOrgId) return;
     try {
       setLoading(true);
       const intent = intentFilter === 'todos' ? null : intentFilter;
       const pages = await Promise.all(
-        PIPELINE_STAGES.map((stage) =>
+        pipelineStages.map((stage) =>
           leadService.listPage({ status: stage.id, intent, limit: 50, includeCount: true })
         )
       );
 
       setLeads(pages.flatMap((page) => page.leads));
       setStageState(Object.fromEntries(
-        PIPELINE_STAGES.map((stage, index) => [
+        pipelineStages.map((stage, index) => [
           stage.id,
           {
             nextCursor: pages[index].nextCursor,
@@ -1581,17 +1732,17 @@ const KanbanBoard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [targetOrgId, intentFilter]);
+  }, [targetOrgId, intentFilter, pipelineStages]);
 
   useEffect(() => {
     if (!targetOrgId) {
       setLeads([]);
-      setStageState(createEmptyStageState());
+      setStageState(createEmptyStageState(pipelineStages));
       setLoading(false);
       return;
     }
     loadLeads();
-  }, [loadLeads, targetOrgId]);
+  }, [loadLeads, pipelineStages, targetOrgId]);
 
   const loadMoreStage = useCallback(async (stageId: string) => {
     const current = stageState[stageId];
@@ -1639,7 +1790,7 @@ const KanbanBoard: React.FC = () => {
 
   const leadsByStage = useMemo(() => {
     const grouped = new Map<string, Lead[]>(
-      PIPELINE_STAGES.map((stage) => [stage.id, []])
+      pipelineStages.map((stage) => [stage.id, []])
     );
     for (const lead of leads) {
       let matches = true;
@@ -1668,7 +1819,7 @@ const KanbanBoard: React.FC = () => {
       if (matches) grouped.get(lead.status)?.push(lead);
     }
     return grouped;
-  }, [leads, normalizedSearch]);
+  }, [leads, normalizedSearch, pipelineStages]);
 
 
   const selectedIds = useMemo(() => new Set(selectedLeadIds), [selectedLeadIds]);
@@ -1834,17 +1985,24 @@ const KanbanBoard: React.FC = () => {
             {(Object.values(stageState) as StagePageState[keyof StagePageState][]).reduce((s, v) => s + (v.total || 0), 0)} leads ativos no funil
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
             <input
               type="text"
               placeholder="Buscar lead..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              className="h-9 w-52 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+              className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 sm:w-52"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setIsStageModalOpen(true)}
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-700"
+          >
+            <LayoutGrid size={15} /> Nova Etapa
+          </button>
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
@@ -1980,6 +2138,12 @@ const KanbanBoard: React.FC = () => {
         orgId={targetOrgId}
         matchProfile={matchProfile}
       />
+      <NewStageModal
+        isOpen={isStageModalOpen}
+        existingStages={pipelineStages}
+        onClose={() => setIsStageModalOpen(false)}
+        onCreate={handleCreateStage}
+      />
       <LeadDetailsModal
         lead={selectedLead}
         isOpen={isDetailsOpen}
@@ -2005,7 +2169,7 @@ const KanbanBoard: React.FC = () => {
 
       <div className="-mx-4 overflow-x-auto px-4 pb-3 md:hidden">
         <div className="flex min-w-max gap-2">
-          {PIPELINE_STAGES.map((stage) => (
+          {pipelineStages.map((stage) => (
             <button
               key={stage.id}
               type="button"
@@ -2027,13 +2191,14 @@ const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
-      <div className="-mx-4 flex-1 overflow-x-auto px-4 pb-4">
+      <div className="flex-1 overflow-x-auto pb-4">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex h-full gap-3 pb-2 sm:gap-4">
-            {PIPELINE_STAGES.map((stage) => (
+          <div className="grid h-full min-w-full grid-flow-col auto-cols-[minmax(17rem,1fr)] gap-3 pb-2">
+            {pipelineStages.map((stage) => (
               <KanbanColumn
                 key={stage.id}
                 stage={stage}
+                stages={pipelineStages}
                 leads={leadsByStage.get(stage.id) || []}
                 total={normalizedSearch
                   ? (leadsByStage.get(stage.id)?.length || 0)

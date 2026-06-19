@@ -55,6 +55,23 @@ export const oruloService = {
     });
   },
 
+  async disconnectEndUser() {
+    return callApi('/api/orulo/end-user/connection', {
+      method: 'DELETE',
+    });
+  },
+
+  async getMasterCredentials() {
+    return callApi('/api/orulo/master-credentials');
+  },
+
+  async saveMasterCredentials(clientId: string, clientSecret: string) {
+    return callApi('/api/orulo/master-credentials', {
+      method: 'PUT',
+      body: JSON.stringify({ clientId, clientSecret }),
+    });
+  },
+
   async updatePublicationLinks(buildingId: string, publicationLinks: Array<{ url?: string; active: boolean }>) {
     return callApi(`/api/orulo/publication-links/${buildingId}`, {
       method: 'POST',

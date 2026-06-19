@@ -30,7 +30,13 @@ const router = express.Router();
 
 // Proxy lazy: delega transparentemente para getSupabaseServer() na 1ª chamada
 // Isso permite usar supabase.from(), supabase.auth, etc. sem mudar o resto do código.
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  }
+});
 
 const storageHandler = (fn) => async (req, res) => {
   try {
@@ -260,7 +266,7 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
     console.log(`[Admin] 🏢 Fetching organizations for superadmin: ${req.user.email}`);
     const { data, error } = await supabase
       .from('organizations')
-      .select('*')
+      .select('*, plans ( id, name, price_monthly )')
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -292,7 +298,11 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       owner_name: owner_name || null,
       owner_email: owner_email || null
     };
-    if (plan_id) payload.plan_id = plan_id;
+    if (plan_id) {
+      payload.plan_id = plan_id;
+      payload.subscription_status = 'active';
+      payload.selected_plan_at = new Date().toISOString();
+    }
     
     const { data, error } = await supabase
       .from('organizations')
@@ -323,7 +333,13 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     if (name !== undefined) payload.name = name;
     if (slug !== undefined) payload.slug = slug;
     if (status !== undefined) payload.status = status;
-    if (plan_id !== undefined) payload.plan_id = plan_id || null;
+    if (plan_id !== undefined) {
+      payload.plan_id = plan_id || null;
+      if (plan_id) {
+        payload.subscription_status = 'active';
+        payload.selected_plan_at = new Date().toISOString();
+      }
+    }
     if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
     if (niche !== undefined) payload.niche = normalizeNiche(niche, name, slug, custom_domain, owner_email);
     if (owner_name !== undefined) payload.owner_name = owner_name;

@@ -52,6 +52,11 @@ function normalizePhone(value = '') {
   return digits;
 }
 
+function phoneSearchTail(value = '') {
+  const normalized = normalizePhone(value);
+  return normalized.length >= 8 ? normalized.slice(-8) : normalized;
+}
+
 function isValidBRPhone(value = '') {
   const phone = normalizePhone(value);
   return phone.startsWith('55') && (phone.length === 12 || phone.length === 13);
@@ -80,6 +85,25 @@ function resolveLeadName(...values) {
   return phoneFallback || 'Lead WhatsApp';
 }
 
+async function findLeadByNormalizedPhone(organizationId, phone) {
+  const normalizedPhone = normalizePhone(phone);
+  const tail = phoneSearchTail(normalizedPhone);
+
+  if (!tail) return null;
+
+  const { data, error } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .ilike('phone', `%${tail}%`)
+    .order('created_at', { ascending: false })
+    .limit(25);
+
+  if (error) throw error;
+
+  return (data || []).find((lead) => normalizePhone(lead.phone) === normalizedPhone) || null;
+}
+
 async function findOrCreateWhatsAppLead({ organizationId, phone, name, chatJid, source = 'WhatsApp' }) {
   const normalizedPhone = normalizePhone(phone);
   if (isGroupChatJid(chatJid)) {
@@ -94,19 +118,14 @@ async function findOrCreateWhatsAppLead({ organizationId, phone, name, chatJid, 
     throw error;
   }
 
-  const { data: existingLead, error: findError } = await supabase
-    .from('leads')
-    .select('*')
-    .eq('organization_id', organizationId)
-    .eq('phone', normalizedPhone)
-    .maybeSingle();
-
-  if (findError) throw findError;
+  const existingLead = await findLeadByNormalizedPhone(organizationId, normalizedPhone);
 
   const displayName = resolveLeadName(name, existingLead?.name, normalizedPhone);
   if (existingLead) {
     const updates = {
+      phone: normalizedPhone,
       chat_jid: chatJid || existingLead.chat_jid,
+      last_contacted_at: new Date().toISOString(),
     };
 
     if (isPlaceholderLeadName(existingLead.name)) updates.name = displayName;
@@ -274,14 +293,7 @@ router.get('/whatsapp/contact', verifyAuth, requireTenant, async (req, res) => {
     const phone = normalizePhone(req.query.phone);
     if (!isValidBRPhone(phone)) return res.status(400).json({ error: 'Telefone individual e obrigatorio' });
 
-    const { data: lead, error } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('organization_id', req.orgId)
-      .eq('phone', phone)
-      .maybeSingle();
-
-    if (error) throw error;
+    const lead = await findLeadByNormalizedPhone(req.orgId, phone);
 
     const tags = lead ? await getLeadTags(req.orgId, lead.id) : [];
     res.json({ success: true, lead, tags });
@@ -486,32 +498,65 @@ router.post('/whatsapp/priority', verifyAuth, requireTenant, async (req, res) =>
 router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { name, phone, email, property_id, source } = req.body;
+    const normalizedPhone = normalizePhone(phone);
     
     if (!name || !phone) {
       return res.status(400).json({ error: 'Nome e telefone são obrigatórios' });
     }
 
-    const { data, error } = await supabase
-      .from('leads')
-      .insert({
-        organization_id: req.orgId, 
-        name,
-        phone,
-        email,
-        property_id,
-        source: source || 'CRM / Manual',
-        ad_reference: req.body.ad_reference,
-        organic_channel: req.body.organic_channel,
-        campaign: req.body.campaign,
-        notes: req.body.notes,
-        budget: req.body.budget,
-        aptitude_interest: req.body.aptitude_interest,
-        status: 'Novo'
-      })
-      .select()
-      .single();
+    if (!isValidBRPhone(normalizedPhone)) {
+      return res.status(400).json({ error: 'Telefone brasileiro valido e obrigatorio' });
+    }
 
-    if (error) throw error;
+    const existingLead = await findLeadByNormalizedPhone(req.orgId, normalizedPhone);
+    let data;
+    if (existingLead) {
+      const { data: updated, error } = await supabase
+        .from('leads')
+        .update({
+          name: isPlaceholderLeadName(existingLead.name) ? name : existingLead.name,
+          phone: normalizedPhone,
+          email: email || existingLead.email,
+          property_id: property_id || existingLead.property_id,
+          source: existingLead.source || source || 'CRM / Manual',
+          ad_reference: req.body.ad_reference || existingLead.ad_reference,
+          organic_channel: req.body.organic_channel || existingLead.organic_channel,
+          campaign: req.body.campaign || existingLead.campaign,
+          notes: [existingLead.notes, req.body.notes].filter(Boolean).join('\n\n'),
+          budget: req.body.budget || existingLead.budget,
+          aptitude_interest: req.body.aptitude_interest || existingLead.aptitude_interest,
+          last_contacted_at: new Date().toISOString(),
+        })
+        .eq('id', existingLead.id)
+        .eq('organization_id', req.orgId)
+        .select()
+        .single();
+      if (error) throw error;
+      data = updated;
+    } else {
+      const { data: inserted, error } = await supabase
+        .from('leads')
+        .insert({
+          organization_id: req.orgId,
+          name,
+          phone: normalizedPhone,
+          email,
+          property_id,
+          source: source || 'CRM / Manual',
+          ad_reference: req.body.ad_reference,
+          organic_channel: req.body.organic_channel,
+          campaign: req.body.campaign,
+          notes: req.body.notes,
+          budget: req.body.budget,
+          aptitude_interest: req.body.aptitude_interest,
+          status: 'Novo'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      data = inserted;
+    }
 
     const forcedProfile = ['urbano', 'rural'].includes(req.body.match_profile)
       ? req.body.match_profile
@@ -525,7 +570,7 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
       profileOverride: forcedProfile,
     });
 
-    res.status(201).json({ success: true, lead: matchedLead });
+    res.status(existingLead ? 200 : 201).json({ success: true, lead: matchedLead });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -177,9 +177,17 @@ const TenantManager: React.FC = () => {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
+      if (
+        formData.plan_id &&
+        data.organization?.plan_id !== formData.plan_id
+      ) {
+        throw new Error(
+          'O servidor não confirmou a atribuição do plano selecionado'
+        );
+      }
 
       setIsModalOpen(false);
-      fetchTenants();
+      await fetchTenants();
     } catch (error: any) {
       logger.error('Error saving:', error);
       alert(

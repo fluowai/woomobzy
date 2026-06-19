@@ -85,7 +85,7 @@ func main() {
 
 	// Initialize handlers
 	instanceHandler := handlers.NewInstanceHandler(manager, instanceRepo, log)
-	chatHandler := handlers.NewChatHandler(chatRepo, contactRepo, log)
+	chatHandler := handlers.NewChatHandler(chatRepo, contactRepo, instanceRepo, log)
 	messageHandler := handlers.NewMessageHandler(messageRepo, mediaRepo, chatRepo, manager, log)
 
 	// Setup Gin router
@@ -145,6 +145,7 @@ func main() {
 		chats := api.Group("/chats")
 		{
 			chats.GET("", chatHandler.ListChats)
+			chats.POST("/ensure", chatHandler.EnsureDirectChat)
 			chats.DELETE("", chatHandler.DeleteAllChats)
 			chats.POST("/:id/read", chatHandler.MarkChatRead)
 			chats.PATCH("/:id/contact", chatHandler.UpdateContactName)

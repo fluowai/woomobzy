@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 import { oruloService } from '../services/orulo';
 import { portalService } from '../services/portals';
 import {
@@ -29,6 +30,7 @@ import ChannelsSettings from './admin/ChannelsSettings';
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
+  const { profile } = useAuth();
   const location = useLocation();
   const [openaiKey, setOpenaiKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
@@ -36,9 +38,6 @@ const SystemSettings: React.FC = () => {
   const [namoBanaKey, setNamoBanaKey] = useState('');
   const [asaasKey, setAsaasKey] = useState('');
   const [zapsignKey, setZapsignKey] = useState('');
-  const [oruloEnabled, setOruloEnabled] = useState(false);
-  const [oruloClientId, setOruloClientId] = useState('');
-  const [oruloClientSecret, setOruloClientSecret] = useState('');
   const [oruloBrokerConnected, setOruloBrokerConnected] = useState(false);
   const [oruloBrokerConnecting, setOruloBrokerConnecting] = useState(false);
   const [oruloBrokerExpiresAt, setOruloBrokerExpiresAt] = useState<string | null>(null);
@@ -67,15 +66,6 @@ const SystemSettings: React.FC = () => {
     if (settings?.integrations?.namoBana?.apiKey) setNamoBanaKey(settings.integrations.namoBana.apiKey);
     if (settings?.integrations?.asaas?.apiKey) setAsaasKey(settings.integrations.asaas.apiKey);
     if (settings?.integrations?.zapsign?.apiKey) setZapsignKey(settings.integrations.zapsign.apiKey);
-    if (settings?.integrations?.orulo) {
-      setOruloEnabled(settings.integrations.orulo.enabled ?? false);
-      setOruloClientId(settings.integrations.orulo.clientId || '');
-      setOruloClientSecret(settings.integrations.orulo.clientSecret || '');
-    } else {
-      setOruloEnabled(false);
-      setOruloClientId('');
-      setOruloClientSecret('');
-    }
     loadPortalConfigs();
   }, [settings]);
 
@@ -140,22 +130,18 @@ const SystemSettings: React.FC = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
+      const safeIntegrations = { ...(settings.integrations || {}) };
+      delete safeIntegrations.orulo;
       await updateSettings({
         ...settings,
         integrations: {
-          ...settings.integrations,
+          ...safeIntegrations,
           openai: { apiKey: openaiKey, model: 'gpt-4o' },
           groq: { apiKey: groqKey, model: 'llama-3.3-70b-versatile' },
           gemini: { apiKey: geminiKey },
           namoBana: { apiKey: namoBanaKey },
           asaas: { apiKey: asaasKey, environment: 'production' },
           zapsign: { apiKey: zapsignKey },
-          orulo: {
-            ...(settings.integrations?.orulo || {}),
-            enabled: oruloEnabled,
-            clientId: oruloClientId.trim(),
-            clientSecret: oruloClientSecret.trim(),
-          },
         },
       });
 
@@ -192,10 +178,88 @@ const SystemSettings: React.FC = () => {
     }
   };
 
+  const handleDisconnectOruloBroker = async () => {
+    try {
+      setOruloBrokerConnecting(true);
+      await oruloService.disconnectEndUser();
+      setOruloBrokerConnected(false);
+      setOruloBrokerExpiresAt(null);
+    } catch (error) {
+      logger.error('Erro ao desconectar corretor Orulo', error);
+    } finally {
+      setOruloBrokerConnecting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (profile?.role === 'broker') {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Integração Órulo</h1>
+          <p className="mt-2 text-sm text-text-secondary">
+            O catálogo da imobiliária já usa a credencial mestre da plataforma.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-6">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/10 p-3">
+              <Building2 className="text-sky-500" size={24} />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold text-text-primary">Minha conta Órulo</h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                Conecte sua própria conta para acessar contatos comerciais, arquivos, unidades e
+                outros dados protegidos.
+              </p>
+
+              <div className="mt-5 rounded-xl border border-border-subtle bg-bg-card p-4">
+                <p className="text-sm font-semibold text-text-primary">
+                  {oruloBrokerConnected ? 'Conta conectada' : 'Conta ainda não conectada'}
+                </p>
+                {oruloBrokerExpiresAt && (
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Autorização válida até{' '}
+                    {new Date(oruloBrokerExpiresAt).toLocaleString('pt-BR')}.
+                  </p>
+                )}
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {oruloBrokerConnected && (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectOruloBroker}
+                      disabled={oruloBrokerConnecting}
+                      className="btn-secondary disabled:opacity-60"
+                    >
+                      Desconectar
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleConnectOruloBroker}
+                    disabled={oruloBrokerConnecting}
+                    className="btn-primary disabled:opacity-60"
+                  >
+                    {oruloBrokerConnecting
+                      ? 'Conectando...'
+                      : oruloBrokerConnected
+                        ? 'Reconectar minha conta'
+                        : 'Conectar minha conta'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -477,7 +541,7 @@ const SystemSettings: React.FC = () => {
 
                 <div className="h-px bg-border-subtle" />
 
-                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-5 space-y-5">
+                <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-5 space-y-5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-2xl">
@@ -488,82 +552,52 @@ const SystemSettings: React.FC = () => {
                           Órulo Catálogo Urbano
                         </h4>
                         <p className="text-xs text-text-secondary mt-0.5">
-                          Credenciais exclusivas desta imobiliária para importar empreendimentos e tipologias.
+                          O catálogo usa a credencial mestre da plataforma, disponível para todas as imobiliárias.
                         </p>
                       </div>
                     </div>
-                    <label className="inline-flex items-center gap-3 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={oruloEnabled}
-                        onChange={(e) => setOruloEnabled(e.target.checked)}
-                        className="sr-only"
-                      />
-                      <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${oruloEnabled ? 'bg-primary' : 'bg-slate-300'}`}>
-                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${oruloEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
-                      </span>
-                      <span className="text-xs font-semibold text-text-secondary">
-                        {oruloEnabled ? 'Ativa' : 'Inativa'}
-                      </span>
-                    </label>
+                    <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600">
+                      Integração da plataforma
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
-                        Client ID
-                      </label>
-                      <input
-                        type="password"
-                        value={oruloClientId}
-                        onChange={(e) => setOruloClientId(e.target.value)}
-                        placeholder="Client ID fornecido pela Órulo"
-                        className="input-premium font-mono"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
-                        Client Secret
-                      </label>
-                      <input
-                        type="password"
-                        value={oruloClientSecret}
-                        onChange={(e) => setOruloClientSecret(e.target.value)}
-                        placeholder="Client Secret fornecido pela Órulo"
-                        className="input-premium font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-text-tertiary">
-                    Ao clicar em "Importar Órulo" no módulo urbano, o sistema usa estas credenciais apenas para a organização atual.
-                  </p>
-                </div>
-
-                  <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="rounded-xl border border-border-subtle bg-bg-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <h5 className="text-xs font-black uppercase tracking-widest text-text-primary">
-                        Corretor conectado
+                        Minha conta Órulo
                       </h5>
                       <p className="mt-1 text-xs text-text-secondary">
                         {oruloBrokerConnected
                           ? `Conta Ã“rulo autorizada${oruloBrokerExpiresAt ? ` atÃ© ${new Date(oruloBrokerExpiresAt).toLocaleString('pt-BR')}` : ''}.`
-                          : 'Conecte o corretor para consultar contatos, arquivos e dados protegidos em tempo real.'}
+                          : 'Cada corretor deve conectar a própria conta para consultar contatos, arquivos, unidades e outros dados protegidos.'}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleConnectOruloBroker}
-                      disabled={oruloBrokerConnecting || !oruloEnabled}
-                      className="btn-secondary text-xs uppercase tracking-widest font-bold disabled:opacity-60"
-                    >
-                      {oruloBrokerConnecting
-                        ? 'Conectando...'
-                        : oruloBrokerConnected
-                          ? 'Reconectar Corretor'
-                          : 'Conectar Corretor'}
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      {oruloBrokerConnected && (
+                        <button
+                          type="button"
+                          onClick={handleDisconnectOruloBroker}
+                          disabled={oruloBrokerConnecting}
+                          className="btn-secondary text-xs uppercase tracking-widest font-bold disabled:opacity-60"
+                        >
+                          Desconectar
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleConnectOruloBroker}
+                        disabled={oruloBrokerConnecting}
+                        className="btn-primary text-xs uppercase tracking-widest font-bold disabled:opacity-60"
+                      >
+                        {oruloBrokerConnecting
+                          ? 'Conectando...'
+                          : oruloBrokerConnected
+                            ? 'Reconectar minha conta'
+                            : 'Conectar minha conta'}
+                      </button>
+                    </div>
                   </div>
+                </div>
 
                 {/* Info Banner */}
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-3">

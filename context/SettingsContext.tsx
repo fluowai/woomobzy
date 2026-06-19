@@ -30,6 +30,15 @@ const normalizeBrandColor = (color?: string | null) => {
     : color;
 };
 
+const sanitizeClientIntegrations = (integrations: SiteSettings['integrations']) => {
+  if (!integrations) return integrations;
+  const safe = { ...integrations };
+  if (safe.orulo) {
+    safe.orulo = { enabled: safe.orulo.enabled };
+  }
+  return safe;
+};
+
 export const SettingsProvider: React.FC<{
   children: ReactNode;
   organizationId?: string;
@@ -120,7 +129,7 @@ export const SettingsProvider: React.FC<{
               linkedin: data.social_links?.linkedin || data.linkedin_url,
             },
             homeContent: layoutConfig.homeContent || {},
-            integrations: data.integrations,
+            integrations: sanitizeClientIntegrations(data.integrations),
           });
         }
       } catch (e) {
@@ -194,7 +203,7 @@ export const SettingsProvider: React.FC<{
           isLive: newSettings.isLive,
           homeContent: newSettings.homeContent,
         },
-        integrations: newSettings.integrations,
+        integrations: sanitizeClientIntegrations(newSettings.integrations),
         contact_email: newSettings.contactEmail,
         contact_phone: newSettings.contactPhone,
         updated_at: new Date().toISOString(),

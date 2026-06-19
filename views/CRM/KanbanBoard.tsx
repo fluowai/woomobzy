@@ -1192,6 +1192,41 @@ const isWithinLeadBudget = (lead: Lead, price?: number) => {
   return true;
 };
 
+// ─── SLA Semaphore ──────────────────────────────────────────────────────────
+// Calcula tempo parado e retorna classe de borda colorida:
+// Verde  = < 24h   (em dia)
+// Amarelo = 24–48h  (atenção)
+// Vermelho = > 48h  (crítico)
+const getSlaInfo = (lead: Lead): { borderClass: string; label: string; labelClass: string } => {
+  const ref = (lead as any).last_interaction_at || lead.createdAt;
+  if (!ref) return { borderClass: 'border-slate-200', label: '', labelClass: '' };
+  const hours = (Date.now() - new Date(ref).getTime()) / 3_600_000;
+  if (hours > 48) return {
+    borderClass: 'border-l-[3px] border-l-red-500',
+    label: `${Math.floor(hours)}h`,
+    labelClass: 'text-red-500',
+  };
+  if (hours > 24) return {
+    borderClass: 'border-l-[3px] border-l-amber-400',
+    label: `${Math.floor(hours)}h`,
+    labelClass: 'text-amber-500',
+  };
+  return {
+    borderClass: 'border-l-[3px] border-l-emerald-400',
+    label: `${Math.floor(hours)}h`,
+    labelClass: 'text-emerald-600',
+  };
+};
+
+// ─── Score Badge ─────────────────────────────────────────────────────────────
+const getScoreBadge = (score?: number | null) => {
+  if (!score) return null;
+  if (score >= 80) return { icon: '🔥', bg: 'bg-orange-50 text-orange-600' };
+  if (score >= 60) return { icon: '🟢', bg: 'bg-emerald-50 text-emerald-700' };
+  if (score >= 40) return { icon: '🟡', bg: 'bg-amber-50 text-amber-700' };
+  return { icon: '⚪', bg: 'bg-slate-100 text-slate-500' };
+};
+
 interface LeadCardProps {
   lead: Lead;
   selected: boolean;
@@ -1208,124 +1243,142 @@ const LeadCard = React.memo(({
   onToggle,
   onDelete,
   onMove,
-}: LeadCardProps) => (
-  <div
-    onClick={() => onOpen(lead)}
-    className={`cursor-pointer rounded-xl border bg-white p-3 shadow-sm transition-shadow hover:shadow-md ${
-      selected ? 'border-indigo-400 bg-indigo-50/30 ring-2 ring-indigo-500' : 'border-slate-200'
-    }`}
-  >
-    <div className="flex items-start gap-2">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold uppercase text-slate-500">
-        {getLeadInitials(lead)}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h4 className="truncate text-sm font-bold text-slate-800" title={getLeadDisplayName(lead)}>
-            {getLeadDisplayName(lead)}
-          </h4>
-          {lead.classification && (
-            <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-slate-600">
-              {lead.classification}
-            </span>
-          )}
-        </div>
-        <p className="mt-1 truncate text-[10px] font-medium text-slate-400">
-          Via {lead.source || 'CRM'}
-          {lead.campaign ? ` · ${lead.campaign}` : ''}
-        </p>
-      </div>
-      <input
-        type="checkbox"
-        checked={selected}
-        onClick={(event) => event.stopPropagation()}
-        onChange={() => onToggle(lead.id)}
-        className="h-4 w-4 cursor-pointer rounded border-slate-300 text-indigo-600"
-      />
-    </div>
+}: LeadCardProps) => {
+  const sla = getSlaInfo(lead);
+  const scoreBadge = getScoreBadge(lead.lead_score);
 
-    {(lead.lead_score || lead.ai_next_action || lead.next_visit_at) && (
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {!!lead.lead_score && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700">
-            <Target size={9} /> {lead.lead_score}
-          </span>
-        )}
-        {lead.ai_next_action && (
-          <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[9px] font-black text-indigo-700">
-            <Sparkles size={9} />
-            <span className="truncate">{lead.ai_next_action}</span>
-          </span>
-        )}
-        {lead.next_visit_at && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[9px] font-black text-blue-700">
-            <Calendar size={9} /> Visita
-          </span>
-        )}
-      </div>
-    )}
-
-    {lead.property && (
-      <div className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 p-2">
-        <Home size={13} className="shrink-0 text-slate-400" />
-        <div className="min-w-0">
-          <p className="truncate text-[10px] font-bold text-slate-700">{lead.property.title}</p>
-          <p className="text-[9px] font-semibold text-slate-500">
-            {Number(lead.property.price || 0).toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            })}
-          </p>
-        </div>
-      </div>
-    )}
-
-    <div className="mt-3 flex items-center justify-between">
-      <span className="flex items-center gap-1 text-[9px] font-bold uppercase text-slate-400">
-        <Clock3 size={10} />
-        {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '—'}
-      </span>
-      <div className="flex items-center gap-1">
+  return (
+    <div
+      onClick={() => onOpen(lead)}
+      className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-px ${
+        selected
+          ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50/20'
+          : `border-slate-200 ${sla.borderClass}`
+      }`}
+    >
+      {/* Quick Actions — aparecem no hover */}
+      <div className="absolute right-2 top-2 z-10 hidden items-center gap-1 group-hover:flex">
         <button
           type="button"
-          onClick={(event) => {
-            event.stopPropagation();
+          onClick={(e) => {
+            e.stopPropagation();
             const chatUrl = lead.chat_jid
               ? `/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid)}`
-              : `https://wa.me/${lead.phone.replace(/\D/g, '')}`;
+              : `https://wa.me/${(lead.phone || '').replace(/\D/g, '')}`;
             window.open(chatUrl, '_blank');
           }}
-          className="rounded-lg p-1.5 text-emerald-500 hover:bg-emerald-50"
-          title="Abrir WhatsApp"
+          className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
+          title="WhatsApp"
         >
-          <MessageCircle size={15} />
+          <MessageCircle size={12} />
         </button>
         <button
           type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete(lead.id, lead.name);
-          }}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-          title="Excluir lead"
+          onClick={(e) => { e.stopPropagation(); onDelete(lead.id, lead.name); }}
+          className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-slate-500 shadow-sm hover:bg-red-50 hover:text-red-500"
+          title="Excluir"
         >
-          <Trash2 size={15} />
+          <Trash2 size={12} />
         </button>
       </div>
-    </div>
 
-    <select
-      value={lead.status}
-      onClick={(event) => event.stopPropagation()}
-      onChange={(event) => onMove(lead.id, event.target.value)}
-      className="mt-3 h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-700 md:hidden"
-    >
-      {PIPELINE_STAGES.map((stage) => (
-        <option key={stage.id} value={stage.id}>{stage.label}</option>
-      ))}
-    </select>
-  </div>
-));
+      <div className="p-2.5">
+        {/* Linha 1: Avatar + Nome + Score */}
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold uppercase text-slate-600">
+            {getLeadInitials(lead)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h4 className="truncate text-[13px] font-semibold leading-tight text-slate-900" title={getLeadDisplayName(lead)}>
+              {getLeadDisplayName(lead)}
+            </h4>
+            <p className="truncate text-[10px] text-slate-400">
+              {lead.source || 'CRM'}
+            </p>
+          </div>
+          {scoreBadge && (
+            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black ${scoreBadge.bg}`}>
+              {scoreBadge.icon} {lead.lead_score}
+            </span>
+          )}
+          <input
+            type="checkbox"
+            checked={selected}
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => onToggle(lead.id)}
+            className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded border-slate-300 text-indigo-600 opacity-0 transition-opacity group-hover:opacity-100 data-[checked]:opacity-100"
+          />
+        </div>
+
+        {/* Linha 2: Imóvel de interesse (se houver) */}
+        {lead.property && (
+          <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5">
+            <Home size={11} className="shrink-0 text-slate-400" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[10px] font-semibold text-slate-700">{lead.property.title}</p>
+            </div>
+            {Number(lead.property.price) > 0 && (
+              <span className="shrink-0 text-[10px] font-bold text-slate-600">
+                {Number(lead.property.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 })}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Linha 3: Footer — SLA + Visita + IA */}
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            {sla.label && (
+              <span className={`flex items-center gap-1 text-[10px] font-bold ${sla.labelClass}`}>
+                <Clock3 size={9} /> {sla.label}
+              </span>
+            )}
+            {lead.next_visit_at && (
+              <span className="flex items-center gap-1 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-600">
+                <Calendar size={9} /> Visita
+              </span>
+            )}
+            {lead.ai_next_action && (
+              <span
+                title={lead.ai_next_action}
+                className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-50 text-indigo-500"
+              >
+                <Sparkles size={9} />
+              </span>
+            )}
+          </div>
+          {/* WhatsApp sempre visível (fallback para mobile) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              const chatUrl = lead.chat_jid
+                ? `/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid)}`
+                : `https://wa.me/${(lead.phone || '').replace(/\D/g, '')}`;
+              window.open(chatUrl, '_blank');
+            }}
+            className="flex items-center justify-center rounded-lg p-1 text-emerald-500 hover:bg-emerald-50 group-hover:hidden"
+            title="Abrir WhatsApp"
+          >
+            <MessageCircle size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* Select mobile */}
+      <select
+        value={lead.status}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => onMove(lead.id, e.target.value)}
+        className="mx-2.5 mb-2 h-8 w-[calc(100%-1.25rem)] rounded-lg border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-700 md:hidden"
+      >
+        {PIPELINE_STAGES.map((stage) => (
+          <option key={stage.id} value={stage.id}>{stage.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+});
 LeadCard.displayName = 'LeadCard';
 
 interface KanbanColumnProps {
@@ -1356,11 +1409,23 @@ const KanbanColumn = React.memo(({
   onMove,
 }: KanbanColumnProps) => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Calcula VGV total dos leads carregados nesta coluna
+  const columnVgv = useMemo(() => {
+    const total = leads.reduce((sum, lead) => {
+      const price = Number((lead as any).budget || lead.property?.price || 0);
+      return sum + (Number.isFinite(price) ? price : 0);
+    }, 0);
+    return total > 0
+      ? total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 })
+      : null;
+  }, [leads]);
+
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual is intentionally used here to avoid rendering hundreds of Kanban cards at once.
   const virtualizer = useVirtualizer({
     count: leads.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 190,
+    estimateSize: () => 120,
     overscan: 4,
     getItemKey: (index) => leads[index]?.id || index,
   });
@@ -1402,13 +1467,20 @@ const KanbanColumn = React.memo(({
             snapshot.isDraggingOver ? 'bg-slate-100' : 'bg-slate-50'
           }`}
         >
-          <header className="rounded-t-2xl border-b border-slate-100 bg-white/80 p-4 backdrop-blur">
-            <div className="flex items-center justify-between">
-              <span className={`flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-bold uppercase ${stage.color}`}>
-                <stage.icon size={12} /> {stage.label}
+          <header className="rounded-t-2xl border-b border-slate-100 bg-white/80 p-3 backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <span className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold uppercase ${stage.color}`}>
+                <stage.icon size={11} /> {stage.label}
               </span>
-              <span className="text-xs font-bold text-slate-400">{total}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-500">{total}</span>
+              </div>
             </div>
+            {columnVgv && (
+              <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
+                VGV <span className="font-black text-slate-600">{columnVgv}</span>
+              </p>
+            )}
           </header>
 
           <div
@@ -1590,14 +1662,27 @@ const KanbanBoard: React.FC = () => {
       PIPELINE_STAGES.map((stage) => [stage.id, []])
     );
     for (const lead of leads) {
-      const matchesSearch =
-        !normalizedSearch ||
-        getLeadDisplayName(lead).toLocaleLowerCase('pt-BR').includes(normalizedSearch) ||
-        lead.property?.title?.toLocaleLowerCase('pt-BR').includes(normalizedSearch);
-      if (matchesSearch) grouped.get(lead.status)?.push(lead);
+      let matches = true;
+
+      if (normalizedSearch === '__atrasados__') {
+        const ref = (lead as any).last_interaction_at || lead.createdAt;
+        const hours = ref ? (Date.now() - new Date(ref).getTime()) / 3_600_000 : 0;
+        matches = hours > 48 && lead.status !== 'Fechado' && lead.status !== 'Perdido';
+      } else if (normalizedSearch === '__visitas__') {
+        matches = Boolean(lead.next_visit_at);
+      } else if (normalizedSearch === '__score_alto__') {
+        matches = Number(lead.lead_score) >= 80;
+      } else if (normalizedSearch) {
+        matches =
+          getLeadDisplayName(lead).toLocaleLowerCase('pt-BR').includes(normalizedSearch) ||
+          Boolean(lead.property?.title?.toLocaleLowerCase('pt-BR').includes(normalizedSearch));
+      }
+
+      if (matches) grouped.get(lead.status)?.push(lead);
     }
     return grouped;
   }, [leads, normalizedSearch]);
+
 
   const selectedIds = useMemo(() => new Set(selectedLeadIds), [selectedLeadIds]);
 
@@ -1715,7 +1800,33 @@ const KanbanBoard: React.FC = () => {
     );
   }, []);
 
-  if (loading) return <div className="p-10 text-center">Carregando CRM...</div>;
+  if (loading) {
+    return (
+      <div className="flex h-full flex-col gap-4">
+        {/* Skeleton Header */}
+        <div className="flex items-center justify-between">
+          <div className="h-8 w-48 animate-pulse rounded-xl bg-slate-200" />
+          <div className="h-10 w-32 animate-pulse rounded-xl bg-slate-200" />
+        </div>
+        {/* Skeleton Filtros */}
+        <div className="flex gap-2">
+          {[1,2,3,4].map((i) => <div key={i} className="h-8 w-28 animate-pulse rounded-full bg-slate-200" />)}
+        </div>
+        {/* Skeleton Colunas */}
+        <div className="flex flex-1 gap-3 overflow-hidden">
+          {[1,2,3,4,5].map((col) => (
+            <div key={col} className="flex w-72 shrink-0 flex-col gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+              <div className="h-8 w-full animate-pulse rounded-xl bg-slate-200" />
+              {[1,2,3].map((row) => (
+                <div key={row} className="h-[90px] w-full animate-pulse rounded-xl bg-white shadow-sm" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (!targetOrgId) {
     return (
       <div className="p-10 text-center text-slate-600">
@@ -1725,32 +1836,93 @@ const KanbanBoard: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 sm:flex-row sm:items-center">
+    <div className="flex h-full flex-col gap-4">
+      {/* ── Header Enterprise ──────────────────────────────────── */}
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-black uppercase italic tracking-tighter text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Processo de Vendas
           </h1>
-          <p className="text-sm font-medium text-slate-500">Gestão inteligente de funil e leads.</p>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-400">
+            {Object.values(stageState).reduce((s, v) => s + (v.total || 0), 0)} leads ativos no funil
+          </p>
         </div>
-        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
             <input
               type="text"
-              placeholder="Buscar nos cards carregados..."
+              placeholder="Buscar lead..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 sm:w-64"
+              className="h-9 w-52 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
             />
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 sm:px-6"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
           >
-            <Plus size={18} /> NOVO LEAD
+            <Plus size={15} /> Novo Lead
           </button>
         </div>
+      </div>
+
+      {/* ── Filtros Rápidos Enterprise ─────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setSearchTerm('')}
+          className={`flex h-7 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition-colors ${
+            !searchTerm ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+          }`}
+        >
+          Todos
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchTerm('__ATRASADOS__')}
+          className={`flex h-7 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition-colors ${
+            searchTerm === '__ATRASADOS__' ? 'border-red-400 bg-red-50 text-red-600' : 'border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:text-red-500'
+          }`}
+        >
+          🔴 Atrasados
+          <span className="rounded-full bg-red-100 px-1.5 text-[10px] font-bold text-red-600">
+            {leads.filter(l => { const h = (Date.now() - new Date((l as any).last_interaction_at || l.createdAt || 0).getTime()) / 3_600_000; return h > 48 && l.status !== 'Fechado' && l.status !== 'Perdido'; }).length}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchTerm('__VISITAS__')}
+          className={`flex h-7 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition-colors ${
+            searchTerm === '__VISITAS__' ? 'border-blue-400 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-500'
+          }`}
+        >
+          📅 Visitas Agendadas
+          <span className="rounded-full bg-blue-100 px-1.5 text-[10px] font-bold text-blue-600">
+            {leads.filter(l => l.next_visit_at).length}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchTerm('__SCORE_ALTO__')}
+          className={`flex h-7 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition-colors ${
+            searchTerm === '__SCORE_ALTO__' ? 'border-orange-400 bg-orange-50 text-orange-600' : 'border-slate-200 bg-white text-slate-500 hover:border-orange-200 hover:text-orange-500'
+          }`}
+        >
+          🔥 Score Alto
+          <span className="rounded-full bg-orange-100 px-1.5 text-[10px] font-bold text-orange-600">
+            {leads.filter(l => Number(l.lead_score) >= 80).length}
+          </span>
+        </button>
+        {searchTerm && searchTerm.startsWith('__') && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm('')}
+            className="flex h-7 items-center gap-1 rounded-full bg-slate-900 px-3 text-[11px] font-semibold text-white"
+          >
+            ✕ Limpar filtro
+          </button>
+        )}
       </div>
 
       <NewLeadModal

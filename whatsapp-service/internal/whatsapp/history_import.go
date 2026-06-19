@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.mau.fi/whatsmeow/proto/waCompanionReg"
+	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/proto/waHistorySync"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"whatsapp-service/internal/models"
 	"whatsapp-service/pkg/phone"
@@ -265,6 +268,63 @@ func (c *Client) RequestAdditionalHistory(ctx context.Context, chat models.Chat,
 
 	_, err = c.waClient.SendPeerMessage(ctx, c.waClient.BuildHistorySyncRequest(msgInfo, count))
 	return err
+}
+
+func (c *Client) RequestFullHistoryOnDemand(ctx context.Context, sinceDays, perChat int) error {
+	if sinceDays <= 0 {
+		sinceDays = 60
+	}
+	if sinceDays > 3650 {
+		sinceDays = 3650
+	}
+	if perChat <= 0 {
+		perChat = 80
+	}
+	if perChat > 1000 {
+		perChat = 1000
+	}
+
+	from := time.Now().AddDate(0, 0, -sinceDays).Unix()
+	requestID := uuid.NewString()
+	msg := &waE2E.Message{
+		ProtocolMessage: &waE2E.ProtocolMessage{
+			Type: waE2E.ProtocolMessage_PEER_DATA_OPERATION_REQUEST_MESSAGE.Enum(),
+			PeerDataOperationRequestMessage: &waE2E.PeerDataOperationRequestMessage{
+				PeerDataOperationRequestType: waE2E.PeerDataOperationRequestType_FULL_HISTORY_SYNC_ON_DEMAND.Enum(),
+				FullHistorySyncOnDemandRequest: &waE2E.PeerDataOperationRequestMessage_FullHistorySyncOnDemandRequest{
+					RequestMetadata: &waE2E.FullHistorySyncOnDemandRequestMetadata{
+						RequestID:       proto.String(requestID),
+						BusinessProduct: proto.String("imobzy"),
+					},
+					HistorySyncConfig: &waCompanionReg.DeviceProps_HistorySyncConfig{
+						FullSyncDaysLimit:             proto.Uint32(uint32(sinceDays)),
+						RecentSyncDaysLimit:           proto.Uint32(uint32(sinceDays)),
+						InitialSyncMaxMessagesPerChat: proto.Uint32(uint32(perChat)),
+						OnDemandReady:                 proto.Bool(true),
+						CompleteOnDemandReady:         proto.Bool(true),
+						InlineInitialPayloadInE2EeMsg: proto.Bool(false),
+					},
+					FullHistorySyncOnDemandConfig: &waE2E.FullHistorySyncOnDemandConfig{
+						HistoryFromTimestamp: proto.Uint64(uint64(from)),
+						HistoryDurationDays:  proto.Uint32(uint32(sinceDays)),
+					},
+				},
+			},
+		},
+	}
+
+	_, err := c.waClient.SendPeerMessage(ctx, msg)
+	if err != nil {
+		return err
+	}
+
+	c.logger.Info("Requested full WhatsApp history on demand",
+		zap.String("instance", c.instanceID.String()),
+		zap.String("request_id", requestID),
+		zap.Int("since_days", sinceDays),
+		zap.Int("per_chat", perChat),
+	)
+	return nil
 }
 
 func (c *Client) SetHistoryImportCutoff(cutoff time.Time) {

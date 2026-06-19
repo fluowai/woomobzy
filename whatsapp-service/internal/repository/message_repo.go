@@ -62,6 +62,9 @@ func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
 	if msg.ID == uuid.Nil {
 		msg.ID = uuid.New()
 	}
+	if msg.DeliveryStatus == "" {
+		msg.DeliveryStatus = "sent"
+	}
 	if msg.MediaStatus == "" {
 		msg.MediaStatus = inferMessageMediaStatus(msg)
 	}

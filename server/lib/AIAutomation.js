@@ -261,13 +261,19 @@ Formato:
 
     if (!isCommercialLead) {
       if (isPersonalConversation) {
-        return {
-          skipped: true,
-          stopped: true,
-          reason: actionPlan.leadType || 'personal conversation ignored',
-          aiResult: actionPlan,
-          should_reply: false,
-        };
+        return this._upsertPersonalConversationCard({
+          supabase,
+          organizationId,
+          existingLead,
+          actionPlan,
+          message,
+          chat,
+          normalizedPhone,
+          agent,
+          tags: this._normalizeTags(actionPlan.tags, message),
+          source: 'WhatsApp Pessoal IA',
+          activityType: 'WhatsApp Pessoal IA',
+        });
       }
 
       if (!existingLead) {
@@ -490,12 +496,20 @@ Formato:
 
     if (!isCommercialLead) {
       if (isPersonalConversation) {
-        return {
-          chat_id: chat.id,
-          skipped: true,
-          stopped: true,
-          reason: actionPlan.leadType || 'personal conversation ignored',
-        };
+        return this._upsertPersonalConversationCard({
+          supabase,
+          organizationId,
+          existingLead,
+          actionPlan,
+          message: inboundMessages[inboundMessages.length - 1] || {},
+          chat,
+          normalizedPhone,
+          agent: null,
+          tags: this._normalizeTags(actionPlan.tags, {}),
+          source: 'WhatsApp Pessoal Importado IA',
+          activityType: 'WhatsApp Pessoal Importado IA',
+          transcript,
+        });
       }
 
       if (!existingLead) {
@@ -823,9 +837,7 @@ Formato:
       tags: personalTags,
     });
 
-    const personalExisting = existingLead && this._isPersonalLead(existingLead)
-      ? existingLead
-      : await this._findPersonalLeadByPhone(supabase, organizationId, normalizedPhone);
+    const personalExisting = existingLead || await this._findPersonalLeadByPhone(supabase, organizationId, normalizedPhone);
 
     let lead;
     if (personalExisting) {

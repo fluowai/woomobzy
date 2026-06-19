@@ -408,6 +408,9 @@ func (c *Client) handleMessage(evt *events.Message) {
 			evt.Message = evt.Message.GetDocumentWithCaptionMessage().GetMessage()
 		}
 	}
+	if c.logFullHistoryOnDemandResponse(evt) {
+		return
+	}
 
 	info := evt.Info
 	canonicalJID := canonicalChatJID(info)
@@ -641,6 +644,36 @@ func (c *Client) handleMessage(evt *events.Message) {
 			}
 		}(*msg, *chat, participantInfo)
 	}
+}
+
+func (c *Client) logFullHistoryOnDemandResponse(evt *events.Message) bool {
+	if evt == nil || evt.Message == nil {
+		return false
+	}
+	protoMsg := evt.Message.GetProtocolMessage()
+	if protoMsg == nil {
+		return false
+	}
+	peerResp := protoMsg.GetPeerDataOperationRequestResponseMessage()
+	if peerResp == nil || peerResp.GetPeerDataOperationRequestType() != waE2E.PeerDataOperationRequestType_FULL_HISTORY_SYNC_ON_DEMAND {
+		return false
+	}
+
+	for _, result := range peerResp.GetPeerDataOperationResult() {
+		fullResp := result.GetFullHistorySyncOnDemandRequestResponse()
+		if fullResp == nil {
+			continue
+		}
+		metadata := fullResp.GetRequestMetadata()
+		c.logger.Info("Received full WhatsApp history on-demand response",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("message_id", evt.Info.ID),
+			zap.String("stanza_id", peerResp.GetStanzaID()),
+			zap.String("request_id", metadata.GetRequestID()),
+			zap.String("response_code", fullResp.GetResponseCode().String()),
+		)
+	}
+	return true
 }
 
 func (c *Client) queueMessageMedia(ctx context.Context, msg *models.Message, waMessage *waE2E.Message) {

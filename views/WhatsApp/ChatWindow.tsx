@@ -576,7 +576,7 @@ export default ChatWindow;
 
 function isRenderableMessage(message: Message) {
   const content = (message.content || '').trim();
-  const hasMedia = Boolean(message.media_url || message.media_filename);
+  const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
   return message.type !== 'text' || content || hasMedia;
 }
 

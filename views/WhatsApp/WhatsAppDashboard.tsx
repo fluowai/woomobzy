@@ -24,6 +24,7 @@ import { useSearchParams } from 'react-router-dom';
 const HISTORY_PERIOD_OPTIONS = [
   { value: 7, label: '7 dias', chatLimit: 80, perChat: 40 },
   { value: 30, label: '30 dias', chatLimit: 120, perChat: 60 },
+  { value: 60, label: '60 dias', chatLimit: 160, perChat: 80 },
   { value: 90, label: '90 dias', chatLimit: 180, perChat: 80 },
   { value: 365, label: '1 ano', chatLimit: 200, perChat: 100 },
   { value: 0, label: 'Tudo', chatLimit: 200, perChat: 100 },
@@ -48,7 +49,7 @@ const WhatsAppDashboard: React.FC = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [importingHistory, setImportingHistory] = useState(false);
-  const [historyPeriodDays, setHistoryPeriodDays] = useState(30);
+  const [historyPeriodDays, setHistoryPeriodDays] = useState(60);
   const [historyImportStats, setHistoryImportStats] = useState({
     importedMessages: 0,
     importedChats: 0,
@@ -180,6 +181,9 @@ const WhatsAppDashboard: React.FC = () => {
         importedChats: prev.importedChats + Number(data.chats || 0),
       }));
       loadChats(selectedInstance.id);
+      if (selectedChat?.instance_id === selectedInstance.id) {
+        loadMessages(selectedChat.id, selectedInstance.id);
+      }
       toast.success(`Histórico importado: ${data.messages || 0} mensagens em ${data.chats || 0} conversas.`);
     });
 
@@ -350,7 +354,7 @@ const WhatsAppDashboard: React.FC = () => {
       startedAt: Date.now(),
     });
     try {
-      const selectedPeriod = HISTORY_PERIOD_OPTIONS.find((option) => option.value === historyPeriodDays) || HISTORY_PERIOD_OPTIONS[1];
+      const selectedPeriod = HISTORY_PERIOD_OPTIONS.find((option) => option.value === historyPeriodDays) || HISTORY_PERIOD_OPTIONS[2];
       const result = await instanceApi.importHistory(selectedInstance.id, {
         chat_limit: selectedPeriod.chatLimit,
         per_chat: selectedPeriod.perChat,
@@ -378,7 +382,7 @@ const WhatsAppDashboard: React.FC = () => {
   };
 
   const getHistoryPeriodLabel = (value = historyPeriodDays) => {
-    return HISTORY_PERIOD_OPTIONS.find((option) => option.value === value)?.label || '30 dias';
+    return HISTORY_PERIOD_OPTIONS.find((option) => option.value === value)?.label || '60 dias';
   };
 
   const formatElapsed = (seconds: number) => {

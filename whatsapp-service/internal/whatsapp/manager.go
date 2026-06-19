@@ -77,6 +77,7 @@ func NewManager(
 	automationEnabled bool,
 ) *Manager {
 	managerCtx, cancel := context.WithCancel(context.Background())
+	configureHistorySyncCapabilities()
 	return &Manager{
 		clients:           make(map[uuid.UUID]*Client),
 		connecting:        make(map[uuid.UUID]bool),
@@ -102,6 +103,19 @@ func NewManager(
 		ctx:               managerCtx,
 		cancel:            cancel,
 	}
+}
+
+func configureHistorySyncCapabilities() {
+	if store.DeviceProps.HistorySyncConfig == nil {
+		return
+	}
+	cfg := store.DeviceProps.HistorySyncConfig
+	cfg.FullSyncDaysLimit = proto.Uint32(30)
+	cfg.RecentSyncDaysLimit = proto.Uint32(30)
+	cfg.OnDemandReady = proto.Bool(true)
+	cfg.CompleteOnDemandReady = proto.Bool(true)
+	cfg.InitialSyncMaxMessagesPerChat = proto.Uint32(100)
+	cfg.InlineInitialPayloadInE2EeMsg = proto.Bool(true)
 }
 
 func (m *Manager) initializeSessionStore(ctx context.Context) error {
@@ -392,6 +406,8 @@ connected:
 	}
 
 	requested := 0
+	skippedNoAnchor := 0
+	skippedBeforeCutoff := 0
 	chatIDs := make([]uuid.UUID, 0, chatLimit)
 	for _, chat := range chats {
 		if requested >= chatLimit {
@@ -401,9 +417,11 @@ connected:
 
 		oldest, err := m.messageRepo.GetOldestByChat(ctx, chat.ID, instanceID)
 		if err != nil || oldest == nil || oldest.MessageID == "" {
+			skippedNoAnchor++
 			continue
 		}
 		if !cutoff.IsZero() && oldest.Timestamp.Before(cutoff) {
+			skippedBeforeCutoff++
 			continue
 		}
 
@@ -420,11 +438,31 @@ connected:
 
 	client.AnalyzeImportedHistory(chatIDs, len(chatIDs))
 
+	fullHistoryRequested := false
+	message := "Importacao solicitada. O WhatsApp enviara o historico disponivel em segundo plano e a IA analisara as conversas no CRM."
+	if requested == 0 && skippedNoAnchor > 0 {
+		if err := client.RequestFullHistoryOnDemand(ctx, sinceDays, perChat); err != nil {
+			m.logger.Warn("Failed to request full on-demand history",
+				zap.String("instance", instanceID.String()),
+				zap.Error(err),
+			)
+			message = "Nao havia mensagens ancora para solicitar historico por conversa, e o pedido completo do WhatsApp falhou. Reconecte a instancia e tente novamente."
+		} else {
+			fullHistoryRequested = true
+			requested = 1
+			message = "Importacao completa solicitada para o WhatsApp. O historico dos ultimos dias sera entregue em segundo plano e aparecera no painel conforme os blocos forem recebidos."
+		}
+	}
+
 	return &models.HistoryImportResponse{
-		Message:   "Importacao solicitada. O WhatsApp enviara o historico disponivel em segundo plano e a IA analisara as conversas no CRM.",
-		Requested: requested,
-		Analyzing: true,
-		SinceDays: sinceDays,
+		Message:              message,
+		Requested:            requested,
+		Analyzing:            true,
+		SinceDays:            sinceDays,
+		EligibleChats:        len(chatIDs),
+		SkippedNoAnchor:      skippedNoAnchor,
+		SkippedBeforeCutoff:  skippedBeforeCutoff,
+		FullHistoryRequested: fullHistoryRequested,
 	}, nil
 }
 

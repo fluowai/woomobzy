@@ -159,12 +159,16 @@ type HistoryImportRequest struct {
 
 // HistoryImportResponse summarizes a requested import/analysis run.
 type HistoryImportResponse struct {
-	Message       string `json:"message"`
-	Requested     int    `json:"requested"`
-	Analyzing     bool   `json:"analyzing"`
-	SinceDays     int    `json:"since_days,omitempty"`
-	ImportedChats int    `json:"imported_chats,omitempty"`
-	ImportedMsgs  int    `json:"imported_messages,omitempty"`
+	Message              string `json:"message"`
+	Requested            int    `json:"requested"`
+	Analyzing            bool   `json:"analyzing"`
+	SinceDays            int    `json:"since_days,omitempty"`
+	EligibleChats        int    `json:"eligible_chats,omitempty"`
+	SkippedNoAnchor      int    `json:"skipped_no_anchor,omitempty"`
+	SkippedBeforeCutoff  int    `json:"skipped_before_cutoff,omitempty"`
+	FullHistoryRequested bool   `json:"full_history_requested,omitempty"`
+	ImportedChats        int    `json:"imported_chats,omitempty"`
+	ImportedMsgs         int    `json:"imported_messages,omitempty"`
 }
 
 // DeleteChatsResponse summarizes a bulk chat cleanup.

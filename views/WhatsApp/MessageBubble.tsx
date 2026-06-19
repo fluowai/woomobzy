@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Check, CheckCheck, Clock, Contact, FileText, FileVideo, Image, MapPin } from 'lucide-react';
 import AudioMessagePlayer from './AudioMessagePlayer';
-import { formatPhoneDisplay, type Message } from './hooks/api';
+import { formatPhoneDisplay, mediaApi, type Message } from './hooks/api';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
@@ -17,10 +17,30 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenDetails }) => {
   const [imgError, setImgError] = useState(false);
+  const [mediaSourceUrl, setMediaSourceUrl] = useState(message.media_url || '');
   const isSent = message.is_from_me;
   const content = (message.content || '').trim();
-  const hasMedia = Boolean(message.media_url || message.media_filename);
+  const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
   const isRenderable = message.type !== 'text' || content || hasMedia;
+
+  useEffect(() => {
+    setMediaSourceUrl(message.media_url || '');
+    if (!message.media_id || message.type === 'audio') return;
+
+    let active = true;
+    mediaApi
+      .getUrl(message.media_id)
+      .then((result) => {
+        if (active && result?.url) setMediaSourceUrl(result.url);
+      })
+      .catch(() => {
+        if (active) setMediaSourceUrl(message.media_url || '');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [message.media_id, message.media_url, message.type]);
 
   if (!isRenderable) return null;
 
@@ -45,15 +65,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       case 'image':
         return (
           <div className="wa-bubble-media">
-            {message.media_url ? (
+            {mediaSourceUrl ? (
               <img
-                src={message.media_url}
+                src={mediaSourceUrl}
                 alt="Imagem"
                 className="wa-bubble-image"
                 loading="lazy"
                 onClick={(event) => {
                   event.stopPropagation();
-                  window.open(message.media_url, '_blank');
+                  window.open(mediaSourceUrl, '_blank');
                 }}
               />
             ) : (
@@ -75,9 +95,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       case 'video':
         return (
           <div className="wa-bubble-media">
-            {message.media_url ? (
+            {mediaSourceUrl ? (
               <video controls preload="none" className="wa-bubble-video" onClick={(event) => event.stopPropagation()}>
-                <source src={message.media_url} type={message.media_mimetype || 'video/mp4'} />
+                <source src={mediaSourceUrl} type={message.media_mimetype || 'video/mp4'} />
               </video>
             ) : (
               <div className="wa-bubble-media-placeholder">
@@ -92,7 +112,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       case 'document':
         return (
           <a
-            href={message.media_url || '#'}
+            href={mediaSourceUrl || '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="wa-bubble-document"

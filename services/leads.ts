@@ -50,6 +50,7 @@ export const leadService = {
 
   async listPage(params: {
     status: string;
+    intent?: 'comprador' | 'vendedor' | 'parceria' | null;
     limit?: number;
     cursor?: { created_at: string; id: string } | null;
     includeCount?: boolean;
@@ -59,6 +60,9 @@ export const leadService = {
       limit: String(params.limit || 50),
       include_count: String(params.includeCount !== false),
     });
+    if (params.intent) {
+      search.set('intent', params.intent);
+    }
     if (params.cursor) {
       search.set('cursor_created_at', params.cursor.created_at);
       search.set('cursor_id', params.cursor.id);

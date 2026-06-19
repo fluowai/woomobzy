@@ -31,6 +31,7 @@ import {
   DollarSign,
   Tag,
   Building2,
+  LayoutGrid,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -1122,6 +1123,45 @@ const PIPELINE_STAGES = [
   },
 ];
 
+type IntentFilter = 'todos' | 'comprador' | 'vendedor' | 'parceria';
+
+const INTENT_FILTERS: Array<{
+  id: IntentFilter;
+  label: string;
+  shortLabel: string;
+  description: string;
+  icon: React.ElementType;
+}> = [
+  {
+    id: 'todos',
+    label: 'Todos os leads',
+    shortLabel: 'Todos',
+    description: 'Funil completo',
+    icon: LayoutGrid,
+  },
+  {
+    id: 'comprador',
+    label: 'Compradores de fazenda',
+    shortLabel: 'Compradores',
+    description: 'Quem busca comprar',
+    icon: Target,
+  },
+  {
+    id: 'vendedor',
+    label: 'Vendedores de fazenda',
+    shortLabel: 'Vendedores',
+    description: 'Proprietarios que querem vender',
+    icon: Home,
+  },
+  {
+    id: 'parceria',
+    label: 'Corretores / parcerias',
+    shortLabel: 'Parcerias',
+    description: 'Corretores e ofertas de terceiros',
+    icon: Building2,
+  },
+];
+
 const buildMatchWhatsappMessage = (lead: Lead, matches: any[]) => {
   const firstName = lead.name?.split(' ')[0] || 'tudo bem';
   if (!matches.length) {
@@ -1568,6 +1608,7 @@ const KanbanBoard: React.FC = () => {
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [mobileStageId, setMobileStageId] = useState(PIPELINE_STAGES[0].id);
+  const [intentFilter, setIntentFilter] = useState<IntentFilter>('todos');
 
   const { profile, isImpersonating } = useAuth();
   const isSuperAdmin = profile?.role === 'superadmin';
@@ -1578,9 +1619,10 @@ const KanbanBoard: React.FC = () => {
     if (!targetOrgId) return;
     try {
       setLoading(true);
+      const intent = intentFilter === 'todos' ? null : intentFilter;
       const pages = await Promise.all(
         PIPELINE_STAGES.map((stage) =>
-          leadService.listPage({ status: stage.id, limit: 50, includeCount: true })
+          leadService.listPage({ status: stage.id, intent, limit: 50, includeCount: true })
         )
       );
 
@@ -1602,7 +1644,7 @@ const KanbanBoard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [targetOrgId]);
+  }, [targetOrgId, intentFilter]);
 
   useEffect(() => {
     if (!targetOrgId) {
@@ -1626,6 +1668,7 @@ const KanbanBoard: React.FC = () => {
     try {
       const page = await leadService.listPage({
         status: stageId,
+        intent: intentFilter === 'todos' ? null : intentFilter,
         limit: 50,
         cursor: current.nextCursor,
         includeCount: false,
@@ -1650,7 +1693,7 @@ const KanbanBoard: React.FC = () => {
       }));
       toast.error('Erro ao carregar mais leads: ' + error.message);
     }
-  }, [stageState]);
+  }, [intentFilter, stageState]);
 
   const normalizedSearch = useMemo(
     () => searchTerm.trim().toLocaleLowerCase('pt-BR'),
@@ -1675,7 +1718,9 @@ const KanbanBoard: React.FC = () => {
       } else if (normalizedSearch) {
         matches =
           getLeadDisplayName(lead).toLocaleLowerCase('pt-BR').includes(normalizedSearch) ||
-          Boolean(lead.property?.title?.toLocaleLowerCase('pt-BR').includes(normalizedSearch));
+          Boolean(lead.property?.title?.toLocaleLowerCase('pt-BR').includes(normalizedSearch)) ||
+          Boolean(lead.classification?.toLocaleLowerCase('pt-BR').includes(normalizedSearch)) ||
+          Boolean(lead.tags?.some((tag) => tag.toLocaleLowerCase('pt-BR').includes(normalizedSearch)));
       }
 
       if (matches) grouped.get(lead.status)?.push(lead);
@@ -1867,6 +1912,42 @@ const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {INTENT_FILTERS.map((filter) => {
+          const Icon = filter.icon;
+          const active = intentFilter === filter.id;
+          return (
+            <button
+              key={filter.id}
+              type="button"
+              onClick={() => {
+                setIntentFilter(filter.id);
+                setSearchTerm('');
+                setSelectedLeadIds([]);
+              }}
+              className={`flex min-h-[68px] items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors ${
+                active
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                active ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                <Icon size={17} />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-black">{filter.shortLabel}</span>
+                <span className={`block truncate text-[11px] font-semibold ${
+                  active ? 'text-white/65' : 'text-slate-400'
+                }`}>
+                  {filter.description}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
       {/* ── Filtros Rápidos Enterprise ─────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
         <button

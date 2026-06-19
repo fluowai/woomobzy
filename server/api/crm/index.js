@@ -171,6 +171,7 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
     const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 100);
     const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
     const status = String(req.query.status || '').trim();
+    const intent = String(req.query.intent || '').trim();
     const cursorCreatedAt = String(req.query.cursor_created_at || '').trim();
     const cursorId = String(req.query.cursor_id || '').trim();
     const includeCount = req.query.include_count !== 'false';
@@ -183,6 +184,9 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
       .order('id', { ascending: false });
 
     if (status) query = query.eq('status', status);
+    if (intent === 'comprador') query = query.eq('classification', 'Comprador Fazenda');
+    if (intent === 'vendedor') query = query.eq('classification', 'Vendedor Fazenda');
+    if (intent === 'parceria') query = query.eq('classification', 'Corretor/Parceria');
 
     if (cursorCreatedAt && cursorId) {
       query = query.or(

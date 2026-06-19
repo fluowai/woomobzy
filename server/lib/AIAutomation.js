@@ -10,6 +10,8 @@ const ENHANCED_LEAD_COLUMNS = [
   'ai_last_confidence',
   'next_follow_up_at',
   'next_visit_at',
+  'preferences',
+  'aptitude_interest',
 ];
 
 const PERSONAL_LEAD_TYPES = ['familia', 'amigo', 'fornecedor', 'interno', 'spam', 'pessoal', 'outro'];
@@ -138,12 +140,17 @@ Filtro obrigatorio:
 - leadName deve ser nome por extenso quando houver nome no contato ou na conversa; nao use apenas iniciais.
 
 Modo operacional:
-- Pense como uma equipe de agentes: SDR, matchmaker, agenda, documentos e fechamento.
+- Atue primeiro como SDR imobiliario: recepcione, qualifique e avance o lead antes de vender o imovel.
+- Descubra operacao, tipo de imovel, cidade/regiao, faixa de investimento, prazo, forma de pagamento e motivo da busca.
+- Nao despeje lista de imoveis no primeiro contato se faltarem dados essenciais; faca no maximo 2 perguntas objetivas por mensagem.
+- Recomende imoveis somente quando o lead pedir opcoes, citar um imovel especifico, demonstrar alta intencao ou ja tiver perfil minimo qualificado.
+- Se houver imoveis aderentes, convide para proximo passo: detalhe, visita, simulacao ou corretor humano.
 - Extraia dados para o CRM, nao apenas uma resposta de chat.
 - leadScore deve ser 0-100, combinando urgencia, orcamento, clareza de interesse, visita/proposta e qualidade do contato.
 - nextAction.type deve ser: qualify, recommend_property, schedule_visit, follow_up, collect_documents, notify_broker, close_deal, mark_lost.
 - Se houver pedido de visita ou horario claro, preencha visit.requested=true e visit.scheduledAt.
 - Se houver promessa de retorno, preencha nextAction.dueAt ou followUpAt em ISO.
+- reply deve ser curta, humana e com postura de SDR. Quando faltarem dados, pergunte apenas os proximos dados mais importantes.
 
 Formato:
 {
@@ -247,35 +254,20 @@ Formato:
 
     await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'user', content);
 
-    if (actionPlan.reply) {
-      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', actionPlan.reply);
-    }
-
-    const { data: existingLead } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .eq('phone', normalizedPhone)
-      .maybeSingle();
+    const existingLead = await this._findLeadByNormalizedPhone(supabase, organizationId, normalizedPhone);
 
     const isCommercialLead = this._shouldCreateLeadFromAI(actionPlan, content);
     const isPersonalConversation = this._isPersonalConversation(actionPlan, content);
 
     if (!isCommercialLead) {
       if (isPersonalConversation) {
-        return this._upsertPersonalConversationCard({
-          supabase,
-          organizationId,
-          existingLead,
-          actionPlan,
-          message,
-          chat,
-          normalizedPhone,
-          agent,
-          tags: this._normalizeTags(actionPlan.tags, message),
-          source: 'WhatsApp Pessoal IA',
-          activityType: 'WhatsApp Pessoal IA',
-        });
+        return {
+          skipped: true,
+          stopped: true,
+          reason: actionPlan.leadType || 'personal conversation ignored',
+          aiResult: actionPlan,
+          should_reply: false,
+        };
       }
 
       if (!existingLead) {
@@ -305,6 +297,7 @@ Formato:
     if (existingLead) {
       const updates = {
         name: existingLead.name || name,
+        phone: normalizedPhone,
         status: this._shouldAdvance(existingLead.status, stage) ? stage : existingLead.status,
         classification: actionPlan.classification || existingLead.classification,
         notes: [existingLead.notes, noteLine].filter(Boolean).join('\n\n'),
@@ -353,10 +346,17 @@ Formato:
     await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags });
     await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult: actionPlan });
 
+    let matchAvailable = false;
     try {
       lead = await matchLeadProperties({ supabase, lead, organizationId });
+      matchAvailable = true;
     } catch (error) {
       console.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
+    }
+
+    const reply = this._buildWhatsAppReply({ lead, actionPlan, content });
+    if (reply) {
+      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', reply);
     }
 
     return {
@@ -367,8 +367,12 @@ Formato:
       next_action: actionPlan.nextAction,
       agent_id: agent?.id || null,
       agent_name: agent?.name || '',
-      reply: actionPlan.reply || '',
-      should_reply: this._canAutoReply(agent, actionPlan),
+      reply,
+      opportunities: lead.matched_properties || [],
+      match_summary: lead.match_summary || '',
+      should_reply: this._canAutoReply(agent, { ...actionPlan, reply }, {
+        allowHandoff: matchAvailable && this._hasPropertyMatches(lead) && this._shouldRecommendProperties({ actionPlan, text: content }),
+      }),
     };
   }
 
@@ -479,32 +483,19 @@ Formato:
     });
     const actionPlan = this._buildActionPlan({ aiResult, text: transcript, messageType: 'text' });
 
-    const { data: existingLead } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .eq('phone', normalizedPhone)
-      .maybeSingle();
+    const existingLead = await this._findLeadByNormalizedPhone(supabase, organizationId, normalizedPhone);
 
     const isCommercialLead = this._shouldCreateLeadFromAI(actionPlan, transcript);
     const isPersonalConversation = this._isPersonalConversation(actionPlan, transcript);
 
     if (!isCommercialLead) {
       if (isPersonalConversation) {
-        return this._upsertPersonalConversationCard({
-          supabase,
-          organizationId,
-          existingLead,
-          actionPlan,
-          message: inboundMessages[inboundMessages.length - 1] || {},
-          chat,
-          normalizedPhone,
-          agent: null,
-          tags: this._normalizeTags(actionPlan.tags, {}),
-          source: 'WhatsApp Importado Pessoal IA',
-          activityType: 'WhatsApp Importado Pessoal IA',
-          transcript,
-        });
+        return {
+          chat_id: chat.id,
+          skipped: true,
+          stopped: true,
+          reason: actionPlan.leadType || 'personal conversation ignored',
+        };
       }
 
       if (!existingLead) {
@@ -539,6 +530,7 @@ Formato:
     if (existingLead) {
       const updates = {
         name: existingLead.name || name,
+        phone: normalizedPhone,
         status: this._shouldAdvance(existingLead.status, stage) ? stage : existingLead.status,
         classification: actionPlan.classification || existingLead.classification,
         notes: [existingLead.notes, noteLine].filter(Boolean).join('\n\n'),
@@ -726,9 +718,11 @@ Formato:
     };
   }
 
-  _buildLeadAIPatch({ actionPlan, stage, tags }) {
+  _buildLeadAIPatch({ actionPlan, stage, tags, existingLead }) {
     return {
       lead_score: actionPlan.leadScore,
+      preferences: this._buildLeadPreferences(actionPlan, existingLead?.preferences),
+      aptitude_interest: this._buildAptitudeInterest(actionPlan),
       ai_profile: {
         version: 'imobzy-agent-orchestrator-v1',
         temperature: actionPlan.temperature,
@@ -749,6 +743,38 @@ Formato:
       next_follow_up_at: actionPlan.followUpAt || null,
       next_visit_at: actionPlan.visit?.scheduledAt || null,
     };
+  }
+
+  _buildLeadPreferences(actionPlan = {}, currentPreferences = {}) {
+    const profile = actionPlan.interestProfile || {};
+    return {
+      ...(currentPreferences && typeof currentPreferences === 'object' ? currentPreferences : {}),
+      operation: profile.operation || 'indefinido',
+      type: profile.propertyType || 'indefinido',
+      tipo: profile.propertyType || 'indefinido',
+      city: profile.city || '',
+      cidade: profile.city || '',
+      region: profile.region || '',
+      regiao: profile.region || '',
+      payment: profile.payment || 'indefinido',
+      timeline: profile.timeline || 'indefinido',
+      budget: actionPlan.budget || 0,
+      source: 'whatsapp-ai-agent',
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  _buildAptitudeInterest(actionPlan = {}) {
+    const profile = actionPlan.interestProfile || {};
+    return [
+      profile.operation,
+      profile.propertyType,
+      profile.city,
+      profile.region,
+      actionPlan.temperature,
+    ].map((item) => String(item || '').trim().toLowerCase())
+      .filter((item) => item && item !== 'indefinido')
+      .slice(0, 8);
   }
 
   async _upsertPersonalConversationCard({
@@ -871,6 +897,23 @@ Formato:
     return data || null;
   }
 
+  async _findLeadByNormalizedPhone(supabase, organizationId, phone) {
+    const normalizedPhone = this._normalizeBRPhone(phone);
+    const tail = normalizedPhone.length >= 8 ? normalizedPhone.slice(-8) : normalizedPhone;
+    if (!tail) return null;
+
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .ilike('phone', `%${tail}%`)
+      .order('created_at', { ascending: false })
+      .limit(25);
+
+    if (error) throw error;
+    return (data || []).find((lead) => this._normalizeBRPhone(lead.phone) === normalizedPhone) || null;
+  }
+
   _isPersonalLead(lead = {}) {
     return lead.status === PERSONAL_STAGE || String(lead.source || '').toLowerCase().includes('pessoal');
   }
@@ -969,8 +1012,9 @@ Formato:
     return configuredInstances.some((instance) => accepted.has(String(instance).trim())) ? 'exact' : 'none';
   }
 
-  _canAutoReply(agent, actionPlan) {
-    if (!agent || !actionPlan?.reply || actionPlan.handoffRequired) return false;
+  _canAutoReply(agent, actionPlan, options = {}) {
+    if (!agent || !actionPlan?.reply) return false;
+    if (actionPlan.handoffRequired && !options.allowHandoff) return false;
 
     const config = agent?.handoff_rules?.__operational360 || {};
     const status = config.status || (agent.is_active ? 'Ativo' : 'Pausado');
@@ -983,6 +1027,10 @@ Formato:
       && autonomyLevel >= 3
       && channels.includes('whatsapp')
       && (agent.tools || []).includes('whatsapp');
+  }
+
+  _hasPropertyMatches(lead = {}) {
+    return Array.isArray(lead.matched_properties) && lead.matched_properties.length > 0;
   }
 
   async _resolveOrganizationId(instanceId) {
@@ -1302,6 +1350,82 @@ Formato:
       profile.timeline && profile.timeline !== 'indefinido' ? `prazo ${profile.timeline}` : '',
     ].filter(Boolean);
     return parts.length ? parts.join('; ') : 'nao identificado';
+  }
+
+  _buildWhatsAppReply({ lead, actionPlan, content = '' }) {
+    const matchMessage = String(lead?.match_whatsapp_message || '').trim();
+    const shouldRecommend = this._shouldRecommendProperties({ actionPlan, text: content });
+
+    if (matchMessage && this._hasPropertyMatches(lead) && shouldRecommend) {
+      return matchMessage.slice(0, 2500);
+    }
+
+    const matches = Array.isArray(lead?.matched_properties) ? lead.matched_properties : [];
+    if (matches.length && shouldRecommend) {
+      const firstName = String(lead?.name || '').split(' ')[0] || 'tudo bem';
+      const lines = [
+        `Ola ${firstName}, encontrei algumas oportunidades que combinam com o seu perfil:`,
+        '',
+        ...matches.slice(0, 3).flatMap((property, index) => [
+          `${index + 1}. ${property.title || 'Imovel selecionado'}`,
+          property.city || property.state ? `- ${[property.city, property.state].filter(Boolean).join(' / ')}` : '',
+          property.price ? `- ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property.price)}` : '',
+          ...(Array.isArray(property.reasons) ? property.reasons.slice(0, 2).map((reason) => `- ${reason}`) : []),
+          '',
+        ].filter(Boolean)),
+        'Quer que eu te envie mais detalhes ou prefere agendar uma visita?',
+      ];
+      return lines.join('\n').slice(0, 2500);
+    }
+
+    return (String(actionPlan?.reply || '').trim() || this._buildSdrQualificationReply(actionPlan)).slice(0, 1200);
+  }
+
+  _buildSdrQualificationReply(actionPlan = {}) {
+    const profile = actionPlan.interestProfile || {};
+    const missing = Array.isArray(profile.missingFields) ? profile.missingFields : [];
+    const questions = [];
+
+    if ((!profile.propertyType || profile.propertyType === 'indefinido') || missing.includes('propertyType')) {
+      questions.push('qual tipo de imovel voce procura');
+    }
+    if ((!profile.city && !profile.region) || missing.includes('city') || missing.includes('region')) {
+      questions.push('em qual cidade ou regiao');
+    }
+    if (!actionPlan.budget || missing.includes('budget')) {
+      questions.push('qual faixa de investimento');
+    }
+    if ((!profile.timeline || profile.timeline === 'indefinido') || missing.includes('timeline')) {
+      questions.push('para quando voce pretende avancar');
+    }
+
+    const selected = questions.slice(0, 2);
+    if (!selected.length) {
+      return 'Perfeito. Vou cruzar seu perfil com as melhores oportunidades e ja te retorno com as opcoes mais aderentes.';
+    }
+
+    return `Perfeito, vou te ajudar. Para filtrar boas oportunidades, me confirma ${selected.join(' e ')}?`;
+  }
+
+  _shouldRecommendProperties({ actionPlan = {}, text = '' }) {
+    const normalizedText = String(text)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    const requestedOptions = /\b(opcoes|oportunidades|imoveis|tem algo|me envia|manda|quais|catalogo|lista|disponiveis|visita|visitar|conhecer)\b/.test(normalizedText);
+    const profile = actionPlan.interestProfile || {};
+    const missing = Array.isArray(profile.missingFields) ? profile.missingFields.filter(Boolean) : [];
+    const hasMinimumProfile = Boolean(
+      profile.propertyType && profile.propertyType !== 'indefinido'
+      && (profile.city || profile.region)
+      && (actionPlan.budget || profile.payment !== 'indefinido' || profile.timeline !== 'indefinido')
+    );
+
+    return actionPlan.nextAction?.type === 'recommend_property'
+      || actionPlan.visit?.requested
+      || requestedOptions
+      || (hasMinimumProfile && missing.length <= 2)
+      || Number(actionPlan.leadScore || 0) >= 70;
   }
 
   _buildChatLink(chat = {}) {

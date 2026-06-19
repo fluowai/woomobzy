@@ -9,6 +9,7 @@ import {
   DraggableStateSnapshot,
 } from '@hello-pangea/dnd';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useNavigate } from 'react-router-dom';
 import { leadService } from '../../services/leads';
 import { Lead } from '../../types';
 import {
@@ -37,367 +38,128 @@ import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, X, Sparkles, TrendingUp, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
+import { chatApi, instanceApi } from '../WhatsApp/hooks/api';
 
+// ─── NewLeadModal ─────────────────────────────────────────────────────────────
 interface NewLeadModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  orgId?: string;
-  matchProfile: 'urbano' | 'rural';
+  isOpen: boolean; onClose: () => void; onSuccess: () => void;
+  orgId?: string; matchProfile: 'urbano' | 'rural';
 }
-
-const NewLeadModal: React.FC<NewLeadModalProps> = ({
-  isOpen,
-  onClose,
-  onSuccess,
-  orgId,
-  matchProfile,
-}) => {
+const NewLeadModal: React.FC<NewLeadModalProps> = ({ isOpen, onClose, onSuccess, orgId, matchProfile }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    source: 'Manual / CRM',
-    ad_reference: '',
-    organic_channel: '',
-    campaign: '',
-    notes: '',
-    budget: 0,
+    name: '', email: '', phone: '', source: 'Manual / CRM',
+    ad_reference: '', organic_channel: '', campaign: '', notes: '', budget: 0,
     aptitude_interest: [] as string[],
   });
-
   if (!isOpen) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault(); setLoading(true);
     try {
-      await leadService.create({
-        ...formData,
-        organization_id: orgId,
-        match_profile: matchProfile,
-      } as any);
-      onSuccess();
-      onClose();
-      toast.success('Lead cadastrado com sucesso!');
-    } catch (err: any) {
-      toast.error('Erro ao criar lead: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+      await leadService.create({ ...formData, organization_id: orgId, match_profile: matchProfile } as any);
+      onSuccess(); onClose(); toast.success('Lead cadastrado com sucesso!');
+    } catch (err: any) { toast.error('Erro ao criar lead: ' + err.message); }
+    finally { setLoading(false); }
   };
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
-        <div className="p-5 sm:p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white shrink-0">
-          <div className="flex items-center gap-3">
-            <Plus size={20} className="sm:w-6 sm:h-6" />
-            <h3 className="text-lg sm:text-xl font-black uppercase italic tracking-tighter">
-              Novo Lead
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg"
-          >
-            <X size={20} />
-          </button>
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white shrink-0">
+          <div className="flex items-center gap-3"><Plus size={20} /><h3 className="text-xl font-black uppercase italic tracking-tighter">Novo Lead</h3></div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg"><X size={20} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-8 space-y-4 overflow-y-auto flex-1">
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Nome Completo *
-            </label>
-            <input
-              required
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="Nome do lead"
-            />
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Nome Completo *</label>
+            <input required className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Nome do lead" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                Telefone *
-              </label>
-              <input
-                required
-                type="tel"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                placeholder="(00) 00000-0000"
-              />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Telefone *</label>
+              <input required type="tel" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="(00) 00000-0000" />
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                placeholder="email@exemplo.com"
-              />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Email</label>
+              <input type="email" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@exemplo.com" />
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                Orçamento Máximo (R$)
-              </label>
-              <input
-                type="number"
-                value={formData.budget}
-                onChange={(e) =>
-                  setFormData({ ...formData, budget: Number(e.target.value) })
-                }
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-                placeholder="Ex: 5000000"
-              />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Orçamento (R$)</label>
+              <input type="number" value={formData.budget} onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" placeholder="Ex: 5000000" />
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                Interesses / Aptidões
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {['Pecuária', 'Agricultura', 'Lazer', 'Investimento'].map((apt) => (
-                  <button
-                    key={apt}
-                    type="button"
-                    onClick={() => {
-                      const current = formData.aptitude_interest;
-                      const next = current.includes(apt)
-                        ? current.filter((a) => a !== apt)
-                        : [...current, apt];
-                      setFormData({ ...formData, aptitude_interest: next });
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                      formData.aptitude_interest.includes(apt)
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
-                    }`}
-                  >
-                    {apt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                Origem do Lead
-              </label>
-              <select
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-                value={formData.source}
-                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-              >
-                <option value="Manual / CRM">Manual / CRM</option>
-                <option value="Instagram">Instagram</option>
-                <option value="Facebook">Facebook</option>
-                <option value="Google Ads">Google Ads</option>
-                <option value="WhatsApp">WhatsApp</option>
-                <option value="Site / Landing Page">Site / Landing Page</option>
-                <option value="Portal Imobiliário">Portal Imobiliário</option>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Origem</label>
+              <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" value={formData.source} onChange={(e) => setFormData({ ...formData, source: e.target.value })}>
+                {['Manual / CRM','Instagram','Facebook','Google Ads','WhatsApp','Site / Landing Page','Portal Imobiliário'].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                Ref. Anúncio
-              </label>
-              <input
-                placeholder="Ex: Fazenda MS-120"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-                value={formData.ad_reference}
-                onChange={(e) => setFormData({ ...formData, ad_reference: e.target.value })}
-              />
-            </div>
           </div>
-
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Canal Orgânico / Campanha
-            </label>
-            <input
-              placeholder="Ex: Bio Instagram / Lançamento Verão"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-              value={formData.organic_channel}
-              onChange={(e) => setFormData({ ...formData, organic_channel: e.target.value })}
-            />
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Notas Iniciais</label>
+            <textarea className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold min-h-[80px] text-sm" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
           </div>
-
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Notas Iniciais
-            </label>
-            <textarea
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold min-h-[80px] text-sm"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            />
-          </div>
-          <button
-            disabled={loading}
-            className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-all disabled:opacity-50 text-sm"
-          >
-            {loading ? 'Salvando...' : 'Finalizar Cadastro'}
-          </button>
+          <button disabled={loading} className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-all disabled:opacity-50 text-sm">{loading ? 'Salvando...' : 'Finalizar Cadastro'}</button>
         </form>
       </div>
     </div>
   );
 };
 
+// ─── EditLeadModal ────────────────────────────────────────────────────────────
 const EditLeadModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  lead: Lead | null;
+  isOpen: boolean; onClose: () => void; onSuccess: () => void; lead: Lead | null;
 }> = ({ isOpen, onClose, onSuccess, lead }) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    source: '',
-    ad_reference: '',
-    organic_channel: '',
-    notes: '',
-    classification: '',
-  });
-
-  useEffect(() => {
-    if (lead) {
-      setFormData({
-        name: lead.name || '',
-        email: lead.email || '',
-        phone: lead.phone || '',
-        source: lead.source || '',
-        ad_reference: lead.ad_reference || '',
-        organic_channel: lead.organic_channel || '',
-        notes: lead.notes || '',
-        classification: lead.classification || '',
-      });
-    }
-  }, [lead]);
-
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', source: '', ad_reference: '', organic_channel: '', notes: '', classification: '' });
+  useEffect(() => { if (lead) setFormData({ name: lead.name||'', email: lead.email||'', phone: lead.phone||'', source: lead.source||'', ad_reference: lead.ad_reference||'', organic_channel: lead.organic_channel||'', notes: lead.notes||'', classification: lead.classification||'' }); }, [lead]);
   if (!isOpen || !lead) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await leadService.update(lead.id, formData);
-      onSuccess();
-      onClose();
-      toast.success('Lead atualizado com sucesso!');
-    } catch (err: any) {
-      toast.error('Erro ao atualizar lead: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+    e.preventDefault(); setLoading(true);
+    try { await leadService.update(lead.id, formData); onSuccess(); onClose(); toast.success('Lead atualizado com sucesso!'); }
+    catch (err: any) { toast.error('Erro ao atualizar lead: ' + err.message); }
+    finally { setLoading(false); }
   };
-
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
-        <div className="p-5 sm:p-8 border-b border-slate-50 flex items-center justify-between bg-indigo-900 text-white shrink-0">
-          <div className="flex items-center gap-3">
-            <User size={20} className="sm:w-6 sm:h-6" />
-            <h3 className="text-lg sm:text-xl font-black uppercase italic tracking-tighter">
-              Editar Lead
-            </h3>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
-            <X size={20} />
-          </button>
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-indigo-900 text-white shrink-0">
+          <div className="flex items-center gap-3"><User size={20} /><h3 className="text-xl font-black uppercase italic tracking-tighter">Editar Lead</h3></div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg"><X size={20} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-8 space-y-4 overflow-y-auto flex-1">
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Nome Completo
-            </label>
-            <input
-              required
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Nome Completo</label>
+            <input required className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                Telefone
-              </label>
-              <input
-                required
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Telefone</label>
+              <input required className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                Classificação
-              </label>
-              <select
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-                value={formData.classification}
-                onChange={(e) => setFormData({ ...formData, classification: e.target.value })}
-              >
-                <option value="Novo">Novo</option>
-                <option value="Interessado">Interessado</option>
-                <option value="Alta Prioridade">Alta Prioridade</option>
-                <option value="Desqualificado">Desqualificado</option>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Classificação</label>
+              <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" value={formData.classification} onChange={(e) => setFormData({ ...formData, classification: e.target.value })}>
+                {['Novo','Interessado','Alta Prioridade','Desqualificado'].map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Email</label>
+            <input type="email" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
           </div>
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Notas
-            </label>
-            <textarea
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold min-h-[100px] text-sm"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            />
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Notas</label>
+            <textarea className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold min-h-[100px] text-sm" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
           </div>
-          <button
-            disabled={loading}
-            className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-all disabled:opacity-50 text-sm"
-          >
-            {loading ? 'Salvando...' : 'Salvar Alterações'}
-          </button>
+          <button disabled={loading} className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] transition-all disabled:opacity-50 text-sm">{loading ? 'Salvando...' : 'Salvar Alterações'}</button>
         </form>
       </div>
     </div>
   );
 };
 
+// ─── LeadDetailsModal ─────────────────────────────────────────────────────────
 const LeadDetailsModal: React.FC<{
   lead: Lead | null;
   isOpen: boolean;
@@ -406,13 +168,13 @@ const LeadDetailsModal: React.FC<{
   onRefresh: () => void;
   onLeadUpdated: (lead: Lead) => void;
   matchProfile: 'urbano' | 'rural';
-}> = ({ lead, isOpen, onClose, onEdit, onRefresh, onLeadUpdated, matchProfile }) => {
+  navigate: (path: string) => void;
+}> = ({ lead, isOpen, onClose, onEdit, onRefresh, onLeadUpdated, matchProfile, navigate }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'activities' | 'investments'>('info');
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [newActivity, setNewActivity] = useState({ type: 'Nota', description: '' });
   const [savingActivity, setSavingActivity] = useState(false);
-  
   const [recommendations, setRecommendations] = useState<any>(null);
   const [loadingRecs, setLoadingRecs] = useState(false);
 
@@ -622,11 +384,11 @@ const LeadDetailsModal: React.FC<{
                       <p className="text-xs font-bold text-slate-500 mt-1">Dados principais para atendimento e qualificacao.</p>
                     </div>
                     <button
-                      onClick={() => window.open(`https://wa.me/${(lead.phone || '').replace(/\D/g, '')}`, '_blank')}
+                      onClick={() => openLeadWhatsAppConversation(lead, navigate)}
                       disabled={!lead.phone}
                       className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-40"
                     >
-                      <Send size={13} /> WhatsApp
+                      <Send size={13} /> Abrir conversa
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -635,6 +397,15 @@ const LeadDetailsModal: React.FC<{
                         <Phone size={13} /> Telefone
                       </div>
                       <p className="text-sm font-black text-slate-900 break-words">{lead.phone || 'Nao informado'}</p>
+                      {lead.chat_jid && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid || '')}`)}
+                          className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 border border-emerald-100 hover:bg-emerald-50"
+                        >
+                          <MessageCircle size={12} /> Ver conversa vinculada
+                        </button>
+                      )}
                     </div>
                     <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
@@ -1258,6 +1029,50 @@ const getSlaInfo = (lead: Lead): { borderClass: string; label: string; labelClas
   };
 };
 
+const getLeadWhatsAppFallbackUrl = (lead: Lead) =>
+  `https://wa.me/${(lead.phone || '').replace(/\D/g, '')}`;
+
+const openLeadWhatsAppConversation = async (
+  lead: Lead,
+  navigate: (path: string) => void,
+) => {
+  if (lead.phone) {
+    try {
+      const instances = await instanceApi.list();
+      const instance = instances.find((item) => item.status === 'connected') || instances[0];
+      if (instance?.id) {
+        const chat = await chatApi.ensureDirect(instance.id, {
+          phone: lead.phone,
+          name: getLeadDisplayName(lead),
+        });
+        const params = new URLSearchParams({
+          instanceId: instance.id,
+          chatId: chat.id,
+          chatJid: chat.chat_jid,
+        });
+        // Navega internamente para a aba de mensagens (sem abrir nova janela)
+        navigate(`/whatsapp?${params.toString()}`);
+        return;
+      }
+    } catch (error) {
+      logger.warn('Failed to open internal WhatsApp chat', error);
+    }
+  }
+
+  if (lead.chat_jid) {
+    // Fallback: navega internamente pelo JID da conversa
+    navigate(`/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid)}`);
+    return;
+  }
+
+  if (lead.phone) {
+    // Último recurso: abre wa.me externo
+    window.open(getLeadWhatsAppFallbackUrl(lead), '_blank');
+  } else {
+    toast.error('Este lead nao possui telefone cadastrado.');
+  }
+};
+
 // ─── Score Badge ─────────────────────────────────────────────────────────────
 const getScoreBadge = (score?: number | null) => {
   if (!score) return null;
@@ -1274,6 +1089,7 @@ interface LeadCardProps {
   onToggle: (id: string) => void;
   onDelete: (id: string, name: string) => void;
   onMove: (id: string, status: string) => void;
+  navigate: (path: string) => void;
 }
 
 const LeadCard = React.memo(({
@@ -1283,29 +1099,143 @@ const LeadCard = React.memo(({
   onToggle,
   onDelete,
   onMove,
+  navigate,
 }: LeadCardProps) => {
   const sla = getSlaInfo(lead);
   const scoreBadge = getScoreBadge(lead.lead_score);
+  const displayName = getLeadDisplayName(lead);
+  const classification = lead.classification || 'Sem classificacao';
+  const phoneDigits = (lead.phone || '').replace(/\D/g, '');
+  const phoneLabel = phoneDigits.length > 4 ? phoneDigits.slice(-4).padStart(8, '*') : lead.phone;
+  const visibleTags = (lead.tags || [])
+    .filter((tag) => !String(tag).startsWith('intent-'))
+    .slice(0, 2);
 
   return (
     <div
       onClick={() => onOpen(lead)}
-      className={`group relative cursor-pointer overflow-hidden rounded-xl border bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-px ${
+      className={`group relative cursor-pointer overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg ${
         selected
           ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50/20'
           : `border-slate-200 ${sla.borderClass}`
       }`}
     >
+      <div className="flex items-start gap-3 p-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[11px] font-black uppercase text-slate-700 ring-1 ring-slate-200">
+          {getLeadInitials(lead)}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 pr-5">
+              <h4 className="line-clamp-2 text-[13px] font-black leading-snug text-slate-950" title={displayName}>
+                {displayName}
+              </h4>
+              <p className="mt-0.5 truncate text-[10px] font-bold text-slate-400">
+                {lead.source || 'CRM'}{phoneLabel ? ` · ${phoneLabel}` : ''}
+              </p>
+            </div>
+            {scoreBadge && (
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide ${scoreBadge.bg}`}>
+                {scoreBadge.icon} {lead.lead_score}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="max-w-full truncate rounded-full bg-slate-50 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-slate-500 ring-1 ring-slate-200">
+              {classification}
+            </span>
+            {visibleTags.map((tag) => (
+              <span
+                key={tag}
+                className="max-w-[8rem] truncate rounded-full bg-indigo-50 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-indigo-600 ring-1 ring-indigo-100"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {lead.property && (
+            <div className="mt-2 flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-2">
+              <Home size={12} className="shrink-0 text-slate-400" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[10px] font-bold text-slate-700">{lead.property.title}</p>
+              </div>
+              {Number(lead.property.price) > 0 && (
+                <span className="shrink-0 text-[10px] font-black text-emerald-700">
+                  {Number(lead.property.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 })}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              {sla.label ? (
+                <span className={`inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-black ${sla.labelClass}`}>
+                  <Clock3 size={10} /> {sla.label}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-400">
+                  <Clock3 size={10} /> Em dia
+                </span>
+              )}
+              {lead.next_visit_at && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-600">
+                  <Calendar size={10} /> Visita
+                </span>
+              )}
+              {lead.ai_next_action && (
+                <span title={lead.ai_next_action} className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
+                  <Sparkles size={10} />
+                </span>
+              )}
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openLeadWhatsAppConversation(lead, navigate);
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                title="Abrir WhatsApp"
+              >
+                <MessageCircle size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDelete(lead.id, lead.name); }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 text-slate-400 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                title="Excluir"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <label className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-md bg-white/90 opacity-0 shadow-sm ring-1 ring-slate-200 transition-opacity group-hover:opacity-100 has-[:checked]:opacity-100">
+          <input
+            type="checkbox"
+            checked={selected}
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => onToggle(lead.id)}
+            className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 text-indigo-600"
+          />
+        </label>
+      </div>
+
+      <div className="hidden">
       {/* Quick Actions — aparecem no hover */}
       <div className="absolute right-2 top-2 z-10 hidden items-center gap-1 group-hover:flex">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            const chatUrl = lead.chat_jid
-              ? `/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid)}`
-              : `https://wa.me/${(lead.phone || '').replace(/\D/g, '')}`;
-            window.open(chatUrl, '_blank');
+            openLeadWhatsAppConversation(lead, navigate);
           }}
           className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
           title="WhatsApp"
@@ -1322,17 +1252,28 @@ const LeadCard = React.memo(({
         </button>
       </div>
 
-      <div className="p-2.5">
-        {/* Linha 1: Avatar + Nome + Score */}
+      <div className="p-3 flex flex-col gap-2">
+        {/* Linha 1: Nome no topo */}
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="text-[14px] font-bold leading-tight text-slate-900 line-clamp-2" title={getLeadDisplayName(lead)}>
+            {getLeadDisplayName(lead)}
+          </h4>
+          <input
+            type="checkbox"
+            checked={selected}
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => onToggle(lead.id)}
+            className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer rounded border-slate-300 text-indigo-600 opacity-0 transition-opacity group-hover:opacity-100 data-[checked]:opacity-100"
+          />
+        </div>
+
+        {/* Linha 2: Avatar + Origem + Score */}
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold uppercase text-slate-600">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[9px] font-bold uppercase text-indigo-600">
             {getLeadInitials(lead)}
           </div>
           <div className="min-w-0 flex-1">
-            <h4 className="truncate text-[13px] font-semibold leading-tight text-slate-900" title={getLeadDisplayName(lead)}>
-              {getLeadDisplayName(lead)}
-            </h4>
-            <p className="truncate text-[10px] text-slate-400">
+            <p className="truncate text-[10px] font-medium text-slate-500">
               {lead.source || 'CRM'}
             </p>
           </div>
@@ -1341,24 +1282,17 @@ const LeadCard = React.memo(({
               {scoreBadge.icon} {lead.lead_score}
             </span>
           )}
-          <input
-            type="checkbox"
-            checked={selected}
-            onClick={(e) => e.stopPropagation()}
-            onChange={() => onToggle(lead.id)}
-            className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded border-slate-300 text-indigo-600 opacity-0 transition-opacity group-hover:opacity-100 data-[checked]:opacity-100"
-          />
         </div>
 
-        {/* Linha 2: Imóvel de interesse (se houver) */}
+        {/* Linha 3: Imóvel de interesse (se houver) */}
         {lead.property && (
-          <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5">
+          <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5 border border-slate-100">
             <Home size={11} className="shrink-0 text-slate-400" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[10px] font-semibold text-slate-700">{lead.property.title}</p>
             </div>
             {Number(lead.property.price) > 0 && (
-              <span className="shrink-0 text-[10px] font-bold text-slate-600">
+              <span className="shrink-0 text-[10px] font-bold text-emerald-600">
                 {Number(lead.property.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 })}
               </span>
             )}
@@ -1392,10 +1326,7 @@ const LeadCard = React.memo(({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              const chatUrl = lead.chat_jid
-                ? `/whatsapp?chatJid=${encodeURIComponent(lead.chat_jid)}`
-                : `https://wa.me/${(lead.phone || '').replace(/\D/g, '')}`;
-              window.open(chatUrl, '_blank');
+              openLeadWhatsAppConversation(lead, navigate);
             }}
             className="flex items-center justify-center rounded-lg p-1 text-emerald-500 hover:bg-emerald-50 group-hover:hidden"
             title="Abrir WhatsApp"
@@ -1403,6 +1334,8 @@ const LeadCard = React.memo(({
             <MessageCircle size={13} />
           </button>
         </div>
+      </div>
+
       </div>
 
       {/* Select mobile */}
@@ -1433,6 +1366,7 @@ interface KanbanColumnProps {
   onToggle: (id: string) => void;
   onDelete: (id: string, name: string) => void;
   onMove: (id: string, status: string) => void;
+  navigate: (path: string) => void;
 }
 
 const KanbanColumn = React.memo(({
@@ -1447,6 +1381,7 @@ const KanbanColumn = React.memo(({
   onToggle,
   onDelete,
   onMove,
+  navigate,
 }: KanbanColumnProps) => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -1465,7 +1400,7 @@ const KanbanColumn = React.memo(({
   const virtualizer = useVirtualizer({
     count: leads.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 120,
+    estimateSize: () => 112,
     overscan: 4,
     getItemKey: (index) => leads[index]?.id || index,
   });
@@ -1488,6 +1423,7 @@ const KanbanColumn = React.memo(({
         onToggle={onToggle}
         onDelete={onDelete}
         onMove={onMove}
+        navigate={navigate}
       />
     </div>
   );
@@ -1597,6 +1533,7 @@ const createEmptyStageState = (): StagePageState =>
 
 const KanbanBoard: React.FC = () => {
   const matchProfile: 'urbano' | 'rural' = window.location.pathname.startsWith('/rural') ? 'rural' : 'urbano';
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stageState, setStageState] = useState<StagePageState>(createEmptyStageState);
   const [loading, setLoading] = useState(true);
@@ -1715,6 +1652,11 @@ const KanbanBoard: React.FC = () => {
         matches = Boolean(lead.next_visit_at);
       } else if (normalizedSearch === '__score_alto__') {
         matches = Number(lead.lead_score) >= 80;
+      } else if (normalizedSearch === '__novos__') {
+        const hours = lead.createdAt ? (Date.now() - new Date(lead.createdAt).getTime()) / 3_600_000 : 0;
+        matches = hours <= 24;
+      } else if (normalizedSearch === '__com_imovel__') {
+        matches = Boolean(lead.property);
       } else if (normalizedSearch) {
         matches =
           getLeadDisplayName(lead).toLocaleLowerCase('pt-BR').includes(normalizedSearch) ||
@@ -1889,7 +1831,7 @@ const KanbanBoard: React.FC = () => {
             Processo de Vendas
           </h1>
           <p className="mt-0.5 text-[11px] font-medium text-slate-400">
-            {Object.values(stageState).reduce((s, v) => s + (v.total || 0), 0)} leads ativos no funil
+            {(Object.values(stageState) as StagePageState[keyof StagePageState][]).reduce((s, v) => s + (v.total || 0), 0)} leads ativos no funil
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1948,6 +1890,7 @@ const KanbanBoard: React.FC = () => {
           );
         })}
       </div>
+
       {/* ── Filtros Rápidos Enterprise ─────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -1995,6 +1938,30 @@ const KanbanBoard: React.FC = () => {
             {leads.filter(l => Number(l.lead_score) >= 80).length}
           </span>
         </button>
+        <button
+          type="button"
+          onClick={() => setSearchTerm('__NOVOS__')}
+          className={`flex h-7 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition-colors ${
+            searchTerm === '__NOVOS__' ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-slate-200 bg-white text-slate-500 hover:border-emerald-200 hover:text-emerald-500'
+          }`}
+        >
+          ✨ Novos (24h)
+          <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] font-bold text-emerald-600">
+            {leads.filter(l => { const h = l.createdAt ? (Date.now() - new Date(l.createdAt).getTime()) / 3_600_000 : 0; return h <= 24; }).length}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchTerm('__COM_IMOVEL__')}
+          className={`flex h-7 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold transition-colors ${
+            searchTerm === '__COM_IMOVEL__' ? 'border-purple-400 bg-purple-50 text-purple-600' : 'border-slate-200 bg-white text-slate-500 hover:border-purple-200 hover:text-purple-500'
+          }`}
+        >
+          🏡 Com Imóvel
+          <span className="rounded-full bg-purple-100 px-1.5 text-[10px] font-bold text-purple-600">
+            {leads.filter(l => Boolean(l.property)).length}
+          </span>
+        </button>
         {searchTerm && searchTerm.startsWith('__') && (
           <button
             type="button"
@@ -2027,6 +1994,7 @@ const KanbanBoard: React.FC = () => {
           setSelectedLead(updatedLead);
         }}
         matchProfile={matchProfile}
+        navigate={navigate}
       />
       <EditLeadModal
         isOpen={isEditOpen}
@@ -2078,6 +2046,7 @@ const KanbanBoard: React.FC = () => {
                 onToggle={toggleLeadSelection}
                 onDelete={handleDeleteLead}
                 onMove={handleMoveLeadStage}
+                navigate={navigate}
               />
             ))}
           </div>

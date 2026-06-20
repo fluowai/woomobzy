@@ -112,15 +112,17 @@ const WhatsAppDashboard: React.FC = () => {
       // Update chat list
       setChats((prev) => {
         const existing = prev.find((c) => c.id === chat.id);
+        const unreadCount = selectedChat?.id === chat.id ? 0 : chat.unread_count;
         if (existing) {
           return prev
             .map((c) =>
               c.id === chat.id
                 ? {
                     ...c,
+                    ...chat,
                     last_message: normalizeMessagePreview(chat.last_message),
                     last_message_at: chat.last_message_at,
-                    unread_count: chat.unread_count,
+                    unread_count: unreadCount,
                   }
                 : c
             )
@@ -130,7 +132,7 @@ const WhatsAppDashboard: React.FC = () => {
               return dateB - dateA;
             });
         } else {
-          return [{ ...chat, last_message: normalizeMessagePreview(chat.last_message) }, ...prev];
+          return [{ ...chat, unread_count: unreadCount, last_message: normalizeMessagePreview(chat.last_message) }, ...prev];
         }
       });
 
@@ -423,6 +425,9 @@ const WhatsAppDashboard: React.FC = () => {
     ? chats.filter(
         (c) =>
           c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.display_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.phone_display || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
           normalizeMessagePreview(c.last_message).toLowerCase().includes(searchQuery.toLowerCase())
       )
     : chats;

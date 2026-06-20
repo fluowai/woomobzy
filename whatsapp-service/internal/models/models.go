@@ -47,6 +47,10 @@ type Chat struct {
 	InstanceID    uuid.UUID  `json:"instance_id" db:"instance_id"`
 	ChatJID       string     `json:"chat_jid" db:"chat_jid"`
 	Name          string     `json:"name" db:"name"`
+	DisplayName   string     `json:"display_name,omitempty"`
+	Phone         string     `json:"phone,omitempty"`
+	PhoneDisplay  string     `json:"phone_display,omitempty"`
+	PushName      string     `json:"push_name,omitempty"`
 	IsGroup       bool       `json:"is_group" db:"is_group"`
 	LastMessage   string     `json:"last_message,omitempty" db:"last_message"`
 	LastMessageAt *time.Time `json:"last_message_at,omitempty" db:"last_message_at"`

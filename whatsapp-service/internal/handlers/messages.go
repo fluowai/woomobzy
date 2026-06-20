@@ -141,8 +141,9 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 		return
 	}
 
-	// Send the message
-	if err := client.SendTextMessage(ctx, chat.ChatJID, req.Content); err != nil {
+	// Send the message and persist the real WhatsApp ID so receipts correlate.
+	messageID, sentAt, err := client.SendTextMessage(ctx, chat.ChatJID, req.Content)
+	if err != nil {
 		h.logger.Error("Failed to send message", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -158,17 +159,17 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 	msg := &models.Message{
 		InstanceID:  instanceID,
 		ChatID:      chatID,
-		MessageID:   fmt.Sprintf("sent_%d", time.Now().UnixNano()),
+		MessageID:   messageID,
 		SenderPhone: senderPhone,
 		SenderName:  "Me",
 		IsFromMe:    true,
 		IsGroup:     chat.IsGroup,
 		Type:        req.Type,
 		Content:     req.Content,
-		Timestamp:   time.Now(),
+		Timestamp:   sentAt,
 	}
 
-	if err := h.messageRepo.Create(ctx, msg); err != nil {
+	if _, err := h.messageRepo.Create(ctx, msg); err != nil {
 		h.logger.Error("Failed to save sent message", zap.Error(err))
 	}
 
@@ -176,7 +177,9 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 	now := time.Now()
 	chat.LastMessage = req.Content
 	chat.LastMessageAt = &now
-	h.chatRepo.Upsert(ctx, chat)
+	if err := h.chatRepo.Upsert(ctx, chat); err != nil {
+		h.logger.Warn("Failed to update sent chat preview", zap.Error(err))
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Message sent",
@@ -275,7 +278,7 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 		Timestamp:     time.Now(),
 	}
 
-	if err := h.messageRepo.Create(ctx, msg); err != nil {
+	if _, err := h.messageRepo.Create(ctx, msg); err != nil {
 		h.logger.Error("Failed to save sent media message", zap.Error(err))
 	} else if h.mediaRepo != nil {
 		if err := h.mediaRepo.UpsertFromMessage(ctx, msg, tenantID, client.StorageBucket()); err != nil {
@@ -289,7 +292,9 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 		chat.LastMessage = caption
 	}
 	chat.LastMessageAt = &now
-	h.chatRepo.Upsert(ctx, chat)
+	if err := h.chatRepo.Upsert(ctx, chat); err != nil {
+		h.logger.Warn("Failed to update sent media chat preview", zap.Error(err))
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Media sent",

@@ -569,9 +569,18 @@ func (c *Client) handleMessage(evt *events.Message) {
 		}
 	}
 
-	if err := c.messageRepo.Create(ctx, msg); err != nil {
+	inserted, err := c.messageRepo.Create(ctx, msg)
+	if err != nil {
 		c.logger.Error("Failed to save message", zap.Error(err))
 		return
+	}
+	if inserted && !info.IsFromMe {
+		unread, unreadErr := c.chatRepo.IncrementUnread(ctx, chat.ID, c.instanceID)
+		if unreadErr != nil {
+			c.logger.Warn("Failed to increment unread count", zap.Error(unreadErr))
+		} else {
+			chat.UnreadCount = unread
+		}
 	}
 	if isMediaMessageType(msgType) {
 		c.queueMessageMedia(ctx, msg, evt.Message)
@@ -625,7 +634,7 @@ func (c *Client) handleMessage(evt *events.Message) {
 				replyCtx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
 				defer cancel()
 
-				if err := c.SendTextMessage(replyCtx, savedChat.ChatJID, strings.TrimSpace(result.Reply)); err != nil {
+				if _, _, err := c.SendTextMessage(replyCtx, savedChat.ChatJID, strings.TrimSpace(result.Reply)); err != nil {
 					c.logger.Warn("AI automatic reply failed",
 						zap.String("instance", c.instanceID.String()),
 						zap.String("message_id", saved.MessageID),
@@ -814,26 +823,26 @@ func (c *Client) resolveAvatarURL(ctx context.Context, jid types.JID) string {
 	req, err := http.NewRequestWithContext(ctx, "GET", picture.URL, nil)
 	if err != nil {
 		c.logger.Warn("Failed to create request for avatar", zap.Error(err))
-		return picture.URL // fallback para a URL temporária
+		return ""
 	}
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		c.logger.Warn("Failed to download avatar", zap.Error(err))
-		return picture.URL
+		return ""
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Warn("Failed to download avatar, bad status", zap.Int("status", resp.StatusCode))
-		return picture.URL
+		return ""
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		c.logger.Warn("Failed to read avatar body", zap.Error(err))
-		return picture.URL
+		return ""
 	}
 
 	// Define o nome do arquivo e o path no MinIO
@@ -845,7 +854,7 @@ func (c *Client) resolveAvatarURL(ctx context.Context, jid types.JID) string {
 	publicURL, _, _, err := c.uploadToStorageWithDedup(ctx, "whatsapp/avatars", data, "image/jpeg", "avatar", "whatsapp_avatar", phoneNum)
 	if err != nil {
 		c.logger.Warn("Failed to upload avatar to storage", zap.Error(err))
-		return picture.URL
+		return ""
 	}
 
 	return publicURL

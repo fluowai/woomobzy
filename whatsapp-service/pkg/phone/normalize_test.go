@@ -51,3 +51,17 @@ func TestIsUserPhoneJID(t *testing.T) {
 		t.Fatal("expected group JID not to be supported as phone JID")
 	}
 }
+
+func TestGetDisplayNameRejectsPlaceholders(t *testing.T) {
+	tests := []string{"~", "+55------30", "84388272410703@lid", "5548988003260", "ES"}
+	for _, input := range tests {
+		got := GetDisplayName(input, "5548988003260")
+		if got != "+55 (48) 98800-3260" {
+			t.Fatalf("GetDisplayName(%q) = %q, want formatted phone", input, got)
+		}
+	}
+
+	if got := GetDisplayName("Elisangela Sanches", "5548988003260"); got != "Elisangela Sanches" {
+		t.Fatalf("expected real push name, got %q", got)
+	}
+}

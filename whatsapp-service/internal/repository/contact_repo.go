@@ -32,6 +32,8 @@ func (r *ContactRepo) Upsert(ctx context.Context, contact *models.Contact) error
 			display_name = CASE
 				WHEN COALESCE(whatsapp_contacts.display_name, '') = '' THEN EXCLUDED.display_name
 				WHEN lower(whatsapp_contacts.display_name) IN ('~', 'contato sem telefone') THEN EXCLUDED.display_name
+				WHEN whatsapp_contacts.display_name ILIKE '%@lid' THEN EXCLUDED.display_name
+				WHEN whatsapp_contacts.display_name LIKE '%--%' THEN EXCLUDED.display_name
 				WHEN regexp_replace(whatsapp_contacts.display_name, '\D', '', 'g') = whatsapp_contacts.phone
 					AND EXCLUDED.display_name != '' THEN EXCLUDED.display_name
 				ELSE whatsapp_contacts.display_name

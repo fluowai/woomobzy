@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"whatsapp-service/internal/models"
+	"whatsapp-service/pkg/phone"
 )
 
 // ChatRepo handles database operations for WhatsApp chats
@@ -33,6 +34,8 @@ func (r *ChatRepo) Upsert(ctx context.Context, chat *models.Chat) error {
 			name = CASE
 				WHEN COALESCE(whatsapp_chats.name, '') = '' THEN EXCLUDED.name
 				WHEN lower(whatsapp_chats.name) IN ('~', 'contato sem telefone') THEN EXCLUDED.name
+				WHEN whatsapp_chats.name ILIKE '%@lid' THEN EXCLUDED.name
+				WHEN whatsapp_chats.name LIKE '%--%' THEN EXCLUDED.name
 				WHEN whatsapp_chats.is_group
 					AND EXCLUDED.name != ''
 					AND EXCLUDED.name !~ '^Grupo \([^)]+\.\.\.\)$'
@@ -44,7 +47,7 @@ func (r *ChatRepo) Upsert(ctx context.Context, chat *models.Chat) error {
 			avatar_url = CASE WHEN EXCLUDED.avatar_url != '' THEN EXCLUDED.avatar_url ELSE whatsapp_chats.avatar_url END,
 			last_message = EXCLUDED.last_message,
 			last_message_at = EXCLUDED.last_message_at,
-			unread_count = COALESCE(whatsapp_chats.unread_count, 0) + 1
+			unread_count = COALESCE(whatsapp_chats.unread_count, 0)
 		RETURNING id, created_at, updated_at, unread_count`
 
 	if chat.ID == uuid.Nil {
@@ -62,6 +65,21 @@ func (r *ChatRepo) Upsert(ctx context.Context, chat *models.Chat) error {
 	).Scan(&chat.ID, &chat.CreatedAt, &chat.UpdatedAt, &chat.UnreadCount)
 }
 
+// IncrementUnread increments unread state only after a newly inserted inbound
+// message has been confirmed by MessageRepo.
+func (r *ChatRepo) IncrementUnread(ctx context.Context, chatID, instanceID uuid.UUID) (int, error) {
+	var unread int
+	err := r.db.QueryRow(ctx, `
+		UPDATE whatsapp_chats
+		SET unread_count = COALESCE(unread_count, 0) + 1,
+		    updated_at = NOW()
+		WHERE id = $1 AND instance_id = $2
+		RETURNING unread_count`,
+		chatID, instanceID,
+	).Scan(&unread)
+	return unread, err
+}
+
 // UpsertImported creates or updates a chat from historical sync without
 // increasing unread counters for old messages.
 func (r *ChatRepo) UpsertImported(ctx context.Context, chat *models.Chat) error {
@@ -73,6 +91,8 @@ func (r *ChatRepo) UpsertImported(ctx context.Context, chat *models.Chat) error 
 			name = CASE
 				WHEN COALESCE(whatsapp_chats.name, '') = '' THEN EXCLUDED.name
 				WHEN lower(whatsapp_chats.name) IN ('~', 'contato sem telefone') THEN EXCLUDED.name
+				WHEN whatsapp_chats.name ILIKE '%@lid' THEN EXCLUDED.name
+				WHEN whatsapp_chats.name LIKE '%--%' THEN EXCLUDED.name
 				WHEN whatsapp_chats.is_group
 					AND EXCLUDED.name != ''
 					AND EXCLUDED.name !~ '^Grupo \([^)]+\.\.\.\)$'
@@ -156,13 +176,21 @@ func (r *ChatRepo) GetByIDForTenant(ctx context.Context, chatID, instanceID, ten
 // ListByInstanceForTenant retrieves chats only when the instance belongs to the tenant.
 func (r *ChatRepo) ListByInstanceForTenant(ctx context.Context, instanceID, tenantID uuid.UUID) ([]models.Chat, error) {
 	query := `
-		SELECT c.id, c.instance_id, c.chat_jid, COALESCE(c.name, '') as name, c.is_group,
+		SELECT c.id, c.instance_id, c.chat_jid,
+		       COALESCE(NULLIF(ct.display_name, ''), NULLIF(ct.push_name, ''), NULLIF(c.name, ''), '') as display_name,
+		       COALESCE(c.name, '') as name,
+		       COALESCE(ct.phone, regexp_replace(split_part(c.chat_jid, '@', 1), '\D', '', 'g'), '') as phone,
+		       COALESCE(ct.push_name, '') as push_name,
+		       c.is_group,
 		       COALESCE(c.last_message, '') as last_message,
 		       c.last_message_at, COALESCE(c.unread_count, 0) as unread_count,
 		       COALESCE(c.avatar_url, '') as avatar_url,
 		       c.created_at, c.updated_at
 		FROM whatsapp_chats c
 		JOIN whatsapp_instances wi ON wi.id = c.instance_id
+		LEFT JOIN whatsapp_contacts ct
+		  ON ct.instance_id = c.instance_id
+		 AND ct.phone = regexp_replace(split_part(c.chat_jid, '@', 1), '\D', '', 'g')
 		WHERE c.instance_id = $1 AND wi.tenant_id = $2
 		  AND (
 		    (c.is_group AND c.chat_jid ILIKE '%@g.us')
@@ -185,18 +213,57 @@ func (r *ChatRepo) ListByInstanceForTenant(ctx context.Context, instanceID, tena
 	for rows.Next() {
 		var chat models.Chat
 		if err := rows.Scan(
-			&chat.ID, &chat.InstanceID, &chat.ChatJID, &chat.Name, &chat.IsGroup,
+			&chat.ID, &chat.InstanceID, &chat.ChatJID, &chat.DisplayName, &chat.Name,
+			&chat.Phone, &chat.PushName, &chat.IsGroup,
 			&chat.LastMessage, &chat.LastMessageAt, &chat.UnreadCount,
 			&chat.AvatarURL, &chat.CreatedAt, &chat.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan chat: %w", err)
 		}
+		chat = resolveChatIdentity(chat)
 		chats = append(chats, chat)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("failed to iterate chats: %w", err)
 	}
 	return chats, nil
+}
+
+func resolveChatIdentity(chat models.Chat) models.Chat {
+	if chat.IsGroup {
+		if chat.DisplayName == "" {
+			chat.DisplayName = chat.Name
+		}
+		return chat
+	}
+	if chat.Phone == "" {
+		chat.Phone = phone.ExtractFromJID(chat.ChatJID)
+	}
+	if chat.PhoneDisplay == "" && phone.IsValidBR(chat.Phone) {
+		chat.PhoneDisplay = phone.FormatDisplay(chat.Phone)
+	}
+	if phone.IsPlaceholderName(chat.DisplayName) {
+		chat.DisplayName = ""
+	}
+	if phone.IsPlaceholderName(chat.Name) {
+		chat.Name = ""
+	}
+	if chat.DisplayName == "" {
+		chat.DisplayName = phone.GetDisplayName(chat.PushName, firstNonEmptyString(chat.Phone, phone.ExtractFromJID(chat.ChatJID)))
+	}
+	if chat.Name == "" {
+		chat.Name = chat.DisplayName
+	}
+	return chat
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 // DeleteAllByInstanceForTenant removes all chats and messages for a tenant-owned instance.

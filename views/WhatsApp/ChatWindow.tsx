@@ -4,6 +4,7 @@ import {
   crmContactApi,
   formatPhone,
   formatPhoneDisplay,
+  getChatDisplayName,
   isValidBrazilianPhone,
   type Chat,
   type CrmAssignee,
@@ -79,13 +80,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const chatPhone = formatPhoneDisplay(chat.chat_jid);
-  const rawPhone = getPhoneFromJid(chat.chat_jid);
-  const chatName = chat.is_group
-    ? chat.name || 'Grupo sem nome'
-    : chat.name && chat.name !== '~'
-      ? chat.name
-      : chatPhone || 'Contato sem telefone';
+  const chatPhone = chat.phone_display || formatPhoneDisplay(chat.chat_jid);
+  const rawPhone = chat.phone || getPhoneFromJid(chat.chat_jid);
+  const chatName = chat.is_group ? chat.name || 'Grupo sem nome' : getChatDisplayName(chat);
 
   useEffect(() => {
     setContactNameDraft(chatName);
@@ -165,6 +162,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setSavingContact(true);
     try {
       const updated = await chatApi.updateContactName(chat.id, instanceId, nextName);
+      if (!chat.is_group && rawPhone) {
+        const result = await crmContactApi.update({ ...crmPayload(), name: nextName });
+        setCrmLead(result.lead || null);
+        setCrmTags(result.tags || []);
+      }
       onChatUpdated(updated);
       setEditingName(false);
     } finally {
@@ -256,6 +258,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       toast.success('Contato marcado como prioridade.');
     } catch (err: any) {
       toast.error(err?.message || 'Erro ao marcar prioridade.');
+    } finally {
+      setCrmActionLoading(false);
+    }
+  };
+
+  const createCrmTask = async () => {
+    if (!rawPhone || chat.is_group) return;
+    setCrmActionLoading(true);
+    try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const result = await crmContactApi.createTask({
+        ...crmPayload(),
+        title: `Retornar contato: ${chatName}`,
+        due_at: tomorrow.toISOString(),
+      });
+      setCrmLead(result.lead || null);
+      setCrmTags(result.tags || []);
+      toast.success('Tarefa criada para o atendimento.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao criar tarefa.');
     } finally {
       setCrmActionLoading(false);
     }
@@ -457,7 +480,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <Tag size={16} />
               Adicionar tag
             </button>
-            <button type="button" className="wa-contact-action">
+            <button
+              type="button"
+              className="wa-contact-action"
+              onClick={createCrmTask}
+              disabled={crmActionLoading || chat.is_group || !rawPhone}
+            >
               <Clock3 size={16} />
               Criar tarefa
             </button>

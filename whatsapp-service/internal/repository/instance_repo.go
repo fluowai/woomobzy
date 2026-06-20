@@ -29,19 +29,10 @@ func (r *InstanceRepo) Create(ctx context.Context, inst *models.Instance) error 
 		var exists bool
 		err := r.db.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM organizations WHERE id = $1)", inst.TenantID).Scan(&exists)
 		if err != nil {
-			r.logger.Error("Failed to check if organization exists", zap.Error(err))
+			return fmt.Errorf("failed to validate tenant: %w", err)
 		} else if !exists {
-			r.logger.Warn("Organization not found in database, auto-generating to prevent foreign key violation", zap.String("id", inst.TenantID.String()))
-			slugVal := "auto-" + inst.TenantID.String()
-			_, err = r.db.Exec(ctx, `
-				INSERT INTO organizations (id, name, slug)
-				VALUES ($1, 'Auto-Generated Organization', $2)
-				ON CONFLICT (id) DO NOTHING`,
-				inst.TenantID, slugVal,
-			)
-			if err != nil {
-				r.logger.Error("Failed to auto-generate organization", zap.Error(err))
-			}
+			r.logger.Warn("Rejecting WhatsApp instance creation for invalid tenant", zap.String("id", inst.TenantID.String()))
+			return fmt.Errorf("invalid tenant: organization not found")
 		}
 	}
 

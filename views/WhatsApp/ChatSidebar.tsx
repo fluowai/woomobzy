@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatPhoneDisplay, type Chat } from './hooks/api';
+import { formatPhoneDisplay, getChatDisplayName, type Chat } from './hooks/api';
 import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2, Clock3 } from 'lucide-react';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
@@ -98,10 +98,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   };
 
   const getChatName = (chat: Chat) => {
-    const formattedPhone = formatPhoneDisplay(chat.chat_jid);
-    if (chat.is_group) return chat.name || 'Grupo sem nome';
-    if (formattedPhone) return chat.name && chat.name !== '~' ? chat.name : formattedPhone;
-    return chat.name && chat.name !== '~' ? chat.name : 'Contato sem telefone';
+    return getChatDisplayName(chat) || formatPhoneDisplay(chat.chat_jid) || 'Contato sem telefone';
   };
 
   return (

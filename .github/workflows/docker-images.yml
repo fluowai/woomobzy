@@ -65,7 +65,7 @@ jobs:
             VITE_WHATSAPP_WS_URL=/api/whatsapp/ws
             VITE_SUPABASE_URL=runtime
             VITE_SUPABASE_ANON_KEY=runtime
-            VITE_PANEL_URL=https://crmimobzy.consultio.com.br
+            VITE_PANEL_URL=https://imobfluow.consultio.com.br
 
   deploy-portainer:
     runs-on: ubuntu-latest
@@ -92,7 +92,7 @@ jobs:
         if: steps.redeploy.outputs.triggered == 'true'
         env:
           PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL || 'https://imobfluow.com.br' }}
-          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL || 'https://app.imobfluow.com.br' }}
+          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL || 'https://imobfluow.consultio.com.br' }}
         run: |
           for attempt in $(seq 1 12); do
             system_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \

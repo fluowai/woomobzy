@@ -7,6 +7,7 @@ import (
 )
 
 var nonDigitRegex = regexp.MustCompile(`\D`)
+var jidLikeRegex = regexp.MustCompile(`(?i)@(?:s\.whatsapp\.net|c\.us|g\.us|lid|broadcast)$`)
 
 // Normalize removes all non-digit characters and leading zeros from a phone number.
 // Input examples: +5548988003260, (48) 98800-3260, 048988003260
@@ -50,7 +51,7 @@ func FormatDisplay(number string) string {
 // GetDisplayName returns the pushName if available, otherwise a formatted phone number.
 func GetDisplayName(pushName string, phone string) string {
 	trimmed := strings.TrimSpace(pushName)
-	if trimmed != "" {
+	if !IsPlaceholderName(trimmed) {
 		return trimmed
 	}
 	cleaned := Normalize(phone)
@@ -58,6 +59,35 @@ func GetDisplayName(pushName string, phone string) string {
 		return FormatDisplay(cleaned)
 	}
 	return cleaned
+}
+
+// IsPlaceholderName identifies names that should never win over pushname,
+// CRM/manual names or a complete phone fallback.
+func IsPlaceholderName(value string) bool {
+	clean := strings.TrimSpace(value)
+	if clean == "" {
+		return true
+	}
+	lower := strings.ToLower(clean)
+	switch lower {
+	case "~", "me", "contato sem telefone", "telefone nao identificado", "telefone não identificado", "lead whatsapp":
+		return true
+	}
+	if jidLikeRegex.MatchString(lower) || IsLIDJID(lower) {
+		return true
+	}
+	digits := nonDigitRegex.ReplaceAllString(clean, "")
+	if len(digits) >= 2 && (strings.Contains(clean, "*") || strings.Contains(clean, "•") || strings.Contains(clean, "…") || strings.Contains(clean, "...") || strings.Contains(clean, "--")) {
+		return true
+	}
+	if len(digits) >= 8 && len(digits) == len([]rune(clean)) {
+		return true
+	}
+	letters := regexp.MustCompile(`[A-Za-zÀ-ÿ]`).FindAllString(clean, -1)
+	if len(letters) > 0 && len(letters) <= 3 && len(digits) == 0 {
+		return true
+	}
+	return false
 }
 
 // ExtractFromJID extracts the phone number from a WhatsApp JID.

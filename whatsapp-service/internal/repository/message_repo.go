@@ -22,8 +22,9 @@ func NewMessageRepo(db *pgxpool.Pool, logger *zap.Logger) *MessageRepo {
 	return &MessageRepo{db: db, logger: logger}
 }
 
-// Create inserts a new message
-func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
+// Create inserts or enriches a message and reports whether it was newly
+// inserted. Callers use this to keep unread counters idempotent.
+func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) (bool, error) {
 	query := `
 		INSERT INTO whatsapp_messages (
 			id, instance_id, chat_id, message_id, sender_phone, sender_name,
@@ -57,7 +58,7 @@ func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
 			media_retry_count = GREATEST(EXCLUDED.media_retry_count, whatsapp_messages.media_retry_count),
 			quoted_message_id = COALESCE(NULLIF(EXCLUDED.quoted_message_id, ''), whatsapp_messages.quoted_message_id),
 			timestamp = EXCLUDED.timestamp
-		RETURNING id, created_at`
+		RETURNING id, created_at, (xmax = 0) AS inserted`
 
 	if msg.ID == uuid.Nil {
 		msg.ID = uuid.New()
@@ -69,15 +70,16 @@ func (r *MessageRepo) Create(ctx context.Context, msg *models.Message) error {
 		msg.MediaStatus = inferMessageMediaStatus(msg)
 	}
 
+	var inserted bool
 	err := r.db.QueryRow(ctx, query,
 		msg.ID, msg.InstanceID, msg.ChatID, msg.MessageID,
 		msg.SenderPhone, msg.SenderName, msg.IsFromMe, msg.IsGroup,
 		msg.Type, msg.Content, msg.DeliveryStatus, msg.MediaURL, msg.MediaMimetype,
 		msg.MediaFilename, msg.MediaStatus, msg.MediaError, msg.MediaRetryCount,
 		msg.QuotedMessageID, msg.Timestamp,
-	).Scan(&msg.ID, &msg.CreatedAt)
+	).Scan(&msg.ID, &msg.CreatedAt, &inserted)
 
-	return err
+	return inserted, err
 }
 
 // UpdateDeliveryStatus updates outgoing message receipt state by WhatsApp message ids.
@@ -86,6 +88,31 @@ func (r *MessageRepo) UpdateDeliveryStatus(ctx context.Context, instanceID uuid.
 		return nil
 	}
 	_, err := r.db.Exec(ctx, `
+		WITH updated AS (
+			UPDATE whatsapp_messages
+			SET delivery_status = $3
+			WHERE instance_id = $1
+			  AND message_id = ANY($2)
+			RETURNING id, instance_id, message_id
+		),
+		instance_tenant AS (
+			SELECT id, tenant_id
+			FROM whatsapp_instances
+			WHERE id = $1
+		)
+		INSERT INTO whatsapp_message_status (
+			message_id, instance_id, tenant_id, whatsapp_message_id, status, occurred_at
+		)
+		SELECT updated.id, updated.instance_id, instance_tenant.tenant_id, updated.message_id, $3, now()
+		FROM updated
+		JOIN instance_tenant ON instance_tenant.id = updated.instance_id
+		WHERE instance_tenant.tenant_id IS NOT NULL
+		ON CONFLICT DO NOTHING
+	`, instanceID, messageIDs, status)
+	if err != nil {
+		return err
+	}
+	_, err = r.db.Exec(ctx, `
 		UPDATE whatsapp_messages
 		SET delivery_status = $3
 		WHERE instance_id = $1

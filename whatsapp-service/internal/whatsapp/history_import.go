@@ -234,7 +234,7 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 		}
 	}
 
-	if err := c.messageRepo.Create(ctx, msg); err != nil {
+	if _, err := c.messageRepo.Create(ctx, msg); err != nil {
 		c.logger.Warn("Failed to save imported message", zap.Error(err))
 		return chat.ID, false
 	}

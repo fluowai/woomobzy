@@ -324,6 +324,56 @@ router.get('/whatsapp/assignees', verifyAuth, requireTenant, async (req, res) =>
 });
 
 /**
+ * PATCH /api/crm/whatsapp/contact-profile
+ * Atualiza os dados editaveis do lead a partir do painel de conversa.
+ */
+router.patch('/whatsapp/contact-profile', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const lead = await findOrCreateWhatsAppLead({
+      organizationId: req.orgId,
+      phone: req.body.phone,
+      name: req.body.name,
+      chatJid: req.body.chat_jid,
+      source: req.body.source || 'WhatsApp',
+    });
+
+    const updates = {
+      last_contacted_at: new Date().toISOString(),
+    };
+    const name = String(req.body.name || '').trim();
+    const email = String(req.body.email || '').trim();
+    if (name && !isPlaceholderLeadName(name)) updates.name = name;
+    if (email) updates.email = email;
+    if (req.body.chat_jid) updates.chat_jid = req.body.chat_jid;
+
+    const { data, error } = await supabase
+      .from('leads')
+      .update(updates)
+      .eq('id', lead.id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+    if (error) throw error;
+
+    await supabase.from('lead_activities').insert({
+      lead_id: data.id,
+      organization_id: req.orgId,
+      created_by: req.user.id,
+      type: 'WhatsApp',
+      description: 'Dados do lead atualizados pelo painel de conversa',
+      metadata: {
+        chat_jid: req.body.chat_jid || data.chat_jid || null,
+        fields: Object.keys(updates),
+      },
+    });
+
+    res.json({ success: true, lead: data, tags: await getLeadTags(req.orgId, data.id) });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/crm/whatsapp/link-contact
  * Vincula uma conversa individual do WhatsApp ao CRM, criando o lead se preciso.
  */
@@ -486,6 +536,65 @@ router.post('/whatsapp/priority', verifyAuth, requireTenant, async (req, res) =>
     });
 
     res.json({ success: true, lead: data, tags: await getLeadTags(req.orgId, data.id) });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/crm/whatsapp/task
+ * Cria uma tarefa/follow-up real vinculada ao lead do contato WhatsApp.
+ */
+router.post('/whatsapp/task', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const lead = await findOrCreateWhatsAppLead({
+      organizationId: req.orgId,
+      phone: req.body.phone,
+      name: req.body.name,
+      chatJid: req.body.chat_jid,
+      source: req.body.source || 'WhatsApp',
+    });
+
+    const dueAt = req.body.due_at ? new Date(req.body.due_at) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    if (Number.isNaN(dueAt.getTime())) {
+      return res.status(400).json({ error: 'Data da tarefa invalida' });
+    }
+
+    const title = String(req.body.title || `Retornar contato: ${lead.name || lead.phone}`).trim().slice(0, 180);
+    const notes = String(req.body.notes || '').trim() || `Criado a partir da conversa WhatsApp ${req.body.chat_jid || lead.chat_jid || ''}`.trim();
+
+    const { data: task, error } = await supabase
+      .from('lead_followups')
+      .insert({
+        organization_id: req.orgId,
+        lead_id: lead.id,
+        title,
+        notes,
+        due_at: dueAt.toISOString(),
+        status: 'pending',
+        kind: 'task',
+        metadata: {
+          source: 'whatsapp',
+          chat_jid: req.body.chat_jid || lead.chat_jid || null,
+        },
+      })
+      .select()
+      .single();
+    if (error) throw error;
+
+    await supabase.from('lead_activities').insert({
+      lead_id: lead.id,
+      organization_id: req.orgId,
+      created_by: req.user.id,
+      type: 'Tarefa',
+      description: `Tarefa criada pelo WhatsApp: ${title}`,
+      metadata: {
+        task_id: task.id,
+        chat_jid: req.body.chat_jid || lead.chat_jid || null,
+      },
+    });
+
+    res.json({ success: true, lead, task, tags: await getLeadTags(req.orgId, lead.id) });
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
   }

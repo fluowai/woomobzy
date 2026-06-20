@@ -305,6 +305,10 @@ export interface Chat {
   instance_id: string;
   chat_jid: string;
   name: string;
+  display_name?: string;
+  phone?: string;
+  phone_display?: string;
+  push_name?: string;
   is_group: boolean;
   last_message?: string;
   last_message_at?: string;
@@ -497,6 +501,12 @@ export const crmContactApi = {
       body: JSON.stringify(payload),
     }) as Promise<CrmContactResponse>,
 
+  update: (payload: { phone: string; name?: string; email?: string; chat_jid?: string; source?: string }) =>
+    callApi('/api/crm/whatsapp/contact-profile', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse>,
+
   addTags: (payload: { phone: string; name?: string; chat_jid?: string; tags: string[]; source?: string }) =>
     callApi('/api/crm/whatsapp/contact-tags', {
       method: 'POST',
@@ -514,6 +524,12 @@ export const crmContactApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<CrmContactResponse & { assignee?: CrmAssignee }>,
+
+  createTask: (payload: { phone: string; name?: string; chat_jid?: string; title?: string; due_at?: string; source?: string }) =>
+    callApi('/api/crm/whatsapp/task', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse & { task?: any }>,
 };
 
 // ---- Message API ----
@@ -595,7 +611,7 @@ export function formatPhoneFriendly(phone: string): string {
 }
 
 export function getDisplayName(pushName: string | null, number: string): string {
-  if (pushName && pushName.trim() !== '') return pushName;
+  if (pushName && !isPlaceholderName(pushName)) return pushName.trim();
   if (number) {
     const cleaned = formatPhone(number);
     if (isValidBrazilianPhone(cleaned)) return formatPhoneFriendly(cleaned);
@@ -604,9 +620,12 @@ export function getDisplayName(pushName: string | null, number: string): string 
 }
 
 export function getChatDisplayName(chat: Pick<Chat, 'name' | 'chat_jid' | 'is_group'>): string {
+  const richChat = chat as Partial<Chat>;
   if (chat.is_group) return chat.name || 'Grupo';
+  if (richChat.display_name && !isPlaceholderName(richChat.display_name)) return richChat.display_name;
+  if (chat.name && !isPlaceholderName(chat.name)) return chat.name;
+  if (richChat.phone_display) return richChat.phone_display;
   const phoneFromJid = getPhoneFromJid(chat.chat_jid);
-  if (chat.name && chat.name !== '~' && chat.name !== phoneFromJid) return chat.name;
   return phoneFromJid || chat.name || 'Contato sem telefone';
 }
 
@@ -621,4 +640,19 @@ function mediaTypeFromFile(file: File): string {
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
   return 'document';
+}
+
+export function isPlaceholderName(value?: string | null): boolean {
+  const clean = String(value || '').trim();
+  if (!clean) return true;
+  const lower = clean.toLowerCase();
+  if (['~', 'me', 'contato sem telefone', 'telefone nao identificado', 'telefone não identificado', 'lead whatsapp'].includes(lower)) {
+    return true;
+  }
+  if (/@(s\.whatsapp\.net|c\.us|g\.us|lid|broadcast)$/i.test(clean) || clean.includes('@lid')) return true;
+  const digits = clean.replace(/\D/g, '');
+  if (digits.length >= 2 && (/[-*•…]{2,}/.test(clean) || clean.includes('...'))) return true;
+  if (digits.length >= 8 && digits.length === clean.length) return true;
+  if (/^[A-Za-zÀ-ÿ]{1,3}$/.test(clean)) return true;
+  return false;
 }

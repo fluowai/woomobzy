@@ -401,7 +401,7 @@
 }
 .wa-chat-name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
@@ -412,14 +412,14 @@
 }
 .wa-group-icon { color: var(--color-text-tertiary); }
 .wa-chat-time {
-  font-size: 0.7rem;
+  font-size: 0.76rem;
   color: var(--color-text-tertiary);
   flex-shrink: 0;
 }
 .wa-chat-bottom { display: flex; align-items: center; gap: 8px; }
 .wa-chat-preview {
   flex: 1;
-  font-size: 0.8rem;
+  font-size: 0.86rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -486,13 +486,13 @@
   font-size: 1rem;
 }
 .wa-chat-header-name {
-  font-size: 0.95rem;
+  font-size: 1.02rem;
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0;
 }
 .wa-chat-header-sub {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: var(--color-text-tertiary);
 }
 .wa-chat-header-actions { display: flex; gap: 4px; }
@@ -611,7 +611,7 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 .wa-contact-fields span {
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -619,7 +619,8 @@
 }
 .wa-contact-fields strong {
   color: var(--color-text-primary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  word-break: break-word;
 }
 .wa-contact-tags {
   display: flex !important;
@@ -807,8 +808,8 @@
   margin-bottom: 2px;
 }
 .wa-bubble-text {
-  font-size: 0.875rem;
-  line-height: 1.4;
+  font-size: 0.94rem;
+  line-height: 1.5;
   margin: 0;
   color: var(--color-text-primary);
   white-space: pre-wrap;
@@ -822,7 +823,7 @@
   margin-top: 2px;
 }
 .wa-bubble-time {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   color: var(--color-wa-time-received);
 }
 .wa-bubble-sent .wa-bubble-time { color: var(--color-wa-time-sent); }

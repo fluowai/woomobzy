@@ -52,6 +52,7 @@ const SystemSettings = lazy(() => import('./views/SystemSettings'));
 const DataRoom = lazy(() => import('./views/DataRoom'));
 const LegalContracts = lazy(() => import('./views/LegalContracts'));
 const BIRural = lazy(() => import('./views/BIRural'));
+const BIUrbano = lazy(() => import('./views/BIUrbano'));
 const CRMLeads = lazy(() => import('./views/CRM/CRMLeads'));
 const ClientsManager = lazy(() => import('./views/CRM/ClientsManager'));
 const KanbanBoard = lazy(() => import('./views/CRM/KanbanBoard'));
@@ -88,6 +89,7 @@ const AdmCondominios = lazy(() => import('./views/urban/AdmCondominios'));
 const ControleChaves = lazy(() => import('./views/urban/ControleChaves'));
 const FinanceiroUrbano = lazy(() => import('./views/urban/FinanceiroUrbano'));
 const GestaoDocumentos = lazy(() => import('./views/urban/GestaoDocumentos'));
+const ConexoesUrbano = lazy(() => import('./views/urban/ConexoesUrbano'));
 
 // Super Admin
 const SuperAdminLayout = lazy(() => import('./views/superadmin/SuperAdminLayout'));
@@ -555,7 +557,7 @@ const AppContent: React.FC = () => {
             <Route path="crm" element={<CRMLeads />} />
             <Route path="clients" element={<ClientsManager />} />
             <Route path="kanban" element={<KanbanBoard />} />
-            <Route path="reports" element={<BIRural />} />
+            <Route path="reports" element={<BIUrbano />} />
             <Route path="condominios" element={<AdmCondominios />} />
             <Route path="chaves" element={<ControleChaves />} />
             <Route path="financeiro" element={<FinanceiroUrbano />} />
@@ -582,7 +584,7 @@ const AppContent: React.FC = () => {
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="email" element={<EmailCenter />} />
-            <Route path="connections" element={<ConexoesRural />} />
+            <Route path="connections" element={<ConexoesUrbano />} />
             <Route path="integrations" element={<SystemSettings />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>

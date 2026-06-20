@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { legalUrbanValidationService } from '../../services/legalUrbanValidationService';
+import { useAuth } from '../../context/AuthContext';
+import { isUrbanProperty } from '../../utils/propertyNiche';
 
 type DocStatus = 'ok' | 'pendente' | 'vencido' | 'ausente';
 
@@ -176,6 +178,7 @@ const statusConfig: Record<
 };
 
 const ComplianceUrbano: React.FC = () => {
+  const { profile } = useAuth();
   const [docs, setDocs] = useState<DocItem[]>(DEFAULT_DOCS);
   const [expandedCat, setExpandedCat] = useState<string>('imovel');
   const [selectedProperty, setSelectedProperty] = useState<string>('');
@@ -187,13 +190,18 @@ const ComplianceUrbano: React.FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!profile?.organization_id) {
+      setProperties([]);
+      return;
+    }
+
     const { data } = await supabase
       .from('properties')
-      .select('id, title, features')
-      .not('property_type', 'in', '("Rural","Fazenda")')
+      .select('id, title, features, property_type, niche')
+      .eq('organization_id', profile.organization_id)
       .order('title');
-    setProperties(data || []);
-  }, []);
+    setProperties((data || []).filter(isUrbanProperty));
+  }, [profile?.organization_id]);
 
   useEffect(() => {
     load();

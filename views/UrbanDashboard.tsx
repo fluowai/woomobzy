@@ -30,12 +30,27 @@ import {
 
 const BRAND_COLORS = ['#007850', '#f59600', '#7c3aed', '#d97706', '#0891b2'];
 
+const URBAN_TYPES = [
+  'Apartamento',
+  'Casa',
+  'Sobrado',
+  'Terreno Urbano',
+  'Sala Comercial',
+  'Galpão Industrial',
+  'Galpao Industrial',
+  'Loft',
+  'Studio',
+  'Cobertura',
+];
+
 const UrbanDashboard: React.FC = () => {
   const { profile } = useAuth();
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
   const [vgv, setVgv] = useState(0);
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
+  const [urbanProperties, setUrbanProperties] = useState<any[]>([]);
+  const [urbanLeads, setUrbanLeads] = useState<any[]>([]);
   const [propertyStats, setPropertyStats] = useState({
     available: 0,
     sold: 0,
@@ -52,14 +67,14 @@ const UrbanDashboard: React.FC = () => {
         .from('properties')
         .select('id', { count: 'exact' })
         .eq('organization_id', organizationId)
-        .not('property_type', 'in', '("Rural","Fazenda","Sítio","Chácara")');
+        .or(`niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`);
 
       // 2. Contagem por Status
       const { data: pByStatus } = await supabase
         .from('properties')
-        .select('status')
+        .select('id,status,price,property_type,niche,created_at')
         .eq('organization_id', organizationId)
-        .not('property_type', 'in', '("Rural","Fazenda","Sítio","Chácara")');
+        .or(`niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`);
 
       const statsMap = { available: 0, sold: 0, rented: 0 };
       pByStatus?.forEach((p) => {
@@ -69,33 +84,41 @@ const UrbanDashboard: React.FC = () => {
       });
 
       // 3. VGV (Valor Geral de Vendas)
-      const { data: pPrices } = await supabase
-        .from('properties')
-        .select('price')
-        .eq('organization_id', organizationId)
-        .eq('status', 'Disponível');
-      
-      const totalVgv = pPrices?.reduce((sum, p) => sum + (p.price || 0), 0) || 0;
+      const totalVgv =
+        pByStatus
+          ?.filter((p) => p.status === 'Disponível' || p.status === 'Disponivel')
+          .reduce((sum, p) => sum + (p.price || 0), 0) || 0;
 
       // 4. Contagem de Leads
       const { count: lCount } = await supabase
         .from('leads')
         .select('id', { count: 'exact' })
-        .eq('organization_id', organizationId);
+        .eq('organization_id', organizationId)
+        .or('match_profile.eq.urbano,match_profile.is.null');
 
       // 5. Leads Recentes Reais
       const { data: rLeads } = await supabase
         .from('leads')
         .select('*')
         .eq('organization_id', organizationId)
+        .or('match_profile.eq.urbano,match_profile.is.null')
         .order('created_at', { ascending: false })
         .limit(4);
+
+      const { data: allLeads } = await supabase
+        .from('leads')
+        .select('id,source,status,created_at,assigned_to,broker_id,match_profile')
+        .eq('organization_id', organizationId)
+        .or('match_profile.eq.urbano,match_profile.is.null')
+        .order('created_at', { ascending: false });
 
       setPropertyCount(pCount || 0);
       setLeadCount(lCount || 0);
       setVgv(totalVgv);
       setPropertyStats(statsMap);
       setRecentLeads(rLeads || []);
+      setUrbanProperties(pByStatus || []);
+      setUrbanLeads(allLeads || []);
     };
     load();
   }, [profile?.organization_id]);
@@ -143,29 +166,48 @@ const UrbanDashboard: React.FC = () => {
     },
   ];
 
-  const channelData = [
-    { name: 'Jan', whatsapp: 20, site: 12, portal: 8, indicacao: 5 },
-    { name: 'Fev', whatsapp: 25, site: 15, portal: 10, indicacao: 7 },
-    { name: 'Mar', whatsapp: 18, site: 20, portal: 14, indicacao: 6 },
-    { name: 'Abr', whatsapp: 30, site: 18, portal: 12, indicacao: 9 },
-    { name: 'Mai', whatsapp: 28, site: 22, portal: 16, indicacao: 8 },
-    { name: 'Jun', whatsapp: 35, site: 25, portal: 18, indicacao: 11 },
-  ];
+  const channelData = React.useMemo(() => {
+    const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+    return labels.map((name, month) => {
+      const monthLeads = urbanLeads.filter((lead) => new Date(lead.created_at).getMonth() === month);
+      const countBySource = (source: string) =>
+        monthLeads.filter((lead) => String(lead.source || '').toLowerCase().includes(source)).length;
 
-  const conversionData = [
-    { name: 'Carlos S.', leads: 15, vendas: 3 },
-    { name: 'Ana M.', leads: 22, vendas: 5 },
-    { name: 'Roberto L.', leads: 12, vendas: 2 },
-    { name: 'Julia P.', leads: 18, vendas: 4 },
-  ];
+      return {
+        name,
+        whatsapp: countBySource('whatsapp'),
+        site: countBySource('site'),
+        portal: countBySource('portal'),
+        indicacao: countBySource('indica'),
+      };
+    });
+  }, [urbanLeads]);
 
-  const typeData = [
-    { name: 'Apartamento', value: 45 },
-    { name: 'Casa', value: 25 },
-    { name: 'Comercial', value: 15 },
-    { name: 'Terreno', value: 10 },
-    { name: 'Lançamento', value: 5 },
-  ];
+  const conversionData = React.useMemo(() => {
+    const grouped: Record<string, { name: string; leads: number; vendas: number }> = {};
+    urbanLeads.forEach((lead) => {
+      const key = lead.assigned_to || lead.broker_id || 'Sem corretor';
+      grouped[key] = grouped[key] || {
+        name: key === 'Sem corretor' ? key : `Corretor ${String(key).slice(0, 4)}`,
+        leads: 0,
+        vendas: 0,
+      };
+      grouped[key].leads++;
+      if (['convertido', 'vendido', 'fechado'].includes(String(lead.status || '').toLowerCase())) {
+        grouped[key].vendas++;
+      }
+    });
+    return Object.values(grouped).slice(0, 6);
+  }, [urbanLeads]);
+
+  const typeData = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    urbanProperties.forEach((property) => {
+      const type = property.property_type || 'Sem tipo';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [urbanProperties]);
 
   const channelColors: Record<string, string> = {
     WhatsApp: 'bg-primary/15 text-primary',

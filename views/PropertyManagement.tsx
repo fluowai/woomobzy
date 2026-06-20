@@ -32,6 +32,7 @@ import { portalService } from '../services/portals';
 import { Property } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { isRuralProperty, isUrbanProperty } from '../utils/propertyNiche';
 
 const PropertyManagement: React.FC = () => {
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
@@ -185,8 +186,7 @@ const PropertyManagement: React.FC = () => {
   };
 
   const filteredProperties = properties.filter((p) => {
-    // Filtrar primeiro por nicho (se a coluna existir ou for mapeada)
-    const matchesNiche = (p as any).niche === currentNiche || (!(p as any).niche && currentNiche === 'urbano');
+    const matchesNiche = isRural ? isRuralProperty(p) : isUrbanProperty(p);
     if (!matchesNiche) return false;
 
     if (activeTab === 'pending') return p.status === 'Pendente';
@@ -194,6 +194,32 @@ const PropertyManagement: React.FC = () => {
   });
 
   const getAcp = (property: Property) => (property.features as any)?.acp;
+
+  const getUrbanFeatureSummary = (property: Property) => {
+    const features: any = property.features || {};
+    const area = features.areaM2 || features.area_m2 || features.physical?.area || features.physical?.builtArea;
+    const bedrooms = features.dormitorios || features.bedrooms;
+    const bathrooms = features.banheiros || features.bathrooms;
+    const parking = features.vagas || features.parking_spaces || features.parking;
+
+    const items = [
+      area ? `${Number(area).toLocaleString('pt-BR')} m²` : null,
+      bedrooms ? `${bedrooms} dorm.` : null,
+      bathrooms ? `${bathrooms} banh.` : null,
+      parking ? `${parking} vagas` : null,
+    ].filter(Boolean);
+
+    return items.length ? items : ['Ficha urbana pendente'];
+  };
+
+  const getPropertySummary = (property: Property) => {
+    if (!isRural) return getUrbanFeatureSummary(property);
+
+    return [
+      `${property.features?.areaHectares || 0} ha`,
+      property.features?.tipoSolo || 'Solo N/A',
+    ];
+  };
 
   const updateOruloFilter = (key: keyof typeof oruloFilters, value: string) => {
     setOruloFilters((prev) => ({ ...prev, [key]: value }));
@@ -558,10 +584,13 @@ const PropertyManagement: React.FC = () => {
                             currency: 'BRL',
                           })}
                         </span>
-                        <div className="flex items-center gap-2 text-text-tertiary text-xs font-bold uppercase tracking-wider">
-                          <span>{property.features?.areaHectares || 0} ha</span>
-                          <span className="w-1 h-1 bg-text-tertiary rounded-full" />
-                          <span>{property.features?.tipoSolo || 'N/A'}</span>
+                        <div className="flex flex-wrap items-center justify-end gap-2 text-text-tertiary text-xs font-bold uppercase tracking-wider">
+                          {getPropertySummary(property).map((item, index) => (
+                            <React.Fragment key={`${property.id}-summary-${item}`}>
+                              {index > 0 && <span className="w-1 h-1 bg-text-tertiary rounded-full" />}
+                              <span>{item}</span>
+                            </React.Fragment>
+                          ))}
                         </div>
                       </div>
                       <div className="flex items-center gap-3 border-t border-border-subtle pt-6 mt-2">
@@ -758,7 +787,7 @@ const PropertyManagement: React.FC = () => {
                               {property.title}
                             </p>
                             <p className="text-xs text-slate-400">
-                              ID: {property.id?.slice(0, 8)} • {(property as any).source === 'orulo' ? 'Órulo' : `${property.features?.areaHectares || 0} ha`}
+                              ID: {property.id?.slice(0, 8)} • {(property as any).source === 'orulo' ? 'Órulo' : getPropertySummary(property).join(' • ')}
                             </p>
                           </div>
                         </div>

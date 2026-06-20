@@ -30,6 +30,26 @@ const LoteamentoDetails: React.FC = () => {
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
   const [filterStatus, setFilterStatus] = useState<LotStatus | 'Todos'>('Todos');
 
+  const dbStatusToUi = (status: string): LotStatus => {
+    const map: Record<string, LotStatus> = {
+      available: LotStatus.AVAILABLE,
+      reserved: LotStatus.RESERVED,
+      sold: LotStatus.SOLD,
+      blocked: LotStatus.BLOCKED,
+    };
+    return map[status] || LotStatus.AVAILABLE;
+  };
+
+  const uiStatusToDb = (status: LotStatus): string => {
+    const map: Record<string, string> = {
+      [LotStatus.AVAILABLE]: 'available',
+      [LotStatus.RESERVED]: 'reserved',
+      [LotStatus.SOLD]: 'sold',
+      [LotStatus.BLOCKED]: 'blocked',
+    };
+    return map[status] || 'available';
+  };
+
   useEffect(() => {
     if (id) {
       loadData();
@@ -48,19 +68,28 @@ const LoteamentoDetails: React.FC = () => {
       
       setDevelopment(dev);
 
-      // Mocking Lots for demonstration if none exist
-      // In a real scenario, this would come from a 'lots' table
-      const mockLots: Lot[] = Array.from({ length: 48 }).map((_, i) => ({
-        id: `lot-${i}`,
-        development_id: id!,
-        block_id: i < 12 ? 'Quadra A' : i < 24 ? 'Quadra B' : i < 36 ? 'Quadra C' : 'Quadra D',
-        number: String((i % 12) + 1).padStart(2, '0'),
-        area_m2: 250 + (Math.random() * 100),
-        price: 150000 + (Math.random() * 50000),
-        status: i % 7 === 0 ? LotStatus.SOLD : i % 11 === 0 ? LotStatus.RESERVED : LotStatus.AVAILABLE,
-      }));
+      const { data: lotData, error: lotError } = await supabase
+        .from('urban_lots')
+        .select('*')
+        .eq('development_id', id)
+        .order('block_name', { ascending: true })
+        .order('lot_number', { ascending: true });
 
-      setLots(mockLots);
+      if (lotError) throw lotError;
+
+      setLots(
+        (lotData || []).map((lot: any) => ({
+          id: lot.id,
+          development_id: lot.development_id,
+          block_id: lot.block_name,
+          number: lot.lot_number,
+          area_m2: Number(lot.area_m2 || 0),
+          price: Number(lot.price || 0),
+          status: dbStatusToUi(lot.status),
+          current_client_id: lot.buyer_id,
+          coordinates: lot.metadata?.coordinates,
+        }))
+      );
     } catch (err) {
       console.error('Error loading lot data:', err);
       toast.error('Erro ao carregar dados do loteamento');
@@ -81,6 +110,44 @@ const LoteamentoDetails: React.FC = () => {
       case LotStatus.BLOCKED: return 'bg-slate-400 text-white';
       default: return 'bg-slate-200 text-slate-500';
     }
+  };
+
+  const handleCreateLot = async () => {
+    if (!development?.organization_id || !id) return;
+
+    const nextNumber = String(lots.length + 1).padStart(2, '0');
+    const { data, error } = await supabase
+      .from('urban_lots')
+      .insert({
+        organization_id: development.organization_id,
+        development_id: id,
+        block_name: 'Quadra A',
+        lot_number: nextNumber,
+        area_m2: 250,
+        price: 0,
+        status: uiStatusToDb(LotStatus.AVAILABLE),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error('Erro ao criar lote');
+      return;
+    }
+
+    const lot: Lot = {
+      id: data.id,
+      development_id: data.development_id,
+      block_id: data.block_name,
+      number: data.lot_number,
+      area_m2: Number(data.area_m2 || 0),
+      price: Number(data.price || 0),
+      status: dbStatusToUi(data.status),
+    };
+
+    setLots((prev) => [...prev, lot]);
+    setSelectedLot(lot);
+    toast.success('Lote criado');
   };
 
   if (loading) return <div className="p-10 text-center animate-pulse">Carregando Espelho de Vendas...</div>;
@@ -116,7 +183,7 @@ const LoteamentoDetails: React.FC = () => {
           <button className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-900/10">
             <Download size={16} /> Exportar Mapa
           </button>
-          <button className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+          <button onClick={handleCreateLot} className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
             <Plus size={16} /> Novo Lote
           </button>
         </div>
@@ -163,6 +230,17 @@ const LoteamentoDetails: React.FC = () => {
                  </button>
                ))}
             </div>
+            {filteredLots.length === 0 && (
+              <div className="rounded-[2rem] border-2 border-dashed border-slate-200 bg-white p-10 text-center">
+                <Grid3X3 size={40} className="mx-auto mb-4 text-slate-300" />
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">
+                  Nenhum lote cadastrado
+                </h3>
+                <p className="mt-2 text-xs text-slate-400">
+                  Clique em Novo Lote para iniciar o espelho de vendas real deste loteamento.
+                </p>
+              </div>
+            )}
             
             <div className="mt-20 p-8 border-2 border-dashed border-slate-200 rounded-[3rem] text-center bg-slate-100/50">
                <MapIcon size={40} className="mx-auto text-slate-300 mb-4" />

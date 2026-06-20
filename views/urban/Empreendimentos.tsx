@@ -52,6 +52,8 @@ const Empreendimentos: React.FC = () => {
   const { profile } = useAuth();
   const [developments, setDevelopments] = useState<Development[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [inventoryValue, setInventoryValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     name: '',
@@ -66,18 +68,28 @@ const Empreendimentos: React.FC = () => {
   });
 
   useEffect(() => {
-    load();
-  }, []);
+    if (profile?.organization_id) load();
+  }, [profile?.organization_id]);
 
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase
-        .from('developments')
-        .select('*')
-        .eq('organization_id', profile?.organization_id)
-        .order('created_at', { ascending: false });
+      const [{ data }, { data: lots }] = await Promise.all([
+        supabase
+          .from('developments')
+          .select('*')
+          .eq('organization_id', profile?.organization_id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('urban_lots')
+          .select('price,status')
+          .eq('organization_id', profile?.organization_id)
+          .in('status', ['available', 'reserved']),
+      ]);
       setDevelopments(data || []);
+      setInventoryValue(
+        (lots || []).reduce((total, lot) => total + Number(lot.price || 0), 0)
+      );
     } finally {
       setLoading(false);
     }
@@ -90,16 +102,24 @@ const Empreendimentos: React.FC = () => {
       return;
     }
 
-    const { error } = await supabase.from('developments').insert({
+    const payload = {
       ...form,
       organization_id: profile.organization_id,
       available_units: form.total_units,
-    });
+    };
+    const { error } = editingId
+      ? await supabase
+          .from('developments')
+          .update(payload)
+          .eq('id', editingId)
+          .eq('organization_id', profile.organization_id)
+      : await supabase.from('developments').insert(payload);
     if (error) {
       console.error('Erro ao salvar empreendimento:', error);
       return;
     }
     setShowModal(false);
+    setEditingId(null);
     setForm({
       name: '',
       address: '',
@@ -112,6 +132,22 @@ const Empreendimentos: React.FC = () => {
       total_area: 0,
     });
     load();
+  };
+
+  const handleEdit = (development: Development) => {
+    setEditingId(development.id);
+    setForm({
+      name: development.name || '',
+      address: development.address || '',
+      city: development.city || '',
+      state: development.state || '',
+      total_units: development.total_units || 0,
+      status: development.status || 'projeto',
+      progress_pct: development.progress_pct || 0,
+      registration_number: development.registration_number || '',
+      total_area: development.total_area || 0,
+    });
+    setShowModal(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -183,7 +219,11 @@ const Empreendimentos: React.FC = () => {
           {
             icon: TrendingUp,
             label: 'VGV em Estoque',
-            value: 'R$ --',
+            value: inventoryValue.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+              maximumFractionDigits: 0,
+            }),
             color: 'text-purple-600',
             bg: 'bg-purple-50',
           },
@@ -302,7 +342,7 @@ const Empreendimentos: React.FC = () => {
                           >
                             <Map size={14} /> Mapa / Lotes
                           </Link>
-                          <button className="p-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">
+                          <button onClick={() => handleEdit(dev)} className="p-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">
                             <Pencil size={16} />
                           </button>
                           <button
@@ -333,13 +373,16 @@ const Empreendimentos: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">
-                    Novo Empreendimento
+                    {editingId ? 'Editar Empreendimento' : 'Novo Empreendimento'}
                   </h3>
                   <p className="text-slate-400 text-sm font-medium">Configure os dados básicos da loteadora.</p>
                 </div>
               </div>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingId(null);
+                }}
                 className="p-3 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-all"
               >
                 <X size={20} />
@@ -455,7 +498,7 @@ const Empreendimentos: React.FC = () => {
                 onClick={handleSave}
                 className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-95"
               >
-                Salvar Empreendimento
+                {editingId ? 'Atualizar Empreendimento' : 'Salvar Empreendimento'}
               </button>
             </div>
           </div>

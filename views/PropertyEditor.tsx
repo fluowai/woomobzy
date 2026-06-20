@@ -59,10 +59,16 @@ import { useAuth } from '../context/AuthContext';
 const PropertyEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const routeLocation = useLocation();
   const { profile } = useAuth();
   const isNew = !id || id === 'new';
 
-  const niche = profile?.organization?.niche || 'traditional';
+  const routeNiche = routeLocation.pathname.startsWith('/urban')
+    ? 'traditional'
+    : routeLocation.pathname.startsWith('/rural')
+      ? 'rural'
+      : null;
+  const niche = routeNiche || profile?.organization?.niche || 'traditional';
   const nichePath = niche === 'traditional' ? 'urban' : 'rural';
 
   const RURAL_TYPES = [

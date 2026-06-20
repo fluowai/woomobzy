@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Calculator, 
   DollarSign, 
   Calendar, 
@@ -13,6 +13,8 @@ import {
   TrendingUp,
   RefreshCw
 } from 'lucide-react';
+import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 interface BalloonPayment {
   id: string;
@@ -21,6 +23,7 @@ interface BalloonPayment {
 }
 
 const Simulator360: React.FC = () => {
+  const { profile } = useAuth();
   const [propertyPrice, setPropertyPrice] = useState(250000);
   const [entryValue, setEntryValue] = useState(25000);
   const [installmentsCount, setInstallmentsCount] = useState(120);
@@ -29,15 +32,17 @@ const Simulator360: React.FC = () => {
   const [totalFinanced, setTotalFinanced] = useState(0);
   const [monthlyInstallment, setMonthlyInstallment] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState('');
 
   const calculateFinancing = () => {
-    const principal = propertyPrice - entryValue;
+    const principal = Math.max(propertyPrice - entryValue, 0);
     const totalBalloons = balloons.reduce((acc, b) => acc + b.amount, 0);
-    const financeablePrincipal = principal - totalBalloons;
+    const financeablePrincipal = Math.max(principal - totalBalloons, 0);
     
     // Fórmula Price: P = [i * (1 + i)^n] / [(1 + i)^n - 1] * principal
     const i = interestRate / 100;
-    const n = installmentsCount;
+    const n = Math.max(installmentsCount, 1);
     
     let monthly;
     if (i === 0) {
@@ -75,6 +80,81 @@ const Simulator360: React.FC = () => {
   const formatCurrency = (val: number) => 
     val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+  const validateSimulation = () => {
+    if (propertyPrice <= 0) return 'Informe um valor de imovel valido.';
+    if (entryValue < 0 || entryValue > propertyPrice) {
+      return 'A entrada deve ficar entre zero e o valor do imovel.';
+    }
+    if (installmentsCount < 1) return 'Informe ao menos uma parcela.';
+    if (interestRate < 0) return 'A taxa de juros nao pode ser negativa.';
+    if (
+      balloons.some(
+        (item) =>
+          item.month < 1 ||
+          item.month > installmentsCount ||
+          item.amount < 0
+      )
+    ) {
+      return 'Revise os meses e valores dos baloes.';
+    }
+    return '';
+  };
+
+  const saveSimulation = async (status: 'draft' | 'proposal' = 'draft') => {
+    const validationMessage = validateSimulation();
+    if (validationMessage) {
+      setFeedback(validationMessage);
+      return false;
+    }
+    if (!profile?.organization_id) {
+      setFeedback('Organizacao nao identificada.');
+      return false;
+    }
+
+    setSaving(true);
+    setFeedback('');
+    const { error } = await supabase.from('urban_financing_simulations').insert({
+      organization_id: profile.organization_id,
+      created_by: profile.id,
+      title: `Simulacao de ${formatCurrency(propertyPrice)}`,
+      property_price: propertyPrice,
+      entry_value: entryValue,
+      installments_count: installmentsCount,
+      monthly_interest_rate: interestRate,
+      balloon_payments: balloons,
+      monthly_installment: monthlyInstallment,
+      total_financed: totalFinanced,
+      total_cost: totalCost,
+      status,
+    });
+    setSaving(false);
+
+    if (error) {
+      setFeedback(`Nao foi possivel salvar: ${error.message}`);
+      return false;
+    }
+    setFeedback(
+      status === 'proposal'
+        ? 'Proposta registrada no CRM.'
+        : 'Simulacao salva no CRM.'
+    );
+    return true;
+  };
+
+  const printProposal = () => {
+    const validationMessage = validateSimulation();
+    if (validationMessage) {
+      setFeedback(validationMessage);
+      return;
+    }
+    window.print();
+  };
+
+  const generateProposal = async () => {
+    const saved = await saveSimulation('proposal');
+    if (saved) window.print();
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -88,10 +168,10 @@ const Simulator360: React.FC = () => {
         </div>
         
         <div className="flex gap-2">
-           <button className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-900/10">
+           <button onClick={printProposal} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-900/10">
               <Printer size={16} /> Imprimir PDF
            </button>
-           <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+           <button onClick={generateProposal} disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-500/20">
               <FileText size={16} /> Gerar Proposta
            </button>
         </div>
@@ -257,7 +337,12 @@ const Simulator360: React.FC = () => {
                 </div>
              </section>
              
-             <button className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all">
+             {feedback && (
+               <p className="rounded-xl bg-white/10 px-4 py-3 text-xs font-bold text-white/80">
+                 {feedback}
+               </p>
+             )}
+             <button onClick={() => saveSimulation('draft')} disabled={saving} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all">
                 Salvar Simulação no CRM
              </button>
           </div>

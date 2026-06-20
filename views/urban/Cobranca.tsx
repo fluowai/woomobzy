@@ -37,7 +37,7 @@ interface Billing {
 }
 
 const Cobranca: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'all' | 'rent' | 'sale' | 'lot'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'rent' | 'sale' | 'lot' | 'late'>('all');
   const [billings, setBillings] = useState<Billing[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState('');
@@ -52,12 +52,7 @@ const Cobranca: React.FC = () => {
   });
 
   const loadBillings = useCallback(async () => {
-    const { data } = await supabase
-      .from('billings')
-      .select(
-        '*, contract:contracts(tenant_name, property:property_id(title))'
-      )
-      .order('due_date', { ascending: false });
+    const data = await cobrancaService.listBillings();
     setBillings(data || []);
   }, []);
 
@@ -105,8 +100,9 @@ const Cobranca: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir cobrança?')) return;
-    await supabase.from('billings').delete().eq('id', id);
+    await cobrancaService.cancelBilling(id, 'Cancelada pelo painel urbano');
     loadBillings();
+    loadDashboard();
   };
 
   const handleGerarMensal = async () => {
@@ -351,7 +347,7 @@ const Cobranca: React.FC = () => {
             <tbody>
               {filteredBillings.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-400">
+                  <td colSpan={7} className="text-center py-12 text-slate-400">
                     <DollarSign
                       className="mx-auto mb-3 text-slate-300"
                       size={40}
@@ -360,7 +356,7 @@ const Cobranca: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                billings.map((b) => {
+                filteredBillings.map((b) => {
                   const cfg = getStatusColor(b.status);
                   return (
                     <tr

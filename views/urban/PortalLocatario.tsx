@@ -55,7 +55,7 @@ const PortalLocatario: React.FC = () => {
   const [showRent, setShowRent] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!profile?.id) return;
+    if (!profile?.id || !profile.organization_id) return;
     setIsLoading(true);
 
     const { data: tenantData } = await supabase
@@ -65,21 +65,20 @@ const PortalLocatario: React.FC = () => {
       .single();
 
     const cpf = tenantData?.cpf;
-    if (!cpf) {
-      setIsLoading(false);
-      return;
-    }
 
-    const { data: contractData } = await supabase
+    let contractQuery = supabase
       .from('rental_contracts')
       .select('*, property:property_id(title, address)')
+      .eq('organization_id', profile.organization_id)
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
-    const tenantContracts =
-      contractData?.filter(
-        (c) => c.tenant_cpf === cpf || c.tenant_email === profile.email
-      ) || [];
+    contractQuery = cpf
+      ? contractQuery.or(`tenant_cpf.eq.${cpf},tenant_email.ilike.${profile.email}`)
+      : contractQuery.ilike('tenant_email', profile.email);
+
+    const { data: contractData } = await contractQuery;
+    const tenantContracts = contractData || [];
     setContracts(tenantContracts);
 
     if (tenantContracts.length > 0) {
@@ -87,13 +86,14 @@ const PortalLocatario: React.FC = () => {
       const { data: billingData } = await supabase
         .from('billing')
         .select('*')
+        .eq('organization_id', profile.organization_id)
         .in('contract_id', contractIds)
         .order('due_date', { ascending: false });
       setBillings(billingData || []);
     }
 
     setIsLoading(false);
-  }, [profile?.id, profile?.email]);
+  }, [profile?.id, profile?.email, profile?.organization_id]);
 
   useEffect(() => {
     loadData();

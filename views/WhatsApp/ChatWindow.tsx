@@ -64,7 +64,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [showScrollDown, setShowScrollDown] = useState(false);
-  const [showContactPanel, setShowContactPanel] = useState(false);
+  const [showContactPanel, setShowContactPanel] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
   const [editingName, setEditingName] = useState(false);
   const [contactNameDraft, setContactNameDraft] = useState('');
   const [avatarError, setAvatarError] = useState(false);
@@ -88,6 +91,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setContactNameDraft(chatName);
     setEditingName(false);
     setAvatarError(false);
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
+      setShowContactPanel(true);
+    }
   }, [chat.id, chatName]);
 
   useEffect(() => {
@@ -334,7 +340,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <Phone size={18} />
           </button>
           <button className="wa-icon-btn" title="Mais opções">
-            <MoreVertical size={18} />
+            <MoreVertical size={18} onClick={() => setShowContactPanel(true)} />
           </button>
         </div>
       </header>

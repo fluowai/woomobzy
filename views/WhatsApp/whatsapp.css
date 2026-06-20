@@ -165,6 +165,7 @@
 .wa-main {
   display: flex;
   flex: 1;
+  width: 100%;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -1113,6 +1114,75 @@
   padding: 32px;
   text-align: center;
 }
+.wa-empty-workspace {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 400px);
+  background: var(--color-bg-primary);
+}
+.wa-empty-workspace .wa-empty-state {
+  min-width: 0;
+}
+.wa-empty-contact-panel {
+  min-width: 360px;
+  height: 100%;
+  background: var(--color-bg-card);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.wa-empty-contact-body {
+  padding: 28px 24px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.wa-empty-contact-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--color-primary-alpha-10);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-primary-alpha-20);
+}
+.wa-empty-contact-body h3 {
+  margin: 4px 0 0;
+  color: var(--color-text-primary);
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+.wa-empty-contact-body p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.wa-empty-actions-preview {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+.wa-empty-actions-preview span {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
 .wa-empty-icon {
   width: 100px; height: 100px;
   border-radius: 50%;
@@ -1450,6 +1520,14 @@
   .wa-contact-panel {
     min-width: 340px;
   }
+
+  .wa-empty-workspace {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  .wa-empty-contact-panel {
+    min-width: 340px;
+  }
 }
 
 /* Responsive */
@@ -1504,6 +1582,17 @@
   }
   .wa-chat-window,
   .wa-empty-state {
+    display: none;
+  }
+  .wa-empty-workspace {
+    display: flex;
+    width: 100%;
+    min-width: 100%;
+  }
+  .wa-empty-workspace .wa-empty-state {
+    display: flex;
+  }
+  .wa-empty-contact-panel {
     display: none;
   }
   .wa-dashboard.wa-chat-open .wa-sidebar {

@@ -50,6 +50,7 @@ const UrbanLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
+  const isMessagingRoute = pathname.startsWith('/urban/whatsapp');
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
     logger.info('[UrbanLayout] Guard triggered. Redirecting Super Admin to /superadmin');
@@ -292,7 +293,11 @@ const UrbanLayout: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-bg-primary">
+        <div
+          className={`flex-1 overflow-y-auto bg-bg-primary ${
+            isMessagingRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+          }`}
+        >
           <Outlet />
         </div>
       </main>

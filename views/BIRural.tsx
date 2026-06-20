@@ -3,16 +3,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   TrendingUp,
   Users,
-  Home as HomeIcon,
   DollarSign,
-  PieChart as PieIcon,
-  ArrowUpRight,
   MapPin,
   Activity,
-  Calendar,
   Filter,
   Download,
-  FilterX,
 } from 'lucide-react';
 import {
   BarChart,
@@ -30,74 +25,56 @@ import {
   Legend,
 } from 'recharts';
 import { useSettings } from '../context/SettingsContext';
-import { MOCK_PROPERTIES, MOCK_LEADS } from '../constants.tsx';
-import { PropertyType, Property } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { Property } from '../types';
 import { supabase } from '../services/supabase';
+import { isRuralProperty } from '../utils/propertyNiche';
 
 const BIRural: React.FC = () => {
   const { settings } = useSettings();
+  const { profile } = useAuth();
   const [timeRange, setTimeRange] = useState('Anual');
   const [properties, setProperties] = useState<Property[]>([]);
-  const [biStats, setBiStats] = useState<any>(null);
-  const [leadSources, setLeadSources] = useState<any[]>([]);
+  const [ruralLeads, setRuralLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!profile?.organization_id) return;
     loadData();
-  }, []);
+  }, [profile?.organization_id]);
 
   const loadData = async () => {
+    if (!profile?.organization_id) return;
     try {
       setLoading(true);
+      const organizationId = profile.organization_id;
 
-      // Fetch stats via RPC
-      const { data: stats, error: statsError } = await supabase.rpc(
-        'get_bi_stats',
-        { org_id: settings.id }
-      );
-
-      if (statsError) {
-        logger.warn(
-          '⚠️ RPC get_bi_stats não encontrada ou falhou. Usando fallback local.'
-        );
-      } else {
-        setBiStats(stats);
-      }
-
-      // Fetch lead sources via RPC
-      const { data: sources, error: sourcesError } = await supabase.rpc(
-        'get_bi_lead_sources',
-        { org_id: settings.id }
-      );
-
-      if (sourcesError) {
-        logger.warn('⚠️ RPC get_bi_lead_sources não encontrada ou falhou.');
-        setLeadSources([]);
-      } else {
-        setLeadSources(sources || []);
-      }
-
-      const { data: props, error: propsError } = await supabase
-        .from('properties')
-        .select('*')
-        .in('property_type', [
-          'Fazenda',
-          'Sítio',
-          'Chácara',
-          'Área Produtiva',
-          'Gleba',
-          'Rural',
-          'Estância',
-          'Haras',
-          'Granja',
-          'Agropecuária',
-          'Terreno Rural',
-          'Lote Rural',
-        ])
-        .neq('status', 'Pendente');
+      const [{ data: props, error: propsError }, { data: leads, error: leadsError }] =
+        await Promise.all([
+          supabase
+            .from('properties')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .neq('status', 'Pendente'),
+          supabase
+            .from('leads')
+            .select('id, source, created_at, match_profile, preferences')
+            .eq('organization_id', organizationId),
+        ]);
 
       if (propsError) logger.error('Error fetching properties:', propsError);
-      else setProperties(props || []);
+      else setProperties((props || []).filter(isRuralProperty) as any);
+      if (leadsError) logger.error('Error fetching rural leads:', leadsError);
+      else {
+        setRuralLeads(
+          (leads || []).filter(
+            (lead) =>
+              lead.match_profile === 'rural' ||
+              lead.preferences?.niche === 'rural' ||
+              lead.preferences?.profile === 'rural',
+          ),
+        );
+      }
     } catch (error) {
       logger.error('Error loading BI data:', error);
     } finally {
@@ -107,16 +84,6 @@ const BIRural: React.FC = () => {
 
   // Aggregation Logic (Now based on real properties)
   const stats = useMemo(() => {
-    if (biStats) {
-      return {
-        totalValue: biStats.total_value,
-        totalArea: biStats.total_area_ha,
-        avgHectarePrice: biStats.avg_ha_price,
-        totalLeads: leadSources.reduce((acc, s) => acc + s.value, 0),
-        propertyCount: biStats.property_count,
-      };
-    }
-
     const totalValue = properties.reduce((acc, p) => acc + (p.price || 0), 0);
     const totalArea = properties.reduce(
       (acc, p) => acc + (p.total_area_ha || 0),
@@ -128,16 +95,17 @@ const BIRural: React.FC = () => {
       totalValue,
       totalArea,
       avgHectarePrice,
-      totalLeads: leadSources.reduce((acc, s) => acc + s.value, 0),
+      totalLeads: ruralLeads.length,
       propertyCount: properties.length,
     };
-  }, [properties, biStats, leadSources]);
+  }, [properties, ruralLeads]);
 
   // Inventory by Type Data
   const typeData = useMemo(() => {
     const counts: Record<string, number> = {};
     properties.forEach((p) => {
-      counts[p.type] = (counts[p.type] || 0) + 1;
+      const type = p.type || 'Rural';
+      counts[type] = (counts[type] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [properties]);
@@ -146,7 +114,8 @@ const BIRural: React.FC = () => {
   const regionData = useMemo(() => {
     const regions: Record<string, number> = {};
     properties.forEach((p) => {
-      regions[p.state] = (regions[p.state] || 0) + (p.price || 0);
+      const state = p.location?.state || 'Não informado';
+      regions[state] = (regions[state] || 0) + (p.price || 0);
     });
     return Object.entries(regions)
       .map(([name, value]) => ({ name, value }))
@@ -155,25 +124,38 @@ const BIRural: React.FC = () => {
 
   // Lead Source Data (Now from DB)
   const leadSourceData = useMemo(() => {
-    if (leadSources.length === 0) {
+    if (ruralLeads.length === 0) {
       return [{ name: 'Nenhum Dado', value: 0 }];
     }
-    const total = leadSources.reduce((acc, s) => acc + s.value, 0);
-    return leadSources.map((s) => ({
-      name: s.name,
-      value: total > 0 ? Math.round((s.value / total) * 100) : 0,
+    const counts = ruralLeads.reduce<Record<string, number>>((acc, lead) => {
+      const source = lead.source || 'Não informado';
+      acc[source] = (acc[source] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).map(([name, count]) => ({
+      name,
+      value: Math.round((Number(count) / ruralLeads.length) * 100),
     }));
-  }, [leadSources]);
+  }, [ruralLeads]);
 
-  // Growth Data (Simulated for now as we don't have historical aggregation yet)
-  const growthData = [
-    { month: 'Jan', listings: 4, leads: 12 },
-    { month: 'Fev', listings: 6, leads: 18 },
-    { month: 'Mar', listings: 5, leads: 15 },
-    { month: 'Abr', listings: 8, leads: 24 },
-    { month: 'Mai', listings: 12, leads: 32 },
-    { month: 'Jun', listings: 10, leads: 28 },
-  ];
+  const growthData = useMemo(() => {
+      const monthCount = timeRange === 'Mensal' ? 4 : timeRange === 'Semestral' ? 6 : 12;
+      return Array.from({ length: monthCount }, (_, index) => {
+        const date = new Date();
+        date.setDate(1);
+        date.setMonth(date.getMonth() - (monthCount - 1 - index));
+        const matchesMonth = (value?: string) => {
+          if (!value) return false;
+          const createdAt = new Date(value);
+          return createdAt.getMonth() === date.getMonth() && createdAt.getFullYear() === date.getFullYear();
+        };
+        return {
+          month: new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(date).replace('.', ''),
+          listings: properties.filter((property) => matchesMonth((property as any).created_at)).length,
+          leads: ruralLeads.filter((lead) => matchesMonth(lead.created_at)).length,
+        };
+      });
+    }, [properties, ruralLeads, timeRange]);
 
   const COLORS = [
     settings.primaryColor,
@@ -189,6 +171,29 @@ const BIRural: React.FC = () => {
       currency: 'BRL',
       notation: 'compact',
     }).format(val);
+
+  const exportReport = () => {
+    const rows = [
+      ['Imóvel', 'Tipo', 'Cidade', 'UF', 'Área (ha)', 'Valor'],
+      ...properties.map((property) => [
+        property.title,
+        property.type,
+        property.location?.city || '',
+        property.location?.state || '',
+        String(property.total_area_ha || property.features?.areaHectares || 0),
+        String(property.price || 0),
+      ]),
+    ];
+    const csv = rows
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `bi-rural-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return (
@@ -229,7 +234,11 @@ const BIRural: React.FC = () => {
               </button>
             ))}
           </div>
-          <button className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all text-black/60">
+          <button
+            onClick={exportReport}
+            title="Exportar relatório rural"
+            className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all text-black/60"
+          >
             <Download size={20} />
           </button>
         </div>
@@ -242,28 +251,28 @@ const BIRural: React.FC = () => {
             label: 'Valor em Carteira',
             value: formatCurrency(stats.totalValue),
             icon: DollarSign,
-            trend: '+12.5%',
+            trend: `${stats.propertyCount} imóveis`,
             color: settings.primaryColor,
           },
           {
             label: 'Área Total Sob Gestão',
             value: `${stats.totalArea.toLocaleString()} ha`,
             icon: MapPin,
-            trend: '+8.2%',
+            trend: 'Área cadastrada',
             color: '#10b981',
           },
           {
             label: 'Ticket Médio/Hectare',
             value: formatCurrency(stats.avgHectarePrice),
             icon: Activity,
-            trend: '-2.1%',
+            trend: 'Média da carteira',
             color: '#f59e0b',
           },
           {
             label: 'Performance de Leads',
             value: `${stats.totalLeads} Ativos`,
             icon: Users,
-            trend: '+18.4%',
+            trend: 'Perfil rural',
             color: '#6366f1',
           },
         ].map((kpi, idx) => (
@@ -286,7 +295,7 @@ const BIRural: React.FC = () => {
                   <kpi.icon size={24} />
                 </div>
                 <span
-                  className={`text-[10px] font-black px-3 py-1 rounded-full ${kpi.trend.startsWith('+') ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}
+                  className="text-[10px] font-black px-3 py-1 rounded-full bg-slate-100 text-slate-600"
                 >
                   {kpi.trend}
                 </span>
@@ -533,9 +542,9 @@ const BIRural: React.FC = () => {
               </h4>
             </div>
             <p className="text-xs text-white/60 leading-relaxed italic">
-              Canais de conversão direta (WhatsApp) tiveram um incremento de 15%
-              na última semana. Recomenda-se aumentar o investimento em
-              campanhas mobile-first.
+              {stats.totalLeads > 0
+                ? `${leadSourceData[0]?.name || 'O principal canal'} concentra ${leadSourceData[0]?.value || 0}% dos leads rurais registrados.`
+                : 'Ainda não há leads classificados com perfil rural para gerar recomendações de canal.'}
             </p>
           </div>
         </div>

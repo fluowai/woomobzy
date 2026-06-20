@@ -37,6 +37,8 @@ import { EditControl } from 'react-leaflet-draw';
 import L from 'leaflet';
 import * as toGeoJSON from '@mapbox/togeojson';
 import JSZip from 'jszip';
+import { propertyService } from '../../services/properties';
+import { toast } from 'sonner';
 
 // Fix Leaflet icons
 if (typeof window !== 'undefined') {
@@ -81,6 +83,9 @@ const Geointeligencia: React.FC = () => {
   const [sigefInput, setSigefInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [marketPrices, setMarketPrices] = useState<any>(null);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const [savingGeometry, setSavingGeometry] = useState(false);
 
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -92,7 +97,51 @@ const Geointeligencia: React.FC = () => {
       }
     };
     fetchMarketData();
+    propertyService
+      .list(1, 100, 'rural')
+      .then(setProperties)
+      .catch((error) => logger.error('Rural properties fetch error:', error));
   }, []);
+
+  const saveGeometryToProperty = async () => {
+    if (!selectedPropertyId || geometries.length === 0) {
+      toast.error('Selecione uma propriedade e adicione uma geometria.');
+      return;
+    }
+
+    const property = properties.find((item) => item.id === selectedPropertyId);
+    const featureCollection = { type: 'FeatureCollection', features: geometries };
+    const areaHectares = Number((calculatedArea * 0.0001).toFixed(4));
+
+    setSavingGeometry(true);
+    try {
+      const updated = await propertyService.update(selectedPropertyId, {
+        features: {
+          ...(property?.features || {}),
+          areaHectares: areaHectares || property?.features?.areaHectares || 0,
+          legal: {
+            ...(property?.features?.legal || {}),
+            geometry: featureCollection,
+          },
+          rural_technical: {
+            ...(property?.features?.rural_technical || {}),
+            geometry: featureCollection,
+            measured_area_ha: areaHectares,
+            geometry_updated_at: new Date().toISOString(),
+          },
+        },
+        niche: 'rural',
+      } as any);
+      setProperties((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      );
+      toast.success('Geometria vinculada ao imóvel rural.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao salvar geometria.');
+    } finally {
+      setSavingGeometry(false);
+    }
+  };
 
   const toggleLayer = (idx: number) => {
     setLayers((prev) => prev.map((l, i) => (i === idx ? { ...l, active: !l.active } : l)));
@@ -287,7 +336,7 @@ const Geointeligencia: React.FC = () => {
           { icon: Layers, label: 'Hectares', value: areaHectares + ' ha', color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { icon: Mountain, label: 'Alqueire MG', value: alqMG + ' aq', color: 'text-amber-600', bg: 'bg-amber-50' },
           { icon: AlertTriangle, label: 'Alqueire SP', value: alqSP + ' aq', color: 'text-blue-600', bg: 'bg-blue-50' },
-          { icon: Droplets, label: 'Clima', value: '28°C', color: 'text-orange-600', bg: 'bg-orange-50' },
+          { icon: Droplets, label: 'Geometrias', value: String(geometries.length), color: 'text-orange-600', bg: 'bg-orange-50' },
         ].map((stat, idx) => (
           <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-100">
             <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}>
@@ -319,6 +368,29 @@ const Geointeligencia: React.FC = () => {
               <Download size={14} /> Importar KMZ
               <input type="file" className="hidden" accept=".kml,.kmz" onChange={handleFileUpload} />
             </label>
+          </div>
+          <div className="pt-4 border-t border-slate-100 space-y-3">
+            <h4 className="text-[10px] font-black uppercase text-slate-400">Vincular ao Imovel</h4>
+            <select
+              value={selectedPropertyId}
+              onChange={(event) => setSelectedPropertyId(event.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border rounded-lg text-xs"
+            >
+              <option value="">Selecione a propriedade</option>
+              {properties.map((property) => (
+                <option key={property.id} value={property.id}>
+                  {property.title}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={saveGeometryToProperty}
+              disabled={savingGeometry || !selectedPropertyId || geometries.length === 0}
+              className="w-full p-3 bg-slate-900 text-white rounded-xl text-xs font-bold disabled:opacity-50"
+            >
+              {savingGeometry ? 'Salvando...' : 'Salvar Geometria'}
+            </button>
           </div>
           <div className="pt-4 border-t border-slate-100 space-y-4">
             <h4 className="text-[10px] font-black uppercase text-slate-400">Consulta API Live</h4>

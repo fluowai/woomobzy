@@ -14,6 +14,10 @@ import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { isRuralProperty } from '../../utils/propertyNiche';
+import * as toGeoJSON from '@mapbox/togeojson';
+import JSZip from 'jszip';
+import { toast } from 'sonner';
 
 interface PropertyGeo {
   id: string;
@@ -35,6 +39,18 @@ const CadastroTecnico: React.FC = () => {
   const [geoData, setGeoData] = useState<any>(null);
   const [fileName, setFileName] = useState('');
   const [properties, setProperties] = useState<any[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [technicalForm, setTechnicalForm] = useState({
+    area_agricultavel: '',
+    area_reserva: '',
+    bioma: 'Cerrado',
+    tipo_solo: 'Latossolo',
+    regime_hidrico: 'Irrigado',
+    topografia: 'Plana',
+    aptidao: 'Pecuária',
+    score_liquidez: '',
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -43,75 +59,51 @@ const CadastroTecnico: React.FC = () => {
       const { data } = await supabase
         .from('properties')
         .select(
-          'id, title, area_total_ha, location_city, location_state, status'
+          'id, title, total_area_ha, city, state, status, property_type, niche, features'
         )
         .eq('organization_id', profile?.organization_id)
-        .in('property_type', [
-          'Fazenda',
-          'Sítio',
-          'Chácara',
-          'Área Produtiva',
-          'Gleba',
-          'Rural',
-          'Estância',
-          'Haras',
-          'Granja',
-          'Agropecuária',
-          'Terreno Rural',
-          'Lote Rural',
-        ])
         .order('created_at', { ascending: false });
-      setProperties(data || []);
+      setProperties((data || []).filter(isRuralProperty));
     };
     load();
   }, [profile?.organization_id]);
 
   const handleFileUpload = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
       setFileName(file.name);
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const text = event.target?.result as string;
-          if (file.name.endsWith('.geojson') || file.name.endsWith('.json')) {
-            const geo = JSON.parse(text);
-            setGeoData(geo);
-          } else if (file.name.endsWith('.kml')) {
-            // Basic KML parsing - convert to GeoJSON points
-            const parser = new DOMParser();
-            const kml = parser.parseFromString(text, 'text/xml');
-            const placemarks = kml.getElementsByTagName('Placemark');
-            const features: any[] = [];
-
-            for (let i = 0; i < placemarks.length; i++) {
-              const coords = placemarks[i]
-                .getElementsByTagName('coordinates')[0]
-                ?.textContent?.trim();
-              const name =
-                placemarks[i].getElementsByTagName('name')[0]?.textContent ||
-                `Ponto ${i + 1}`;
-              if (coords) {
-                const parts = coords.split(',').map(Number);
-                features.push({
-                  type: 'Feature',
-                  properties: { name },
-                  geometry: {
-                    type: 'Point',
-                    coordinates: [parts[0], parts[1]],
-                  },
-                });
-              }
-            }
-            setGeoData({ type: 'FeatureCollection', features });
-          }
-        } catch (err) {
-          logger.error('Erro ao processar arquivo:', err);
+      try {
+        const lowerName = file.name.toLowerCase();
+        if (lowerName.endsWith('.geojson') || lowerName.endsWith('.json')) {
+          setGeoData(JSON.parse(await file.text()));
+          return;
         }
-      };
-      reader.readAsText(file);
+
+        let kmlText = '';
+        if (lowerName.endsWith('.kmz')) {
+          const zip = await JSZip.loadAsync(file);
+          const kmlFile = Object.values(zip.files).find((item) =>
+            item.name.toLowerCase().endsWith('.kml'),
+          );
+          if (!kmlFile) throw new Error('O arquivo KMZ não contém um KML.');
+          kmlText = await kmlFile.async('string');
+        } else if (lowerName.endsWith('.kml')) {
+          kmlText = await file.text();
+        } else {
+          throw new Error('Formato não suportado. Use KML, KMZ ou GeoJSON.');
+        }
+
+        const kml = new DOMParser().parseFromString(kmlText, 'text/xml');
+        const converted = toGeoJSON.kml(kml);
+        if (!converted.features.length) throw new Error('Nenhuma geometria encontrada no arquivo.');
+        setGeoData(converted);
+      } catch (err: any) {
+        logger.error('Erro ao processar arquivo:', err);
+        setGeoData(null);
+        toast.error(err.message || 'Erro ao processar arquivo geográfico.');
+      }
     },
     []
   );
@@ -120,7 +112,7 @@ const CadastroTecnico: React.FC = () => {
     {
       icon: Map,
       label: 'Propriedades Georreferenciadas',
-      value: String(properties.length),
+      value: String(properties.filter((property) => property.features?.legal?.geometry).length),
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
     },
@@ -140,12 +132,62 @@ const CadastroTecnico: React.FC = () => {
     },
     {
       icon: AlertTriangle,
-      label: 'Sobreposições Detectadas',
-      value: '0',
+      label: 'Cadastros Pendentes',
+      value: String(properties.filter((property) => !property.features?.rural_technical).length),
       color: 'text-red-600',
       bg: 'bg-red-50',
     },
   ];
+
+  const updateTechnicalForm = (key: keyof typeof technicalForm, value: string) => {
+    setTechnicalForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const saveTechnicalRegistration = async () => {
+    if (!selectedPropertyId || !profile?.organization_id) {
+      toast.error('Selecione uma propriedade rural para salvar o cadastro técnico.');
+      return;
+    }
+
+    const property = properties.find((item) => item.id === selectedPropertyId);
+    const nextFeatures = {
+      ...(property?.features || {}),
+      rural_technical: {
+        ...technicalForm,
+        area_agricultavel: Number(technicalForm.area_agricultavel || 0),
+        area_reserva: Number(technicalForm.area_reserva || 0),
+        score_liquidez: Number(technicalForm.score_liquidez || 0),
+        source_file: fileName || null,
+        geometry: geoData || null,
+        updated_at: new Date().toISOString(),
+      },
+      legal: {
+        ...(property?.features?.legal || {}),
+        geometry: geoData || property?.features?.legal?.geometry || null,
+      },
+    };
+
+    setSaving(true);
+    const { error } = await supabase
+      .from('properties')
+      .update({ features: nextFeatures })
+      .eq('id', selectedPropertyId)
+      .eq('organization_id', profile.organization_id);
+    setSaving(false);
+
+    if (error) {
+      logger.error('Erro ao salvar cadastro tecnico rural:', error);
+      toast.error('Erro ao salvar cadastro técnico rural.');
+      return;
+    }
+
+    setProperties((prev) =>
+      prev.map((item) =>
+        item.id === selectedPropertyId ? { ...item, features: nextFeatures } : item
+      )
+    );
+    toast.success('Cadastro técnico rural salvo com sucesso.');
+  };
 
   return (
     <div className="space-y-8">
@@ -208,13 +250,13 @@ const CadastroTecnico: React.FC = () => {
                 {fileName ? fileName : 'Arraste ou selecione um arquivo'}
               </h3>
               <p className="text-sm text-slate-400 mb-6">
-                Suporta KML, KMZ, GeoJSON e Shapefile
+                Suporta KML, KMZ e GeoJSON
               </p>
               <label className="cursor-pointer bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-emerald-500 transition-all shadow-lg inline-block">
                 Selecionar Arquivo
                 <input
                   type="file"
-                  accept=".kml,.kmz,.geojson,.json,.shp,.zip"
+                  accept=".kml,.kmz,.geojson,.json"
                   className="hidden"
                   onChange={handleFileUpload}
                 />
@@ -224,6 +266,23 @@ const CadastroTecnico: React.FC = () => {
             {/* Form Fields */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
               <h3 className="font-bold text-black">Dados Técnicos</h3>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  Propriedade Rural
+                </label>
+                <select
+                  value={selectedPropertyId}
+                  onChange={(event) => setSelectedPropertyId(event.target.value)}
+                  className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
+                >
+                  <option value="">Selecione uma propriedade</option>
+                  {properties.map((property) => (
+                    <option key={property.id} value={property.id}>
+                      {property.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
@@ -231,6 +290,8 @@ const CadastroTecnico: React.FC = () => {
                   </label>
                   <input
                     type="number"
+                    value={technicalForm.area_agricultavel}
+                    onChange={(event) => updateTechnicalForm('area_agricultavel', event.target.value)}
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
                     placeholder="0"
                   />
@@ -241,6 +302,8 @@ const CadastroTecnico: React.FC = () => {
                   </label>
                   <input
                     type="number"
+                    value={technicalForm.area_reserva}
+                    onChange={(event) => updateTechnicalForm('area_reserva', event.target.value)}
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
                     placeholder="0"
                   />
@@ -249,7 +312,11 @@ const CadastroTecnico: React.FC = () => {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                     Bioma
                   </label>
-                  <select className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none">
+                  <select
+                    value={technicalForm.bioma}
+                    onChange={(event) => updateTechnicalForm('bioma', event.target.value)}
+                    className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
+                  >
                     <option>Cerrado</option>
                     <option>Amazônia</option>
                     <option>Mata Atlântica</option>
@@ -262,7 +329,11 @@ const CadastroTecnico: React.FC = () => {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                     Tipo de Solo
                   </label>
-                  <select className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none">
+                  <select
+                    value={technicalForm.tipo_solo}
+                    onChange={(event) => updateTechnicalForm('tipo_solo', event.target.value)}
+                    className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
+                  >
                     <option>Latossolo</option>
                     <option>Argissolo</option>
                     <option>Neossolo</option>
@@ -274,7 +345,11 @@ const CadastroTecnico: React.FC = () => {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                     Regime Hídrico
                   </label>
-                  <select className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none">
+                  <select
+                    value={technicalForm.regime_hidrico}
+                    onChange={(event) => updateTechnicalForm('regime_hidrico', event.target.value)}
+                    className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
+                  >
                     <option>Irrigado</option>
                     <option>Sequeiro</option>
                     <option>Misto</option>
@@ -284,7 +359,11 @@ const CadastroTecnico: React.FC = () => {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                     Topografia
                   </label>
-                  <select className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none">
+                  <select
+                    value={technicalForm.topografia}
+                    onChange={(event) => updateTechnicalForm('topografia', event.target.value)}
+                    className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
+                  >
                     <option>Plana</option>
                     <option>Suave Ondulada</option>
                     <option>Ondulada</option>
@@ -296,7 +375,11 @@ const CadastroTecnico: React.FC = () => {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                     Aptidão Produtiva
                   </label>
-                  <select className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none">
+                  <select
+                    value={technicalForm.aptidao}
+                    onChange={(event) => updateTechnicalForm('aptidao', event.target.value)}
+                    className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
+                  >
                     <option>Pecuária</option>
                     <option>Agricultura</option>
                     <option>Mista</option>
@@ -312,12 +395,19 @@ const CadastroTecnico: React.FC = () => {
                     type="number"
                     min="0"
                     max="100"
+                    value={technicalForm.score_liquidez}
+                    onChange={(event) => updateTechnicalForm('score_liquidez', event.target.value)}
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
                     placeholder="0"
                   />
                 </div>
               </div>
-              <button className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-emerald-500 transition-all mt-4 shadow-lg">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={saveTechnicalRegistration}
+                className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-emerald-500 transition-all mt-4 shadow-lg disabled:opacity-60"
+              >
                 Salvar Cadastro Técnico
               </button>
             </div>
@@ -398,10 +488,10 @@ const CadastroTecnico: React.FC = () => {
                         {prop.title}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {prop.location_city}/{prop.location_state}
+                        {[prop.city, prop.state].filter(Boolean).join(' / ') || '—'}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {prop.area_total_ha || '—'}
+                        {prop.total_area_ha || prop.features?.areaHectares || '—'}
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-700">

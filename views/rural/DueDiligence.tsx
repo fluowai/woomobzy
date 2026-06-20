@@ -17,6 +17,8 @@ import {
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { legalValidationService } from '../../services/legalValidationService';
+import DocumentUpload from '../../src/components/DocumentUpload';
+import { callApi } from '../../src/lib/api';
 
 type DocStatus = 'approved' | 'pending' | 'rejected' | 'missing';
 
@@ -185,6 +187,7 @@ const DueDiligence: React.FC = () => {
   >({});
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
 
   const loadProps = useCallback(async () => {
     if (!profile?.organization_id) {
@@ -232,6 +235,18 @@ const DueDiligence: React.FC = () => {
   useEffect(() => {
     if (!selectedProperty) {
       setChecklist(DEFAULT_CHECKLIST);
+      setDocuments([]);
+      return;
+    }
+
+    callApi(`/api/documents/${selectedProperty}`)
+      .then((result) => setDocuments(result.documents || []))
+      .catch((error) => logger.warn('Nao foi possivel carregar documentos rurais:', error));
+
+    const selected = properties.find((property) => property.id === selectedProperty);
+    const savedChecklist = selected?.features?.rural_due_diligence?.checklist;
+    if (Array.isArray(savedChecklist) && savedChecklist.length > 0) {
+      setChecklist(savedChecklist);
       return;
     }
 
@@ -261,7 +276,44 @@ const DueDiligence: React.FC = () => {
         })
       );
     }
-  }, [selectedProperty, propertyValidations]);
+  }, [selectedProperty, propertyValidations, properties]);
+
+  const persistChecklist = async (
+    nextChecklist: ChecklistItem[],
+    validation?: PropertyValidation
+  ) => {
+    if (!selectedProperty || !profile?.organization_id) return;
+
+    const current = properties.find((property) => property.id === selectedProperty);
+    const nextFeatures = {
+      ...(current?.features || {}),
+      rural_due_diligence: {
+        ...(current?.features?.rural_due_diligence || {}),
+        checklist: nextChecklist,
+        validation: validation || propertyValidations[selectedProperty] || null,
+        updated_at: new Date().toISOString(),
+      },
+    };
+
+    const { error } = await supabase
+      .from('properties')
+      .update({ features: nextFeatures })
+      .eq('id', selectedProperty)
+      .eq('organization_id', profile.organization_id);
+
+    if (error) {
+      logger.error('Erro ao persistir due diligence rural:', error);
+      return;
+    }
+
+    setProperties((prev) =>
+      prev.map((property) =>
+        property.id === selectedProperty
+          ? { ...property, features: nextFeatures }
+          : property
+      )
+    );
+  };
 
   const runValidation = async () => {
     if (!selectedProperty) return;
@@ -292,6 +344,30 @@ const DueDiligence: React.FC = () => {
         ...prev,
         [selectedProperty]: newValidation,
       }));
+
+      const nextChecklist = checklist.map((item) => {
+        let newStatus = item.status;
+        let validated = false;
+
+        if (item.validationSource === 'CAR' && newValidation.carStatus) {
+          newStatus = newValidation.carStatus === 'ATIVO' ? 'approved' : 'rejected';
+          validated = true;
+        } else if (item.validationSource === 'SNCR' && newValidation.ccirStatus) {
+          newStatus = newValidation.ccirStatus === 'ATIVO' ? 'approved' : 'pending';
+          validated = true;
+        } else if (item.validationSource === 'SIGEF' && newValidation.geoStatus) {
+          newStatus = newValidation.geoStatus === 'CERTIFICADO' ? 'approved' : 'rejected';
+          validated = true;
+        } else if (item.validationSource === 'ITR' && newValidation.itrStatus) {
+          newStatus = newValidation.itrStatus === 'REGULAR' ? 'approved' : 'rejected';
+          validated = true;
+        }
+
+        return { ...item, status: newStatus, validated };
+      });
+
+      setChecklist(nextChecklist);
+      await persistChecklist(nextChecklist, newValidation);
     } catch (error: any) {
       setValidationError(error.message || 'Erro ao validar');
     } finally {
@@ -301,14 +377,16 @@ const DueDiligence: React.FC = () => {
 
   const cycleStatus = (id: string) => {
     const order: DocStatus[] = ['missing', 'pending', 'approved', 'rejected'];
-    setChecklist((prev) =>
-      prev.map((item) => {
+    setChecklist((prev) => {
+      const nextChecklist = prev.map((item) => {
         if (item.id !== id) return item;
         const currentIdx = order.indexOf(item.status);
         const nextIdx = (currentIdx + 1) % order.length;
         return { ...item, status: order[nextIdx], validated: false };
-      })
-    );
+      });
+      persistChecklist(nextChecklist);
+      return nextChecklist;
+    });
   };
 
   const fundiarioItems = checklist.filter((i) => i.category === 'fundiario');
@@ -460,6 +538,22 @@ const DueDiligence: React.FC = () => {
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
               <AlertCircle size={16} />
               {validationError}
+            </div>
+          )}
+
+          {selectedProperty && (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Documentos anexados: {documents.length}
+              </p>
+              <DocumentUpload
+                propertyId={selectedProperty}
+                onUploadComplete={() =>
+                  callApi(`/api/documents/${selectedProperty}`)
+                    .then((result) => setDocuments(result.documents || []))
+                    .catch(() => {})
+                }
+              />
             </div>
           )}
         </div>

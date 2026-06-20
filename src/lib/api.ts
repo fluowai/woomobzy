@@ -127,6 +127,41 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   return response.json();
 };
 
+export const downloadApiFile = async (path: string, filename: string) => {
+  const url = getApiUrl(path);
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const headers = new Headers();
+  if (session?.access_token) {
+    headers.set('Authorization', `Bearer ${session.access_token}`);
+  }
+
+  const impId = getImpersonatedOrgId();
+  if (impId && impId !== 'null') {
+    headers.set('x-impersonate-org-id', impId);
+  } else {
+    const activeOrgId = getActiveOrganizationId();
+    if (activeOrgId) headers.set('x-organization-id', activeOrgId);
+  }
+
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Erro ao baixar arquivo: ${response.statusText}`);
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+};
+
 function getImpersonatedOrgId(): string | null {
   if (typeof window === 'undefined') return null;
 
@@ -141,5 +176,4 @@ function getImpersonatedOrgId(): string | null {
 
   return null;
 }
-
 

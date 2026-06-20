@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { callApi } from '../lib/api';
 
 interface DocumentUploadProps {
   propertyId: string;
@@ -56,12 +57,10 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ propertyId, onUploadCom
     formData.append('file', file);
 
     try {
-      const res = await fetch(`/api/documents/upload/${propertyId}`, {
+      const data = await callApi(`/api/documents/upload/${propertyId}`, {
         method: 'POST',
-        credentials: 'include',
         body: formData,
       });
-      const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Erro no upload');
       setUploaded(true);
       setFile(null);

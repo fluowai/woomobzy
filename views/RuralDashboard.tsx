@@ -14,6 +14,7 @@ import {
 import IADashboardSummary from '../components/IADashboardSummary';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
+import { isRuralProperty } from '../utils/propertyNiche';
 import {
   XAxis,
   YAxis,
@@ -26,7 +27,7 @@ import {
 
 const RuralDashboard: React.FC = () => {
   const { profile } = useAuth();
-  const [propertyCount, setPropertyCount] = useState(0);
+  const [ruralProperties, setRuralProperties] = useState<any[]>([]);
   const [leadCount, setLeadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -35,9 +36,9 @@ const RuralDashboard: React.FC = () => {
 
     const loadData = async () => {
       try {
-        const { count: pCount } = await supabase
+        const { data: propertyRows } = await supabase
           .from('properties')
-          .select('*', { count: 'exact', head: true })
+          .select('id, property_type, niche, price, status, total_area_ha, features, created_at')
           .eq('organization_id', profile.organization_id);
 
         const { count: lCount } = await supabase
@@ -45,7 +46,7 @@ const RuralDashboard: React.FC = () => {
           .select('*', { count: 'exact', head: true })
           .eq('organization_id', profile.organization_id);
 
-        setPropertyCount(pCount || 0);
+        setRuralProperties((propertyRows || []).filter(isRuralProperty));
         setLeadCount(lCount || 0);
       } catch (err) {
         logger.error('Loader error:', err);
@@ -57,11 +58,36 @@ const RuralDashboard: React.FC = () => {
     loadData();
   }, [profile?.organization_id]);
 
+  const propertyCount = ruralProperties.length;
+  const pendingDueDiligence = ruralProperties.filter((property) => {
+    const validation = property.features?.rural_due_diligence?.validation;
+    return !validation || Number(validation.riskScore || 0) < 80;
+  }).length;
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthlyPortfolioValue = ruralProperties
+    .filter((property) => {
+      const createdAt = property.created_at ? new Date(property.created_at) : null;
+      return (
+        createdAt &&
+        createdAt.getMonth() === currentMonth &&
+        createdAt.getFullYear() === currentYear
+      );
+    })
+    .reduce((sum, property) => sum + Number(property.price || 0), 0);
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(value);
+
   const kpis = [
     {
       label: 'Propriedades',
       value: loading ? '—' : String(propertyCount),
-      change: '+12%',
+      change: 'Rural',
       icon: Wheat,
       iconColor: 'text-primary',
       iconBg: 'bg-primary/10 border-primary/20',
@@ -69,37 +95,50 @@ const RuralDashboard: React.FC = () => {
     {
       label: 'Investidores',
       value: loading ? '—' : String(leadCount),
-      change: '+5%',
+      change: 'Ativos',
       icon: UsersIcon,
       iconColor: 'text-purple-400',
       iconBg: 'bg-purple-500/10 border-purple-500/20',
     },
     {
       label: 'Due Diligence',
-      value: '18',
-      change: '+8%',
+      value: loading ? '—' : String(pendingDueDiligence),
+      change: 'Pendentes',
       icon: ShieldCheck,
       iconColor: 'text-amber-400',
       iconBg: 'bg-amber-500/10 border-amber-500/20',
     },
     {
       label: 'Negócios (Mês)',
-      value: 'R$ 8.2M',
-      change: '+24%',
+      value: loading ? '—' : formatCurrency(monthlyPortfolioValue),
+      change: 'Carteira',
       icon: TrendingUp,
       iconColor: 'text-teal-400',
       iconBg: 'bg-teal-500/10 border-teal-500/20',
     },
   ];
 
-  const chartData = [
-    { name: 'Jan', valor: 45 },
-    { name: 'Fev', valor: 52 },
-    { name: 'Mar', valor: 48 },
-    { name: 'Abr', valor: 61 },
-    { name: 'Mai', valor: 55 },
-    { name: 'Jun', valor: 67 },
-  ];
+  const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'short' });
+  const chartData = Array.from({ length: 6 }, (_, offset) => {
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() - (5 - offset));
+    const value = ruralProperties
+      .filter((property) => {
+        const createdAt = property.created_at ? new Date(property.created_at) : null;
+        return (
+          createdAt &&
+          createdAt.getMonth() === date.getMonth() &&
+          createdAt.getFullYear() === date.getFullYear()
+        );
+      })
+      .reduce((sum, property) => sum + Number(property.price || 0), 0);
+
+    return {
+      name: monthFormatter.format(date).replace('.', ''),
+      valor: Number((value / 1_000_000).toFixed(2)),
+    };
+  });
 
   const displayName =
     profile?.full_name ||

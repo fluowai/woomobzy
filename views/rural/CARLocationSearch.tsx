@@ -17,6 +17,8 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { propertyService } from '../../services/properties';
+import { useNavigate } from 'react-router-dom';
 
 // Fix Leaflet icons with safety checks
 if (typeof window !== 'undefined') {
@@ -51,6 +53,7 @@ interface CARCandidate {
 }
 
 const CARLocationSearch: React.FC = () => {
+  const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +61,7 @@ const CARLocationSearch: React.FC = () => {
   const [selectedCandidate, setSelectedCandidate] = useState<CARCandidate | null>(null);
   const [progress, setProgress] = useState<string[]>([]);
   const [inputData, setInputData] = useState<any>(null);
+  const [savingCandidate, setSavingCandidate] = useState(false);
 
   const addProgress = (msg: string) => setProgress(prev => [...prev, msg]);
 
@@ -74,9 +78,15 @@ const CARLocationSearch: React.FC = () => {
 
     try {
       addProgress('Processando link do Google Maps...');
+      const coordinateMatch = inputValue
+        .trim()
+        .match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+      const requestBody = coordinateMatch
+        ? { lat: Number(coordinateMatch[1]), lng: Number(coordinateMatch[2]) }
+        : { googleMapsUrl: inputValue };
       const response = await callApi('/api/rural/find-car-by-location', {
         method: 'POST',
-        body: JSON.stringify({ googleMapsUrl: inputValue })
+        body: JSON.stringify(requestBody)
       });
 
       if (response.success) {
@@ -109,6 +119,53 @@ const CARLocationSearch: React.FC = () => {
       }
     }, [geometry, point, map]);
     return null;
+  };
+
+  const createPropertyFromCandidate = async () => {
+    if (!selectedCandidate) return;
+
+    setSavingCandidate(true);
+    setError(null);
+    try {
+      const created = await propertyService.create({
+        title: `Fazenda ${selectedCandidate.municipio || selectedCandidate.codImovel}`,
+        description: `Propriedade rural identificada pelo CAR ${selectedCandidate.codImovel}.`,
+        type: 'Fazenda' as any,
+        purpose: 'Venda' as any,
+        status: 'Pendente' as any,
+        price: 0,
+        niche: 'rural',
+        location: {
+          city: selectedCandidate.municipio || '',
+          state: selectedCandidate.uf || '',
+          address: '',
+          neighborhood: '',
+        },
+        features: {
+          areaHectares: selectedCandidate.areaHa || 0,
+          preferredUnit: 'ha',
+          legal: {
+            car: true,
+            carNumber: selectedCandidate.codImovel,
+            geometry: selectedCandidate.geometry,
+            reservaLegal: 0,
+            app: 0,
+          },
+          rural: {
+            car_source: selectedCandidate.sourceLayer,
+            car_match_mode: selectedCandidate.matchMode,
+            car_confidence: selectedCandidate.confidence,
+            car_raw_properties: selectedCandidate.rawProperties,
+          },
+        } as any,
+      } as any);
+
+      navigate(`/rural/properties/${created.id}`);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao criar propriedade a partir do CAR.');
+    } finally {
+      setSavingCandidate(false);
+    }
   };
 
   return (
@@ -273,12 +330,10 @@ const CARLocationSearch: React.FC = () => {
               </div>
               <button 
                 className="group flex items-center gap-3 bg-white text-emerald-900 px-8 py-4 rounded-2xl font-black uppercase text-xs hover:bg-emerald-50 transition-all"
-                onClick={() => {
-                  // TODO: Integração com o fluxo de geração de dossiê
-                  alert(`Iniciando dossiê para ${selectedCandidate.codImovel}`);
-                }}
+                onClick={createPropertyFromCandidate}
+                disabled={savingCandidate}
               >
-                Gerar Dossiê Rural
+                {savingCandidate ? 'Salvando imóvel...' : 'Gerar Dossiê Rural'}
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

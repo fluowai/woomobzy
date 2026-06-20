@@ -3,6 +3,13 @@ import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { enrichPropertyWithAcp } from '../../services/acpPropertyAgent.js';
+import {
+  applyRuralFilter,
+  applyUrbanFilter,
+  isRuralType,
+  isUrbanType,
+  normalizeNiche,
+} from '../../utils/propertyNiche.js';
 
 const router = Router();
 
@@ -23,20 +30,9 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       .eq('id', req.orgId)
       .single();
 
-    const niche = org?.niche || 'traditional';
+    const niche = normalizeNiche(org?.niche) || 'urbano';
 
-    // 2. Definir as listas de tipos permitidos (SQL Separation)
-    const URBAN_TYPES = [
-      'Apartamento', 'Casa', 'Sobrado', 'Terreno Urbano', 
-      'Sala Comercial', 'Galpão Industrial', 'Loft', 'Studio', 'Cobertura'
-    ];
-    
-    const RURAL_TYPES = [
-      'Fazenda', 'Sítio', 'Chácara', 'Estância', 'Haras', 'Granja', 
-      'Agropecuária', 'Terreno Rural', 'Gleba', 'Lote Rural', 'Área Produtiva'
-    ];
-
-    // 3. Montar a query com o filtro de nicho
+    // 2. Montar a query com o filtro de nicho
     let query = supabase
       .from('properties')
       .select('*', { count: 'exact' })
@@ -44,13 +40,12 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     // Se o cliente pediu um nicho específico via query string, usamos ele
     // Caso contrário, usamos o nicho da organização
-    const filterNiche = req.query.niche || niche;
+    const filterNiche = normalizeNiche(req.query.niche) || niche;
 
     if (filterNiche === 'rural') {
-      // Tenta filtrar pela coluna 'niche' ou pelos tipos rurais como fallback
-      query = query.or(`niche.eq.rural,property_type.in.(${RURAL_TYPES.map(t => `"${t}"`).join(',')})`);
+      query = applyRuralFilter(query);
     } else if (filterNiche === 'urbano') {
-      query = query.or(`niche.eq.urbano,property_type.in.(${URBAN_TYPES.map(t => `"${t}"`).join(',')})`);
+      query = applyUrbanFilter(query);
     }
 
     const { data, error, count } = await query
@@ -79,11 +74,18 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 router.post('/', verifyAdmin, requireTenant, async (req, res) => {
   try {
     const propertyData = req.body;
+    const explicitNiche = normalizeNiche(propertyData.niche);
+    const inferredNiche = isRuralType(propertyData.property_type)
+      ? 'rural'
+      : isUrbanType(propertyData.property_type)
+        ? 'urbano'
+        : '';
     
     const { data, error } = await supabase
       .from('properties')
       .insert({
         ...propertyData,
+        niche: explicitNiche || inferredNiche || propertyData.niche || null,
         organization_id: req.orgId // FORÇADO
       })
       .select()

@@ -2,37 +2,80 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileSearch, 
   Download, 
-  Share2, 
   ShieldCheck, 
   Map, 
   TrendingUp, 
-  AlertCircle,
   CheckCircle2,
-  ExternalLink,
-  ChevronRight,
-  Info,
   Calendar,
   Zap
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { Property } from '../../types';
 import AgroMarketWidget from '../../components/AgroMarketWidget';
+import { useAuth } from '../../context/AuthContext';
+import { isRuralProperty } from '../../utils/propertyNiche';
+import { downloadApiFile } from '../../src/lib/api';
+import { toast } from 'sonner';
 
 const DossieInteligente: React.FC = () => {
+  const { profile } = useAuth();
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!profile?.organization_id) return;
     loadProperties();
-  }, []);
+  }, [profile?.organization_id]);
 
   const loadProperties = async () => {
+    if (!profile?.organization_id) return;
+    setLoading(true);
     const { data } = await supabase
       .from('properties')
       .select('*')
+      .eq('organization_id', profile.organization_id)
       .order('created_at', { ascending: false });
-    if (data) setProperties(data);
+    if (data) setProperties(data.filter(isRuralProperty) as any);
+    setLoading(false);
+  };
+
+  const downloadDossier = async () => {
+    if (!selectedProperty) {
+      toast.error('Selecione uma propriedade rural.');
+      return;
+    }
+
+    try {
+      await downloadApiFile(
+        `/api/rural/dossier/${selectedProperty.id}/pdf`,
+        `dossie-rural-${selectedProperty.id}.pdf`
+      );
+      toast.success('Dossie rural gerado.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao gerar dossie rural.');
+    }
+  };
+
+  const legal = selectedProperty?.features?.legal || {};
+  const validation = (selectedProperty?.features as any)?.rural_due_diligence?.validation;
+  const riskScore = Number(validation?.riskScore || 0);
+  const technicalItems = selectedProperty
+    ? [
+        { label: 'Georreferenciamento', valid: Boolean(legal.geo || legal.geometry), icon: Map },
+        { label: 'CAR (Ambiental)', valid: Boolean(legal.car || legal.carNumber), icon: ShieldCheck },
+        { label: 'Matrícula', valid: Boolean(legal.matricula), icon: FileSearch },
+      ]
+    : [];
+
+  const shareOnWhatsApp = () => {
+    if (!selectedProperty) return;
+    const message = [
+      selectedProperty.title,
+      `${selectedProperty.total_area_ha || selectedProperty.features?.areaHectares || 0} hectares`,
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedProperty.price || 0),
+    ].join(' - ');
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -64,13 +107,24 @@ const DossieInteligente: React.FC = () => {
               ))}
             </select>
           </div>
-          <button className="h-12 px-6 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2">
+          <button
+            type="button"
+            onClick={downloadDossier}
+            disabled={!selectedProperty}
+            className="h-12 px-6 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-40"
+          >
              <Download size={14} /> Gerar PDF
           </button>
         </div>
       </div>
 
-      {!selectedProperty ? (
+      {loading ? (
+        <div className="py-32 text-center bg-white rounded-[3rem] border border-slate-100">
+          <FileSearch size={64} className="text-slate-200 mx-auto mb-6 animate-pulse" />
+          <h3 className="text-2xl font-black text-black uppercase italic tracking-tighter">Carregando Ativos Rurais</h3>
+          <p className="text-slate-400 font-medium italic mt-2">Buscando apenas propriedades rurais da sua organizacao.</p>
+        </div>
+      ) : !selectedProperty ? (
         <div className="py-32 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
           <FileSearch size={64} className="text-slate-200 mx-auto mb-6" />
           <h3 className="text-2xl font-black text-black uppercase italic tracking-tighter">Aguardando Seleção</h3>
@@ -130,17 +184,15 @@ const DossieInteligente: React.FC = () => {
                    <CheckCircle2 size={20} className="text-emerald-500" />
                 </div>
                 <div className="space-y-4">
-                  {[
-                    { label: 'Georreferenciamento', status: 'Certificado', icon: Map },
-                    { label: 'CAR (Ambiental)', status: 'Ativo', icon: ShieldCheck },
-                    { label: 'Matrícula', status: 'Regular', icon: FileSearch },
-                  ].map((item, idx) => (
+                  {technicalItems.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
                       <div className="flex items-center gap-3">
                         <item.icon size={16} className="text-slate-400" />
                         <span className="text-xs font-bold text-slate-600">{item.label}</span>
                       </div>
-                      <span className="text-[10px] font-black text-emerald-600 uppercase">{item.status}</span>
+                      <span className={`text-[10px] font-black uppercase ${item.valid ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {item.valid ? 'Informado' : 'Pendente'}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -158,11 +210,8 @@ const DossieInteligente: React.FC = () => {
                     <p className="text-lg font-black text-indigo-900">
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedProperty.price || 0) / (selectedProperty.total_area_ha || 1))}
                     </p>
-                    <p className="text-[9px] text-indigo-400 italic mt-1">± 12% em relação à média regional</p>
+                    <p className="text-[9px] text-indigo-400 italic mt-1">Calculado a partir do valor e da área cadastrados.</p>
                   </div>
-                  <button className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-all">
-                    Ver Comparativo Completo →
-                  </button>
                 </div>
               </div>
             </div>
@@ -180,7 +229,13 @@ const DossieInteligente: React.FC = () => {
                   </div>
                </div>
                <p className="text-sm text-amber-800 font-medium italic leading-relaxed">
-                 O imóvel apresenta <strong>Baixo Risco Fundiário</strong>. No entanto, identificamos uma sobreposição de 2% com área de preservação permanente (APP) que requer atenção na próxima atualização do CAR. O potencial de valorização é estimado em <strong>15% ao ano</strong> devido à proximidade com o novo eixo logístico.
+                 {validation
+                   ? `A última validação registrou score ${riskScore}/100 e risco ${validation.riskLevel || 'não classificado'}. ${
+                       validation.validations?.filter((item: any) => !item.success).length
+                         ? `${validation.validations.filter((item: any) => !item.success).length} verificação(ões) seguem pendentes.`
+                         : 'As verificações cadastradas foram aprovadas.'
+                     }`
+                   : 'A análise de risco ainda não foi executada. Conclua a due diligence rural para gerar um parecer baseado nos documentos e cadastros do imóvel.'}
                </p>
             </div>
           </div>
@@ -192,11 +247,11 @@ const DossieInteligente: React.FC = () => {
             <div className="bg-black rounded-[3rem] p-10 text-white shadow-2xl shadow-slate-200">
                <h3 className="text-lg font-black uppercase italic tracking-tighter mb-8">Ferramentas de Venda</h3>
                <div className="space-y-4">
-                  <button className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-600 hover:border-emerald-500 transition-all text-left group">
+                  <button onClick={shareOnWhatsApp} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-600 hover:border-emerald-500 transition-all text-left group">
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/80 mb-1">Apresentação</p>
                     <p className="text-sm font-black">Enviar para Cliente (WhatsApp)</p>
                   </button>
-                  <button className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-indigo-600 hover:border-indigo-500 transition-all text-left group">
+                  <button onClick={() => toast.info('A minuta deve ser solicitada após a aprovação jurídica da due diligence.')} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-indigo-600 hover:border-indigo-500 transition-all text-left group">
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/80 mb-1">Jurídico</p>
                     <p className="text-sm font-black">Solicitar Minuta de Venda</p>
                   </button>

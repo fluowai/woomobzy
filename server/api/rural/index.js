@@ -19,6 +19,8 @@ import { AnalysisController } from './analysis/controller.js';
 import { AgroIntelligenceService } from '../../services/AgroIntelligence.js';
 import { extractLatLngFromGoogleMapsUrl, reverseGeocode, calculateConfidence } from '../../utils/geoUtils.js';
 import { SicarService } from '../../services/sicarService.js';
+import { applyRuralFilter, isRuralProperty } from '../../utils/propertyNiche.js';
+import PDFDocument from 'pdfkit';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -36,23 +38,6 @@ router.get('/market/prices', verifyAuth, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-const SNCR_API_BASE =
-  'https://apigateway.conectagov.estaleiro.serpro.gov.br/api-sncr/v2';
-const ITR_API_BASE = 'https://servicos.receita.fazenda.gov.br';
-
-async function fetchWithGovBr(url, token) {
-  const response = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`Gov.br API error: ${response.status}`);
-  }
-  return response.json();
-}
 
 function sanitizeInput(input, maxLength = 50) {
   if (typeof input !== 'string') return '';
@@ -139,7 +124,14 @@ const cpfCnpjSchema = z
     { message: 'CPF ou CNPJ inválido' }
   );
 
-const codigoSchema = z.string().min(1).max(30).transform(sanitizeInput);
+function ruralPropertiesQuery(supabase, orgId, columns = '*') {
+  return applyRuralFilter(
+    supabase
+      .from('properties')
+      .select(columns)
+      .eq('organization_id', orgId)
+  );
+}
 
 /**
  * GET /api/rural/sncr/buscar?cpfCnpj=XXXXXXXXXXXX
@@ -156,22 +148,16 @@ router.get('/sncr/buscar', verifyAuth, requireTenant, async (req, res) => {
     const cpfCnpjClean = req.query.cpfCnpj.replace(/\D/g, '');
 
     const supabase = getSupabaseServer();
-    const { data: properties } = await supabase
-      .from('properties')
-      .select('id, title, features')
-      .eq('organization_id', req.orgId)
-      .eq('property_type', 'Rural')
-      .or(
-        `legal->ccirNumber.cs.${cpfCnpjClean},legal->ccirNumber.cs.${cpfCnpj}`
-      );
+    const { data: properties } = await ruralPropertiesQuery(supabase, req.orgId, 'id, title, features, property_type, niche')
+      .filter('features->legal->>ccirNumber', 'ilike', `*${cpfCnpjClean}*`);
 
     const results =
       properties?.map((p) => ({
         codigoImovel: p.features?.legal?.ccirNumber,
         denominacao: p.title,
-        municipio: p.features?.location?.city,
-        uf: p.features?.location?.state,
-        areaHa: p.features?.physical?.area,
+          municipio: p.city || p.features?.location?.city,
+          uf: p.state || p.features?.location?.state,
+          areaHa: p.total_area_ha || p.features?.areaHectares || p.features?.physical?.area,
       })) || [];
 
     res.json({ success: true, data: results, count: results.length });
@@ -198,10 +184,7 @@ router.get(
       }
 
       const supabase = getSupabaseServer();
-      const { data: property } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('organization_id', req.orgId)
+      const { data: property } = await ruralPropertiesQuery(supabase, req.orgId)
         .eq('features->legal->ccirNumber', codigo)
         .single();
 
@@ -214,10 +197,10 @@ router.get(
         data: {
           codigoImovel: codigo,
           denominacao: property.title,
-          municipio: property.features?.location?.city,
-          uf: property.features?.location?.state,
-          areaHa: property.features?.physical?.area,
-          areaTotal: property.features?.physical?.area,
+          municipio: property.city || property.features?.location?.city,
+          uf: property.state || property.features?.location?.state,
+          areaHa: property.total_area_ha || property.features?.areaHectares || property.features?.physical?.area,
+          areaTotal: property.total_area_ha || property.features?.areaHectares || property.features?.physical?.area,
           situacao: 'ATIVO',
           dataAtualizacao: property.updated_at,
         },
@@ -246,10 +229,7 @@ router.get(
       }
 
       const supabase = getSupabaseServer();
-      const { data: property } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('organization_id', req.orgId)
+      const { data: property } = await ruralPropertiesQuery(supabase, req.orgId)
         .eq('features->legal->geoNumber', codigo)
         .single();
 
@@ -263,10 +243,10 @@ router.get(
           codigoParcela: codigo,
           codigoImovel: property.features?.legal?.ccirNumber,
           denominacao: property.title,
-          municipio: property.features?.location?.city,
-          uf: property.features?.location?.state,
-          areaCertificada: property.features?.physical?.area,
-          areaShape: property.features?.physical?.area,
+          municipio: property.city || property.features?.location?.city,
+          uf: property.state || property.features?.location?.state,
+          areaCertificada: property.total_area_ha || property.features?.areaHectares || property.features?.physical?.area,
+          areaShape: property.total_area_ha || property.features?.areaHectares || property.features?.physical?.area,
           situacao: 'CERTIFICADO',
           dataCertificacao: property.updated_at,
         },
@@ -398,7 +378,8 @@ router.get('/sigef/consultar/:codigo', verifyAuth, requireTenant, async (req, re
       });
     }
 
-    res.json({ success: true, data });
+    const target = featureCollectionToMapTarget(data);
+    res.json({ success: true, data, ...(target || {}) });
   } catch (error) {
     console.error('SIGEF WFS error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -418,10 +399,7 @@ router.get('/car/:codigo', verifyAuth, requireTenant, async (req, res) => {
     }
 
     const supabase = getSupabaseServer();
-    const { data: properties } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('organization_id', req.orgId)
+    const { data: properties } = await ruralPropertiesQuery(supabase, req.orgId)
       .eq('features->legal->carNumber', codigo);
 
     if (!properties || properties.length === 0) {
@@ -471,8 +449,8 @@ router.get(
         success: true,
         data: {
           nirf,
-          situacao: 'REGULAR',
-          tipo: 'NEGATIVA',
+        situacao: 'CONSULTA_EXTERNA_NECESSARIA',
+        tipo: 'NAO_VERIFICADA',
           mensagem: 'Consulte a certidão no portal e-CAC da Receita Federal',
           dataEmissao: new Date().toISOString(),
           link: `https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/portal-cnir`,
@@ -503,11 +481,8 @@ router.get(
       }
 
       const supabase = getSupabaseServer();
-      const { data: property } = await supabase
-        .from('properties')
-        .select('*')
+      const { data: property } = await ruralPropertiesQuery(supabase, req.orgId)
         .eq('id', propertyId)
-        .eq('organization_id', req.orgId)
         .single();
 
       if (!property) {
@@ -563,6 +538,20 @@ router.get(
         });
       }
 
+      validations.push(
+        legal.itrNumber || legal.nirf
+          ? {
+              source: 'ITR',
+              success: true,
+              data: { codigo: legal.itrNumber || legal.nirf, situacao: legal.itrStatus || 'REGULAR' },
+            }
+          : {
+              source: 'ITR',
+              success: false,
+              data: { codigo: '', situacao: 'NAO CADASTRADO' },
+            }
+      );
+
       let riskScore = 100;
       for (const v of validations) {
         if (!v.success) riskScore -= 25;
@@ -575,7 +564,7 @@ router.get(
         propertyId,
         propertyTitle: property.title,
         location: `${location.city}/${location.state}`,
-        areaHa: physical.area,
+        areaHa: physical.area || property.total_area_ha || property.features?.areaHectares || 0,
         validations,
         riskScore: Math.max(0, riskScore),
         riskLevel:
@@ -592,6 +581,108 @@ router.get(
  * Motor de Análise Rural (MAR)
  * POST /api/rural/analysis/kmz
  */
+router.get('/dossier/:propertyId/pdf', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.propertyId)) {
+      return res.status(400).json({ error: 'ID de propriedade invalido' });
+    }
+
+    const supabase = getSupabaseServer();
+    const { data: property } = await ruralPropertiesQuery(supabase, req.orgId)
+      .eq('id', req.params.propertyId)
+      .single();
+
+    if (!property || !isRuralProperty(property)) {
+      return res.status(404).json({ error: 'Propriedade rural nao encontrada' });
+    }
+
+    const { data: documents } = await supabase
+      .from('documents')
+      .select('document_type, status, validation_status, validation_score, created_at')
+      .eq('organization_id', req.orgId)
+      .eq('property_id', property.id)
+      .order('created_at', { ascending: false });
+
+    const features = property.features || {};
+    const legal = features.legal || {};
+    const technical = features.rural_technical || {};
+    const dueDiligence = features.rural_due_diligence || {};
+    const areaHa = Number(property.total_area_ha || features.areaHectares || technical.measured_area_ha || 0);
+    const price = Number(property.price || 0);
+    const pricePerHa = areaHa > 0 ? price / areaHa : 0;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="dossie-rural-${property.id}.pdf"`);
+
+    const doc = new PDFDocument({ margin: 48, size: 'A4' });
+    doc.pipe(res);
+    doc.fillColor('#065f46').fontSize(24).text('Dossie Rural 360');
+    doc.moveDown(0.3);
+    doc.fillColor('#111827').fontSize(18).text(property.title || 'Propriedade rural');
+    doc.fillColor('#6b7280').fontSize(10).text(`Gerado em ${new Date().toLocaleString('pt-BR')}`);
+    doc.moveDown();
+
+    const addSection = (title, rows) => {
+      doc.fillColor('#065f46').fontSize(14).text(title);
+      doc.moveDown(0.3);
+      for (const [label, value] of rows) {
+        doc.fillColor('#374151').fontSize(10).text(`${label}: `, { continued: true });
+        doc.fillColor('#111827').text(String(value ?? '-'));
+      }
+      doc.moveDown();
+    };
+
+    addSection('Resumo Comercial', [
+      ['Tipo', property.property_type || 'Rural'],
+      ['Status', property.status || '-'],
+      ['Preco', price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })],
+      ['Area', `${areaHa.toLocaleString('pt-BR')} ha`],
+      ['Preco por hectare', pricePerHa.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })],
+      ['Localizacao', [property.city, property.state].filter(Boolean).join(' / ') || '-'],
+    ]);
+    addSection('Cadastro Tecnico', [
+      ['Bioma', technical.bioma || '-'],
+      ['Solo', technical.tipo_solo || features.tipoSolo || '-'],
+      ['Topografia', technical.topografia || features.topography || '-'],
+      ['Aptidao', technical.aptidao || '-'],
+      ['Area agricultavel', technical.area_agricultavel ? `${technical.area_agricultavel} ha` : '-'],
+      ['Area de reserva', technical.area_reserva ? `${technical.area_reserva} ha` : '-'],
+      ['Score tecnico/liquidez', technical.score_liquidez ?? '-'],
+    ]);
+    addSection('Documentacao Rural', [
+      ['CAR', legal.carNumber || 'Nao cadastrado'],
+      ['CCIR', legal.ccirNumber || 'Nao cadastrado'],
+      ['SIGEF/GEO', legal.geoNumber || 'Nao cadastrado'],
+      ['ITR/NIRF', legal.itrNumber || legal.nirf || 'Nao cadastrado'],
+      ['Score de risco', dueDiligence.validation?.riskScore ?? '-'],
+      ['Nivel de risco', dueDiligence.validation?.riskLevel || '-'],
+    ]);
+
+    doc.fillColor('#065f46').fontSize(14).text('Arquivos e Validacoes');
+    doc.moveDown(0.3);
+    if (documents?.length) {
+      documents.forEach((item) => {
+        doc.fillColor('#111827').fontSize(10).text(
+          `${item.document_type || 'OUTRO'} - ${item.status || 'pending'} - ${item.validation_status || 'unchecked'}`
+        );
+      });
+    } else {
+      doc.fillColor('#6b7280').fontSize(10).text('Nenhum documento anexado.');
+    }
+
+    doc.moveDown();
+    doc.fillColor('#6b7280').fontSize(8).text(
+      'Documento gerado automaticamente pelo IMOBZY Rural. Confirme as validacoes nos orgaos competentes.',
+      { align: 'center' }
+    );
+    doc.end();
+  } catch (error) {
+    console.error('Rural dossier PDF error:', error);
+    if (!res.headersSent) res.status(500).json({ error: error.message });
+    else res.end();
+  }
+});
+
 router.post(
   '/analysis/kmz',
   verifyAuth,

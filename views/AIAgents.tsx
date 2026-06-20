@@ -191,23 +191,69 @@ const handoffRules = [
 ];
 
 const tabs = [
-  { id: 'identity', label: 'Identidade', icon: UserCheck },
+  { id: 'identity', label: 'Perfil do agente', icon: UserCheck },
   { id: 'channels', label: 'Canais', icon: Radio },
-  { id: 'operation', label: 'Operação', icon: Workflow },
-  { id: 'tools', label: 'Ferramentas', icon: Settings2 },
-  { id: 'rules', label: 'Regras', icon: ShieldCheck },
-  { id: 'brain', label: 'Cérebro Neural', icon: Brain },
-  { id: 'test', label: 'Teste', icon: Play },
+  { id: 'operation', label: 'Jornada comercial', icon: Workflow },
+  { id: 'tools', label: 'Acoes permitidas', icon: Settings2 },
+  { id: 'rules', label: 'Transbordo', icon: ShieldCheck },
+  { id: 'brain', label: 'Aprendizado', icon: Brain },
+  { id: 'test', label: 'Simulacao', icon: Play },
 ];
 
 const flowSteps = [
-  { title: 'Lead entrou', subtitle: 'Novo contato captado', icon: PhoneCall },
-  { title: 'IA atende', subtitle: 'Resposta instantânea', icon: Bot },
-  { title: 'IA qualifica', subtitle: 'Entende necessidade', icon: ClipboardCheck },
-  { title: 'Sugere imóvel', subtitle: 'Opções personalizadas', icon: Home },
-  { title: 'Agenda visita', subtitle: 'Sincroniza agenda', icon: CalendarClock },
-  { title: 'Corretor assume', subtitle: 'Recebe contexto', icon: UserPlus },
-  { title: 'Follow-up automático', subtitle: 'Acompanha interesse', icon: Repeat2 },
+  { title: 'Atende', subtitle: 'Recebe e responde o lead', icon: Headphones },
+  { title: 'Qualifica', subtitle: 'Perfil, dor, prazo e valor', icon: ClipboardCheck },
+  { title: 'Cria processo', subtitle: 'Card, etapa e proxima acao', icon: LayoutGrid },
+  { title: 'Recomenda', subtitle: 'Imoveis aderentes da carteira', icon: Home },
+  { title: 'Agenda', subtitle: 'Visita, simulacao ou retorno', icon: CalendarClock },
+  { title: 'Transborda', subtitle: 'Corretor recebe contexto', icon: UserPlus },
+  { title: 'Acompanha', subtitle: 'Follow-up ate fechamento', icon: Repeat2 },
+];
+
+const salesProcessSteps = [
+  {
+    title: 'Entrada e triagem',
+    description: 'Identifica comprador, locatario, proprietario, investidor ou contato sem perfil comercial.',
+    icon: PhoneCall,
+  },
+  {
+    title: 'Qualificacao SDR',
+    description: 'Coleta tipo de imovel, regiao, faixa de investimento, pagamento, prazo e objecoes.',
+    icon: Target,
+  },
+  {
+    title: 'Processo de venda',
+    description: 'Cria ou atualiza lead no CRM, movimenta funil, registra resumo e define proxima acao.',
+    icon: Workflow,
+  },
+  {
+    title: 'Oportunidades',
+    description: 'Consulta a carteira, recomenda imoveis aderentes e prepara argumento comercial.',
+    icon: Sparkles,
+  },
+  {
+    title: 'Execucao comercial',
+    description: 'Agenda visita, cria follow-up, aciona corretor, pede documentos e acompanha negociacao.',
+    icon: Rocket,
+  },
+];
+
+const operatingModes = [
+  {
+    title: 'SDR de atendimento',
+    description: 'Ideal para WhatsApp conectado: responde rapido, qualifica e cria o processo no CRM.',
+    tools: ['whatsapp', 'crm', 'kanban', 'follow-up'],
+  },
+  {
+    title: 'Closer assistido',
+    description: 'Conduz proposta, visita, simulacao e objecoes, com transbordo para corretor humano.',
+    tools: ['matchmaking', 'agenda', 'notificar-corretor', 'mover-etapa-funil'],
+  },
+  {
+    title: 'Atendimento completo',
+    description: 'Opera do primeiro contato ao pos-atendimento, mantendo historico, tarefas e retornos.',
+    tools: ['whatsapp', 'crm', 'kanban', 'matchmaking', 'follow-up', 'criar-tarefa'],
+  },
 ];
 
 const defaultHandoff = {
@@ -222,24 +268,45 @@ const defaultHandoff = {
 
 const emptyAgent: BuilderDraft = {
   name: '',
-  role: 'Atendimento e Qualificação de Leads',
+  role: 'SDR de Atendimento Imobiliario',
   channel: 'whatsapp',
   channels: ['whatsapp'],
   instances: [],
   is_active: true,
   status: 'Ativo',
   personality: '',
-  instructions: '',
-  capabilities: ['Atendimento inicial', 'Kanban comercial', 'Follow-up'],
-  tools: ['whatsapp', 'kanban', 'crm', 'follow-up', 'notificar-corretor'],
+  instructions:
+    'Atue como SDR imobiliario. Receba o lead, qualifique perfil, crie ou atualize o processo no CRM, mova a etapa correta do funil, consulte oportunidades da carteira quando fizer sentido e acione o corretor com contexto completo quando houver intencao forte.',
+  capabilities: ['Atendimento inicial', 'Kanban comercial', 'Match de imoveis', 'Agenda', 'Follow-up'],
+  tools: ['whatsapp', 'kanban', 'crm', 'matchmaking', 'agenda', 'follow-up', 'notificar-corretor', 'mover-etapa-funil'],
   response_style: 'consultivo',
   autonomy_level: 2,
-  operation_mode: 'Semiautônomo',
+  operation_mode: 'Semiautonomo',
   channel_scope: 'Omnichannel CRM',
   handoff_rules: defaultHandoff,
 };
 
 const presets: TemplatePreset[] = [
+  {
+    name: 'Aline Atendimento 360',
+    role: 'SDR e Atendimento Completo',
+    description: 'Atende no WhatsApp, qualifica, cria o processo no CRM, recomenda oportunidades e conduz o lead ate o corretor.',
+    tags: ['SDR', 'Venda', 'CRM'],
+    accent: 'from-emerald-600 to-slate-950',
+    avatar: 'A',
+    payload: {
+      ...emptyAgent,
+      name: 'Aline Atendimento 360',
+      role: 'SDR e Atendimento Completo',
+      personality: 'Humana, objetiva e consultiva. Conduz a conversa com perguntas curtas e foco no proximo passo comercial.',
+      instructions:
+        'Atenda o lead como SDR imobiliario. Qualifique operacao, tipo de imovel, regiao, orcamento, prazo, forma de pagamento e motivo da busca. Crie ou atualize o processo no CRM, mova o funil, gere follow-up, consulte oportunidades quando houver perfil suficiente e transborde para corretor com resumo completo quando houver alta intencao.',
+      capabilities: ['Atendimento inicial', 'Kanban comercial', 'Match de imoveis', 'Agenda', 'Follow-up'],
+      tools: ['whatsapp', 'kanban', 'crm', 'matchmaking', 'agenda', 'follow-up', 'notificar-corretor', 'mover-etapa-funil', 'criar-tarefa'],
+      autonomy_level: 3,
+      operation_mode: 'Autonomo',
+    },
+  },
   {
     name: 'Lia Qualificação',
     role: 'SDR Imobiliário',
@@ -961,7 +1028,7 @@ const AIAgents: React.FC = () => {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Central de Agentes</div>
-                  <h2 className="mt-2 text-xl font-black tracking-tight mb-0">Modelos e operação</h2>
+                  <h2 className="mt-2 text-xl font-black tracking-tight mb-0">Agentes de atendimento</h2>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <WandSparkles size={20} />
@@ -970,12 +1037,12 @@ const AIAgents: React.FC = () => {
             </div>
 
             <nav className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3">
-              <SidebarItem icon={Sparkles} label="Templates prontos" count={presets.length} active />
+              <SidebarItem icon={Sparkles} label="Modelos operacionais" count={presets.length} active />
               <SidebarItem icon={Activity} label="Agentes ativos" count={activeAgents} />
               <SidebarItem icon={Circle} label="Agentes pausados" count={pausedAgents} />
-              <SidebarItem icon={BookOpen} label="Biblioteca de prompts" />
-              <SidebarItem icon={ShieldCheck} label="Regras globais" />
-              <SidebarItem icon={FileText} label="Logs de execução" />
+              <SidebarItem icon={BookOpen} label="Scripts SDR" />
+              <SidebarItem icon={ShieldCheck} label="Transbordo globais" />
+              <SidebarItem icon={FileText} label="Historico operacional" />
             </nav>
 
             <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
@@ -1039,13 +1106,13 @@ const AIAgents: React.FC = () => {
                 <div className="max-w-3xl">
                   <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">
                     <Sparkles size={15} />
-                    IA e automação
+                    Atendimento, SDR e vendas
                   </div>
                   <h1 className="mt-4 text-3xl lg:text-4xl font-black tracking-tight text-slate-950 mb-0">
-                    Construtor de Agente Autônomo
+                    Central de Agentes de Atendimento
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm lg:text-base font-medium leading-relaxed text-slate-600 mb-0">
-                    Configure agentes que atendem, qualificam, analisam documentos, movimentam leads no Kanban e executam follow-ups automaticamente.
+                    Crie agentes que atendem leads no WhatsApp, qualificam perfil, abrem o processo no funil, recomendam imoveis, agendam proximos passos e transbordam para o corretor com contexto.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -1126,8 +1193,8 @@ const AIAgents: React.FC = () => {
               <div className="p-5 lg:p-6 min-h-[520px]">
                 <section id="agent-identity" className={activeTab === 'identity' ? 'block' : 'hidden'}>
                   <SectionHeading
-                    eyebrow="Identidade"
-                    title="Perfil operacional do agente"
+                    eyebrow="Perfil do agente"
+                    title="Missao e postura de atendimento"
                     description="Defina nome, função, estilo de atendimento, status e instruções operacionais."
                   />
                   <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1144,7 +1211,7 @@ const AIAgents: React.FC = () => {
                         value={draft.role || ''}
                         onChange={(e) => setDraft({ ...draft, role: e.target.value })}
                         className="agent-input"
-                        placeholder="Ex.: Atendimento e Qualificação de Leads"
+                        placeholder="Ex.: SDR e Atendimento Completo"
                       />
                     </Field>
                     <Field label="Estilo de atendimento">
@@ -1193,7 +1260,7 @@ const AIAgents: React.FC = () => {
                         value={draft.instructions || ''}
                         onChange={(e) => setDraft({ ...draft, instructions: e.target.value })}
                         className="agent-input min-h-28 resize-none"
-                        placeholder="Regras, boas práticas, limites e contexto da imobiliária."
+                        placeholder="Transbordo, boas práticas, limites e contexto da imobiliária."
                       />
                     </Field>
                   </div>
@@ -1267,9 +1334,66 @@ const AIAgents: React.FC = () => {
                 <section id="agent-operation" className={activeTab === 'operation' ? 'block' : 'hidden'}>
                   <SectionHeading
                     eyebrow="Operação"
-                    title="Onde este agente atua?"
+                    title="Jornada que este agente conduz"
                     description="Selecione os processos em que o agente poderá agir dentro da operação imobiliária."
                   />
+                  <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-5">
+                    {salesProcessSteps.map((step, index) => (
+                      <div key={step.title} className="rounded-lg border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100">
+                            <step.icon size={18} />
+                          </div>
+                          <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500">
+                            {index + 1}
+                          </span>
+                        </div>
+                        <h3 className="mt-3 text-sm font-black text-slate-950 mb-0">{step.title}</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">{step.description}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-3">
+                    {operatingModes.map((mode) => (
+                      <button
+                        key={mode.title}
+                        type="button"
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            role: mode.title,
+                            tools: Array.from(new Set([...(draft.tools || []), ...mode.tools])),
+                            capabilities: Array.from(new Set([...(draft.capabilities || []), 'Atendimento inicial', 'Kanban comercial', 'Follow-up'])),
+                          })
+                        }
+                        className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-emerald-200 hover:bg-emerald-50"
+                      >
+                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+                          <Workflow size={15} />
+                          Modo operacional
+                        </div>
+                        <h3 className="mt-2 text-sm font-black text-slate-950 mb-0">{mode.title}</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-600 mb-0">{mode.description}</p>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {mode.tools.slice(0, 4).map((tool) => (
+                            <span key={tool} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-600">
+                              {tool}
+                            </span>
+                          ))}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-7">
+                    <SectionHeading
+                      eyebrow="Escopo"
+                      title="Processos liberados"
+                      description="Escolha quais partes do atendimento e da venda este agente pode executar."
+                    />
+                  </div>
+
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                     {workspaces.map((workspace) => (
                       <button
@@ -1342,9 +1466,9 @@ const AIAgents: React.FC = () => {
 
                 <section id="agent-tools" className={activeTab === 'tools' ? 'block' : 'hidden'}>
                   <SectionHeading
-                    eyebrow="Ferramentas"
-                    title="Ferramentas permitidas"
-                    description="Ative os recursos que o agente pode consultar ou executar durante o atendimento."
+                    eyebrow="Acoes permitidas"
+                    title="O que o agente pode fazer sozinho"
+                    description="Ative consultas e execucoes: CRM, Kanban, match de imoveis, agenda, tarefas e notificacao ao corretor."
                   />
                   <div className="mt-4 flex flex-wrap gap-2">
                     {toolOptions.map((tool) => (
@@ -1367,8 +1491,8 @@ const AIAgents: React.FC = () => {
 
                 <section id="agent-rules" className={activeTab === 'rules' ? 'block' : 'hidden'}>
                   <SectionHeading
-                    eyebrow="Regras"
-                    title="Quando acionar humano?"
+                    eyebrow="Transbordo"
+                    title="Quando transbordar para o corretor?"
                     description="Determine os sinais de risco, negociação ou alta intenção que devem transbordar para um corretor."
                   />
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -1395,7 +1519,7 @@ const AIAgents: React.FC = () => {
 
                 <section id="agent-brain" className={activeTab === 'brain' ? 'block' : 'hidden'}>
                   <SectionHeading
-                    eyebrow="Cerebro Neural"
+                    eyebrow="Aprendizado operacional"
                     title="Qualificação e aprendizado do agente"
                     description="Acompanhe metricas, avalie respostas e treine o agente para melhorar continuamente."
                   />
@@ -1512,8 +1636,8 @@ const AIAgents: React.FC = () => {
 
                 <section id="agent-test" className={activeTab === 'test' ? 'block' : 'hidden'}>
                   <SectionHeading
-                    eyebrow="Teste"
-                    title="Converse e valide o agente"
+                    eyebrow="Simulacao"
+                    title="Simule atendimento, venda e transbordo"
                     description="Teste respostas reais do agente salvo ou simule o comportamento enquanto ele ainda esta em rascunho."
                   />
 
@@ -1523,7 +1647,7 @@ const AIAgents: React.FC = () => {
                         <Avatar label={(draft.name || 'A').charAt(0)} gradient="from-slate-700 to-slate-950" />
                         <div className="min-w-0 flex-1">
                           <h3 className="text-sm font-black text-slate-950 mb-0 truncate">{draft.name || 'Agente em teste'}</h3>
-                          <p className="text-xs font-bold text-slate-500 mb-0 truncate">{draft.role || 'Atendimento e Qualificacao'}</p>
+                          <p className="text-xs font-bold text-slate-500 mb-0 truncate">{draft.role || 'SDR e Atendimento Completo'}</p>
                           <div className="mt-1 flex items-center gap-1.5 text-[11px] font-black text-emerald-600">
                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
                             {testMode === 'lead-simulator'
@@ -1663,7 +1787,7 @@ const AIAgents: React.FC = () => {
                             <Bot size={18} />
                           </div>
                           <div>
-                            <h3 className="text-sm font-black text-slate-950 mb-0">Resumo de publicacao</h3>
+                            <h3 className="text-sm font-black text-slate-950 mb-0">Resumo operacional</h3>
                             <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
                               {draft.channels?.length || 1} canal(is), {draft.tools?.length || 0} ferramenta(s) e autonomia nivel {draft.autonomy_level || 2}.
                             </p>

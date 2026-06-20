@@ -5,11 +5,16 @@
 .wa-dashboard {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 64px);
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  height: 100%;
+  min-height: calc(100vh - 112px);
   background: var(--color-bg-primary);
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--color-border);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* Header */
@@ -167,8 +172,8 @@
 
 /* Sidebar */
 .wa-sidebar {
-  width: 360px;
-  min-width: 300px;
+  width: clamp(380px, 28vw, 460px);
+  min-width: 360px;
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -197,7 +202,7 @@
   border: none;
   background: transparent;
   color: var(--color-text-primary);
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   outline: none;
 }
 .wa-search-input::placeholder { color: var(--color-text-tertiary); }
@@ -360,8 +365,8 @@
 .wa-chat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 14px;
+  padding: 14px 18px;
   cursor: pointer;
   transition: background 0.15s;
   border-bottom: 1px solid var(--color-border-subtle);
@@ -374,14 +379,14 @@
 
 /* Avatar */
 .wa-avatar {
-  width: 48px; height: 48px;
+  width: 52px; height: 52px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 800;
 }
 .wa-avatar-text { color: white; }
 .wa-avatar-img {
@@ -400,8 +405,9 @@
   margin-bottom: 4px;
 }
 .wa-chat-name {
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 750;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
@@ -412,14 +418,15 @@
 }
 .wa-group-icon { color: var(--color-text-tertiary); }
 .wa-chat-time {
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   color: var(--color-text-tertiary);
   flex-shrink: 0;
 }
 .wa-chat-bottom { display: flex; align-items: center; gap: 8px; }
 .wa-chat-preview {
   flex: 1;
-  font-size: 0.86rem;
+  font-size: 0.92rem;
+  line-height: 1.35;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -450,7 +457,7 @@
   min-height: 0;
 }
 .wa-chat-window.details-open {
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 400px);
 }
 .wa-chat-header {
   grid-column: 1;
@@ -458,7 +465,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 12px 18px;
   background: var(--color-bg-card);
   border-bottom: 1px solid var(--color-border);
 }
@@ -475,7 +482,7 @@
   color: var(--color-primary);
 }
 .wa-chat-header-avatar {
-  width: 40px; height: 40px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #25D366, #128C7E);
   display: flex;
@@ -486,8 +493,9 @@
   font-size: 1rem;
 }
 .wa-chat-header-name {
-  font-size: 1.02rem;
-  font-weight: 600;
+  font-size: 1.08rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
   color: var(--color-text-primary);
   margin: 0;
 }
@@ -516,8 +524,8 @@
 .wa-contact-panel {
   grid-column: 2;
   grid-row: 1 / 4;
-  width: 340px;
-  min-width: 320px;
+  width: 100%;
+  min-width: 360px;
   height: 100%;
   background: var(--color-bg-card);
   border-left: 1px solid var(--color-border);
@@ -719,10 +727,10 @@
   grid-row: 2;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 24px;
+  padding: 28px clamp(28px, 5vw, 80px);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 .wa-messages-loading, .wa-messages-empty {
   display: flex;
@@ -740,9 +748,9 @@
 }
 .wa-date-divider span {
   background: rgba(255,255,255,0.9);
-  padding: 4px 16px;
+  padding: 5px 18px;
   border-radius: var(--radius-md);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
@@ -751,8 +759,8 @@
 .wa-bubble-wrapper {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
-  margin-bottom: 2px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 .wa-bubble-wrapper.sent { justify-content: flex-end; }
 .wa-bubble-wrapper.received {
@@ -760,15 +768,15 @@
   padding-left: 0;
 }
 .wa-message-avatar {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--color-primary);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 700;
   flex-shrink: 0;
   overflow: hidden;
@@ -778,12 +786,12 @@
   display: inline-flex;
   flex-direction: column;
   width: fit-content;
-  max-width: min(68%, 560px);
-  padding: 6px 10px;
-  border-radius: 8px;
+  max-width: min(74%, 760px);
+  padding: 10px 13px 7px;
+  border-radius: 14px;
   position: relative;
   word-break: break-word;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 .wa-bubble-clickable {
   cursor: pointer;
@@ -802,14 +810,15 @@
 }
 .wa-bubble-sender {
   display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 750;
   color: #25D366;
   margin-bottom: 2px;
 }
 .wa-bubble-text {
-  font-size: 0.94rem;
-  line-height: 1.5;
+  font-size: 1rem;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
   margin: 0;
   color: var(--color-text-primary);
   white-space: pre-wrap;
@@ -820,10 +829,10 @@
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
-  margin-top: 2px;
+  margin-top: 5px;
 }
 .wa-bubble-time {
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   color: var(--color-wa-time-received);
 }
 .wa-bubble-sent .wa-bubble-time { color: var(--color-wa-time-sent); }
@@ -842,8 +851,9 @@
 .wa-bubble-image:hover { opacity: 0.9; }
 .wa-bubble-video { max-width: 100%; border-radius: 6px; }
 .wa-bubble-caption {
-  font-size: 0.85rem;
-  margin: 4px 0 0;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  margin: 6px 0 0;
   color: var(--color-text-primary);
 }
 .wa-bubble-audio {
@@ -1000,8 +1010,8 @@
 .wa-input-area {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  gap: 10px;
+  padding: 14px 22px;
   background: var(--color-bg-card);
   border-top: 1px solid var(--color-border);
 }
@@ -1050,13 +1060,15 @@
 }
 .wa-message-input {
   width: 100%;
-  padding: 10px 14px;
+  min-height: 44px;
+  padding: 12px 16px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 14px;
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
-  font-size: 0.9rem;
-  font-family: var(--font-primary);
+  font-size: 1rem;
+  line-height: 1.45;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   resize: none;
   outline: none;
   transition: border-color 0.2s;
@@ -1067,7 +1079,7 @@
 }
 .wa-message-input::placeholder { color: var(--color-text-tertiary); }
 .wa-send-btn {
-  width: 42px; height: 42px;
+  width: 46px; height: 46px;
   border-radius: 50%;
   border: none;
   background: #e2e8f0;
@@ -1098,6 +1110,8 @@
   gap: 16px;
   color: var(--color-text-tertiary);
   background: var(--color-bg-primary);
+  padding: 32px;
+  text-align: center;
 }
 .wa-empty-icon {
   width: 100px; height: 100px;
@@ -1109,12 +1123,13 @@
   margin-bottom: 8px;
 }
 .wa-empty-state h2 {
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
   color: var(--color-text-primary);
   margin: 0;
 }
-.wa-empty-state p { font-size: 0.9rem; margin: 0; }
+.wa-empty-state p { font-size: 1rem; margin: 0; max-width: 360px; line-height: 1.5; }
 .wa-empty-warning {
   display: flex;
   align-items: center;
@@ -1418,10 +1433,30 @@
 .wa-qr-success h3 { font-size: 1.2rem; margin: 0 0 8px; }
 .wa-qr-success p { color: var(--color-text-secondary); font-size: 0.9rem; margin: 0; }
 
+@media (max-width: 1180px) {
+  .wa-sidebar {
+    width: 340px;
+    min-width: 320px;
+  }
+
+  .wa-messages {
+    padding-inline: 28px;
+  }
+
+  .wa-chat-window.details-open {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  .wa-contact-panel {
+    min-width: 340px;
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .wa-dashboard {
     height: calc(100dvh - 64px);
+    min-height: calc(100dvh - 64px);
     border-radius: 0;
     border-left: 0;
     border-right: 0;
@@ -1527,9 +1562,12 @@
   }
   .wa-messages {
     padding: 12px 10px;
+    gap: 4px;
   }
   .wa-bubble {
     max-width: 88%;
+    padding: 8px 10px 6px;
+    border-radius: 11px;
   }
   .wa-bubble-audio {
     min-width: 0;

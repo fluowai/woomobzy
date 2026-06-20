@@ -159,6 +159,7 @@ function normalizeAgentPayload(body, partial = false) {
     metrics: body.metrics || [],
     simulation: body.simulation || {},
     limits: body.limits || {},
+    flow_steps: body.flow_steps === undefined ? undefined : normalizeAgentFlowSteps(body.flow_steps),
   };
 
   Object.keys(extendedConfig).forEach((key) => {
@@ -196,6 +197,21 @@ function normalizeAgentPayload(body, partial = false) {
   }
 
   return payload;
+}
+
+function normalizeAgentFlowSteps(steps = []) {
+  if (!Array.isArray(steps)) return [];
+
+  return steps
+    .map((step, index) => ({
+      id: String(step?.id || `etapa-${index + 1}`),
+      title: String(step?.title || `Etapa ${index + 1}`).slice(0, 80),
+      trigger: String(step?.trigger || '').slice(0, 500),
+      prompt: String(step?.prompt || '').slice(0, 1200),
+      action: String(step?.action || '').slice(0, 500),
+      enabled: step?.enabled !== false,
+    }))
+    .filter((step) => step.title && (step.trigger || step.prompt || step.action));
 }
 
 function hydrateAgent(agent) {

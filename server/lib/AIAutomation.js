@@ -106,6 +106,8 @@ export class AIAutomationEngine {
         ? `\nHISTORICO DA CONVERSA (NÃO repita perguntas ja respondidas aqui):\n${history.map((m) => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n')}\n`
         : '\n(Inicio da conversa)\n';
 
+      const agentFlowBlock = this._buildAgentFlowContext(agent);
+
       parts.push({
         text: `
 Analise a mensagem de um cliente imobiliario e responda apenas JSON valido.
@@ -122,6 +124,7 @@ Agente ativo:
 - Capacidades: ${(agent?.capabilities || []).join(', ') || 'qualificar lead, criar kanban, etiquetar atendimento'}
 - Ferramentas: ${(agent?.tools || []).join(', ') || 'whatsapp, kanban, follow-up'}
 - Instrucoes: ${agent?.instructions || 'Atenda com foco em qualificar e avancar o cliente para o proximo passo comercial.'}
+${agentFlowBlock}
 
 Etapas do kanban:
 - Novo: primeiro contato ou saudacao.
@@ -151,6 +154,7 @@ Modo operacional:
 - Se houver pedido de visita ou horario claro, preencha visit.requested=true e visit.scheduledAt.
 - Se houver promessa de retorno, preencha nextAction.dueAt ou followUpAt em ISO.
 - reply deve ser curta, humana e com postura de SDR. Quando faltarem dados, pergunte apenas os proximos dados mais importantes.
+- Siga o funil configurado do agente quando houver conflito entre uma resposta generica e uma etapa ativa do roteiro.
 
 Formato:
 {
@@ -250,7 +254,7 @@ Formato:
       agent,
       phone: normalizedPhone,
     });
-    const actionPlan = this._buildActionPlan({ aiResult, text: content, messageType: message.type });
+    const actionPlan = this._buildActionPlan({ aiResult, text: content, messageType: message.type, agent });
 
     await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'user', content);
 
@@ -692,7 +696,7 @@ Formato:
     }
   }
 
-  _buildActionPlan({ aiResult, text = '', messageType = 'text' }) {
+  _buildActionPlan({ aiResult, text = '', messageType = 'text', agent = null }) {
     const stage = this._normalizeStage(aiResult?.suggestedStage || aiResult?.stage, messageType);
     const score = this._normalizeLeadScore(aiResult, text, stage);
     const visit = this._normalizeVisit(aiResult?.visit, aiResult?.followUpAt || aiResult?.nextAction?.dueAt, stage);
@@ -707,6 +711,8 @@ Formato:
       nextAction.dueAt,
       aiResult?.followUpAt
     );
+
+    const handoff = this._shouldRequireHandoff({ agent, aiResult, score, visit, nextAction, text });
 
     return {
       ...(aiResult || {}),
@@ -726,10 +732,46 @@ Formato:
       nextAction,
       visit,
       followUpAt,
-      handoffRequired: Boolean(aiResult?.handoffRequired || score >= 80 || visit.requested),
-      handoffReason: aiResult?.handoffReason || (visit.requested ? 'Lead pediu visita' : score >= 80 ? 'Lead com alta intencao' : ''),
+      handoffRequired: handoff.required,
+      handoffReason: aiResult?.handoffReason || handoff.reason,
       reply: String(aiResult?.reply || nextAction.reason || '').slice(0, 1200),
     };
+  }
+
+  _shouldRequireHandoff({ agent, aiResult, score, visit, nextAction, text = '' }) {
+    const rules = agent?.handoff_rules || {};
+    const confidence = Number(aiResult?.confidence);
+    const lowConfidence = Number.isFinite(confidence) && confidence > 0 && confidence < 0.45;
+    const normalizedText = String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const angryLead = /\b(reclam|absurdo|process|procon|engan|irritad|raiva|cancel|denunci)\w*/.test(normalizedText);
+    const sensitiveDocument = /\b(rg|cpf|cnh|comprovante|matricula|contrato|documento|holerite|extrato)\b/.test(normalizedText)
+      && (nextAction?.type === 'collect_documents' || String(aiResult?.intent || '').toLowerCase().includes('document'));
+    const negotiation = /\b(negoci|desconto|proposta|contra proposta|abaixar|menor valor|entrada|parcel)\w*/.test(normalizedText)
+      || nextAction?.type === 'close_deal';
+
+    if (rules.low_confidence !== false && lowConfidence) {
+      return { required: true, reason: 'IA com baixa confianca' };
+    }
+    if (rules.angry_lead !== false && angryLead) {
+      return { required: true, reason: 'Lead irritado ou risco reputacional' };
+    }
+    if (rules.sensitive_document !== false && sensitiveDocument) {
+      return { required: true, reason: 'Documento sensivel recebido ou solicitado' };
+    }
+    if (rules.price_negotiation !== false && negotiation) {
+      return { required: true, reason: 'Negociacao comercial exige corretor' };
+    }
+    if (rules.visit_requested === true && visit.requested) {
+      return { required: true, reason: 'Lead pediu visita' };
+    }
+    if (rules.high_intent === true && score >= 90 && nextAction?.type === 'notify_broker') {
+      return { required: true, reason: 'Lead com alta intencao e pedido de corretor' };
+    }
+    if (aiResult?.handoffRequired && rules.low_confidence !== false) {
+      return { required: true, reason: 'Modelo sinalizou necessidade de transbordo' };
+    }
+
+    return { required: false, reason: '' };
   }
 
   _buildLeadAIPatch({ actionPlan, stage, tags, existingLead }) {
@@ -1022,6 +1064,29 @@ Formato:
     ].filter(Boolean));
 
     return configuredInstances.some((instance) => accepted.has(String(instance).trim())) ? 'exact' : 'none';
+  }
+
+  _buildAgentFlowContext(agent) {
+    const config = agent?.handoff_rules?.__operational360 || {};
+    const steps = Array.isArray(config.flow_steps)
+      ? config.flow_steps.filter((step) => step && step.enabled !== false)
+      : [];
+
+    if (!steps.length) return '';
+
+    const lines = steps.slice(0, 12).map((step, index) => {
+      const title = String(step.title || `Etapa ${index + 1}`).trim();
+      const trigger = String(step.trigger || 'Sem gatilho definido').trim();
+      const prompt = String(step.prompt || 'Sem prompt definido').trim();
+      const action = String(step.action || 'Registrar proxima acao no CRM').trim();
+      return `${index + 1}. ${title}\n   - Gatilho: ${trigger}\n   - Conduta: ${prompt}\n   - Acao: ${action}`;
+    });
+
+    return `
+
+Funil configurado do agente:
+${lines.join('\n')}
+Use essas etapas como roteiro operacional. Identifique a etapa mais adequada pela conversa, execute a acao prevista e so transborde quando as regras de transbordo ou baixa confianca exigirem.`;
   }
 
   _canAutoReply(agent, actionPlan, options = {}) {

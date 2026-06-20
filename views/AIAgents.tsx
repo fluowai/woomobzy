@@ -51,7 +51,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { aiAgentService, type AIAgent, type AIAgentPayload, type AgentMetrics } from '../services/aiAgents';
+import { aiAgentService, type AIAgent, type AIAgentPayload, type AgentFlowStep, type AgentMetrics } from '../services/aiAgents';
 import { callApi } from '../src/lib/api';
 import { instanceApi, type Instance as WhatsAppInstance } from './WhatsApp/hooks/api';
 
@@ -64,6 +64,7 @@ type BuilderDraft = AIAgentPayload & {
   operation_mode?: string;
   channel_scope?: string;
   handoff?: Record<string, unknown>;
+  flow_steps?: AgentFlowStep[];
 };
 
 type TemplatePreset = {
@@ -193,6 +194,7 @@ const handoffRules = [
 const tabs = [
   { id: 'identity', label: 'Perfil do agente', icon: UserCheck },
   { id: 'channels', label: 'Canais', icon: Radio },
+  { id: 'prompt', label: 'Prompt e funil', icon: MessageSquareText },
   { id: 'operation', label: 'Jornada comercial', icon: Workflow },
   { id: 'tools', label: 'Acoes permitidas', icon: Settings2 },
   { id: 'rules', label: 'Transbordo', icon: ShieldCheck },
@@ -256,6 +258,103 @@ const operatingModes = [
   },
 ];
 
+const funnelBuilderSteps: (AgentFlowStep & { icon: React.ElementType })[] = [
+  {
+    id: 'entrada',
+    title: 'Entrada',
+    trigger: 'Nova mensagem no WhatsApp',
+    prompt: 'Cumprimente, identifique o interesse e confirme se a pessoa busca compra, locacao, venda ou investimento.',
+    action: 'Criar ou localizar lead',
+    enabled: true,
+    icon: MessageCircle,
+  },
+  {
+    id: 'qualificacao',
+    title: 'Qualificacao',
+    trigger: 'Lead respondeu com interesse',
+    prompt: 'Pergunte tipo de imovel, cidade ou regiao, faixa de valor, prazo, forma de pagamento e motivo da busca.',
+    action: 'Atualizar perfil e score',
+    enabled: true,
+    icon: ClipboardCheck,
+  },
+  {
+    id: 'match',
+    title: 'Oportunidades',
+    trigger: 'Perfil minimo completo',
+    prompt: 'Consulte a carteira e apresente ate 3 oportunidades com motivo de aderencia, sem despejar catalogo.',
+    action: 'Buscar imoveis e registrar match',
+    enabled: true,
+    icon: Home,
+  },
+  {
+    id: 'processo',
+    title: 'Processo',
+    trigger: 'Lead demonstrou intencao',
+    prompt: 'Mova o card no funil, registre resumo, proxima acao e crie follow-up com data quando houver compromisso.',
+    action: 'Mover etapa e criar tarefa',
+    enabled: true,
+    icon: Workflow,
+  },
+  {
+    id: 'transbordo',
+    title: 'Transbordo',
+    trigger: 'Visita, proposta ou duvida sensivel',
+    prompt: 'Acione o corretor com resumo do lead, imovel desejado, orcamento, objecoes e proximo passo recomendado.',
+    action: 'Notificar corretor',
+    enabled: true,
+    icon: UserPlus,
+  },
+];
+
+const funnelStepIcons: Record<string, React.ElementType> = {
+  entrada: MessageCircle,
+  qualificacao: ClipboardCheck,
+  match: Home,
+  processo: Workflow,
+  transbordo: UserPlus,
+};
+
+const defaultFlowSteps: AgentFlowStep[] = funnelBuilderSteps.map(({ icon: _icon, ...step }) => step);
+
+function normalizeFlowSteps(steps?: AgentFlowStep[] | unknown): AgentFlowStep[] {
+  if (!Array.isArray(steps) || steps.length === 0) {
+    return defaultFlowSteps.map((step) => ({ ...step }));
+  }
+
+  return steps
+    .map((step, index) => {
+      const item = step as Partial<AgentFlowStep>;
+      return {
+        id: String(item.id || `etapa-${index + 1}-${Date.now()}`),
+        title: String(item.title || `Etapa ${index + 1}`),
+        trigger: String(item.trigger || 'Defina o gatilho desta etapa.'),
+        prompt: String(item.prompt || 'Defina o comportamento do agente nesta etapa.'),
+        action: String(item.action || 'Registrar acao no CRM.'),
+        enabled: item.enabled !== false,
+      };
+    })
+    .filter((step) => step.title.trim());
+}
+
+const promptQuickBlocks = [
+  {
+    title: 'SDR consultivo',
+    text: 'Atue como SDR imobiliario: faca perguntas curtas, uma ou duas por vez, qualifique antes de recomendar e sempre conduza para o proximo passo comercial.',
+  },
+  {
+    title: 'Criar processo',
+    text: 'Sempre que identificar interesse comercial, crie ou atualize o lead, defina etapa do funil, registre resumo, score, tags e proxima acao.',
+  },
+  {
+    title: 'Match de imoveis',
+    text: 'So apresente imoveis quando houver perfil minimo ou pedido claro. Recomende ate 3 opcoes e explique por que cada uma combina com o lead.',
+  },
+  {
+    title: 'Transbordo humano',
+    text: 'Transborde para corretor quando houver visita, proposta, negociacao de preco, documento sensivel, lead irritado ou baixa confianca da IA.',
+  },
+];
+
 const defaultHandoff = {
   visit_requested: true,
   price_negotiation: true,
@@ -284,6 +383,7 @@ const emptyAgent: BuilderDraft = {
   operation_mode: 'Semiautonomo',
   channel_scope: 'Omnichannel CRM',
   handoff_rules: defaultHandoff,
+  flow_steps: defaultFlowSteps,
 };
 
 const presets: TemplatePreset[] = [
@@ -652,6 +752,7 @@ const AIAgents: React.FC = () => {
     chatMessages[chatMessages.length - 1]?.content ||
     '';
   const previewDiagnostics = useMemo(() => buildPreviewDiagnostics(lastLeadMessage), [lastLeadMessage]);
+  const currentFlowSteps = useMemo(() => normalizeFlowSteps(draft.flow_steps), [draft.flow_steps]);
 
   useEffect(() => {
     loadAgents();
@@ -680,6 +781,7 @@ const AIAgents: React.FC = () => {
           ...defaultHandoff,
           ...(agent.handoff_rules || {}),
         },
+        flow_steps: normalizeFlowSteps(agent.flow_steps),
       });
       return;
     }
@@ -781,6 +883,7 @@ const AIAgents: React.FC = () => {
       name: '',
       personality: '',
       instructions: '',
+      flow_steps: defaultFlowSteps.map((step) => ({ ...step })),
     });
     setActiveTab('identity');
   };
@@ -794,6 +897,7 @@ const AIAgents: React.FC = () => {
         ...defaultHandoff,
         ...(preset.payload.handoff_rules || {}),
       },
+      flow_steps: normalizeFlowSteps(preset.payload.flow_steps),
     });
     setActiveTab('identity');
     toast.success(`${preset.name} carregado como modelo.`);
@@ -833,6 +937,66 @@ const AIAgents: React.FC = () => {
     });
   };
 
+  const appendPromptBlock = (text: string) => {
+    const current = String(draft.instructions || '').trim();
+    setDraft({
+      ...draft,
+      instructions: current ? `${current}\n\n${text}` : text,
+    });
+  };
+
+  const setFlowSteps = (steps: AgentFlowStep[]) => {
+    setDraft({
+      ...draft,
+      flow_steps: normalizeFlowSteps(steps),
+    });
+  };
+
+  const updateFlowStep = (stepId: string, field: keyof AgentFlowStep, value: string | boolean) => {
+    setFlowSteps(
+      currentFlowSteps.map((step) =>
+        step.id === stepId
+          ? {
+              ...step,
+              [field]: value,
+            }
+          : step
+      )
+    );
+  };
+
+  const moveFlowStep = (stepId: string, direction: -1 | 1) => {
+    const index = currentFlowSteps.findIndex((step) => step.id === stepId);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= currentFlowSteps.length) return;
+    const next = [...currentFlowSteps];
+    const [item] = next.splice(index, 1);
+    next.splice(nextIndex, 0, item);
+    setFlowSteps(next);
+  };
+
+  const removeFlowStep = (stepId: string) => {
+    if (currentFlowSteps.length <= 1) {
+      toast.error('O agente precisa ter pelo menos uma etapa no funil.');
+      return;
+    }
+    setFlowSteps(currentFlowSteps.filter((step) => step.id !== stepId));
+  };
+
+  const addFlowStep = () => {
+    setFlowSteps([
+      ...currentFlowSteps,
+      {
+        id: `etapa-${Date.now()}`,
+        title: 'Nova etapa',
+        trigger: 'Defina quando o agente deve entrar nesta etapa.',
+        prompt: 'Explique o que o agente deve perguntar, responder ou validar aqui.',
+        action: 'Registrar resumo e proxima acao no CRM.',
+        enabled: true,
+      },
+    ]);
+  };
+
   const resetDraft = () => {
     if (selectedAgent) {
       const agent = selectedAgent as AIAgent & BuilderDraft;
@@ -845,6 +1009,7 @@ const AIAgents: React.FC = () => {
           ...defaultHandoff,
           ...(agent.handoff_rules || {}),
         },
+        flow_steps: normalizeFlowSteps(agent.flow_steps),
       });
       return;
     }
@@ -872,6 +1037,7 @@ const AIAgents: React.FC = () => {
           .filter(([, enabled]) => Boolean(enabled))
           .map(([key]) => key),
       },
+      flow_steps: currentFlowSteps,
     };
 
     try {
@@ -1022,7 +1188,7 @@ const AIAgents: React.FC = () => {
       </header>
 
       <div className="p-4 lg:p-7">
-        <div className="mx-auto max-w-[1500px] space-y-5">
+        <div className="w-full max-w-none space-y-5">
           <aside className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden">
             <div className="p-5 border-b border-slate-100">
               <div className="flex items-center justify-between gap-3">
@@ -1045,7 +1211,7 @@ const AIAgents: React.FC = () => {
               <SidebarItem icon={FileText} label="Historico operacional" />
             </nav>
 
-            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
               {presets.map((preset) => (
                 <article key={preset.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-start gap-3">
@@ -1103,7 +1269,7 @@ const AIAgents: React.FC = () => {
           <main className="min-w-0 space-y-5">
             <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                <div className="max-w-3xl">
+                <div className="max-w-5xl">
                   <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">
                     <Sparkles size={15} />
                     Atendimento, SDR e vendas
@@ -1111,7 +1277,7 @@ const AIAgents: React.FC = () => {
                   <h1 className="mt-4 text-3xl lg:text-4xl font-black tracking-tight text-slate-950 mb-0">
                     Central de Agentes de Atendimento
                   </h1>
-                  <p className="mt-3 max-w-3xl text-sm lg:text-base font-medium leading-relaxed text-slate-600 mb-0">
+                  <p className="mt-3 max-w-5xl text-sm lg:text-base font-medium leading-relaxed text-slate-600 mb-0">
                     Crie agentes que atendem leads no WhatsApp, qualificam perfil, abrem o processo no funil, recomendam imoveis, agendam proximos passos e transbordam para o corretor com contexto.
                   </p>
                 </div>
@@ -1171,7 +1337,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
@@ -1326,6 +1492,158 @@ const AIAgents: React.FC = () => {
                             ? `Este agente atende pela instancia ${selectedWhatsAppInstance.name}.`
                             : 'Sem instancia fixa: o agente pode atender qualquer WhatsApp conectado da organizacao.'}
                         </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section id="agent-prompt" className={activeTab === 'prompt' ? 'block' : 'hidden'}>
+                  <SectionHeading
+                    eyebrow="Prompt e funil"
+                    title="Construtor tipo Typebot"
+                    description="Monte o roteiro de atendimento que o agente vai seguir: entrada, qualificacao, match, processo e transbordo."
+                  />
+
+                  <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-black text-slate-950 mb-0">Fluxo de atendimento</h3>
+                          <p className="mt-1 text-xs font-semibold text-slate-500 mb-0">
+                            Cada bloco representa uma etapa que o agente deve executar durante a conversa.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={addFlowStep}
+                          className="h-9 rounded-lg border border-emerald-100 bg-emerald-50 px-3 text-[11px] font-black text-emerald-700 hover:bg-emerald-100"
+                        >
+                          + Adicionar bloco
+                        </button>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        {currentFlowSteps.map((step, index) => {
+                          const StepIcon = funnelStepIcons[step.id] || Workflow;
+                          return (
+                          <div key={step.id} className="relative rounded-lg border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+                              <div className="flex items-center gap-3 lg:w-56">
+                                <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${step.enabled === false ? 'bg-slate-200 text-slate-500' : 'bg-slate-950 text-white'}`}>
+                                  <StepIcon size={18} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                                    Bloco {index + 1}
+                                  </div>
+                                  <input
+                                    value={step.title}
+                                    onChange={(e) => updateFlowStep(step.id, 'title', e.target.value)}
+                                    className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-black text-slate-950 outline-none focus:border-emerald-500"
+                                  />
+                                </div>
+                              </div>
+                              <div className="grid flex-1 grid-cols-1 gap-3 lg:grid-cols-3">
+                                <div>
+                                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Gatilho</div>
+                                  <textarea
+                                    value={step.trigger}
+                                    onChange={(e) => updateFlowStep(step.id, 'trigger', e.target.value)}
+                                    className="mt-1 min-h-[78px] w-full resize-none rounded-md border border-slate-200 bg-white p-2 text-xs font-semibold leading-relaxed text-slate-700 outline-none focus:border-emerald-500"
+                                  />
+                                </div>
+                                <div>
+                                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Prompt</div>
+                                  <textarea
+                                    value={step.prompt}
+                                    onChange={(e) => updateFlowStep(step.id, 'prompt', e.target.value)}
+                                    className="mt-1 min-h-[78px] w-full resize-none rounded-md border border-slate-200 bg-white p-2 text-xs font-semibold leading-relaxed text-slate-700 outline-none focus:border-emerald-500"
+                                  />
+                                </div>
+                                <div>
+                                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Acao no CRM</div>
+                                  <textarea
+                                    value={step.action}
+                                    onChange={(e) => updateFlowStep(step.id, 'action', e.target.value)}
+                                    className="mt-1 min-h-[78px] w-full resize-none rounded-md border border-slate-200 bg-white p-2 text-xs font-semibold leading-relaxed text-slate-700 outline-none focus:border-emerald-500"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3">
+                              <label className="inline-flex items-center gap-2 text-xs font-black text-slate-600">
+                                <input
+                                  type="checkbox"
+                                  checked={step.enabled !== false}
+                                  onChange={(e) => updateFlowStep(step.id, 'enabled', e.target.checked)}
+                                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                />
+                                Etapa ativa
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => moveFlowStep(step.id, -1)}
+                                  disabled={index === 0}
+                                  className="h-8 rounded-md border border-slate-200 bg-white px-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                                >
+                                  Subir
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveFlowStep(step.id, 1)}
+                                  disabled={index === currentFlowSteps.length - 1}
+                                  className="h-8 rounded-md border border-slate-200 bg-white px-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                                >
+                                  Descer
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeFlowStep(step.id)}
+                                  className="h-8 rounded-md border border-red-100 bg-white px-3 text-[11px] font-black text-red-600 hover:bg-red-50"
+                                >
+                                  Excluir
+                                </button>
+                              </div>
+                            </div>
+                            {index < currentFlowSteps.length - 1 && (
+                              <div className="absolute -bottom-3 left-8 hidden h-6 w-px bg-slate-300 lg:block" />
+                            )}
+                          </div>
+                        );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-slate-200 bg-white p-4">
+                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                          <MessageSquareText size={15} />
+                          Prompt mestre
+                        </div>
+                        <textarea
+                          value={draft.instructions || ''}
+                          onChange={(e) => setDraft({ ...draft, instructions: e.target.value })}
+                          className="mt-3 min-h-[300px] w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-semibold leading-relaxed text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                          placeholder="Descreva como o agente deve atender, qualificar, criar processo, recomendar imoveis e transbordar para o corretor."
+                        />
+                      </div>
+
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <h3 className="text-sm font-black text-slate-950 mb-0">Blocos rapidos de prompt</h3>
+                        <div className="mt-3 space-y-2">
+                          {promptQuickBlocks.map((block) => (
+                            <button
+                              key={block.title}
+                              type="button"
+                              onClick={() => appendPromptBlock(block.text)}
+                              className="w-full rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-emerald-200 hover:bg-emerald-50"
+                            >
+                              <div className="text-xs font-black text-slate-950">{block.title}</div>
+                              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-slate-500 mb-0">{block.text}</p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1956,7 +2274,7 @@ const StatusPill: React.FC<{ status: string; compact?: boolean }> = ({ status, c
 const ChatBubble: React.FC<{ side: 'lead' | 'agent'; children: React.ReactNode }> = ({ side, children }) => (
   <div className={`flex ${side === 'agent' ? 'justify-end' : 'justify-start'}`}>
     <div
-      className={`max-w-[86%] rounded-lg px-3 py-2 text-xs font-semibold leading-relaxed shadow-sm ${
+      className={`max-w-[96%] rounded-lg px-3 py-2 text-xs font-semibold leading-relaxed shadow-sm ${
         side === 'agent' ? 'bg-[#D9FDD3] text-slate-800' : 'bg-white text-slate-800'
       }`}
     >

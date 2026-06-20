@@ -24,6 +24,7 @@ export interface AIAgent {
   metrics?: unknown[];
   simulation?: Record<string, unknown>;
   limits?: Record<string, unknown>;
+  flow_steps?: AgentFlowStep[];
   personality?: string;
   instructions?: string;
   handoff_rules?: Record<string, unknown>;
@@ -32,6 +33,15 @@ export interface AIAgent {
   response_style: string;
   working_hours?: Record<string, unknown>;
   created_at: string;
+}
+
+export interface AgentFlowStep {
+  id: string;
+  title: string;
+  trigger: string;
+  prompt: string;
+  action: string;
+  enabled?: boolean;
 }
 
 export type AIAgentPayload = Partial<Omit<AIAgent, 'id' | 'organization_id' | 'created_at'>>;

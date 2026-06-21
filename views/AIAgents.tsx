@@ -1187,9 +1187,9 @@ const AIAgents: React.FC = () => {
         </div>
       </header>
 
-      <div className="p-4 lg:p-7">
-        <div className="w-full max-w-none space-y-5">
-          <aside className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden">
+      <div className="p-0">
+        <div className="grid w-full max-w-none grid-cols-1 items-start gap-4 p-3 sm:p-4 lg:p-5 2xl:p-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+          <aside className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden xl:sticky xl:top-5 xl:max-h-[calc(100vh-132px)] xl:overflow-y-auto">
             <div className="p-5 border-b border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -1211,7 +1211,7 @@ const AIAgents: React.FC = () => {
               <SidebarItem icon={FileText} label="Historico operacional" />
             </nav>
 
-            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
+            <div className="grid grid-cols-1 gap-3 p-4">
               {presets.map((preset) => (
                 <article key={preset.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-start gap-3">
@@ -1265,7 +1265,6 @@ const AIAgents: React.FC = () => {
             )}
           </aside>
 
-          <div className="grid grid-cols-1 gap-5 items-start">
           <main className="min-w-0 space-y-5">
             <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -2164,8 +2163,6 @@ const AIAgents: React.FC = () => {
               </div>
             </footer>
           </main>
-
-          </div>
         </div>
       </div>
 

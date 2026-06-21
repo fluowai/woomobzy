@@ -1144,9 +1144,9 @@ const AIAgents: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full bg-[#F5F7FB] -m-3 sm:-m-4 md:-m-6 text-slate-950">
+    <div className="min-h-full w-full min-w-0 bg-[#F5F7FB] -m-2 sm:-m-3 md:-m-4 text-slate-950">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
-        <div className="h-auto min-h-16 px-4 py-3 lg:px-7 flex flex-col gap-3 xl:h-20 xl:flex-row xl:items-center xl:justify-between">
+        <div className="h-auto min-h-16 px-3 py-3 sm:px-4 lg:px-5 flex flex-col gap-3 xl:h-20 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 rounded-lg bg-slate-950 flex items-center justify-center shadow-sm">
               <Home className="text-emerald-400" size={21} />
@@ -1188,8 +1188,8 @@ const AIAgents: React.FC = () => {
       </header>
 
       <div className="p-0">
-        <div className="grid w-full max-w-none grid-cols-1 items-start gap-4 p-3 sm:p-4 lg:p-5 2xl:p-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-          <aside className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden xl:sticky xl:top-5 xl:max-h-[calc(100vh-132px)] xl:overflow-y-auto">
+        <div className="grid w-full max-w-none grid-cols-1 items-start gap-3 p-2 sm:p-3 lg:p-4 2xl:p-5 xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(320px,360px)_minmax(0,1fr)]">
+          <aside className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-124px)] xl:overflow-y-auto">
             <div className="p-5 border-b border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>

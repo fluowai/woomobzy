@@ -51,7 +51,8 @@ const UrbanLayout: React.FC = () => {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
   const isMessagingRoute = pathname.startsWith('/urban/whatsapp');
-  const isWorkspaceRoute = isMessagingRoute || pathname.startsWith('/urban/ai-agents');
+  const isAgentRoute = pathname.startsWith('/urban/ai-agents');
+  const isWorkspaceRoute = isMessagingRoute || isAgentRoute;
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
     logger.info('[UrbanLayout] Guard triggered. Redirecting Super Admin to /superadmin');
@@ -296,7 +297,7 @@ const UrbanLayout: React.FC = () => {
 
         <div
           className={`flex-1 overflow-y-auto bg-bg-primary ${
-            isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isAgentRoute ? 'p-0' : isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >
           <Outlet />

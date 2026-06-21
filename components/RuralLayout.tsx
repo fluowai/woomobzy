@@ -120,7 +120,8 @@ const RuralLayout: React.FC = () => {
   const isMenuItemActive = (path: string, isActive: boolean) =>
     isActive || (path === '/rural/territorio' && pathname.startsWith('/rural/territorio'));
   const isMessagingRoute = pathname.startsWith('/rural/whatsapp');
-  const isWorkspaceRoute = isMessagingRoute || pathname.startsWith('/rural/ai-agents');
+  const isAgentRoute = pathname.startsWith('/rural/ai-agents');
+  const isWorkspaceRoute = isMessagingRoute || isAgentRoute;
 
   const renderMenuItem = (item: MenuItem) => (
     <NavLink
@@ -301,7 +302,7 @@ const RuralLayout: React.FC = () => {
 
         <div
           className={`flex-1 overflow-y-auto bg-bg-primary ${
-            isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isAgentRoute ? 'p-0' : isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >
           <div className={isWorkspaceRoute ? 'w-full h-full min-h-0' : 'max-w-[1600px] mx-auto'}>

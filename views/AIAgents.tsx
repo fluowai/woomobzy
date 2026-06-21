@@ -1184,17 +1184,54 @@ const AIAgents: React.FC = () => {
               Novo agente
             </button>
           </div>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-lg bg-slate-950 flex items-center justify-center shadow-sm">
+              <Home className="text-emerald-400" size={21} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-lg font-black tracking-tight leading-none">ImobFluow</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 mt-1 truncate">
+                Imobiliária Tradicional
+              </div>
+
+            </div>
+          </div>
+
+          <div className="relative flex-1 max-w-2xl xl:mx-8">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              className="w-full h-11 rounded-lg border border-slate-200 bg-[#F8FAFD] pl-12 pr-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              placeholder="Buscar imóveis, leads, agentes..."
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              to={propertyPath}
+              className="h-11 px-4 rounded-lg bg-emerald-600 text-white text-sm font-black flex items-center gap-2 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700"
+            >
+              <Plus size={18} />
+              Novo imóvel
+            </Link>
+            <button
+              onClick={startBlankAgent}
+              className="h-11 px-4 rounded-lg bg-slate-950 text-white text-sm font-black flex items-center gap-2 shadow-sm hover:bg-slate-800"
+            >
+              <Bot size={18} />
+              Novo agente
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="p-0">
-        <div className="grid w-full max-w-none grid-cols-1 items-start gap-3 p-2 sm:p-3 lg:p-4 2xl:p-5 xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(320px,360px)_minmax(0,1fr)]">
-          <aside className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-124px)] xl:overflow-y-auto">
+      <div className="p-2 sm:p-3 lg:p-4 2xl:p-5 flex flex-col gap-5 w-full">
+        {/* Top Section: Central de Agentes */}
+        <section className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden w-full">
             <div className="p-5 border-b border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Central de Agentes</div>
-                  <h2 className="mt-2 text-xl font-black tracking-tight mb-0">Agentes de atendimento</h2>
+                  <h2 className="mt-2 text-xl font-black tracking-tight mb-0">Modelos e operação</h2>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <WandSparkles size={20} />
@@ -1203,15 +1240,15 @@ const AIAgents: React.FC = () => {
             </div>
 
             <nav className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3">
-              <SidebarItem icon={Sparkles} label="Modelos operacionais" count={presets.length} active />
+              <SidebarItem icon={Sparkles} label="Templates prontos" count={presets.length} active />
               <SidebarItem icon={Activity} label="Agentes ativos" count={activeAgents} />
               <SidebarItem icon={Circle} label="Agentes pausados" count={pausedAgents} />
-              <SidebarItem icon={BookOpen} label="Scripts SDR" />
-              <SidebarItem icon={ShieldCheck} label="Transbordo globais" />
-              <SidebarItem icon={FileText} label="Historico operacional" />
+              <SidebarItem icon={BookOpen} label="Biblioteca de prompts" />
+              <SidebarItem icon={ShieldCheck} label="Regras globais" />
+              <SidebarItem icon={FileText} label="Logs de execução" />
             </nav>
 
-            <div className="grid grid-cols-1 gap-3 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
               {presets.map((preset) => (
                 <article key={preset.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-start gap-3">
@@ -1263,21 +1300,22 @@ const AIAgents: React.FC = () => {
                 </div>
               </div>
             )}
-          </aside>
+          </section>
 
-          <main className="min-w-0 space-y-5">
+          {/* Bottom Section: Construtor */}
+          <section className="min-w-0 space-y-5 w-full">
             <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div className="max-w-5xl">
                   <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">
                     <Sparkles size={15} />
-                    Atendimento, SDR e vendas
+                    IA e Automação
                   </div>
                   <h1 className="mt-4 text-3xl lg:text-4xl font-black tracking-tight text-slate-950 mb-0">
-                    Central de Agentes de Atendimento
+                    Construtor de Agente Autônomo
                   </h1>
                   <p className="mt-3 max-w-5xl text-sm lg:text-base font-medium leading-relaxed text-slate-600 mb-0">
-                    Crie agentes que atendem leads no WhatsApp, qualificam perfil, abrem o processo no funil, recomendam imoveis, agendam proximos passos e transbordam para o corretor com contexto.
+                    Configure agentes que atendem, qualificam, analisam documentos, movimentam leads no Kanban e executam follow-ups automaticamente.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -1294,7 +1332,7 @@ const AIAgents: React.FC = () => {
                 </div>
               </div>
             </section>
-
+            
             <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
               <div className="grid grid-cols-1 gap-2 lg:grid-cols-7">
                 {flowSteps.map((step, index) => (
@@ -2162,9 +2200,9 @@ const AIAgents: React.FC = () => {
                 </div>
               </div>
             </footer>
-          </main>
+            </footer>
+          </section>
         </div>
-      </div>
 
       <style>{`
         .agent-input {

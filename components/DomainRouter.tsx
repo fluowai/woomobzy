@@ -29,6 +29,8 @@ const SYSTEM_ROUTES = [
   '/consultoria/qualificacao',
   '/fazendas-brasil/',
   '/breu-branco',
+  '/rural/fazendas-brasil/breu-branco',
+  '/rural/breu-branco',
   '/quiz/',
   '/chat',
   '/crm',

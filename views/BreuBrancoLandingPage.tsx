@@ -32,13 +32,13 @@ const WHATSAPP_MESSAGE =
   'Ola, tenho interesse na Fazenda de Breu Branco-PA e gostaria de receber o material completo.';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
 const HERO_IMAGE = '/images/fazendas-brasil/breu-branco-hero-clean.webp';
-const GALLERY_IMAGES = [
-  '/images/fazendas-brasil/reference-category.webp',
-  '/images/fazendas-brasil/card-santa-helena.webp',
-  '/images/fazendas-brasil/card-boa-vista.webp',
-  '/images/fazendas-brasil/card-sao-bento.webp',
-  '/images/fazendas-brasil/card-conquista.webp',
-  '/images/fazendas-brasil/card-uniao.webp',
+const galleryItems = [
+  { label: 'Videos aereos', detail: 'Drone da area e acessos', position: 'center' },
+  { label: 'Sede', detail: 'Estrutura operacional', position: 'left center' },
+  { label: 'Curral', detail: 'Pecuaria pronta', position: '38% center' },
+  { label: 'Pastagens', detail: 'Area produtiva', position: '28% center' },
+  { label: 'Recursos hidricos', detail: 'Tanques, represas e nascentes', position: '72% center' },
+  { label: 'Estruturas', detail: 'Base para visita tecnica', position: 'right center' },
 ];
 
 const highlights = [
@@ -342,7 +342,7 @@ const BreuBrancoLandingPage: React.FC<BreuBrancoLandingPageProps> = ({ organizat
           place-items: center;
           background:
             linear-gradient(rgba(0,0,0,.1), rgba(0,0,0,.48)),
-            url("${GALLERY_IMAGES[0]}") center / cover no-repeat;
+            url("${HERO_IMAGE}") center / cover no-repeat;
         }
         .bb-play {
           width: 78px;
@@ -497,8 +497,6 @@ const BreuBrancoLandingPage: React.FC<BreuBrancoLandingPageProps> = ({ organizat
           position: relative;
           overflow: hidden;
           border-radius: 8px;
-          background-position: center;
-          background-size: cover;
         }
         .bb-gallery-item:first-child { grid-row: span 2; }
         .bb-gallery-item span {
@@ -513,6 +511,14 @@ const BreuBrancoLandingPage: React.FC<BreuBrancoLandingPageProps> = ({ organizat
           font-size: 12px;
           font-weight: 900;
           text-transform: uppercase;
+        }
+        .bb-gallery-item small {
+          display: block;
+          margin-top: 3px;
+          color: rgba(255,255,255,.72);
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: none;
         }
         .bb-about { display: grid; grid-template-columns: .82fr 1.18fr; gap: 36px; align-items: center; }
         .bb-about-card {
@@ -599,7 +605,7 @@ const BreuBrancoLandingPage: React.FC<BreuBrancoLandingPageProps> = ({ organizat
           color: #fff;
           background:
             linear-gradient(rgba(8,47,31,.88), rgba(8,47,31,.88)),
-            url("${GALLERY_IMAGES[2]}") center / cover no-repeat;
+            url("${HERO_IMAGE}") 70% center / cover no-repeat;
           border-radius: 8px;
           border: 1px solid rgba(239,210,138,.24);
         }
@@ -779,13 +785,17 @@ const BreuBrancoLandingPage: React.FC<BreuBrancoLandingPageProps> = ({ organizat
             <h2>Visao aerea, sede, curral, pastagens e recursos hidricos.</h2>
           </div>
           <div className="bb-gallery">
-            {GALLERY_IMAGES.map((image, index) => (
+            {galleryItems.map((item) => (
               <div
                 className="bb-gallery-item"
-                key={image}
-                style={{ backgroundImage: `linear-gradient(rgba(0,0,0,.02), rgba(0,0,0,.34)), url("${image}")` }}
+                key={item.label}
+                style={{
+                  backgroundImage: `linear-gradient(rgba(0,0,0,.02), rgba(0,0,0,.34)), url("${HERO_IMAGE}")`,
+                  backgroundPosition: item.position,
+                  backgroundSize: 'cover',
+                }}
               >
-                <span>{['Videos aereos', 'Sede', 'Curral', 'Pastagens', 'Recursos hidricos', 'Estruturas'][index]}</span>
+                <span>{item.label}<small>{item.detail}</small></span>
               </div>
             ))}
           </div>

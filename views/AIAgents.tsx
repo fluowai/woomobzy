@@ -92,6 +92,20 @@ type TestMessage = {
 
 type TestMode = 'lead-simulator' | 'agent-reply';
 
+type TestScenario = {
+  id: string;
+  title: string;
+  objective: string;
+  leadMessage: string;
+  expectedSignals: string[];
+};
+
+type AttendanceCriterion = {
+  label: string;
+  passed: boolean;
+  hint: string;
+};
+
 const channels = [
   { id: 'whatsapp', label: 'WhatsApp' },
   { id: 'site', label: 'Site' },
@@ -352,6 +366,66 @@ const promptQuickBlocks = [
   {
     title: 'Transbordo humano',
     text: 'Transborde para corretor quando houver visita, proposta, negociacao de preco, documento sensivel, lead irritado ou baixa confianca da IA.',
+  },
+];
+
+const professionalMasterPrompt = `Objetivo do agente:
+Atender leads imobiliarios com postura profissional, humana e consultiva, qualificando a demanda antes de recomendar imoveis ou transferir para um corretor.
+
+Tom de voz:
+- Claro, educado, direto e sem parecer robo.
+- Mensagens curtas, naturais e adequadas para WhatsApp.
+- Uma ou duas perguntas por vez.
+- Nunca pressionar o lead de forma agressiva.
+
+Fluxo obrigatorio de atendimento:
+1. Cumprimente e confirme o tipo de interesse: compra, locacao, venda, investimento ou duvida geral.
+2. Qualifique cidade/bairro, tipo de imovel, faixa de valor, prazo, forma de pagamento e objetivo da busca.
+3. Identifique temperatura do lead: inicial, morno ou quente.
+4. So recomende imoveis quando houver perfil minimo ou pedido claro.
+5. Ao recomendar, apresente ate 3 opcoes com motivo de aderencia, valor e proximo passo.
+6. Registre resumo, score, tags e proxima acao no CRM quando houver interesse comercial.
+7. Se houver pedido de visita, proposta, negociacao, documento sensivel, irritacao ou baixa confianca, transborde para um corretor humano com contexto completo.
+
+Limites:
+- Nao inventar imoveis, valores, disponibilidade, taxas, documentacao ou aprovacoes.
+- Nao prometer financiamento aprovado.
+- Nao pedir documentos sensiveis sem explicar finalidade e sem transbordar quando necessario.
+- Nao repetir perguntas ja respondidas na conversa.
+
+Padrao de resposta:
+- Responder primeiro a duvida do lead.
+- Em seguida, fazer a proxima pergunta de qualificacao ou conduzir para a acao comercial.
+- Quando acionar humano, enviar resumo com: nome do lead se houver, interesse, regiao, valor, prazo, objecoes e proximo passo recomendado.`;
+
+const attendanceTestScenarios: TestScenario[] = [
+  {
+    id: 'buyer-qualification',
+    title: 'Compra residencial',
+    objective: 'Validar se o agente qualifica antes de recomendar imoveis.',
+    leadMessage: 'Oi, estou procurando uma casa para comprar em Maringa, ate R$ 650 mil. Pode me ajudar?',
+    expectedSignals: ['cumprimento', 'cidade/bairro', 'orcamento', 'tipo de imovel', 'proximo passo'],
+  },
+  {
+    id: 'visit-request',
+    title: 'Pedido de visita',
+    objective: 'Validar se o agente coleta dados e transborda para corretor.',
+    leadMessage: 'Gostei desse apartamento e queria marcar uma visita amanha no fim da tarde.',
+    expectedSignals: ['imovel desejado', 'data/horario', 'confirmacao', 'corretor', 'resumo'],
+  },
+  {
+    id: 'financing-objection',
+    title: 'Financiamento',
+    objective: 'Validar resposta segura sem prometer aprovacao.',
+    leadMessage: 'Tenho R$ 80 mil de entrada e queria financiar o resto. Voces aprovam isso?',
+    expectedSignals: ['entrada', 'financiamento', 'sem promessa', 'simulacao', 'corretor'],
+  },
+  {
+    id: 'rental-lead',
+    title: 'Locacao',
+    objective: 'Validar coleta de prazo, faixa mensal e documentacao.',
+    leadMessage: 'Preciso alugar um apartamento de 2 quartos para mudar em 30 dias.',
+    expectedSignals: ['bairro/cidade', 'aluguel', 'prazo', 'quartos', 'documentacao'],
   },
 ];
 
@@ -617,6 +691,55 @@ function buildPreviewDiagnostics(message: string) {
   };
 }
 
+function buildAttendanceEvaluation(messages: TestMessage[], draft: BuilderDraft) {
+  const lastAgentMessage = [...messages].reverse().find((message) => message.side === 'agent')?.content || '';
+  const conversationText = normalizePreviewText(messages.map((message) => message.content).join(' '));
+  const agentText = normalizePreviewText(lastAgentMessage);
+  const hasPrompt = String(draft.instructions || '').trim().length >= 240;
+
+  const criteria: AttendanceCriterion[] = [
+    {
+      label: 'Prompt detalhado',
+      passed: hasPrompt,
+      hint: hasPrompt ? 'O agente tem contexto suficiente para operar.' : 'Inclua regras, limites, tom de voz e fluxo esperado.',
+    },
+    {
+      label: 'Tom profissional',
+      passed: /\b(oi|ola|olá|perfeito|claro|entendi|posso|vou te ajudar)\b/.test(agentText),
+      hint: 'A resposta deve soar humana, educada e objetiva.',
+    },
+    {
+      label: 'Qualificacao comercial',
+      passed: /\b(cidade|bairro|regiao|região|valor|orcamento|orçamento|prazo|pagamento|entrada|tipo)\b/.test(agentText),
+      hint: 'O agente precisa coletar dados antes de recomendar.',
+    },
+    {
+      label: 'Proximo passo',
+      passed: /\b(visita|agendar|simular|enviar|confirmar|corretor|retorno|proximo|próximo)\b/.test(agentText),
+      hint: 'Toda conversa deve conduzir para uma acao comercial clara.',
+    },
+    {
+      label: 'Nao inventou disponibilidade',
+      passed: !/\b(garantido|aprovado|disponivel com certeza|fechado|reservado para voce)\b/.test(agentText),
+      hint: 'Evite promessas que dependem de corretor, banco ou estoque.',
+    },
+    {
+      label: 'Memoria da conversa',
+      passed: messages.length < 4 || !/\b(qual.*cidade|qual.*valor|qual.*orcamento)\b/.test(agentText) || !/\b(maringa|650|80 mil|30 dias)\b/.test(conversationText),
+      hint: 'O agente nao deve repetir perguntas ja respondidas.',
+    },
+  ];
+
+  const passedCount = criteria.filter((criterion) => criterion.passed).length;
+
+  return {
+    score: Math.round((passedCount / criteria.length) * 100),
+    passedCount,
+    total: criteria.length,
+    criteria,
+  };
+}
+
 function buildDraftAgentReply(draft: BuilderDraft, message: string) {
   const diagnostics = buildPreviewDiagnostics(message);
   const agentName = draft.name || 'Agente';
@@ -715,6 +838,7 @@ const AIAgents: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('identity');
   const [testMode, setTestMode] = useState<TestMode>('lead-simulator');
+  const [selectedScenarioId, setSelectedScenarioId] = useState(attendanceTestScenarios[0].id);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<TestMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -753,6 +877,14 @@ const AIAgents: React.FC = () => {
     '';
   const previewDiagnostics = useMemo(() => buildPreviewDiagnostics(lastLeadMessage), [lastLeadMessage]);
   const currentFlowSteps = useMemo(() => normalizeFlowSteps(draft.flow_steps), [draft.flow_steps]);
+  const selectedScenario = useMemo(
+    () => attendanceTestScenarios.find((scenario) => scenario.id === selectedScenarioId) || attendanceTestScenarios[0],
+    [selectedScenarioId]
+  );
+  const attendanceEvaluation = useMemo(
+    () => buildAttendanceEvaluation(chatMessages, draft),
+    [chatMessages, draft]
+  );
 
   useEffect(() => {
     loadAgents();
@@ -945,6 +1077,14 @@ const AIAgents: React.FC = () => {
     });
   };
 
+  const applyProfessionalPrompt = () => {
+    setDraft({
+      ...draft,
+      instructions: professionalMasterPrompt,
+    });
+    toast.success('Prompt profissional aplicado ao agente.');
+  };
+
   const setFlowSteps = (steps: AgentFlowStep[]) => {
     setDraft({
       ...draft,
@@ -1131,6 +1271,15 @@ const AIAgents: React.FC = () => {
     setChatSessionId(`agent-preview-${Date.now()}`);
     setChatInput('');
     setChatMessages([]);
+  };
+
+  const startScenarioTest = (scenario = selectedScenario) => {
+    setTestMode('agent-reply');
+    setSelectedScenarioId(scenario.id);
+    setChatSessionId(`agent-scenario-${scenario.id}-${Date.now()}`);
+    setChatMessages([]);
+    setChatInput(scenario.leadMessage);
+    toast.success(`Cenario "${scenario.title}" carregado. Envie a mensagem para validar.`);
   };
   if (loading) {
     return (
@@ -1654,16 +1803,39 @@ const AIAgents: React.FC = () => {
 
                     <div className="space-y-4">
                       <div className="rounded-lg border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                          <MessageSquareText size={15} />
-                          Prompt mestre
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                              <MessageSquareText size={15} />
+                              Prompt mestre detalhado
+                            </div>
+                            <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500 mb-0">
+                              Campo livre para orientar postura, limites, qualificacao, CRM, transbordo e criterios de atendimento.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={applyProfessionalPrompt}
+                            className="h-9 shrink-0 rounded-lg border border-emerald-100 bg-emerald-50 px-3 text-[11px] font-black text-emerald-700 hover:bg-emerald-100"
+                          >
+                            Aplicar modelo profissional
+                          </button>
                         </div>
                         <textarea
                           value={draft.instructions || ''}
                           onChange={(e) => setDraft({ ...draft, instructions: e.target.value })}
-                          className="mt-3 min-h-[300px] w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-semibold leading-relaxed text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                          className="mt-3 min-h-[360px] w-full resize-y rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-semibold leading-relaxed text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                           placeholder="Descreva como o agente deve atender, qualificar, criar processo, recomendar imoveis e transbordar para o corretor."
                         />
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <Diagnostic label="Caracteres" value={String(draft.instructions || '').length.toLocaleString('pt-BR')} tone="slate" />
+                          <Diagnostic label="Blocos do funil" value={String(currentFlowSteps.length)} tone="green" />
+                          <Diagnostic
+                            label="Prontidao"
+                            value={String(draft.instructions || '').length >= 240 ? 'Profissional' : 'Basico'}
+                            tone={String(draft.instructions || '').length >= 240 ? 'green' : 'orange'}
+                          />
+                        </div>
                       </div>
 
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -2119,6 +2291,52 @@ const AIAgents: React.FC = () => {
                     </div>
 
                     <div className="space-y-4">
+                      <div className="rounded-lg border border-slate-200 bg-white p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="h-9 w-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <ClipboardCheck size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-sm font-black text-slate-950 mb-0">Roteiro de validacao</h3>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
+                              Escolha um cenario real de atendimento e teste se o agente conduz a conversa corretamente.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {attendanceTestScenarios.map((scenario) => (
+                            <button
+                              key={scenario.id}
+                              type="button"
+                              onClick={() => startScenarioTest(scenario)}
+                              className={`w-full rounded-lg border p-3 text-left transition ${
+                                selectedScenarioId === scenario.id
+                                  ? 'border-emerald-200 bg-emerald-50'
+                                  : 'border-slate-200 bg-slate-50 hover:bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-black text-slate-950">{scenario.title}</span>
+                                <Play size={13} className="text-emerald-600" />
+                              </div>
+                              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-slate-500 mb-0">
+                                {scenario.objective}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Sinais esperados</div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {selectedScenario.expectedSignals.map((signal) => (
+                              <span key={signal} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-600">
+                                {signal}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                         <h3 className="text-sm font-black text-slate-950 mb-0">Diagnostico do teste</h3>
                         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -2133,6 +2351,41 @@ const AIAgents: React.FC = () => {
                             <LayoutGrid size={16} />
                             {previewDiagnostics.nextAction}
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-sm font-black text-slate-950 mb-0">Validacao do atendimento</h3>
+                            <p className="mt-1 text-xs font-semibold text-slate-500 mb-0">
+                              Nota automatica baseada na ultima conversa de teste.
+                            </p>
+                          </div>
+                          <div className={`rounded-lg px-3 py-2 text-lg font-black ${
+                            attendanceEvaluation.score >= 80
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : attendanceEvaluation.score >= 60
+                                ? 'bg-orange-50 text-orange-700'
+                                : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            {attendanceEvaluation.score}%
+                          </div>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {attendanceEvaluation.criteria.map((criterion) => (
+                            <div key={criterion.label} className="flex items-start gap-2 rounded-lg border border-slate-100 bg-slate-50 p-2">
+                              {criterion.passed ? (
+                                <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                              ) : (
+                                <Circle size={15} className="mt-0.5 shrink-0 text-slate-400" />
+                              )}
+                              <div className="min-w-0">
+                                <div className="text-xs font-black text-slate-800">{criterion.label}</div>
+                                <p className="mt-0.5 text-[11px] font-semibold leading-relaxed text-slate-500 mb-0">{criterion.hint}</p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
 

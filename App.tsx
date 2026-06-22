@@ -451,6 +451,8 @@ const AppContent: React.FC = () => {
           <Route path="/ajuda/dns" element={<DnsHelp />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />
+          <Route path="/quiz/fazenda-breu-branco" element={<BreuBrancoLandingPage organizationId={FAZENDAS_BRASIL_ORG_ID} />} />
+          <Route path="/quiz/breu-branco" element={<BreuBrancoLandingPage organizationId={FAZENDAS_BRASIL_ORG_ID} />} />
           <Route path="/quiz/:slug" element={<PublicQuiz />} />
           <Route path="/login" element={<Login />} />
           <Route

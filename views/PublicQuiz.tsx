@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, MessageCircle, ShieldCheck } from 'lucide-react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { quizService, type QuizCampaign } from '../services/quiz';
+import BreuBrancoLandingPage from './BreuBrancoLandingPage';
 
 type QuizResult = {
   qualified: boolean;
@@ -12,6 +13,7 @@ type QuizResult = {
 
 const PublicQuiz: React.FC = () => {
   const { slug = '' } = useParams();
+  const isBreuBrancoLanding = ['fazenda-breu-branco', 'breu-branco'].includes(slug);
   const [searchParams] = useSearchParams();
   const [campaign, setCampaign] = useState<QuizCampaign | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,12 +25,13 @@ const PublicQuiz: React.FC = () => {
   const [result, setResult] = useState<QuizResult | null>(null);
 
   useEffect(() => {
+    if (isBreuBrancoLanding) return;
     quizService
       .getPublicCampaign(slug)
       .then(setCampaign)
       .catch((reason) => setError(reason instanceof Error ? reason.message : 'Quiz indisponivel.'))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, isBreuBrancoLanding]);
 
   useEffect(() => {
     if (!result?.qualified || !result.whatsapp_url) return;
@@ -59,6 +62,10 @@ const PublicQuiz: React.FC = () => {
   const footerText = (branding.footer_text as string) || 'Atendimento imobiliario especializado';
   const qualificationLabel = (branding.qualification_label as string) || 'Pre-qualificacao imobiliaria';
   const selectionLabel = (branding.selection_label as string) || campaign?.property_label || 'Imovel selecionado';
+
+  if (isBreuBrancoLanding) {
+    return <BreuBrancoLandingPage organizationId="ee2eafa9-929a-460e-a38a-2e13d259e7cb" />;
+  }
 
   const next = () => {
     if (step === -1 && canContinueContact) setStep(0);

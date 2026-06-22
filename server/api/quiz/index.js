@@ -24,6 +24,117 @@ const publicQuizLimiter = rateLimit({
   message: { error: 'Muitas tentativas. Aguarde um minuto e tente novamente.' },
 });
 
+const FAZENDAS_BRASIL_ORG_ID = 'ee2eafa9-929a-460e-a38a-2e13d259e7cb';
+const BREU_BRANCO_SLUGS = new Set(['breu-branco', 'fazenda-breu-branco']);
+const BREU_BRANCO_WHATSAPP = '5544998433030';
+
+const breuBrancoQuestions = [
+  {
+    id: 'purpose',
+    label: 'Qual e a finalidade principal da compra?',
+    type: 'single',
+    required: true,
+    options: [
+      { value: 'pecuaria', label: 'Pecuaria', score: 25 },
+      { value: 'lavoura', label: 'Lavoura', score: 22 },
+      { value: 'investimento', label: 'Investimento patrimonial', score: 20 },
+      { value: 'curiosidade', label: 'Ainda estou apenas pesquisando', score: 0, reason: 'Lead em fase inicial de pesquisa' },
+    ],
+  },
+  {
+    id: 'budget',
+    label: 'Qual faixa de investimento esta alinhada para esta compra?',
+    type: 'single',
+    required: true,
+    options: [
+      { value: 'below-5m', label: 'Ate R$5 milhoes', score: 0, disqualify: true, reason: 'Faixa de investimento abaixo do perfil da oferta' },
+      { value: '5m-10m', label: 'R$5M a R$10M', score: 25 },
+      { value: 'above-10m', label: 'Acima de R$10M', score: 25 },
+    ],
+  },
+  {
+    id: 'operation',
+    label: 'Voce ja possui operacao rural?',
+    type: 'single',
+    required: true,
+    options: [
+      { value: 'sim', label: 'Sim', score: 20 },
+      { value: 'nao-investidor', label: 'Nao, estou comprando como investidor', score: 14 },
+      { value: 'representante', label: 'Represento um comprador direto', score: 10 },
+    ],
+  },
+  {
+    id: 'visit',
+    label: 'Tem disponibilidade para visita tecnica apos receber o material?',
+    type: 'single',
+    required: true,
+    options: [
+      { value: 'sim', label: 'Sim, posso avancar para visita', score: 20 },
+      { value: 'material-primeiro', label: 'Quero avaliar o material primeiro', score: 12 },
+      { value: 'sem-prazo', label: 'Ainda nao tenho prazo', score: 2, reason: 'Sem prazo definido para visita' },
+    ],
+  },
+  {
+    id: 'role',
+    label: 'Voce participa diretamente da decisao de compra?',
+    type: 'single',
+    required: true,
+    options: [
+      { value: 'decisor', label: 'Sim, sou decisor ou comprador direto', score: 10 },
+      { value: 'socio', label: 'Sou socio/familiar do comprador', score: 8 },
+      { value: 'corretor', label: 'Sou corretor/intermediario', score: 0, reason: 'Intermediario precisa confirmar comprador real' },
+    ],
+  },
+];
+
+function buildBreuBrancoCampaign(publicOnly = true) {
+  const questions = publicOnly
+    ? breuBrancoQuestions.map((question) => ({
+        id: question.id,
+        label: question.label,
+        type: question.type,
+        required: question.required,
+        options: question.options.map((option) => ({
+          value: option.value,
+          label: option.label,
+        })),
+      }))
+    : breuBrancoQuestions;
+
+  return {
+    id: 'breu-branco-static-campaign',
+    title: 'Fazenda de Dupla Aptidao em Breu Branco-PA',
+    slug: 'breu-branco',
+    property_label: 'Fazenda de Dupla Aptidao em Breu Branco-PA',
+    status: 'active',
+    whatsapp_number: BREU_BRANCO_WHATSAPP,
+    qualification_threshold: 70,
+    intro_title: 'Receba o material completo da Fazenda Breu Branco-PA',
+    intro_copy:
+      'Pre-qualificacao rapida para compradores diretos e investidores com capacidade real de compra.',
+    success_message:
+      'Perfil qualificado. Vamos direcionar voce para o WhatsApp para receber o material completo.',
+    disqualification_message:
+      'Obrigado pelo interesse. Um especialista podera avaliar seu perfil antes do envio de materiais sensiveis.',
+    questions,
+    branding: {
+      primary: '#0f4a31',
+      charcoal: '#10251b',
+      muted: '#66736c',
+      background: '#fffaf0',
+      logo: '/images/fazendas-brasil/logo.png',
+      side_image: '/images/fazendas-brasil/breu-branco-hero-clean.webp',
+      footer_text: 'Fazendas Brasil - Consultoria Estrategica em Patrimonio Rural',
+      qualification_label: 'Pre-qualificacao rural',
+      selection_label: 'Oportunidade exclusiva',
+      lead_source: 'Quiz Breu Branco ACP',
+      match_profile: 'rural',
+      niche: 'rural',
+    },
+    created_at: new Date(0).toISOString(),
+  };
+}
+
 const optionSchema = z.object({
   value: z.string().min(1).max(120),
   label: z.string().min(1).max(240),
@@ -402,11 +513,16 @@ router.post('/campaigns/generate-from-pdf', verifyAuth, requireTenant, upload.si
 
 router.get('/public/:slug', async (req, res) => {
   try {
+    const normalizedSlug = normalizeSlug(req.params.slug);
+    if (BREU_BRANCO_SLUGS.has(normalizedSlug)) {
+      return res.json({ success: true, campaign: buildBreuBrancoCampaign(true) });
+    }
+
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
       .from('quiz_campaigns')
       .select('id,title,slug,property_label,intro_title,intro_copy,success_message,disqualification_message,questions,branding')
-      .eq('slug', normalizeSlug(req.params.slug))
+      .eq('slug', normalizedSlug)
       .eq('status', 'active')
       .maybeSingle();
     if (error) throw error;
@@ -435,11 +551,68 @@ router.post('/public/:slug/submissions', publicQuizLimiter, async (req, res) => 
       return res.status(400).json({ error: 'Preencha seus dados e responda todas as perguntas.' });
     }
 
+    const normalizedSlug = normalizeSlug(req.params.slug);
     const supabase = getSupabaseServer();
+    if (BREU_BRANCO_SLUGS.has(normalizedSlug)) {
+      const campaign = buildBreuBrancoCampaign(false);
+      const result = evaluateSubmission(
+        campaign.questions,
+        validation.data.answers,
+        Number(campaign.qualification_threshold || 70)
+      );
+      const classification = result.qualified ? 'qualified' : 'nurture';
+      const notes = [
+        `Quiz: ${campaign.title}`,
+        `Resultado: ${result.qualified ? 'Qualificado' : 'Nutricao futura'} (${result.score}/100)`,
+        ...result.answerSummary.map((item) => `${item.question}: ${item.answer}`),
+        ...(result.reasons.length ? [`Motivos: ${result.reasons.join('; ')}`] : []),
+      ].join('\n');
+
+      const { error: leadError } = await supabase.from('leads').insert({
+        organization_id: FAZENDAS_BRASIL_ORG_ID,
+        name: validation.data.name,
+        email: validation.data.email || null,
+        phone: validation.data.phone,
+        status: result.qualified ? 'Novo' : 'Nutricao Quiz',
+        source: 'Quiz Breu Branco ACP',
+        campaign: campaign.title,
+        notes,
+        budget: budgetFromAnswers(validation.data.answers),
+        classification,
+        lead_score: result.score,
+        match_profile: 'rural',
+        ai_profile: {
+          quiz_slug: normalizedSlug,
+          lead_source: 'Quiz Breu Branco ACP',
+          match_profile: 'rural',
+          qualification_status: classification,
+          answers: result.answerSummary,
+          reasons: result.reasons,
+          static_campaign: true,
+        },
+      });
+      if (leadError) throw leadError;
+
+      const message = [
+        `Ola! Sou ${validation.data.name}.`,
+        'Tenho interesse na Fazenda de Breu Branco-PA e gostaria de receber o material completo.',
+        `Pontuacao de qualificacao: ${result.score}/100.`,
+      ].join('\n');
+      const whatsappUrl = `https://wa.me/${BREU_BRANCO_WHATSAPP}?text=${encodeURIComponent(message)}`;
+
+      return res.status(201).json({
+        success: true,
+        qualified: result.qualified,
+        score: result.score,
+        message: result.qualified ? campaign.success_message : campaign.disqualification_message,
+        whatsapp_url: whatsappUrl,
+      });
+    }
+
     const { data: campaign, error: campaignError } = await supabase
       .from('quiz_campaigns')
       .select('*')
-      .eq('slug', normalizeSlug(req.params.slug))
+      .eq('slug', normalizedSlug)
       .eq('status', 'active')
       .maybeSingle();
     if (campaignError) throw campaignError;

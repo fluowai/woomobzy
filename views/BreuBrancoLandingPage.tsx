@@ -1,25 +1,23 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  ArrowRight,
   BadgeCheck,
-  Building2,
-  Check,
-  ChevronDown,
+  Banknote,
+  CheckCircle2,
+  CircleDollarSign,
+  ClipboardCheck,
   Droplets,
   FileCheck2,
+  Home,
   Instagram,
-  Leaf,
-  LockKeyhole,
-  Map,
+  Lock,
+  MapPinned,
   MessageCircle,
-  Mountain,
   Play,
   ShieldCheck,
   Sprout,
   Tractor,
-  TreePine,
-  UsersRound,
   Warehouse,
+  Wheat,
 } from 'lucide-react';
 import { leadService } from '../services/leads';
 
@@ -29,150 +27,163 @@ interface BreuBrancoLandingPageProps {
 
 const WHATSAPP_NUMBER = '5544998433030';
 const WHATSAPP_MESSAGE =
-  'Ola, tenho interesse na Fazenda de Breu Branco-PA e gostaria de receber o material completo.';
+  'Olá, tenho interesse na Fazenda de Breu Branco-PA e gostaria de receber o material completo.';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
 const HERO_IMAGE = '/images/fazendas-brasil/breu-branco-hero-clean.webp';
-const galleryItems = [
-  { label: 'Videos aereos', detail: 'Drone da area e acessos', position: 'center' },
-  { label: 'Sede', detail: 'Estrutura operacional', position: 'left center' },
-  { label: 'Curral', detail: 'Pecuaria pronta', position: '38% center' },
-  { label: 'Pastagens', detail: 'Area produtiva', position: '28% center' },
-  { label: 'Recursos hidricos', detail: 'Tanques, represas e nascentes', position: '72% center' },
-  { label: 'Estruturas', detail: 'Base para visita tecnica', position: 'right center' },
-];
 
-const highlights = [
-  '72 Alqueiroes',
-  '348,48 Hectares',
-  'Dupla Aptidao',
-  'Rica em Agua',
-  'Estrutura Nova',
-  'Potencial Agricola',
-  'Sem Embargos',
-  'Silo a 6 km',
-];
-
-const differenceCards = [
-  {
-    icon: Tractor,
-    title: 'Pecuaria pronta',
-    text: 'Curral com brete e balanca, divisoes, sede, casas de funcionarios e estrutura operacional nova.',
-  },
+const heroBenefits = [
   {
     icon: Droplets,
-    title: 'Agua abundante',
-    text: '4 tanques, 2 represas, igarape e nascentes permanentes para seguranca produtiva no ano todo.',
+    title: 'Rica em água',
+    text: '4 tanques, 2 represas, nascentes e igarapé',
+  },
+  {
+    icon: Home,
+    title: 'Estrutura completa',
+    text: 'Casa sede, 3 casas de funcionários e galpão',
+  },
+  {
+    icon: Tractor,
+    title: 'Curral completo',
+    text: 'Brete e balança pronto para operar',
+  },
+  {
+    icon: Wheat,
+    title: 'Potencial agrícola',
+    text: 'Faz lavoura em +300 ha',
+  },
+  {
+    icon: MapPinned,
+    title: 'Excelente logística',
+    text: 'A 25 km da cidade e silo/secador a 6 km',
+  },
+];
+
+const opportunities = [
+  {
+    icon: Tractor,
+    title: 'Para pecuaristas',
+    text: 'Fazenda pronta para operar e expandir seu rebanho com segurança e estrutura completa.',
   },
   {
     icon: Sprout,
-    title: 'Potencial agricola',
-    text: 'Mais de 300 hectares aptos para lavoura, topografia plana e divisa com area de soja.',
+    title: 'Para produtores de grãos',
+    text: 'Topografia plana e aberta, lavoura em mais de 300 ha e divisa com soja produtiva.',
   },
   {
-    icon: Warehouse,
-    title: 'Logistica estrategica',
-    text: 'Acesso por asfalto e vicinal boa, a 25 km de Breu Branco e com silo/secador a apenas 6 km.',
+    icon: CircleDollarSign,
+    title: 'Para investidores',
+    text: 'Ativo sólido, produtivo e com grande potencial de valorização patrimonial e geração de renda.',
   },
 ];
 
-const audienceCards = [
+const numbers = [
+  { icon: Banknote, value: '72', title: 'Alqueirões', note: '348,48 hectares' },
+  { icon: Wheat, value: '300+', title: 'Hectares', note: 'aptos para lavoura' },
+  { icon: Droplets, value: '4', title: 'Tanques', note: '2 represas e nascentes permanentes' },
+  { icon: Warehouse, value: '6 km', title: 'Do silo/secador', note: 'logística estratégica' },
+  { icon: MapPinned, value: '25 km', title: 'Da cidade', note: 'acesso por asfalto e vicinal boa' },
+  { icon: FileCheck2, value: '100%', title: 'Documentada', note: 'sem embargos ou multas ambientais' },
+];
+
+const quizGroups = [
   {
-    icon: UsersRound,
-    title: 'Pecuaristas em expansao',
-    text: 'Expansao imediata da operacao, sem iniciar uma fazenda do zero.',
+    id: 'interest',
+    title: '1. Qual o seu interesse?',
+    options: ['Pecuária', 'Lavoura', 'Investimento'],
   },
   {
-    icon: Leaf,
-    title: 'Produtores de graos',
-    text: 'Area plana com potencial de conversao agricola e logistica favoravel.',
+    id: 'role',
+    title: '2. Você é:',
+    options: ['Comprador direto', 'Representante de comprador', 'Corretor parceiro'],
   },
   {
-    icon: ShieldCheck,
-    title: 'Investidores patrimoniais',
-    text: 'Ativo real com agua, estrutura, renda potencial e perspectiva de valorizacao.',
+    id: 'payment',
+    title: '3. Qual a forma de aquisição?',
+    options: ['À vista', 'Entrada + prazo', 'Financiamento'],
+  },
+  {
+    id: 'budget',
+    title: '4. Qual o valor aproximado disponível para investimento?',
+    options: ['Até R$ 2 milhões', 'R$ 2 a R$ 5 milhões', 'R$ 5 a R$ 10 milhões', 'Acima de R$ 10 milhões'],
+  },
+  {
+    id: 'operation',
+    title: '5. Você possui operação rural atualmente?',
+    options: ['Sim', 'Não'],
+  },
+  {
+    id: 'visit',
+    title: '6. Tem disponibilidade para visitar a propriedade?',
+    options: ['Sim', 'Não'],
+  },
+  {
+    id: 'timeline',
+    title: '7. Em quanto tempo pretende comprar?',
+    options: ['Imediatamente', 'Até 3 meses', 'Até 6 meses', 'Apenas pesquisando'],
   },
 ];
 
-const materialItems = [
-  'Video de drone',
-  'Fotos internas',
-  'Localizacao aproximada',
-  'Informacoes produtivas',
-  'Documentacao inicial',
-  'Condicoes para visita',
+const processItems = [
+  { icon: ClipboardCheck, text: 'Você envia suas respostas' },
+  { icon: BadgeCheck, text: 'Analisamos seu perfil' },
+  { icon: FileCheck2, text: 'Enviamos o dossiê completo' },
+  { icon: MapPinned, text: 'Agendamos uma visita' },
+  { icon: ShieldCheck, text: 'Negociação segura e transparente' },
 ];
 
-const processSteps = [
-  'Solicitacao de informacoes',
-  'Pre-qualificacao',
-  'Envio do material',
-  'Reuniao estrategica',
-  'Visita tecnica',
-  'Negociacao',
+const trustItems = [
+  { icon: FileCheck2, text: 'Documentação 100% regular' },
+  { icon: ShieldCheck, text: 'Sem embargos ambientais' },
+  { icon: Home, text: 'Estrutura nova em alvenaria' },
+  { icon: Droplets, text: 'Água abundante o ano todo' },
+  { icon: MapPinned, text: 'Logística privilegiada e vizinhança produtiva' },
 ];
 
-type LeadForm = {
+type CaptureForm = {
   name: string;
   phone: string;
-  city: string;
-  state: string;
   email: string;
-  purpose: string;
-  investmentRange: string;
-  hasRuralOperation: string;
+  cityState: string;
 };
 
-const initialForm: LeadForm = {
+const initialCapture: CaptureForm = {
   name: '',
   phone: '',
-  city: '',
-  state: '',
   email: '',
-  purpose: 'Pecuaria',
-  investmentRange: 'R$5M a R$10M',
-  hasRuralOperation: 'Sim',
+  cityState: '',
 };
 
 function whatsappUrl() {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 }
 
-const BreuBrancoLandingPage: React.FC<BreuBrancoLandingPageProps> = ({ organizationId }) => {
-  const [form, setForm] = useState<LeadForm>(initialForm);
+const BreuBrancoLandingPage: React.FC<BreuBrancoLandingPageProps> = ({
+  organizationId,
+}) => {
+  const [capture, setCapture] = useState(initialCapture);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const leadScore = useMemo(() => {
-    let score = 55;
-    if (form.investmentRange === 'Acima de R$10M') score += 22;
-    if (form.investmentRange === 'R$5M a R$10M') score += 18;
-    if (form.hasRuralOperation === 'Sim') score += 14;
-    if (form.purpose === 'Pecuaria') score += 8;
-    if (form.phone && form.city && form.state) score += 6;
-    return Math.min(score, 100);
-  }, [form]);
-
-  const updateField = (field: keyof LeadForm, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
+  const updateCapture = (field: keyof CaptureForm, value: string) => {
+    setCapture((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const saveLeadAndRedirect = async (source: string) => {
     setSubmitting(true);
     setError('');
 
     try {
       if (organizationId) {
         const notes = [
-          'Lead da landing premium Fazenda de Dupla Aptidao em Breu Branco-PA.',
-          'Area: 72 alqueiroes / 348,48 hectares.',
-          'Diferenciais: pecuaria pronta, agua abundante, estrutura nova, +300 ha com potencial agricola, silo a 6 km, sem embargos.',
+          'Lead da landing Fazenda de Dupla Aptidão em Breu Branco - PA.',
+          '72 alqueirões / 348,48 hectares.',
+          'Estrutura completa, rica em água, curral completo, potencial agrícola e excelente logística.',
           '',
-          `Cidade/UF do lead: ${form.city}/${form.state}`,
-          `Finalidade da compra: ${form.purpose}`,
-          `Faixa de investimento: ${form.investmentRange}`,
-          `Ja possui operacao rural: ${form.hasRuralOperation}`,
-          `Score estimado: ${leadScore}`,
+          `Cidade / Estado: ${capture.cityState || 'Não informado'}`,
+          `Origem do formulário: ${source}`,
+          `Respostas do formulário: ${JSON.stringify(quizAnswers)}`,
         ].join('\n');
 
         await leadService.create({
@@ -182,769 +193,992 @@ const BreuBrancoLandingPage: React.FC<BreuBrancoLandingPageProps> = ({ organizat
           owner_email: 'contato@fazendasbrasil.com.br',
           site_key: 'fazendasbrasil',
           referrer_url: window.location.href,
-          name: form.name,
-          phone: form.phone,
-          email: form.email || undefined,
-          source: 'Landing Breu Branco ACP',
-          campaign: 'Fazenda Breu Branco PA - Material completo',
-          ad_reference: 'Fazenda de Dupla Aptidao em Breu Branco-PA',
-          organic_channel: 'Landing page premium',
+          name: capture.name || 'Lead Fazenda Breu Branco',
+          phone: capture.phone,
+          email: capture.email || undefined,
+          source: 'Landing Fazenda Breu Branco',
+          campaign: 'Dossiê Fazenda Breu Branco - PA',
+          ad_reference: 'Fazenda de Dupla Aptidão em Breu Branco - PA',
+          organic_channel: 'Landing page',
           notes,
-          budget: form.investmentRange as any,
-          aptitude_interest: form.purpose as any,
           match_profile: 'rural',
-          status: 'Qualificacao',
-          classification:
-            leadScore >= 82 ? 'Lead qualificado - Alta prioridade' : 'Lead qualificado',
-          lead_score: leadScore,
+          status: 'Qualificação',
+          classification: 'Solicitou dossiê da fazenda',
+          lead_score: 85,
         } as any);
       }
     } catch (err: any) {
-      setError(err?.message || 'Nao foi possivel salvar o lead agora. Vamos direcionar para o WhatsApp.');
+      setError(
+        err?.message ||
+          'Não foi possível registrar o lead agora. Vamos direcionar para o WhatsApp.'
+      );
     } finally {
       setSubmitting(false);
       window.location.href = whatsappUrl();
     }
   };
 
+  const handleHeroSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    saveLeadAndRedirect('Dossiê completo');
+  };
+
+  const handleQuizSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    saveLeadAndRedirect('Questionário de qualificação');
+  };
+
   return (
-    <div className="bb-page">
+    <main className="bb-page">
       <style>{`
         .bb-page {
-          --bb-green: #082f1f;
-          --bb-green-2: #0f4a31;
-          --bb-green-3: #123d2a;
-          --bb-gold: #caa24b;
-          --bb-gold-2: #efd28a;
-          --bb-white: #fffdf7;
-          --bb-muted: #66736c;
-          --bb-line: rgba(202, 162, 75, .28);
+          --green: #002c17;
+          --green-2: #063b20;
+          --green-3: #0b4a28;
+          --gold: #f6b51e;
+          --gold-2: #f7c94a;
+          --cream: #f7f3e9;
+          --text: #092314;
+          --muted: #3f4a42;
           min-height: 100vh;
-          color: #10251b;
-          background: #fffaf0;
-          font-family: Inter, Arial, Helvetica, sans-serif;
+          color: var(--text);
+          background: var(--cream);
+          font-family: Arial, Helvetica, sans-serif;
         }
         .bb-page * { box-sizing: border-box; }
-        .bb-shell { width: min(100% - 40px, 1180px); margin: 0 auto; }
-        .bb-nav {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 30;
-          background: rgba(8, 47, 31, .9);
-          border-bottom: 1px solid rgba(239, 210, 138, .22);
-          backdrop-filter: blur(18px);
+        .bb-wrap { width: min(100% - 68px, 1320px); margin: 0 auto; }
+        .bb-hero {
+          position: relative;
+          min-height: 760px;
+          color: #fff;
+          background:
+            linear-gradient(90deg, rgba(0,31,15,.96) 0%, rgba(0,42,19,.78) 38%, rgba(0,42,19,.2) 72%),
+            linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.2)),
+            url("${HERO_IMAGE}") center / cover no-repeat;
         }
-        .bb-nav .bb-shell {
-          min-height: 78px;
+        .bb-top {
+          height: 105px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 20px;
+          gap: 24px;
         }
-        .bb-logo { width: 158px; height: 56px; object-fit: contain; object-position: left center; filter: drop-shadow(0 10px 18px rgba(0,0,0,.25)); }
-        .bb-nav-links { display: flex; align-items: center; gap: 22px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-        .bb-nav-links a { color: rgba(255,255,255,.86); text-decoration: none; }
-        .bb-wa-mini {
-          display: inline-flex;
+        .bb-logo { width: 170px; height: auto; display: block; }
+        .bb-doc-badge {
+          display: flex;
           align-items: center;
-          gap: 8px;
-          min-height: 42px;
-          padding: 0 16px;
-          color: #082f1f;
-          background: linear-gradient(135deg, var(--bb-gold-2), var(--bb-gold));
-          border-radius: 999px;
-          font-weight: 900;
-          text-decoration: none;
-          box-shadow: 0 18px 34px rgba(0,0,0,.22);
+          gap: 13px;
+          min-width: 320px;
+          padding: 15px 22px;
+          color: #102016;
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 10px 28px rgba(0,0,0,.22);
         }
-        .bb-hero {
-          min-height: 760px;
-          padding-top: 118px;
-          color: white;
-          background:
-            radial-gradient(circle at 74% 22%, rgba(239,210,138,.28), transparent 28%),
-            linear-gradient(90deg, rgba(3,25,16,.96) 0%, rgba(8,47,31,.82) 44%, rgba(8,47,31,.3) 76%),
-            url("${HERO_IMAGE}") center / cover no-repeat;
-        }
-        .bb-hero .bb-shell {
+        .bb-doc-badge strong { display: block; font-size: 14px; text-transform: uppercase; }
+        .bb-doc-badge span { display: block; margin-top: 2px; font-size: 13px; font-weight: 700; }
+        .bb-hero-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1.02fr) 430px;
-          gap: 46px;
-          align-items: center;
-          min-height: 640px;
+          grid-template-columns: minmax(0, 1fr) 360px;
+          gap: 70px;
+          align-items: start;
+          padding-top: 70px;
         }
-        .bb-kicker {
+        .bb-sale-tag {
           display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          margin: 0 0 22px;
-          color: var(--bb-gold-2);
-          font-size: 12px;
+          padding: 9px 14px;
+          color: #fff;
+          background: #0d6a32;
+          border-radius: 3px;
+          font-size: 18px;
           font-weight: 900;
-          letter-spacing: .12em;
           text-transform: uppercase;
         }
         .bb-hero h1 {
-          max-width: 760px;
-          margin: 0;
-          font-size: clamp(42px, 6vw, 76px);
-          line-height: .95;
-          letter-spacing: 0;
+          max-width: 690px;
+          margin: 18px 0 0;
+          color: #fff;
+          font-size: clamp(54px, 7vw, 84px);
+          line-height: .98;
+          letter-spacing: -1px;
+          font-weight: 900;
+        }
+        .bb-hero h1 span {
+          display: block;
+          margin-top: 20px;
+          color: var(--gold-2);
+          font-size: clamp(34px, 3.9vw, 48px);
+          line-height: 1.05;
           text-transform: uppercase;
         }
-        .bb-hero h1 span { color: var(--bb-gold-2); }
-        .bb-subtitle {
-          max-width: 690px;
-          margin: 22px 0 0;
-          color: rgba(255,255,255,.92);
-          font-size: clamp(18px, 2.1vw, 25px);
-          line-height: 1.34;
+        .bb-hero-sub {
+          max-width: 760px;
+          margin: 30px 0 0;
+          color: #fff;
+          font-size: 20px;
+          line-height: 1.55;
+          font-weight: 800;
+        }
+        .bb-lead-card {
+          padding: 28px 24px 24px;
+          background: linear-gradient(160deg, rgba(0,39,18,.96), rgba(0,27,13,.96));
+          border: 1px solid rgba(255,255,255,.9);
+          border-radius: 8px;
+          box-shadow: 0 20px 55px rgba(0,0,0,.42);
+        }
+        .bb-lead-card h2 {
+          margin: 0;
+          color: var(--gold-2);
+          font-size: 24px;
+          line-height: 1.15;
+          text-align: center;
+          text-transform: uppercase;
+        }
+        .bb-lead-card h2 span { display: block; color: #fff; }
+        .bb-lead-card p {
+          margin: 22px auto;
+          max-width: 250px;
+          color: #fff;
+          text-align: center;
+          font-size: 15px;
+          line-height: 1.45;
           font-weight: 700;
         }
-        .bb-hero-copy {
-          max-width: 610px;
-          margin: 18px 0 0;
-          color: rgba(255,255,255,.76);
-          font-size: 17px;
-          line-height: 1.7;
-        }
-        .bb-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
-        .bb-btn {
-          min-height: 54px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          padding: 0 22px;
-          border: 1px solid transparent;
-          border-radius: 6px;
+        .bb-lead-card input {
+          width: 100%;
+          height: 55px;
+          margin-bottom: 10px;
+          padding: 0 16px;
+          color: #1b261f;
+          background: #fff;
+          border: 0;
+          border-radius: 4px;
           font-size: 14px;
-          font-weight: 950;
-          text-transform: uppercase;
-          letter-spacing: .04em;
-          text-decoration: none;
-          cursor: pointer;
+          outline: none;
         }
-        .bb-btn-primary { color: #0b2d1e; background: linear-gradient(135deg, #ffe8a8, var(--bb-gold)); box-shadow: 0 20px 45px rgba(0,0,0,.28); }
-        .bb-btn-secondary { color: #fff; background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.34); }
-        .bb-asset-card {
-          background: rgba(7, 35, 23, .82);
-          border: 1px solid rgba(239,210,138,.28);
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 34px 80px rgba(0,0,0,.38);
-        }
-        .bb-video {
-          min-height: 260px;
-          display: grid;
-          place-items: center;
-          background:
-            linear-gradient(rgba(0,0,0,.1), rgba(0,0,0,.48)),
-            url("${HERO_IMAGE}") center / cover no-repeat;
-        }
-        .bb-play {
-          width: 78px;
-          height: 78px;
-          display: grid;
-          place-items: center;
-          border-radius: 999px;
-          color: #082f1f;
-          background: var(--bb-gold-2);
-          box-shadow: 0 18px 42px rgba(0,0,0,.32);
-        }
-        .bb-asset-body { padding: 22px; }
-        .bb-asset-body strong { display: block; color: #fff; font-size: 20px; margin-bottom: 8px; }
-        .bb-asset-body p { margin: 0; color: rgba(255,255,255,.72); line-height: 1.6; }
-        .bb-proof {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 1px;
-          margin-top: -1px;
-          background: var(--bb-green);
-          border-top: 1px solid var(--bb-line);
-          border-bottom: 1px solid var(--bb-line);
-        }
-        .bb-proof span {
-          min-height: 68px;
-          display: flex;
+        .bb-yellow-btn {
+          width: 100%;
+          height: 65px;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 9px;
-          padding: 14px 10px;
-          color: #fff;
-          background: rgba(255,255,255,.035);
-          font-size: 13px;
-          font-weight: 900;
-          text-align: center;
-          text-transform: uppercase;
-        }
-        .bb-proof svg { color: var(--bb-gold-2); flex: 0 0 auto; }
-        .bb-section { padding: 92px 0; }
-        .bb-section.dark { color: #fff; background: var(--bb-green); }
-        .bb-section.alt { background: #f6f0e2; }
-        .bb-head { max-width: 760px; margin-bottom: 38px; }
-        .bb-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          color: var(--bb-gold);
-          font-size: 12px;
+          border: 0;
+          border-radius: 5px;
+          color: #091d10;
+          background: linear-gradient(180deg, #ffc52d, #f5a914);
+          font-size: 18px;
           font-weight: 950;
-          letter-spacing: .14em;
+          text-transform: uppercase;
+          cursor: pointer;
+          text-decoration: none;
+        }
+        .bb-secure {
+          display: flex;
+          justify-content: center;
+          gap: 7px;
+          margin-top: 14px;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 800;
+          opacity: .9;
+        }
+        .bb-benefits {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,40,18,.9);
+          border-top: 1px solid rgba(255,255,255,.12);
+        }
+        .bb-benefit-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 0;
+        }
+        .bb-benefit {
+          min-height: 150px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 18px 18px 16px;
+          text-align: center;
+          border-left: 1px solid rgba(247,201,74,.28);
+        }
+        .bb-benefit:last-child { border-right: 1px solid rgba(247,201,74,.28); }
+        .bb-benefit svg { width: 50px; height: 50px; color: var(--gold-2); stroke-width: 1.6; }
+        .bb-benefit strong {
+          margin-top: 10px;
+          color: #fff;
+          font-size: 13px;
+          line-height: 1.1;
           text-transform: uppercase;
         }
-        .bb-head h2 {
-          margin: 12px 0 0;
-          font-size: clamp(32px, 4.2vw, 52px);
-          line-height: 1.02;
-          letter-spacing: 0;
+        .bb-benefit span {
+          margin-top: 6px;
+          max-width: 160px;
+          color: #fff;
+          font-size: 12px;
+          line-height: 1.25;
+          font-weight: 700;
+        }
+        .bb-section { padding: 44px 0; background: var(--cream); }
+        .bb-intro-grid {
+          display: grid;
+          grid-template-columns: 470px minmax(0, 1fr);
+          gap: 58px;
+          align-items: start;
+        }
+        .bb-section-title {
+          margin: 0;
+          color: #0b2b17;
+          font-size: 27px;
+          line-height: 1.1;
+          font-weight: 950;
           text-transform: uppercase;
         }
-        .bb-head p { margin: 16px 0 0; color: var(--bb-muted); font-size: 17px; line-height: 1.7; }
-        .dark .bb-head p { color: rgba(255,255,255,.72); }
-        .bb-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
-        .bb-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-        .bb-info-card {
-          min-height: 250px;
-          padding: 28px;
-          background: #fff;
-          border: 1px solid rgba(15,74,49,.1);
-          border-radius: 8px;
-          box-shadow: 0 18px 45px rgba(20, 35, 25, .08);
+        .bb-copy {
+          margin: 16px 0 20px;
+          color: #0b2114;
+          font-size: 15px;
+          line-height: 1.45;
+          font-weight: 700;
         }
-        .dark .bb-info-card { background: rgba(255,255,255,.06); border-color: rgba(239,210,138,.22); box-shadow: none; }
-        .bb-info-icon {
-          width: 54px;
-          height: 54px;
+        .bb-video-card {
+          overflow: hidden;
+          border-radius: 5px;
+          background: #0b321a;
+          box-shadow: 0 10px 22px rgba(0,0,0,.18);
+        }
+        .bb-video-thumb {
+          min-height: 240px;
           display: grid;
           place-items: center;
-          margin-bottom: 22px;
-          color: var(--bb-green);
-          background: linear-gradient(135deg, #fff4cd, var(--bb-gold));
-          border-radius: 8px;
-        }
-        .bb-info-card h3 { margin: 0 0 12px; font-size: 22px; color: inherit; }
-        .bb-info-card p { margin: 0; color: var(--bb-muted); line-height: 1.62; }
-        .dark .bb-info-card p { color: rgba(255,255,255,.72); }
-        .bb-split { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 42px; align-items: center; }
-        .bb-map-card {
-          position: relative;
-          min-height: 470px;
-          overflow: hidden;
-          border-radius: 8px;
           background:
-            radial-gradient(circle at 50% 42%, rgba(202,162,75,.2), transparent 24%),
-            linear-gradient(135deg, #0a3624, #082f1f);
-          border: 1px solid rgba(239,210,138,.24);
-          box-shadow: 0 28px 70px rgba(8,47,31,.2);
+            linear-gradient(rgba(0,0,0,.02), rgba(0,0,0,.12)),
+            url("${HERO_IMAGE}") center / cover no-repeat;
         }
-        .bb-map-card:before {
-          content: "";
-          position: absolute;
-          inset: 40px;
-          background:
-            linear-gradient(115deg, transparent 0 25%, rgba(255,255,255,.1) 25% 26%, transparent 26% 100%),
-            radial-gradient(circle at 44% 28%, rgba(255,255,255,.18) 0 2px, transparent 3px),
-            radial-gradient(circle at 58% 52%, rgba(239,210,138,.9) 0 7px, transparent 8px),
-            radial-gradient(circle at 61% 56%, rgba(239,210,138,.32) 0 28px, transparent 29px);
-          clip-path: polygon(38% 0, 63% 7%, 79% 27%, 70% 49%, 82% 68%, 58% 100%, 34% 90%, 22% 65%, 28% 43%, 17% 21%);
-          border: 1px solid rgba(239,210,138,.32);
-        }
-        .bb-map-label {
-          position: absolute;
-          right: 28px;
-          bottom: 28px;
-          width: min(290px, calc(100% - 56px));
-          padding: 20px;
-          color: #fff;
-          background: rgba(6, 30, 20, .88);
-          border: 1px solid rgba(239,210,138,.32);
-          border-radius: 8px;
-          backdrop-filter: blur(10px);
-        }
-        .bb-map-label strong { display: block; margin-bottom: 6px; font-size: 20px; }
-        .bb-map-label span { color: rgba(255,255,255,.74); line-height: 1.55; }
-        .bb-check-list { display: grid; gap: 14px; margin-top: 24px; }
-        .bb-check-list span {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          color: #203529;
-          font-weight: 800;
-        }
-        .bb-check-list svg { color: var(--bb-gold); }
-        .bb-material {
+        .bb-play {
+          width: 86px;
+          height: 86px;
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-        }
-        .bb-material span {
-          min-height: 72px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 18px;
-          background: rgba(255,255,255,.07);
-          border: 1px solid rgba(239,210,138,.22);
-          border-radius: 8px;
-          font-weight: 850;
-        }
-        .bb-material svg { color: var(--bb-gold-2); flex: 0 0 auto; }
-        .bb-gallery { display: grid; grid-template-columns: 1.2fr .8fr .8fr; grid-auto-rows: 220px; gap: 12px; }
-        .bb-gallery-item {
-          position: relative;
-          overflow: hidden;
-          border-radius: 8px;
-        }
-        .bb-gallery-item:first-child { grid-row: span 2; }
-        .bb-gallery-item span {
-          position: absolute;
-          left: 14px;
-          bottom: 14px;
-          padding: 8px 10px;
+          place-items: center;
           color: #fff;
-          background: rgba(8,47,31,.82);
-          border: 1px solid rgba(239,210,138,.28);
+          background: rgba(0,0,0,.34);
+          border: 4px solid #fff;
           border-radius: 999px;
-          font-size: 12px;
-          font-weight: 900;
-          text-transform: uppercase;
         }
-        .bb-gallery-item small {
-          display: block;
-          margin-top: 3px;
-          color: rgba(255,255,255,.72);
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: none;
-        }
-        .bb-about { display: grid; grid-template-columns: .82fr 1.18fr; gap: 36px; align-items: center; }
-        .bb-about-card {
-          padding: 34px;
-          color: #fff;
-          background: linear-gradient(145deg, #082f1f, #0f4a31);
-          border: 1px solid rgba(239,210,138,.24);
-          border-radius: 8px;
-        }
-        .bb-about-card img { width: 190px; height: 74px; object-fit: contain; object-position: left center; margin-bottom: 26px; filter: drop-shadow(0 12px 22px rgba(0,0,0,.28)); }
-        .bb-about-card p { margin: 0; color: rgba(255,255,255,.76); line-height: 1.7; }
-        .bb-process {
-          display: grid;
-          grid-template-columns: repeat(6, minmax(0, 1fr));
-          gap: 10px;
-        }
-        .bb-step {
-          position: relative;
-          min-height: 138px;
-          padding: 20px 16px;
-          color: #fff;
-          background: rgba(255,255,255,.06);
-          border: 1px solid rgba(239,210,138,.22);
-          border-radius: 8px;
-        }
-        .bb-step small { color: var(--bb-gold-2); font-weight: 900; text-transform: uppercase; }
-        .bb-step strong { display: block; margin-top: 14px; line-height: 1.35; }
-        .bb-form-section { padding: 96px 0; background: linear-gradient(135deg, #f8f2e4, #fffdf7); }
-        .bb-form-wrap { display: grid; grid-template-columns: .9fr 1.1fr; gap: 42px; align-items: start; }
-        .bb-form-panel {
-          padding: 30px;
-          background: #fff;
-          border: 1px solid rgba(15,74,49,.12);
-          border-radius: 8px;
-          box-shadow: 0 26px 70px rgba(8,47,31,.12);
-        }
-        .bb-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-        .bb-field.full { grid-column: 1 / -1; }
-        .bb-field label { display: block; margin-bottom: 7px; color: #173526; font-size: 12px; font-weight: 950; text-transform: uppercase; letter-spacing: .06em; }
-        .bb-field input {
+        .bb-video-btn {
           width: 100%;
-          height: 48px;
-          padding: 0 13px;
-          color: #10251b;
-          background: #f8f4ea;
-          border: 1px solid rgba(15,74,49,.18);
-          border-radius: 6px;
-          outline: none;
-        }
-        .bb-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-        .bb-option {
-          min-height: 44px;
+          min-height: 66px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 9px;
-          border: 1px solid rgba(15,74,49,.18);
-          border-radius: 6px;
-          background: #f8f4ea;
-          color: #173526;
-          font-size: 12px;
-          font-weight: 900;
-          text-align: center;
-          cursor: pointer;
-        }
-        .bb-option.active { color: #082f1f; background: #f2d889; border-color: var(--bb-gold); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
-        .bb-submit {
-          width: 100%;
-          min-height: 56px;
-          margin-top: 18px;
+          gap: 10px;
+          color: #fff;
+          background: #002f18;
           border: 0;
-          border-radius: 6px;
-          color: #092b1d;
-          background: linear-gradient(135deg, #ffe8a8, var(--bb-gold));
-          font-size: 14px;
+          border-top: 7px solid var(--cream);
+          font-size: 15px;
           font-weight: 950;
           text-transform: uppercase;
-          letter-spacing: .04em;
-          cursor: pointer;
         }
-        .bb-error { margin-top: 12px; color: #9b3d23; font-size: 13px; font-weight: 800; }
-        .bb-lock-box {
-          padding: 26px;
+        .bb-opportunities h2 { text-align: center; margin-bottom: 62px; }
+        .bb-card-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .bb-op-card {
+          min-height: 335px;
+          padding: 44px 38px;
+          background: #fff;
+          border: 1px solid #d5d5d0;
+          border-radius: 6px;
+          box-shadow: 0 8px 18px rgba(0,0,0,.15);
+        }
+        .bb-op-card svg { width: 58px; height: 58px; color: #092715; stroke-width: 1.9; }
+        .bb-op-card h3 {
+          margin: 34px 0 22px;
+          color: #0a2012;
+          font-size: 17px;
+          line-height: 1.2;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+        .bb-op-card p {
+          margin: 0;
+          color: #17291d;
+          font-size: 15px;
+          line-height: 1.58;
+          font-weight: 700;
+        }
+        .bb-dark-band {
+          padding: 38px 0 40px;
           color: #fff;
           background:
-            linear-gradient(rgba(8,47,31,.88), rgba(8,47,31,.88)),
-            url("${HERO_IMAGE}") 70% center / cover no-repeat;
-          border-radius: 8px;
-          border: 1px solid rgba(239,210,138,.24);
+            linear-gradient(90deg, #002f18, #073d20 50%, #002b16);
         }
-        .bb-lock-box h3 { margin: 18px 0 10px; font-size: 28px; line-height: 1.08; text-transform: uppercase; }
-        .bb-lock-box p { margin: 0; color: rgba(255,255,255,.76); line-height: 1.7; }
-        .bb-footer { padding: 44px 0 28px; color: rgba(255,255,255,.75); background: #061f15; }
-        .bb-footer .bb-shell { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; }
-        .bb-footer img { width: 160px; height: 58px; object-fit: contain; object-position: left center; filter: brightness(1.12); }
-        .bb-footer p { max-width: 690px; margin: 10px 0 0; line-height: 1.6; }
-        .bb-footer-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
-        .bb-footer-links a { color: #fff; text-decoration: none; font-weight: 800; }
-        @media (max-width: 1020px) {
-          .bb-nav-links a:not(.bb-wa-mini) { display: none; }
-          .bb-hero .bb-shell, .bb-split, .bb-about, .bb-form-wrap { grid-template-columns: 1fr; }
-          .bb-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .bb-process { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-          .bb-asset-card { max-width: 560px; }
+        .bb-dark-band h2 {
+          margin: 0 0 34px;
+          color: #fff;
+          text-align: center;
+          font-size: 28px;
+          font-weight: 950;
+          text-transform: uppercase;
         }
-        @media (max-width: 760px) {
-          .bb-shell { width: min(100% - 28px, 1180px); }
-          .bb-nav { position: sticky; }
+        .bb-number-grid {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 0;
+        }
+        .bb-number {
+          min-height: 175px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          border-left: 1px solid rgba(247,201,74,.34);
+        }
+        .bb-number:last-child { border-right: 1px solid rgba(247,201,74,.34); }
+        .bb-number svg { width: 48px; height: 48px; color: var(--gold-2); stroke-width: 1.7; }
+        .bb-number b {
+          display: block;
+          margin-top: 13px;
+          color: var(--gold-2);
+          font-size: 48px;
+          line-height: .95;
+          font-weight: 950;
+        }
+        .bb-number strong {
+          margin-top: 8px;
+          color: #fff;
+          font-size: 15px;
+          text-transform: uppercase;
+        }
+        .bb-number span {
+          max-width: 150px;
+          margin-top: 7px;
+          color: #fff;
+          font-size: 13px;
+          line-height: 1.25;
+          font-weight: 700;
+        }
+        .bb-quiz-section { padding: 56px 0; background: var(--cream); }
+        .bb-quiz-title {
+          max-width: 820px;
+          margin: 0 auto;
+          color: #0a2a17;
+          text-align: center;
+          font-size: 29px;
+          line-height: 1.18;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+        .bb-quiz-sub {
+          margin: 12px 0 28px;
+          text-align: center;
+          color: #27372d;
+          font-size: 14px;
+          font-weight: 700;
+        }
+        .bb-quiz-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 325px;
+          gap: 28px;
+          align-items: stretch;
+        }
+        .bb-quiz-card {
+          padding: 28px 32px 22px;
+          background: #fff;
+          border: 1px solid #dedbd3;
+          border-radius: 5px;
+          box-shadow: 0 6px 16px rgba(0,0,0,.08);
+        }
+        .bb-question-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 25px 34px;
+        }
+        .bb-question {
+          padding-right: 24px;
+          border-right: 1px solid #d5d2ca;
+        }
+        .bb-question:nth-child(3),
+        .bb-question:nth-child(6),
+        .bb-question:nth-child(7) { border-right: 0; }
+        .bb-question:last-child {
+          grid-column: 1 / 3;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          border-top: 1px solid #d5d2ca;
+          padding-top: 20px;
+        }
+        .bb-question h3 {
+          grid-column: 1 / -1;
+          margin: 0 0 13px;
+          color: #0c2014;
+          font-size: 13px;
+          line-height: 1.25;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+        .bb-radio {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0 0 12px;
+          color: #1d2a21;
+          font-size: 14px;
+          font-weight: 700;
+        }
+        .bb-radio input {
+          width: 17px;
+          height: 17px;
+          accent-color: #063b20;
+        }
+        .bb-submit-row {
+          display: grid;
+          grid-template-columns: 1fr 300px;
+          gap: 26px;
+          align-items: center;
+          margin-top: 22px;
+          padding-top: 20px;
+          border-top: 1px solid #d5d2ca;
+        }
+        .bb-green-btn {
+          min-height: 58px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          color: #fff;
+          background: #002f18;
+          border: 0;
+          border-radius: 3px;
+          font-size: 16px;
+          font-weight: 950;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+        .bb-submit-note {
+          margin-top: 12px;
+          color: #7c7770;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .bb-how {
+          padding: 32px 28px;
+          color: #fff;
+          background: linear-gradient(160deg, #003019, #052714);
+          border: 2px solid #002615;
+          border-radius: 7px;
+          box-shadow: 0 10px 20px rgba(0,0,0,.22);
+        }
+        .bb-how h3 {
+          margin: 0 0 28px;
+          color: var(--gold-2);
+          font-size: 18px;
+          text-transform: uppercase;
+        }
+        .bb-how-item {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 26px;
+          color: #fff;
+          font-size: 14px;
+          font-weight: 800;
+        }
+        .bb-how-item svg {
+          width: 42px;
+          height: 42px;
+          padding: 8px;
+          color: var(--gold-2);
+          border: 1px solid var(--gold-2);
+          border-radius: 999px;
+          flex: 0 0 auto;
+        }
+        .bb-service-box {
+          margin-top: 16px;
+          padding: 20px 18px;
+          color: #0a2012;
+          background: linear-gradient(180deg, #ffc52d, #e49e10);
+          border-radius: 4px;
+        }
+        .bb-service-box h4 {
+          margin: 0 0 12px;
+          font-size: 16px;
+          text-transform: uppercase;
+        }
+        .bb-service-box p {
+          margin: 0 0 16px;
+          font-size: 14px;
+          line-height: 1.35;
+          font-weight: 700;
+        }
+        .bb-whatsapp-box {
+          min-height: 58px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          color: var(--gold-2);
+          background: #002f18;
+          border-radius: 5px;
+          font-size: 22px;
+          font-weight: 950;
+          text-decoration: none;
+        }
+        .bb-trust {
+          padding: 43px 0 38px;
+          color: #fff;
+          background:
+            linear-gradient(rgba(0,42,19,.82), rgba(0,42,19,.82)),
+            url("${HERO_IMAGE}") center 63% / cover no-repeat;
+        }
+        .bb-trust h2 {
+          margin: 0 0 30px;
+          text-align: center;
+          color: #fff;
+          font-size: 31px;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+        .bb-trust-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 0;
+        }
+        .bb-trust-item {
+          min-height: 112px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          border-left: 1px solid rgba(247,201,74,.35);
+        }
+        .bb-trust-item:last-child { border-right: 1px solid rgba(247,201,74,.35); }
+        .bb-trust-item svg {
+          width: 48px;
+          height: 48px;
+          margin-bottom: 10px;
+          color: var(--gold-2);
+          stroke-width: 1.7;
+        }
+        .bb-trust-item span {
+          max-width: 160px;
+          color: #fff;
+          font-size: 13px;
+          line-height: 1.25;
+          font-weight: 800;
+        }
+        .bb-footer {
+          color: #fff;
+          background: linear-gradient(90deg, #003019, #063b20 45%, #002b16);
+        }
+        .bb-footer-main {
+          min-height: 190px;
+          display: grid;
+          grid-template-columns: 1fr 360px 1fr;
+          gap: 30px;
+          align-items: center;
+        }
+        .bb-footer h2 {
+          margin: 0;
+          font-size: 25px;
+          line-height: 1.28;
+          text-transform: uppercase;
+        }
+        .bb-footer h2 span { display: block; color: var(--gold-2); }
+        .bb-footer p {
+          margin: 16px 0 0;
+          max-width: 620px;
+          color: #fff;
+          font-size: 17px;
+          line-height: 1.42;
+        }
+        .bb-footer-logo { width: 165px; margin: 0 auto; display: block; }
+        .bb-agent {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 12px;
+          color: var(--gold-2);
+          font-size: 18px;
+          font-weight: 950;
+        }
+        .bb-agent small {
+          display: block;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 800;
+        }
+        .bb-social {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+        }
+        .bb-social span,
+        .bb-social a {
+          width: 34px;
+          height: 34px;
+          display: grid;
+          place-items: center;
+          color: #fff;
+          border-radius: 999px;
+          font-weight: 950;
+          text-decoration: none;
+        }
+        .bb-social .fb { background: #2467d7; }
+        .bb-social .ig { background: linear-gradient(135deg,#7646ff,#e12b80,#ff9d20); }
+        .bb-social .yt { background: #ed1b24; }
+        .bb-footer-bottom {
+          min-height: 42px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          color: rgba(255,255,255,.74);
+          border-top: 1px solid rgba(255,255,255,.16);
+          font-size: 12px;
+        }
+        .bb-footer-bottom a { color: rgba(255,255,255,.74); text-decoration: none; }
+        .bb-error {
+          margin-top: 10px;
+          color: #ffd36b;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 800;
+        }
+        @media (max-width: 1100px) {
+          .bb-wrap { width: min(100% - 32px, 1320px); }
+          .bb-hero { padding-bottom: 0; }
+          .bb-hero-grid,
+          .bb-intro-grid,
+          .bb-quiz-layout,
+          .bb-footer-main { grid-template-columns: 1fr; }
+          .bb-benefits { position: static; margin-top: 50px; }
+          .bb-benefit-grid,
+          .bb-number-grid,
+          .bb-trust-grid { grid-template-columns: repeat(2, 1fr); }
+          .bb-card-row,
+          .bb-question-grid { grid-template-columns: 1fr; }
+          .bb-question,
+          .bb-question:nth-child(3),
+          .bb-question:nth-child(6),
+          .bb-question:nth-child(7) { border-right: 0; }
+          .bb-question:last-child { grid-column: auto; grid-template-columns: 1fr; }
+          .bb-submit-row { grid-template-columns: 1fr; }
+          .bb-social { justify-content: center; }
+        }
+        @media (max-width: 680px) {
+          .bb-top { height: auto; padding: 22px 0; align-items: flex-start; }
           .bb-logo { width: 132px; }
-          .bb-wa-mini { min-height: 38px; padding: 0 12px; font-size: 12px; }
-          .bb-hero { min-height: auto; padding: 48px 0 58px; }
-          .bb-hero .bb-shell { min-height: auto; gap: 28px; }
-          .bb-proof { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .bb-section, .bb-form-section { padding: 62px 0; }
-          .bb-grid-4, .bb-grid-3, .bb-material, .bb-form-grid, .bb-options { grid-template-columns: 1fr; }
-          .bb-gallery { grid-template-columns: 1fr; grid-auto-rows: 210px; }
-          .bb-gallery-item:first-child { grid-row: span 1; }
-          .bb-process { grid-template-columns: 1fr; }
-          .bb-footer .bb-shell { grid-template-columns: 1fr; }
-          .bb-footer-links { justify-content: flex-start; }
+          .bb-doc-badge { min-width: 0; padding: 12px; }
+          .bb-hero-grid { padding-top: 26px; gap: 28px; }
+          .bb-hero h1 { font-size: 46px; }
+          .bb-hero h1 span { font-size: 28px; }
+          .bb-lead-card { padding: 22px 18px; }
+          .bb-benefit-grid,
+          .bb-number-grid,
+          .bb-trust-grid { grid-template-columns: 1fr; }
+          .bb-section-title,
+          .bb-dark-band h2,
+          .bb-quiz-title,
+          .bb-trust h2 { font-size: 24px; }
         }
       `}</style>
 
-      <nav className="bb-nav">
-        <div className="bb-shell">
-          <a href="#inicio" aria-label="Fazendas Brasil">
+      <section className="bb-hero">
+        <div className="bb-wrap">
+          <div className="bb-top">
             <img className="bb-logo" src={LOGO_URL} alt="Fazendas Brasil" />
-          </a>
-          <div className="bb-nav-links">
-            <a href="#diferenciais">Diferenciais</a>
-            <a href="#galeria">Galeria</a>
-            <a href="#processo">Processo</a>
-            <a className="bb-wa-mini" href={whatsappUrl()} target="_blank" rel="noreferrer">
-              <MessageCircle size={16} /> WhatsApp
-            </a>
+            <div className="bb-doc-badge">
+              <ShieldCheck size={36} />
+              <div>
+                <strong>100% documentada</strong>
+                <span>Sem embargos ou multas ambientais</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bb-hero-grid">
+            <div>
+              <span className="bb-sale-tag">Fazenda à venda</span>
+              <h1>
+                Fazenda de
+                <br />
+                Dupla Aptidão
+                <span>Em Breu Branco - PA</span>
+              </h1>
+              <p className="bb-hero-sub">
+                72 alqueirões (348,48 ha) com estrutura completa, rica em água
+                e potencial para mais de 300 ha de lavoura.
+              </p>
+            </div>
+
+            <form className="bb-lead-card" onSubmit={handleHeroSubmit}>
+              <h2>
+                Receba o dossiê
+                <span>completo da fazenda</span>
+              </h2>
+              <p>
+                Preencha seus dados e receba vídeos, fotos, mapas e informações
+                detalhadas.
+              </p>
+              <input
+                required
+                placeholder="Nome completo"
+                value={capture.name}
+                onChange={(event) => updateCapture('name', event.target.value)}
+              />
+              <input
+                required
+                placeholder="WhatsApp (com DDD)"
+                value={capture.phone}
+                onChange={(event) => updateCapture('phone', event.target.value)}
+              />
+              <input
+                required
+                type="email"
+                placeholder="E-mail"
+                value={capture.email}
+                onChange={(event) => updateCapture('email', event.target.value)}
+              />
+              <input
+                required
+                placeholder="Cidade / Estado"
+                value={capture.cityState}
+                onChange={(event) =>
+                  updateCapture('cityState', event.target.value)
+                }
+              />
+              <button className="bb-yellow-btn" disabled={submitting} type="submit">
+                Quero receber agora
+              </button>
+              <span className="bb-secure">
+                <Lock size={13} /> Seus dados estão seguros conosco.
+              </span>
+              {error && <div className="bb-error">{error}</div>}
+            </form>
           </div>
         </div>
-      </nav>
 
-      <header className="bb-hero" id="inicio">
-        <div className="bb-shell">
-          <div>
-            <p className="bb-kicker"><LockKeyhole size={16} /> Metodo ACP - Oferta para compradores qualificados</p>
-            <h1>Fazenda de Dupla Aptidao em <span>Breu Branco - PA</span></h1>
-            <p className="bb-subtitle">
-              72 alqueiroes | 348,48 hectares | Pecuaria pronta e potencial agricola em mais de 300 hectares.
-            </p>
-            <p className="bb-hero-copy">
-              Uma oportunidade para produtores e investidores que buscam patrimonio rural, renda e valorizacao. Informacoes completas apenas para compradores com capacidade real de compra.
-            </p>
-            <div className="bb-actions">
-              <a className="bb-btn bb-btn-primary" href="#captacao">
-                Solicitar Material Completo <ArrowRight size={18} />
-              </a>
-              <a className="bb-btn bb-btn-secondary" href={whatsappUrl()} target="_blank" rel="noreferrer">
-                Agendar Visita Tecnica <MessageCircle size={17} />
-              </a>
-            </div>
-          </div>
-
-          <aside className="bb-asset-card" aria-label="Video de drone da fazenda">
-            <div className="bb-video">
-              <span className="bb-play"><Play size={32} fill="currentColor" /></span>
-            </div>
-            <div className="bb-asset-body">
-              <strong>Drone, agua, estrutura e potencial produtivo.</strong>
-              <p>O material completo reune video aereo, fotos internas, localizacao aproximada e dados para analise inicial.</p>
-            </div>
-          </aside>
-        </div>
-      </header>
-
-      <section className="bb-proof" aria-label="Destaques da fazenda">
-        {highlights.map((item) => (
-          <span key={item}><Check size={17} />{item}</span>
-        ))}
-      </section>
-
-      <section className="bb-section" id="diferenciais">
-        <div className="bb-shell">
-          <div className="bb-head">
-            <span className="bb-eyebrow"><TreePine size={16} /> Por que esta fazenda e diferente?</span>
-            <h2>Estrutura pronta, agua e uma tese clara de valorizacao.</h2>
-            <p>O ativo combina operacao pecuaria imediata com uma janela agricola relevante para quem avalia expansao em regiao de crescimento no Para.</p>
-          </div>
-          <div className="bb-grid-4">
-            {differenceCards.map((card) => {
-              const Icon = card.icon;
+        <div className="bb-benefits">
+          <div className="bb-wrap bb-benefit-grid">
+            {heroBenefits.map((item) => {
+              const Icon = item.icon;
               return (
-                <article className="bb-info-card" key={card.title}>
-                  <span className="bb-info-icon"><Icon size={26} /></span>
-                  <h3>{card.title}</h3>
-                  <p>{card.text}</p>
-                </article>
+                <div className="bb-benefit" key={item.title}>
+                  <Icon />
+                  <strong>{item.title}</strong>
+                  <span>{item.text}</span>
+                </div>
               );
             })}
           </div>
         </div>
       </section>
 
-      <section className="bb-section dark">
-        <div className="bb-shell">
-          <div className="bb-head">
-            <span className="bb-eyebrow"><UsersRound size={16} /> Para quem esta oportunidade foi desenvolvida?</span>
-            <h2>Compradores que entendem producao, agua, logistica e patrimonio.</h2>
+      <section className="bb-section">
+        <div className="bb-wrap bb-intro-grid">
+          <div>
+            <h2 className="bb-section-title">Conheça a fazenda</h2>
+            <p className="bb-copy">
+              Assista ao vídeo e veja de perto a estrutura, a água, as pastagens
+              e o potencial desta excelente oportunidade.
+            </p>
+            <div className="bb-video-card">
+              <div className="bb-video-thumb">
+                <span className="bb-play">
+                  <Play size={44} fill="currentColor" />
+                </span>
+              </div>
+              <a className="bb-video-btn" href={whatsappUrl()}>
+                Assistir vídeo completo
+              </a>
+            </div>
           </div>
-          <div className="bb-grid-3">
-            {audienceCards.map((card) => {
-              const Icon = card.icon;
+
+          <div className="bb-opportunities">
+            <h2 className="bb-section-title">
+              Uma fazenda, várias oportunidades
+            </h2>
+            <div className="bb-card-row">
+              {opportunities.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <article className="bb-op-card" key={item.title}>
+                    <Icon />
+                    <h3>{item.title}</h3>
+                    <p>{item.text}</p>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bb-dark-band">
+        <div className="bb-wrap">
+          <h2>Números que comprovam o potencial</h2>
+          <div className="bb-number-grid">
+            {numbers.map((item) => {
+              const Icon = item.icon;
               return (
-                <article className="bb-info-card" key={card.title}>
-                  <span className="bb-info-icon"><Icon size={26} /></span>
-                  <h3>{card.title}</h3>
-                  <p>{card.text}</p>
-                </article>
+                <div className="bb-number" key={item.title}>
+                  <Icon />
+                  <b>{item.value}</b>
+                  <strong>{item.title}</strong>
+                  <span>{item.note}</span>
+                </div>
               );
             })}
           </div>
         </div>
       </section>
 
-      <section className="bb-section alt">
-        <div className="bb-shell bb-split">
-          <div className="bb-map-card" aria-label="Mapa do Brasil com destaque no Para">
-            <div className="bb-map-label">
-              <strong>Breu Branco - PA</strong>
-              <span>A 25 km da cidade, com acesso por asfalto e vicinal boa. Divisa com soja e silo/secador a 6 km.</span>
-            </div>
-          </div>
-          <div>
-            <div className="bb-head">
-              <span className="bb-eyebrow"><Map size={16} /> Oportunidade de patrimonio</span>
-              <h2>Terra produtiva de qualidade esta cada vez mais escassa.</h2>
-              <p>A demanda por ativos rurais cresce continuamente. Esta propriedade reune producao, agua, infraestrutura, potencial agricola e valorizacao.</p>
-            </div>
-            <div className="bb-check-list">
-              <span><Check size={19} /> Producao com estrutura operacional instalada</span>
-              <span><Check size={19} /> Agua permanente para seguranca produtiva</span>
-              <span><Check size={19} /> Potencial agricola acima de 300 hectares</span>
-              <span><Check size={19} /> Sem embargos ou multas ambientais informadas</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <section className="bb-quiz-section">
+        <div className="bb-wrap">
+          <h2 className="bb-quiz-title">
+            Quase lá! Para enviarmos o material completo, precisamos te conhecer
+            melhor.
+          </h2>
+          <p className="bb-quiz-sub">Responda algumas perguntas rápidas:</p>
 
-      <section className="bb-section dark">
-        <div className="bb-shell">
-          <div className="bb-head">
-            <span className="bb-eyebrow"><FileCheck2 size={16} /> O que voce recebera</span>
-            <h2>Material completo para decisao tecnica, nao para curiosidade.</h2>
-          </div>
-          <div className="bb-material">
-            {materialItems.map((item) => (
-              <span key={item}><BadgeCheck size={20} />{item}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bb-section" id="galeria">
-        <div className="bb-shell">
-          <div className="bb-head">
-            <span className="bb-eyebrow"><Mountain size={16} /> Galeria premium</span>
-            <h2>Visao aerea, sede, curral, pastagens e recursos hidricos.</h2>
-          </div>
-          <div className="bb-gallery">
-            {galleryItems.map((item) => (
-              <div
-                className="bb-gallery-item"
-                key={item.label}
-                style={{
-                  backgroundImage: `linear-gradient(rgba(0,0,0,.02), rgba(0,0,0,.34)), url("${HERO_IMAGE}")`,
-                  backgroundPosition: item.position,
-                  backgroundSize: 'cover',
-                }}
-              >
-                <span>{item.label}<small>{item.detail}</small></span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bb-section alt">
-        <div className="bb-shell bb-about">
-          <div className="bb-about-card">
-            <img src={LOGO_URL} alt="Fazendas Brasil" />
-            <p>Mais de 25 anos de experiencia em compra, venda, analise estrategica e patrimonio rural. Atendimento consultivo para compradores e investidores no agronegocio.</p>
-          </div>
-          <div>
-            <div className="bb-head">
-              <span className="bb-eyebrow"><Building2 size={16} /> Sobre a Fazendas Brasil</span>
-              <h2>Autoridade para negociar ativos rurais com sigilo e criterio.</h2>
-              <p>Da primeira conversa a visita tecnica, o processo filtra compradores reais, protege informacoes sensiveis e organiza a negociacao com foco em seguranca.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bb-section dark" id="processo">
-        <div className="bb-shell">
-          <div className="bb-head">
-            <span className="bb-eyebrow"><ChevronDown size={16} /> Processo de aquisicao</span>
-            <h2>Um funil objetivo para compradores com capacidade financeira.</h2>
-          </div>
-          <div className="bb-process">
-            {processSteps.map((step, index) => (
-              <div className="bb-step" key={step}>
-                <small>Etapa {index + 1}</small>
-                <strong>{step}</strong>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bb-form-section" id="captacao">
-        <div className="bb-shell bb-form-wrap">
-          <div>
-            <div className="bb-head">
-              <span className="bb-eyebrow"><MessageCircle size={16} /> Solicitar material completo</span>
-              <h2>Preencha para receber fotos, videos e condicoes de visita.</h2>
-              <p>O envio do material e direcionado a compradores diretos e investidores qualificados. O WhatsApp abre automaticamente apos o cadastro.</p>
-            </div>
-            <div className="bb-lock-box">
-              <ShieldCheck size={34} color="#efd28a" />
-              <h3>Exclusividade com seguranca.</h3>
-              <p>Localizacao detalhada, documentos e materiais sensiveis sao compartilhados apos pre-qualificacao do comprador.</p>
-            </div>
-          </div>
-
-          <form className="bb-form-panel" onSubmit={handleSubmit}>
-            <div className="bb-form-grid">
-              <div className="bb-field">
-                <label>Nome</label>
-                <input required value={form.name} onChange={(event) => updateField('name', event.target.value)} />
-              </div>
-              <div className="bb-field">
-                <label>Telefone</label>
-                <input required type="tel" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} />
-              </div>
-              <div className="bb-field">
-                <label>Cidade</label>
-                <input required value={form.city} onChange={(event) => updateField('city', event.target.value)} />
-              </div>
-              <div className="bb-field">
-                <label>Estado</label>
-                <input required maxLength={2} value={form.state} onChange={(event) => updateField('state', event.target.value.toUpperCase())} />
-              </div>
-              <div className="bb-field full">
-                <label>E-mail</label>
-                <input required type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} />
+          <div className="bb-quiz-layout">
+            <form className="bb-quiz-card" onSubmit={handleQuizSubmit}>
+              <div className="bb-question-grid">
+                {quizGroups.map((group) => (
+                  <fieldset className="bb-question" key={group.id}>
+                    <h3>{group.title}</h3>
+                    {group.options.map((option) => (
+                      <label className="bb-radio" key={option}>
+                        <input
+                          required={!quizAnswers[group.id]}
+                          type="radio"
+                          name={group.id}
+                          value={option}
+                          checked={quizAnswers[group.id] === option}
+                          onChange={() =>
+                            setQuizAnswers((current) => ({
+                              ...current,
+                              [group.id]: option,
+                            }))
+                          }
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </fieldset>
+                ))}
               </div>
 
-              <div className="bb-field full">
-                <label>Finalidade da compra</label>
-                <div className="bb-options">
-                  {['Pecuaria', 'Lavoura', 'Investimento'].map((option) => (
-                    <button
-                      className={`bb-option ${form.purpose === option ? 'active' : ''}`}
-                      key={option}
-                      type="button"
-                      onClick={() => updateField('purpose', option)}
-                    >
-                      {option}
-                    </button>
-                  ))}
+              <div className="bb-submit-row">
+                <div />
+                <div>
+                  <button className="bb-green-btn" disabled={submitting} type="submit">
+                    Enviar respostas
+                  </button>
+                  <div className="bb-submit-note">
+                    <Lock size={11} /> Suas informações estão protegidas.
+                  </div>
                 </div>
               </div>
+            </form>
 
-              <div className="bb-field full">
-                <label>Faixa de investimento</label>
-                <div className="bb-options">
-                  {['Ate R$5 milhoes', 'R$5M a R$10M', 'Acima de R$10M'].map((option) => (
-                    <button
-                      className={`bb-option ${form.investmentRange === option ? 'active' : ''}`}
-                      key={option}
-                      type="button"
-                      onClick={() => updateField('investmentRange', option)}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
+            <aside className="bb-how">
+              <h3>Como funciona?</h3>
+              {processItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div className="bb-how-item" key={item.text}>
+                    <Icon />
+                    <span>{item.text}</span>
+                  </div>
+                );
+              })}
+
+              <div className="bb-service-box">
+                <h4>Atendimento personalizado</h4>
+                <p>Fale direto com nossa equipe pelo WhatsApp.</p>
+                <a className="bb-whatsapp-box" href={whatsappUrl()}>
+                  <MessageCircle size={26} /> (44) 99843-3030
+                </a>
               </div>
+            </aside>
+          </div>
+        </div>
+      </section>
 
-              <div className="bb-field full">
-                <label>Ja possui operacao rural?</label>
-                <div className="bb-options">
-                  {['Sim', 'Nao'].map((option) => (
-                    <button
-                      className={`bb-option ${form.hasRuralOperation === option ? 'active' : ''}`}
-                      key={option}
-                      type="button"
-                      onClick={() => updateField('hasRuralOperation', option)}
-                    >
-                      {option}
-                    </button>
-                  ))}
+      <section className="bb-trust">
+        <div className="bb-wrap">
+          <h2>Compra segura, negócio transparente</h2>
+          <div className="bb-trust-grid">
+            {trustItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div className="bb-trust-item" key={item.text}>
+                  <Icon />
+                  <span>{item.text}</span>
                 </div>
-              </div>
-            </div>
-
-            <button className="bb-submit" type="submit" disabled={submitting}>
-              {submitting ? 'Enviando...' : 'Solicitar Material Completo'}
-            </button>
-            {error && <div className="bb-error">{error}</div>}
-          </form>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       <footer className="bb-footer">
-        <div className="bb-shell">
+        <div className="bb-wrap bb-footer-main">
           <div>
-            <img src={LOGO_URL} alt="Fazendas Brasil" />
-            <p>Consultoria Estrategica em Patrimonio Rural e Investimentos no Agronegocio. WhatsApp: (44) 99843-3030. CRECI 16644F.</p>
+            <h2>
+              Fazenda pronta. Estrutura completa.
+              <span>Potencial comprovado. É hora de investir!</span>
+            </h2>
+            <p>
+              Preencha o formulário e receba agora o dossiê completo com todas
+              as informações da Fazenda em Breu Branco - PA.
+            </p>
           </div>
-          <div className="bb-footer-links">
-            <a href={whatsappUrl()} target="_blank" rel="noreferrer">WhatsApp</a>
-            <a href="https://www.instagram.com/fazendasbrasiloficial" target="_blank" rel="noreferrer"><Instagram size={16} /> Instagram</a>
-            <a href="https://www.fazendasbrasil.com.br" target="_blank" rel="noreferrer">Site</a>
-            <a href="#captacao">Politica de Privacidade</a>
+
+          <div>
+            <img className="bb-footer-logo" src={LOGO_URL} alt="Fazendas Brasil" />
+            <div className="bb-agent">
+              <MessageCircle size={25} />
+              <span>
+                <small>Renato Piovesana</small>
+                (44) 99843-3030
+              </span>
+            </div>
+          </div>
+
+          <div className="bb-social">
+            <span className="fb">f</span>
+            <a
+              className="ig"
+              href="https://www.instagram.com/fazendasbrasiloficial"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+            >
+              <Instagram size={19} />
+            </a>
+            <span className="yt">▶</span>
           </div>
         </div>
+
+        <div className="bb-wrap bb-footer-bottom">
+          <span>© 2024 Fazendas Brasil - Todos os direitos reservados.</span>
+          <span>
+            <a href="#top">Política de Privacidade</a> &nbsp; • &nbsp;
+            <a href="#top">Termos de Uso</a>
+          </span>
+        </div>
       </footer>
-    </div>
+    </main>
   );
 };
 

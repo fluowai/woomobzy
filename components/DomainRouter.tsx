@@ -29,6 +29,8 @@ const SYSTEM_ROUTES = [
   '/consultoria/qualificacao',
   '/fazendas-brasil/',
   '/breu-branco',
+  '/publico/fazenda-breu-branco',
+  '/campanha/fazenda-breu-branco',
   '/rural/fazendas-brasil/breu-branco',
   '/rural/breu-branco',
   '/quiz/',
@@ -121,6 +123,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
         const isSystemDomain =
           hostname.includes('localhost') ||
+          hostname === 'imobfluow.consultio.com.br' ||
           hostname === 'app.imobfluow.com.br' ||
           hostname === 'imobfluow.com.br' ||
           hostname === 'www.imobfluow.com.br' ||

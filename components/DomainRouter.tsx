@@ -27,6 +27,7 @@ const SYSTEM_ROUTES = [
   '/vendas',
   '/consultoria',
   '/consultoria/qualificacao',
+  '/oferta/fazenda-breu-branco-pa',
   '/fazendas-brasil/',
   '/breu-branco',
   '/publico/fazenda-breu-branco',

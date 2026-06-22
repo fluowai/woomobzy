@@ -275,6 +275,7 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
       '/consultoria',
       '/consultoria/qualificacao',
       '/fazendas-brasil/',
+      '/oferta/fazenda-breu-branco-pa',
       '/breu-branco',
       '/publico/fazenda-breu-branco',
       '/campanha/fazenda-breu-branco',
@@ -442,6 +443,7 @@ const AppContent: React.FC = () => {
           <Route path="/vendas" element={<SystemSalesPage />} />
           <Route path="/consultoria" element={<SystemSalesPage />} />
           <Route path="/consultoria/qualificacao" element={<ConsultingQualificacao />} />
+          <Route path="/oferta/fazenda-breu-branco-pa" element={<BreuBrancoLandingPage organizationId={FAZENDAS_BRASIL_ORG_ID} />} />
           <Route path="/fazendas-brasil/breu-branco" element={<BreuBrancoLandingPage organizationId={FAZENDAS_BRASIL_ORG_ID} />} />
           <Route path="/breu-branco" element={<BreuBrancoLandingPage organizationId={FAZENDAS_BRASIL_ORG_ID} />} />
           <Route path="/publico/fazenda-breu-branco" element={<BreuBrancoLandingPage organizationId={FAZENDAS_BRASIL_ORG_ID} />} />

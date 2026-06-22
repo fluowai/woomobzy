@@ -27,6 +27,8 @@ const SYSTEM_ROUTES = [
   '/vendas',
   '/consultoria',
   '/consultoria/qualificacao',
+  '/fazendas-brasil/',
+  '/breu-branco',
   '/quiz/',
   '/chat',
   '/crm',

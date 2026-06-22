@@ -33,6 +33,7 @@ import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
 import DividerBlock from '../components/LandingPageBlocks/DividerBlock';
 import OkaPublicSite from './OkaPublicSite';
 import FazendasBrasilPublicSite from './FazendasBrasilPublicSite';
+import BreuBrancoLandingPage from './BreuBrancoLandingPage';
 
 interface PublicLandingPageProps {
   forceSlug?: string;
@@ -272,12 +273,17 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     organization?.custom_domain === 'www.fazendasbrasil.com' ||
     organization?.custom_domain === 'fazendasbrasil.com.br' ||
     organization?.custom_domain === 'www.fazendasbrasil.com.br';
+  const isBreuBrancoCampaign =
+    /(^|\/)(breu-branco|fazenda-breu-branco)(\/|$)/.test(location.pathname);
 
   if (isOkaSite) {
     return <OkaPublicSite organizationId={organization?.id} />;
   }
 
   if (isFazendasBrasilSite) {
+    if (isBreuBrancoCampaign) {
+      return <BreuBrancoLandingPage organizationId={organization?.id} />;
+    }
     return <FazendasBrasilPublicSite organizationId={organization?.id} />;
   }
 

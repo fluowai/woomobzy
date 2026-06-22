@@ -26,6 +26,7 @@ import { PlansProvider } from './context/PlansContext';
 import { supabase } from './services/supabase';
 
 const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
+const FAZENDAS_BRASIL_ORG_ID = 'ee2eafa9-929a-460e-a38a-2e13d259e7cb';
 
 // Public Views (Static for SEO/Initial Load)
 import LandingPage from './views/LandingPage';
@@ -38,6 +39,7 @@ const Register = lazy(() => import('./views/Register'));
 const DnsHelp = lazy(() => import('./views/DnsHelp'));
 const ImpersonateCallback = lazy(() => import('./views/ImpersonateCallback'));
 const PublicLandingPage = lazy(() => import('./views/PublicLandingPage'));
+const BreuBrancoLandingPage = lazy(() => import('./views/BreuBrancoLandingPage'));
 const RuralDashboard = lazy(() => import('./views/RuralDashboard'));
 const UrbanDashboard = lazy(() => import('./views/UrbanDashboard'));
 const PropertyManagement = lazy(() => import('./views/PropertyManagement'));
@@ -272,6 +274,8 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
       '/vendas',
       '/consultoria',
       '/consultoria/qualificacao',
+      '/fazendas-brasil/',
+      '/breu-branco',
       '/quiz/',
       '/ajuda/',
       '/lp/',
@@ -434,6 +438,8 @@ const AppContent: React.FC = () => {
           <Route path="/vendas" element={<SystemSalesPage />} />
           <Route path="/consultoria" element={<SystemSalesPage />} />
           <Route path="/consultoria/qualificacao" element={<ConsultingQualificacao />} />
+          <Route path="/fazendas-brasil/breu-branco" element={<BreuBrancoLandingPage organizationId={FAZENDAS_BRASIL_ORG_ID} />} />
+          <Route path="/breu-branco" element={<BreuBrancoLandingPage organizationId={FAZENDAS_BRASIL_ORG_ID} />} />
           <Route path="/ajuda/dns" element={<DnsHelp />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />

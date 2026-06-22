@@ -24,6 +24,7 @@ import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
 import { Loader2, Menu, X, Phone, Mail, MapPin, Instagram, Facebook, Youtube, Linkedin, MessageCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import FazendasBrasilPublicSite from './FazendasBrasilPublicSite';
+import BreuBrancoLandingPage from './BreuBrancoLandingPage';
 
 interface PublicSiteProps {
   forceOrgSlug?: string;
@@ -51,6 +52,8 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
   const [properties, setProperties] = useState<any[]>([]);
   const isFazendasBrasilSite =
     orgSlug === 'fazendasbrasil' || orgSlug === 'fazendas-brasil';
+  const isBreuBrancoCampaign =
+    /(^|\/)(breu-branco|fazenda-breu-branco)(\/|$)/.test(location.pathname);
 
   useEffect(() => {
     if (orgSlug && !isFazendasBrasilSite) loadSite();
@@ -244,6 +247,9 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
 
   const siteName = organization?.name || site?.name || 'Site';
   if (isFazendasBrasilSite) {
+    if (isBreuBrancoCampaign) {
+      return <BreuBrancoLandingPage organizationId={organization?.id} />;
+    }
     return <FazendasBrasilPublicSite organizationId={organization?.id} />;
   }
 

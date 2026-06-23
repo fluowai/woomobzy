@@ -71,219 +71,16 @@ const blankAccount: ConnectEmailPayload = {
 };
 
 const folders: Array<{ key: FolderKey; label: string; icon: React.ElementType; count?: number }> = [
-  { key: 'inbox', label: 'Caixa de entrada', icon: Inbox, count: 128 },
+  { key: 'inbox', label: 'Caixa de entrada', icon: Inbox },
   { key: 'starred', label: 'Com estrela', icon: Star },
   { key: 'snoozed', label: 'Adiados', icon: Clock3 },
   { key: 'sent', label: 'Enviados', icon: Send },
-  { key: 'drafts', label: 'Rascunhos', icon: FileText, count: 12 },
+  { key: 'drafts', label: 'Rascunhos', icon: FileText },
   { key: 'all', label: 'Todos os e-mails', icon: Mail },
-  { key: 'spam', label: 'Spam', icon: ShieldAlert, count: 8 },
+  { key: 'spam', label: 'Spam', icon: ShieldAlert },
   { key: 'trash', label: 'Lixeira', icon: Trash2 },
   { key: 'archived', label: 'Arquivados', icon: ArchiveRestore },
 ];
-
-const labels = [
-  { name: 'Leads Quentes', count: 24, color: 'bg-red-500' },
-  { name: 'Clientes', count: 18, color: 'bg-emerald-600' },
-  { name: 'Propostas', count: 7, color: 'bg-blue-500' },
-  { name: 'Financeiro', count: 11, color: 'bg-yellow-400' },
-  { name: 'Suporte', count: 5, color: 'bg-violet-500' },
-];
-
-const demoLead = {
-  id: 'demo-lead-joao',
-  name: 'Joao da Silva',
-  email: 'joaodasilva@gmail.com',
-  phone: '(11) 99999-9999',
-  source: 'Site',
-  status: 'Negociacao',
-  company: 'JS Consultoria Ltda.',
-  value: 'R$ 650.000,00',
-  notes: 'Cliente tem interesse em imoveis na regiao central. Busca opcoes com 2 quartos e varanda.',
-};
-
-const demoEmails: VisualEmail[] = [
-  {
-    id: 'demo-1',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Proposta de compra - Apartamento no Centro',
-    from_name: 'Joao da Silva',
-    from_email: 'joaodasilva@gmail.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Ola, tudo bem? Gostaria de saber mais sobre a proposta...',
-    body_text:
-      'Ola, tudo bem?\n\nGostaria de saber mais sobre a proposta do apartamento localizado no Centro.\n\nPodemos agendar uma visita para esta semana?\n\nObrigado!\n\nJoao da Silva\n(11) 99999-9999',
-    date: new Date().toISOString(),
-    is_read: false,
-    is_archived: false,
-    thread_id: 'demo-thread-1',
-    lead_id: demoLead.id,
-    leads: { id: demoLead.id, name: demoLead.name, email: demoLead.email },
-    timeLabel: '11:32',
-    is_starred: false,
-    has_attachments: true,
-  },
-  {
-    id: 'demo-2',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Documentacao necessaria',
-    from_name: 'Mariana Lima',
-    from_email: 'mariana@email.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Segue em anexo a documentacao solicitada para darmos...',
-    body_text: 'Segue em anexo a documentacao solicitada para darmos continuidade.',
-    date: new Date().toISOString(),
-    is_read: true,
-    is_archived: false,
-    thread_id: 'demo-thread-2',
-    timeLabel: '10:15',
-  },
-  {
-    id: 'demo-3',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Visita agendada - Imovel ID 4537',
-    from_name: 'Carlos Alberto',
-    from_email: 'carlos@email.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Confirmando nossa visita para amanha as 15h.',
-    body_text: 'Confirmando nossa visita para amanha as 15h.',
-    date: new Date().toISOString(),
-    is_read: true,
-    is_archived: false,
-    thread_id: 'demo-thread-3',
-    timeLabel: 'Ontem',
-    label: 'Clientes',
-    labelColor: 'bg-emerald-100 text-emerald-700',
-  },
-  {
-    id: 'demo-4',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Pagamento aprovado',
-    from_name: 'Financeiro ImobFluow',
-    from_email: 'financeiro@imocrm.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Informamos que o pagamento da comissao foi aprovado...',
-    body_text: 'Informamos que o pagamento da comissao foi aprovado.',
-    date: new Date().toISOString(),
-    is_read: true,
-    is_archived: false,
-    thread_id: 'demo-thread-4',
-    timeLabel: 'Ontem',
-    label: 'Financeiro',
-    labelColor: 'bg-amber-100 text-amber-700',
-  },
-  {
-    id: 'demo-5',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Seu chamado #12345 foi atualizado',
-    from_name: 'Suporte ImobFluow',
-    from_email: 'suporte@imocrm.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Ola Paulo, seu chamado foi atualizado. Por favor, confira...',
-    body_text: 'Ola Paulo, seu chamado foi atualizado. Por favor, confira.',
-    date: new Date().toISOString(),
-    is_read: true,
-    is_archived: false,
-    thread_id: 'demo-thread-5',
-    timeLabel: 'Ontem',
-    label: 'Suporte',
-    labelColor: 'bg-violet-100 text-violet-700',
-  },
-  {
-    id: 'demo-6',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Tenho interesse neste imovel',
-    from_name: 'Beatriz Santos',
-    from_email: 'beatriz@email.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Ola! Vi o anuncio do imovel e tenho interesse. Podemos...',
-    body_text: 'Ola! Vi o anuncio do imovel e tenho interesse. Podemos conversar?',
-    date: new Date().toISOString(),
-    is_read: false,
-    is_archived: false,
-    thread_id: 'demo-thread-6',
-    timeLabel: '18/06',
-    label: 'Leads Quentes',
-    labelColor: 'bg-rose-100 text-rose-700',
-    is_starred: true,
-  },
-  {
-    id: 'demo-7',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Duvida sobre financiamento',
-    from_name: 'Renato Oliveira',
-    from_email: 'renato@email.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Gostaria de mais informacoes sobre as opcoes de...',
-    body_text: 'Gostaria de mais informacoes sobre as opcoes de financiamento.',
-    date: new Date().toISOString(),
-    is_read: true,
-    is_archived: false,
-    thread_id: 'demo-thread-7',
-    timeLabel: '18/06',
-    has_attachments: true,
-  },
-  {
-    id: 'demo-8',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Agradecimento',
-    from_name: 'Alessandra Mendes',
-    from_email: 'alessandra@email.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Passando para agradecer pelo excelente atendimento!',
-    body_text: 'Passando para agradecer pelo excelente atendimento!',
-    date: new Date().toISOString(),
-    is_read: true,
-    is_archived: false,
-    thread_id: 'demo-thread-8',
-    timeLabel: '17/06',
-  },
-  {
-    id: 'demo-9',
-    account_id: 'demo',
-    folder: 'inbox',
-    direction: 'incoming',
-    subject: 'Novidades: Relatorios de Performance',
-    from_name: 'Marketing ImobFluow',
-    from_email: 'marketing@imocrm.com',
-    to_email: ['paulo@imobiliaria.com.br'],
-    preview: 'Conheca os novos relatorios disponiveis no sistema...',
-    body_text: 'Conheca os novos relatorios disponiveis no sistema.',
-    date: new Date().toISOString(),
-    is_read: true,
-    is_archived: false,
-    thread_id: 'demo-thread-9',
-    timeLabel: '17/06',
-  },
-];
-
-const demoReply: VisualEmail = {
-  ...demoEmails[0],
-  id: 'demo-reply',
-  direction: 'outgoing',
-  from_name: 'Paulo Correia',
-  from_email: 'paulo@imobiliaria.com.br',
-  to_email: ['joaodasilva@gmail.com'],
-  body_text: 'Ola Joao, tudo bem?\n\nClaro! Sera um prazer apresentar o imovel para voce.',
-  date: new Date().toISOString(),
-  timeLabel: '11:45 (ha 1 hora)',
-};
 
 const isImplicitTlsPort = (port: number, implicitTlsPort: number) => Number(port) === implicitTlsPort;
 
@@ -340,8 +137,7 @@ const EmailCenter: React.FC = () => {
   );
 
   const displayEmails = useMemo<VisualEmail[]>(() => {
-    const source = emails.length ? emails : demoEmails;
-    const normalized = source as VisualEmail[];
+    const normalized = emails as VisualEmail[];
     if (!search.trim()) return normalized;
     const needle = search.trim().toLowerCase();
     return normalized.filter((email) =>
@@ -352,7 +148,6 @@ const EmailCenter: React.FC = () => {
   }, [emails, search]);
 
   const sortedThread = useMemo<VisualEmail[]>(() => {
-    if (selectedEmail?.id?.startsWith('demo')) return [demoEmails[0], demoReply];
     return [...thread].sort((a, b) => {
       const aDate = a.date ? new Date(a.date).getTime() : 0;
       const bDate = b.date ? new Date(b.date).getTime() : 0;
@@ -362,8 +157,18 @@ const EmailCenter: React.FC = () => {
 
   const linkedLead = useMemo(() => {
     const found = selectedEmail?.lead_id ? leads.find((lead) => lead.id === selectedEmail.lead_id) : null;
-    return found || (selectedEmail?.lead_id === demoLead.id || selectedEmail?.id?.startsWith('demo') ? demoLead : null);
+    return found || selectedEmail?.leads || null;
   }, [leads, selectedEmail]);
+
+  const relevantAgenda = useMemo(
+    () =>
+      agenda.filter(
+        (item) =>
+          (selectedEmail && item.email_id === selectedEmail.id) ||
+          (linkedLead && item.leads?.id === linkedLead.id)
+      ),
+    [agenda, linkedLead, selectedEmail]
+  );
 
   const pendingAgenda = agenda.filter((item) => item.status !== 'done');
   const todayCount = pendingAgenda.filter((item) => new Date(item.created_at).toDateString() === new Date().toDateString()).length;
@@ -400,7 +205,6 @@ const EmailCenter: React.FC = () => {
       toast.error(error.message || 'Erro ao carregar emails.');
     } finally {
       setLoading(false);
-      if (!selectedEmail) setSelectedEmail(demoEmails[0]);
     }
   };
 
@@ -408,16 +212,15 @@ const EmailCenter: React.FC = () => {
     try {
       const data = await emailService.listEmails(folderForApi(folder), 1, search);
       setEmails(data.emails);
-      if (data.emails[0] && (!selectedEmail || selectedEmail.id.startsWith('demo'))) {
+      if (data.emails[0] && !selectedEmail) {
         await selectEmail(data.emails[0] as VisualEmail);
       }
-      if (!data.emails.length && !selectedEmail) {
-        setSelectedEmail(demoEmails[0]);
+      if (!data.emails.length) {
+        setSelectedEmail(null);
         setThread([]);
       }
     } catch (error: any) {
       if (!loading) toast.error(error.message || 'Erro ao listar emails.');
-      if (!selectedEmail) setSelectedEmail(demoEmails[0]);
     }
   };
 
@@ -432,10 +235,6 @@ const EmailCenter: React.FC = () => {
   const selectEmail = async (email: VisualEmail) => {
     setSelectedEmail(email);
     setView('mail');
-    if (email.id.startsWith('demo')) {
-      setThread([email, demoReply]);
-      return;
-    }
     try {
       const messages = await emailService.getThread(email.id);
       setThread(messages);
@@ -508,12 +307,7 @@ const EmailCenter: React.FC = () => {
 
   const sendReply = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedEmail || selectedEmail.id.startsWith('demo')) {
-      toast.success('Resposta registrada no modelo visual.');
-      setReplyOpen(false);
-      setReplyBody('');
-      return;
-    }
+    if (!selectedEmail) return;
     try {
       await emailService.reply(selectedEmail.id, replyBody.replace(/\n/g, '<br />'));
       toast.success('Resposta enviada.');
@@ -527,10 +321,6 @@ const EmailCenter: React.FC = () => {
 
   const archiveSelected = async () => {
     if (!selectedEmail) return;
-    if (selectedEmail.id.startsWith('demo')) {
-      toast.success('Email arquivado.');
-      return;
-    }
     await emailService.updateEmail(selectedEmail.id, { is_archived: true });
     toast.success('Email arquivado.');
     await loadEmails();
@@ -538,11 +328,6 @@ const EmailCenter: React.FC = () => {
 
   const linkSelectedLead = async (leadId: string) => {
     if (!selectedEmail) return;
-    if (selectedEmail.id.startsWith('demo')) {
-      setSelectedEmail({ ...selectedEmail, lead_id: leadId || demoLead.id });
-      toast.success(leadId ? 'Email vinculado ao lead.' : 'Vinculo removido.');
-      return;
-    }
     await emailService.updateEmail(selectedEmail.id, { lead_id: leadId || null });
     toast.success(leadId ? 'Email vinculado ao lead.' : 'Vinculo removido.');
     await selectEmail({ ...selectedEmail, lead_id: leadId || null });
@@ -593,12 +378,8 @@ const EmailCenter: React.FC = () => {
             <Bell size={21} />
             <span className="absolute right-1 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">3</span>
           </button>
-          <div className="h-10 w-10 overflow-hidden rounded-full border border-slate-200 bg-slate-200">
-            <img
-              src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80"
-              alt="Paulo Correia"
-              className="h-full w-full object-cover"
-            />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm font-bold text-slate-700">
+            U
           </div>
         </div>
       </header>
@@ -636,34 +417,14 @@ const EmailCenter: React.FC = () => {
             })}
           </nav>
 
-          <div className="mt-6 flex items-center justify-between px-4 text-sm font-bold text-slate-900">
-            Etiquetas
-            <button className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100">
-              <Plus size={18} />
+          <div className="mt-auto space-y-3 px-4 pb-2">
+            <button
+              onClick={() => setConnectOpen(true)}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-700 hover:border-emerald-300 hover:text-emerald-700"
+            >
+              <Settings size={15} />
+              Conectar conta
             </button>
-          </div>
-          <div className="mt-2 space-y-0.5">
-            {labels.map((label) => (
-              <button key={label.name} className="flex h-10 w-full items-center gap-4 rounded-r-full px-5 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                <span className={`h-3.5 w-5 rounded-full ${label.color}`} />
-                <span className="flex-1 text-left">{label.name}</span>
-                <span className="text-xs text-slate-500">{label.count}</span>
-              </button>
-            ))}
-            <button className="flex h-10 w-full items-center gap-4 rounded-r-full px-5 text-sm font-medium text-slate-700 hover:bg-slate-100">
-              <ChevronDown size={17} />
-              Mais
-            </button>
-          </div>
-
-          <div className="mt-auto px-4 pb-2">
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
-              <div className="h-full w-[22%] rounded-full bg-emerald-500" />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>2,1 GB de 15 GB usados</span>
-              <Settings size={18} />
-            </div>
           </div>
         </aside>
 
@@ -676,7 +437,7 @@ const EmailCenter: React.FC = () => {
             </button>
             <MoreVertical size={19} className="text-slate-600" />
             <div className="ml-auto flex items-center gap-4 text-xs font-medium text-slate-600">
-              <span>1-50 de 342</span>
+              <span>{displayEmails.length ? `1-${displayEmails.length} de ${displayEmails.length}` : '0 de 0'}</span>
               <ChevronLeft size={18} />
               <ChevronRight size={18} />
             </div>
@@ -734,10 +495,6 @@ const EmailCenter: React.FC = () => {
                 <MessageBlock message={sortedThread[0] || selectedEmail} first onReply={() => setReplyOpen(true)} />
 
                 <div className="mt-5 border-t border-slate-200 pt-5">
-                  <div className="mb-6 grid grid-cols-2 gap-4 sm:flex">
-                    <AttachmentCard type="pdf" title="documento.pdf" subtitle="245 KB" />
-                    <AttachmentCard type="image" title="fachada.jpg" subtitle="1,2 MB" />
-                  </div>
                   <div className="mb-7 flex flex-wrap gap-2">
                     <ActionButton icon={Reply} label="Responder" onClick={() => setReplyOpen(true)} />
                     <ActionButton icon={ReplyAll} label="Responder a todos" onClick={() => setReplyOpen(true)} />
@@ -766,6 +523,7 @@ const EmailCenter: React.FC = () => {
           setView={setView}
           loadAgenda={loadAgenda}
           pendingCount={todayCount || pendingAgenda.length}
+          agenda={relevantAgenda}
         />
       </div>
 
@@ -873,7 +631,7 @@ const EmailRow: React.FC<{ email: VisualEmail; active: boolean; onSelect: () => 
 
 const MessageBlock: React.FC<{ message: VisualEmail; first?: boolean; onReply?: () => void }> = ({ message, first, onReply }) => {
   const outgoing = message.direction === 'outgoing';
-  const sender = outgoing ? message.from_name || 'Paulo Correia' : message.from_name || message.from_email;
+  const sender = outgoing ? message.from_name || message.from_email : message.from_name || message.from_email;
   const senderEmail = outgoing ? message.from_email : message.from_email;
   const bodyText = cleanSnippet(message.body_text || message.preview || '');
   const html = message.body_html || '';
@@ -882,17 +640,9 @@ const MessageBlock: React.FC<{ message: VisualEmail; first?: boolean; onReply?: 
     <article>
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-4">
-          {outgoing ? (
-            <img
-              src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80"
-              alt={sender}
-              className="h-10 w-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-700">
-              {getInitials(sender)}
-            </div>
-          )}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-700">
+            {getInitials(sender)}
+          </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <p className="mb-0 truncate text-sm font-black text-slate-950">{sender}</p>
@@ -904,7 +654,7 @@ const MessageBlock: React.FC<{ message: VisualEmail; first?: boolean; onReply?: 
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-4 text-slate-600">
-          <span className="text-xs font-medium text-slate-500">{first ? '11:32 (ha 2 horas)' : message.timeLabel || formatDateTime(message.date)}</span>
+          <span className="text-xs font-medium text-slate-500">{message.timeLabel || formatDateTime(message.date)}</span>
           <Star size={17} />
           <Reply size={17} onClick={onReply} className="cursor-pointer" />
           <MoreVertical size={18} />
@@ -926,21 +676,6 @@ const MessageBlock: React.FC<{ message: VisualEmail; first?: boolean; onReply?: 
   );
 };
 
-const AttachmentCard: React.FC<{ type: 'pdf' | 'image'; title: string; subtitle: string }> = ({ type, title, subtitle }) => (
-  <div className="h-[106px] w-[138px] overflow-hidden rounded-lg border border-slate-200 bg-white">
-    <div className={`h-[58px] ${type === 'image' ? 'bg-[url(https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=300&q=80)] bg-cover bg-center' : 'bg-slate-100'} flex items-center justify-center`}>
-      {type === 'pdf' ? <FileText size={31} className="text-slate-400" /> : null}
-    </div>
-    <div className="flex items-center gap-2 px-2 py-2">
-      <span className={`rounded px-1.5 py-0.5 text-[9px] font-black text-white ${type === 'pdf' ? 'bg-red-500' : 'bg-blue-500'}`}>{type === 'pdf' ? 'PDF' : 'JPG'}</span>
-      <div className="min-w-0">
-        <p className="mb-0 truncate text-xs font-bold text-slate-800">{title}</p>
-        <p className="mb-0 text-[11px] font-medium text-slate-500">{subtitle}</p>
-      </div>
-    </div>
-  </div>
-);
-
 const ActionButton: React.FC<{ icon: React.ElementType; label: string; onClick?: () => void }> = ({ icon: Icon, label, onClick }) => (
   <button onClick={onClick} className="flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
     <Icon size={17} />
@@ -957,7 +692,8 @@ const LeadPanel: React.FC<{
   setView: (view: ViewKey) => void;
   loadAgenda: () => void;
   pendingCount: number;
-}> = ({ linkedLead, leads, selectedEmail, linkSelectedLead, archiveSelected, setView, loadAgenda, pendingCount }) => (
+  agenda: EmailAgendaActivity[];
+}> = ({ linkedLead, leads, selectedEmail, linkSelectedLead, archiveSelected, setView, loadAgenda, pendingCount, agenda }) => (
   <aside className="hidden min-w-0 border-l border-slate-200 bg-white 2xl:flex 2xl:flex-col">
     <div className="flex h-[58px] items-center justify-between border-b border-slate-200 px-5">
       <h2 className="mb-0 text-sm font-black text-slate-900">Lead vinculado</h2>
@@ -967,64 +703,94 @@ const LeadPanel: React.FC<{
       </div>
     </div>
     <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-      <div className="mb-5 flex items-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-xl font-medium text-slate-700">
-          {getInitials(linkedLead?.name || selectedEmail?.from_name)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="mb-0 truncate text-sm font-black text-slate-950">{linkedLead?.name || 'Joao da Silva'}</p>
-            <span className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">Lead</span>
+      {selectedEmail ? (
+        <div className="mb-5 flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-xl font-medium text-slate-700">
+            {getInitials(linkedLead?.name || selectedEmail.from_name || selectedEmail.from_email)}
           </div>
-          <p className="mb-0 mt-1 truncate text-xs font-medium text-slate-500">{linkedLead?.email || selectedEmail?.from_email || demoLead.email}</p>
-          <p className="mb-0 mt-1 text-xs font-medium text-slate-600">{linkedLead?.phone || demoLead.phone}</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="mb-0 truncate text-sm font-black text-slate-950">
+                {linkedLead?.name || selectedEmail.from_name || selectedEmail.from_email}
+              </p>
+              {linkedLead ? (
+                <span className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">Lead</span>
+              ) : null}
+            </div>
+            <p className="mb-0 mt-1 truncate text-xs font-medium text-slate-500">{linkedLead?.email || selectedEmail.from_email}</p>
+            {linkedLead?.phone ? <p className="mb-0 mt-1 text-xs font-medium text-slate-600">{linkedLead.phone}</p> : null}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mb-5 rounded-lg border border-dashed border-slate-200 p-4 text-sm font-semibold text-slate-500">
+          Selecione um e-mail para ver o lead vinculado.
+        </div>
+      )}
 
       <select
         value={selectedEmail?.lead_id || ''}
         onChange={(event) => linkSelectedLead(event.target.value)}
+        disabled={!selectedEmail}
         className="mb-5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 outline-none"
       >
         <option value="">Sem lead vinculado</option>
-        <option value={demoLead.id}>{demoLead.name}</option>
         {leads.map((lead) => (
           <option key={lead.id} value={lead.id}>{lead.name}</option>
         ))}
       </select>
 
-      <div className="space-y-4 border-t border-slate-200 py-5">
-        <InfoRow label="Origem" value={linkedLead?.source || demoLead.source} />
-        <InfoRow label="Etapa do funil" value={linkedLead?.status || demoLead.status} badge />
-        <InfoRow label="Responsavel" value="Paulo Correia" avatar />
-        <InfoRow label="Empresa" value={linkedLead?.company || demoLead.company} />
-        <InfoRow label="Valor interesse" value={linkedLead?.value || demoLead.value} />
-        <InfoRow label="Observacoes" value={linkedLead?.notes || demoLead.notes} multiline />
-      </div>
+      {linkedLead ? (
+        <div className="space-y-4 border-t border-slate-200 py-5">
+          {linkedLead.source ? <InfoRow label="Origem" value={linkedLead.source} /> : null}
+          {linkedLead.status ? <InfoRow label="Etapa do funil" value={linkedLead.status} badge /> : null}
+          {linkedLead.email ? <InfoRow label="E-mail" value={linkedLead.email} /> : null}
+          {linkedLead.phone ? <InfoRow label="Telefone" value={linkedLead.phone} /> : null}
+          {linkedLead.notes ? <InfoRow label="Observacoes" value={linkedLead.notes} multiline /> : null}
+        </div>
+      ) : (
+        <div className="border-t border-slate-200 py-5 text-xs font-semibold leading-relaxed text-slate-500">
+          Nenhum lead real vinculado a este e-mail.
+        </div>
+      )}
 
       <div className="border-t border-slate-200 py-5">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="mb-0 text-sm font-black text-slate-900">Ultimas interacoes</h3>
           {pendingCount ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">{pendingCount}</span> : null}
         </div>
-        <Interaction icon={Mail} color="bg-sky-100 text-sky-600" title="E-mail enviado" subtitle="Proposta enviada" date="18/06/2026 14:32" />
-        <Interaction icon={PhoneIcon} color="bg-emerald-100 text-emerald-600" title="Ligacao realizada" subtitle="" date="17/06/2026 16:10" />
-        <Interaction icon={Mail} color="bg-blue-100 text-blue-600" title="E-mail recebido" subtitle="Duvida sobre imovel" date="17/06/2026 10:22" />
-        <button
-          onClick={() => {
-            setView('agenda');
-            loadAgenda();
-          }}
-          className="mt-2 w-full text-right text-xs font-bold text-blue-600"
-        >
-          Ver todas
-        </button>
+        {agenda.map((item) => (
+          <Interaction
+            key={item.id}
+            icon={Mail}
+            color="bg-blue-100 text-blue-600"
+            title={item.title}
+            subtitle={item.subject || item.description}
+            date={formatDateTime(item.created_at)}
+          />
+        ))}
+        {agenda.length ? (
+          <button
+            onClick={() => {
+              setView('agenda');
+              loadAgenda();
+            }}
+            className="mt-2 w-full text-right text-xs font-bold text-blue-600"
+          >
+            Ver todas
+          </button>
+        ) : (
+          <p className="mb-0 text-xs font-semibold text-slate-500">Nenhuma interacao real registrada.</p>
+        )}
       </div>
 
       <div className="space-y-3 border-t border-slate-200 pt-5">
         <SideAction icon={Calendar} label="Criar tarefa" />
         <SideAction icon={Calendar} label="Agendar follow-up" />
-        <button onClick={archiveSelected} className="flex h-11 w-full items-center gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-500">
+        <button
+          onClick={archiveSelected}
+          disabled={!selectedEmail}
+          className="flex h-11 w-full items-center gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-500 disabled:opacity-50"
+        >
           <LinkIcon size={17} />
           Desvincular lead
         </button>
@@ -1033,22 +799,11 @@ const LeadPanel: React.FC<{
   </aside>
 );
 
-const PhoneIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.08 5.18 2 2 0 0 1 5.06 3h3a2 2 0 0 1 2 1.72c.12.9.32 1.77.59 2.61a2 2 0 0 1-.45 2.11L9 10.64a16 16 0 0 0 4.36 4.36l1.2-1.2a2 2 0 0 1 2.11-.45c.84.27 1.71.47 2.61.59A2 2 0 0 1 22 16.92Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const InfoRow: React.FC<{ label: string; value: string; badge?: boolean; avatar?: boolean; multiline?: boolean }> = ({ label, value, badge, avatar, multiline }) => (
   <div className={`grid grid-cols-[92px_1fr] gap-3 text-xs ${multiline ? 'items-start' : 'items-center'}`}>
     <span className="font-semibold text-slate-500">{label}</span>
     <span className={`font-semibold text-slate-800 ${multiline ? 'leading-relaxed' : ''}`}>
-      {avatar ? (
-        <span className="inline-flex items-center gap-2">
-          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=40&q=80" alt="" className="h-5 w-5 rounded-full object-cover" />
-          {value}
-        </span>
-      ) : badge ? (
+      {badge ? (
         <span className="rounded-md bg-violet-100 px-2 py-1 text-violet-700">{value}</span>
       ) : (
         value

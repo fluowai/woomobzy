@@ -14,6 +14,7 @@ export const LeaseDashboard: React.FC = () => {
   const [events, setEvents] = useState<LeaseTimelineEvent[]>([]);
   const [leases, setLeases] = useState<Lease[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('active');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tickets' | 'statements' | 'guarantees'>('overview');
 
   useEffect(() => {
     loadData();
@@ -62,16 +63,16 @@ export const LeaseDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
+          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter flex items-center gap-3">
             <Key className="text-blue-600" size={32} />
             Gestão de <span className="text-blue-600">Locação</span>
           </h1>
-          <p className="text-black/60 font-medium">
-            Contratos ativos, reajustes, inadimplência e boletos.
+          <p className="text-slate-500 font-medium">
+            Controle completo de contratos, repasses, garantias e manutenção.
           </p>
         </div>
         <button
@@ -81,6 +82,34 @@ export const LeaseDashboard: React.FC = () => {
           <Plus size={18} /> Novo Contrato
         </button>
       </div>
+
+      {/* TABS */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-px overflow-x-auto">
+        {[
+          { id: 'overview', label: 'Visão Geral' },
+          { id: 'tickets', label: 'Chamados & Manutenção', badge: 'Novo' },
+          { id: 'statements', label: 'Repasses & Extratos', badge: 'Novo' },
+          { id: 'guarantees', label: 'Garantias', badge: 'Novo' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`whitespace-nowrap px-5 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+              activeTab === tab.id
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300'
+            }`}
+          >
+            {tab.label}
+            {tab.badge && (
+              <span className="bg-blue-600 text-white text-[9px] px-2 py-0.5 rounded-full">{tab.badge}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'overview' && (
+        <div className="space-y-8 animate-fade-in">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -193,7 +222,46 @@ export const LeaseDashboard: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'tickets' && (
+        <div className="bg-white p-12 rounded-3xl border border-slate-100 shadow-sm text-center animate-fade-in">
+          <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FileText size={32} className="text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Chamados de Manutenção</h2>
+          <p className="text-slate-500 max-w-md mx-auto mb-8">
+            Gerencie as solicitações dos inquilinos, aprove orçamentos e acompanhe reparos nos imóveis alugados.
+          </p>
+          <button className="btn btn-primary">Configurar Portal do Inquilino</button>
+        </div>
+      )}
+
+      {activeTab === 'statements' && (
+        <div className="bg-white p-12 rounded-3xl border border-slate-100 shadow-sm text-center animate-fade-in">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <DollarSign size={32} className="text-emerald-600" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Repasses & Extratos</h2>
+          <p className="text-slate-500 max-w-md mx-auto mb-8">
+            Automatize o split financeiro (Aluguel, IPTU, Condomínio), taxa de administração e disponibilize o extrato para o proprietário.
+          </p>
+          <button className="btn btn-primary bg-emerald-600 hover:bg-emerald-500">Configurar Portal do Proprietário</button>
+        </div>
+      )}
+
+      {activeTab === 'guarantees' && (
+        <div className="bg-white p-12 rounded-3xl border border-slate-100 shadow-sm text-center animate-fade-in">
+          <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle size={32} className="text-purple-600" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Gestão de Garantias</h2>
+          <p className="text-slate-500 max-w-md mx-auto mb-8">
+            Controle apólices de seguro fiança, títulos de capitalização e fiadores com alertas de vencimento automático.
+          </p>
+          <button className="btn btn-primary bg-purple-600 hover:bg-purple-500">Adicionar Garantia</button>
+        </div>
+      )}
     </div>
   );
 };

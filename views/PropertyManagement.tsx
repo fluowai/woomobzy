@@ -41,6 +41,12 @@ const PropertyManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [oruloSyncing, setOruloSyncing] = useState(false);
   const [showOruloFilters, setShowOruloFilters] = useState(false);
+  const [showXmlImport, setShowXmlImport] = useState(false);
+  const [xmlUrl, setXmlUrl] = useState('');
+  const [xmlSourceName, setXmlSourceName] = useState('xml_feed');
+  const [xmlPreview, setXmlPreview] = useState<any | null>(null);
+  const [xmlPreviewing, setXmlPreviewing] = useState(false);
+  const [xmlImporting, setXmlImporting] = useState(false);
   const [oruloFilters, setOruloFilters] = useState({
     state: '',
     city: '',
@@ -212,6 +218,49 @@ const PropertyManagement: React.FC = () => {
     return items.length ? items : ['Ficha urbana pendente'];
   };
 
+  const handleXmlPreview = async () => {
+    if (!xmlUrl.trim()) {
+      toast.error('Informe a URL do XML.');
+      return;
+    }
+
+    try {
+      setXmlPreviewing(true);
+      const result = await propertyService.previewXmlImport({
+        url: xmlUrl.trim(),
+        sourceName: xmlSourceName.trim() || 'xml_feed',
+      });
+      setXmlPreview(result);
+      toast.success(`${result.valid || 0} imóvel(is) válido(s) encontrados no XML.`);
+    } catch (error: any) {
+      toast.error('Erro ao ler XML: ' + error.message);
+    } finally {
+      setXmlPreviewing(false);
+    }
+  };
+
+  const handleXmlImport = async () => {
+    if (!xmlUrl.trim()) {
+      toast.error('Informe a URL do XML.');
+      return;
+    }
+
+    try {
+      setXmlImporting(true);
+      const result = await propertyService.importXml({
+        url: xmlUrl.trim(),
+        sourceName: xmlSourceName.trim() || 'xml_feed',
+      });
+      toast.success(`XML importado: ${result.imported || 0} imóvel(is) sincronizado(s).`);
+      setXmlPreview(result);
+      await loadProperties();
+    } catch (error: any) {
+      toast.error('Erro ao importar XML: ' + error.message);
+    } finally {
+      setXmlImporting(false);
+    }
+  };
+
   const getPropertySummary = (property: Property) => {
     if (!isRural) return getUrbanFeatureSummary(property);
 
@@ -265,6 +314,15 @@ const PropertyManagement: React.FC = () => {
             <span className="hidden sm:inline">Cadastrar Imóvel</span>
             <span className="sm:hidden">Novo</span>
           </button>
+          <button
+            onClick={() => setShowXmlImport((value) => !value)}
+            className="bg-white text-slate-700 border border-slate-200 px-3 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-all font-bold text-sm shadow-sm"
+            title="Importar imóveis por XML"
+          >
+            <Globe size={18} />
+            <span className="hidden sm:inline">Importar XML</span>
+            <span className="sm:hidden">XML</span>
+          </button>
           {!isRural && (
             <button
               onClick={() => setShowOruloFilters((value) => !value)}
@@ -289,6 +347,95 @@ const PropertyManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      {showXmlImport && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-800">
+                Importacao por XML
+              </h2>
+              <p className="text-xs text-slate-500 mt-1 max-w-3xl">
+                O XML alimenta o banco oficial de imóveis. Os agentes continuam consultando apenas o catálogo salvo no IMOBZY.
+              </p>
+            </div>
+            {xmlPreview && (
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <div className="text-[10px] font-black uppercase text-slate-400">Encontrados</div>
+                  <div className="text-sm font-black text-slate-900">{xmlPreview.totalFound || 0}</div>
+                </div>
+                <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                  <div className="text-[10px] font-black uppercase text-emerald-600">Validos</div>
+                  <div className="text-sm font-black text-emerald-700">{xmlPreview.valid || xmlPreview.properties?.length || 0}</div>
+                </div>
+                <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
+                  <div className="text-[10px] font-black uppercase text-amber-600">Avisos</div>
+                  <div className="text-sm font-black text-amber-700">{xmlPreview.warnings?.length || 0}</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto_auto]">
+            <input
+              value={xmlUrl}
+              onChange={(e) => setXmlUrl(e.target.value)}
+              placeholder="https://crm.com.br/feed/imoveis.xml"
+              className="input-field"
+            />
+            <input
+              value={xmlSourceName}
+              onChange={(e) => setXmlSourceName(e.target.value)}
+              placeholder="Origem ex: crm_cliente"
+              className="input-field"
+            />
+            <button
+              type="button"
+              onClick={handleXmlPreview}
+              disabled={xmlPreviewing || xmlImporting}
+              className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            >
+              {xmlPreviewing ? 'Lendo...' : 'Ver previa'}
+            </button>
+            <button
+              type="button"
+              onClick={handleXmlImport}
+              disabled={xmlImporting || xmlPreviewing}
+              className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-black text-white hover:bg-slate-800 disabled:opacity-60"
+            >
+              {xmlImporting ? 'Importando...' : 'Importar'}
+            </button>
+          </div>
+
+          {xmlPreview?.warnings?.length > 0 && (
+            <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+              {xmlPreview.warnings.join(' ')}
+            </div>
+          )}
+
+          {xmlPreview?.preview?.length > 0 && (
+            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+              <div className="grid grid-cols-[1.2fr_0.7fr_0.7fr_0.7fr] bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                <span>Titulo</span>
+                <span>Cidade</span>
+                <span>Finalidade</span>
+                <span>Valor</span>
+              </div>
+              {xmlPreview.preview.slice(0, 5).map((item: any) => (
+                <div key={`${item.source}-${item.external_id}`} className="grid grid-cols-[1.2fr_0.7fr_0.7fr_0.7fr] border-t border-slate-100 px-3 py-2 text-xs">
+                  <span className="truncate font-bold text-slate-800">{item.title}</span>
+                  <span className="truncate text-slate-500">{item.city || '-'}</span>
+                  <span className="truncate text-slate-500">{item.purpose || '-'}</span>
+                  <span className="truncate font-bold text-slate-700">
+                    {Number(item.price || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {!isRural && showOruloFilters && (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">

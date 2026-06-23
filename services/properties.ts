@@ -82,6 +82,20 @@ export const propertyService = {
     return mapToModel(data.property);
   },
 
+  async previewXmlImport(params: { url?: string; xml?: string; sourceName?: string }) {
+    return callApi('/api/properties/import/xml/preview', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async importXml(params: { url?: string; xml?: string; sourceName?: string; dryRun?: boolean }) {
+    return callApi('/api/properties/import/xml', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
   async submit(property: Partial<Property>) {
     const data = await callApi('/api/properties', {
       method: 'POST',

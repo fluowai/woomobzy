@@ -43,20 +43,23 @@ export class AgentOrchestrator {
     });
 
     const conversationHistory = await this._getMemory(organizationId, sessionId);
+    const existingLead = await this._findLeadByPhone(organizationId, phone);
     const matchedStep = await stateMachine.evaluate(message, conversationHistory);
     stateMachine.updateContext({ lastMessage: message });
 
-    const aiResult = await this._callAI(organizationId, agent, stateMachine, message, conversationHistory);
+    const aiResult = await this._callAI(organizationId, agent, stateMachine, message, conversationHistory, existingLead);
     if (aiResult?.profile) stateMachine.updateContext(aiResult.profile);
 
     await this._saveStateMachine(agent?.id, organizationId, stateMachine);
 
     const actionPlan = this._buildActionPlan(aiResult, policy, stateMachine);
 
-    const existingLead = await this._findLeadByPhone(organizationId, phone);
     const leadResult = await this._handleLead(organizationId, phone, existingLead, aiResult, actionPlan, message, agent);
     if (leadResult?.lead?.id) {
       toolCtx.lead = leadResult.lead;
+      const consolidatedContext = this._buildConsolidatedContext(leadResult.lead, aiResult, message);
+      stateMachine.updateContext({ memoria_contexto: consolidatedContext });
+      await this._saveLeadContext(organizationId, leadResult.lead.id, consolidatedContext);
     }
 
     for (const action of actionPlan.actions) {
@@ -202,10 +205,48 @@ export class AgentOrchestrator {
     }
   }
 
-  async _callAI(organizationId, agent, stateMachine, message, history) {
+  _buildConsolidatedContext(lead, aiResult, message) {
+    const current = lead?.ai_profile || {};
+    const profile = aiResult?.profile || aiResult?.interestProfile || {};
+    const nextAction = aiResult?.nextAction?.type || aiResult?.suggestedStage || current.proxima_acao || '';
+
+    return {
+      nome: aiResult?.leadName || current.nome || lead?.name || '',
+      email: profile.email || aiResult?.email || current.email || '',
+      interesse: profile.operation || profile.interesse || aiResult?.intent || current.interesse || '',
+      cidade: profile.city || profile.cidade || current.cidade || '',
+      bairro: profile.neighborhood || profile.bairro || current.bairro || '',
+      orcamento: profile.budget || profile.orcamento || aiResult?.budget || current.orcamento || '',
+      tipo_imovel: profile.propertyType || profile.tipo_imovel || current.tipo_imovel || '',
+      quartos: profile.bedrooms || profile.quartos || current.quartos || '',
+      prazo: profile.timeline || profile.prazo || current.prazo || '',
+      forma_pagamento: profile.paymentMethod || profile.forma_pagamento || current.forma_pagamento || '',
+      imoveis_enviados: current.imoveis_enviados || [],
+      proxima_acao: nextAction,
+      ultima_intencao: aiResult?.intent || current.ultima_intencao || '',
+      temperatura: aiResult?.temperature || current.temperatura || '',
+      resumo: aiResult?.summary || current.resumo || String(message || '').slice(0, 500),
+      updated_at: new Date().toISOString(),
+    };
+  }
+
+  async _saveLeadContext(organizationId, leadId, context) {
+    try {
+      await this.supabase
+        .from('leads')
+        .update({ ai_profile: context, updated_at: new Date().toISOString() })
+        .eq('id', leadId)
+        .eq('organization_id', organizationId);
+    } catch (err) {
+      console.warn('[Orchestrator] Lead context save error:', err.message);
+    }
+  }
+
+  async _callAI(organizationId, agent, stateMachine, message, history, lead = null) {
     try {
       const { default: axios } = await import('axios');
       const flowContext = stateMachine.buildPromptContext();
+      const leadContext = lead?.ai_profile ? JSON.stringify(lead.ai_profile) : '{}';
 
       const systemInstruction = `
 Você é um agente imobiliário inteligente.
@@ -217,6 +258,9 @@ Estilo: ${agent?.response_style || 'consultivo'}
 Instruções: ${agent?.instructions || 'Atenda com foco em qualificar o lead'}
 Capacidades: ${(agent?.capabilities || []).join(', ')}
 Ferramentas: ${(agent?.tools || []).join(', ')}
+
+MEMORIA CONSOLIDADA DO LEAD:
+${leadContext}
 
 ${flowContext}
 
@@ -260,17 +304,30 @@ REGRAS:
     const isVisit = /\b(visita|visitar|agendar|horario)\b/.test(text);
     const isBudget = /\b(valor|preco|r\$|custa|quanto)\b/.test(text);
     const isInterest = /\b(quero|busco|procuro|interesse|gostei)\b/.test(text);
+    const propertyType = text.match(/\b(casa|apartamento|terreno|fazenda|sitio|chacara|comercial|sobrado)\b/i)?.[1] || null;
+    const city = message?.match(/\bem\s+([^,.!?]{2,40})(?:[,.!?]|$)/i)?.[1]?.trim() || null;
+    const operation = text.match(/\b(compra|comprar|venda|aluguel|alugar|locacao|locar)\b/i)?.[1] || null;
+    const budgetMatch = message?.match(/(?:r\$\s*)?(\d{2,3}(?:[.\s]\d{3})*|\d+)\s*(mil|milhao|milhoes|mi)?/i);
+    let budget = budgetMatch ? Number(budgetMatch[1].replace(/[.\s]/g, '')) : null;
+    if (budget && budgetMatch?.[2]?.toLowerCase()?.startsWith('mil')) budget *= 1000;
+    if (budget && budgetMatch?.[2]?.toLowerCase()?.startsWith('mi')) budget *= 1000000;
+    const shouldMatch = Boolean(propertyType || city || budget || operation);
 
     return {
-      shouldCreateLead: isVisit || isBudget || isInterest,
-      intent: isVisit ? 'solicitacao_visita' : isBudget ? 'consulta_preco' : isInterest ? 'demonstrou_interesse' : 'saudacao',
+      shouldCreateLead: isVisit || isBudget || isInterest || shouldMatch,
+      intent: isVisit ? 'solicitacao_visita' : shouldMatch ? 'busca_imovel' : isBudget ? 'consulta_preco' : isInterest ? 'demonstrou_interesse' : 'saudacao',
       leadScore: isVisit ? 80 : isBudget ? 60 : isInterest ? 50 : 10,
       classification: isVisit ? 'Alta Prioridade' : isBudget ? 'Financeiro' : isInterest ? 'Interessado' : 'Curioso',
-      suggestedStage: isVisit ? 'Visita' : isBudget ? 'Simulacao' : isInterest ? 'Qualificacao' : 'Novo',
+      suggestedStage: isVisit ? 'Visita' : shouldMatch ? 'Qualificacao' : isBudget ? 'Simulacao' : isInterest ? 'Qualificacao' : 'Novo',
       temperature: isVisit ? 'quente' : isBudget || isInterest ? 'morno' : 'frio',
       profile: {
-        missingFields: isInterest ? ['city', 'budget', 'propertyType'] : [],
+        city,
+        budget,
+        propertyType,
+        operation,
+        missingFields: shouldMatch ? ['city', 'budget', 'propertyType'].filter((field) => !{ city, budget, propertyType }[field]) : [],
       },
+      nextAction: shouldMatch ? { type: 'match_properties' } : null,
       reply: isVisit
         ? 'Claro! Para agendar a visita, me confirme o imóvel desejado, melhor dia e horário para você.'
         : isBudget
@@ -297,6 +354,23 @@ REGRAS:
         type: 'qualify_lead',
         tool: 'lead_qualifier',
         params: { conversationText: stateMachine.getContext().lastMessage || '', existingProfile: aiResult.profile },
+      });
+    }
+
+    const propertyProfile = aiResult?.interestProfile || aiResult?.profile;
+    const wantsPropertyMatch = /imovel|imovel_match|recomend|match|busca|consulta/i.test(
+      `${aiResult?.nextAction?.type || ''} ${aiResult?.intent || ''} ${aiResult?.suggestedStage || ''}`
+    );
+    if (
+      propertyProfile &&
+      wantsPropertyMatch &&
+      policy.canUseTool('property_matcher') &&
+      policy.canExecuteAction('match_properties').allowed
+    ) {
+      plan.actions.push({
+        type: 'match_properties',
+        tool: 'property_matcher',
+        params: { profile: propertyProfile, limit: 3 },
       });
     }
 

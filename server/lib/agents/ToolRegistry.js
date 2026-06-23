@@ -71,26 +71,37 @@ const Tools = {
     async execute(context, params) {
       const start = Date.now();
       try {
-        const { profile, limit = 5 } = params;
-        if (!profile?.city && !profile?.budget && !profile?.propertyType) {
+        const profile = normalizePropertyProfile(params?.profile || params?.interestProfile || params || {});
+        const limit = Math.min(Number(params?.limit) || 3, 10);
+        if (!profile.city && !profile.neighborhood && !profile.budget && !profile.propertyType && !profile.operation) {
           return { success: true, matches: [], needsMoreInfo: true };
         }
         let query = context.supabase
           .from('properties')
-          .select('id, title, price, location, type, images, features, status')
+          .select('id, title, description, price, property_type, purpose, city, state, neighborhood, address, images, features, status, source, external_id')
           .eq('organization_id', context.organizationId)
-          .eq('status', 'available')
-          .limit(limit);
+          .in('status', ['Disponível', 'Disponivel', 'available', 'Ativo'])
+          .limit(Math.min(limit * 8, 50));
 
-        const matches = (await query).data || [];
-        const scored = matches.map((p) => ({
+        if (profile.city) query = query.ilike('city', `%${profile.city}%`);
+        if (profile.neighborhood) query = query.ilike('neighborhood', `%${profile.neighborhood}%`);
+        if (profile.budget) query = query.lte('price', Math.round(profile.budget * 1.2));
+
+        const purposeOptions = getPurposeOptions(profile.operation);
+        if (purposeOptions.length) query = query.in('purpose', purposeOptions);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const scored = (data || []).map((p) => ({
           ...p,
           matchScore: calculateMatchScore(p, profile),
           matchReason: buildMatchReason(p, profile),
-        })).sort((a, b) => b.matchScore - a.matchScore);
+          mainImage: Array.isArray(p.images) ? p.images[0] || null : null,
+        })).sort((a, b) => b.matchScore - a.matchScore).slice(0, limit);
 
         context.log('property_matcher', params, scored, true, null, Date.now() - start);
-        return { success: true, matches: scored.slice(0, limit), needsMoreInfo: false };
+        return { success: true, matches: scored, needsMoreInfo: scored.length === 0, query: profile };
       } catch (error) {
         context.log('property_matcher', params, null, false, error.message, Date.now() - start);
         return { success: false, error: error.message, matches: [] };
@@ -356,19 +367,102 @@ function extractNumber(text) {
   return num;
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function normalizePropertyProfile(profile = {}) {
+  return {
+    city: profile.city || profile.cidade || profile.location?.city || null,
+    neighborhood: profile.neighborhood || profile.bairro || profile.location?.neighborhood || null,
+    budget: Number(profile.budget || profile.orcamento || profile.maxPrice || profile.precoMaximo || 0) || null,
+    propertyType: profile.propertyType || profile.tipoImovel || profile.tipo_imovel || profile.type || null,
+    operation: profile.operation || profile.operacao || profile.interesse || profile.purpose || null,
+    bedrooms: Number(profile.bedrooms || profile.quartos || profile.dormitorios || 0) || null,
+  };
+}
+
+function getPurposeOptions(operation) {
+  const op = normalizeText(operation);
+  if (!op) return [];
+  if (/\b(aluguel|alugar|locacao|locar|temporada)\b/.test(op)) {
+    return ['Aluguel', 'Aluguel Anual', 'Temporada', 'Venda e Aluguel'];
+  }
+  if (/\b(compra|comprar|venda|investimento)\b/.test(op)) {
+    return ['Venda', 'Venda e Aluguel'];
+  }
+  return [];
+}
+
+function getFeatureNumber(property, keys) {
+  for (const key of keys) {
+    const value = property?.features?.[key];
+    const number = Number(value);
+    if (Number.isFinite(number) && number > 0) return number;
+  }
+  return null;
+}
+
 function calculateMatchScore(property, profile) {
   let score = 50;
-  if (profile.city && property.location?.city?.toLowerCase().includes(profile.city.toLowerCase())) score += 20;
-  if (profile.propertyType && property.type?.toLowerCase().includes(profile.propertyType.toLowerCase())) score += 15;
+  const city = normalizeText(property.city || property.features?.location?.city);
+  const neighborhood = normalizeText(property.neighborhood || property.features?.location?.neighborhood);
+  const type = normalizeText(property.property_type);
+  const purpose = normalizeText(property.purpose);
+  const desiredCity = normalizeText(profile.city);
+  const desiredNeighborhood = normalizeText(profile.neighborhood);
+  const desiredType = normalizeText(profile.propertyType);
+  const purposeOptions = getPurposeOptions(profile.operation).map(normalizeText);
+
+  if (desiredCity && city.includes(desiredCity)) score += 20;
+  if (desiredNeighborhood && neighborhood.includes(desiredNeighborhood)) score += 15;
+  if (desiredType && type.includes(desiredType)) score += 15;
+  if (purposeOptions.length && purposeOptions.includes(purpose)) score += 10;
   if (profile.budget && property.price) {
     const ratio = property.price / profile.budget;
-    if (ratio <= 1) score += 15 - Math.abs(1 - ratio) * 30;
+    if (ratio <= 1) score += 15 - Math.abs(1 - ratio) * 20;
+    else if (ratio <= 1.2) score += 6;
+    else score -= 15;
+  }
+  const bedrooms = getFeatureNumber(property, ['quartos', 'dormitorios', 'bedrooms']);
+  if (profile.bedrooms && bedrooms) {
+    if (bedrooms >= profile.bedrooms) score += 10;
+    else score -= 10;
   }
   return Math.max(0, Math.min(100, score));
 }
 
 function buildMatchReason(property, profile) {
+  const city = property.city || property.features?.location?.city;
+  const neighborhood = property.neighborhood || property.features?.location?.neighborhood;
+  const bedrooms = getFeatureNumber(property, ['quartos', 'dormitorios', 'bedrooms']);
   const reasons = [];
+
+  if (profile.city && normalizeText(city).includes(normalizeText(profile.city))) {
+    reasons.push(`Localizacao em ${city}`);
+  }
+  if (profile.neighborhood && normalizeText(neighborhood).includes(normalizeText(profile.neighborhood))) {
+    reasons.push(`Bairro ${neighborhood}`);
+  }
+  if (profile.propertyType && normalizeText(property.property_type).includes(normalizeText(profile.propertyType))) {
+    reasons.push(`Tipo ${property.property_type}`);
+  }
+  if (profile.budget && property.price) {
+    const ratio = property.price / profile.budget;
+    if (ratio <= 1) reasons.push(`Valor dentro do orcamento (R$ ${property.price.toLocaleString('pt-BR')})`);
+    else if (ratio <= 1.2) reasons.push('Valor proximo ao orcamento informado');
+  }
+  if (profile.bedrooms && bedrooms >= profile.bedrooms) {
+    reasons.push(`${bedrooms} quartos`);
+  }
+
+  return reasons.join('. ') || 'Imovel disponivel no catalogo';
+
+  const legacyReasons = [];
   if (profile.city && property.location?.city?.toLowerCase().includes(profile.city.toLowerCase())) {
     reasons.push(`Localização em ${property.location.city}`);
   }

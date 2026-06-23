@@ -3,6 +3,7 @@ import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { enrichPropertyWithAcp } from '../../services/acpPropertyAgent.js';
+import { importXmlProperties, parseXmlProperties, fetchXmlFromUrl } from '../../services/xmlPropertyImportService.js';
 import {
   applyRuralFilter,
   applyUrbanFilter,
@@ -95,6 +96,62 @@ router.post('/', verifyAdmin, requireTenant, async (req, res) => {
     res.status(201).json({ success: true, property: data });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/properties/import/xml/preview
+ * Recebe { url } ou { xml } e retorna uma prévia normalizada sem gravar no banco.
+ */
+router.post('/import/xml/preview', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { url, xml, sourceName } = req.body || {};
+    if (!url && !xml) {
+      return res.status(400).json({ error: 'Informe url ou xml para pré-visualizar a importação.' });
+    }
+
+    const xmlContent = xml || await fetchXmlFromUrl(url);
+    const parsed = parseXmlProperties(xmlContent, { sourceName });
+
+    res.json({
+      success: true,
+      source: parsed.source,
+      totalFound: parsed.totalFound,
+      valid: parsed.properties.length,
+      warnings: parsed.warnings,
+      preview: parsed.properties.slice(0, 10),
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/properties/import/xml
+ * Recebe { url } ou { xml } e faz upsert no catálogo oficial de imóveis.
+ */
+router.post('/import/xml', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { url, xml, sourceName, dryRun = false } = req.body || {};
+    if (!url && !xml) {
+      return res.status(400).json({ error: 'Informe url ou xml para importar imóveis.' });
+    }
+
+    const result = await importXmlProperties({
+      supabase,
+      organizationId: req.orgId,
+      url,
+      xml,
+      sourceName,
+      dryRun: Boolean(dryRun),
+    });
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

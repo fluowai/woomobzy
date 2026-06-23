@@ -569,7 +569,7 @@ const AppContent: React.FC = () => {
             <Route path="empreendimentos" element={<Empreendimentos />} />
             <Route path="loteamentos" element={<Empreendimentos />} />
             <Route path="loteamentos/:id" element={<LoteamentoDetails />} />
-            <Route path="locacao" element={<Locacao />} />
+            <Route path="locacao/*" element={<Locacao />} />
             <Route path="compliance" element={<ComplianceUrbano />} />
             <Route path="cobranca" element={<Cobranca />} />
             <Route path="simulador" element={<Simulator360 />} />

@@ -126,10 +126,10 @@ const RuralLayout: React.FC = () => {
       onClick={() => setIsMobileMenuOpen(false)}
       className={({ isActive }) => {
         const active = isMenuItemActive(item.path, isActive);
-        return `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group ${
+        return `workspace-nav-item flex items-center justify-between group ${
           active
-            ? 'bg-primary text-white font-bold shadow-lg shadow-primary/25'
-            : 'text-slate-500 hover:bg-primary/10 hover:text-primary'
+            ? 'workspace-nav-item-active'
+            : ''
         }`;
       }}
     >
@@ -141,14 +141,14 @@ const RuralLayout: React.FC = () => {
             <div className="flex items-center gap-3.5 min-w-0">
               <item.icon
                 size={20}
-                className={active ? 'text-white shrink-0' : 'text-slate-400 group-hover:text-primary shrink-0'}
+                className={active ? 'text-primary shrink-0' : 'text-slate-400 group-hover:text-primary shrink-0'}
               />
-              <span className="text-sm font-bold tracking-tight truncate">{item.label}</span>
+              <span className="truncate">{item.label}</span>
             </div>
             {item.path !== '/rural' && (
               <ChevronRight
                 size={14}
-                className={active ? 'text-white/80 shrink-0' : 'text-slate-300 group-hover:text-primary shrink-0'}
+                className={active ? 'text-primary/70 shrink-0' : 'text-slate-300 group-hover:text-primary shrink-0'}
               />
             )}
           </>
@@ -159,7 +159,7 @@ const RuralLayout: React.FC = () => {
 
   const renderSidebarContent = () => (
     <>
-      <div className="p-8 pb-6">
+      <div className="px-6 py-5">
         <RouterLink
           to="/rural"
           className="flex items-center gap-3 group"
@@ -168,15 +168,15 @@ const RuralLayout: React.FC = () => {
           <img
             src="/logo-imobfluow.svg"
             alt="ImobFluow"
-            className="h-12 w-auto object-contain max-w-[150px] transition-transform group-hover:scale-105"
+            className="workspace-logo transition-transform group-hover:scale-[1.02]"
           />
         </RouterLink>
       </div>
 
-      <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-6 custom-scrollbar">
+      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 custom-scrollbar">
         {menuSections.map((section) => (
           <div key={section.title} className="space-y-2">
-            <p className="px-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+            <p className="workspace-section-title">
               {section.title}
             </p>
             <div className="space-y-1">
@@ -187,30 +187,30 @@ const RuralLayout: React.FC = () => {
 
         <button
           onClick={() => setIsSupportOpen(true)}
-          className="flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 group text-slate-500 hover:bg-primary/10 hover:text-primary"
+          className="workspace-nav-item flex items-center justify-between w-full group"
         >
           <div className="flex items-center gap-3.5">
             <Headset size={20} className="text-slate-400 group-hover:text-primary" />
-            <span className="text-sm font-bold tracking-tight">Suporte</span>
+            <span>Suporte</span>
           </div>
         </button>
       </nav>
 
-      <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-        <div className="flex items-center gap-3 mb-4 p-2 rounded-xl border border-slate-200 bg-white">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shadow-inner">
+      <div className="p-4 border-t border-slate-100 bg-slate-50/60">
+        <div className="flex items-center gap-3 mb-3 p-2 rounded-xl border border-slate-200 bg-white">
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold border border-primary/20">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'R'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">
+            <p className="text-sm font-semibold text-slate-900 truncate">
               {profile?.full_name || profile?.name || 'Carregando...'}
             </p>
             {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest rounded">
+              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-semibold uppercase tracking-wide rounded">
                 SUPER ADMIN
               </span>
             ) : (
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide truncate">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide truncate">
                 {profile?.role === 'admin' ? 'Admin Imobiliária' : loading ? '...' : profile?.role || 'Corretor'}
               </p>
             )}
@@ -219,7 +219,7 @@ const RuralLayout: React.FC = () => {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-bold transition-all w-full p-2 rounded-lg hover:bg-red-50"
+          className="flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-semibold transition-all w-full p-2 rounded-lg hover:bg-red-50"
         >
           <LogOut size={14} /> Sair
         </button>
@@ -232,14 +232,14 @@ const RuralLayout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen h-dvh bg-bg-primary overflow-hidden selection:bg-primary/20 selection:text-primary">
+    <div className="workspace-shell flex h-screen h-dvh overflow-hidden selection:bg-primary/20 selection:text-primary">
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white text-slate-900 flex flex-col animate-in slide-in-from-left duration-300 border-r border-slate-200">
+          <aside className="workspace-sidebar absolute left-0 top-0 bottom-0 text-slate-900 flex flex-col animate-in slide-in-from-left duration-300">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all z-50"
@@ -252,11 +252,11 @@ const RuralLayout: React.FC = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden shadow-sm">
+      <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
         {renderSidebarContent()}
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-bg-primary">
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <button
           onClick={() => setIsMobileMenuOpen(true)}
           className="fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md md:hidden"
@@ -265,7 +265,7 @@ const RuralLayout: React.FC = () => {
           <Menu size={21} />
         </button>
         <div
-          className={`flex-1 overflow-y-auto bg-bg-primary ${
+          className={`flex-1 overflow-y-auto ${
             isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >

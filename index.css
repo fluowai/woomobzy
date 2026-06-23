@@ -221,6 +221,269 @@
 
 @layer components {
   /* ============================================
+     IMOBFLUOW WORKSPACE SHELL
+     Visual aplicado aos paineis do CRM, sem editar EmailCenter/SuperAdmin.
+     ============================================ */
+
+  .workspace-shell {
+    background:
+      radial-gradient(circle at top left, rgba(22, 163, 74, 0.06), transparent 30rem),
+      linear-gradient(180deg, #f8fafc 0%, #f3f6fa 100%);
+    color: #111827;
+    font-family: var(--font-sans);
+  }
+
+  .workspace-sidebar {
+    width: 272px;
+    background: rgba(255, 255, 255, 0.94);
+    border-right: 1px solid #e5eaf0;
+    box-shadow: 1px 0 0 rgba(15, 23, 42, 0.02);
+  }
+
+  .workspace-logo {
+    height: 38px;
+    width: auto;
+    object-fit: contain;
+    max-width: 158px;
+  }
+
+  .workspace-section-title {
+    padding-inline: 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a96a8;
+  }
+
+  .workspace-nav-item {
+    min-height: 40px;
+    border-radius: 10px;
+    padding: 9px 12px;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+
+  .workspace-nav-item:hover {
+    background: #eefbf4;
+    color: #00855c;
+  }
+
+  .workspace-nav-item-active {
+    background: linear-gradient(90deg, #d9fbe8 0%, #c9f7dc 100%);
+    color: #00855c;
+    box-shadow: inset 3px 0 0 #0bb86f;
+  }
+
+  .workspace-topbar {
+    min-height: 72px;
+    background: rgba(255, 255, 255, 0.82);
+    border-bottom: 1px solid #e5eaf0;
+    backdrop-filter: blur(18px);
+  }
+
+  .workspace-search {
+    height: 46px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: #eef3f8;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .workspace-search:focus {
+    background: #fff;
+    border-color: rgba(22, 163, 74, 0.35);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  }
+
+  .workspace-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    color: #536176;
+    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+
+  .workspace-icon-button:hover {
+    background: #eef3f8;
+    color: #111827;
+    border-color: #e5eaf0;
+  }
+
+  .workspace-primary-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #dce3eb;
+    color: #111827;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  }
+
+  .workspace-primary-action:hover {
+    border-color: rgba(22, 163, 74, 0.28);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.09);
+    transform: translateY(-1px);
+  }
+
+  .workspace-page {
+    width: 100%;
+    max-width: 1600px;
+    margin-inline: auto;
+  }
+
+  .workspace-card {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .workspace-card-hover {
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  .workspace-card-hover:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .workspace-eyebrow {
+    color: #00855c;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .workspace-title {
+    margin: 0;
+    color: #111827;
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    font-weight: 700;
+    line-height: 1.18;
+    letter-spacing: 0;
+  }
+
+  .workspace-subtitle {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .workspace-muted-label {
+    color: #8a96a8;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .workspace-table-head {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .workspace-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .workspace-chip-active {
+    border-color: #b7efcf;
+    background: #ddfbe9;
+    color: #00855c;
+  }
+
+  .workspace-input {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #dce3eb;
+    background: #f8fafc;
+    color: #1f2937;
+    font-size: 14px;
+    outline: none;
+    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .workspace-input:focus {
+    background: #fff;
+    border-color: rgba(22, 163, 74, 0.4);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  }
+
+  .workspace-shell .card,
+  .workspace-shell .card-premium {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .workspace-shell .card-hover:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .workspace-shell .input-field {
+    border-radius: 10px;
+    border-color: #dce3eb;
+    background: #f8fafc;
+    box-shadow: none;
+  }
+
+  .workspace-shell .input-field:focus {
+    background: #fff;
+    border-color: rgba(22, 163, 74, 0.4);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  }
+
+  .workspace-shell .btn-primary,
+  .workspace-shell .btn.btn-primary {
+    border-radius: 999px;
+    background: #16a34a;
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(22, 163, 74, 0.18);
+  }
+
+  .workspace-shell .btn-primary:hover,
+  .workspace-shell .btn.btn-primary:hover {
+    background: #15803d;
+  }
+
+  /* ============================================
      COMPONENTES UNIFICADOS (v3.0)
      ============================================ */
 

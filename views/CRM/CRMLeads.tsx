@@ -46,12 +46,12 @@ const CRMLeads: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="workspace-page space-y-5">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-black uppercase tracking-[0.18em] text-primary">Relacionamento</span>
-          <h1 className="text-3xl font-black text-slate-950 tracking-tight">CRM</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">
+          <span className="workspace-eyebrow">Relacionamento</span>
+          <h1 className="workspace-title">CRM</h1>
+          <p className="workspace-subtitle mt-1">
             Base central de leads, contatos e histórico comercial.
           </p>
         </div>
@@ -59,14 +59,14 @@ const CRMLeads: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
             to={kanbanPath}
-            className="h-11 px-5 rounded-xl bg-primary text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary-hover transition-colors"
+            className="workspace-primary-action bg-primary text-white border-primary hover:bg-primary-hover"
           >
             <LayoutGrid size={18} />
             Abrir Kanban
           </Link>
           <Link
             to={messagesPath}
-            className="h-11 px-5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold flex items-center justify-center gap-2 hover:border-primary/40 hover:text-primary transition-colors"
+            className="workspace-primary-action"
           >
             <MessageSquare size={18} />
             Mensagens
@@ -80,10 +80,10 @@ const CRMLeads: React.FC = () => {
         <MetricCard label="Fechados" value={leads.filter((lead) => String(lead.status).toLowerCase().includes('fechado')).length} icon={Plus} />
       </div>
 
-      <section className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <section className="workspace-card overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="font-black text-slate-900">Leads</h2>
+            <h2 className="font-semibold text-slate-900">Leads</h2>
             <p className="text-xs text-slate-500">Lista operacional separada do quadro Kanban.</p>
           </div>
           <div className="relative w-full md:w-80">
@@ -91,7 +91,7 @@ const CRMLeads: React.FC = () => {
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+              className="workspace-input h-10 pl-10 pr-4"
               placeholder="Buscar por nome, telefone, origem..."
             />
           </div>
@@ -131,13 +131,13 @@ const CRMLeads: React.FC = () => {
 
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="workspace-table-head border-b border-slate-200">
               <tr>
-                <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">Lead</th>
-                <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">Contato</th>
-                <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">Origem</th>
-                <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">Etapa</th>
-                <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-400">Criado em</th>
+                <th className="text-left px-5 py-3">Lead</th>
+                <th className="text-left px-5 py-3">Contato</th>
+                <th className="text-left px-5 py-3">Origem</th>
+                <th className="text-left px-5 py-3">Etapa</th>
+                <th className="text-left px-5 py-3">Criado em</th>
               </tr>
             </thead>
             <tbody>
@@ -180,10 +180,10 @@ const CRMLeads: React.FC = () => {
 };
 
 const MetricCard: React.FC<{ label: string; value: number; icon: React.ElementType }> = ({ label, value, icon: Icon }) => (
-  <div className="bg-white border border-slate-200 rounded-xl p-5 flex items-center justify-between">
+  <div className="workspace-card workspace-card-hover p-5 flex items-center justify-between">
     <div>
-      <p className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</p>
-      <p className="text-3xl font-black text-slate-950 mt-1">{value}</p>
+      <p className="workspace-muted-label">{label}</p>
+      <p className="text-2xl font-semibold text-slate-950 mt-1">{value}</p>
     </div>
     <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
       <Icon size={21} />

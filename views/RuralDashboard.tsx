@@ -180,20 +180,20 @@ const RuralDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="workspace-page space-y-5">
       <div className="animate-fade-in flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <span className="p-2 bg-primary/5 rounded-xl border border-primary/10">
             <MapPin className="text-primary" size={24} />
           </span>
           <div>
-            <p className="text-small font-bold text-primary uppercase tracking-widest">
+            <p className="workspace-eyebrow">
               Dashboard Rural
             </p>
-            <h1 className="h1">Seja bem-vindo, {displayName}</h1>
+            <h1 className="workspace-title">Seja bem-vindo, {displayName}</h1>
           </div>
         </div>
-        <p className="body text-text-secondary ml-14">
+        <p className="workspace-subtitle ml-14">
           Gerenciamento de ativos e performance comercial.
         </p>
       </div>
@@ -204,7 +204,7 @@ const RuralDashboard: React.FC = () => {
         {kpis.map((kpi, idx) => (
           <div
             key={idx}
-            className="card card-hover animate-slide-up"
+            className="workspace-card workspace-card-hover p-5 animate-slide-up"
             style={{ animationDelay: `${idx * 100}ms` }}
           >
             <div className="flex items-center justify-between mb-4">
@@ -229,7 +229,7 @@ const RuralDashboard: React.FC = () => {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Chart */}
-        <div className="lg:col-span-2 card p-6 animate-slide-up" style={{ animationDelay: '400ms' }}>
+        <div className="lg:col-span-2 workspace-card p-5 animate-slide-up" style={{ animationDelay: '400ms' }}>
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="h3 mb-1">
@@ -284,7 +284,7 @@ const RuralDashboard: React.FC = () => {
         {/* Quick Actions + Goal */}
         <div className="space-y-5">
           {/* Quick Actions */}
-          <div className="bg-bg-card p-5 rounded-2xl border border-border-subtle">
+          <div className="workspace-card p-5">
             <h3 className="text-xs font-semibold text-text-tertiary mb-4 uppercase tracking-widest">
               Ações Estratégicas
             </h3>

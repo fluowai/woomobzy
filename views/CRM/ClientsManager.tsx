@@ -112,30 +112,30 @@ export default function ClientsManager() {
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="workspace-page animate-fade-in space-y-5">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="h1 flex items-center gap-3 text-slate-900">
+          <h1 className="workspace-title flex items-center gap-3">
             <Users className="text-primary" size={32} />
             Cadastro de Clientes
           </h1>
-          <p className="body mt-1 max-w-2xl text-slate-500">
+          <p className="workspace-subtitle mt-1 max-w-2xl">
             Gerencie proprietários, inquilinos, compradores e fiadores.
             {loading && <span className="ml-2 inline-block"><Loader2 size={14} className="animate-spin" /></span>}
           </p>
         </div>
-        <button onClick={openNew} className="btn btn-primary shadow-lg shadow-primary/25 whitespace-nowrap">
+        <button onClick={openNew} className="workspace-primary-action bg-primary text-white border-primary whitespace-nowrap">
           <Plus size={20} /> Novo Cliente
         </button>
       </div>
 
-      <div className="card-premium p-4 md:p-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="workspace-card p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative w-full md:max-w-md group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
           <input
             type="text" placeholder="Buscar por nome, CPF ou e-mail..."
             value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field pl-12 bg-slate-50 focus:bg-white"
+            className="workspace-input h-11 pl-12 pr-4"
           />
         </div>
         <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
@@ -153,7 +153,7 @@ export default function ClientsManager() {
         </div>
       </div>
 
-      <div className="card-premium overflow-hidden">
+      <div className="workspace-card overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 size={32} className="animate-spin text-primary" />
@@ -163,12 +163,12 @@ export default function ClientsManager() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200">
-                  <th className="p-4 md:p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Cliente</th>
-                  <th className="p-4 md:p-5 text-xs font-bold text-slate-500 uppercase tracking-widest hidden md:table-cell">Contato</th>
-                  <th className="p-4 md:p-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Papel</th>
-                  <th className="p-4 md:p-5 text-xs font-bold text-slate-500 uppercase tracking-widest hidden lg:table-cell">Localidade</th>
-                  <th className="p-4 md:p-5 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Ações</th>
+                <tr className="workspace-table-head border-b border-slate-200">
+                  <th className="p-4 md:p-5">Cliente</th>
+                  <th className="p-4 md:p-5 hidden md:table-cell">Contato</th>
+                  <th className="p-4 md:p-5">Papel</th>
+                  <th className="p-4 md:p-5 hidden lg:table-cell">Localidade</th>
+                  <th className="p-4 md:p-5 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

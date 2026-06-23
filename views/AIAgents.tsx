@@ -5,11 +5,9 @@ import {
   ArrowRight,
   BadgeCheck,
   BellRing,
-  BookOpen,
   Bot,
   Brain,
   CalendarClock,
-  ChevronLeft,
   CheckCircle2,
   ChevronDown,
   Circle,
@@ -20,7 +18,6 @@ import {
   Gauge,
   Headphones,
   Home,
-  Key,
   LayoutGrid,
   Loader2,
   MessageCircle,
@@ -30,7 +27,6 @@ import {
   PhoneCall,
   Play,
   Plus,
-  Radio,
   Repeat2,
   Rocket,
   Save,
@@ -38,9 +34,9 @@ import {
   Send,
   Settings2,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Star,
-  Smartphone,
   Target,
   Trash2,
   TrendingUp,
@@ -207,12 +203,7 @@ const handoffRules = [
 
 const tabs = [
   { id: 'identity', label: 'Perfil do agente', icon: UserCheck },
-  { id: 'channels', label: 'Canais', icon: Radio },
   { id: 'prompt', label: 'Prompt e funil', icon: MessageSquareText },
-  { id: 'operation', label: 'Jornada comercial', icon: Workflow },
-  { id: 'tools', label: 'Acoes permitidas', icon: Settings2 },
-  { id: 'rules', label: 'Transbordo', icon: ShieldCheck },
-  { id: 'brain', label: 'Aprendizado', icon: Brain },
   { id: 'test', label: 'Simulacao', icon: Play },
 ];
 
@@ -866,7 +857,6 @@ const AIAgents: React.FC = () => {
     [draft.instances, whatsAppInstances]
   );
   const propertyPath = pathname.startsWith('/rural') ? '/rural/properties/new' : '/urban/properties/new';
-  const brainTabIndex = 5;
   const activeStepIndex = Math.max(tabs.findIndex((tab) => tab.id === activeTab), 0);
   const activeStep = tabs[activeStepIndex] || tabs[0];
   const isFirstStep = activeStepIndex === 0;
@@ -1333,43 +1323,6 @@ const AIAgents: React.FC = () => {
               Novo agente
             </button>
           </div>
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-lg bg-slate-950 flex items-center justify-center shadow-sm">
-              <Home className="text-emerald-400" size={21} />
-            </div>
-            <div className="min-w-0">
-              <div className="text-lg font-black tracking-tight leading-none">ImobFluow</div>
-              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 mt-1 truncate">
-                Imobiliária Tradicional
-              </div>
-
-            </div>
-          </div>
-
-          <div className="relative flex-1 max-w-2xl xl:mx-8">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              className="w-full h-11 rounded-lg border border-slate-200 bg-[#F8FAFD] pl-12 pr-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              placeholder="Buscar imóveis, leads, agentes..."
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              to={propertyPath}
-              className="h-11 px-4 rounded-lg bg-emerald-600 text-white text-sm font-black flex items-center gap-2 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700"
-            >
-              <Plus size={18} />
-              Novo imóvel
-            </Link>
-            <button
-              onClick={startBlankAgent}
-              className="h-11 px-4 rounded-lg bg-slate-950 text-white text-sm font-black flex items-center gap-2 shadow-sm hover:bg-slate-800"
-            >
-              <Bot size={18} />
-              Novo agente
-            </button>
-          </div>
         </div>
       </header>
 
@@ -1390,11 +1343,9 @@ const AIAgents: React.FC = () => {
 
             <nav className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3">
               <SidebarItem icon={Sparkles} label="Templates prontos" count={presets.length} active />
-              <SidebarItem icon={Activity} label="Agentes ativos" count={activeAgents} />
-              <SidebarItem icon={Circle} label="Agentes pausados" count={pausedAgents} />
-              <SidebarItem icon={BookOpen} label="Biblioteca de prompts" />
-              <SidebarItem icon={ShieldCheck} label="Regras globais" />
-              <SidebarItem icon={FileText} label="Logs de execução" />
+              <SidebarItem icon={Activity} label="Ativos" count={activeAgents} />
+              <SidebarItem icon={Circle} label="Pausados" count={pausedAgents} />
+              <SidebarItem icon={Bot} label="Meus agentes" count={agents.length} />
             </nav>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
@@ -1504,24 +1455,7 @@ const AIAgents: React.FC = () => {
             </section>
 
             <section className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="border-b border-slate-100 bg-white p-3">
-                <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                      Etapa {activeStepIndex + 1} de {tabs.length}
-                    </div>
-                    <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-950">
-                      <activeStep.icon size={16} />
-                      {activeStep.label}
-                    </div>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 lg:w-56">
-                    <div
-                      className="h-full rounded-full bg-emerald-600 transition-all"
-                      style={{ width: `${((activeStepIndex + 1) / tabs.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
+              <div className="p-3">
 
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
                   {tabs.map((tab) => (
@@ -2399,6 +2333,13 @@ const AIAgents: React.FC = () => {
                             <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
                               {draft.channels?.length || 1} canal(is), {draft.tools?.length || 0} ferramenta(s) e autonomia nivel {draft.autonomy_level || 2}.
                             </p>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {(draft.tools || []).slice(0, 6).map((tool) => (
+                                <span key={tool} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                  {tool}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -2409,31 +2350,8 @@ const AIAgents: React.FC = () => {
             </section>
 
             <footer className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <button
-                  onClick={resetDraft}
-                  className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 hover:bg-slate-50"
-                >
-                  Cancelar
-                </button>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <button
-                    onClick={goToPreviousStep}
-                    disabled={isFirstStep}
-                    className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    <ChevronLeft size={17} />
-                    Voltar
-                  </button>
-                  {!isLastStep && (
-                    <button
-                      onClick={goToNextStep}
-                      className="h-11 rounded-lg bg-slate-950 px-5 text-sm font-black text-white flex items-center justify-center gap-2 hover:bg-slate-800"
-                    >
-                      Próxima etapa
-                      <ArrowRight size={17} />
-                    </button>
-                  )}
                   <button
                     onClick={() => saveAgent('Rascunho')}
                     disabled={saving}

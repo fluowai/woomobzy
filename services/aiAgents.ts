@@ -68,6 +68,53 @@ export interface AgentMetrics {
   rating_distribution: Record<number, number>;
 }
 
+export interface AutonomyPolicy {
+  level: 1 | 2 | 3;
+  permissions: {
+    canCreateLead: boolean;
+    canMoveKanban: boolean;
+    canSendMessage: boolean;
+    canScheduleVisit: boolean;
+    canMatchProperties: boolean;
+    canHandoffToHuman: boolean;
+    maxBudgetValue: number;
+    requireApproval: string[];
+  };
+}
+
+export interface ToolPermissions {
+  lead_qualifier: boolean;
+  property_matcher: boolean;
+  kanban_mover: boolean;
+  visit_scheduler: boolean;
+  document_analyzer: boolean;
+  followup_creator: boolean;
+  human_escalator: boolean;
+  message_sender: boolean;
+  lead_creator: boolean;
+  tag_manager: boolean;
+}
+
+export interface ToolDefinition {
+  id: string;
+  label: string;
+  description: string;
+}
+
+export interface AgentStateMachineData {
+  current: string | null;
+  history: Array<{ stepId: string; trigger: string; timestamp: string }>;
+  context: Record<string, unknown>;
+}
+
+export interface OrchestrationResult {
+  agent: { id: string; name: string; role: string } | null;
+  reply: string;
+  actionPlan: Record<string, unknown>;
+  lead: Record<string, unknown> | null;
+  stateMachine: AgentStateMachineData;
+}
+
 export const aiAgentService = {
   async list() {
     const data = await callApi('/api/ai/agents');
@@ -136,5 +183,39 @@ export const aiAgentService = {
       body: JSON.stringify(params),
     });
     return data.learning;
+  },
+
+  // New Orchestrator API
+  async listTools() {
+    const data = await callApi('/api/ai/tools');
+    return (data.tools || []) as ToolDefinition[];
+  },
+
+  async orchestrate(params: { message: string; phone: string; session_id?: string; instance_id?: string }) {
+    const data = await callApi('/api/ai/orchestrate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+    return data as OrchestrationResult;
+  },
+
+  async getStateMachine(id: string) {
+    const data = await callApi(`/api/ai/agents/${id}/state-machine`);
+    return data as {
+      stateMachine: AgentStateMachineData;
+      currentStep: { id: string; title: string; prompt: string; action: string } | null;
+      nextStep: { id: string; title: string } | null;
+      remainingSteps: string[];
+    };
+  },
+
+  async getPermissions(id: string) {
+    const data = await callApi(`/api/ai/agents/${id}/permissions`);
+    return data as {
+      autonomyLevel: number;
+      autonomyLabel: string;
+      toolPermissions: ToolPermissions;
+      permissions: AutonomyPolicy;
+    };
   },
 };

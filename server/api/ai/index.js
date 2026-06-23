@@ -791,4 +791,91 @@ router.post('/agents/:id/learn', verifyAuth, requireTenant, async (req, res) => 
   }
 });
 
+// ==========================================
+// ORCHESTRATOR ENDPOINTS
+// ==========================================
+
+import { AgentOrchestrator, ToolRegistry, AgentStateMachine } from '../../lib/agents/index.js';
+
+router.get('/tools', verifyAuth, requireTenant, async (req, res) => {
+  res.json({ success: true, tools: ToolRegistry.listTools() });
+});
+
+router.post('/orchestrate', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { message, phone, session_id, instance_id } = req.body;
+    if (!message || !phone) {
+      return res.status(400).json({ error: 'message e phone são obrigatórios.' });
+    }
+
+    const orchestrator = new AgentOrchestrator();
+    const result = await orchestrator.processMessage({
+      organizationId: req.orgId,
+      message,
+      phone,
+      sessionId: session_id || `orchestrated-${Date.now()}`,
+      instanceId: instance_id,
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('[Orchestrator] Erro:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/agents/:id/state-machine', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from('ai_agents')
+      .select('id, name, flow_steps, state_machine')
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Agente não encontrado.' });
+    }
+
+    const machine = AgentStateMachine.fromAgent(data);
+    res.json({
+      success: true,
+      stateMachine: machine.toJSON(),
+      currentStep: machine.getCurrentStep(),
+      nextStep: machine.getNextStep(),
+      remainingSteps: machine.getRemainingSteps().map((s) => s.title),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/agents/:id/permissions', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from('ai_agents')
+      .select('id, name, autonomy_policy, tool_permissions')
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Agente não encontrado.' });
+    }
+
+    const policy = AutonomyPolicy.fromAgent(data);
+    res.json({
+      success: true,
+      autonomyLevel: policy.getLevel(),
+      autonomyLabel: policy.getLabel(),
+      toolPermissions: policy.toolPermissions,
+      permissions: policy.policy,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

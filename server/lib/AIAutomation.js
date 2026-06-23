@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
+import { AgentStateMachine, AutonomyPolicy, ToolRegistry } from './agents/index.js';
 
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',
@@ -93,6 +94,11 @@ export class AIAutomationEngine {
         ? await this._getConversationMemory(organizationId, phone, 8)
         : [];
 
+      const stateMachine = AgentStateMachine.fromAgent(agent);
+      const matchedStep = await stateMachine.evaluate(content, history);
+      if (matchedStep) stateMachine.updateContext({ lastMessage: content });
+      const policy = AutonomyPolicy.fromAgent(agent);
+
       if (audioData) {
         parts.push({
           inlineData: {
@@ -107,7 +113,14 @@ export class AIAutomationEngine {
         : '\n(Inicio da conversa)\n';
 
       const agentFlowBlock = this._buildAgentFlowContext(agent);
-
+      const stateMachineBlock = `
+MÁQUINA DE ESTADOS (State Machine Ativa):
+- Etapa atual: ${matchedStep?.title || 'Fluxo livre'}
+- Ação esperada: ${matchedStep?.action || 'Qualificar e avançar lead'}
+- Contexto coletado: ${JSON.stringify(stateMachine.getContext())}
+- Nível de autonomia: ${policy.getLabel()} (${policy.getLevel()}/3)
+- Tools liberadas: ${Object.entries(policy.toolPermissions).filter(([, v]) => v).map(([k]) => k).join(', ')}
+`.trim();
       parts.push({
         text: `
 Analise a mensagem de um cliente imobiliario e responda apenas JSON valido.
@@ -125,6 +138,8 @@ Agente ativo:
 - Ferramentas: ${(agent?.tools || []).join(', ') || 'whatsapp, kanban, follow-up'}
 - Instrucoes: ${agent?.instructions || 'Atenda com foco em qualificar e avancar o cliente para o proximo passo comercial.'}
 ${agentFlowBlock}
+
+${stateMachineBlock}
 
 Etapas do kanban:
 - Novo: primeiro contato ou saudacao.
@@ -200,7 +215,13 @@ Formato:
 
       const result = await model.generateContent(parts);
       const text = result.response.text();
-      return JSON.parse(text.replace(/```json|```/g, '').trim());
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+      if (agent?.id) {
+        await this._saveStateMachine(agent.id, organizationId, stateMachine);
+      }
+
+      return { ...parsed, _stateMachine: stateMachine.toJSON() };
     } catch (err) {
       console.error('[AIAutomation] Erro no processamento IA:', err.message);
       return null;
@@ -1108,6 +1129,20 @@ Use essas etapas como roteiro operacional. Identifique a etapa mais adequada pel
 
   _hasPropertyMatches(lead = {}) {
     return Array.isArray(lead.matched_properties) && lead.matched_properties.length > 0;
+  }
+
+  async _saveStateMachine(agentId, organizationId, stateMachine) {
+    if (!agentId || !stateMachine) return;
+    try {
+      const supabase = getSupabaseServer();
+      await supabase
+        .from('ai_agents')
+        .update({ state_machine: stateMachine.toJSON() })
+        .eq('id', agentId)
+        .eq('organization_id', organizationId);
+    } catch (err) {
+      console.warn('[AIAutomation] Erro ao salvar state machine:', err.message);
+    }
   }
 
   async _resolveOrganizationId(instanceId) {

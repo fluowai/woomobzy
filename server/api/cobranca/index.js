@@ -34,11 +34,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     let query = supabase
       .from('billing')
-      .select(
-        `*,
-        contract:rental_contracts(tenant_name, monthly_rent, property:property_id(title, address))`,
-        { count: 'exact' }
-      )
+      .select('*', { count: 'exact' })
       .eq('organization_id', req.orgId)
       .order('due_date', { ascending: false })
       .range(offset, offset + Number(limit) - 1);
@@ -56,9 +52,51 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const { data, error, count } = await query;
     if (error) throw error;
 
+    const billings = data || [];
+
+    const contractIds = [...new Set(billings.map((b) => b.contract_id).filter(Boolean))];
+
+    if (contractIds.length > 0) {
+      const { data: contracts } = await supabase
+        .from('rental_contracts')
+        .select('id, tenant_name, monthly_rent, property_id')
+        .in('id', contractIds);
+
+      if (contracts) {
+        const propertyIds = [...new Set(contracts.map((c) => c.property_id).filter(Boolean))];
+        const propertiesMap = {};
+
+        if (propertyIds.length > 0) {
+          const { data: properties } = await supabase
+            .from('properties')
+            .select('id, title, address')
+            .in('id', propertyIds);
+
+          if (properties) {
+            for (const p of properties) {
+              propertiesMap[p.id] = { title: p.title, address: p.address };
+            }
+          }
+        }
+
+        const contractsMap = {};
+        for (const c of contracts) {
+          contractsMap[c.id] = {
+            tenant_name: c.tenant_name,
+            monthly_rent: c.monthly_rent,
+            property: c.property_id ? propertiesMap[c.property_id] || null : null,
+          };
+        }
+
+        for (const b of billings) {
+          b.contract = b.contract_id ? contractsMap[b.contract_id] || null : null;
+        }
+      }
+    }
+
     res.json({
       success: true,
-      data: data || [],
+      data: billings,
       pagination: {
         total: count,
         page: Number(page),
@@ -144,7 +182,7 @@ router.post('/gerar-mensal', verifyAuth, requireTenant, async (req, res) => {
 
     const { data: contracts } = await supabase
       .from('rental_contracts')
-      .select('*, property:property_id(title, address)')
+      .select('*')
       .eq('organization_id', req.orgId)
       .eq('status', 'active')
       .eq('payment_status', 'em_dia');
@@ -428,12 +466,7 @@ router.get(
 
       let query = supabase
         .from('billing')
-        .select(
-          `
-      *,
-      contract:rental_contracts(tenant_name, tenant_cpf)
-    `
-        )
+        .select('*')
         .eq('organization_id', req.orgId)
         .order('due_date', { ascending: true });
 
@@ -449,12 +482,32 @@ router.get(
           .lte('due_date', `${ano}-12-31`);
       }
 
-      const { data, error } = await query;
+      const { data: rawBillings, error } = await query;
       if (error) throw error;
+
+      const billingsData = rawBillings || [];
+      const contractIds = [...new Set(billingsData.map((b) => b.contract_id).filter(Boolean))];
+
+      if (contractIds.length > 0) {
+        const { data: contracts } = await supabase
+          .from('rental_contracts')
+          .select('id, tenant_name, tenant_cpf')
+          .in('id', contractIds);
+
+        if (contracts) {
+          const contractsMap = {};
+          for (const c of contracts) {
+            contractsMap[c.id] = { tenant_name: c.tenant_name, tenant_cpf: c.tenant_cpf };
+          }
+          for (const b of billingsData) {
+            b.contract = b.contract_id ? contractsMap[b.contract_id] || null : null;
+          }
+        }
+      }
 
       if (formato === 'csv') {
         const headers = ['Data Vencimento', 'Data Pagamento', 'Locatário', 'CPF/CNPJ', 'Valor', 'Status'];
-        const csvRows = (data || []).map((b) =>
+        const csvRows = billingsData.map((b) =>
           [
             b.due_date,
             b.payment_date || '',
@@ -473,7 +526,7 @@ router.get(
       if (formato === 'xml') {
         const xml =
           '<?xml version="1.0" encoding="UTF-8"?>\n<cobrancas>\n' +
-          (data || [])
+          billingsData
             .map(
               (b) => `  <cobranca>
     <id>${b.id}</id>
@@ -518,18 +571,48 @@ router.get(
 
       const { data: contracts } = await supabase
         .from('rental_contracts')
-        .select(
-          `
-        *,
-        property:property_id(title, address),
-        billing:billings()
-      `
-        )
+        .select('*')
         .eq('organization_id', req.orgId)
         .eq('payment_status', 'inadimplente');
 
-      const inadimplentes = (contracts || [])
+      const contractList = contracts || [];
+      const propertyIds = [...new Set(contractList.map((c) => c.property_id).filter(Boolean))];
+      const propertiesMap = {};
+
+      if (propertyIds.length > 0) {
+        const { data: properties } = await supabase
+          .from('properties')
+          .select('id, title, address')
+          .in('id', propertyIds);
+
+        if (properties) {
+          for (const p of properties) {
+            propertiesMap[p.id] = { title: p.title, address: p.address };
+          }
+        }
+      }
+
+      const contractIds = [...new Set(contractList.map((c) => c.id).filter(Boolean))];
+      const billingMap = {};
+
+      if (contractIds.length > 0) {
+        const { data: billings } = await supabase
+          .from('billing')
+          .select('*')
+          .in('contract_id', contractIds);
+
+        if (billings) {
+          for (const b of billings) {
+            if (!billingMap[b.contract_id]) billingMap[b.contract_id] = [];
+            billingMap[b.contract_id].push(b);
+          }
+        }
+      }
+
+      const inadimplentes = contractList
         .map((c) => {
+          c.property = c.property_id ? propertiesMap[c.property_id] || null : null;
+          c.billings = billingMap[c.id] || [];
           const totalDebito = (c.billings || [])
             .filter((b) => b.status !== 'pago')
             .reduce((sum, b) => sum + (b.amount || 0), 0);

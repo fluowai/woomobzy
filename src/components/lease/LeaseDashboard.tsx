@@ -85,15 +85,17 @@ export const LeaseDashboard: React.FC = () => {
 
       {/* TABS */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-px overflow-x-auto">
-        {[
-          { id: 'overview', label: 'Visão Geral' },
-          { id: 'tickets', label: 'Chamados & Manutenção', badge: 'Novo' },
-          { id: 'statements', label: 'Repasses & Extratos', badge: 'Novo' },
-          { id: 'guarantees', label: 'Garantias', badge: 'Novo' },
-        ].map(tab => (
+        {(
+          [
+            { id: 'overview', label: 'Visão Geral' },
+            { id: 'tickets', label: 'Chamados & Manutenção', badge: 'Novo' },
+            { id: 'statements', label: 'Repasses & Extratos', badge: 'Novo' },
+            { id: 'guarantees', label: 'Garantias', badge: 'Novo' },
+          ] as { id: 'overview' | 'tickets' | 'statements' | 'guarantees'; label: string; badge?: string }[]
+        ).map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as 'overview' | 'tickets' | 'statements' | 'guarantees')}
+            onClick={() => setActiveTab(tab.id)}
             className={`whitespace-nowrap px-5 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
               activeTab === tab.id
                 ? 'border-blue-600 text-blue-600'
@@ -220,6 +222,8 @@ export const LeaseDashboard: React.FC = () => {
                 <p className="font-medium">Nenhum contrato encontrado</p>
               </div>
             )}
+          </div>
+        </div>
           </div>
         </div>
       )}

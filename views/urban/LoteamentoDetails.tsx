@@ -1,21 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Map as MapIcon, 
   Grid3X3, 
-  Filter, 
   Download, 
   Plus, 
   Search,
-  DollarSign,
   Maximize2,
   Users,
   CheckCircle2,
   XCircle,
   Clock,
   Phone,
-  FileText
+  FileText,
+  Layers,
+  Settings2,
+  Ruler,
+  Hash,
+  DollarSign,
+  Loader2,
+  Wand2,
+  X,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { Development, Lot, LotStatus } from '../../types';
@@ -29,6 +35,20 @@ const LoteamentoDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
   const [filterStatus, setFilterStatus] = useState<LotStatus | 'Todos'>('Todos');
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  const generateFormState = {
+    quadraCount: 1,
+    lotsPerQuadra: 10,
+    area_m2: 250,
+    price: 0,
+    front_m: 10,
+    back_m: 10,
+    left_m: 25,
+    right_m: 25,
+  };
+  const [genForm, setGenForm] = useState({ ...generateFormState });
 
   const dbStatusToUi = (status: string): LotStatus => {
     const map: Record<string, LotStatus> = {
@@ -50,6 +70,8 @@ const LoteamentoDetails: React.FC = () => {
     return map[status] || 'available';
   };
 
+  const quadraLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+
   useEffect(() => {
     if (id) {
       loadData();
@@ -59,7 +81,6 @@ const LoteamentoDetails: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load Development Info
       const { data: dev } = await supabase
         .from('developments')
         .select('*')
@@ -88,6 +109,10 @@ const LoteamentoDetails: React.FC = () => {
           status: dbStatusToUi(lot.status),
           current_client_id: lot.buyer_id,
           coordinates: lot.metadata?.coordinates,
+          front_m: lot.metadata?.front_m,
+          back_m: lot.metadata?.back_m,
+          left_m: lot.metadata?.left_m,
+          right_m: lot.metadata?.right_m,
         }))
       );
     } catch (err) {
@@ -98,9 +123,18 @@ const LoteamentoDetails: React.FC = () => {
     }
   };
 
-  const filteredLots = filterStatus === 'Todos' 
-    ? lots 
-    : lots.filter(l => l.status === filterStatus);
+  const lotsByBlock = useMemo(() => {
+    const groups: Record<string, Lot[]> = {};
+    const filtered = filterStatus === 'Todos'
+      ? lots
+      : lots.filter(l => l.status === filterStatus);
+
+    for (const lot of filtered) {
+      if (!groups[lot.block_id]) groups[lot.block_id] = [];
+      groups[lot.block_id].push(lot);
+    }
+    return groups;
+  }, [lots, filterStatus]);
 
   const getStatusColor = (status: LotStatus) => {
     switch (status) {
@@ -109,6 +143,87 @@ const LoteamentoDetails: React.FC = () => {
       case LotStatus.RESERVED: return 'bg-amber-500 text-white';
       case LotStatus.BLOCKED: return 'bg-slate-400 text-white';
       default: return 'bg-slate-200 text-slate-500';
+    }
+  };
+
+  const getStatusBorder = (status: LotStatus) => {
+    switch (status) {
+      case LotStatus.AVAILABLE: return 'border-emerald-400';
+      case LotStatus.SOLD: return 'border-red-400';
+      case LotStatus.RESERVED: return 'border-amber-400';
+      case LotStatus.BLOCKED: return 'border-slate-300';
+      default: return 'border-slate-200';
+    }
+  };
+
+  const handleGenerateLots = async () => {
+    if (!development?.organization_id || !id) return;
+    if (genForm.quadraCount < 1 || genForm.lotsPerQuadra < 1) {
+      toast.error('Defina ao menos 1 quadra e 1 lote por quadra');
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const existingCount = lots.filter(l => l.block_id.startsWith('Quadra')).length;
+      const inserts: any[] = [];
+
+      for (let q = 0; q < genForm.quadraCount; q++) {
+        const blockName = `Quadra ${quadraLabels[q]}`;
+        for (let l = 1; l <= genForm.lotsPerQuadra; l++) {
+          const lotNumber = String(existingCount + inserts.length + 1).padStart(2, '0');
+          inserts.push({
+            organization_id: development.organization_id,
+            development_id: id,
+            block_name: blockName,
+            lot_number: lotNumber,
+            area_m2: genForm.area_m2,
+            price: genForm.price,
+            status: uiStatusToDb(LotStatus.AVAILABLE),
+            metadata: {
+              front_m: genForm.front_m,
+              back_m: genForm.back_m,
+              left_m: genForm.left_m,
+              right_m: genForm.right_m,
+            },
+          });
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('urban_lots')
+        .insert(inserts)
+        .select();
+
+      if (error) throw error;
+
+      const newLots: Lot[] = (data || []).map((lot: any) => ({
+        id: lot.id,
+        development_id: lot.development_id,
+        block_id: lot.block_name,
+        number: lot.lot_number,
+        area_m2: Number(lot.area_m2 || 0),
+        price: Number(lot.price || 0),
+        status: dbStatusToUi(lot.status),
+        current_client_id: lot.buyer_id,
+        coordinates: lot.metadata?.coordinates,
+        front_m: lot.metadata?.front_m,
+        back_m: lot.metadata?.back_m,
+        left_m: lot.metadata?.left_m,
+        right_m: lot.metadata?.right_m,
+      }));
+
+      setLots((prev) => {
+        const existingIds = new Set(prev.map(p => p.id));
+        return [...prev, ...newLots.filter(l => !existingIds.has(l.id))];
+      });
+      setShowGenerateModal(false);
+      toast.success(`${inserts.length} lotes gerados com sucesso!`);
+    } catch (err) {
+      console.error('Error generating lots:', err);
+      toast.error('Erro ao gerar lotes');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -180,9 +295,16 @@ const LoteamentoDetails: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-900/10">
-            <Download size={16} /> Exportar Mapa
-          </button>
+          {lots.length === 0 && (
+            <button onClick={() => setShowGenerateModal(true)} className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20">
+              <Wand2 size={16} /> Gerar Lotes
+            </button>
+          )}
+          {lots.length > 0 && (
+            <button onClick={() => setShowGenerateModal(true)} className="flex items-center gap-2 px-5 py-3 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-slate-900/10">
+              <Layers size={16} /> + Gerar Quadras
+            </button>
+          )}
           <button onClick={handleCreateLot} className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
             <Plus size={16} /> Novo Lote
           </button>
@@ -216,37 +338,54 @@ const LoteamentoDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Grid de Lotes (Espelho Visual) */}
+          {/* Mapa Visual de Lotes (agrupado por quadra) */}
           <div className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar">
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-3 lg:gap-4">
-               {filteredLots.map((lot) => (
-                 <button
-                   key={lot.id}
-                   onClick={() => setSelectedLot(lot)}
-                   className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-all hover:scale-110 active:scale-95 shadow-sm border-2 ${selectedLot?.id === lot.id ? 'ring-4 ring-blue-600/30 border-blue-600 scale-105 z-10 shadow-xl' : 'border-transparent'} ${getStatusColor(lot.status)}`}
-                 >
-                   <span className="text-[10px] font-black opacity-60 leading-none uppercase">{lot.block_id.split(' ')[1]}</span>
-                   <span className="text-xl font-black italic tracking-tighter leading-none">{lot.number}</span>
-                 </button>
-               ))}
-            </div>
-            {filteredLots.length === 0 && (
-              <div className="rounded-[2rem] border-2 border-dashed border-slate-200 bg-white p-10 text-center">
-                <Grid3X3 size={40} className="mx-auto mb-4 text-slate-300" />
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">
-                  Nenhum lote cadastrado
-                </h3>
-                <p className="mt-2 text-xs text-slate-400">
-                  Clique em Novo Lote para iniciar o espelho de vendas real deste loteamento.
-                </p>
+            {Object.keys(lotsByBlock).length === 0 ? (
+              <>
+                <div className="rounded-[2rem] border-2 border-dashed border-slate-200 bg-white p-10 text-center">
+                  <Grid3X3 size={40} className="mx-auto mb-4 text-slate-300" />
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">
+                    Nenhum lote cadastrado
+                  </h3>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Clique em "Gerar Lotes" para criar as quadras e lotes deste loteamento.
+                  </p>
+                </div>
+                <div className="mt-8 p-8 border-2 border-dashed border-slate-200 rounded-[3rem] text-center bg-slate-100/50">
+                   <MapIcon size={40} className="mx-auto text-slate-300 mb-4" />
+                   <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Upload de Mapa SVG em breve</p>
+                   <p className="text-xs text-slate-400 mt-1">Nesta área você poderá carregar o mapa real do loteamento.</p>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-10">
+                {(Object.entries(lotsByBlock) as [string, Lot[]][]).map(([blockName, blockLots]) => (
+                  <div key={blockName}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest">
+                        {blockName}
+                      </div>
+                      <div className="h-px flex-1 bg-slate-200" />
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {blockLots.length} lotes
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-3 lg:gap-4">
+                      {blockLots.map((lot) => (
+                        <button
+                          key={lot.id}
+                          onClick={() => setSelectedLot(lot)}
+                          className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-all hover:scale-110 active:scale-95 shadow-sm border-2 ${selectedLot?.id === lot.id ? 'ring-4 ring-blue-600/30 border-blue-600 scale-105 z-10 shadow-xl' : `border-white/40 ${getStatusBorder(lot.status)}/30`} ${getStatusColor(lot.status)}`}
+                        >
+                          <span className="text-[10px] font-black opacity-60 leading-none uppercase">{lot.block_id.split(' ')[1]}</span>
+                          <span className="text-xl font-black italic tracking-tighter leading-none">{lot.number}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-            
-            <div className="mt-20 p-8 border-2 border-dashed border-slate-200 rounded-[3rem] text-center bg-slate-100/50">
-               <MapIcon size={40} className="mx-auto text-slate-300 mb-4" />
-               <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Upload de Mapa SVG em breve</p>
-               <p className="text-xs text-slate-400 mt-1">Nesta área você poderá carregar o mapa real do loteamento.</p>
-            </div>
           </div>
         </div>
 
@@ -285,16 +424,16 @@ const LoteamentoDetails: React.FC = () => {
                 </h3>
                 <div className="space-y-2">
                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400 font-bold">Frente:</span>
-                      <span className="text-slate-900 font-black">10,00 m</span>
+                     <span className="text-slate-400 font-bold">Frente:</span>
+                     <span className="text-slate-900 font-black">{selectedLot.front_m?.toFixed(2) || '—'} m</span>
                    </div>
                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400 font-bold">Fundo:</span>
-                      <span className="text-slate-900 font-black">10,00 m</span>
+                     <span className="text-slate-400 font-bold">Fundo:</span>
+                     <span className="text-slate-900 font-black">{selectedLot.back_m?.toFixed(2) || '—'} m</span>
                    </div>
                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400 font-bold">Laterais:</span>
-                      <span className="text-slate-900 font-black">25,00 m</span>
+                     <span className="text-slate-400 font-bold">Laterais:</span>
+                     <span className="text-slate-900 font-black">{selectedLot.left_m?.toFixed(2) || '—'} m</span>
                    </div>
                 </div>
               </section>
@@ -331,6 +470,161 @@ const LoteamentoDetails: React.FC = () => {
           )}
         </aside>
       </div>
+
+      {/* Modal de Geração em Massa */}
+      {showGenerateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 sm:p-12 w-full max-w-lg shadow-2xl border border-white/20 overflow-hidden relative">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-600 rounded-2xl text-white shadow-lg">
+                  <Wand2 size={24} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">
+                    Gerar Lotes
+                  </h3>
+                  <p className="text-slate-400 text-sm font-medium">Crie quadras e lotes em massa.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGenerateModal(false)}
+                className="p-3 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                    <Layers size={12} className="inline mr-1" /> Quantidade de Quadras
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={26}
+                    value={genForm.quadraCount}
+                    onChange={(e) => setGenForm({ ...genForm, quadraCount: Math.min(26, Math.max(1, Number(e.target.value))) })}
+                    className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                    <Hash size={12} className="inline mr-1" /> Lotes por Quadra
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={genForm.lotsPerQuadra}
+                    onChange={(e) => setGenForm({ ...genForm, lotsPerQuadra: Math.max(1, Number(e.target.value)) })}
+                    className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <Ruler size={12} className="inline mr-1" /> Dimensões Padrão (metros)
+                </label>
+                <div className="grid grid-cols-4 gap-3">
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 block mb-1">Frente</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={genForm.front_m}
+                      onChange={(e) => setGenForm({ ...genForm, front_m: Number(e.target.value) })}
+                      className="w-full px-3 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold outline-none"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 block mb-1">Fundo</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={genForm.back_m}
+                      onChange={(e) => setGenForm({ ...genForm, back_m: Number(e.target.value) })}
+                      className="w-full px-3 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold outline-none"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 block mb-1">Esq.</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={genForm.left_m}
+                      onChange={(e) => setGenForm({ ...genForm, left_m: Number(e.target.value) })}
+                      className="w-full px-3 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold outline-none"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 block mb-1">Dir.</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={genForm.right_m}
+                      onChange={(e) => setGenForm({ ...genForm, right_m: Number(e.target.value) })}
+                      className="w-full px-3 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                    <Maximize2 size={12} className="inline mr-1" /> Área (m²)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={genForm.area_m2}
+                    onChange={(e) => setGenForm({ ...genForm, area_m2: Number(e.target.value) })}
+                    className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                    <DollarSign size={12} className="inline mr-1" /> Preço Padrão (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="1000"
+                    value={genForm.price}
+                    onChange={(e) => setGenForm({ ...genForm, price: Number(e.target.value) })}
+                    className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+                <p className="text-xs font-bold text-emerald-800">
+                  Serão gerados <strong className="text-emerald-900">{genForm.quadraCount * genForm.lotsPerQuadra}</strong> lotes em <strong className="text-emerald-900">{genForm.quadraCount}</strong> quadra(s): {Array.from({ length: genForm.quadraCount }, (_, i) => `"Quadra ${quadraLabels[i]}"`).join(', ')}.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-4">
+              <button
+                onClick={() => setShowGenerateModal(false)}
+                className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGenerateLots}
+                disabled={generating}
+                className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+              >
+                {generating ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}
+                {generating ? 'Gerando...' : `Gerar ${genForm.quadraCount * genForm.lotsPerQuadra} Lotes`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

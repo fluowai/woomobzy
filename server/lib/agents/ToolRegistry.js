@@ -462,19 +462,6 @@ function buildMatchReason(property, profile) {
 
   return reasons.join('. ') || 'Imovel disponivel no catalogo';
 
-  const legacyReasons = [];
-  if (profile.city && property.location?.city?.toLowerCase().includes(profile.city.toLowerCase())) {
-    reasons.push(`Localização em ${property.location.city}`);
-  }
-  if (profile.propertyType && property.type?.toLowerCase().includes(profile.propertyType.toLowerCase())) {
-    reasons.push(`Tipo: ${property.type}`);
-  }
-  if (profile.budget && property.price) {
-    const ratio = property.price / profile.budget;
-    if (ratio <= 1) reasons.push(`Valor dentro do orçamento (R$ ${property.price.toLocaleString('pt-BR')})`);
-    else reasons.push(`Valor próximo ao orçamento`);
-  }
-  return reasons.join('. ') || 'Propriedade disponível';
 }
 
 export class ToolRegistry {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Key, DollarSign, AlertTriangle, Calendar, Plus,
-  FileText, Clock, TrendingUp, Home, Eye, Users,
+  FileText, Clock, TrendingUp, Home, Eye,
 } from 'lucide-react';
 import type { Lease, LeaseDashboardResumo, LeaseTimelineEvent } from '../../types/lease';
 import { LEASE_STATUS_LABELS, LEASE_STATUS_COLORS, PAYMENT_STATUS_LABELS } from '../../types/lease';
@@ -93,7 +93,7 @@ export const LeaseDashboard: React.FC = () => {
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as 'overview' | 'tickets' | 'statements' | 'guarantees')}
             className={`whitespace-nowrap px-5 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
               activeTab === tab.id
                 ? 'border-blue-600 text-blue-600'

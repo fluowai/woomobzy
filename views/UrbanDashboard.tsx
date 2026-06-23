@@ -225,10 +225,10 @@ const UrbanDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="workspace-page space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text-primary flex items-center gap-3">
+        <h1 className="workspace-title flex items-center gap-3">
           <span className="p-2 bg-primary/10 rounded-xl border border-primary/20">
             <Building2 className="text-primary" size={24} />
           </span>
@@ -246,7 +246,7 @@ const UrbanDashboard: React.FC = () => {
         {stats.map((stat, idx) => (
           <div
             key={idx}
-            className={`p-6 rounded-2xl border bg-bg-card transition-all hover-lift cursor-default ${stat.borderColor} hover:border-opacity-60`}
+            className={`workspace-card workspace-card-hover p-5 cursor-default ${stat.borderColor} hover:border-opacity-60`}
             style={{ borderColor: `var(--color-border-subtle)` }}
           >
             <div className="flex items-center justify-between mb-4">
@@ -277,7 +277,7 @@ const UrbanDashboard: React.FC = () => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Leads by Channel */}
-        <div className="lg:col-span-2 bg-bg-card p-6 rounded-2xl border border-border-subtle">
+        <div className="lg:col-span-2 workspace-card p-5">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-base font-semibold text-text-primary">Leads por Canal</h3>
             <select className="bg-bg-hover border border-border-subtle rounded-lg text-sm text-text-secondary px-3 py-1.5 outline-none focus:border-primary transition-colors">
@@ -312,7 +312,7 @@ const UrbanDashboard: React.FC = () => {
         </div>
 
         {/* Stock by Type */}
-        <div className="bg-bg-card p-6 rounded-2xl border border-border-subtle">
+        <div className="workspace-card p-5">
           <h3 className="text-base font-semibold text-text-primary mb-6">Estoque por Tipo</h3>
           <div className="h-[170px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -343,7 +343,7 @@ const UrbanDashboard: React.FC = () => {
       {/* Conversion + Recent Leads */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Conversion by Broker */}
-        <div className="bg-bg-card p-6 rounded-2xl border border-border-subtle">
+        <div className="workspace-card p-5">
           <h3 className="text-base font-semibold text-text-primary mb-6">Conversão por Corretor</h3>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -360,7 +360,7 @@ const UrbanDashboard: React.FC = () => {
         </div>
 
         {/* Recent Leads */}
-        <div className="bg-bg-card p-6 rounded-2xl border border-border-subtle">
+        <div className="workspace-card p-5">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-base font-semibold text-text-primary">Leads Recentes</h3>
             <Link to="/urban/crm" className="text-xs font-semibold text-primary hover:underline">

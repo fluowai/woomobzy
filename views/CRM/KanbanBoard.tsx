@@ -1974,14 +1974,14 @@ const KanbanBoard: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4">
+    <div className="workspace-page flex h-full flex-col gap-4">
       {/* ── Header Enterprise ──────────────────────────────────── */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="workspace-title">
             Processo de Vendas
           </h1>
-          <p className="mt-0.5 text-[11px] font-medium text-slate-400">
+          <p className="workspace-subtitle mt-1">
             {(Object.values(stageState) as StagePageState[keyof StagePageState][]).reduce((s, v) => s + (v.total || 0), 0)} leads ativos no funil
           </p>
         </div>
@@ -1993,19 +1993,19 @@ const KanbanBoard: React.FC = () => {
               placeholder="Buscar lead..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 sm:w-52"
+              className="workspace-input h-10 w-full pl-9 pr-3 sm:w-56"
             />
           </div>
           <button
             type="button"
             onClick={() => setIsStageModalOpen(true)}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-700"
+            className="workspace-primary-action h-10"
           >
             <LayoutGrid size={15} /> Nova Etapa
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+            className="workspace-primary-action h-10 bg-primary text-white border-primary hover:bg-primary-hover"
           >
             <Plus size={15} /> Novo Lead
           </button>

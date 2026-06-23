@@ -93,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Conteúdo da Sidebar (compartilhado entre desktop e mobile)
   const SidebarContent = () => (
     <>
-      <div className="p-6 md:p-8 border-b border-slate-100">
+      <div className="px-6 py-5 border-b border-slate-100">
         <Link
           to="/"
           className="flex items-center gap-3"
@@ -102,20 +102,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <img
             src="/logo-imobfluow.svg"
             alt="ImobFluow"
-            className="h-10 md:h-12 w-auto object-contain max-w-[150px]"
+            className="workspace-logo"
           />
         </Link>
         <a
           href="/#/site"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 md:mt-6 flex items-center justify-center gap-2 w-full bg-primary/10 text-primary hover:bg-primary hover:text-white py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border border-primary/20"
+          className="mt-4 flex items-center justify-center gap-2 w-full rounded-full border border-primary/20 bg-primary/10 py-2 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-white"
         >
           <Globe size={14} /> Visualizar Site
         </a>
       </div>
 
-      <nav className="flex-1 p-4 md:p-5 space-y-1 md:space-y-1.5 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
         {filteredMenuItems.map((item) => (
           <NavLink
             key={item.path}
@@ -123,10 +123,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             end={item.path === '/admin'}
             onClick={() => setIsMobileMenuOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 md:py-3.5 rounded-xl transition-all ${
+              `workspace-nav-item flex items-center gap-3 ${
                 isActive
-                  ? 'bg-primary text-white font-bold shadow-lg shadow-primary/25'
-                  : 'text-slate-500 hover:bg-primary/10 hover:text-primary'
+                  ? 'workspace-nav-item-active'
+                  : ''
               }`
             }
           >
@@ -134,9 +134,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <>
                 <item.icon
                   size={20}
-                  className={isActive ? 'text-white' : 'text-slate-400'}
+                  className={isActive ? 'text-primary' : 'text-slate-400'}
                 />
-                <span className="font-semibold text-sm">{item.label}</span>
+                <span>{item.label}</span>
               </>
             )}
           </NavLink>
@@ -144,7 +144,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </nav>
 
       {/* Bottom: User Profile & Logout */}
-      <div className="p-4 md:p-6 border-t border-slate-100 bg-slate-50/50">
+      <div className="p-4 border-t border-slate-100 bg-slate-50/60">
         <div className="flex items-center gap-3 mb-3 md:mb-4 p-2 rounded-xl border border-slate-200 bg-white">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm border border-primary/20">
             {profile?.full_name?.charAt(0) || 'U'}
@@ -186,7 +186,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div
-      className="flex h-screen bg-bg-primary overflow-hidden"
+      className="workspace-shell flex h-screen overflow-hidden"
       style={{ fontFamily: '"Inter", sans-serif', fontSize: '16px' }}
     >
       {/* Mobile Menu Overlay */}
@@ -198,7 +198,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             onClick={() => setIsMobileMenuOpen(false)}
           />
           {/* Sidebar Drawer */}
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white text-slate-900 flex flex-col animate-in slide-in-from-left duration-300 border-r border-slate-200">
+          <aside className="workspace-sidebar absolute left-0 top-0 bottom-0 text-slate-900 flex flex-col animate-in slide-in-from-left duration-300">
             {/* Close Button */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
@@ -228,18 +228,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="w-64 bg-white text-slate-900 flex-col hidden md:flex transition-all border-r border-slate-200 shadow-sm">
+      <aside className="workspace-sidebar text-slate-900 flex-col hidden md:flex transition-all">
         <SidebarContent />
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-bg-card/80 backdrop-blur-xl border-b border-border-subtle flex items-center justify-between px-6 z-10 gap-3">
+        <header className="workspace-topbar flex items-center justify-between px-6 z-10 gap-3">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="md:hidden p-2 text-secondary hover:text-text-primary"
+            className="workspace-icon-button md:hidden"
           >
             <Menu size={20} />
           </button>
@@ -253,14 +253,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <input
               type="text"
               placeholder="Buscar..."
-              className="w-full pl-10 pr-4 py-2 bg-bg-input border border-subtle rounded-lg text-sm focus:ring-2 focus:ring-brand/20 outline-none transition-all"
+              className="workspace-search w-full pl-10 pr-4"
             />
           </div>
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
             {/* Novo Imóvel Button */}
-            <Link to="/admin/properties/new" className="btn-primary">
+            <Link to="/admin/properties/new" className="workspace-primary-action">
               <PlusCircle size={16} />
               Novo Imóvel
             </Link>
@@ -268,7 +268,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* View Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-bg-primary">
+        <div className="flex-1 overflow-y-auto p-6">
           {children}
         </div>
       </main>

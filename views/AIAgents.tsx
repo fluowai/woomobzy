@@ -1327,8 +1327,103 @@ const AIAgents: React.FC = () => {
       </header>
 
       <div className="p-2 sm:p-3 lg:p-4 2xl:p-5 flex flex-col gap-5 w-full">
-        {/* Top Section: Central de Agentes */}
         <section className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden w-full">
+            <div className="grid xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)]">
+              <div className="border-b border-slate-100 p-5 xl:border-b-0 xl:border-r">
+                <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">
+                  <WandSparkles size={15} />
+                  Central de Agentes
+                </div>
+                <h2 className="mt-4 text-2xl font-black tracking-tight mb-0">Escolha o agente pelo objetivo</h2>
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-500 mb-0">
+                  Primeiro escolha o modelo. Depois ajuste tudo em uma unica tela: perfil, canais, autonomia, regras, prompt e teste.
+                </p>
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  <Diagnostic label="Modelos" value={String(presets.length)} tone="green" />
+                  <Diagnostic label="Ativos" value={String(activeAgents)} tone="green" />
+                  <Diagnostic label="Pausados" value={String(pausedAgents)} tone="slate" />
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-950 mb-0">Modelos recomendados</h3>
+                    <p className="mt-1 text-xs font-semibold text-slate-500 mb-0">Cards compactos para iniciar sem abrir um labirinto de configuracao.</p>
+                  </div>
+                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-black text-slate-500">
+                    {agents.length} salvo(s)
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                  {presets.slice(0, 6).map((preset) => (
+                    <article key={preset.name} className="rounded-lg border border-slate-200 bg-slate-50 p-3 transition hover:border-emerald-200 hover:bg-emerald-50/40">
+                      <div className="flex items-start gap-3">
+                        <Avatar label={preset.avatar} gradient={preset.accent} />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-black text-slate-950 mb-0 truncate">{preset.name}</h3>
+                          <p className="text-[11px] font-bold text-slate-500 mb-0 truncate">{preset.role}</p>
+                        </div>
+                      </div>
+                      <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-600 mb-0">{preset.description}</p>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-wrap gap-1.5">
+                          {preset.tags.slice(0, 2).map((tag) => (
+                            <span key={tag} className="rounded-md border border-emerald-100 bg-white px-2 py-1 text-[10px] font-black text-emerald-700">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => usePreset(preset)}
+                          className="h-8 shrink-0 rounded-lg bg-slate-950 px-3 text-[11px] font-black text-white hover:bg-slate-800"
+                        >
+                          Usar
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {agents.length > 0 && (
+              <div className="border-t border-slate-100 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-950 mb-0">Agentes em uso</h3>
+                    <p className="mt-1 text-xs font-semibold text-slate-500 mb-0">Clique para editar o agente no estúdio abaixo.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={startBlankAgent}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-black text-slate-700 hover:bg-slate-50"
+                  >
+                    Novo do zero
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  {agents.slice(0, 8).map((agent) => (
+                    <button
+                      key={agent.id}
+                      onClick={() => setSelectedId(agent.id)}
+                      className={`rounded-lg border p-3 text-left transition ${
+                        selectedId === agent.id
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-xs font-black">{agent.name}</span>
+                        <span className={`h-2.5 w-2.5 rounded-full ${agent.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      </div>
+                      <div className="mt-1 truncate text-[11px] font-bold text-slate-500">{agent.role}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="hidden">
             <div className="p-5 border-b border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -1400,22 +1495,22 @@ const AIAgents: React.FC = () => {
                 </div>
               </div>
             )}
+            </div>
           </section>
 
-          {/* Bottom Section: Construtor */}
           <section className="min-w-0 space-y-5 w-full">
             <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div className="max-w-5xl">
                   <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">
                     <Sparkles size={15} />
-                    IA e Automação
+                    Estudio do agente
                   </div>
                   <h1 className="mt-4 text-3xl lg:text-4xl font-black tracking-tight text-slate-950 mb-0">
-                    Construtor de Agente Autônomo
+                    Uma configuracao, sem etapas quebradas
                   </h1>
                   <p className="mt-3 max-w-5xl text-sm lg:text-base font-medium leading-relaxed text-slate-600 mb-0">
-                    Configure agentes que atendem, qualificam, analisam documentos, movimentam leads no Kanban e executam follow-ups automaticamente.
+                    Ajuste nome, canais, autonomia, ferramentas, regras, prompt e teste na mesma tela. O resumo ao lado deixa claro o que o agente vai fazer.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -1433,7 +1528,7 @@ const AIAgents: React.FC = () => {
               </div>
             </section>
             
-            <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+            <section className="hidden rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
               <div className="grid grid-cols-1 gap-2 lg:grid-cols-7">
                 {flowSteps.map((step, index) => (
                   <div key={step.title} className="relative rounded-lg border border-slate-100 bg-slate-50 px-3 py-3">
@@ -1455,7 +1550,7 @@ const AIAgents: React.FC = () => {
             </section>
 
             <section className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="p-3">
+              <div className="hidden p-3">
 
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
                   {tabs.map((tab) => (
@@ -1476,8 +1571,8 @@ const AIAgents: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-5 lg:p-6 min-h-[520px]">
-                <section id="agent-identity" className={activeTab === 'identity' ? 'block' : 'hidden'}>
+              <div className="space-y-8 p-5 lg:p-6">
+                <section id="agent-identity" className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <SectionHeading
                     eyebrow="Perfil do agente"
                     title="Missao e postura de atendimento"
@@ -1552,7 +1647,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-channels" className={activeTab === 'channels' ? 'block' : 'hidden'}>
+                <section id="agent-channels" className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <SectionHeading
                     eyebrow="Canais"
                     title="Canais de atuação e WhatsApp conectado"
@@ -1617,7 +1712,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-prompt" className={activeTab === 'prompt' ? 'block' : 'hidden'}>
+                <section id="agent-prompt" className="rounded-lg border border-slate-200 bg-white p-4">
                   <SectionHeading
                     eyebrow="Prompt e funil"
                     title="Construtor tipo Typebot"
@@ -1792,7 +1887,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-operation" className={activeTab === 'operation' ? 'block' : 'hidden'}>
+                <section id="agent-operation" className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <SectionHeading
                     eyebrow="Operação"
                     title="Jornada que este agente conduz"
@@ -1925,7 +2020,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-tools" className={activeTab === 'tools' ? 'block' : 'hidden'}>
+                <section id="agent-tools" className="rounded-lg border border-slate-200 bg-white p-4">
                   <SectionHeading
                     eyebrow="Acoes permitidas"
                     title="O que o agente pode fazer sozinho"
@@ -1950,7 +2045,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-rules" className={activeTab === 'rules' ? 'block' : 'hidden'}>
+                <section id="agent-rules" className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <SectionHeading
                     eyebrow="Transbordo"
                     title="Quando transbordar para o corretor?"
@@ -1978,7 +2073,7 @@ const AIAgents: React.FC = () => {
                   </div>
                 </section>
 
-                <section id="agent-brain" className={activeTab === 'brain' ? 'block' : 'hidden'}>
+                <section id="agent-brain" className="rounded-lg border border-slate-200 bg-white p-4">
                   <SectionHeading
                     eyebrow="Aprendizado operacional"
                     title="Qualificação e aprendizado do agente"
@@ -2095,7 +2190,7 @@ const AIAgents: React.FC = () => {
                   )}
                 </section>
 
-                <section id="agent-test" className={activeTab === 'test' ? 'block' : 'hidden'}>
+                <section id="agent-test" className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <SectionHeading
                     eyebrow="Simulacao"
                     title="Simule atendimento, venda e transbordo"

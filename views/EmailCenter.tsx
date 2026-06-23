@@ -167,7 +167,7 @@ const demoEmails: VisualEmail[] = [
     folder: 'inbox',
     direction: 'incoming',
     subject: 'Pagamento aprovado',
-    from_name: 'Financeiro ImoCRM',
+    from_name: 'Financeiro ImobFluow',
     from_email: 'financeiro@imocrm.com',
     to_email: ['paulo@imobiliaria.com.br'],
     preview: 'Informamos que o pagamento da comissao foi aprovado...',
@@ -186,7 +186,7 @@ const demoEmails: VisualEmail[] = [
     folder: 'inbox',
     direction: 'incoming',
     subject: 'Seu chamado #12345 foi atualizado',
-    from_name: 'Suporte ImoCRM',
+    from_name: 'Suporte ImobFluow',
     from_email: 'suporte@imocrm.com',
     to_email: ['paulo@imobiliaria.com.br'],
     preview: 'Ola Paulo, seu chamado foi atualizado. Por favor, confira...',
@@ -260,7 +260,7 @@ const demoEmails: VisualEmail[] = [
     folder: 'inbox',
     direction: 'incoming',
     subject: 'Novidades: Relatorios de Performance',
-    from_name: 'Marketing ImoCRM',
+    from_name: 'Marketing ImobFluow',
     from_email: 'marketing@imocrm.com',
     to_email: ['paulo@imobiliaria.com.br'],
     preview: 'Conheca os novos relatorios disponiveis no sistema...',
@@ -550,14 +550,14 @@ const EmailCenter: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100vh-8.5rem)] min-h-[720px] items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-500">
+      <div className="flex h-full min-h-[720px] items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-500">
         Carregando email profissional...
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-8.5rem)] min-h-[720px] overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-800 shadow-sm">
+    <div className="h-full min-h-[720px] overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-800 shadow-sm">
       <header className="flex h-[72px] items-center gap-4 border-b border-slate-200 bg-white px-5">
         <button className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100" title="Menu">
           <Menu size={22} />
@@ -566,7 +566,7 @@ const EmailCenter: React.FC = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-emerald-500 text-emerald-600">
             <Mail size={19} />
           </div>
-          <span className="text-xl font-black text-slate-950">ImoCRM</span>
+          <span className="text-xl font-black text-slate-950">ImobFluow</span>
         </div>
         <div className="relative max-w-[760px] flex-1">
           <Search size={21} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" />

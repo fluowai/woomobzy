@@ -15,13 +15,10 @@ import {
   PieChart,
   LogOut,
   ChevronRight,
-  Shield,
   ShieldAlert,
   DollarSign,
   Headset,
   Briefcase,
-  Search,
-  Plus,
   Target,
   Sparkles,
   Zap,
@@ -119,7 +116,7 @@ const RuralLayout: React.FC = () => {
 
   const isMenuItemActive = (path: string, isActive: boolean) =>
     isActive || (path === '/rural/territorio' && pathname.startsWith('/rural/territorio'));
-  const isMessagingRoute = pathname.startsWith('/rural/whatsapp');
+  const isWorkspaceRoute = pathname.startsWith('/rural/whatsapp') || pathname.startsWith('/rural/email');
 
   const renderMenuItem = (item: MenuItem) => (
     <NavLink
@@ -260,50 +257,19 @@ const RuralLayout: React.FC = () => {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-bg-primary">
-        <header className="h-16 md:h-20 bg-bg-card/80 backdrop-blur-xl border-b border-border-subtle flex items-center justify-between px-4 md:px-8 z-10 gap-3 md:gap-6 sticky top-0">
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-2.5 text-text-secondary hover:text-primary bg-bg-hover rounded-xl transition-colors"
-          >
-            <Menu size={22} />
-          </button>
-
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-primary uppercase tracking-widest">Imobiliaria Rural</span>
-              <h2 className="text-lg font-black text-slate-900 leading-none">ImobFluow</h2>
-            </div>
-          </div>
-
-          <div className="relative flex-1 max-w-lg hidden lg:block group">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Buscar fazendas..."
-              className="input-field pl-12 h-11"
-            />
-          </div>
-
-          <div className="flex items-center gap-3 md:gap-6">
-            <RouterLink
-              to="/rural/properties/new"
-              className="btn bg-primary hover:bg-primary-hover text-white h-10 md:h-11 px-3 md:px-6 shadow-lg shadow-primary/20"
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Nova Fazenda</span>
-            </RouterLink>
-          </div>
-        </header>
-
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md md:hidden"
+          aria-label="Abrir menu"
+        >
+          <Menu size={21} />
+        </button>
         <div
           className={`flex-1 overflow-y-auto bg-bg-primary ${
-            isMessagingRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >
-          <div className={isMessagingRoute ? 'w-full h-full min-h-0' : 'max-w-[1600px] mx-auto'}>
+          <div className={isWorkspaceRoute ? 'w-full h-full min-h-0' : 'max-w-[1600px] mx-auto'}>
             <Outlet />
           </div>
         </div>

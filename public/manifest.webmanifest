@@ -1,5 +1,5 @@
 {
-  "id": "/",
+  "id": "/login",
   "name": "IMOBFLUOW - Gestao Imobiliaria Inteligente",
   "short_name": "IMOBFLUOW",
   "description": "Sistema de gestao imobiliaria completo para mercado rural e urbano.",
@@ -11,7 +11,7 @@
   "lang": "pt-BR",
   "dir": "ltr",
   "scope": "/",
-  "start_url": "/",
+  "start_url": "/login",
   "icons": [
     {
       "src": "/icons/imobfluow-192x192.png",
@@ -36,10 +36,10 @@
       "icons": [{ "src": "/icons/imobfluow-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Agendar demonstracao",
-      "short_name": "Demo",
-      "description": "Solicitar uma demonstracao da plataforma",
-      "url": "/consultoria",
+      "name": "Mensagens",
+      "short_name": "Mensagens",
+      "description": "Abrir as mensagens do painel urbano",
+      "url": "/urban/whatsapp",
       "icons": [{ "src": "/icons/imobfluow-192x192.png", "sizes": "192x192" }]
     }
   ]

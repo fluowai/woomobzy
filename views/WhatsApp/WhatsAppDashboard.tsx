@@ -30,6 +30,8 @@ import {
   ArrowRightLeft,
   Tag,
   ShieldCheck,
+  Bell,
+  BellOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
@@ -42,6 +44,18 @@ const HISTORY_PERIOD_OPTIONS = [
   { value: 365, label: '1 ano', chatLimit: 200, perChat: 100 },
   { value: 0, label: 'Tudo', chatLimit: 200, perChat: 100 },
 ];
+
+const NOTIFICATION_SETTINGS_KEY = 'imobfluow:whatsapp-notifications:v1';
+
+interface WhatsAppNotificationSettings {
+  enabled: boolean;
+  mutedChatIds: string[];
+}
+
+const DEFAULT_NOTIFICATION_SETTINGS: WhatsAppNotificationSettings = {
+  enabled: false,
+  mutedChatIds: [],
+};
 
 const WhatsAppDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -71,6 +85,12 @@ const WhatsAppDashboard: React.FC = () => {
     startedAt: 0,
   });
   const [deletingChats, setDeletingChats] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState<WhatsAppNotificationSettings>(() =>
+    loadNotificationSettings()
+  );
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() =>
+    getNotificationPermission()
+  );
 
   // WebSocket
   const { isConnected, on } = useWebSocket(webSocketEnabled);
@@ -79,6 +99,10 @@ const WhatsAppDashboard: React.FC = () => {
   useEffect(() => {
     loadInstances();
   }, []);
+
+  useEffect(() => {
+    saveNotificationSettings(notificationSettings);
+  }, [notificationSettings]);
 
   // Load chats when instance changes
   useEffect(() => {
@@ -121,6 +145,14 @@ const WhatsAppDashboard: React.FC = () => {
       const { message, chat } = data;
       if (!isSupportedChat(chat)) return;
       if (!selectedInstance || chat.instance_id !== selectedInstance.id || message.instance_id !== selectedInstance.id) return;
+
+      maybeShowMessageNotification({
+        chat,
+        message,
+        selectedChatId: selectedChat?.id,
+        settings: notificationSettings,
+        permission: notificationPermission,
+      });
 
       // Update chat list
       setChats((prev) => {
@@ -252,7 +284,7 @@ const WhatsAppDashboard: React.FC = () => {
       unsubMediaFailed();
       unsubReceipt();
     };
-  }, [on, selectedChat, selectedInstance]);
+  }, [on, selectedChat, selectedInstance, notificationSettings, notificationPermission]);
 
   const loadInstances = async () => {
     try {
@@ -431,8 +463,53 @@ const WhatsAppDashboard: React.FC = () => {
     }
   };
 
+  const handleToggleNotifications = async () => {
+    if (!supportsNotifications()) {
+      toast.error('Este navegador nao suporta notificacoes.');
+      return;
+    }
+
+    if (notificationSettings.enabled) {
+      setNotificationSettings((prev) => ({ ...prev, enabled: false }));
+      toast.success('Notificacoes de mensagens desativadas.');
+      return;
+    }
+
+    const permission =
+      Notification.permission === 'granted'
+        ? 'granted'
+        : await Notification.requestPermission();
+    setNotificationPermission(permission);
+
+    if (permission !== 'granted') {
+      toast.error('Permissao de notificacao nao concedida pelo navegador.');
+      return;
+    }
+
+    setNotificationSettings((prev) => ({ ...prev, enabled: true }));
+    toast.success('Notificacoes de mensagens ativadas.');
+  };
+
+  const handleToggleChatNotification = (chatId: string) => {
+    setNotificationSettings((prev) => {
+      const muted = new Set(prev.mutedChatIds);
+      const willMute = !muted.has(chatId);
+
+      if (willMute) {
+        muted.add(chatId);
+      } else {
+        muted.delete(chatId);
+      }
+
+      toast.success(willMute ? 'Conversa silenciada para notificacoes.' : 'Conversa ativada para notificacoes.');
+      return { ...prev, mutedChatIds: Array.from(muted) };
+    });
+  };
+
   const canImportHistory = Boolean(selectedInstance && selectedInstance.status === 'connected');
   const canDeleteChats = Boolean(selectedInstance);
+  const mutedChatIds = new Set(notificationSettings.mutedChatIds);
+  const notificationsAvailable = supportsNotifications();
 
   const filteredChats = searchQuery
     ? chats.filter(
@@ -589,6 +666,21 @@ const WhatsAppDashboard: React.FC = () => {
           )}
 
           <button
+            onClick={handleToggleNotifications}
+            className={`wa-notification-btn ${notificationSettings.enabled ? 'active' : ''}`}
+            disabled={!notificationsAvailable}
+            title={
+              notificationPermission === 'denied'
+                ? 'Permissao bloqueada no navegador'
+                : notificationSettings.enabled
+                  ? 'Desativar notificacoes de mensagens'
+                  : 'Ativar notificacoes de mensagens'
+            }
+          >
+            {notificationSettings.enabled ? <Bell size={18} /> : <BellOff size={18} />}
+          </button>
+
+          <button
             onClick={() => setShowInstanceManager(true)}
             className="wa-settings-btn"
             title="Gerenciar Instâncias"
@@ -619,6 +711,9 @@ const WhatsAppDashboard: React.FC = () => {
           onDeleteAllChats={handleDeleteAllChats}
           deletingChats={deletingChats}
           canDeleteChats={canDeleteChats}
+          notificationsEnabled={notificationSettings.enabled}
+          mutedChatIds={mutedChatIds}
+          onToggleChatNotification={handleToggleChatNotification}
         />
 
         {/* Chat Window */}
@@ -692,6 +787,84 @@ function resultTypeFromFile(file: File): string {
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
   return 'document';
+}
+
+function supportsNotifications() {
+  return typeof window !== 'undefined' && 'Notification' in window;
+}
+
+function getNotificationPermission(): NotificationPermission {
+  if (!supportsNotifications()) return 'default';
+  return Notification.permission;
+}
+
+function loadNotificationSettings(): WhatsAppNotificationSettings {
+  if (typeof window === 'undefined') return DEFAULT_NOTIFICATION_SETTINGS;
+
+  try {
+    const parsed = JSON.parse(localStorage.getItem(NOTIFICATION_SETTINGS_KEY) || '');
+    return {
+      enabled: Boolean(parsed?.enabled),
+      mutedChatIds: Array.isArray(parsed?.mutedChatIds) ? parsed.mutedChatIds.filter(Boolean) : [],
+    };
+  } catch {
+    return DEFAULT_NOTIFICATION_SETTINGS;
+  }
+}
+
+function saveNotificationSettings(settings: WhatsAppNotificationSettings) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function maybeShowMessageNotification({
+  chat,
+  message,
+  selectedChatId,
+  settings,
+  permission,
+}: {
+  chat: Chat;
+  message: Message;
+  selectedChatId?: string;
+  settings: WhatsAppNotificationSettings;
+  permission: NotificationPermission;
+}) {
+  if (!settings.enabled || permission !== 'granted' || message.is_from_me) return;
+  if (settings.mutedChatIds.includes(chat.id)) return;
+  if (document.visibilityState === 'visible' && selectedChatId === chat.id) return;
+
+  const title = chat.display_name || chat.name || message.sender_name || 'Nova mensagem';
+  const body = messageNotificationBody(message);
+  const notification = new Notification(title, {
+    body,
+    icon: '/icons/imobfluow-192x192.png',
+    badge: '/icons/imobfluow-192x192.png',
+    tag: `whatsapp-${chat.id}`,
+  });
+
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+}
+
+function messageNotificationBody(message: Message) {
+  const content = normalizeMessagePreview(message.content || '').trim();
+  if (content) return content.length > 120 ? `${content.slice(0, 117)}...` : content;
+
+  const labels: Record<Message['type'], string> = {
+    text: 'Nova mensagem',
+    image: 'Imagem recebida',
+    audio: 'Audio recebido',
+    video: 'Video recebido',
+    document: 'Documento recebido',
+    sticker: 'Figurinha recebida',
+    location: 'Localizacao recebida',
+    contact: 'Contato recebido',
+    unknown: 'Nova mensagem',
+  };
+  return labels[message.type] || 'Nova mensagem';
 }
 
 export default WhatsAppDashboard;

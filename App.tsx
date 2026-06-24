@@ -24,6 +24,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
 import { supabase } from './services/supabase';
+import { isAppPwaRoute, registerAppServiceWorker, syncAppManifestLink } from './utils/pwa';
 
 const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 const FAZENDAS_BRASIL_ORG_ID = 'ee2eafa9-929a-460e-a38a-2e13d259e7cb';
@@ -419,6 +420,7 @@ const PanelGuard: React.FC<{
 // ==========================================
 const AppContent: React.FC = () => {
   const { loading } = useSettings();
+  const location = useLocation();
 
   React.useEffect(() => {
     // 1. Redirecionamento do Domínio Principal (Painel)
@@ -429,6 +431,14 @@ const AppContent: React.FC = () => {
       window.location.href = '/login';
     }
   }, []);
+
+  React.useEffect(() => {
+    const isPwaRoute = isAppPwaRoute(location.pathname);
+    syncAppManifestLink(isPwaRoute);
+    if (isPwaRoute) {
+      registerAppServiceWorker();
+    }
+  }, [location.pathname]);
 
   if (loading) return <FullScreenSpinner />;
 

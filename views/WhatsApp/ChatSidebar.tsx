@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { formatPhoneDisplay, getChatDisplayName, type Chat } from './hooks/api';
-import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2, Clock3 } from 'lucide-react';
+import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2, Clock3, Bell, BellOff } from 'lucide-react';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
@@ -31,6 +31,9 @@ interface ChatSidebarProps {
   onDeleteAllChats: () => void;
   deletingChats: boolean;
   canDeleteChats: boolean;
+  notificationsEnabled: boolean;
+  mutedChatIds: Set<string>;
+  onToggleChatNotification: (chatId: string) => void;
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -51,6 +54,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onDeleteAllChats,
   deletingChats,
   canDeleteChats,
+  notificationsEnabled,
+  mutedChatIds,
+  onToggleChatNotification,
 }) => {
   const [activeType, setActiveType] = React.useState<'direct' | 'group'>('direct');
   const [erroredAvatars, setErroredAvatars] = useState<Set<string>>(new Set());
@@ -209,6 +215,30 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               onClick={() => onSelectChat(chat)}
               id={`chat-${chat.id}`}
             >
+              {(() => {
+                const isMuted = mutedChatIds.has(chat.id);
+                return (
+                  <button
+                    type="button"
+                    className={`wa-chat-notification-toggle ${isMuted ? 'muted' : 'active'}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleChatNotification(chat.id);
+                    }}
+                    disabled={!notificationsEnabled}
+                    title={
+                      !notificationsEnabled
+                        ? 'Ative as notificacoes no topo da tela'
+                        : isMuted
+                          ? 'Receber notificacoes desta conversa'
+                          : 'Silenciar notificacoes desta conversa'
+                    }
+                  >
+                    {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
+                  </button>
+                );
+              })()}
+
               {/* Avatar */}
               <div
                 className="wa-avatar"

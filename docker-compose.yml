@@ -82,6 +82,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}
     volumes:
       - ./traefik/dynamic:/traefik/dynamic
+    extra_hosts:
+      - "n.woopanel.com.br:${PLATFORM_PUBLIC_IP:-207.58.153.219}"
     expose:
       - "3002"
     depends_on:
@@ -123,6 +125,8 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}
     volumes:
       - whatsapp_sessions:/app/.sessions
+    extra_hosts:
+      - "n.woopanel.com.br:${PLATFORM_PUBLIC_IP:-207.58.153.219}"
     expose:
       - "3100"
     healthcheck:

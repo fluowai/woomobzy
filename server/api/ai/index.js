@@ -156,6 +156,10 @@ function normalizeAgentPayload(body, partial = false) {
     permissions: body.permissions || {},
     pipelines: body.pipelines || [],
     knowledge_sources: body.knowledge_sources || [],
+    default_model_id: body.default_model_id || body.defaultModelId || body.model_id || body.model,
+    fallback_model_id: body.fallback_model_id || body.fallbackModelId,
+    temperature: body.temperature === undefined ? undefined : Number(body.temperature),
+    max_tokens: body.max_tokens === undefined && body.maxTokens === undefined ? undefined : Number(body.max_tokens || body.maxTokens),
     handoff: body.handoff || {},
     metrics: body.metrics || [],
     simulation: body.simulation || {},
@@ -540,6 +544,10 @@ REGRAS IMPORTANTES:
 - Responda em portugues natural, como um corretor humano faria.`;
 }
 
+function getAgentAIConfig(agent = {}) {
+  return agent?.handoff_rules?.__operational360 || agent?.__operational360 || {};
+}
+
 router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
@@ -599,6 +607,7 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
           agentId: id,
           routeKey: 'agent_chat',
           channel: 'agent-test',
+          modelId: getAgentAIConfig(agent).default_model_id || agent.default_model_id || agent.model_id || '',
           messages: [
             ...(recentHistory || []).map((m) => ({
               role: m.role === 'assistant' ? 'assistant' : 'user',
@@ -607,7 +616,8 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
             { role: 'user', content: message },
           ],
           systemInstruction,
-          temperature: 0.7,
+          temperature: Number(getAgentAIConfig(agent).temperature ?? agent.temperature ?? 0.7),
+          maxTokens: getAgentAIConfig(agent).max_tokens || agent.max_tokens,
           metadata: { source: 'legacy-agent-chat', session_id },
         });
         reply = result.text;

@@ -491,15 +491,17 @@ Formato obrigatorio:
 }`.trim();
 
     const aiCore = new AICoreService();
+    const agentAIConfig = agent?.handoff_rules?.__operational360 || {};
     const parsed = await aiCore.generateJson({
       organizationId,
       agentId: agent?.id || null,
       routeKey: 'whatsapp_intent',
       channel: 'whatsapp',
+      modelId: agentAIConfig.default_model_id || agent?.default_model_id || '',
       prompt: `${historyBlock}\nMensagem atual:\n${content || 'Mensagem sem texto.'}`,
       systemInstruction,
-      temperature: 0.2,
-      maxTokens: 1200,
+      temperature: Number(agentAIConfig.temperature ?? agent?.temperature ?? 0.2),
+      maxTokens: agentAIConfig.max_tokens || agent?.max_tokens || 1200,
       metadata: { source: 'ai-automation', phone },
     });
 

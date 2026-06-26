@@ -287,15 +287,17 @@ REGRAS:
       if (process.env.AI_CORE_DISABLED !== 'true') {
         try {
           const aiCore = new AICoreService();
+          const agentAIConfig = agent?.handoff_rules?.__operational360 || {};
           return await aiCore.generateJson({
             organizationId,
             agentId: agent?.id || null,
             routeKey: 'agent_orchestrator',
             channel: 'whatsapp',
+            modelId: agentAIConfig.default_model_id || agent?.default_model_id || '',
             prompt,
             systemInstruction,
-            temperature: 0.2,
-            maxTokens: 900,
+            temperature: Number(agentAIConfig.temperature ?? agent?.temperature ?? 0.2),
+            maxTokens: agentAIConfig.max_tokens || agent?.max_tokens || 900,
             metadata: {
               source: 'agent-orchestrator',
               lead_id: lead?.id || null,

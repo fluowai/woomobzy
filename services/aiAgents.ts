@@ -21,6 +21,10 @@ export interface AIAgent {
   permissions?: Record<string, unknown>;
   pipelines?: string[];
   knowledge_sources?: string[];
+  default_model_id?: string;
+  fallback_model_id?: string;
+  temperature?: number;
+  max_tokens?: number;
   metrics?: unknown[];
   simulation?: Record<string, unknown>;
   limits?: Record<string, unknown>;

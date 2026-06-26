@@ -6,6 +6,11 @@ import { AICoreService } from '../../services/aiCoreService.js';
 
 const router = express.Router();
 
+function requireTenantUnlessSuperAdmin(req, res, next) {
+  if (req.orgId || req.userRole === 'superadmin') return next();
+  return requireTenant(req, res, next);
+}
+
 router.get('/health', async (req, res) => {
   const ollamaUrl = process.env.AI_CORE_OLLAMA_URL || 'http://ollama:11434';
   try {
@@ -27,16 +32,20 @@ router.get('/health', async (req, res) => {
   }
 });
 
-router.get('/models', verifyAuth, requireTenant, async (req, res) => {
+router.get('/models', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
-    const { data, error } = await supabase
+    let query = supabase
       .from('ai_models')
       .select('*')
-      .or(`organization_id.eq.${req.orgId},organization_id.is.null`)
       .order('purpose', { ascending: true })
       .order('priority', { ascending: true });
 
+    if (req.orgId) {
+      query = query.or(`organization_id.eq.${req.orgId},organization_id.is.null`);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     res.json({ success: true, models: data || [] });
   } catch (error) {
@@ -44,7 +53,7 @@ router.get('/models', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/models', verifyAuth, requireTenant, async (req, res) => {
+router.post('/models', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     const payload = normalizeModelPayload(req.body, req.orgId);
@@ -61,7 +70,7 @@ router.post('/models', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/models/:id/test', verifyAuth, requireTenant, async (req, res) => {
+router.post('/models/:id/test', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
   try {
     const aiCore = new AICoreService();
     const result = await aiCore.chat({
@@ -81,7 +90,7 @@ router.post('/models/:id/test', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
+router.post('/chat', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
   try {
     const aiCore = new AICoreService();
     const result = await aiCore.chat({
@@ -109,17 +118,19 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.get('/usage', verifyAuth, requireTenant, async (req, res) => {
+router.get('/usage', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     const limit = Math.min(Number(req.query.limit) || 100, 500);
-    const { data, error } = await supabase
+    let query = supabase
       .from('ai_usage_logs')
-      .select('id, model_name, engine, channel, operation, credits_used, latency_ms, status, error_message, created_at')
-      .eq('organization_id', req.orgId)
+      .select('id, organization_id, model_name, engine, channel, operation, credits_used, latency_ms, status, error_message, created_at')
       .order('created_at', { ascending: false })
       .limit(limit);
 
+    if (req.orgId) query = query.eq('organization_id', req.orgId);
+
+    const { data, error } = await query;
     if (error) throw error;
     res.json({ success: true, usage: data || [] });
   } catch (error) {
@@ -127,8 +138,12 @@ router.get('/usage', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.get('/credits', verifyAuth, requireTenant, async (req, res) => {
+router.get('/credits', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
   try {
+    if (!req.orgId) {
+      return res.json({ success: true, balance: { organization_id: null, balance: 0, blocked: false } });
+    }
+
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
       .from('ai_client_balances')
@@ -215,4 +230,3 @@ function normalizeModelPayload(body, organizationId) {
 }
 
 export default router;
-

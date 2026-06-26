@@ -160,7 +160,12 @@ const CARLocationSearch: React.FC = () => {
         } as any,
       } as any);
 
-      navigate(`/rural/properties/${created.id}`);
+      addProgress('Imóvel rural criado a partir do CAR.');
+      addProgress('Puxando enriquecimento e valuation inicial...');
+      await callApi(`/api/rural/enrich/${created.id}`, { method: 'POST' });
+      await callApi(`/api/rural/valuation/${created.id}`, { method: 'POST' });
+      addProgress('Valuation inicial salvo no dossiê.');
+      navigate('/rural/territorio/dossie');
     } catch (err: any) {
       setError(err.message || 'Erro ao criar propriedade a partir do CAR.');
     } finally {
@@ -333,7 +338,7 @@ const CARLocationSearch: React.FC = () => {
                 onClick={createPropertyFromCandidate}
                 disabled={savingCandidate}
               >
-                {savingCandidate ? 'Salvando imóvel...' : 'Gerar Dossiê Rural'}
+                {savingCandidate ? 'Puxando valuation...' : 'Criar e Puxar Valuation'}
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

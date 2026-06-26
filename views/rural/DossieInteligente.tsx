@@ -14,14 +14,18 @@ import { Property } from '../../types';
 import AgroMarketWidget from '../../components/AgroMarketWidget';
 import { useAuth } from '../../context/AuthContext';
 import { isRuralProperty } from '../../utils/propertyNiche';
-import { downloadApiFile } from '../../src/lib/api';
+import { callApi, downloadApiFile } from '../../src/lib/api';
 import { toast } from 'sonner';
+
+const formatCurrency = (value?: number | null) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
 
 const DossieInteligente: React.FC = () => {
   const { profile } = useAuth();
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
+  const [valuationLoading, setValuationLoading] = useState(false);
 
   useEffect(() => {
     if (!profile?.organization_id) return;
@@ -57,7 +61,30 @@ const DossieInteligente: React.FC = () => {
     }
   };
 
+  const runValuation = async () => {
+    if (!selectedProperty) {
+      toast.error('Selecione uma propriedade rural.');
+      return;
+    }
+
+    setValuationLoading(true);
+    try {
+      await callApi(`/api/rural/enrich/${selectedProperty.id}`, { method: 'POST' });
+      const result = await callApi(`/api/rural/valuation/${selectedProperty.id}`, { method: 'POST' });
+      const updated = result.property as Property;
+      setSelectedProperty(updated);
+      setProperties((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      toast.success('Valuation rural atualizado.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao puxar valuation rural.');
+    } finally {
+      setValuationLoading(false);
+    }
+  };
+
   const legal = selectedProperty?.features?.legal || {};
+  const enrichment = (selectedProperty?.features as any)?.rural_enrichment || {};
+  const valuation = (selectedProperty?.features as any)?.rural_valuation || {};
   const validation = (selectedProperty?.features as any)?.rural_due_diligence?.validation;
   const riskScore = Number(validation?.riskScore || 0);
   const technicalItems = selectedProperty
@@ -114,6 +141,14 @@ const DossieInteligente: React.FC = () => {
             className="h-12 px-6 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-40"
           >
              <Download size={14} /> Gerar PDF
+          </button>
+          <button
+            type="button"
+            onClick={runValuation}
+            disabled={!selectedProperty || valuationLoading}
+            className="h-12 px-6 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-40"
+          >
+             <Zap size={14} /> {valuationLoading ? 'Puxando...' : 'Puxar Valuation'}
           </button>
         </div>
       </div>
@@ -212,7 +247,53 @@ const DossieInteligente: React.FC = () => {
                     </p>
                     <p className="text-[9px] text-indigo-400 italic mt-1">Calculado a partir do valor e da área cadastrados.</p>
                   </div>
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1">Quick Valuation</p>
+                        <p className="text-lg font-black text-emerald-950">
+                          {valuation.total_value_avg ? formatCurrency(valuation.total_value_avg) : 'Pendente'}
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 rounded-full bg-white text-[10px] font-black text-emerald-700">
+                        {valuation.confidence_score !== undefined ? `${valuation.confidence_score}/100` : 'sem score'}
+                      </span>
+                    </div>
+                    {valuation.total_value_avg ? (
+                      <div className="grid grid-cols-3 gap-2 mt-4 text-[10px] font-bold text-emerald-900">
+                        <span>Min. {formatCurrency(valuation.total_value_min)}</span>
+                        <span>Med. {formatCurrency(valuation.total_value_avg)}</span>
+                        <span>Max. {formatCurrency(valuation.total_value_max)}</span>
+                      </div>
+                    ) : (
+                      <p className="text-[9px] text-emerald-500 italic mt-2">
+                        Clique em Puxar Valuation para enriquecer o ativo a partir do CAR.
+                      </p>
+                    )}
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-black uppercase tracking-widest text-black">Enriquecimento Pós-CAR</h3>
+                <Map size={20} className="text-emerald-500" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  ['CAR', enrichment.car_number || legal.carNumber || 'Pendente'],
+                  ['Área medida', enrichment.measured_area_ha ? `${Number(enrichment.measured_area_ha).toLocaleString('pt-BR')} ha` : 'Pendente'],
+                  ['Comparáveis', valuation.comparable_count !== undefined ? `${valuation.comparable_count} ${valuation.comparable_scope || ''}` : 'Pendente'],
+                  ['MapBiomas', enrichment.sources?.mapbiomas?.status === 'planned' ? 'Planejado' : 'Pendente'],
+                  ['PRODES/DETER', enrichment.sources?.prodes?.status === 'planned' ? 'Planejado' : 'Pendente'],
+                  ['Solo/Relevo/Água/Logística', 'Planejado'],
+                ].map(([label, value]) => (
+                  <div key={label} className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+                    <p className="text-xs font-black text-slate-800">{value}</p>
+                  </div>
+                ))}
               </div>
             </div>
 

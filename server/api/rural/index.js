@@ -133,6 +133,249 @@ function ruralPropertiesQuery(supabase, orgId, columns = '*') {
   );
 }
 
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getPropertyAreaHa(property = {}) {
+  const features = property.features || {};
+  return toNumber(
+    property.total_area_ha
+      || features.areaHectares
+      || features.rural_technical?.measured_area_ha
+      || features.rural_technical?.area_total_ha
+      || features.physical?.area
+      || features.rural?.area_ha
+  );
+}
+
+function normalizeGeometry(geometry) {
+  if (!geometry) return null;
+  if (geometry.type === 'FeatureCollection') return geometry;
+  if (geometry.type === 'Feature') return { type: 'FeatureCollection', features: [geometry] };
+  if (['Polygon', 'MultiPolygon'].includes(geometry.type)) {
+    return { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry }] };
+  }
+  return null;
+}
+
+function extractPropertyGeometry(property = {}) {
+  const features = property.features || {};
+  return normalizeGeometry(
+    features.legal?.geometry
+      || features.rural_technical?.geometry
+      || features.rural_enrichment?.geometry
+      || features.rural?.geometry
+  );
+}
+
+function ringAreaSquareMeters(ring) {
+  if (!Array.isArray(ring) || ring.length < 3) return 0;
+  const valid = ring.filter((point) => Array.isArray(point) && point.length >= 2);
+  if (valid.length < 3) return 0;
+  const avgLat = valid.reduce((sum, point) => sum + toNumber(point[1]), 0) / valid.length;
+  const metersPerDegreeLat = 111320;
+  const metersPerDegreeLng = 111320 * Math.cos((avgLat * Math.PI) / 180);
+  let area = 0;
+  for (let i = 0; i < valid.length; i += 1) {
+    const current = valid[i];
+    const next = valid[(i + 1) % valid.length];
+    const x1 = toNumber(current[0]) * metersPerDegreeLng;
+    const y1 = toNumber(current[1]) * metersPerDegreeLat;
+    const x2 = toNumber(next[0]) * metersPerDegreeLng;
+    const y2 = toNumber(next[1]) * metersPerDegreeLat;
+    area += (x1 * y2) - (x2 * y1);
+  }
+  return Math.abs(area / 2);
+}
+
+function polygonAreaSquareMeters(coordinates) {
+  if (!Array.isArray(coordinates) || !coordinates.length) return 0;
+  const [outer, ...holes] = coordinates;
+  const holeArea = holes.reduce((sum, ring) => sum + ringAreaSquareMeters(ring), 0);
+  return Math.max(0, ringAreaSquareMeters(outer) - holeArea);
+}
+
+function calculateGeometryAreaHa(featureCollection) {
+  const features = featureCollection?.features || [];
+  const squareMeters = features.reduce((sum, feature) => {
+    const geometry = feature.geometry || feature;
+    if (geometry.type === 'Polygon') return sum + polygonAreaSquareMeters(geometry.coordinates);
+    if (geometry.type === 'MultiPolygon') {
+      return sum + geometry.coordinates.reduce((polySum, polygon) => polySum + polygonAreaSquareMeters(polygon), 0);
+    }
+    return sum;
+  }, 0);
+  return Number((squareMeters / 10000).toFixed(4));
+}
+
+function describeGeometry(featureCollection) {
+  const target = featureCollectionToMapTarget(featureCollection);
+  const measuredAreaHa = calculateGeometryAreaHa(featureCollection);
+  return {
+    measuredAreaHa,
+    centroid: target?.coords ? { lat: target.coords[0], lng: target.coords[1] } : null,
+    bounds: target?.bounds || null,
+  };
+}
+
+function getComparableStats(properties = [], property = {}) {
+  const propertyArea = getPropertyAreaHa(property);
+  const sameCity = [];
+  const sameState = [];
+  const anyRural = [];
+
+  for (const item of properties) {
+    if (item.id === property.id) continue;
+    const areaHa = getPropertyAreaHa(item);
+    const price = toNumber(item.price);
+    if (areaHa <= 0 || price <= 0) continue;
+
+    const pricePerHa = price / areaHa;
+    const comparable = {
+      id: item.id,
+      title: item.title,
+      city: item.city,
+      state: item.state,
+      areaHa,
+      price,
+      pricePerHa,
+    };
+    anyRural.push(comparable);
+    if (item.state && property.state && item.state === property.state) sameState.push(comparable);
+    if (item.city && property.city && item.city === property.city && item.state === property.state) sameCity.push(comparable);
+  }
+
+  const selected = sameCity.length >= 2 ? sameCity : sameState.length >= 2 ? sameState : anyRural;
+  const prices = selected.map((item) => item.pricePerHa).sort((a, b) => a - b);
+  const avg = prices.length ? prices.reduce((sum, value) => sum + value, 0) / prices.length : 0;
+  const currentPricePerHa = propertyArea > 0 && toNumber(property.price) > 0 ? toNumber(property.price) / propertyArea : 0;
+
+  return {
+    scope: sameCity.length >= 2 ? 'municipio' : sameState.length >= 2 ? 'estado' : prices.length ? 'carteira_rural' : 'sem_comparaveis',
+    count: prices.length,
+    minPricePerHa: prices[0] || 0,
+    avgPricePerHa: avg,
+    maxPricePerHa: prices[prices.length - 1] || 0,
+    currentPricePerHa,
+    samples: selected.slice(0, 5),
+  };
+}
+
+function buildRuralEnrichment(property, documents = []) {
+  const features = property.features || {};
+  const legal = features.legal || {};
+  const technical = features.rural_technical || {};
+  const dueDiligence = features.rural_due_diligence || {};
+  const geometry = extractPropertyGeometry(property);
+  const geometryInfo = geometry ? describeGeometry(geometry) : {};
+  const declaredAreaHa = getPropertyAreaHa(property);
+  const measuredAreaHa = geometryInfo.measuredAreaHa || declaredAreaHa;
+
+  return {
+    source_car: legal.carNumber ? 'SICAR/CAR' : null,
+    car_number: legal.carNumber || null,
+    car_status: legal.carStatus || (legal.carNumber ? 'INFORMADO' : 'NAO_INFORMADO'),
+    declared_area_ha: declaredAreaHa || null,
+    measured_area_ha: measuredAreaHa || null,
+    centroid: geometryInfo.centroid || null,
+    bounds: geometryInfo.bounds || null,
+    municipality: property.city || features.location?.city || null,
+    state: property.state || features.location?.state || null,
+    geometry,
+    technical: {
+      bioma: technical.bioma || null,
+      solo: technical.tipo_solo || features.tipoSolo || null,
+      topografia: technical.topografia || features.topography || null,
+      aptidao: technical.aptidao || null,
+      area_agricultavel: technical.area_agricultavel || null,
+      area_reserva: technical.area_reserva || null,
+      regime_hidrico: technical.regime_hidrico || null,
+      score_liquidez: technical.score_liquidez || null,
+    },
+    documents: {
+      total: documents.length,
+      types: [...new Set(documents.map((doc) => doc.document_type).filter(Boolean))],
+      due_diligence_score: dueDiligence.validation?.riskScore ?? null,
+      due_diligence_level: dueDiligence.validation?.riskLevel || null,
+    },
+    sources: {
+      car: { status: legal.carNumber ? 'available' : 'missing', label: 'CAR/SICAR' },
+      sigef: { status: legal.geoNumber ? 'available' : 'missing', label: 'SIGEF/INCRA' },
+      documents: { status: documents.length ? 'available' : 'missing', label: 'Documentos internos' },
+      mapbiomas: { status: 'planned', label: 'MapBiomas - uso e cobertura do solo' },
+      prodes: { status: 'planned', label: 'PRODES/DETER - alertas ambientais' },
+      soil: { status: 'planned', label: 'Solo e textura' },
+      slope: { status: 'planned', label: 'Declividade e altitude' },
+      hydrography: { status: 'planned', label: 'Hidrografia e APPs' },
+      logistics: { status: 'planned', label: 'Logistica e acesso' },
+    },
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function buildRuralValuation(property, enrichment, comparables) {
+  const areaHa = toNumber(enrichment?.measured_area_ha || enrichment?.declared_area_ha || getPropertyAreaHa(property));
+  const hasOwnPrice = comparables.currentPricePerHa > 0;
+  const marketReference = comparables.avgPricePerHa || comparables.currentPricePerHa || 0;
+  const basePricePerHa = hasOwnPrice && comparables.avgPricePerHa
+    ? ((comparables.currentPricePerHa * 0.45) + (comparables.avgPricePerHa * 0.55))
+    : marketReference;
+  const minPricePerHa = basePricePerHa > 0 ? basePricePerHa * 0.88 : 0;
+  const avgPricePerHa = basePricePerHa;
+  const maxPricePerHa = basePricePerHa > 0 ? basePricePerHa * 1.12 : 0;
+  const technical = enrichment?.technical || {};
+  const docs = enrichment?.documents || {};
+  const drivers = [];
+  const risks = [];
+
+  if (enrichment?.car_number) drivers.push('CAR informado e vinculado ao ativo.');
+  else risks.push('CAR nao informado.');
+  if (enrichment?.geometry) drivers.push('Geometria rural disponivel para medicao territorial.');
+  else risks.push('Geometria/perimetro ainda nao cadastrado.');
+  if (comparables.count > 0) drivers.push(`${comparables.count} comparavel(is) interno(s) usados como referencia (${comparables.scope}).`);
+  else risks.push('Sem comparaveis internos com preco e area para referencia regional.');
+  if (technical.solo || technical.bioma || technical.topografia) drivers.push('Cadastro tecnico rural possui dados agronomicos basicos.');
+  else risks.push('Cadastro tecnico rural incompleto.');
+  if (docs.due_diligence_score !== null) drivers.push(`Due diligence registrada com score ${docs.due_diligence_score}.`);
+  else risks.push('Due diligence ainda nao executada.');
+
+  const confidenceScore = Math.min(100,
+    (enrichment?.car_number ? 20 : 0)
+    + (enrichment?.geometry ? 20 : 0)
+    + (comparables.count >= 3 ? 25 : comparables.count > 0 ? 15 : 0)
+    + (hasOwnPrice ? 10 : 0)
+    + ((technical.solo || technical.bioma || technical.topografia) ? 10 : 0)
+    + (docs.due_diligence_score !== null ? 10 : 0)
+    + ((property.city && property.state) ? 5 : 0)
+  );
+
+  return {
+    valuation_date: new Date().toISOString(),
+    method: 'MVP_POS_CAR_COMPARAVEIS_INTERNOS',
+    area_ha: areaHa || null,
+    price_per_ha_min: Number(minPricePerHa.toFixed(2)),
+    price_per_ha_avg: Number(avgPricePerHa.toFixed(2)),
+    price_per_ha_max: Number(maxPricePerHa.toFixed(2)),
+    total_value_min: Number((minPricePerHa * areaHa).toFixed(2)),
+    total_value_avg: Number((avgPricePerHa * areaHa).toFixed(2)),
+    total_value_max: Number((maxPricePerHa * areaHa).toFixed(2)),
+    price_per_alqueire_sp: Number((avgPricePerHa * 2.42).toFixed(2)),
+    price_per_alqueire_mg: Number((avgPricePerHa * 4.84).toFixed(2)),
+    vtn_reference: null,
+    confidence_score: confidenceScore,
+    comparable_scope: comparables.scope,
+    comparable_count: comparables.count,
+    comparable_samples: comparables.samples,
+    drivers,
+    risks,
+    sources: enrichment?.sources || {},
+    status: avgPricePerHa > 0 && areaHa > 0 ? 'complete' : 'incomplete',
+    updated_at: new Date().toISOString(),
+  };
+}
+
 /**
  * GET /api/rural/sncr/buscar?cpfCnpj=XXXXXXXXXXXX
  * Busca imóveis rurais por CPF ou CNPJ do titular
@@ -577,6 +820,130 @@ router.get(
   }
 );
 
+router.post('/enrich/:propertyId', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { propertyId } = req.params;
+
+    if (!isValidUUID(propertyId)) {
+      return res.status(400).json({ error: 'ID de propriedade invalido' });
+    }
+
+    const supabase = getSupabaseServer();
+    const { data: property } = await ruralPropertiesQuery(supabase, req.orgId)
+      .eq('id', propertyId)
+      .single();
+
+    if (!property || !isRuralProperty(property)) {
+      return res.status(404).json({ error: 'Propriedade rural nao encontrada' });
+    }
+
+    const { data: documents } = await supabase
+      .from('documents')
+      .select('document_type, status, validation_status, validation_score, created_at')
+      .eq('organization_id', req.orgId)
+      .eq('property_id', property.id)
+      .order('created_at', { ascending: false });
+
+    const enrichment = buildRuralEnrichment(property, documents || []);
+    const features = {
+      ...(property.features || {}),
+      rural_enrichment: enrichment,
+      legal: {
+        ...(property.features?.legal || {}),
+        geometry: enrichment.geometry || property.features?.legal?.geometry || null,
+      },
+    };
+
+    const updatePayload = {
+      features,
+      total_area_ha: enrichment.measured_area_ha || enrichment.declared_area_ha || property.total_area_ha,
+      niche: 'rural',
+    };
+    if (toNumber(property.price) > 0 && toNumber(updatePayload.total_area_ha) > 0) {
+      updatePayload.price_per_ha = toNumber(property.price) / toNumber(updatePayload.total_area_ha);
+    }
+
+    const { data: updated, error } = await supabase
+      .from('properties')
+      .update(updatePayload)
+      .eq('id', property.id)
+      .eq('organization_id', req.orgId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, property: updated, enrichment });
+  } catch (error) {
+    console.error('Rural enrichment error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/valuation/:propertyId', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { propertyId } = req.params;
+
+    if (!isValidUUID(propertyId)) {
+      return res.status(400).json({ error: 'ID de propriedade invalido' });
+    }
+
+    const supabase = getSupabaseServer();
+    const { data: property } = await ruralPropertiesQuery(supabase, req.orgId)
+      .eq('id', propertyId)
+      .single();
+
+    if (!property || !isRuralProperty(property)) {
+      return res.status(404).json({ error: 'Propriedade rural nao encontrada' });
+    }
+
+    const { data: documents } = await supabase
+      .from('documents')
+      .select('document_type, status, validation_status, validation_score, created_at')
+      .eq('organization_id', req.orgId)
+      .eq('property_id', property.id)
+      .order('created_at', { ascending: false });
+
+    const enrichment = property.features?.rural_enrichment || buildRuralEnrichment(property, documents || []);
+    const { data: ruralProperties } = await ruralPropertiesQuery(
+      supabase,
+      req.orgId,
+      'id, title, price, total_area_ha, city, state, property_type, niche, features'
+    );
+    const comparables = getComparableStats(ruralProperties || [], property);
+    const valuation = buildRuralValuation(property, enrichment, comparables);
+    const features = {
+      ...(property.features || {}),
+      rural_enrichment: enrichment,
+      rural_valuation: valuation,
+    };
+
+    const updatePayload = {
+      features,
+      total_area_ha: valuation.area_ha || property.total_area_ha,
+      niche: 'rural',
+    };
+    if (toNumber(property.price) > 0 && toNumber(updatePayload.total_area_ha) > 0) {
+      updatePayload.price_per_ha = toNumber(property.price) / toNumber(updatePayload.total_area_ha);
+    }
+
+    const { data: updated, error } = await supabase
+      .from('properties')
+      .update(updatePayload)
+      .eq('id', property.id)
+      .eq('organization_id', req.orgId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, property: updated, enrichment, valuation });
+  } catch (error) {
+    console.error('Rural valuation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /**
  * Motor de Análise Rural (MAR)
  * POST /api/rural/analysis/kmz
@@ -607,6 +974,8 @@ router.get('/dossier/:propertyId/pdf', verifyAuth, requireTenant, async (req, re
     const legal = features.legal || {};
     const technical = features.rural_technical || {};
     const dueDiligence = features.rural_due_diligence || {};
+    const enrichment = features.rural_enrichment || {};
+    const valuation = features.rural_valuation || {};
     const areaHa = Number(property.total_area_ha || features.areaHectares || technical.measured_area_ha || 0);
     const price = Number(property.price || 0);
     const pricePerHa = areaHa > 0 ? price / areaHa : 0;
@@ -657,6 +1026,40 @@ router.get('/dossier/:propertyId/pdf', verifyAuth, requireTenant, async (req, re
       ['Score de risco', dueDiligence.validation?.riskScore ?? '-'],
       ['Nivel de risco', dueDiligence.validation?.riskLevel || '-'],
     ]);
+    addSection('Enriquecimento Pos-CAR', [
+      ['CAR', enrichment.car_number || legal.carNumber || 'Nao cadastrado'],
+      ['Status CAR', enrichment.car_status || legal.carStatus || '-'],
+      ['Municipio/UF', [enrichment.municipality || property.city, enrichment.state || property.state].filter(Boolean).join(' / ') || '-'],
+      ['Area declarada', enrichment.declared_area_ha ? `${Number(enrichment.declared_area_ha).toLocaleString('pt-BR')} ha` : '-'],
+      ['Area medida', enrichment.measured_area_ha ? `${Number(enrichment.measured_area_ha).toLocaleString('pt-BR')} ha` : '-'],
+      ['Centroide', enrichment.centroid ? `${Number(enrichment.centroid.lat).toFixed(6)}, ${Number(enrichment.centroid.lng).toFixed(6)}` : '-'],
+      ['Fontes planejadas', 'MapBiomas, PRODES/DETER, solo, declividade, hidrografia e logistica'],
+    ]);
+    addSection('Quick Valuation Rural', [
+      ['Status', valuation.status || 'Nao calculado'],
+      ['Metodo', valuation.method || '-'],
+      ['Data-base', valuation.valuation_date ? new Date(valuation.valuation_date).toLocaleString('pt-BR') : '-'],
+      ['Confianca', valuation.confidence_score !== undefined ? `${valuation.confidence_score}/100` : '-'],
+      ['Comparaveis internos', valuation.comparable_count !== undefined ? `${valuation.comparable_count} (${valuation.comparable_scope || '-'})` : '-'],
+      ['Valor minimo', valuation.total_value_min ? Number(valuation.total_value_min).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'],
+      ['Valor medio', valuation.total_value_avg ? Number(valuation.total_value_avg).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'],
+      ['Valor maximo', valuation.total_value_max ? Number(valuation.total_value_max).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'],
+      ['Valor/ha medio', valuation.price_per_ha_avg ? Number(valuation.price_per_ha_avg).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'],
+      ['Valor/alqueire SP', valuation.price_per_alqueire_sp ? Number(valuation.price_per_alqueire_sp).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'],
+      ['Valor/alqueire MG', valuation.price_per_alqueire_mg ? Number(valuation.price_per_alqueire_mg).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'],
+    ]);
+
+    if (valuation.drivers?.length || valuation.risks?.length) {
+      doc.fillColor('#065f46').fontSize(14).text('Leitura do Valuation');
+      doc.moveDown(0.3);
+      (valuation.drivers || []).forEach((item) => {
+        doc.fillColor('#047857').fontSize(10).text(`+ ${item}`);
+      });
+      (valuation.risks || []).forEach((item) => {
+        doc.fillColor('#b45309').fontSize(10).text(`! ${item}`);
+      });
+      doc.moveDown();
+    }
 
     doc.fillColor('#065f46').fontSize(14).text('Arquivos e Validacoes');
     doc.moveDown(0.3);

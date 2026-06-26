@@ -2,6 +2,7 @@ import { getSupabaseServer } from '../supabase-server.js';
 import { AutonomyPolicy } from './AutonomyPolicy.js';
 import { AgentStateMachine } from './AgentStateMachine.js';
 import { ToolRegistry } from './ToolRegistry.js';
+import { AICoreService } from '../../services/aiCoreService.js';
 
 export class AgentOrchestrator {
   constructor() {
@@ -282,6 +283,28 @@ REGRAS:
         : '';
 
       const prompt = `${historyBlock}\nMensagem do lead: ${message}\n\nAnalise e responda JSON:`;
+
+      if (process.env.AI_CORE_DISABLED !== 'true') {
+        try {
+          const aiCore = new AICoreService();
+          return await aiCore.generateJson({
+            organizationId,
+            agentId: agent?.id || null,
+            routeKey: 'agent_orchestrator',
+            channel: 'whatsapp',
+            prompt,
+            systemInstruction,
+            temperature: 0.2,
+            maxTokens: 900,
+            metadata: {
+              source: 'agent-orchestrator',
+              lead_id: lead?.id || null,
+            },
+          });
+        } catch (aiCoreError) {
+          console.warn('[Orchestrator] AI Core local failed, trying legacy Gemini:', aiCoreError.message);
+        }
+      }
 
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,

@@ -179,9 +179,76 @@ services:
     logging: *default-logging
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    expose:
+      - "11434"
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    networks:
+      - imobzy
+    cpus: "${OLLAMA_CPUS:-2.00}"
+    mem_limit: ${OLLAMA_MEM_LIMIT:-6g}
+    logging: *default-logging
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    expose:
+      - "6333"
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    networks:
+      - imobzy
+    cpus: "1.00"
+    mem_limit: 1g
+    logging: *default-logging
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    networks:
+      - imobzy
+    cpus: "0.50"
+    mem_limit: 512m
+    logging: *default-logging
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    restart: unless-stopped
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-change-me}
+      DATABASE_URL: ${LITELLM_DATABASE_URL:-}
+      STORE_MODEL_IN_DB: "False"
+    command: ["--port", "4000"]
+    expose:
+      - "4000"
+    ports:
+      - "${LITELLM_PORT:-4000}:4000"
+    networks:
+      - imobzy
+    depends_on:
+      - ollama
+    cpus: "1.00"
+    mem_limit: 1g
+    logging: *default-logging
+
 volumes:
   whatsapp_sessions:
   traefik_acme:
+  ollama_models:
+  qdrant_data:
+  redis_data:
 
 networks:
   imobzy:

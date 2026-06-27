@@ -74,6 +74,7 @@ const RuralLayout: React.FC = () => {
   const assetItems: MenuItem[] = [
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Território Rural', path: '/rural/territorio' },
+    { icon: DollarSign, label: 'Valuation Rural', path: '/rural/territorio/valuation' },
   ];
 
   const growthItems: MenuItem[] = [
@@ -117,8 +118,13 @@ const RuralLayout: React.FC = () => {
     return <Navigate to="/superadmin" replace />;
   }
 
-  const isMenuItemActive = (path: string, isActive: boolean) =>
-    isActive || (path === '/rural/territorio' && pathname.startsWith('/rural/territorio'));
+  const isMenuItemActive = (path: string, isActive: boolean) => {
+    if (path === '/rural/territorio/valuation') return pathname === path;
+    if (path === '/rural/territorio') {
+      return pathname.startsWith('/rural/territorio') && pathname !== '/rural/territorio/valuation';
+    }
+    return isActive;
+  };
   const isMessagingRoute = pathname.startsWith('/rural/whatsapp');
   const isAgentRoute = pathname.startsWith('/rural/ai-agents');
   const isWorkspaceRoute = isMessagingRoute || isAgentRoute;

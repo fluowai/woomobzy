@@ -69,6 +69,7 @@ const CadastroTecnico = lazy(() => import('./views/rural/CadastroTecnico'));
 const RuralTerritoryHub = lazy(() => import('./views/rural/RuralTerritoryHub'));
 const Geointeligencia = lazy(() => import('./views/rural/Geointeligencia'));
 const DossieInteligente = lazy(() => import('./views/rural/DossieInteligente'));
+const ValuationRural = lazy(() => import('./views/rural/ValuationRural'));
 const DueDiligence = lazy(() => import('./views/rural/DueDiligence'));
 const PortalProprietarioRural = lazy(() => import('./views/rural/PortalProprietarioRural'));
 const PortalCompradorRural = lazy(() => import('./views/rural/PortalCompradorRural'));
@@ -522,11 +523,13 @@ const AppContent: React.FC = () => {
               <Route index element={<Navigate to="maps" replace />} />
               <Route path="maps" element={<Geointeligencia />} />
               <Route path="localizar-car" element={<CARLocationSearch />} />
+              <Route path="valuation" element={<ValuationRural />} />
               <Route path="due-diligence" element={<DueDiligence />} />
               <Route path="dossie" element={<DossieInteligente />} />
             </Route>
             <Route path="maps" element={<Navigate to="/rural/territorio/maps" replace />} />
             <Route path="localizar-car" element={<Navigate to="/rural/territorio/localizar-car" replace />} />
+            <Route path="valuation" element={<Navigate to="/rural/territorio/valuation" replace />} />
             <Route path="due-diligence" element={<Navigate to="/rural/territorio/due-diligence" replace />} />
             <Route path="dossie" element={<Navigate to="/rural/territorio/dossie" replace />} />
             <Route path="dataroom" element={<DataRoom />} />

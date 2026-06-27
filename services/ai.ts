@@ -8,9 +8,7 @@ import {
   Block,
 } from '../types/landingPage';
 import { v4 as uuidv4 } from 'uuid';
-import { geminiService } from './geminiService';
-import { openaiService } from './openaiService';
-import { groqService } from './groqService';
+import { callApi } from '../src/lib/api';
 
 export interface AIConfig {
   provider?: 'openai' | 'gemini' | 'groq';
@@ -162,23 +160,21 @@ RETORNE APENAS O JSON. SEM MARKDOWN. SEM EXPLICAÇÕES.
   try {
     let text = '{}';
 
-    // Choose Provider with fallback
-    if (config?.openaiKey) {
-      logger.info('🤖 Using OpenAI for landing page generation...');
-      text = await openaiService.generateText(prompt, config.openaiKey);
-    } else if (config?.geminiKey) {
-      logger.info('🤖 Using Gemini (Config) for landing page generation...');
-      text = await geminiService.generateText(prompt); // geminiService handles its own key currently, but we could refactor
-    } else if (config?.groqKey) {
-      logger.info('🤖 Using Groq for landing page generation...');
-      text = await groqService.generateText(prompt, config.groqKey);
-    } else {
-      // Default to env key if available (Gemini)
-      logger.info(
-        '🤖 Using Default Gemini (Env) for landing page generation...'
-      );
-      text = await geminiService.generateText(prompt);
-    }
+    logger.info('Using AI Core route landing_pages for landing page generation...');
+    const response = await callApi('/api/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt,
+        route_key: 'landing_pages',
+        channel: 'landing_page_builder',
+        temperature: 0.35,
+        max_tokens: 3200,
+        jsonMode: true,
+        systemInstruction:
+          'Voce cria landing pages imobiliarias em JSON valido. Retorne apenas JSON.',
+      }),
+    });
+    text = response.text || response.response || '{}';
 
     // Clean JSON string if returned with ```json
     const cleanJson = text

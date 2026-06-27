@@ -5,6 +5,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { oruloService } from '../services/orulo';
 import { portalService } from '../services/portals';
+import { callApi } from '../src/lib/api';
 import {
   Save,
   Brain,
@@ -20,6 +21,11 @@ import {
   Shield,
   Link,
   Building2,
+  Bot,
+  Wallet,
+  Server,
+  Gauge,
+  RefreshCw,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
@@ -27,6 +33,57 @@ import AppearanceSettings from './admin/AppearanceSettings';
 import UserManagement from './admin/UserManagement';
 import SupportPortal from './admin/SupportPortal';
 import ChannelsSettings from './admin/ChannelsSettings';
+
+type SettingsTab =
+  | 'appearance'
+  | 'users'
+  | 'ai'
+  | 'ai-core'
+  | 'tracking'
+  | 'domains'
+  | 'support'
+  | 'canais'
+  | 'portals';
+
+interface AIModelOption {
+  id: string;
+  name: string;
+  commercial_name?: string;
+  model_id: string;
+  provider: string;
+  engine: string;
+  purpose: string;
+  status: string;
+  priority?: number;
+}
+
+interface AIRouteDraft {
+  primary_model_id: string;
+  fallback_model_id: string;
+  temperature: number;
+  max_tokens: number;
+}
+
+interface AIUsageEntry {
+  id: string;
+  model_name: string;
+  engine: string;
+  channel: string;
+  operation: string;
+  credits_used: number;
+  latency_ms?: number;
+  status: string;
+  created_at: string;
+}
+
+const aiRouteOptions = [
+  { id: 'default', label: 'Padrao do sistema', description: 'Respostas gerais, assistente e chamadas sem rota especifica.' },
+  { id: 'agent_chat', label: 'Agentes comerciais', description: 'Conversas dos agentes e testes manuais.' },
+  { id: 'agent_orchestrator', label: 'Orquestrador', description: 'Decisao de intencao, handoff e fluxo operacional.' },
+  { id: 'whatsapp_intent', label: 'WhatsApp automatico', description: 'Classificacao e resposta das automacoes do WhatsApp.' },
+  { id: 'landing_pages', label: 'Landing pages', description: 'Copy, descricao de imoveis e paginas geradas por IA.' },
+  { id: 'documents', label: 'Documentos e OCR', description: 'Dossies, contratos, analises e extracao estruturada.' },
+];
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -49,9 +106,15 @@ const SystemSettings: React.FC = () => {
   const [zapPartnerId, setZapPartnerId] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    'appearance' | 'users' | 'ai' | 'tracking' | 'domains' | 'support' | 'canais' | 'portals'
-  >(location.pathname.endsWith('/integrations') ? 'ai' : 'appearance');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    location.pathname.endsWith('/integrations') ? 'ai' : 'appearance'
+  );
+  const [aiModels, setAiModels] = useState<AIModelOption[]>([]);
+  const [aiUsage, setAiUsage] = useState<AIUsageEntry[]>([]);
+  const [aiBalance, setAiBalance] = useState<{ balance: number; blocked?: boolean } | null>(null);
+  const [aiRouteDraft, setAiRouteDraft] = useState<Record<string, AIRouteDraft>>({});
+  const [aiCoreLoading, setAiCoreLoading] = useState(false);
+  const [aiCoreError, setAiCoreError] = useState('');
 
   useEffect(() => {
     if (location.pathname.endsWith('/integrations')) {
@@ -69,6 +132,12 @@ const SystemSettings: React.FC = () => {
     loadPortalConfigs();
   }, [settings]);
 
+  useEffect(() => {
+    if (activeTab === 'ai-core') {
+      loadAICoreSettings();
+    }
+  }, [activeTab]);
+
   const loadPortalConfigs = async () => {
     try {
       const vivarealConfig = await portalService.getConfig('vivareal');
@@ -85,6 +154,96 @@ const SystemSettings: React.FC = () => {
       }
     } catch (error) {
       logger.error('Erro ao carregar configurações de portais', error);
+    }
+  };
+
+  const buildRouteDraft = (routes: any[], models: AIModelOption[]) => {
+    const defaultModel = models.find((model) => model.purpose === 'chat' && model.status === 'active') || models[0];
+    const draft: Record<string, AIRouteDraft> = {};
+
+    aiRouteOptions.forEach((option) => {
+      const route =
+        routes.find((item) => item.route_key === option.id && item.organization_id) ||
+        routes.find((item) => item.route_key === option.id);
+
+      draft[option.id] = {
+        primary_model_id: route?.primary_model_id || defaultModel?.id || '',
+        fallback_model_id: route?.fallback_model_id || '',
+        temperature: Number(route?.temperature ?? 0.7),
+        max_tokens: Number(route?.max_tokens || 900),
+      };
+    });
+
+    return draft;
+  };
+
+  const loadAICoreSettings = async () => {
+    try {
+      setAiCoreLoading(true);
+      setAiCoreError('');
+
+      const [modelsResult, routesResult, usageResult, creditsResult] = await Promise.all([
+        callApi('/api/ai-core/models'),
+        callApi('/api/ai-core/routes'),
+        callApi('/api/ai-core/usage?limit=20'),
+        callApi('/api/ai-core/credits'),
+      ]);
+
+      const models = modelsResult.models || [];
+      setAiModels(models);
+      setAiUsage(usageResult.usage || []);
+      setAiBalance(creditsResult.balance || null);
+      setAiRouteDraft(buildRouteDraft(routesResult.routes || [], models));
+    } catch (error: any) {
+      logger.error('Erro ao carregar AI Core', error);
+      setAiCoreError(error?.message || 'Nao foi possivel carregar as configuracoes de IA.');
+    } finally {
+      setAiCoreLoading(false);
+    }
+  };
+
+  const updateAIRouteDraft = (routeKey: string, patch: Partial<AIRouteDraft>) => {
+    setAiRouteDraft((current) => ({
+      ...current,
+      [routeKey]: {
+        ...(current[routeKey] || {
+          primary_model_id: '',
+          fallback_model_id: '',
+          temperature: 0.7,
+          max_tokens: 900,
+        }),
+        ...patch,
+      },
+    }));
+  };
+
+  const handleSaveAICore = async () => {
+    try {
+      setSaving(true);
+      setAiCoreError('');
+
+      await callApi('/api/ai-core/routes', {
+        method: 'PUT',
+        body: JSON.stringify({
+          routes: aiRouteOptions.map((option) => ({
+            route_key: option.id,
+            purpose: 'chat',
+            primary_model_id: aiRouteDraft[option.id]?.primary_model_id || null,
+            fallback_model_id: aiRouteDraft[option.id]?.fallback_model_id || null,
+            temperature: aiRouteDraft[option.id]?.temperature ?? 0.7,
+            max_tokens: aiRouteDraft[option.id]?.max_tokens || 900,
+          })),
+        }),
+      });
+
+      await loadAICoreSettings();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error: any) {
+      logger.error('Erro ao salvar AI Core', error);
+      setAiCoreError(error?.message || 'Nao foi possivel salvar as rotas de IA.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -268,6 +427,7 @@ const SystemSettings: React.FC = () => {
     { id: 'appearance', label: 'Aparência', icon: Palette },
     { id: 'users', label: 'Membros & Acesso', icon: Users },
     { id: 'domains', label: 'Domínios', icon: Globe },
+    { id: 'ai-core', label: 'IA Local', icon: Bot },
     { id: 'ai', label: 'Integrações 360', icon: Brain },
     { id: 'tracking', label: 'Tracking', icon: Activity },
     { id: 'canais', label: 'Canais', icon: Link },
@@ -290,16 +450,16 @@ const SystemSettings: React.FC = () => {
             Controle completo do seu sistema imobiliário e integrações.
           </p>
         </div>
-        {(activeTab === 'ai' || activeTab === 'portals') && (
+        {(activeTab === 'ai' || activeTab === 'portals' || activeTab === 'ai-core') && (
           <button
-            onClick={handleSave}
+            onClick={activeTab === 'ai-core' ? handleSaveAICore : handleSave}
             disabled={saving}
             className="btn-primary"
           >
             {saving ? 'Salvando...' : saved ? (
               <><Check size={16} /> Salvo!</>
             ) : (
-              <><Save size={16} /> Salvar{activeTab === 'portals' ? ' Portais' : ' Chaves'}</>
+              <><Save size={16} /> Salvar{activeTab === 'portals' ? ' Portais' : activeTab === 'ai-core' ? ' IA Local' : ' Chaves'}</>
             )}
           </button>
         )}
@@ -310,7 +470,7 @@ const SystemSettings: React.FC = () => {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as SettingsTab)}
             className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all relative whitespace-nowrap rounded-t-lg ${
               activeTab === tab.id
                 ? 'text-primary bg-primary/5'
@@ -333,6 +493,212 @@ const SystemSettings: React.FC = () => {
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
         {activeTab === 'canais' && <ChannelsSettings />}
+        {activeTab === 'ai-core' && (
+          <div className="space-y-6">
+            <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5 mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-2xl">
+                    <Bot size={24} className="text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-text-primary">IA Local e Roteamento</h3>
+                    <p className="text-sm text-text-secondary mt-0.5">
+                      Defina quais modelos cada modulo usa e acompanhe saldo, consumo e fallback.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadAICoreSettings}
+                  disabled={aiCoreLoading}
+                  className="btn-secondary"
+                >
+                  <RefreshCw size={16} className={aiCoreLoading ? 'animate-spin' : ''} />
+                  Atualizar
+                </button>
+              </div>
+
+              {aiCoreError && (
+                <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-600">
+                  {aiCoreError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                    <Wallet size={15} /> Creditos
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-text-primary">
+                    {Number(aiBalance?.balance || 0).toLocaleString('pt-BR')}
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">
+                    {aiBalance?.blocked ? 'Conta bloqueada por saldo' : 'Saldo disponivel'}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                    <Server size={15} /> Modelos
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-text-primary">
+                    {aiModels.filter((model) => model.status === 'active').length}
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">Ativos para esta conta</p>
+                </div>
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                    <Activity size={15} /> Chamadas
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-text-primary">{aiUsage.length}</p>
+                  <p className="text-xs text-text-secondary mt-1">Ultimos registros carregados</p>
+                </div>
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                    <Gauge size={15} /> Latencia
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-text-primary">
+                    {aiUsage.length
+                      ? `${Math.round(aiUsage.reduce((sum, item) => sum + Number(item.latency_ms || 0), 0) / aiUsage.length)}ms`
+                      : '0ms'}
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">Media das chamadas recentes</p>
+                </div>
+              </div>
+
+              {aiModels.length === 0 ? (
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 text-sm text-amber-700">
+                  Nenhum modelo foi encontrado. Cadastre ou sincronize modelos no AI Core antes de salvar rotas.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {aiRouteOptions.map((route) => {
+                    const draft = aiRouteDraft[route.id] || {
+                      primary_model_id: '',
+                      fallback_model_id: '',
+                      temperature: 0.7,
+                      max_tokens: 900,
+                    };
+                    return (
+                      <div
+                        key={route.id}
+                        className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-5"
+                      >
+                        <div className="flex flex-col xl:flex-row xl:items-center gap-4">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm font-semibold text-text-primary">{route.label}</h4>
+                            <p className="text-xs text-text-secondary mt-1">{route.description}</p>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[220px_220px_110px_120px] gap-3 w-full xl:w-auto">
+                            <select
+                              value={draft.primary_model_id}
+                              onChange={(event) =>
+                                updateAIRouteDraft(route.id, { primary_model_id: event.target.value })
+                              }
+                              className="input-premium"
+                            >
+                              <option value="">Modelo principal</option>
+                              {aiModels.map((model) => (
+                                <option key={model.id} value={model.id}>
+                                  {model.commercial_name || model.name || model.model_id}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={draft.fallback_model_id}
+                              onChange={(event) =>
+                                updateAIRouteDraft(route.id, { fallback_model_id: event.target.value })
+                              }
+                              className="input-premium"
+                            >
+                              <option value="">Sem fallback</option>
+                              {aiModels.map((model) => (
+                                <option key={model.id} value={model.id}>
+                                  {model.commercial_name || model.name || model.model_id}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              min="0"
+                              max="2"
+                              step="0.1"
+                              value={draft.temperature}
+                              onChange={(event) =>
+                                updateAIRouteDraft(route.id, { temperature: Number(event.target.value) })
+                              }
+                              className="input-premium"
+                              title="Temperatura"
+                            />
+                            <input
+                              type="number"
+                              min="128"
+                              max="8192"
+                              step="128"
+                              value={draft.max_tokens}
+                              onChange={(event) =>
+                                updateAIRouteDraft(route.id, { max_tokens: Number(event.target.value) })
+                              }
+                              className="input-premium"
+                              title="Max tokens"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2 bg-slate-500/10 border border-slate-500/20 rounded-xl">
+                  <Activity size={18} className="text-slate-500" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-text-primary">Uso recente de IA</h3>
+                  <p className="text-xs text-text-secondary">Consumo por modelo, canal e operacao.</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-widest text-text-tertiary border-b border-border-subtle">
+                      <th className="py-3 pr-4">Modelo</th>
+                      <th className="py-3 pr-4">Canal</th>
+                      <th className="py-3 pr-4">Operacao</th>
+                      <th className="py-3 pr-4">Creditos</th>
+                      <th className="py-3 pr-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {aiUsage.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-text-secondary">
+                          Nenhum uso recente registrado.
+                        </td>
+                      </tr>
+                    ) : (
+                      aiUsage.map((item) => (
+                        <tr key={item.id} className="border-b border-border-subtle/60">
+                          <td className="py-3 pr-4 text-text-primary">{item.model_name}</td>
+                          <td className="py-3 pr-4 text-text-secondary">{item.channel}</td>
+                          <td className="py-3 pr-4 text-text-secondary">{item.operation}</td>
+                          <td className="py-3 pr-4 text-text-secondary">
+                            {Number(item.credits_used || 0).toLocaleString('pt-BR')}
+                          </td>
+                          <td className="py-3 pr-4 text-text-secondary">{item.status}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
         {activeTab === 'portals' && (
           <div className="space-y-6">
             <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">

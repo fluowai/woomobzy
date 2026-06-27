@@ -50,13 +50,38 @@ export class AICoreService {
 
       await this.assertCreditsAvailable(organizationId, creditPreview);
 
-      const result = await this.callModel({
-        model: resolvedModel,
-        messages: normalizedMessages,
-        temperature,
-        maxTokens,
-        jsonMode,
-      });
+      const effectiveTemperature = temperature ?? resolvedModel.route_temperature;
+      const effectiveMaxTokens = maxTokens || resolvedModel.route_max_tokens;
+      let callMetadata = metadata;
+      let result;
+
+      try {
+        result = await this.callModel({
+          model: resolvedModel,
+          messages: normalizedMessages,
+          temperature: effectiveTemperature,
+          maxTokens: effectiveMaxTokens,
+          jsonMode,
+        });
+      } catch (modelError) {
+        const fallbackModel = await this.findModelByUuid(resolvedModel.route_fallback_model_id);
+        if (!fallbackModel || modelId) throw modelError;
+
+        const primaryModelId = resolvedModel.model_id;
+        resolvedModel = fallbackModel;
+        callMetadata = {
+          ...metadata,
+          fallback_from_model: primaryModelId,
+          fallback_reason: modelError.message,
+        };
+        result = await this.callModel({
+          model: resolvedModel,
+          messages: normalizedMessages,
+          temperature: effectiveTemperature,
+          maxTokens: effectiveMaxTokens,
+          jsonMode,
+        });
+      }
 
       const outputText = String(result.text || '');
       const inputTokens = result.inputTokens || estimateTokens(inputText);
@@ -83,7 +108,7 @@ export class AICoreService {
         creditsUsed,
         latencyMs,
         status: 'success',
-        metadata,
+        metadata: callMetadata,
       });
 
       await this.debitCredits({
@@ -175,12 +200,17 @@ export class AICoreService {
       let query = this.supabase
         .from('ai_model_routes')
         .select('*')
-        .eq('organization_id', organizationId)
         .eq('route_key', routeKey || 'default')
         .eq('purpose', purpose)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(20);
+
+      if (organizationId) {
+        query = query.or(`organization_id.eq.${organizationId},organization_id.is.null`);
+      } else {
+        query = query.is('organization_id', null);
+      }
 
       if (agentId) {
         query = query.or(`agent_id.eq.${agentId},agent_id.is.null`);
@@ -190,7 +220,15 @@ export class AICoreService {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data?.[0] || null;
+
+      const routes = data || [];
+      return (
+        routes.find((route) => route.organization_id === organizationId && route.agent_id === agentId) ||
+        routes.find((route) => route.organization_id === organizationId && !route.agent_id) ||
+        routes.find((route) => !route.organization_id && route.agent_id === agentId) ||
+        routes.find((route) => !route.organization_id && !route.agent_id) ||
+        null
+      );
     } catch (error) {
       console.warn('[AICore] Route lookup skipped:', error.message);
       return null;
@@ -479,6 +517,7 @@ function mergeRouteDefaults(model, route) {
     ...model,
     route_temperature: route.temperature,
     route_max_tokens: route.max_tokens,
+    route_fallback_model_id: route.fallback_model_id,
   };
 }
 

@@ -118,6 +118,79 @@ router.post('/chat', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res)
   }
 });
 
+router.get('/routes', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    let query = supabase
+      .from('ai_model_routes')
+      .select('*')
+      .is('agent_id', null)
+      .order('route_key', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (req.orgId) {
+      query = query.or(`organization_id.eq.${req.orgId},organization_id.is.null`);
+    } else {
+      query = query.is('organization_id', null);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ success: true, routes: data || [] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.put('/routes', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const routes = Array.isArray(req.body?.routes) ? req.body.routes : [];
+    if (routes.length === 0) {
+      return res.status(400).json({ success: false, error: 'routes deve ser uma lista.' });
+    }
+
+    const saved = [];
+    for (const routeBody of routes) {
+      const payload = normalizeRoutePayload(routeBody, req.orgId);
+      let lookup = supabase
+        .from('ai_model_routes')
+        .select('id')
+        .eq('route_key', payload.route_key)
+        .eq('purpose', payload.purpose)
+        .is('agent_id', null)
+        .limit(1);
+
+      lookup = req.orgId ? lookup.eq('organization_id', req.orgId) : lookup.is('organization_id', null);
+      const { data: existing, error: lookupError } = await lookup.maybeSingle();
+      if (lookupError) throw lookupError;
+
+      if (existing?.id) {
+        const { data, error } = await supabase
+          .from('ai_model_routes')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        saved.push(data);
+      } else {
+        const { data, error } = await supabase
+          .from('ai_model_routes')
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        saved.push(data);
+      }
+    }
+
+    res.json({ success: true, routes: saved });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.get('/usage', verifyAuth, requireTenantUnlessSuperAdmin, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
@@ -225,6 +298,26 @@ function normalizeModelPayload(body, organizationId) {
     credit_multiplier: body.credit_multiplier || 1,
     status: body.status || 'active',
     priority: Number(body.priority || 100),
+    metadata: body.metadata || {},
+  };
+}
+
+function normalizeRoutePayload(body, organizationId) {
+  const routeKey = body.route_key || body.routeKey || 'default';
+  const purpose = body.purpose || 'chat';
+  const temperature = Number(body.temperature ?? 0.7);
+  const maxTokens = Number(body.max_tokens || body.maxTokens || 900);
+
+  return {
+    organization_id: body.global ? null : organizationId || null,
+    agent_id: null,
+    route_key: routeKey,
+    purpose,
+    primary_model_id: body.primary_model_id || body.primaryModelId || null,
+    fallback_model_id: body.fallback_model_id || body.fallbackModelId || null,
+    temperature: Number.isFinite(temperature) ? temperature : 0.7,
+    max_tokens: Number.isFinite(maxTokens) ? maxTokens : 900,
+    is_active: body.is_active ?? body.isActive ?? true,
     metadata: body.metadata || {},
   };
 }

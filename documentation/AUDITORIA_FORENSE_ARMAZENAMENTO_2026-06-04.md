@@ -112,7 +112,7 @@ Contem queries read-only para:
 1. Rodar `scripts/forensic-storage-audit.mjs` no servidor e anexar o JSON gerado.
 2. Rodar `sql/forensic_storage_audit.sql` no Postgres.
 3. Pausar importacao de historico WhatsApp enquanto a duplicidade nao estiver medida.
-4. Validar se `whatsapp-media` e publico ou privado e se `MINIO_PUBLIC_URL` aponta para o dominio real.
+4. Validar se `imobzywhatsapp` e publico ou privado e se `MINIO_PUBLIC_URL` aponta para o dominio real.
 
 ### Curto prazo - ate 7 dias
 

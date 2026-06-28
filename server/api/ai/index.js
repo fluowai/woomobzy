@@ -4,7 +4,6 @@ import axios from 'axios';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { randomUUID } from 'crypto';
-import { AICoreService } from '../../services/aiCoreService.js';
 
 const router = express.Router();
 
@@ -156,8 +155,6 @@ function normalizeAgentPayload(body, partial = false) {
     permissions: body.permissions || {},
     pipelines: body.pipelines || [],
     knowledge_sources: body.knowledge_sources || [],
-    default_model_id: body.default_model_id || body.defaultModelId || body.model_id || body.model,
-    fallback_model_id: body.fallback_model_id || body.fallbackModelId,
     temperature: body.temperature === undefined ? undefined : Number(body.temperature),
     max_tokens: body.max_tokens === undefined && body.maxTokens === undefined ? undefined : Number(body.max_tokens || body.maxTokens),
     handoff: body.handoff || {},
@@ -354,29 +351,6 @@ router.post('/generate-page', verifyAuth, requireTenant, async (req, res) => {
 router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
   const { prompt, systemInstruction, temperature = 0.7, jsonMode = false } = req.body;
   const organizationId = req.orgId;
-
-  if (process.env.AI_CORE_DISABLED !== 'true') {
-    try {
-      const aiCore = new AICoreService();
-      const result = await aiCore.chat({
-        organizationId,
-        userId: req.user?.id,
-        routeKey: req.body.route_key || 'default',
-        channel: req.body.channel || 'api',
-        messages: req.body.messages || [],
-        prompt,
-        systemInstruction,
-        modelId: req.body.model || req.body.model_id || '',
-        temperature,
-        maxTokens: req.body.max_tokens || req.body.maxTokens,
-        jsonMode,
-        metadata: { source: 'legacy-api-ai-chat' },
-      });
-      return res.json({ text: result.text, usage: result.usage, model: result.model, engine: result.engine });
-    } catch (aiCoreError) {
-      console.warn('[AI Core] Local chat failed, falling back to legacy providers:', aiCoreError.message);
-    }
-  }
   
   // Try Gemini first (Global or Org-specific)
   try {
@@ -544,10 +518,6 @@ REGRAS IMPORTANTES:
 - Responda em portugues natural, como um corretor humano faria.`;
 }
 
-function getAgentAIConfig(agent = {}) {
-  return agent?.handoff_rules?.__operational360 || agent?.__operational360 || {};
-}
-
 router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
@@ -598,36 +568,7 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
 
     let reply = '';
 
-    if (process.env.AI_CORE_DISABLED !== 'true') {
-      try {
-        const aiCore = new AICoreService();
-        const result = await aiCore.chat({
-          organizationId: req.orgId,
-          userId: req.user?.id,
-          agentId: id,
-          routeKey: 'agent_chat',
-          channel: 'agent-test',
-          modelId: getAgentAIConfig(agent).default_model_id || agent.default_model_id || agent.model_id || '',
-          messages: [
-            ...(recentHistory || []).map((m) => ({
-              role: m.role === 'assistant' ? 'assistant' : 'user',
-              content: m.content,
-            })),
-            { role: 'user', content: message },
-          ],
-          systemInstruction,
-          temperature: Number(getAgentAIConfig(agent).temperature ?? agent.temperature ?? 0.7),
-          maxTokens: getAgentAIConfig(agent).max_tokens || agent.max_tokens,
-          metadata: { source: 'legacy-agent-chat', session_id },
-        });
-        reply = result.text;
-      } catch (aiCoreError) {
-        console.warn('[AgentChat] AI Core local failed, trying legacy providers:', aiCoreError.message);
-      }
-    }
-
     try {
-      if (reply) throw new Error('__AI_CORE_ALREADY_REPLIED__');
       if (provider === 'gemini' || !provider) {
         const geminiResponse = await axios.post(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -658,9 +599,6 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
         reply = openaiResponse.data.choices?.[0]?.message?.content || '';
       }
     } catch (aiError) {
-      if (aiError.message === '__AI_CORE_ALREADY_REPLIED__') {
-        // AI Core already produced the reply. Keep the legacy persistence flow below.
-      } else {
       console.warn('[AgentChat] Primary AI failed, trying Groq:', aiError.message);
       let groqKey = config?.groq?.apiKey || process.env.GROQ_API_KEY;
       if (groqKey) {
@@ -681,7 +619,6 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
           { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
         );
         reply = groqResponse.data.choices?.[0]?.message?.content || '';
-      }
       }
     }
 

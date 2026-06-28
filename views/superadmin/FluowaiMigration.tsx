@@ -85,7 +85,7 @@ const initialForm: FormState = {
     publicBaseUrl: '',
     useSsl: true,
   },
-  selectedBuckets: 'whatsapp-media, imobzyimg, imobzymsg, documents, exports',
+  selectedBuckets: 'imobzywhatsapp, imobzycrm, documents, exports',
   confirmation: '',
 };
 

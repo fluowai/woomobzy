@@ -16,7 +16,7 @@ import {
   suspendBucketVersioning,
 } from '../lib/minio-storage.js';
 
-const DEFAULT_BUCKET = 'whatsapp-media';
+const DEFAULT_BUCKET = 'imobzywhatsapp';
 const MINIO_INTEGRATION_PROVIDER = 'minio';
 let storedMinioConfigLoaded = false;
 const DEFAULT_RETENTION_RULES = [
@@ -684,7 +684,7 @@ function buildSummaryAlerts({ buckets, objects }) {
   const alerts = [];
   const whatsapp = buckets.find((bucket) => bucket.name === getWhatsappBucketName());
   if (String(whatsapp?.versioning || '').toLowerCase() === 'enabled') {
-    alerts.push({ severity: 'critical', message: 'CRITICO: Versionamento ativo no bucket whatsapp-media.' });
+    alerts.push({ severity: 'critical', message: 'CRITICO: Versionamento ativo no bucket imobzywhatsapp.' });
   }
   if (!whatsapp || String(whatsapp.lifecycle || '').toLowerCase() === 'missing') {
     alerts.push({ severity: 'critical', message: 'CRITICO: Nenhuma politica de retencao encontrada.' });

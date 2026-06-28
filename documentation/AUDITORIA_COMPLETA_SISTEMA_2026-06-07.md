@@ -234,7 +234,7 @@ Recomendacao:
 
 Diretorio: `ai_worker`.
 
-Nao foram encontrados testes automatizados para STT/TTS/Ollama/Kanban. Como esse worker toca audio e automacao, falhas podem afetar atendimento.
+Nao foram encontrados testes automatizados para STT/TTS/provedores de IA/Kanban. Como esse worker toca audio e automacao, falhas podem afetar atendimento.
 
 Recomendacao:
 

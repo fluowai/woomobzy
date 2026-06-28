@@ -1,6 +1,6 @@
 # ImobiSaaS - Multi-Tenant Architecture
 
-Monorepo structure for multi-tenant SaaS with self-hosted deployment.
+Monorepo structure for multi-tenant SaaS deployment.
 
 ## Project Structure
 

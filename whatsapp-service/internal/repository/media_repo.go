@@ -144,11 +144,12 @@ func (r *MediaRepo) UpsertFromMessage(ctx context.Context, msg *models.Message, 
 }
 
 // UpsertPendingFromMessage creates a recoverable pending job for incoming WhatsApp media.
-func (r *MediaRepo) UpsertPendingFromMessage(ctx context.Context, msg *models.Message, tenantID uuid.UUID, bucket string, payload []byte) error {
+func (r *MediaRepo) UpsertPendingFromMessage(ctx context.Context, msg *models.Message, tenantID uuid.UUID, bucket string, payload []byte) (uuid.UUID, error) {
 	if msg == nil || msg.ID == uuid.Nil || tenantID == uuid.Nil || !isMediaType(msg.Type) {
-		return nil
+		return uuid.Nil, nil
 	}
-	_, err := r.db.Exec(ctx, `
+	var mediaID uuid.UUID
+	err := r.db.QueryRow(ctx, `
 		INSERT INTO whatsapp_media (
 			message_id, instance_id, tenant_id, type, provider, bucket, object_key,
 			public_url, filename, mime_type, status, retry_count, last_error,
@@ -161,8 +162,9 @@ func (r *MediaRepo) UpsertPendingFromMessage(ctx context.Context, msg *models.Me
 			last_error = NULL,
 			next_retry_at = now(),
 			updated_at = now()
-	`, msg.ID, msg.InstanceID, tenantID, string(msg.Type), bucket, msg.MediaFilename, msg.MediaMimetype, payload, msg.MessageID)
-	return err
+		RETURNING id
+	`, msg.ID, msg.InstanceID, tenantID, string(msg.Type), bucket, msg.MediaFilename, msg.MediaMimetype, payload, msg.MessageID).Scan(&mediaID)
+	return mediaID, err
 }
 
 // ClaimPending claims pending or retryable failed media jobs for this worker.
@@ -211,6 +213,40 @@ func (r *MediaRepo) ClaimPending(ctx context.Context, limit int) ([]models.Media
 		items = append(items, media)
 	}
 	return items, rows.Err()
+}
+
+// ClaimByID claims a specific media job published by the external queue.
+func (r *MediaRepo) ClaimByID(ctx context.Context, mediaID uuid.UUID) (*models.Media, error) {
+	if mediaID == uuid.Nil {
+		return nil, nil
+	}
+	var media models.Media
+	err := r.db.QueryRow(ctx, `
+		UPDATE whatsapp_media
+		SET status = 'downloading',
+		    claimed_at = now(),
+		    updated_at = now()
+		WHERE id = $1
+		  AND status IN ('pending', 'failed')
+		  AND retry_count < 8
+		  AND COALESCE(next_retry_at, now()) <= now()
+		  AND whatsapp_payload IS NOT NULL
+		RETURNING id, message_id, instance_id, tenant_id, type,
+		          provider, bucket, object_key, COALESCE(public_url, ''),
+		          COALESCE(filename, ''), COALESCE(mime_type, ''), status,
+		          retry_count, COALESCE(last_error, ''), whatsapp_payload,
+		          created_at, updated_at
+	`, mediaID).Scan(&media.ID, &media.MessageID, &media.InstanceID, &media.TenantID, &media.Type,
+		&media.Provider, &media.Bucket, &media.ObjectKey, &media.PublicURL, &media.Filename,
+		&media.MimeType, &media.Status, &media.RetryCount, &media.LastError, &media.Payload,
+		&media.CreatedAt, &media.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &media, nil
 }
 
 // MarkReady records a successful media download/upload and updates the legacy message fields.

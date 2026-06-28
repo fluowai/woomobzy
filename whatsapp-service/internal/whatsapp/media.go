@@ -139,7 +139,11 @@ func (c *Client) contentAddressedStoragePath(folder, sha, ext string) string {
 		ext = ".bin"
 	}
 	now := time.Now().UTC()
-	return fmt.Sprintf("%s/%s/%04d/%02d/%s%s", tenantID, strings.Trim(folder, "/"), now.Year(), int(now.Month()), sha, ext)
+	cleanFolder := strings.Trim(folder, "/")
+	if strings.HasPrefix(cleanFolder, "whatsapp/") {
+		cleanFolder = fmt.Sprintf("whatsapp/instances/%s/%s", c.instanceID.String(), strings.TrimPrefix(cleanFolder, "whatsapp/"))
+	}
+	return fmt.Sprintf("%s/%s/%04d/%02d/%s%s", tenantID, cleanFolder, now.Year(), int(now.Month()), sha, ext)
 }
 
 func (c *Client) storagePublicURL(path string) string {

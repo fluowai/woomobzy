@@ -19,9 +19,8 @@ console.log('📦 Criando Buckets de Storage...\n');
 
 async function createBuckets() {
   const buckets = [
-    { name: 'imobzyimg', public: true },
-    { name: 'imobzymsg', public: true },
-    { name: 'whatsapp-media', public: true }
+    { name: 'imobzycrm', public: true },
+    { name: 'imobzywhatsapp', public: true }
   ];
 
   for (const bucket of buckets) {

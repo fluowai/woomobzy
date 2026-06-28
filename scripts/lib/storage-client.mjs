@@ -6,17 +6,20 @@ import {
 } from '../../server/lib/minio-storage.js';
 
 const LEGACY_BUCKET_MAP = {
-  properties: 'imobzyimg',
-  'property-images': 'imobzyimg',
-  'agency-assets': 'imobzyimg',
-  imobzyimg: 'imobzyimg',
-  imobzymsg: 'imobzymsg',
-  'whatsapp-media': 'whatsapp-media',
+  properties: 'imobzycrm',
+  'property-images': 'imobzycrm',
+  'agency-assets': 'imobzycrm',
+  imobzyimg: 'imobzycrm',
+  'imobzy-media': 'imobzycrm',
+  imobzycrm: 'imobzycrm',
+  imobzymsg: 'imobzywhatsapp',
+  'whatsapp-media': 'imobzywhatsapp',
+  imobzywhatsapp: 'imobzywhatsapp',
   documents: 'documents',
   exports: 'exports',
 };
 
-export async function uploadStorageObject({ supabase, bucket = 'imobzyimg', path, body, contentType }) {
+export async function uploadStorageObject({ supabase, bucket = 'imobzycrm', path, body, contentType }) {
   const normalizedBucket = LEGACY_BUCKET_MAP[bucket] || bucket;
 
   if (isMinioConfigured()) {

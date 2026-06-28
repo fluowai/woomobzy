@@ -56,8 +56,6 @@ type BuilderDraft = AIAgentPayload & {
   autonomy_level?: number;
   channels?: string[];
   instances?: string[];
-  default_model_id?: string;
-  fallback_model_id?: string;
   temperature?: number;
   max_tokens?: number;
   description?: string;
@@ -65,19 +63,6 @@ type BuilderDraft = AIAgentPayload & {
   channel_scope?: string;
   handoff?: Record<string, unknown>;
   flow_steps?: AgentFlowStep[];
-};
-
-type AIModelOption = {
-  id: string;
-  name: string;
-  commercial_name?: string;
-  provider: string;
-  engine: string;
-  model_id: string;
-  purpose: string;
-  status: string;
-  context_window?: number;
-  credit_multiplier?: number;
 };
 
 type TemplatePreset = {
@@ -456,8 +441,6 @@ const emptyAgent: BuilderDraft = {
   is_active: true,
   status: 'Ativo',
   personality: '',
-  default_model_id: '',
-  fallback_model_id: '',
   temperature: 0.7,
   max_tokens: 900,
   instructions:
@@ -942,8 +925,6 @@ async function simulateLeadReply(draft: BuilderDraft, brokerMessage: string, his
 
 const AIAgents: React.FC = () => {
   const [agents, setAgents] = useState<AIAgent[]>([]);
-  const [aiModels, setAiModels] = useState<AIModelOption[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
   const [whatsAppInstances, setWhatsAppInstances] = useState<WhatsAppInstance[]>([]);
   const [instancesLoading, setInstancesLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string>('new');
@@ -979,14 +960,6 @@ const AIAgents: React.FC = () => {
     () => whatsAppInstances.find((instance) => instance.id === draft.instances?.[0]),
     [draft.instances, whatsAppInstances]
   );
-  const chatModelOptions = useMemo(
-    () => aiModels.filter((model) => model.purpose === 'chat' && ['active', 'available'].includes(model.status)),
-    [aiModels]
-  );
-  const selectedAiModel = useMemo(
-    () => chatModelOptions.find((model) => model.model_id === draft.default_model_id || model.id === draft.default_model_id),
-    [chatModelOptions, draft.default_model_id]
-  );
   const propertyPath = pathname.startsWith('/rural') ? '/rural/properties/new' : '/urban/properties/new';
   const activeStepIndex = Math.max(tabs.findIndex((tab) => tab.id === activeTab), 0);
   const activeStep = tabs[activeStepIndex] || tabs[0];
@@ -1009,7 +982,6 @@ const AIAgents: React.FC = () => {
 
   useEffect(() => {
     loadAgents();
-    loadAIModels();
   }, []);
 
   useEffect(() => {
@@ -1028,8 +1000,6 @@ const AIAgents: React.FC = () => {
         capabilities: agent.capabilities?.length ? agent.capabilities : emptyAgent.capabilities,
         tools: agent.tools?.length ? agent.tools : emptyAgent.tools,
         response_style: agent.response_style || 'consultivo',
-        default_model_id: agent.default_model_id || '',
-        fallback_model_id: agent.fallback_model_id || '',
         temperature: Number(agent.temperature ?? 0.7),
         max_tokens: Number(agent.max_tokens ?? 900),
         autonomy_level: agent.autonomy_level || 2,
@@ -1086,19 +1056,6 @@ const AIAgents: React.FC = () => {
       return [];
     } finally {
       setInstancesLoading(false);
-    }
-  };
-
-  const loadAIModels = async () => {
-    try {
-      setModelsLoading(true);
-      const data = await callApi('/api/ai-core/models');
-      setAiModels(data.models || []);
-    } catch {
-      setAiModels([]);
-      toast.error('Nao foi possivel carregar os modelos locais de IA.');
-    } finally {
-      setModelsLoading(false);
     }
   };
 
@@ -1284,8 +1241,6 @@ const AIAgents: React.FC = () => {
         ...agent,
         channels: agent.channels?.length ? agent.channels : [agent.channel || 'whatsapp'],
         instances: agent.instances?.length ? agent.instances : [],
-        default_model_id: agent.default_model_id || '',
-        fallback_model_id: agent.fallback_model_id || '',
         temperature: Number(agent.temperature ?? 0.7),
         max_tokens: Number(agent.max_tokens ?? 900),
         handoff_rules: {
@@ -1797,103 +1752,6 @@ const AIAgents: React.FC = () => {
                         placeholder="Transbordo, boas práticas, limites e contexto da imobiliária."
                       />
                     </Field>
-                  </div>
-                </section>
-
-                <section id="agent-model" className="rounded-lg border border-slate-200 bg-white p-4">
-                  <SectionHeading
-                    eyebrow="Modelo de IA"
-                    title="LLM local usada por este agente"
-                    description="Escolha qual modelo auto-hospedado o agente deve usar nas respostas e qual será o fallback local."
-                  />
-                  <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                      <Field label="Modelo principal">
-                        <select
-                          value={draft.default_model_id || ''}
-                          onChange={(e) => setDraft({ ...draft, default_model_id: e.target.value })}
-                          className="agent-input"
-                        >
-                          <option value="">Padrao da plataforma ({chatModelOptions[0]?.model_id || 'qwen2.5:7b'})</option>
-                          {chatModelOptions.map((model) => (
-                            <option key={model.id} value={model.model_id}>
-                              {(model.commercial_name || model.name)} - {model.engine}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="Fallback local">
-                        <select
-                          value={draft.fallback_model_id || ''}
-                          onChange={(e) => setDraft({ ...draft, fallback_model_id: e.target.value })}
-                          className="agent-input"
-                        >
-                          <option value="">Fallback automatico</option>
-                          {chatModelOptions.map((model) => (
-                            <option key={model.id} value={model.model_id}>
-                              {(model.commercial_name || model.name)} - {model.engine}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="Temperatura">
-                        <input
-                          type="number"
-                          min={0}
-                          max={2}
-                          step={0.1}
-                          value={draft.temperature ?? 0.7}
-                          onChange={(e) => setDraft({ ...draft, temperature: Number(e.target.value) })}
-                          className="agent-input"
-                        />
-                      </Field>
-                      <Field label="Max tokens">
-                        <input
-                          type="number"
-                          min={128}
-                          max={8192}
-                          step={128}
-                          value={draft.max_tokens ?? 900}
-                          onChange={(e) => setDraft({ ...draft, max_tokens: Number(e.target.value) })}
-                          className="agent-input"
-                        />
-                      </Field>
-                    </div>
-
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                          <Database size={15} />
-                          Modelos
-                        </div>
-                        <button
-                          type="button"
-                          onClick={loadAIModels}
-                          disabled={modelsLoading}
-                          className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                        >
-                          {modelsLoading ? 'Atualizando...' : 'Atualizar'}
-                        </button>
-                      </div>
-                      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="text-sm font-black text-slate-950 mb-0">
-                          {selectedAiModel?.commercial_name || selectedAiModel?.name || 'Padrao da plataforma'}
-                        </p>
-                        <p className="mt-1 text-xs font-semibold text-slate-500 mb-0">
-                          {selectedAiModel
-                            ? `${selectedAiModel.engine} · ${selectedAiModel.model_id} · contexto ${Number(selectedAiModel.context_window || 0).toLocaleString('pt-BR')}`
-                            : 'Este agente vai usar o roteamento padrao configurado no AI Core.'}
-                        </p>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <Diagnostic label="Chat" value={String(chatModelOptions.length)} tone="green" />
-                        <Diagnostic
-                          label="Status"
-                          value={selectedAiModel?.status || 'auto'}
-                          tone={selectedAiModel?.status === 'active' ? 'green' : 'slate'}
-                        />
-                      </div>
-                    </div>
                   </div>
                 </section>
 

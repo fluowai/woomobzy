@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"whatsapp-service/internal/models"
+	"whatsapp-service/internal/queue"
 	"whatsapp-service/internal/repository"
 	"whatsapp-service/internal/ws"
 	"whatsapp-service/pkg/phone"
@@ -36,6 +37,7 @@ type Client struct {
 	contactRepo    *repository.ContactRepo
 	messageRepo    *repository.MessageRepo
 	mediaRepo      *repository.MediaRepo
+	mediaQueue     *queue.RabbitMQ
 	hub            *ws.Hub
 	logger         *zap.Logger
 	qrCode         string
@@ -71,6 +73,7 @@ func NewClient(
 	contactRepo *repository.ContactRepo,
 	messageRepo *repository.MessageRepo,
 	mediaRepo *repository.MediaRepo,
+	mediaQueue *queue.RabbitMQ,
 	hub *ws.Hub,
 	logger *zap.Logger,
 	supabaseURL string,
@@ -103,6 +106,7 @@ func NewClient(
 		contactRepo:    contactRepo,
 		messageRepo:    messageRepo,
 		mediaRepo:      mediaRepo,
+		mediaQueue:     mediaQueue,
 		hub:            hub,
 		logger:         logger,
 		supabaseURL:    supabaseURL,
@@ -694,8 +698,20 @@ func (c *Client) queueMessageMedia(ctx context.Context, msg *models.Message, waM
 		c.logger.Warn("Failed to marshal WhatsApp media payload", zap.String("message_id", msg.MessageID), zap.Error(err))
 		return
 	}
-	if err := c.mediaRepo.UpsertPendingFromMessage(ctx, msg, *c.tenantID, c.storageBucket, payload); err != nil {
+	mediaID, err := c.mediaRepo.UpsertPendingFromMessage(ctx, msg, *c.tenantID, c.storageBucket, payload)
+	if err != nil {
 		c.logger.Warn("Failed to queue media job", zap.String("message_id", msg.MessageID), zap.Error(err))
+		return
+	}
+	if mediaID != uuid.Nil && c.mediaQueue != nil {
+		if err := c.mediaQueue.PublishMediaJob(ctx, queue.MediaJob{
+			MediaID:    mediaID,
+			MessageID:  msg.ID,
+			InstanceID: msg.InstanceID,
+			TenantID:   *c.tenantID,
+		}); err != nil {
+			c.logger.Warn("Failed to publish RabbitMQ media job", zap.String("media_id", mediaID.String()), zap.Error(err))
+		}
 	}
 }
 

@@ -21,6 +21,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"whatsapp-service/internal/models"
+	"whatsapp-service/internal/queue"
 	"whatsapp-service/internal/repository"
 	"whatsapp-service/internal/ws"
 )
@@ -35,6 +36,7 @@ type Manager struct {
 	contactRepo       *repository.ContactRepo
 	messageRepo       *repository.MessageRepo
 	mediaRepo         *repository.MediaRepo
+	mediaQueue        *queue.RabbitMQ
 	hub               *ws.Hub
 	logger            *zap.Logger
 	dbURI             string
@@ -61,6 +63,7 @@ func NewManager(
 	contactRepo *repository.ContactRepo,
 	messageRepo *repository.MessageRepo,
 	mediaRepo *repository.MediaRepo,
+	mediaQueue *queue.RabbitMQ,
 	hub *ws.Hub,
 	logger *zap.Logger,
 	dbURI string,
@@ -86,6 +89,7 @@ func NewManager(
 		contactRepo:       contactRepo,
 		messageRepo:       messageRepo,
 		mediaRepo:         mediaRepo,
+		mediaQueue:        mediaQueue,
 		hub:               hub,
 		logger:            logger,
 		dbURI:             dbURI,
@@ -210,6 +214,7 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		m.contactRepo,
 		m.messageRepo,
 		m.mediaRepo,
+		m.mediaQueue,
 		m.hub,
 		m.logger,
 		m.supabaseURL,
@@ -516,6 +521,16 @@ func (m *Manager) StartMediaWorker() {
 	if m.mediaRepo == nil {
 		return
 	}
+	if m.mediaQueue != nil {
+		go func() {
+			m.logger.Info("RabbitMQ media worker started")
+			if err := m.mediaQueue.ConsumeMediaJobs(m.ctx, func(ctx context.Context, job queue.MediaJob) error {
+				return m.processMediaByID(ctx, job.MediaID)
+			}); err != nil && err != context.Canceled {
+				m.logger.Warn("RabbitMQ media worker stopped", zap.Error(err))
+			}
+		}()
+	}
 	go func() {
 		ticker := time.NewTicker(3 * time.Second)
 		defer ticker.Stop()
@@ -541,6 +556,18 @@ func (m *Manager) processMediaBatch() {
 	for _, job := range jobs {
 		m.processMediaJob(job)
 	}
+}
+
+func (m *Manager) processMediaByID(ctx context.Context, mediaID uuid.UUID) error {
+	job, err := m.mediaRepo.ClaimByID(ctx, mediaID)
+	if err != nil {
+		return err
+	}
+	if job == nil {
+		return nil
+	}
+	m.processMediaJob(*job)
+	return nil
 }
 
 func (m *Manager) processMediaJob(job models.Media) {

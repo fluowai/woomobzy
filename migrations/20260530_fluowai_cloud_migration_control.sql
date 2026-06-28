@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.migration_jobs (
   target_supabase_url TEXT,
   target_minio_endpoint TEXT,
   selected_schemas TEXT[] NOT NULL DEFAULT ARRAY['public', 'auth'],
-  selected_buckets TEXT[] NOT NULL DEFAULT ARRAY['whatsapp-media', 'imobzyimg', 'imobzymsg', 'documents', 'exports'],
+  selected_buckets TEXT[] NOT NULL DEFAULT ARRAY['imobzywhatsapp', 'imobzycrm', 'documents', 'exports'],
   started_at TIMESTAMPTZ,
   finished_at TIMESTAMPTZ,
   progress INTEGER NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),

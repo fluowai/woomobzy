@@ -23,12 +23,14 @@ const upload = multer({
 });
 
 const BUCKET_MAP = {
-  'agency-assets': 'imobzyimg',
-  'property-images': 'imobzyimg',
-  imobzyimg: 'imobzyimg',
-  'imobzy-media': 'imobzyimg',
-  imobzymsg: 'imobzymsg',
-  'whatsapp-media': 'whatsapp-media',
+  'agency-assets': 'imobzycrm',
+  'property-images': 'imobzycrm',
+  imobzyimg: 'imobzycrm',
+  imobzycrm: 'imobzycrm',
+  'imobzy-media': 'imobzycrm',
+  imobzymsg: 'imobzywhatsapp',
+  imobzywhatsapp: 'imobzywhatsapp',
+  'whatsapp-media': 'imobzywhatsapp',
   documents: 'documents',
   'imobzy-documents': 'documents',
   exports: 'exports',
@@ -36,18 +38,8 @@ const BUCKET_MAP = {
 };
 
 const ALLOWED_MIME_BY_BUCKET = {
-  imobzyimg: new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']),
-  imobzymsg: new Set([
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'audio/ogg',
-    'audio/mpeg',
-    'audio/mp4',
-    'video/mp4',
-    'application/pdf',
-  ]),
-  'whatsapp-media': new Set([
+  imobzycrm: new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']),
+  imobzywhatsapp: new Set([
     'image/jpeg',
     'image/png',
     'image/webp',
@@ -353,7 +345,7 @@ function buildContentAddressedKey(tenantId, folder, sha256, extension) {
 }
 
 function defaultFolderForBucket(bucket) {
-  if (bucket === 'imobzymsg' || bucket === 'whatsapp-media') return 'whatsapp/media';
+  if (bucket === 'imobzymsg' || bucket === 'imobzywhatsapp' || bucket === 'whatsapp-media') return 'whatsapp/media';
   if (bucket === 'documents') return 'documents';
   if (bucket === 'exports') return 'exports';
   return 'uploads';

@@ -37,7 +37,7 @@ Antes da correcao, a tabela `storage_objects` nao existia no banco. A migration 
 
 ## MinIO
 
-Contrato confirmado: imagens, audios, PDFs/docs, videos e stickers devem ser salvos no MinIO/S3, no bucket configurado por `MINIO_WHATSAPP_BUCKET` ou `S3_WHATSAPP_BUCKET` com fallback `whatsapp-media`.
+Contrato confirmado: imagens, audios, PDFs/docs, videos e stickers devem ser salvos no MinIO/S3, no bucket configurado por `MINIO_WHATSAPP_BUCKET` ou `S3_WHATSAPP_BUCKET` com fallback `imobzywhatsapp`.
 
 Variaveis obrigatorias para o WhatsApp Service:
 
@@ -48,7 +48,7 @@ MINIO_PUBLIC_URL=...
 MINIO_ACCESS_KEY=...
 MINIO_SECRET_KEY=...
 MINIO_REGION=us-east-1
-MINIO_WHATSAPP_BUCKET=whatsapp-media
+MINIO_WHATSAPP_BUCKET=imobzywhatsapp
 ```
 
 O fallback Supabase continua disponivel somente se explicitamente configurado por `MEDIA_STORAGE_PROVIDER=supabase` ou `ALLOW_SUPABASE_STORAGE_FALLBACK=true`, mas nao deve ser usado para este contrato.

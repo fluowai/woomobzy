@@ -32,6 +32,8 @@ dist-ssr
 
 # Secrets backup
 *.secrets.md
+*-filled.yml
+*-filled.yaml
 
 # Debug files
 debug_scrape.html

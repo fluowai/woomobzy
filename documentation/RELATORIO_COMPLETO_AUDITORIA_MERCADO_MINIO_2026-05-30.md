@@ -210,8 +210,8 @@ Recomendacao:
 ### Plano de consolidacao
 
 1. Definir matriz de buckets:
-   - `imobzy-media`: publico, imagens comerciais.
-   - `whatsapp-media`: privado por padrao, URL assinada.
+  - `imobzycrm`: publico, imagens comerciais.
+  - `imobzywhatsapp`: privado por padrao, URL assinada.
    - `imobzy-documents`: privado.
    - `imobzy-exports`: privado com expiracao.
    - `imobzy-backups`: privado, versionado, sem acesso app.

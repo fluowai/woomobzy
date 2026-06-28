@@ -11,8 +11,8 @@ const BUCKET_ENV = {
 };
 
 const BUCKET_FALLBACKS = {
-  media: 'imobzy-media',
-  whatsapp: 'whatsapp-media',
+  media: 'imobzycrm',
+  whatsapp: 'imobzywhatsapp',
   documents: 'imobzy-documents',
   backups: 'imobzy-backups',
   exports: 'imobzy-exports',
@@ -61,6 +61,7 @@ export function resolveMediaBucket(requestedBucket = 'imobzyimg') {
   if (
     normalized === 'imobzymsg' ||
     normalized === 'whatsapp-media' ||
+    normalized === 'imobzywhatsapp' ||
     normalized === 'whatsapp'
   ) {
     return getBucketName('whatsapp');

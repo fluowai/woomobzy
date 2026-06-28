@@ -4,7 +4,7 @@ import json
 import re
 from utils.audio_converter import convert_to_wav
 from stt import transcrever_audio
-from ollama_client import analisar_com_ai, get_ai_config
+from ai_client import analisar_com_ai, get_ai_config
 from kanban import atualizar_status_kanban, get_supabase
 from tts import gerar_audio_resposta
 

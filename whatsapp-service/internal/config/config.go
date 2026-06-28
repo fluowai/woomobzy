@@ -29,6 +29,10 @@ type Config struct {
 	ServiceToken       string
 	WSJWTSecret        string
 	AutomationEnabled  bool
+	RabbitMQURL        string
+	RabbitMQExchange   string
+	RabbitMQMediaQueue string
+	RabbitMQRoutingKey string
 }
 
 // Load reads configuration from environment variables
@@ -68,7 +72,7 @@ func Load(logger *zap.Logger) *Config {
 		SupabaseURL:        getEnvAny([]string{"SUPABASE_URL", "VITE_SUPABASE_URL"}, ""),
 		SupabaseServiceKey: getEnvAny([]string{"SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY"}, ""),
 		SupabaseDBURL:      normalizeDatabaseURL(rawDBURL),
-		StorageBucket:      getEnvAny([]string{"MINIO_WHATSAPP_BUCKET", "S3_WHATSAPP_BUCKET", "SUPABASE_STORAGE_BUCKET"}, "whatsapp-media"),
+		StorageBucket:      getEnvAny([]string{"MINIO_WHATSAPP_BUCKET", "S3_WHATSAPP_BUCKET", "SUPABASE_STORAGE_BUCKET"}, "imobzywhatsapp"),
 		MinIOEndpoint:      normalizeStorageEndpoint(getEnvAny([]string{"MINIO_ENDPOINT", "S3_ENDPOINT", "AWS_ENDPOINT_URL"}, ""), getEnvAny([]string{"MINIO_USE_SSL", "S3_USE_SSL"}, "false")),
 		MinIOPublicURL:     normalizeStorageEndpoint(getEnvAny([]string{"MINIO_PUBLIC_URL", "MINIO_PUBLIC_ENDPOINT", "S3_PUBLIC_URL"}, ""), getEnvAny([]string{"MINIO_PUBLIC_USE_SSL", "MINIO_USE_SSL", "S3_USE_SSL"}, "false")),
 		MinIOAccessKey:     getEnvAny([]string{"MINIO_ACCESS_KEY", "MINIO_ROOT_USER", "AWS_ACCESS_KEY_ID", "S3_ACCESS_KEY_ID"}, ""),
@@ -80,6 +84,10 @@ func Load(logger *zap.Logger) *Config {
 		ServiceToken:       getEnvAny([]string{"WHATSAPP_SERVICE_TOKEN", "WHATSAPP_INTERNAL_TOKEN"}, ""),
 		WSJWTSecret:        getEnv("WHATSAPP_WS_JWT_SECRET", ""),
 		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
+		RabbitMQURL:        getEnv("RABBITMQ_URL", ""),
+		RabbitMQExchange:   getEnv("RABBITMQ_MEDIA_EXCHANGE", "imobzy.whatsapp"),
+		RabbitMQMediaQueue: getEnv("RABBITMQ_MEDIA_QUEUE", "whatsapp.media.download"),
+		RabbitMQRoutingKey: getEnv("RABBITMQ_MEDIA_ROUTING_KEY", "media.download"),
 	}
 
 	corsStr := getEnvAny([]string{"CORS_ORIGINS", "ALLOWED_ORIGINS"}, "http://localhost:3006,http://localhost:3002,https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br")

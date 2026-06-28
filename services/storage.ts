@@ -2,8 +2,8 @@ import { logger } from '@/utils/logger';
 import { getApiUrl } from '../src/lib/api';
 import { supabase } from './supabase';
 
-type StorageBucket = 'agency-assets' | 'property-images' | 'imobzyimg' | 'imobzymsg' | 'whatsapp-media';
-type ResolvedStorageBucket = 'imobzyimg' | 'imobzymsg' | 'whatsapp-media';
+type StorageBucket = 'agency-assets' | 'property-images' | 'imobzyimg' | 'imobzycrm' | 'imobzymsg' | 'imobzywhatsapp' | 'whatsapp-media';
+type ResolvedStorageBucket = 'imobzycrm' | 'imobzywhatsapp';
 
 export const uploadFile = async (
   file: File,
@@ -71,12 +71,12 @@ function getImpersonatedOrgId(): string | null {
 
 function resolveStorageBucket(bucket: StorageBucket): ResolvedStorageBucket {
   if (bucket === 'agency-assets' || bucket === 'property-images') {
-    return 'imobzyimg';
+    return 'imobzycrm';
   }
 
-  if (bucket === 'imobzymsg' || bucket === 'whatsapp-media') {
-    return bucket;
+  if (bucket === 'imobzymsg' || bucket === 'whatsapp-media' || bucket === 'imobzywhatsapp') {
+    return 'imobzywhatsapp';
   }
 
-  return 'imobzyimg';
+  return 'imobzycrm';
 }

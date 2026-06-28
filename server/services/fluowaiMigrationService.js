@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 const { Client } = pg;
 
 const DEFAULT_SCHEMAS = ['public', 'auth'];
-const DEFAULT_BUCKETS = ['whatsapp-media', 'imobzyimg', 'imobzymsg', 'documents', 'exports'];
+const DEFAULT_BUCKETS = ['imobzywhatsapp', 'imobzycrm', 'documents', 'exports'];
 const TEXT_URL_COLUMNS = [
   'media_url',
   'file_url',

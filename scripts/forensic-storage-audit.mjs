@@ -8,8 +8,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const DEFAULT_BUCKETS = [
-  process.env.MINIO_MEDIA_BUCKET || process.env.S3_MEDIA_BUCKET || 'imobzy-media',
-  process.env.MINIO_WHATSAPP_BUCKET || process.env.S3_WHATSAPP_BUCKET || 'whatsapp-media',
+  process.env.MINIO_MEDIA_BUCKET || process.env.S3_MEDIA_BUCKET || 'imobzycrm',
+  process.env.MINIO_WHATSAPP_BUCKET || process.env.S3_WHATSAPP_BUCKET || 'imobzywhatsapp',
   process.env.MINIO_DOCUMENTS_BUCKET || process.env.S3_DOCUMENTS_BUCKET || 'imobzy-documents',
   process.env.MINIO_EXPORTS_BUCKET || process.env.S3_EXPORTS_BUCKET || 'imobzy-exports',
   process.env.MINIO_BACKUPS_BUCKET || process.env.S3_BACKUPS_BUCKET || 'imobzy-backups',

@@ -7,7 +7,7 @@ alter table storage.objects enable row level security;
 create policy "Public Access"
 on storage.objects for select
 to public
-using ( bucket_id in ('imobzyimg', 'imobzymsg', 'whatsapp-media') );
+using ( bucket_id in ('imobzycrm', 'imobzywhatsapp') );
 
 -- Política CRÍTICA: Permitir UPLOAD (Insert) para qualquer pessoa (anon key)
 -- ATENÇÃO: Em um sistema multi-tenant real, você restringiria isso apenas a usuários logados.
@@ -15,10 +15,10 @@ using ( bucket_id in ('imobzyimg', 'imobzymsg', 'whatsapp-media') );
 create policy "Allow Uploads"
 on storage.objects for insert
 to public
-with check ( bucket_id in ('imobzyimg', 'imobzymsg', 'whatsapp-media') );
+with check ( bucket_id in ('imobzycrm', 'imobzywhatsapp') );
 
 -- Política para permitir deletar imagens (caso queira substituir o logo ou remover foto)
 create policy "Allow Deletes"
 on storage.objects for delete
 to public
-using ( bucket_id in ('imobzyimg', 'imobzymsg', 'whatsapp-media') );
+using ( bucket_id in ('imobzycrm', 'imobzywhatsapp') );

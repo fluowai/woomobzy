@@ -136,5 +136,5 @@ CREATE TRIGGER update_whatsapp_chats_updated_at
 -- ============================================
 
 INSERT INTO storage.buckets (id, name, public) 
-VALUES ('whatsapp-media', 'whatsapp-media', true)
+VALUES ('imobzywhatsapp', 'imobzywhatsapp', true)
 ON CONFLICT (id) DO NOTHING;

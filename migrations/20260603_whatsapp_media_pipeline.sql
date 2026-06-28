@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_media (
   type TEXT NOT NULL,
 
   provider TEXT NOT NULL DEFAULT 'minio',
-  bucket TEXT NOT NULL DEFAULT 'whatsapp-media',
+  bucket TEXT NOT NULL DEFAULT 'imobzywhatsapp',
   object_key TEXT NOT NULL DEFAULT '',
   public_url TEXT,
 
@@ -125,7 +125,7 @@ SELECT
       THEN split_part(regexp_replace(m.media_url, '^.*/storage/v1/object/public/', ''), '/', 1)
     WHEN COALESCE(m.media_url, '') ~ '^https?://'
       THEN split_part(regexp_replace(m.media_url, '^https?://[^/]+/', ''), '/', 1)
-    ELSE 'whatsapp-media'
+    ELSE 'imobzywhatsapp'
   END,
   CASE
     WHEN COALESCE(m.media_url, '') ILIKE '%/storage/v1/object/public/%'

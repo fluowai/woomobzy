@@ -416,7 +416,7 @@ Componentes sugeridos:
 
 1. Deploy das correcoes ja aplicadas em `history_import.go`, `message_repo.go` e `client.go`.
 2. Validar `MINIO_PUBLIC_URL` real em producao; hoje templates usam `https://media.seu-dominio.com`.
-3. Confirmar se bucket `whatsapp-media` e publico ou privado. Se privado, integrar signed URL no painel.
+3. Confirmar se bucket `imobzywhatsapp` e publico ou privado. Se privado, integrar signed URL no painel.
 4. Criar endpoint de diagnostico para media: mensagem, bucket, object key, status HTTP da URL.
 5. Adicionar logs com `message_id`, `chat_jid`, `mime`, `size`, `bucket`, `storage_path`.
 6. Criar query de auditoria:

@@ -2,7 +2,6 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 import { AgentStateMachine, AutonomyPolicy, ToolRegistry } from './agents/index.js';
-import { AICoreService } from '../services/aiCoreService.js';
 
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',
@@ -88,15 +87,6 @@ export class AIAutomationEngine {
 
   async processIntent({ content, audioData, mimeType, organizationId, agent, phone }) {
     try {
-      if (!audioData && process.env.AI_CORE_DISABLED !== 'true') {
-        try {
-          const aiCoreResult = await this._processIntentWithAICore({ content, organizationId, agent, phone });
-          if (aiCoreResult) return aiCoreResult;
-        } catch (aiCoreError) {
-          console.warn('[AIAutomation] AI Core local indisponivel, usando fluxo legado:', aiCoreError.message);
-        }
-      }
-
       const model = await this._ensureModel(organizationId);
       const parts = [];
 
@@ -415,101 +405,6 @@ Formato:
         allowHandoff: matchAvailable && this._hasPropertyMatches(lead) && this._shouldRecommendProperties({ actionPlan, text: content }),
       }),
     };
-  }
-
-  async _processIntentWithAICore({ content, organizationId, agent, phone }) {
-    const history = phone
-      ? await this._getConversationMemory(organizationId, phone, 8)
-      : [];
-    const stateMachine = AgentStateMachine.fromAgent(agent);
-    const matchedStep = await stateMachine.evaluate(content, history);
-    if (matchedStep) stateMachine.updateContext({ lastMessage: content });
-    const policy = AutonomyPolicy.fromAgent(agent);
-
-    const historyBlock = history.length
-      ? `\nHISTORICO DA CONVERSA:\n${history.map((m) => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n')}\n`
-      : '\n(Inicio da conversa)\n';
-
-    const systemInstruction = `
-Voce e o motor de qualificacao comercial da IMOBZY para atendimento imobiliario via WhatsApp.
-Responda apenas JSON valido, sem markdown.
-
-Agente:
-- Nome: ${agent?.name || 'Agente IMOBZY'}
-- Funcao: ${agent?.role || 'Atendimento imobiliario'}
-- Personalidade: ${agent?.personality || 'consultiva, clara e objetiva'}
-- Estilo: ${agent?.response_style || 'consultivo'}
-- Instrucoes: ${agent?.instructions || 'Atenda com foco em qualificar e avancar o cliente.'}
-- Nivel de autonomia: ${policy.getLabel()} (${policy.getLevel()}/3)
-
-Regras:
-- So marque shouldCreateLead=true quando houver intencao imobiliaria/comercial real.
-- Conversas pessoais, grupos, spam e fornecedores devem ser shouldCreateLead=false.
-- Extraia perfil de interesse, score, etapa, proxima acao e resposta curta.
-- Nao repita perguntas ja respondidas no historico.
-- Faca no maximo duas perguntas objetivas por resposta.
-
-Formato obrigatorio:
-{
-  "shouldCreateLead": true,
-  "leadType": "cliente | familia | amigo | fornecedor | interno | spam | outro",
-  "confidence": 0.0,
-  "transcricao": "",
-  "intent": "resumo curto",
-  "suggestedStage": "Novo | Qualificacao | Visita | Simulacao | Documentacao | Fechado | Perdido",
-  "classification": "Alta Prioridade | Interessado | Curioso | Documentacao | Financeiro",
-  "leadScore": 0,
-  "temperature": "frio | morno | quente",
-  "tags": ["ate 3 etiquetas curtas"],
-  "leadName": "",
-  "budget": 0,
-  "interestProfile": {
-    "operation": "compra | venda | aluguel | arrendamento | captacao | indefinido",
-    "propertyType": "casa | apartamento | terreno | fazenda | sitio | chacara | comercial | indefinido",
-    "city": "",
-    "region": "",
-    "payment": "vista | financiamento | parcelado | indefinido",
-    "timeline": "imediato | 7_dias | 30_dias | 90_dias | indefinido",
-    "missingFields": []
-  },
-  "nextAction": {
-    "type": "qualify | recommend_property | schedule_visit | follow_up | collect_documents | notify_broker | close_deal | mark_lost",
-    "title": "",
-    "dueAt": "",
-    "reason": ""
-  },
-  "visit": {
-    "requested": false,
-    "scheduledAt": "",
-    "propertyHint": "",
-    "notes": ""
-  },
-  "handoffRequired": false,
-  "handoffReason": "",
-  "followUpAt": "",
-  "reply": "resposta curta para enviar ao cliente"
-}`.trim();
-
-    const aiCore = new AICoreService();
-    const agentAIConfig = agent?.handoff_rules?.__operational360 || {};
-    const parsed = await aiCore.generateJson({
-      organizationId,
-      agentId: agent?.id || null,
-      routeKey: 'whatsapp_intent',
-      channel: 'whatsapp',
-      modelId: agentAIConfig.default_model_id || agent?.default_model_id || '',
-      prompt: `${historyBlock}\nMensagem atual:\n${content || 'Mensagem sem texto.'}`,
-      systemInstruction,
-      temperature: Number(agentAIConfig.temperature ?? agent?.temperature ?? 0.2),
-      maxTokens: agentAIConfig.max_tokens || agent?.max_tokens || 1200,
-      metadata: { source: 'ai-automation', phone },
-    });
-
-    if (agent?.id) {
-      await this._saveStateMachine(agent.id, organizationId, stateMachine);
-    }
-
-    return { ...parsed, _stateMachine: stateMachine.toJSON() };
   }
 
   async handleImportedWhatsAppConversations(payload = {}) {

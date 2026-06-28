@@ -160,7 +160,7 @@ RETORNE APENAS O JSON. SEM MARKDOWN. SEM EXPLICAÇÕES.
   try {
     let text = '{}';
 
-    logger.info('Using AI Core route landing_pages for landing page generation...');
+    logger.info('Using configured AI provider for landing page generation...');
     const response = await callApi('/api/ai/chat', {
       method: 'POST',
       body: JSON.stringify({

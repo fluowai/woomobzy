@@ -106,6 +106,29 @@ services:
     logging: *default-logging
     restart: unless-stopped
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-imobzy}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    expose:
+      - "5672"
+      - "15672"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - imobzy
+    cpus: "0.50"
+    mem_limit: 512m
+    logging: *default-logging
+    restart: unless-stopped
+
   whatsapp-service:
     build:
       context: .
@@ -120,6 +143,7 @@ services:
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:?set WHATSAPP_SERVICE_TOKEN}
       WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-imobzy}:${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD}@rabbitmq:5672/
       PGSSLMODE: require
       CORS_ORIGINS: ${CORS_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}
@@ -129,6 +153,9 @@ services:
       - "n.woopanel.com.br:${PLATFORM_PUBLIC_IP:-207.58.153.219}"
     expose:
       - "3100"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3100/health >/dev/null || exit 1"]
       interval: 30s
@@ -179,76 +206,10 @@ services:
     logging: *default-logging
     restart: unless-stopped
 
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    volumes:
-      - ollama_models:/root/.ollama
-    expose:
-      - "11434"
-    ports:
-      - "${OLLAMA_PORT:-11434}:11434"
-    networks:
-      - imobzy
-    cpus: "${OLLAMA_CPUS:-2.00}"
-    mem_limit: ${OLLAMA_MEM_LIMIT:-6g}
-    logging: *default-logging
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    restart: unless-stopped
-    volumes:
-      - qdrant_data:/qdrant/storage
-    expose:
-      - "6333"
-    ports:
-      - "${QDRANT_PORT:-6333}:6333"
-    networks:
-      - imobzy
-    cpus: "1.00"
-    mem_limit: 1g
-    logging: *default-logging
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis_data:/data
-    expose:
-      - "6379"
-    networks:
-      - imobzy
-    cpus: "0.50"
-    mem_limit: 512m
-    logging: *default-logging
-
-  litellm:
-    image: ghcr.io/berriai/litellm:main-latest
-    restart: unless-stopped
-    environment:
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-change-me}
-      DATABASE_URL: ${LITELLM_DATABASE_URL:-}
-      STORE_MODEL_IN_DB: "False"
-    command: ["--port", "4000"]
-    expose:
-      - "4000"
-    ports:
-      - "${LITELLM_PORT:-4000}:4000"
-    networks:
-      - imobzy
-    depends_on:
-      - ollama
-    cpus: "1.00"
-    mem_limit: 1g
-    logging: *default-logging
-
 volumes:
   whatsapp_sessions:
   traefik_acme:
-  ollama_models:
-  qdrant_data:
-  redis_data:
+  rabbitmq_data:
 
 networks:
   imobzy:

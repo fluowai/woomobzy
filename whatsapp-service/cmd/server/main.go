@@ -18,6 +18,7 @@ import (
 
 	"whatsapp-service/internal/config"
 	"whatsapp-service/internal/handlers"
+	"whatsapp-service/internal/queue"
 	"whatsapp-service/internal/repository"
 	"whatsapp-service/internal/whatsapp"
 	"whatsapp-service/internal/ws"
@@ -64,6 +65,13 @@ func main() {
 	contactRepo := repository.NewContactRepo(pool, log)
 	messageRepo := repository.NewMessageRepo(pool, log)
 	mediaRepo := repository.NewMediaRepo(pool, log)
+	mediaQueue, err := queue.NewRabbitMQ(cfg.RabbitMQURL, cfg.RabbitMQExchange, cfg.RabbitMQMediaQueue, cfg.RabbitMQRoutingKey, log)
+	if err != nil {
+		log.Warn(fmt.Sprintf("RabbitMQ unavailable, falling back to Postgres media polling: %v", err))
+	} else if mediaQueue != nil {
+		defer mediaQueue.Close()
+		log.Info("Connected to RabbitMQ media queue")
+	}
 
 	// Initialize WebSocket hub
 	hub := ws.NewHub(log, cfg.CORSOrigins)
@@ -72,7 +80,7 @@ func main() {
 
 	// Initialize WhatsApp manager
 	manager := whatsapp.NewManager(
-		instanceRepo, chatRepo, contactRepo, messageRepo, mediaRepo,
+		instanceRepo, chatRepo, contactRepo, messageRepo, mediaRepo, mediaQueue,
 		hub, log, cfg.SupabaseDBURL,
 		cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.StorageBucket,
 		cfg.MinIOEndpoint, cfg.MinIOPublicURL, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIORegion,

@@ -1,0 +1,293 @@
+x-default-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+x-public-env: &public-env
+  VITE_API_URL: "same-origin"
+  VITE_WHATSAPP_API_URL: "/api/whatsapp"
+  VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
+  VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?set VITE_SUPABASE_URL}"
+  VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?set VITE_SUPABASE_ANON_KEY}"
+  VITE_PANEL_URL: "${VITE_PANEL_URL:-https://imobfluow.consultio.com.br}"
+  VITE_PUBLIC_APP_URL: "${VITE_PUBLIC_APP_URL:-https://imobfluow.consultio.com.br}"
+  VITE_PLATFORM_IP: "${PLATFORM_PUBLIC_IP:-207.58.153.219}"
+
+x-backend-env: &backend-env
+  NODE_ENV: "production"
+  ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}"
+  CORS_ORIGINS: "${CORS_ORIGINS:-https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br}"
+  VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?set VITE_SUPABASE_URL}"
+  VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?set VITE_SUPABASE_ANON_KEY}"
+  SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY}"
+  SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET:?set SUPABASE_JWT_SECRET}"
+  DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL}"
+  SUPABASE_DB_URL: "${SUPABASE_DB_URL:-${DATABASE_URL}}"
+  PGSSLMODE: "require"
+  NODE_URL: "http://api:3002"
+  WHATSAPP_API_URL: "http://whatsapp-service:3100"
+  WHATSMEOW_URL: "http://whatsapp-service:3100"
+  WHATSAPP_SERVICE_TOKEN: "${WHATSAPP_SERVICE_TOKEN:?set WHATSAPP_SERVICE_TOKEN}"
+  WHATSAPP_INTERNAL_TOKEN: "${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}"
+  WHATSAPP_WS_JWT_SECRET: "${WHATSAPP_WS_JWT_SECRET:?set WHATSAPP_WS_JWT_SECRET}"
+  WHATSAPP_AI_AUTOMATION: "${WHATSAPP_AI_AUTOMATION:-true}"
+  MEDIA_STORAGE_PROVIDER: "minio"
+  MINIO_ENDPOINT: "${MINIO_ENDPOINT:?set MINIO_ENDPOINT}"
+  MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL:-${MINIO_ENDPOINT}}"
+  MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY}"
+  MINIO_SECRET_KEY: "${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY}"
+  MINIO_REGION: "${MINIO_REGION:-us-east-1}"
+  MINIO_WHATSAPP_BUCKET: "${MINIO_WHATSAPP_BUCKET:?set MINIO_WHATSAPP_BUCKET}"
+  OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+  GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+  GROQ_API_KEY: "${GROQ_API_KEY:-}"
+
+services:
+  frontend:
+    image: ghcr.io/fluowai/woomobzy-frontend:latest
+    environment:
+      <<: *public-env
+    networks:
+      - woopanel1
+      - imobfluow_internal
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: start-first
+        failure_action: rollback
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "256M"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=woopanel1"
+        - "traefik.http.routers.imobfluow_frontend.rule=Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)"
+        - "traefik.http.routers.imobfluow_frontend.entrypoints=websecure"
+        - "traefik.http.routers.imobfluow_frontend.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.imobfluow_frontend.priority=1"
+        - "traefik.http.routers.imobfluow_frontend.service=imobfluow_frontend"
+        - "traefik.http.services.imobfluow_frontend.loadbalancer.server.port=80"
+
+  api:
+    image: ghcr.io/fluowai/woomobzy-api:latest
+    environment:
+      <<: *backend-env
+      PORT: "3002"
+      AGRO_INTEL_URL: "http://agro-intelligence:8000"
+      AI_CORE_DISABLED: "${AI_CORE_DISABLED:-false}"
+      AI_CORE_OLLAMA_URL: "http://ollama:11434"
+      AI_CORE_LITELLM_URL: "http://litellm:4000"
+      AI_CORE_QDRANT_URL: "http://qdrant:6333"
+      AI_CORE_REDIS_URL: "redis://redis:6379"
+      AI_CORE_DEFAULT_CHAT_MODEL: "${AI_CORE_DEFAULT_CHAT_MODEL:-qwen2.5:3b}"
+      AI_CORE_DEFAULT_EMBEDDING_MODEL: "${AI_CORE_DEFAULT_EMBEDDING_MODEL:-nomic-embed-text}"
+      AI_CORE_TIMEOUT_MS: "${AI_CORE_TIMEOUT_MS:-120000}"
+      AI_CORE_ENFORCE_CREDITS: "${AI_CORE_ENFORCE_CREDITS:-false}"
+      LITELLM_MASTER_KEY: "${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY}"
+      TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
+    volumes:
+      - imobzy_traefik_dynamic:/app/traefik/dynamic
+    networks:
+      - woopanel1
+      - imobfluow_internal
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3002/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: start-first
+        failure_action: rollback
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: "768M"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=woopanel1"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.rule=(Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api/whatsapp/ws`)"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.entrypoints=websecure"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.priority=20"
+        - "traefik.http.routers.imobfluow_whatsapp_ws.service=imobfluow_api"
+        - "traefik.http.routers.imobfluow_api.rule=(Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api`)"
+        - "traefik.http.routers.imobfluow_api.entrypoints=websecure"
+        - "traefik.http.routers.imobfluow_api.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.imobfluow_api.priority=10"
+        - "traefik.http.routers.imobfluow_api.service=imobfluow_api"
+        - "traefik.http.services.imobfluow_api.loadbalancer.server.port=3002"
+
+  whatsapp-service:
+    image: ghcr.io/fluowai/woomobzy-whatsapp:latest
+    environment:
+      <<: *backend-env
+      PORT: "3100"
+    volumes:
+      - whatsapp_sessions:/app/.sessions
+    networks:
+      - imobfluow_internal
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3100/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: start-first
+        failure_action: rollback
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: "1G"
+
+  agro-intelligence:
+    image: ghcr.io/fluowai/woomobzy-agro:latest
+    networks:
+      - imobfluow_internal
+    logging: *default-logging
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: "1G"
+
+  ollama:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_KEEP_ALIVE: "5m"
+    volumes:
+      - ollama_models:/root/.ollama
+    networks:
+      - imobfluow_internal
+    logging: *default-logging
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: "4G"
+
+  ollama-model-loader:
+    image: ollama/ollama:latest
+    entrypoint:
+      - "/bin/sh"
+      - "-lc"
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+    command:
+      - |
+        until ollama list >/dev/null 2>&1; do
+          echo "Aguardando Ollama ficar online..."
+          sleep 5
+        done
+        ollama pull qwen2.5:3b
+        ollama list
+    networks:
+      - imobfluow_internal
+    logging: *default-logging
+    deploy:
+      restart_policy:
+        condition: none
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: "2G"
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - imobfluow_internal
+    logging: *default-logging
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: "1G"
+
+  redis:
+    image: redis:7-alpine
+    command:
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+    volumes:
+      - redis_data:/data
+    networks:
+      - imobfluow_internal
+    logging: *default-logging
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "512M"
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    environment:
+      LITELLM_MASTER_KEY: "${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY}"
+      STORE_MODEL_IN_DB: "False"
+    command:
+      - "--port"
+      - "4000"
+    networks:
+      - imobfluow_internal
+    logging: *default-logging
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: "1G"
+
+volumes:
+  whatsapp_sessions:
+  ollama_models:
+  qdrant_data:
+  redis_data:
+  imobzy_traefik_dynamic:
+    external: true
+
+networks:
+  woopanel1:
+    external: true
+  imobfluow_internal:
+    driver: overlay

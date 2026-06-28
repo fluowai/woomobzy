@@ -20,9 +20,43 @@ Fluxo desejado:
 
 1. Crie ou edite a stack do IMOBZY no Portainer.
 2. Use o arquivo `docker-stack.prod.yml`.
-3. Preencha as variaveis marcadas como `TROCAR_AQUI_*` com os valores reais.
-4. Ative o webhook da stack no Portainer.
-5. Copie a URL do webhook.
+3. Configure as variaveis obrigatorias da stack no Portainer:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_JWT_SECRET
+DATABASE_URL
+SUPABASE_DB_URL
+WHATSAPP_SERVICE_TOKEN
+WHATSAPP_INTERNAL_TOKEN
+WHATSAPP_WS_JWT_SECRET
+MINIO_ENDPOINT
+MINIO_ACCESS_KEY
+MINIO_SECRET_KEY
+MINIO_WHATSAPP_BUCKET
+LITELLM_MASTER_KEY
+```
+
+4. Opcionalmente ajuste:
+
+```text
+VITE_PANEL_URL
+VITE_PUBLIC_APP_URL
+PLATFORM_PUBLIC_IP
+ALLOWED_ORIGINS
+CORS_ORIGINS
+MINIO_PUBLIC_URL
+MINIO_REGION
+OPENAI_API_KEY
+GEMINI_API_KEY
+GROQ_API_KEY
+```
+
+5. Garanta que as redes/volumes externos referenciados na stack existam no Swarm: `woopanel1` e `imobzy_traefik_dynamic`.
+6. Ative o webhook da stack no Portainer.
+7. Copie a URL do webhook.
 
 ## Configuracao no GitHub
 

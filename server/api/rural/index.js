@@ -220,6 +220,109 @@ function describeGeometry(featureCollection) {
   };
 }
 
+function normalizeCarFeature(feature = {}, fallbackCode = '') {
+  const properties = feature.properties || {};
+  const codImovel = properties.cod_imovel || properties.cod_imovel_car || fallbackCode;
+  const areaHa = toNumber(properties.num_area || properties.area || properties.area_ha);
+  const municipio = properties.nom_munici || properties.municipio || properties.nom_municipio || null;
+  const uf = properties.cod_estado || properties.uf || extractUfFromRuralCode(codImovel) || null;
+
+  return {
+    codImovel,
+    areaHa,
+    status: properties.ind_status || properties.status || properties.situacao || null,
+    municipio,
+    uf,
+    geometry: feature.geometry || null,
+    rawProperties: properties,
+  };
+}
+
+async function fetchPdfImageBuffer(url) {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'image/png,image/jpeg,image/jpg,*/*' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('svg')) return null;
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.warn('[Rural PDF] Logo unavailable:', error.message);
+    return null;
+  }
+}
+
+async function fetchCarFeatureByCode(codigo) {
+  const uf = extractUfFromRuralCode(codigo);
+  if (!uf) {
+    const error = new Error('Codigo CAR deve iniciar com a UF. Ex: PA-...');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const layer = SicarService.getLayerName(uf);
+  const params = new URLSearchParams({
+    service: 'WFS',
+    version: '1.0.0',
+    request: 'GetFeature',
+    typeName: layer,
+    outputFormat: 'application/json',
+    CQL_FILTER: `cod_imovel='${codigo}'`,
+  });
+
+  const wfsUrl = `https://geoserver.car.gov.br/geoserver/sicar/ows?${params.toString()}`;
+  const response = await fetch(wfsUrl, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(20000),
+  });
+  const rawText = await response.text();
+  const contentType = response.headers.get('content-type') || '';
+
+  if (!response.ok) {
+    const message = extractGeoServerException(rawText) || 'Falha ao consultar servidor do CAR';
+    const error = new Error(message);
+    error.statusCode = 502;
+    throw error;
+  }
+
+  if (!contentType.includes('json') && rawText.trim().startsWith('<')) {
+    const message = extractGeoServerException(rawText) || 'Servidor do CAR retornou XML em vez de JSON.';
+    const error = new Error(message);
+    error.statusCode = 502;
+    throw error;
+  }
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch (parseError) {
+    const error = new Error(`Resposta invalida do servidor do CAR: ${parseError.message}`);
+    error.statusCode = 502;
+    throw error;
+  }
+
+  const feature = data?.features?.[0];
+  if (!feature) {
+    const error = new Error('Nenhum imovel encontrado para este codigo CAR.');
+    error.statusCode = 404;
+    error.data = data;
+    throw error;
+  }
+
+  return {
+    data,
+    feature,
+    car: normalizeCarFeature(feature, codigo),
+    target: featureCollectionToMapTarget(data),
+  };
+}
+
 function getComparableStats(properties = [], property = {}) {
   const propertyArea = getPropertyAreaHa(property);
   const sameCity = [];
@@ -512,63 +615,11 @@ router.get('/car/consultar/:codigo', verifyAuth, requireTenant, async (req, res)
       return res.status(400).json({ success: false, error: 'Codigo CAR invalido' });
     }
 
-    const uf = extractUfFromRuralCode(codigo);
-    if (!uf) {
-      return res.status(400).json({ success: false, error: 'Codigo CAR deve iniciar com a UF. Ex: PA-...' });
-    }
-
-    const layer = SicarService.getLayerName(uf);
-    const params = new URLSearchParams({
-      service: 'WFS',
-      version: '1.0.0',
-      request: 'GetFeature',
-      typeName: layer,
-      outputFormat: 'application/json',
-      CQL_FILTER: `cod_imovel='${codigo}'`,
-    });
-
-    const wfsUrl = `https://geoserver.car.gov.br/geoserver/sicar/ows?${params.toString()}`;
-    const response = await fetch(wfsUrl, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(20000),
-    });
-    const rawText = await response.text();
-    const contentType = response.headers.get('content-type') || '';
-
-    if (!response.ok) {
-      const message = extractGeoServerException(rawText) || 'Falha ao consultar servidor do CAR';
-      return res.status(502).json({ success: false, error: message, status: response.status });
-    }
-
-    if (!contentType.includes('json') && rawText.trim().startsWith('<')) {
-      const message = extractGeoServerException(rawText) || 'Servidor do CAR retornou XML em vez de JSON.';
-      return res.status(200).json({ success: false, error: message, data: null });
-    }
-
-    let data;
-    try {
-      data = JSON.parse(rawText);
-    } catch (parseError) {
-      return res.status(502).json({
-        success: false,
-        error: 'Resposta invalida do servidor do CAR.',
-        details: parseError.message,
-      });
-    }
-
-    const target = featureCollectionToMapTarget(data);
-    if (!target) {
-      return res.status(200).json({
-        success: false,
-        error: 'Nenhum imovel encontrado para este codigo CAR.',
-        data,
-      });
-    }
-
-    res.json({ success: true, data, ...target });
+    const result = await fetchCarFeatureByCode(codigo);
+    res.json({ success: true, data: result.data, ...result.target });
   } catch (error) {
     console.error('CAR WFS error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(error.statusCode || 500).json({ success: false, error: error.message, data: error.data || null });
   }
 });
 
@@ -880,6 +931,8 @@ router.post('/enrich/:propertyId', verifyAuth, requireTenant, async (req, res) =
   }
 });
 
+router.post('/valuation/by-car', verifyAuth, requireTenant, handleRuralValuationByCar);
+
 router.post('/valuation/:propertyId', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { propertyId } = req.params;
@@ -944,6 +997,154 @@ router.post('/valuation/:propertyId', verifyAuth, requireTenant, async (req, res
   }
 });
 
+async function handleRuralValuationByCar(req, res) {
+  try {
+    const codigo = sanitizeInput(req.body?.carNumber, 80).toUpperCase();
+    if (!codigo) {
+      return res.status(400).json({ error: 'Informe um numero de CAR valido.' });
+    }
+
+    const supabase = getSupabaseServer();
+    const carResult = await fetchCarFeatureByCode(codigo);
+    const car = carResult.car;
+    const geometry = normalizeGeometry(car.geometry);
+    const areaFromGeometry = geometry ? calculateGeometryAreaHa(geometry) : 0;
+    const areaHa = areaFromGeometry || car.areaHa || 0;
+
+    const { data: existingProperties, error: existingError } = await ruralPropertiesQuery(supabase, req.orgId)
+      .eq('features->legal->>carNumber', codigo)
+      .limit(1);
+
+    if (existingError) throw existingError;
+
+    const existing = existingProperties?.[0] || null;
+    const baseFeatures = existing?.features || {};
+    const features = {
+      ...baseFeatures,
+      areaHectares: areaHa || baseFeatures.areaHectares || 0,
+      preferredUnit: baseFeatures.preferredUnit || 'ha',
+      location: {
+        ...(baseFeatures.location || {}),
+        city: car.municipio || existing?.city || baseFeatures.location?.city || '',
+        state: car.uf || existing?.state || baseFeatures.location?.state || '',
+      },
+      legal: {
+        ...(baseFeatures.legal || {}),
+        car: true,
+        carNumber: codigo,
+        carStatus: car.status || baseFeatures.legal?.carStatus || 'INFORMADO',
+        geometry,
+        reservaLegal: baseFeatures.legal?.reservaLegal || 0,
+        app: baseFeatures.legal?.app || 0,
+      },
+      rural: {
+        ...(baseFeatures.rural || {}),
+        car_source: SicarService.getLayerName(car.uf),
+        car_match_mode: 'car_number',
+        car_confidence: 'alta',
+        car_raw_properties: car.rawProperties,
+      },
+    };
+
+    const payload = {
+      organization_id: req.orgId,
+      title: existing?.title || req.body?.title || `Fazenda ${car.municipio || codigo}`,
+      description: existing?.description || `Propriedade rural identificada pelo CAR ${codigo}.`,
+      property_type: existing?.property_type || 'Fazenda',
+      purpose: existing?.purpose || 'Venda',
+      status: existing?.status || 'Pendente',
+      price: toNumber(existing?.price || req.body?.price),
+      niche: 'rural',
+      city: car.municipio || existing?.city || '',
+      state: car.uf || existing?.state || '',
+      address: existing?.address || '',
+      neighborhood: existing?.neighborhood || '',
+      total_area_ha: areaHa || existing?.total_area_ha || null,
+      features,
+      images: existing?.images || [],
+    };
+
+    if (payload.price > 0 && toNumber(payload.total_area_ha) > 0) {
+      payload.price_per_ha = payload.price / toNumber(payload.total_area_ha);
+    }
+
+    const saveQuery = existing?.id
+      ? supabase
+          .from('properties')
+          .update(payload)
+          .eq('id', existing.id)
+          .eq('organization_id', req.orgId)
+          .select('*')
+          .single()
+      : supabase
+          .from('properties')
+          .insert(payload)
+          .select('*')
+          .single();
+
+    const { data: savedProperty, error: saveError } = await saveQuery;
+    if (saveError) throw saveError;
+
+    const { data: documents } = await supabase
+      .from('documents')
+      .select('document_type, status, validation_status, validation_score, created_at')
+      .eq('organization_id', req.orgId)
+      .eq('property_id', savedProperty.id)
+      .order('created_at', { ascending: false });
+
+    const enrichment = buildRuralEnrichment(savedProperty, documents || []);
+    const { data: ruralProperties } = await ruralPropertiesQuery(
+      supabase,
+      req.orgId,
+      'id, title, price, total_area_ha, city, state, property_type, niche, features'
+    );
+    const comparables = getComparableStats(ruralProperties || [], savedProperty);
+    const valuation = buildRuralValuation(savedProperty, enrichment, comparables);
+    const finalFeatures = {
+      ...(savedProperty.features || {}),
+      rural_enrichment: enrichment,
+      rural_valuation: valuation,
+    };
+
+    const updatePayload = {
+      features: finalFeatures,
+      total_area_ha: valuation.area_ha || savedProperty.total_area_ha,
+      niche: 'rural',
+    };
+    if (toNumber(savedProperty.price) > 0 && toNumber(updatePayload.total_area_ha) > 0) {
+      updatePayload.price_per_ha = toNumber(savedProperty.price) / toNumber(updatePayload.total_area_ha);
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from('properties')
+      .update(updatePayload)
+      .eq('id', savedProperty.id)
+      .eq('organization_id', req.orgId)
+      .select('*')
+      .single();
+
+    if (updateError) throw updateError;
+
+    res.json({
+      success: true,
+      mode: existing ? 'updated' : 'created',
+      property: updated,
+      enrichment,
+      valuation,
+      car: {
+        number: codigo,
+        status: car.status,
+        areaHa,
+        city: car.municipio,
+        state: car.uf,
+      },
+    });
+  } catch (error) {
+    console.error('Rural valuation by CAR error:', error);
+    res.status(error.statusCode || 500).json({ error: error.message || 'Erro ao puxar valuation pelo CAR.' });
+  }
+}
+
 /**
  * Motor de Análise Rural (MAR)
  * POST /api/rural/analysis/kmz
@@ -979,20 +1180,45 @@ router.get('/dossier/:propertyId/pdf', verifyAuth, requireTenant, async (req, re
     const areaHa = Number(property.total_area_ha || features.areaHectares || technical.measured_area_ha || 0);
     const price = Number(property.price || 0);
     const pricePerHa = areaHa > 0 ? price / areaHa : 0;
+    const { data: siteSettings } = await supabase
+      .from('site_settings')
+      .select('agency_name, logo_url, primary_color')
+      .eq('organization_id', req.orgId)
+      .maybeSingle();
+    const logoBuffer = await fetchPdfImageBuffer(siteSettings?.logo_url);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="dossie-rural-${property.id}.pdf"`);
 
     const doc = new PDFDocument({ margin: 48, size: 'A4' });
     doc.pipe(res);
-    doc.fillColor('#065f46').fontSize(24).text('Dossie Rural 360');
+    const brandColor = siteSettings?.primary_color || '#065f46';
+    const brandName = siteSettings?.agency_name || 'IMOBZY Rural';
+    const headerTop = doc.y;
+    if (logoBuffer) {
+      try {
+        doc.image(logoBuffer, 48, headerTop, { fit: [120, 54], align: 'left', valign: 'center' });
+      } catch (error) {
+        console.warn('[Rural PDF] Logo render failed:', error.message);
+      }
+    }
+    doc
+      .fillColor(brandColor)
+      .fontSize(10)
+      .text(brandName, 190, headerTop, { align: 'right' });
+    doc
+      .fillColor('#6b7280')
+      .fontSize(8)
+      .text(`Gerado em ${new Date().toLocaleString('pt-BR')}`, 190, headerTop + 16, { align: 'right' });
+    doc.moveTo(48, headerTop + 66).lineTo(547, headerTop + 66).strokeColor('#d1d5db').stroke();
+    doc.y = headerTop + 84;
+    doc.fillColor(brandColor).fontSize(24).text('Dossie Rural 360');
     doc.moveDown(0.3);
     doc.fillColor('#111827').fontSize(18).text(property.title || 'Propriedade rural');
-    doc.fillColor('#6b7280').fontSize(10).text(`Gerado em ${new Date().toLocaleString('pt-BR')}`);
     doc.moveDown();
 
     const addSection = (title, rows) => {
-      doc.fillColor('#065f46').fontSize(14).text(title);
+      doc.fillColor(brandColor).fontSize(14).text(title);
       doc.moveDown(0.3);
       for (const [label, value] of rows) {
         doc.fillColor('#374151').fontSize(10).text(`${label}: `, { continued: true });
@@ -1050,7 +1276,7 @@ router.get('/dossier/:propertyId/pdf', verifyAuth, requireTenant, async (req, re
     ]);
 
     if (valuation.drivers?.length || valuation.risks?.length) {
-      doc.fillColor('#065f46').fontSize(14).text('Leitura do Valuation');
+      doc.fillColor(brandColor).fontSize(14).text('Leitura do Valuation');
       doc.moveDown(0.3);
       (valuation.drivers || []).forEach((item) => {
         doc.fillColor('#047857').fontSize(10).text(`+ ${item}`);
@@ -1061,7 +1287,7 @@ router.get('/dossier/:propertyId/pdf', verifyAuth, requireTenant, async (req, re
       doc.moveDown();
     }
 
-    doc.fillColor('#065f46').fontSize(14).text('Arquivos e Validacoes');
+    doc.fillColor(brandColor).fontSize(14).text('Arquivos e Validacoes');
     doc.moveDown(0.3);
     if (documents?.length) {
       documents.forEach((item) => {
@@ -1075,7 +1301,7 @@ router.get('/dossier/:propertyId/pdf', verifyAuth, requireTenant, async (req, re
 
     doc.moveDown();
     doc.fillColor('#6b7280').fontSize(8).text(
-      'Documento gerado automaticamente pelo IMOBZY Rural. Confirme as validacoes nos orgaos competentes.',
+      'Documento gerado automaticamente pelo IMOBZY Rural. Valuation referencial, nao substitui laudo oficial de avaliacao. Confirme as validacoes nos orgaos competentes.',
       { align: 'center' }
     );
     doc.end();

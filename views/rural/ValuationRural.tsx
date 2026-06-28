@@ -32,6 +32,8 @@ const ValuationRural: React.FC = () => {
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
+  const [runningByCar, setRunningByCar] = useState(false);
+  const [carNumber, setCarNumber] = useState('');
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -98,6 +100,36 @@ const ValuationRural: React.FC = () => {
       toast.error(error.message || 'Erro ao consultar valuation rural.');
     } finally {
       setRunning(false);
+    }
+  };
+
+  const runValuationByCar = async () => {
+    const normalizedCar = carNumber.trim().toUpperCase();
+    if (!normalizedCar) {
+      toast.error('Informe o numero do CAR.');
+      return;
+    }
+
+    setRunningByCar(true);
+    try {
+      const result = await callApi('/api/rural/valuation/by-car', {
+        method: 'POST',
+        body: JSON.stringify({ carNumber: normalizedCar }),
+      });
+      const updated = result.property;
+      setProperties((prev) => {
+        const exists = prev.some((item) => item.id === updated.id);
+        return exists
+          ? prev.map((item) => (item.id === updated.id ? updated : item)) as any
+          : [updated, ...prev] as any;
+      });
+      setSelectedId(updated.id);
+      setCarNumber('');
+      toast.success(result.mode === 'created' ? 'Imovel criado e valuation salvo.' : 'Valuation atualizado pelo CAR.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao puxar valuation pelo CAR.');
+    } finally {
+      setRunningByCar(false);
     }
   };
 
@@ -172,6 +204,40 @@ const ValuationRural: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <section className="rounded-lg border border-emerald-100 bg-white p-5 shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 lg:items-end">
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
+              Numero do CAR
+            </label>
+            <div className="relative mt-2">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={carNumber}
+                onChange={(event) => setCarNumber(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') runValuationByCar();
+                }}
+                placeholder="Ex: PA-1500347-..."
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-semibold uppercase text-slate-800 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={runValuationByCar}
+            disabled={runningByCar || !carNumber.trim()}
+            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-slate-800 disabled:opacity-40"
+          >
+            {runningByCar ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
+            {runningByCar ? 'Puxando CAR' : 'Puxar Valuation pelo CAR'}
+          </button>
+        </div>
+        <p className="mt-3 text-xs font-semibold text-slate-500">
+          Consulta o SICAR pelo codigo, cria ou atualiza o imovel rural, salva geometria/area/localizacao e gera o valuation referencial.
+        </p>
+      </section>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         <aside className="xl:col-span-4 space-y-4">

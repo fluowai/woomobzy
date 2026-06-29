@@ -355,7 +355,7 @@ async function getWhatsAppMediaUrl(req, res) {
       });
     }
 
-    if (!isMinioConfigured()) {
+    if (!isMinioConfigured({ useRuntimeConfig: false })) {
       if (media.public_url) {
         return res.json({
           id: media.id,
@@ -374,6 +374,7 @@ async function getWhatsAppMediaUrl(req, res) {
       bucket: media.bucket,
       key: media.object_key,
       expiresInSeconds,
+      useRuntimeConfig: false,
     });
 
     return res.json({

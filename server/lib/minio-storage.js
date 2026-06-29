@@ -35,8 +35,8 @@ export function setMinioRuntimeConfig(config = {}) {
   };
 }
 
-export function isMinioConfigured() {
-  const cfg = getMinioConfig();
+export function isMinioConfigured(options = {}) {
+  const cfg = getMinioConfig(options);
   return Boolean(cfg.endpoint && cfg.accessKey && cfg.secretKey);
 }
 
@@ -307,8 +307,8 @@ export async function deleteMinioObjects({ bucket, keys = [] }) {
   return results;
 }
 
-export function createPresignedGetUrl({ bucket, key, expiresInSeconds = 300 }) {
-  const cfg = getMinioConfig();
+export function createPresignedGetUrl({ bucket, key, expiresInSeconds = 300, useRuntimeConfig = true }) {
+  const cfg = getMinioConfig({ useRuntimeConfig });
   if (!cfg.endpoint || !cfg.accessKey || !cfg.secretKey) {
     throw new Error('MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.');
   }
@@ -349,26 +349,27 @@ export function createPresignedGetUrl({ bucket, key, expiresInSeconds = 300 }) {
   return url.toString();
 }
 
-export function getMinioConfig() {
-  const useSSLRaw = typeof minioRuntimeConfig.useSsl === 'boolean'
-    ? String(minioRuntimeConfig.useSsl)
+export function getMinioConfig(options = {}) {
+  const runtimeConfig = options.useRuntimeConfig === false ? {} : minioRuntimeConfig;
+  const useSSLRaw = typeof runtimeConfig.useSsl === 'boolean'
+    ? String(runtimeConfig.useSsl)
     : firstEnv(['MINIO_USE_SSL', 'S3_USE_SSL']);
   const endpoint = normalizeEndpoint(
-    withPort(minioRuntimeConfig.endpoint || firstEnv(['MINIO_ENDPOINT', 'S3_ENDPOINT', 'AWS_ENDPOINT_URL']), minioRuntimeConfig.port),
+    withPort(runtimeConfig.endpoint || firstEnv(['MINIO_ENDPOINT', 'S3_ENDPOINT', 'AWS_ENDPOINT_URL']), runtimeConfig.port),
     useSSLRaw
   );
 
   return {
     endpoint,
     publicUrl: normalizeEndpoint(
-      minioRuntimeConfig.publicUrl || firstEnv(['MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) || endpoint,
-      typeof minioRuntimeConfig.useSsl === 'boolean'
-        ? String(minioRuntimeConfig.useSsl)
+      runtimeConfig.publicUrl || firstEnv(['MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) || endpoint,
+      typeof runtimeConfig.useSsl === 'boolean'
+        ? String(runtimeConfig.useSsl)
         : firstEnv(['MINIO_PUBLIC_USE_SSL', 'MINIO_USE_SSL', 'S3_USE_SSL'])
     ),
-    accessKey: minioRuntimeConfig.accessKey || firstEnv(['MINIO_ACCESS_KEY', 'MINIO_ROOT_USER', 'AWS_ACCESS_KEY_ID', 'S3_ACCESS_KEY_ID']),
-    secretKey: minioRuntimeConfig.secretKey || firstEnv(['MINIO_SECRET_KEY', 'MINIO_ROOT_PASSWORD', 'AWS_SECRET_ACCESS_KEY', 'S3_SECRET_ACCESS_KEY']),
-    region: minioRuntimeConfig.region || firstEnv(['MINIO_REGION', 'AWS_REGION', 'S3_REGION']) || DEFAULT_REGION,
+    accessKey: runtimeConfig.accessKey || firstEnv(['MINIO_ACCESS_KEY', 'MINIO_ROOT_USER', 'AWS_ACCESS_KEY_ID', 'S3_ACCESS_KEY_ID']),
+    secretKey: runtimeConfig.secretKey || firstEnv(['MINIO_SECRET_KEY', 'MINIO_ROOT_PASSWORD', 'AWS_SECRET_ACCESS_KEY', 'S3_SECRET_ACCESS_KEY']),
+    region: runtimeConfig.region || firstEnv(['MINIO_REGION', 'AWS_REGION', 'S3_REGION']) || DEFAULT_REGION,
   };
 }
 

@@ -63,6 +63,7 @@ jobs:
             VITE_API_URL=same-origin
             VITE_WHATSAPP_API_URL=/api/whatsapp
             VITE_WHATSAPP_WS_URL=/api/whatsapp/ws
+            VITE_MINIO_PUBLIC_URL=https://nb.consultio.com.br
             VITE_SUPABASE_URL=runtime
             VITE_SUPABASE_ANON_KEY=runtime
             VITE_PANEL_URL=https://crmimobzy.consultio.com.br

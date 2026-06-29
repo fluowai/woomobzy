@@ -403,8 +403,10 @@ export interface CrmAssigneesResponse {
 
 export interface WhatsAppMediaUrlResponse {
   id: string;
-  url: string;
+  url: string | null;
   status: string;
+  code?: string;
+  error?: string;
   mime_type?: string;
   filename?: string;
   expires_in?: number | null;

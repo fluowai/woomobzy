@@ -348,10 +348,15 @@ async function getWhatsAppMediaUrl(req, res) {
     }
 
     if (!media.object_key) {
-      return res.status(409).json({
+      return res.json({
+        id: media.id,
+        url: null,
         error: 'Midia ainda nao possui arquivo processado.',
         code: 'MEDIA_NOT_READY',
         status: media.status === 'ready' ? 'pending' : media.status,
+        mime_type: media.mime_type,
+        filename: media.filename,
+        expires_in: null,
       });
     }
 

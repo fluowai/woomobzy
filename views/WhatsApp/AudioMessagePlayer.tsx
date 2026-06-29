@@ -59,8 +59,14 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
       .getUrl(message.media_id)
       .then((response) => {
         if (!isMounted) return;
-        setSourceUrl(response.url);
-        setStatus(response.status === 'ready' ? 'downloading' : (response.status as PlayerStatus));
+        if (response.url) {
+          setSourceUrl(response.url);
+          setStatus(response.status === 'ready' ? 'downloading' : (response.status as PlayerStatus));
+          return;
+        }
+        const nextStatus = normalizePlayerStatus(response.status);
+        setSourceUrl('');
+        setStatus(nextStatus === 'ready' ? 'pending' : nextStatus || 'pending');
       })
       .catch((err: any) => {
         if (!isMounted) return;

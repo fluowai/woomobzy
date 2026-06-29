@@ -5,7 +5,12 @@ import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2, Clock3, B
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
   if (!url) return false;
-  return url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net');
+  return (
+    url.includes('pps.whatsapp.net') ||
+    url.includes('mmg.whatsapp.net') ||
+    url.includes('/whatsapp/avatars/') ||
+    url.includes('whatsapp%2Favatars%2F')
+  );
 }
 
 interface ChatSidebarProps {

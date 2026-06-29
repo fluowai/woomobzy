@@ -46,6 +46,8 @@ const TenantManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedTenantIds, setSelectedTenantIds] = useState<string[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -235,6 +237,7 @@ const TenantManager: React.FC = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      setSelectedTenantIds((prev) => prev.filter((item) => item !== id));
       fetchTenants();
     } catch (error: any) {
       alert(`Erro ao excluir: ${error.message}`);
@@ -244,6 +247,70 @@ const TenantManager: React.FC = () => {
   const filtered = tenants.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase())
   );
+  const selectedTenants = tenants.filter((tenant) =>
+    selectedTenantIds.includes(tenant.id)
+  );
+  const filteredIds = filtered.map((tenant) => tenant.id);
+  const allFilteredSelected =
+    filteredIds.length > 0 &&
+    filteredIds.every((id) => selectedTenantIds.includes(id));
+
+  const toggleTenantSelection = (id: string) => {
+    setSelectedTenantIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllFiltered = () => {
+    if (allFilteredSelected) {
+      setSelectedTenantIds((prev) =>
+        prev.filter((id) => !filteredIds.includes(id))
+      );
+      return;
+    }
+
+    setSelectedTenantIds((prev) => [...new Set([...prev, ...filteredIds])]);
+  };
+
+  const deleteSelectedTenants = async () => {
+    if (selectedTenantIds.length === 0) return;
+
+    const previewNames = selectedTenants
+      .slice(0, 5)
+      .map((tenant) => tenant.name)
+      .join(', ');
+    const suffix = selectedTenants.length > 5 ? '...' : '';
+    if (
+      !confirm(
+        `Tem certeza que deseja EXCLUIR ${selectedTenantIds.length} imobiliaria(s)?\n\n${previewNames}${suffix}\n\nEssa acao e IRREVERSIVEL e vai remover os dados associados.`
+      )
+    )
+      return;
+    if (
+      !confirm(
+        `Ultima confirmacao: excluir permanentemente ${selectedTenantIds.length} imobiliaria(s)?`
+      )
+    )
+      return;
+
+    setBulkDeleting(true);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(getApiUrl('/api/admin/organizations/bulk-delete'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ids: selectedTenantIds }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao excluir imobiliarias');
+      setSelectedTenantIds([]);
+      await fetchTenants();
+    } catch (error: any) {
+      alert(`Erro ao excluir imobiliarias: ${error.message}`);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   return (
     <div>
@@ -260,6 +327,19 @@ const TenantManager: React.FC = () => {
           <p className="text-gray-500">Crie e edite empresas manualmente.</p>
         </div>
         <div className="flex gap-4">
+          {selectedTenantIds.length > 0 && (
+            <button
+              type="button"
+              onClick={deleteSelectedTenants}
+              disabled={bulkDeleting}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-60"
+            >
+              <Trash2 size={18} />
+              {bulkDeleting
+                ? 'Excluindo...'
+                : `Excluir ${selectedTenantIds.length} selecionada(s)`}
+            </button>
+          )}
           <div className="relative">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -286,6 +366,16 @@ const TenantManager: React.FC = () => {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
+              <th className="px-6 py-3 text-left">
+                <input
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  onChange={toggleAllFiltered}
+                  disabled={loading || filtered.length === 0}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  aria-label="Selecionar imobiliarias filtradas"
+                />
+              </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Empresa
               </th>
@@ -312,13 +402,13 @@ const TenantManager: React.FC = () => {
           <tbody className="divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                   Carregando...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                   Nenhuma empresa encontrada.
                 </td>
               </tr>
@@ -328,6 +418,15 @@ const TenantManager: React.FC = () => {
                   key={tenant.id}
                   className="hover:bg-gray-50 transition-colors"
                 >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedTenantIds.includes(tenant.id)}
+                      onChange={() => toggleTenantSelection(tenant.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      aria-label={`Selecionar ${tenant.name}`}
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-gray-100 rounded-lg text-gray-600">

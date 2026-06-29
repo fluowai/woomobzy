@@ -33,7 +33,7 @@ const FAZENDAS = {
   brokerPhotoUrl: '/images/fazendas-brasil/renato.png',
   phone: '(44) 99843-3030',
   phoneDigits: '5544998433030',
-  email: 'ele@fazendasbrasil.com.br',
+  email: 'contato@fazendasbrasil.com.br',
   ownerEmail: 'contato@fazendasbrasil.com.br',
 };
 
@@ -137,7 +137,12 @@ async function upsertDomains(organizationId) {
   const columns = await tableColumns('domains');
   if (columns.size === 0 || !columns.has('organization_id') || !columns.has('domain')) return;
 
-  const domains = [FAZENDAS.domain, FAZENDAS.wwwDomain];
+  const domains = [
+    FAZENDAS.domain,
+    FAZENDAS.wwwDomain,
+    FAZENDAS.legacyDomain,
+    FAZENDAS.legacyWwwDomain,
+  ];
 
   for (const domain of domains) {
     const payload = pickColumns(columns, {

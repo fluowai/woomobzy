@@ -64,6 +64,7 @@ window.__IMOBZY_CONFIG__ = {
   VITE_API_URL: "${VITE_API_URL:-same-origin}",
   VITE_WHATSAPP_API_URL: "${VITE_WHATSAPP_API_URL:-/api/whatsapp}",
   VITE_WHATSAPP_WS_URL: "${VITE_WHATSAPP_WS_URL:-/api/whatsapp/ws}",
+  VITE_MINIO_PUBLIC_URL: "${VITE_MINIO_PUBLIC_URL:-https://nb.consultio.com.br}",
   VITE_SUPABASE_URL: "${supabase_url}",
   VITE_SUPABASE_ANON_KEY: "${supabase_anon_key}",
   VITE_PANEL_URL: "${VITE_PANEL_URL:-}",

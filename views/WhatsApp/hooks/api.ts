@@ -7,6 +7,8 @@ const DEFAULT_WHATSAPP_WS_PATH = '/api/whatsapp/ws';
 const RAW_WHATSAPP_API_URL = getRuntimeEnv('VITE_WHATSAPP_API_URL', DEFAULT_WHATSAPP_API_URL);
 const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
 const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
+const LEGACY_STORAGE_HOSTS = ['n.woopanel.com.br'];
+const STORAGE_PUBLIC_URL = getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://nb.consultio.com.br').replace(/\/$/, '');
 export const WS_URL = normalizeWhatsAppWsUrl(
   getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
 );
@@ -127,7 +129,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
     throw new WhatsAppApiError(message, res.status, error.code);
   }
 
-  return res.json();
+  return normalizeStorageUrls(await res.json()) as T;
 }
 
 function buildApiHeaders(
@@ -276,6 +278,32 @@ function withTenantBody(body: BodyInit | null | undefined, tenantId?: string | n
   }
 
   return body;
+}
+
+function normalizeStorageUrls(value: unknown): unknown {
+  if (typeof value === 'string') return normalizeStorageUrl(value);
+  if (Array.isArray(value)) return value.map(normalizeStorageUrls);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, normalizeStorageUrls(entry)])
+    );
+  }
+  return value;
+}
+
+function normalizeStorageUrl(value: string): string {
+  if (!value || !/^https?:\/\//i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    if (!LEGACY_STORAGE_HOSTS.includes(url.hostname)) return value;
+    const target = new URL(STORAGE_PUBLIC_URL);
+    url.protocol = target.protocol;
+    url.hostname = target.hostname;
+    url.port = target.port;
+    return url.toString();
+  } catch {
+    return value;
+  }
 }
 
 // ---- Types ----

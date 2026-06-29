@@ -2,6 +2,7 @@ type RuntimeConfig = {
   VITE_API_URL?: string;
   VITE_WHATSAPP_API_URL?: string;
   VITE_WHATSAPP_WS_URL?: string;
+  VITE_MINIO_PUBLIC_URL?: string;
   VITE_SUPABASE_URL?: string;
   VITE_SUPABASE_ANON_KEY?: string;
   VITE_PANEL_URL?: string;

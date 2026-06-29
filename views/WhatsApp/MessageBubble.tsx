@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Check, CheckCheck, Clock, Contact, FileText, FileVideo, Image, MapPin } from 'lucide-react';
+import { Check, CheckCheck, Clock, Contact, DownloadCloud, FileText, FileVideo, Image, MapPin, RefreshCw } from 'lucide-react';
 import AudioMessagePlayer from './AudioMessagePlayer';
 import { formatPhoneDisplay, mediaApi, type Message } from './hooks/api';
+import { toast } from 'sonner';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
@@ -18,14 +19,30 @@ interface MessageBubbleProps {
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenDetails }) => {
   const [imgError, setImgError] = useState(false);
   const [mediaSourceUrl, setMediaSourceUrl] = useState(message.media_url || '');
+  const [mediaStatusOverride, setMediaStatusOverride] = useState<Message['media_status'] | undefined>();
+  const [retryingMedia, setRetryingMedia] = useState(false);
+  const [openingDocument, setOpeningDocument] = useState(false);
   const isSent = message.is_from_me;
+  const effectiveMediaStatus = mediaStatusOverride || message.media_status;
   const content = (message.content || '').trim();
-  const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
-  const isRenderable = message.type !== 'text' || content || hasMedia;
+  const hasMedia = Boolean(
+    message.media_url ||
+    message.media_id ||
+    message.media_filename ||
+    (effectiveMediaStatus && effectiveMediaStatus !== 'none')
+  );
+  const isRenderable = message.type === 'text' ? Boolean(content) : Boolean(content || hasMedia);
+
+  useEffect(() => {
+    setMediaStatusOverride(undefined);
+    setImgError(false);
+    setOpeningDocument(false);
+  }, [message.id, message.media_id]);
 
   useEffect(() => {
     setMediaSourceUrl(message.media_url || '');
     if (!message.media_id || message.type === 'audio') return;
+    if (!shouldRequestMediaUrl(effectiveMediaStatus)) return;
 
     let active = true;
     mediaApi
@@ -33,14 +50,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       .then((result) => {
         if (active && result?.url) setMediaSourceUrl(result.url);
       })
-      .catch(() => {
-        if (active) setMediaSourceUrl(message.media_url || '');
+      .catch((err: any) => {
+        if (!active) return;
+        setMediaSourceUrl(message.media_url || '');
+        if (err?.code === 'MEDIA_NOT_READY') {
+          setMediaStatusOverride(normalizeMediaStatus(err?.details?.status) || 'pending');
+        }
       });
 
     return () => {
       active = false;
     };
-  }, [message.media_id, message.media_url, message.type]);
+  }, [message.media_id, message.media_status, message.media_url, message.type]);
 
   if (!isRenderable) return null;
 
@@ -52,6 +73,55 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
   const senderInitial = (senderName.match(/[A-Za-z0-9]/)?.[0] || '?').toUpperCase();
   const showSenderName = !isSent && isGroup;
   const deliveryStatus = message.delivery_status || 'sent';
+  const mediaLabel = getMediaLabel(message);
+  const mediaState = getMediaState(message, mediaSourceUrl, effectiveMediaStatus);
+  const canRetryMedia = Boolean(message.media_id && (effectiveMediaStatus === 'failed' || effectiveMediaStatus === 'expired'));
+
+  const retryMedia = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!message.media_id || retryingMedia) return;
+
+    setRetryingMedia(true);
+    try {
+      await mediaApi.retry(message.media_id);
+      setMediaStatusOverride('pending');
+      toast.success('Midia reenviada para recuperacao.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Nao foi possivel solicitar a recuperacao da midia.');
+    } finally {
+      setRetryingMedia(false);
+    }
+  };
+
+  const openDocument = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!message.media_id) {
+      if (mediaSourceUrl) window.open(mediaSourceUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    const popup = window.open('', '_blank');
+    setOpeningDocument(true);
+    try {
+      const result = await mediaApi.getUrl(message.media_id, 900);
+      const freshUrl = result.url || mediaSourceUrl;
+      if (!freshUrl) throw new Error('Arquivo ainda sem URL disponivel.');
+      setMediaSourceUrl(freshUrl);
+      if (popup) {
+        popup.opener = null;
+        popup.location.href = freshUrl;
+      } else {
+        window.open(freshUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err: any) {
+      if (popup) popup.close();
+      toast.error(err?.message || 'Nao foi possivel abrir o documento.');
+    } finally {
+      setOpeningDocument(false);
+    }
+  };
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('pt-BR', {
@@ -65,21 +135,27 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       case 'image':
         return (
           <div className="wa-bubble-media">
-            {mediaSourceUrl ? (
+            {mediaSourceUrl && !imgError ? (
               <img
                 src={mediaSourceUrl}
                 alt="Imagem"
                 className="wa-bubble-image"
                 loading="lazy"
+                onError={() => setImgError(true)}
                 onClick={(event) => {
                   event.stopPropagation();
                   window.open(mediaSourceUrl, '_blank');
                 }}
               />
             ) : (
-              <div className="wa-bubble-media-placeholder">
-                <Image size={24} />
-              </div>
+              <MediaPlaceholder
+                icon={<Image size={20} />}
+                label={mediaLabel}
+                state={mediaState}
+                canRetry={canRetryMedia}
+                retrying={retryingMedia}
+                onRetry={retryMedia}
+              />
             )}
             {content && <p className="wa-bubble-caption">{content}</p>}
           </div>
@@ -100,30 +176,47 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
                 <source src={mediaSourceUrl} type={message.media_mimetype || 'video/mp4'} />
               </video>
             ) : (
-              <div className="wa-bubble-media-placeholder">
-                <FileVideo size={24} />
-                <span>Video</span>
-              </div>
+              <MediaPlaceholder
+                icon={<FileVideo size={20} />}
+                label={mediaLabel}
+                state={mediaState}
+                canRetry={canRetryMedia}
+                retrying={retryingMedia}
+                onRetry={retryMedia}
+              />
             )}
             {content && <p className="wa-bubble-caption">{content}</p>}
           </div>
         );
 
       case 'document':
-        return (
+        return mediaSourceUrl ? (
           <a
-            href={mediaSourceUrl || '#'}
+            href={mediaSourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="wa-bubble-document"
-            onClick={(event) => event.stopPropagation()}
+            onClick={openDocument}
           >
+            {openingDocument ? <RefreshCw size={28} className="animate-spin" /> : <FileText size={28} />}
+            <div>
+              <span className="wa-doc-name">{message.media_filename || 'Arquivo recebido'}</span>
+              <span className="wa-doc-type">{openingDocument ? 'Gerando link seguro...' : message.media_mimetype || 'Documento'}</span>
+            </div>
+          </a>
+        ) : (
+          <div className="wa-bubble-document is-disabled" onClick={(event) => event.stopPropagation()}>
             <FileText size={28} />
             <div>
               <span className="wa-doc-name">{message.media_filename || 'Arquivo recebido'}</span>
-              {message.media_mimetype && <span className="wa-doc-type">{message.media_mimetype}</span>}
+              <span className="wa-doc-type">{mediaState}</span>
+              {canRetryMedia && (
+                <button type="button" className="wa-doc-retry" onClick={retryMedia} disabled={retryingMedia}>
+                  {retryingMedia ? 'Solicitando...' : 'Tentar novamente'}
+                </button>
+              )}
             </div>
-          </a>
+          </div>
         );
 
       case 'location':
@@ -145,10 +238,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       case 'sticker':
         return (
           <div className="wa-bubble-sticker">
-            {message.media_url ? (
-              <img src={message.media_url} alt="Sticker" className="wa-sticker-img" />
+            {mediaSourceUrl ? (
+              <img src={mediaSourceUrl} alt="Sticker" className="wa-sticker-img" />
             ) : (
-              <span>Sticker</span>
+              <MediaPlaceholder
+                icon={<Image size={20} />}
+                label={mediaLabel}
+                state={mediaState}
+                canRetry={canRetryMedia}
+                retrying={retryingMedia}
+                onRetry={retryMedia}
+              />
             )}
           </div>
         );
@@ -203,3 +303,83 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
 };
 
 export default MessageBubble;
+
+function MediaPlaceholder({
+  icon,
+  label,
+  state,
+  canRetry,
+  retrying,
+  onRetry,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  state: string;
+  canRetry?: boolean;
+  retrying?: boolean;
+  onRetry?: (event: React.MouseEvent) => void;
+}) {
+  const pending = /baixando|processando|aguardando/i.test(state);
+  return (
+    <div className="wa-bubble-media-placeholder">
+      <span className="wa-media-placeholder-icon">{pending ? <RefreshCw size={18} className="animate-spin" /> : icon}</span>
+      <span className="wa-media-placeholder-copy">
+        <strong>{label}</strong>
+        <small>{state}</small>
+      </span>
+      {canRetry ? (
+        <button type="button" className="wa-media-retry" onClick={onRetry} disabled={retrying}>
+          {retrying ? <RefreshCw size={14} className="animate-spin" /> : 'Tentar'}
+        </button>
+      ) : (
+        !pending && <DownloadCloud size={16} className="wa-media-placeholder-action" />
+      )}
+    </div>
+  );
+}
+
+function getMediaLabel(message: Message) {
+  if (message.media_filename) return message.media_filename;
+  const labels: Record<Message['type'], string> = {
+    text: 'Mensagem',
+    image: 'Imagem recebida',
+    audio: 'Audio recebido',
+    video: 'Video recebido',
+    document: 'Documento recebido',
+    sticker: 'Figurinha recebida',
+    location: 'Localizacao recebida',
+    contact: 'Contato recebido',
+    unknown: 'Mensagem recebida',
+  };
+  return labels[message.type] || 'Midia recebida';
+}
+
+function getMediaState(message: Message, mediaSourceUrl: string, mediaStatus?: Message['media_status']) {
+  if (mediaSourceUrl) return message.media_mimetype || 'Toque para abrir';
+  if (mediaStatus === 'pending') return 'Aguardando download';
+  if (mediaStatus === 'downloading') return 'Baixando midia';
+  if (mediaStatus === 'processing') return 'Processando midia';
+  if (mediaStatus === 'failed') return message.media_error || 'Nao foi possivel carregar';
+  if (mediaStatus === 'expired') return 'Midia expirada';
+  if (message.media_id) return 'Preparando visualizacao';
+  return 'Midia sem arquivo disponivel';
+}
+
+function shouldRequestMediaUrl(mediaStatus?: Message['media_status']) {
+  return !mediaStatus || mediaStatus === 'none' || mediaStatus === 'ready';
+}
+
+function normalizeMediaStatus(value: unknown): Message['media_status'] | undefined {
+  if (
+    value === 'none' ||
+    value === 'pending' ||
+    value === 'downloading' ||
+    value === 'processing' ||
+    value === 'ready' ||
+    value === 'failed' ||
+    value === 'expired'
+  ) {
+    return value;
+  }
+  return undefined;
+}

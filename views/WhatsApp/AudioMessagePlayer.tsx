@@ -32,18 +32,28 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
 
   useEffect(() => {
     let isMounted = true;
+    const initialStatus = resolveInitialStatus(message);
 
     if (!message.media_id) {
       setSourceUrl(message.media_url || '');
       if (!message.media_url) {
-        setStatus(resolveInitialStatus(message));
+        setStatus(initialStatus);
         setIsPlaying(false);
         setDuration(0);
         setCurrentTime(0);
         return;
       }
 
-      setStatus(resolveInitialStatus(message) === 'ready' ? 'downloading' : resolveInitialStatus(message));
+      setStatus(initialStatus === 'ready' ? 'downloading' : initialStatus);
+      setIsPlaying(false);
+      setDuration(0);
+      setCurrentTime(0);
+      return;
+    }
+
+    if (!shouldRequestMediaUrl(message.media_status)) {
+      setSourceUrl(message.media_url || '');
+      setStatus(initialStatus);
       setIsPlaying(false);
       setDuration(0);
       setCurrentTime(0);
@@ -62,9 +72,13 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
         setSourceUrl(response.url);
         setStatus(response.status === 'ready' ? 'downloading' : (response.status as PlayerStatus));
       })
-      .catch(() => {
+      .catch((err: any) => {
         if (!isMounted) return;
         setSourceUrl(message.media_url || '');
+        if (err?.code === 'MEDIA_NOT_READY') {
+          setStatus(normalizePlayerStatus(err?.details?.status) || 'pending');
+          return;
+        }
         setStatus(message.media_url ? 'downloading' : 'failed');
       });
 
@@ -225,6 +239,24 @@ function resolveInitialStatus(message: Message): PlayerStatus {
     return message.media_status;
   }
   return message.media_url ? 'ready' : 'failed';
+}
+
+function shouldRequestMediaUrl(mediaStatus?: Message['media_status']) {
+  return !mediaStatus || mediaStatus === 'none' || mediaStatus === 'ready';
+}
+
+function normalizePlayerStatus(value: unknown): PlayerStatus | undefined {
+  if (
+    value === 'pending' ||
+    value === 'downloading' ||
+    value === 'processing' ||
+    value === 'ready' ||
+    value === 'failed' ||
+    value === 'expired'
+  ) {
+    return value;
+  }
+  return undefined;
 }
 
 function statusLabel(status: PlayerStatus): string {

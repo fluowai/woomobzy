@@ -28,7 +28,8 @@ export class WhatsAppApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly code?: string
+    public readonly code?: string,
+    public readonly details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'WhatsAppApiError';
@@ -126,7 +127,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
     const message = error.code === 'TENANT_REQUIRED'
       ? 'Selecione uma organização antes de acessar o WhatsApp.'
       : error.error || `API Error: ${res.status}`;
-    throw new WhatsAppApiError(message, res.status, error.code);
+    throw new WhatsAppApiError(message, res.status, error.code, error);
   }
 
   return normalizeStorageUrls(await res.json()) as T;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { FileCheck, FileSearch, Map as MapIcon, Navigation } from 'lucide-react';
+import { FileCheck, FileSearch, Map as MapIcon, Navigation, ShieldCheck } from 'lucide-react';
 
 const tabs = [
   {
@@ -14,6 +14,12 @@ const tabs = [
     label: 'Localizar CAR',
     description: 'Busca automática por coordenadas e município',
     path: '/rural/territorio/localizar-car',
+  },
+  {
+    icon: ShieldCheck,
+    label: 'Valuation CAR',
+    description: 'Relatório completo baseado no CAR',
+    path: '/rural/territorio/valuation',
   },
   {
     icon: FileSearch,
@@ -38,11 +44,11 @@ const RuralTerritoryHub: React.FC = () => {
         </p>
         <h1 className="h1">Território Rural</h1>
         <p className="body text-text-secondary max-w-3xl">
-          Mapas, CAR, dossiê e documentação trabalham juntos para qualificar o imóvel rural em um único fluxo.
+          Mapas, CAR, valuation, dossiê e documentação trabalham juntos para qualificar o imóvel rural em um único fluxo.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
         {tabs.map((tab) => (
           <NavLink
             key={tab.path}

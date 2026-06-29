@@ -74,7 +74,7 @@ const RuralLayout: React.FC = () => {
   const assetItems: MenuItem[] = [
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Território Rural', path: '/rural/territorio' },
-    { icon: DollarSign, label: 'Valuation Rural', path: '/rural/territorio/valuation' },
+    { icon: DollarSign, label: 'Valuation CAR', path: '/rural/territorio/valuation' },
   ];
 
   const growthItems: MenuItem[] = [

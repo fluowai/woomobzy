@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { BarChart3, FileCheck, FileSearch, Map as MapIcon, Navigation } from 'lucide-react';
+import { FileCheck, FileSearch, Map as MapIcon, Navigation, ShieldCheck } from 'lucide-react';
 
 const tabs = [
   {
@@ -16,9 +16,9 @@ const tabs = [
     path: '/rural/territorio/localizar-car',
   },
   {
-    icon: BarChart3,
-    label: 'Valuation',
-    description: 'Consulta pós-CAR e valor referencial',
+    icon: ShieldCheck,
+    label: 'Valuation CAR',
+    description: 'Relatório completo baseado no CAR',
     path: '/rural/territorio/valuation',
   },
   {

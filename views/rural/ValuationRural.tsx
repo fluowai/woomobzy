@@ -3,10 +3,15 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  CalendarClock,
   CheckCircle2,
+  ClipboardCheck,
   Download,
   FileSearch,
+  FileText,
+  Layers,
   Map,
+  MapPinned,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -25,6 +30,22 @@ const currency = (value?: number | null) =>
 
 const number = (value?: number | null, suffix = '') =>
   Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + suffix;
+
+const dateTime = (value?: string | null) =>
+  value ? new Date(value).toLocaleString('pt-BR') : 'Pendente';
+
+const sourceLabel = (status?: string) => {
+  if (status === 'available') return 'Disponivel';
+  if (status === 'planned') return 'Planejado';
+  return 'Pendente';
+};
+
+const confidenceLabel = (score?: number) => {
+  if (score === undefined || score === null) return 'Pendente';
+  if (score >= 80) return 'Alta';
+  if (score >= 50) return 'Media';
+  return 'Baixa';
+};
 
 const ValuationRural: React.FC = () => {
   const { profile } = useAuth();
@@ -173,12 +194,71 @@ const ValuationRural: React.FC = () => {
     },
   ];
 
+  const reportSections = selected
+    ? [
+        {
+          title: 'Identificacao CAR',
+          icon: ClipboardCheck,
+          rows: [
+            ['Numero do CAR', enrichment.car_number || legal.carNumber || 'Pendente'],
+            ['Status SICAR', enrichment.car_status || legal.carStatus || 'Pendente'],
+            ['Municipio/UF', [enrichment.municipality || selected.city, enrichment.state || selected.state].filter(Boolean).join(' / ') || 'Pendente'],
+            ['Origem da consulta', enrichment.source_car || (legal.carNumber ? 'SICAR/CAR' : 'Pendente')],
+          ],
+        },
+        {
+          title: 'Area e Geometria',
+          icon: MapPinned,
+          rows: [
+            ['Area declarada', enrichment.declared_area_ha ? number(enrichment.declared_area_ha, ' ha') : number(selected.total_area_ha || features.areaHectares, ' ha')],
+            ['Area medida', enrichment.measured_area_ha ? number(enrichment.measured_area_ha, ' ha') : 'Pendente'],
+            ['Centroide', enrichment.centroid ? `${Number(enrichment.centroid.lat).toFixed(6)}, ${Number(enrichment.centroid.lng).toFixed(6)}` : 'Pendente'],
+            ['Geometria', enrichment.geometry ? 'Poligono disponivel' : 'Pendente'],
+          ],
+        },
+        {
+          title: 'Metodo do Valuation',
+          icon: FileText,
+          rows: [
+            ['Metodo', valuation.method || 'MVP_POS_CAR_COMPARAVEIS_INTERNOS'],
+            ['Data-base', dateTime(valuation.valuation_date)],
+            ['Status', valuation.status || 'Pendente'],
+            ['Confianca', valuation.confidence_score !== undefined ? `${valuation.confidence_score}/100 (${confidenceLabel(valuation.confidence_score)})` : 'Pendente'],
+          ],
+        },
+        {
+          title: 'Comparaveis',
+          icon: Layers,
+          rows: [
+            ['Escopo', valuation.comparable_scope || 'Pendente'],
+            ['Quantidade usada', valuation.comparable_count !== undefined ? valuation.comparable_count : 'Pendente'],
+            ['Valor/ha minimo', valuation.price_per_ha_min ? currency(valuation.price_per_ha_min) : 'Pendente'],
+            ['Valor/ha maximo', valuation.price_per_ha_max ? currency(valuation.price_per_ha_max) : 'Pendente'],
+          ],
+        },
+      ]
+    : [];
+
+  const sourceRows = [
+    ['CAR/SICAR', enrichment.sources?.car?.status || (legal.carNumber ? 'available' : 'missing')],
+    ['SIGEF/INCRA', enrichment.sources?.sigef?.status || 'missing'],
+    ['Documentos internos', enrichment.sources?.documents?.status || 'missing'],
+    ['MapBiomas', enrichment.sources?.mapbiomas?.status || 'planned'],
+    ['PRODES/DETER', enrichment.sources?.prodes?.status || 'planned'],
+    ['Solo', enrichment.sources?.soil?.status || 'planned'],
+    ['Declividade', enrichment.sources?.slope?.status || 'planned'],
+    ['Hidrografia/APP', enrichment.sources?.hydrography?.status || 'planned'],
+    ['Logistica e acesso', enrichment.sources?.logistics?.status || 'planned'],
+  ];
+
+  const comparableSamples = valuation.comparable_samples || [];
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
         <div>
           <p className="text-small font-bold text-primary uppercase tracking-widest">Consulta Pós-CAR</p>
-          <h2 className="text-3xl font-black text-slate-950 tracking-tight">Valuation Rural</h2>
+          <h2 className="text-3xl font-black text-slate-950 tracking-tight">Valuation CAR Rural</h2>
           <p className="text-sm text-slate-500 max-w-3xl mt-2">
             Consulte o CAR, geometria, dados técnicos, comparáveis internos e gere um valuation referencial para o imóvel rural selecionado.
           </p>
@@ -191,7 +271,7 @@ const ValuationRural: React.FC = () => {
             className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-emerald-700 disabled:opacity-40"
           >
             {running ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
-            {running ? 'Consultando' : 'Consultar Valuation'}
+            {running ? 'Consultando' : 'Atualizar Relatorio'}
           </button>
           <button
             type="button"
@@ -334,6 +414,89 @@ const ValuationRural: React.FC = () => {
                   </div>
                 ))}
               </section>
+
+              <section className="rounded-lg border border-emerald-100 bg-white p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Relatorio completo</p>
+                    <h4 className="text-lg font-black text-slate-950">Laudo preliminar de valuation por CAR</h4>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-black uppercase tracking-widest text-emerald-700">
+                    <CalendarClock size={15} />
+                    {dateTime(valuation.updated_at || valuation.valuation_date)}
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {reportSections.map((section) => (
+                    <div key={section.title} className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-emerald-700">
+                          <section.icon size={18} />
+                        </div>
+                        <h5 className="text-sm font-black uppercase tracking-widest text-slate-900">{section.title}</h5>
+                      </div>
+                      <div className="space-y-2">
+                        {section.rows.map(([label, value]) => (
+                          <div key={label as string} className="flex items-start justify-between gap-4 border-t border-slate-200 pt-2">
+                            <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</span>
+                            <span className="max-w-[62%] text-right text-xs font-black text-slate-800">{String(value || 'Pendente')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-lg border border-slate-200 bg-white p-6">
+                <h4 className="text-sm font-black uppercase tracking-widest text-slate-950">Fontes do Relatorio CAR</h4>
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {sourceRows.map(([label, status]) => {
+                    const done = status === 'available';
+                    const planned = status === 'planned';
+                    return (
+                      <div key={label} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-3">
+                        {done ? <CheckCircle2 size={16} className="text-emerald-600" /> : planned ? <Activity size={16} className="text-blue-500" /> : <AlertTriangle size={16} className="text-amber-500" />}
+                        <div>
+                          <p className="text-xs font-black text-slate-800">{label}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{sourceLabel(status as string)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {comparableSamples.length > 0 && (
+                <section className="rounded-lg border border-slate-200 bg-white p-6">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-950">Amostras Comparaveis Internas</h4>
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          <th className="py-3 pr-4">Imovel</th>
+                          <th className="py-3 pr-4">Regiao</th>
+                          <th className="py-3 pr-4">Area</th>
+                          <th className="py-3 pr-4">Preco</th>
+                          <th className="py-3">Preco/ha</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {comparableSamples.map((item: any) => (
+                          <tr key={item.id || item.title} className="border-b border-slate-100 font-semibold text-slate-700">
+                            <td className="py-3 pr-4 font-black text-slate-900">{item.title || 'Imovel rural'}</td>
+                            <td className="py-3 pr-4">{[item.city, item.state].filter(Boolean).join(' / ') || '-'}</td>
+                            <td className="py-3 pr-4">{number(item.areaHa, ' ha')}</td>
+                            <td className="py-3 pr-4">{currency(item.price)}</td>
+                            <td className="py-3">{currency(item.pricePerHa)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
 
               <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="rounded-lg border border-slate-200 bg-white p-6">

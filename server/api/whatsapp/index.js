@@ -311,6 +311,8 @@ function issueWsToken(req, res) {
 }
 
 async function getWhatsAppMediaUrl(req, res) {
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+
   try {
     const supabase = getSupabaseServer();
     const { data: media, error } = await supabase

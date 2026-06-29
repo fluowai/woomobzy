@@ -381,6 +381,49 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
   }
 });
 
+router.post('/organizations/bulk-delete', verifySuperAdmin, async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? [...new Set(req.body.ids.filter((id) => typeof id === 'string' && id.trim()))]
+      : [];
+
+    if (ids.length === 0) {
+      return res.status(400).json({ error: 'Selecione ao menos uma imobiliaria para excluir' });
+    }
+
+    const { data, error } = await supabase
+      .from('organizations')
+      .delete()
+      .in('id', ids)
+      .select('id');
+
+    if (error) throw error;
+
+    res.json({ success: true, deleted: data || [] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/organizations/:id', verifySuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('organizations')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Imobiliaria nao encontrada' });
+
+    res.json({ success: true, deleted: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- 👥 User Management (Tenant Isolated) ---
 
 router.put('/users/:id/password', verifyAdmin, requireTenant, async (req, res) => {

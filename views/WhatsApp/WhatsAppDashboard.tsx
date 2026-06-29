@@ -26,10 +26,6 @@ import {
   DownloadCloud,
   Loader2,
   Clock3,
-  UserRound,
-  ArrowRightLeft,
-  Tag,
-  ShieldCheck,
   Bell,
   BellOff,
 } from 'lucide-react';
@@ -731,38 +727,18 @@ const WhatsAppDashboard: React.FC = () => {
         ) : (
           <div className="wa-empty-workspace">
             <div className="wa-empty-state">
-            <div className="wa-empty-icon">
-              <MessageSquare size={64} strokeWidth={1} />
-            </div>
-            <h2>Mensagens</h2>
-            <p>Selecione uma conversa para começar</p>
-            {selectedInstance?.status !== 'connected' && (
-              <div className="wa-empty-warning">
-                <WifiOff size={16} />
-                <span>Instância desconectada. Vá em configurações para conectar.</span>
+              <div className="wa-empty-icon">
+                <MessageSquare size={64} strokeWidth={1} />
               </div>
-            )}
-            </div>
-
-            <aside className="wa-empty-contact-panel">
-              <div className="wa-contact-panel-head">
-                <span>Atendimento</span>
-              </div>
-              <div className="wa-empty-contact-body">
-                <div className="wa-empty-contact-avatar">
-                  <UserRound size={28} />
+              <h2>Mensagens</h2>
+              <p>Selecione uma conversa para começar. O card do lead abre quando voce clicar nos dados da conversa.</p>
+              {selectedInstance?.status !== 'connected' && (
+                <div className="wa-empty-warning">
+                  <WifiOff size={16} />
+                  <span>Instância desconectada. Vá em configurações para conectar.</span>
                 </div>
-                <h3>Card do lead</h3>
-                <p>Ao clicar em uma conversa, este painel mostra contato, CRM, tags, responsavel e acoes rapidas.</p>
-              </div>
-              <div className="wa-empty-actions-preview">
-                <span><UserRound size={15} /> Editar/vincular lead</span>
-                <span><ArrowRightLeft size={15} /> Transferir chat</span>
-                <span><Tag size={15} /> Criar tag</span>
-                <span><Clock3 size={15} /> Criar tarefa</span>
-                <span><ShieldCheck size={15} /> Prioridade</span>
-              </div>
-            </aside>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -268,7 +268,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   <span className="wa-chat-time">{formatTime(chat.last_message_at)}</span>
                 </div>
                 <div className="wa-chat-bottom">
-                  <p className="wa-chat-preview">{formatChatPreview(chat.last_message) || formatPhoneDisplay(chat.chat_jid) || '...'}</p>
+                  <p className="wa-chat-preview">{formatChatPreviewLabel(chat.last_message) || formatPhoneDisplay(chat.chat_jid) || '...'}</p>
                   {chat.unread_count > 0 && (
                     <span className="wa-unread-badge">{chat.unread_count > 99 ? '99+' : chat.unread_count}</span>
                   )}
@@ -283,6 +283,27 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 };
 
 export default ChatSidebar;
+
+function formatChatPreviewLabel(value?: string) {
+  const clean = String(value || '').trim();
+  if (!clean) return '';
+
+  const bracketMatch = clean.match(/^\[(image|audio|video|document|sticker)\]$/i);
+  const mediaKey = (bracketMatch?.[1] || clean).toLowerCase();
+  const mediaLabels: Record<string, string> = {
+    image: 'Imagem recebida',
+    imagem: 'Imagem recebida',
+    audio: 'Audio recebido',
+    video: 'Video recebido',
+    document: 'Documento recebido',
+    documento: 'Documento recebido',
+    pdf: 'Documento recebido',
+    sticker: 'Figurinha recebida',
+    figurinha: 'Figurinha recebida',
+  };
+
+  return mediaLabels[mediaKey] || formatChatPreview(clean);
+}
 
 function formatChatPreview(value?: string) {
   const clean = String(value || '').trim();

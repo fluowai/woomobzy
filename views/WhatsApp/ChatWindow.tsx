@@ -64,10 +64,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [showScrollDown, setShowScrollDown] = useState(false);
-  const [showContactPanel, setShowContactPanel] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia('(min-width: 1024px)').matches;
-  });
+  const [showContactPanel, setShowContactPanel] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [contactNameDraft, setContactNameDraft] = useState('');
   const [avatarError, setAvatarError] = useState(false);
@@ -91,9 +88,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setContactNameDraft(chatName);
     setEditingName(false);
     setAvatarError(false);
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
-      setShowContactPanel(true);
-    }
+    setShowContactPanel(false);
   }, [chat.id, chatName]);
 
   useEffect(() => {
@@ -610,8 +605,14 @@ export default ChatWindow;
 
 function isRenderableMessage(message: Message) {
   const content = (message.content || '').trim();
-  const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
-  return message.type !== 'text' || content || hasMedia;
+  if (message.type === 'text') return Boolean(content);
+  if (content) return true;
+  return Boolean(
+    message.media_url ||
+    message.media_id ||
+    message.media_filename ||
+    (message.media_status && message.media_status !== 'none')
+  );
 }
 
 function fileIconFor(file: File) {

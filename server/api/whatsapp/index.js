@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
-import { createPresignedGetUrl, isMinioConfigured } from '../../lib/minio-storage.js';
+import { createPresignedGetUrl, getMinioPublicUrl, isMinioConfigured } from '../../lib/minio-storage.js';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
@@ -328,7 +328,7 @@ async function getWhatsAppMediaUrl(req, res) {
     if (!media.object_key && media.public_url) {
       return res.json({
         id: media.id,
-        url: media.public_url,
+        url: unsignedUrl(media.public_url),
         status: media.status,
         mime_type: media.mime_type,
         filename: media.filename,
@@ -339,7 +339,7 @@ async function getWhatsAppMediaUrl(req, res) {
     if (String(media.provider || '').toLowerCase() !== 'minio' && media.public_url) {
       return res.json({
         id: media.id,
-        url: media.public_url,
+        url: unsignedUrl(media.public_url),
         status: media.status,
         mime_type: media.mime_type,
         filename: media.filename,
@@ -355,11 +355,26 @@ async function getWhatsAppMediaUrl(req, res) {
       });
     }
 
+    if (!shouldSignWhatsAppMediaUrls()) {
+      const url = media.public_url
+        ? unsignedUrl(media.public_url)
+        : getMinioPublicUrl({ bucket: media.bucket, key: media.object_key, useRuntimeConfig: false });
+
+      return res.json({
+        id: media.id,
+        url,
+        status: media.status,
+        mime_type: media.mime_type,
+        filename: media.filename,
+        expires_in: null,
+      });
+    }
+
     if (!isMinioConfigured({ useRuntimeConfig: false })) {
       if (media.public_url) {
         return res.json({
           id: media.id,
-          url: media.public_url,
+          url: unsignedUrl(media.public_url),
           status: media.status,
           mime_type: media.mime_type,
           filename: media.filename,
@@ -388,6 +403,20 @@ async function getWhatsAppMediaUrl(req, res) {
   } catch (error) {
     console.error('[WhatsApp Media URL Error]', error.message);
     return res.status(500).json({ error: error.message || 'Erro ao gerar URL da midia.' });
+  }
+}
+
+function shouldSignWhatsAppMediaUrls() {
+  return String(process.env.WHATSAPP_MEDIA_SIGNED_URLS || '').trim().toLowerCase() === 'true';
+}
+
+function unsignedUrl(value) {
+  try {
+    const url = new URL(value);
+    url.search = '';
+    return url.toString();
+  } catch {
+    return value;
   }
 }
 

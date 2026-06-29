@@ -174,8 +174,8 @@ export function getConfiguredBucketName(kind = 'whatsapp') {
   return getBucketName(kind);
 }
 
-export function getMinioPublicUrl({ bucket, key }) {
-  const cfg = getMinioConfig();
+export function getMinioPublicUrl({ bucket, key, useRuntimeConfig = true }) {
+  const cfg = getMinioConfig({ useRuntimeConfig });
   return buildPublicUrl(cfg.publicUrl || cfg.endpoint, bucket, key);
 }
 

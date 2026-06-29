@@ -54,7 +54,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
         if (!active) return;
         setMediaSourceUrl(message.media_url || '');
         if (err?.code === 'MEDIA_NOT_READY') {
-          setMediaStatusOverride(normalizeMediaStatus(err?.details?.status) || 'pending');
+          const nextStatus = normalizeMediaStatus(err?.details?.status);
+          setMediaStatusOverride(nextStatus === 'ready' ? 'pending' : nextStatus || 'pending');
         }
       });
 

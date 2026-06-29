@@ -157,9 +157,15 @@ func (r *MediaRepo) UpsertPendingFromMessage(ctx context.Context, msg *models.Me
 		ON CONFLICT (message_id) DO UPDATE SET
 			whatsapp_payload = COALESCE(EXCLUDED.whatsapp_payload, whatsapp_media.whatsapp_payload),
 			source_message_id = COALESCE(NULLIF(EXCLUDED.source_message_id, ''), whatsapp_media.source_message_id),
-			status = CASE WHEN whatsapp_media.status = 'ready' THEN whatsapp_media.status ELSE 'pending' END,
+			status = CASE
+				WHEN whatsapp_media.status = 'ready'
+				 AND (NULLIF(whatsapp_media.object_key, '') IS NOT NULL OR NULLIF(whatsapp_media.public_url, '') IS NOT NULL)
+				THEN whatsapp_media.status
+				ELSE 'pending'
+			END,
 			last_error = NULL,
 			next_retry_at = now(),
+			claimed_at = NULL,
 			updated_at = now()
 	`, msg.ID, msg.InstanceID, tenantID, string(msg.Type), bucket, msg.MediaFilename, msg.MediaMimetype, payload, msg.MessageID)
 	return err

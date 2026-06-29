@@ -62,9 +62,14 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
         setSourceUrl(response.url);
         setStatus(response.status === 'ready' ? 'downloading' : (response.status as PlayerStatus));
       })
-      .catch(() => {
+      .catch((err: any) => {
         if (!isMounted) return;
         setSourceUrl(message.media_url || '');
+        if (err?.code === 'MEDIA_NOT_READY') {
+          const nextStatus = normalizePlayerStatus(err?.details?.status);
+          setStatus(nextStatus === 'ready' ? 'pending' : nextStatus || 'pending');
+          return;
+        }
         setStatus(message.media_url ? 'downloading' : 'failed');
       });
 
@@ -108,8 +113,13 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
 
   const retry = (event: React.MouseEvent) => {
     event.stopPropagation();
+    setStatus('pending');
+    setSourceUrl('');
     if (message.media_id) {
-      mediaApi.retry(message.media_id).catch(() => undefined);
+      mediaApi.retry(message.media_id)
+        .catch(() => setStatus('failed'))
+        .finally(() => setReloadKey((value) => value + 1));
+      return;
     }
     setReloadKey((value) => value + 1);
   };
@@ -221,10 +231,31 @@ function buildWaveform(seed: string): number[] {
 
 function resolveInitialStatus(message: Message): PlayerStatus {
   if (message.media_status && message.media_status !== 'none') {
-    if (message.media_status === 'ready' && !message.media_url) return 'failed';
+    if (message.media_status === 'ready' && !message.media_url) {
+      return message.media_id ? 'downloading' : 'failed';
+    }
     return message.media_status;
   }
-  return message.media_url ? 'ready' : 'failed';
+  if (message.media_url) return 'ready';
+  return message.media_id ? 'pending' : 'failed';
+}
+
+function shouldRequestMediaUrl(mediaStatus?: Message['media_status']) {
+  return !mediaStatus || mediaStatus === 'none' || mediaStatus === 'ready' || mediaStatus === 'failed' || mediaStatus === 'expired';
+}
+
+function normalizePlayerStatus(value: unknown): PlayerStatus | undefined {
+  if (
+    value === 'pending' ||
+    value === 'downloading' ||
+    value === 'processing' ||
+    value === 'ready' ||
+    value === 'failed' ||
+    value === 'expired'
+  ) {
+    return value;
+  }
+  return undefined;
 }
 
 function statusLabel(status: PlayerStatus): string {

@@ -351,7 +351,7 @@ async function getWhatsAppMediaUrl(req, res) {
       return res.status(409).json({
         error: 'Midia ainda nao possui arquivo processado.',
         code: 'MEDIA_NOT_READY',
-        status: media.status,
+        status: media.status === 'ready' ? 'pending' : media.status,
       });
     }
 
@@ -412,6 +412,8 @@ async function retryWhatsAppMedia(req, res) {
         status: 'pending',
         retry_count: retryCount,
         last_error: null,
+        next_retry_at: new Date().toISOString(),
+        claimed_at: null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', media.id)

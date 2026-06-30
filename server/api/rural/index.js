@@ -1098,14 +1098,41 @@ async function handleRuralValuationByCar(req, res) {
       .eq('property_id', savedProperty.id)
       .order('created_at', { ascending: false });
 
-    const enrichment = buildRuralEnrichment(savedProperty, documents || []);
+    const fullEnrichment = await FarmValuationService.valuationByCAR(codigo, req.orgId, req.user.id);
+    const baseEnrichment = buildRuralEnrichment(savedProperty, documents || []);
+    const enrichment = {
+      ...baseEnrichment,
+      ...fullEnrichment,
+      technical: {
+        ...(baseEnrichment.technical || {}),
+        ...(fullEnrichment.technical || {}),
+      },
+      documents: baseEnrichment.documents,
+      sources: {
+        ...(baseEnrichment.sources || {}),
+        ...(fullEnrichment.sources || {}),
+      },
+    };
     const { data: ruralProperties } = await ruralPropertiesQuery(
       supabase,
       req.orgId,
       'id, title, price, total_area_ha, city, state, property_type, niche, features'
     );
     const comparables = getComparableStats(ruralProperties || [], savedProperty);
-    const valuation = buildRuralValuation(savedProperty, enrichment, comparables);
+    const valuation = {
+      ...buildRuralValuation(savedProperty, enrichment, comparables),
+      comparable_samples: [],
+      drivers: [
+        ...(fullEnrichment.valuation?.drivers || []),
+        ...((fullEnrichment.valuation?.regional_summary && [`Resumo regional: ${fullEnrichment.valuation.regional_summary}`]) || []),
+      ],
+      risks: fullEnrichment.valuation?.risks || [],
+      confidence_score: fullEnrichment.valuation?.score_confianca ?? null,
+      intelligence_score: fullEnrichment.valuation?.score_confianca ?? null,
+      environmental_alert_score: fullEnrichment.valuation?.score_alerta_ambiental ?? null,
+      risk_level: fullEnrichment.valuation?.nivel_risco || null,
+      regional_summary: fullEnrichment.valuation?.regional_summary || fullEnrichment.regional_analysis?.market_summary || null,
+    };
     const finalFeatures = {
       ...(savedProperty.features || {}),
       rural_enrichment: enrichment,
@@ -1609,9 +1636,22 @@ router.post('/valuation/car-full', verifyAuth, requireTenant, async (req, res) =
 
     if (propertyId) {
       const supabase = getSupabaseServer();
-      const features = {};
+      const { data: current } = await supabase
+        .from('properties')
+        .select('features')
+        .eq('id', propertyId)
+        .eq('organization_id', req.orgId)
+        .single();
+      const features = current?.features || {};
       await supabase.from('properties').update({
-        features: { rural_enrichment: enrichment },
+        features: {
+          ...features,
+          rural_enrichment: enrichment,
+          rural_valuation: {
+            ...(features.rural_valuation || {}),
+            ...(enrichment.valuation || {}),
+          },
+        },
       }).eq('id', propertyId).eq('organization_id', req.orgId);
     }
 

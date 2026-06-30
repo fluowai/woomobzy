@@ -412,7 +412,7 @@ async function retryWhatsAppMedia(req, res) {
       return res.status(404).json({ error: 'Midia nao encontrada.' });
     }
 
-    const retryCount = Number(media.retry_count || 0) + 1;
+    const retryCount = Math.min(Number(media.retry_count || 0), 7);
     const { error: mediaError } = await supabase
       .from('whatsapp_media')
       .update({

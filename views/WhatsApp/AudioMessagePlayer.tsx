@@ -19,6 +19,8 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
   const [status, setStatus] = useState<PlayerStatus>(resolveInitialStatus(message));
   const [reloadKey, setReloadKey] = useState(0);
   const [sourceUrl, setSourceUrl] = useState(message.media_url || '');
+  const [sourceMimeType, setSourceMimeType] = useState(message.media_mimetype || 'audio/ogg');
+  const [refreshAttempts, setRefreshAttempts] = useState(0);
 
   const speed = SPEEDS[speedIndex];
   const waveform = useMemo(() => buildWaveform(message.message_id || message.id), [message.id, message.message_id]);
@@ -61,6 +63,7 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
         if (!isMounted) return;
         if (response.url) {
           setSourceUrl(response.url);
+          setSourceMimeType(response.mime_type || message.media_mimetype || 'audio/ogg');
           setStatus(response.status === 'ready' ? 'downloading' : (response.status as PlayerStatus));
           return;
         }
@@ -71,6 +74,7 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
       .catch((err: any) => {
         if (!isMounted) return;
         setSourceUrl(message.media_url || '');
+        setSourceMimeType(message.media_mimetype || 'audio/ogg');
         if (err?.code === 'MEDIA_NOT_READY') {
           const nextStatus = normalizePlayerStatus(err?.details?.status);
           setStatus(nextStatus === 'ready' ? 'pending' : nextStatus || 'pending');
@@ -121,6 +125,7 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
     event.stopPropagation();
     setStatus('pending');
     setSourceUrl('');
+    setRefreshAttempts(0);
     if (message.media_id) {
       mediaApi.retry(message.media_id)
         .catch(() => setStatus('failed'))
@@ -153,21 +158,41 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
           key={`${sourceUrl}-${reloadKey}`}
           ref={audioRef}
           preload="metadata"
-          src={sourceUrl}
+          controls={false}
           onLoadedMetadata={(event) => {
             const nextDuration = Number(event.currentTarget.duration);
             setDuration(Number.isFinite(nextDuration) ? nextDuration : 0);
             setStatus('ready');
+            setRefreshAttempts(0);
           }}
           onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
           onError={() => {
+            if (message.media_id && refreshAttempts < 1) {
+              setRefreshAttempts((value) => value + 1);
+              setStatus('downloading');
+              mediaApi
+                .getUrl(message.media_id, 900)
+                .then((response) => {
+                  if (response.url) {
+                    setSourceUrl(response.url);
+                    setSourceMimeType(response.mime_type || message.media_mimetype || sourceMimeType);
+                    setReloadKey((value) => value + 1);
+                    return;
+                  }
+                  setStatus(normalizePlayerStatus(response.status) || 'failed');
+                })
+                .catch(() => setStatus('failed'));
+              return;
+            }
             setStatus('failed');
             setIsPlaying(false);
           }}
-        />
+        >
+          <source src={sourceUrl} type={sourceMimeType} />
+        </audio>
       )}
 
       <button

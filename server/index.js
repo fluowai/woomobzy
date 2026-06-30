@@ -58,7 +58,8 @@ const REQUIRED_ENV_VARS = [
 const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
 
 console.log('\n--- WhatsApp Check ---');
-console.log(`WhatsMeow URL: ${process.env.WHATSAPP_API_URL ? '✅ Configurada' : '❌ AUSENTE'}`);
+console.log(`WhatsApp Provider: ${process.env.WHATSAPP_PROVIDER || 'whatsmeow'}`);
+console.log(`WhatsApp URL: ${process.env.WHATSAPP_API_URL || process.env.WAHA_API_URL || process.env.ARRAPHA_API_URL ? 'configurada' : 'ausente'}`);
 console.log('-------------------------\n');
 
 if (missingVars.length > 0) {

@@ -18,6 +18,7 @@ import {
   ArrowDown,
   Users,
   Phone,
+  Video,
   MoreVertical,
   Loader2,
   X,
@@ -338,6 +339,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="wa-chat-header-actions">
           <button className="wa-icon-btn" title="Ligar">
             <Phone size={18} />
+          </button>
+          <button className="wa-icon-btn" title="Videochamada">
+            <Video size={18} />
           </button>
           <button className="wa-icon-btn" title="Mais opções">
             <MoreVertical size={18} onClick={() => setShowContactPanel(true)} />

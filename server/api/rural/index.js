@@ -21,6 +21,12 @@ import { extractLatLngFromGoogleMapsUrl, reverseGeocode, calculateConfidence } f
 import { SicarService } from '../../services/sicarService.js';
 import { applyRuralFilter, isRuralProperty } from '../../utils/propertyNiche.js';
 import PDFDocument from 'pdfkit';
+import { FarmValuationService } from '../../services/farmValuationService.js';
+import { IntegracaoConectaGov } from '../../services/integracaoConectaGov.js';
+import { IntegracaoIbamaEmbargos } from '../../services/integracaoIbamaEmbargos.js';
+import { IntegracaoTerraBrasilis } from '../../services/integracaoTerraBrasilis.js';
+import { IntegracaoMapBiomas } from '../../services/integracaoMapBiomas.js';
+import { IntegracaoIbgeSidra } from '../../services/integracaoIbgeSidra.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -1252,15 +1258,97 @@ router.get('/dossier/:propertyId/pdf', verifyAuth, requireTenant, async (req, re
       ['Score de risco', dueDiligence.validation?.riskScore ?? '-'],
       ['Nivel de risco', dueDiligence.validation?.riskLevel || '-'],
     ]);
-    addSection('Enriquecimento Pos-CAR', [
-      ['CAR', enrichment.car_number || legal.carNumber || 'Nao cadastrado'],
-      ['Status CAR', enrichment.car_status || legal.carStatus || '-'],
-      ['Municipio/UF', [enrichment.municipality || property.city, enrichment.state || property.state].filter(Boolean).join(' / ') || '-'],
-      ['Area declarada', enrichment.declared_area_ha ? `${Number(enrichment.declared_area_ha).toLocaleString('pt-BR')} ha` : '-'],
-      ['Area medida', enrichment.measured_area_ha ? `${Number(enrichment.measured_area_ha).toLocaleString('pt-BR')} ha` : '-'],
-      ['Centroide', enrichment.centroid ? `${Number(enrichment.centroid.lat).toFixed(6)}, ${Number(enrichment.centroid.lng).toFixed(6)}` : '-'],
-      ['Fontes planejadas', 'MapBiomas, PRODES/DETER, solo, declividade, hidrografia e logistica'],
+    const farmEnrich = enrichment.car ? enrichment : null;
+
+    addSection('Dados do CAR', [
+      ['Codigo CAR', farmEnrich ? farmEnrich.car.codigo : legal.carNumber || 'Nao cadastrado'],
+      ['Status', farmEnrich ? farmEnrich.car.status : legal.carStatus || '-'],
+      ['Area CAR (ha)', farmEnrich ? `${farmEnrich.car.area_ha.toFixed(2)}` : `${areaHa.toFixed(2)}`],
+      ['Municipio/UF', farmEnrich ? `${farmEnrich.car.municipio || ''}/${farmEnrich.car.uf || ''}` : [property.city, property.state].filter(Boolean).join(' / ') || '-'],
+      ['Centroide', farmEnrich?.car?.centroide ? `${farmEnrich.car.centroide.lat.toFixed(6)}, ${farmEnrich.car.centroide.lng.toFixed(6)}` : enrichment.centroid ? `${Number(enrichment.centroid.lat).toFixed(6)}, ${Number(enrichment.centroid.lng).toFixed(6)}` : '-'],
     ]);
+
+    if (farmEnrich?.incra) {
+      addSection('Dados INCRA/SNCR', [
+        ['Classificacao fundiaria', farmEnrich.incra.classificacao_fundiaria || '-'],
+        ['Modulos fiscais', farmEnrich.incra.modulos_fiscais ? String(farmEnrich.incra.modulos_fiscais) : '-'],
+        ['Area registrada', farmEnrich.incra.area_registrada_ha ? `${farmEnrich.incra.area_registrada_ha.toFixed(2)} ha` : '-'],
+        ['Situacao', farmEnrich.incra.situacao || '-'],
+        ['Titulares', Array.isArray(farmEnrich.incra.titulares) ? farmEnrich.incra.titulares.map(t => t.nome).join(', ') : '-'],
+      ]);
+    }
+
+    if (farmEnrich?.sicar_temas) {
+      const st = farmEnrich.sicar_temas;
+      addSection('Uso do Solo (SICAR Tema)', [
+        ['Reserva legal', `${st.reserva_legal_ha.toFixed(2)} ha`],
+        ['APP', `${st.app_ha.toFixed(2)} ha`],
+        ['Vegetacao nativa', `${st.vegetacao_nativa_ha.toFixed(2)} ha`],
+        ['Uso consolidado', `${st.uso_consolidado_ha.toFixed(2)} ha`],
+        ['Area a recompor', st.area_recompor_ha > 0 ? `${st.area_recompor_ha.toFixed(2)} ha` : 'N/A'],
+      ]);
+    }
+
+    if (farmEnrich?.ambiental) {
+      const amb = farmEnrich.ambiental;
+      const rowsAmb = [];
+      if (amb.prodes?.possui_desmatamento !== null) {
+        rowsAmb.push(['Desmatamento PRODES', amb.prodes.possui_desmatamento ? `SIM (${amb.prodes.area_desmatada_ha.toFixed(2)}ha em ${amb.prodes.ano_referencia})` : 'NAO detectado']);
+      }
+      if (amb.deter?.total_alertas !== null) {
+        rowsAmb.push(['Alertas DETER (30 dias)', String(amb.deter.total_alertas)]);
+      }
+      if (amb.embargos?.total_embargos !== null) {
+        rowsAmb.push(['Embargos IBAMA (raio)', `${amb.embargos.total_embargos} (${amb.embargos.area_total_embargada_ha.toFixed(2)}ha)`]);
+      }
+      if (amb.mapbiomas) {
+        rowsAmb.push(['Alertas MapBiomas', amb.mapbiomas.token_configurado === false ? 'Token nao configurado' : String(amb.mapbiomas.total_alertas)]);
+      }
+      if (rowsAmb.length > 0) {
+        addSection('Analise Ambiental', rowsAmb);
+      }
+    }
+
+    if (farmEnrich?.economico) {
+      const eco = farmEnrich.economico;
+      const rowsEco = [];
+      if (eco.producao_agricola?.produtos_principais?.length) {
+        const top = eco.producao_agricola.produtos_principais.slice(0, 3);
+        rowsEco.push(['Principais culturas', top.map(p => `${p.produto} (${(p.quantidade / 1000).toFixed(0)}t)`).join(', ')]);
+      }
+      if (eco.producao_pecuaria?.total_cabecas) {
+        rowsEco.push(['Efetivo pecuario', `${eco.producao_pecuaria.total_cabecas.toLocaleString()} cabecas`]);
+      }
+      if (eco.indicadores?.pib_total) {
+        rowsEco.push(['PIB municipal', eco.indicadores.pib_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })]);
+      }
+      if (rowsEco.length > 0) {
+        addSection('Dados Economicos Municipais (IBGE)', rowsEco);
+      }
+    }
+
+    if (farmEnrich?.valuation) {
+      const v = farmEnrich.valuation;
+      addSection('Score de Inteligencia Rural', [
+        ['Score de confianca', `${v.score_confianca}/100`],
+        ['Nivel de risco', v.nivel_risco || '-'],
+        ['Score alerta ambiental', v.score_alerta_ambiental ? `${v.score_alerta_ambiental}/100` : '-'],
+        ['Fontes consultadas', farmEnrich.fontes_consultadas?.join(', ') || '-'],
+      ]);
+    }
+
+    if (farmEnrich?.valuation?.drivers?.length || farmEnrich?.valuation?.risks?.length) {
+      const v = farmEnrich.valuation;
+      doc.fillColor(brandColor).fontSize(14).text('Leitura da Analise');
+      doc.moveDown(0.3);
+      (v.drivers || []).forEach((item) => {
+        doc.fillColor('#047857').fontSize(10).text(`+ ${item}`);
+      });
+      (v.risks || []).forEach((item) => {
+        doc.fillColor('#b45309').fontSize(10).text(`! ${item}`);
+      });
+      doc.moveDown();
+    }
     addSection('Quick Valuation Rural', [
       ['Status', valuation.status || 'Nao calculado'],
       ['Metodo', valuation.method || '-'],
@@ -1478,6 +1566,143 @@ router.post('/find-car-by-location', verifyAuth, requireTenant, async (req, res)
   } catch (error) {
     console.error('[CARSearch] Erro crítico:', error);
     res.status(500).json({ success: false, error: 'Erro interno ao processar busca de localização.', message: error.message });
+  }
+});
+
+/**
+ * POST /api/rural/valuation/car-full
+ * Valuation completa a partir do codigo CAR com todas as integracoes
+ * (SNCR, SICAR Tema, PRODES, DETER, MapBiomas, IBAMA, IBGE)
+ */
+router.post('/valuation/car-full', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { carNumber, propertyId } = req.body;
+    if (!carNumber && !propertyId) {
+      return res.status(400).json({ success: false, error: 'Informe carNumber ou propertyId.' });
+    }
+
+    let enrichment;
+    if (carNumber) {
+      enrichment = await FarmValuationService.valuationByCAR(
+        carNumber, req.orgId, req.user.id
+      );
+    } else {
+      const supabase = getSupabaseServer();
+      const { data: property } = await supabase
+        .from('properties')
+        .select('features, title, city, state')
+        .eq('id', propertyId)
+        .eq('organization_id', req.orgId)
+        .single();
+
+      if (!property) return res.status(404).json({ success: false, error: 'Imovel nao encontrado.' });
+
+      const legal = property.features?.legal || {};
+      const carNumberFromProp = legal.carNumber;
+      if (!carNumberFromProp) {
+        return res.status(400).json({ success: false, error: 'Propriedade sem CAR vinculado. Informe carNumber.' });
+      }
+      enrichment = await FarmValuationService.valuationByCAR(
+        carNumberFromProp, req.orgId, req.user.id
+      );
+    }
+
+    if (propertyId) {
+      const supabase = getSupabaseServer();
+      const features = {};
+      await supabase.from('properties').update({
+        features: { rural_enrichment: enrichment },
+      }).eq('id', propertyId).eq('organization_id', req.orgId);
+    }
+
+    res.json({ success: true, enrichment });
+  } catch (error) {
+    console.error('[FarmValuation] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/rural/consultarProdes/:lat/:lng
+ * Consulta PRODES (desmatamento) para coordenada
+ */
+router.get('/consultarProdes/:lat/:lng', verifyAuth, async (req, res) => {
+  try {
+    const lat = parseFloat(req.params.lat);
+    const lng = parseFloat(req.params.lng);
+    if (!isFinite(lat) || !isFinite(lng)) {
+      return res.status(400).json({ error: 'Coordenadas invalidas' });
+    }
+    const data = await IntegracaoTerraBrasilis.consultarProdes(lat, lng);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/rural/consultarEmbargos/:lat/:lng
+ * Consulta embargos IBAMA para coordenada
+ */
+router.get('/consultarEmbargos/:lat/:lng', verifyAuth, async (req, res) => {
+  try {
+    const lat = parseFloat(req.params.lat);
+    const lng = parseFloat(req.params.lng);
+    if (!isFinite(lat) || !isFinite(lng)) {
+      return res.status(400).json({ error: 'Coordenadas invalidas' });
+    }
+    const data = await IntegracaoIbamaEmbargos.consultarEmbargosPorCoordenada(lat, lng);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/rural/consultarMapBiomas/:lat/:lng
+ * Consulta alertas MapBiomas para coordenada
+ */
+router.get('/consultarMapBiomas/:lat/:lng', verifyAuth, async (req, res) => {
+  try {
+    const lat = parseFloat(req.params.lat);
+    const lng = parseFloat(req.params.lng);
+    if (!isFinite(lat) || !isFinite(lng)) {
+      return res.status(400).json({ error: 'Coordenadas invalidas' });
+    }
+    const data = await IntegracaoMapBiomas.consultarUsoSolo(lat, lng);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/rural/producaoAgricola/:codigoIbge
+ * Consulta producao agricola municipal (IBGE SIDRA)
+ */
+router.get('/producaoAgricola/:codigoIbge', verifyAuth, async (req, res) => {
+  try {
+    const codigoIbge = req.params.codigoIbge;
+    if (!codigoIbge || codigoIbge.length < 7) {
+      return res.status(400).json({ error: 'Codigo IBGE invalido' });
+    }
+    const data = await IntegracaoIbgeSidra.enrichPropertyWithIbge(codigoIbge);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/rural/consultarSNCR/:codigo
+ * Consulta dados do SNCR/INCRA para codigo do imovel
+ */
+router.get('/consultarSNCR/:codigo', verifyAuth, async (req, res) => {
+  try {
+    const data = await IntegracaoConectaGov.consultarSNCR(req.params.codigo);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

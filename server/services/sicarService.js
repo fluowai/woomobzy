@@ -98,6 +98,40 @@ export const SicarService = {
   },
 
   /**
+   * Busca imóvel rural pelo código CAR.
+   */
+  async findByCode(codigo) {
+    const uf = this._extractUF(codigo);
+    if (!uf) throw new Error('Código CAR deve iniciar com a UF. Ex: PA-...');
+
+    const layer = this.getLayerName(uf);
+    const cleanCode = codigo.toUpperCase().trim();
+
+    const params = new URLSearchParams({
+      service: 'WFS',
+      version: '1.0.0',
+      request: 'GetFeature',
+      typeName: layer,
+      outputFormat: 'application/json',
+      CQL_FILTER: `cod_imovel='${cleanCode}'`,
+    });
+
+    try {
+      console.log(`[SicarService] Consultando CAR ${cleanCode} em ${layer}`);
+      const response = await axios.get(`${SICAR_WFS_URL}?${params.toString()}`, { timeout: 20000 });
+      return response.data;
+    } catch (e) {
+      console.error(`[SicarService] Erro na consulta por código (${codigo}):`, e.message);
+      throw e;
+    }
+  },
+
+  _extractUF(codigo) {
+    const match = String(codigo || '').trim().match(/^([A-Z]{2})[-_]/i);
+    return match ? match[1].toUpperCase() : null;
+  },
+
+  /**
    * Tenta encontrar o campo geométrico correto se o padrão falhar.
    */
   async retryWithAlternativeGeometry(layer, spatialValue, operator) {

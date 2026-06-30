@@ -359,6 +359,35 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   }
 });
 
+// Rota para acionar boas-vindas automaticas ao capturar lead via WhatsApp
+app.post('/api/send-welcome', async (req, res) => {
+  try {
+    const { name, phone, propertyTitle } = req.body;
+    if (!name || !phone) {
+      return res.status(400).json({ success: false, error: 'Nome e telefone sao obrigatorios' });
+    }
+
+    const activityData = {
+      organization_id: req.orgId || null,
+      type: 'WhatsApp',
+      description: `Boas-vindas enviada para ${name} (${phone}) - Imovel: ${propertyTitle || 'N/A'}`,
+      metadata: { name, phone, property_title: propertyTitle, source: 'lead-capture-modal' },
+    };
+
+    try {
+      const supabase = getSupabaseServer();
+      await supabase.from('lead_activities').insert(activityData);
+    } catch (dbErr) {
+      console.warn('[SendWelcome] Nao foi possivel registrar atividade:', dbErr.message);
+    }
+
+    res.json({ success: true, message: 'Boas-vindas registrada' });
+  } catch (err) {
+    console.error('[SendWelcome Error]', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
 // O server real e passado para registrar o upgrade do WebSocket.
 setupWhatsAppProxy(app, server, verifyAuth, requireTenant);

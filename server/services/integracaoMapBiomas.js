@@ -2,54 +2,61 @@ import axios from 'axios';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const MAPBIOMAS_API = 'https://plataforma.alerta.mapbiomas.org/api/v2/graphql';
-const MAPBIOMAS_TOKEN = process.env.MAPBIOMAS_API_TOKEN || '';
+let mapbiomasSessionToken = null;
 
 export class IntegracaoMapBiomas {
   static async consultarUsoSolo(lat, lng) {
     const cacheKey = `mapbiomas:usosolo:${lat}:${lng}`;
     return this._fetchWithCache(cacheKey, async () => {
-      if (!MAPBIOMAS_TOKEN) {
-        return this._fallbackUsoSolo(lat, lng);
-      }
-
       const query = `
-        query alertasPorCoordenada($lat: Float!, $lng: Float!) {
-          alertsByLocation(lat: $lat, lng: $lng, limit: 50) {
-            id
-            alertDate
-            areaHa
-            classification
-            status
-            geometry
+        query pointInformation($boundingBox: BoundingBoxInput) {
+          pointInformation(boundingBox: $boundingBox) {
+            alerts {
+              alertCode
+              detectedAt
+              publishedAt
+              areaHa
+              sources
+              statusName
+            }
           }
         }
       `;
+      const delta = Number(process.env.MAPBIOMAS_POINT_DELTA || 0.01);
 
       try {
-        const response = await axios.post(MAPBIOMAS_API, {
+        const response = await this._graphql({
           query,
-          variables: { lat, lng },
-        }, {
-          headers: {
-            Authorization: `Bearer ${MAPBIOMAS_TOKEN}`,
-            'Content-Type': 'application/json',
+          variables: {
+            boundingBox: {
+              swLat: Number(lat) - delta,
+              swLng: Number(lng) - delta,
+              neLat: Number(lat) + delta,
+              neLng: Number(lng) + delta,
+            },
           },
-          timeout: 20000,
         });
 
-        const alerts = response.data?.data?.alertsByLocation || [];
+        const errors = response.data?.errors || [];
+        if (errors.length) {
+          throw new Error(errors.map((item) => item.message).join('; '));
+        }
+
+        const alerts = response.data?.data?.pointInformation?.alerts || [];
         return {
           total_alertas: alerts.length,
           alertas: alerts.map(a => ({
-            id: a.id,
-            data: a.alertDate,
+            id: a.alertCode,
+            data: a.detectedAt || a.publishedAt,
             area_ha: a.areaHa,
-            classificacao: a.classification,
-            status: a.status,
+            classificacao: Array.isArray(a.sources) ? a.sources.join(', ') : null,
+            status: a.statusName,
           })),
           area_total_alertas_ha: alerts.reduce((s, a) => s + (a.areaHa || 0), 0),
           fonte: 'MapBiomas Alerta',
-          token_configurado: true,
+          token_configurado: Boolean(process.env.MAPBIOMAS_API_TOKEN || process.env.MAPBIOMAS_EMAIL),
+          api_autenticada: Boolean(mapbiomasSessionToken || process.env.MAPBIOMAS_API_TOKEN),
+          bounding_box_delta: delta,
         };
       } catch (error) {
         console.warn(`[MapBiomas] API erro, usando fallback: ${error.message}`);
@@ -98,9 +105,9 @@ export class IntegracaoMapBiomas {
       alertas: [],
       total_alertas: 0,
       area_total_alertas_ha: 0,
-      fonte: 'MapBiomas Alerta (sem token)',
-      token_configurado: false,
-      mensagem: 'Configure MAPBIOMAS_API_TOKEN no .env para ativar consultas reais. Cadastre-se em https://plataforma.alerta.mapbiomas.org/sign-up',
+      fonte: 'MapBiomas Alerta (fallback)',
+      token_configurado: Boolean(process.env.MAPBIOMAS_API_TOKEN || process.env.MAPBIOMAS_EMAIL),
+      mensagem: 'Consulta MapBiomas indisponivel no momento. Configure MAPBIOMAS_EMAIL/MAPBIOMAS_PASSWORD ou MAPBIOMAS_API_TOKEN e tente novamente.',
     };
   }
 
@@ -143,5 +150,47 @@ export class IntegracaoMapBiomas {
     }
 
     return data;
+  }
+
+  static async _graphql({ query, variables }) {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    const token = await this._getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    return axios.post(MAPBIOMAS_API, { query, variables }, {
+      headers,
+      timeout: 20000,
+    });
+  }
+
+  static async _getToken() {
+    const configuredToken = (process.env.MAPBIOMAS_API_TOKEN || '').trim();
+    if (configuredToken) return configuredToken;
+    if (mapbiomasSessionToken) return mapbiomasSessionToken;
+
+    const email = (process.env.MAPBIOMAS_EMAIL || '').trim();
+    const password = (process.env.MAPBIOMAS_PASSWORD || '').trim();
+    if (!email || !password) return null;
+
+    const response = await axios.post(MAPBIOMAS_API, {
+      query: `
+        mutation signIn($email: String!, $password: String!) {
+          signIn(email: $email, password: $password) { token }
+        }
+      `,
+      variables: { email, password },
+    }, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 20000,
+    });
+
+    const errors = response.data?.errors || [];
+    if (errors.length) {
+      throw new Error(errors.map((item) => item.message).join('; '));
+    }
+    mapbiomasSessionToken = response.data?.data?.signIn?.token || null;
+    return mapbiomasSessionToken;
   }
 }

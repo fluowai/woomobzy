@@ -48,8 +48,13 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3002
+      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-whatsmeow}
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100
+      ARRAPHA_API_URL: http://arrapha:3000
+      WAHA_API_URL: http://arrapha:3000
+      ARRAPHA_API_KEY: ${ARRAPHA_API_KEY:-}
+      WAHA_API_KEY: ${WAHA_API_KEY:-}
       WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:-local-whatsapp-service-token}
       WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:-local-whatsapp-internal-token}
       WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:-local-whatsapp-ws-secret-change-me}
@@ -74,6 +79,27 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    networks:
+      - imobzy
+    cpus: "1.00"
+    mem_limit: 768m
+    logging: *default-logging
+    restart: unless-stopped
+
+  arrapha:
+    image: devlikeapro/waha:latest
+    profiles:
+      - arrapha
+    environment:
+      WHATSAPP_API_KEY: ${ARRAPHA_API_KEY:-local-arrapha-api-key}
+      WAHA_PRINT_QR: "false"
+      WAHA_LOG_FORMAT: JSON
+    volumes:
+      - arrapha_sessions:/app/.sessions
+    expose:
+      - "3000"
+    ports:
+      - "3007:3000"
     networks:
       - imobzy
     cpus: "1.00"
@@ -154,6 +180,7 @@ services:
 
 volumes:
   whatsapp_sessions:
+  arrapha_sessions:
 
 networks:
   imobzy:

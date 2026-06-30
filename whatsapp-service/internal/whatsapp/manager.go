@@ -35,6 +35,7 @@ type Manager struct {
 	contactRepo       *repository.ContactRepo
 	messageRepo       *repository.MessageRepo
 	mediaRepo         *repository.MediaRepo
+	callRepo          *repository.CallRepo
 	hub               *ws.Hub
 	logger            *zap.Logger
 	dbURI             string
@@ -61,6 +62,7 @@ func NewManager(
 	contactRepo *repository.ContactRepo,
 	messageRepo *repository.MessageRepo,
 	mediaRepo *repository.MediaRepo,
+	callRepo *repository.CallRepo,
 	hub *ws.Hub,
 	logger *zap.Logger,
 	dbURI string,
@@ -86,6 +88,7 @@ func NewManager(
 		contactRepo:       contactRepo,
 		messageRepo:       messageRepo,
 		mediaRepo:         mediaRepo,
+		callRepo:          callRepo,
 		hub:               hub,
 		logger:            logger,
 		dbURI:             dbURI,
@@ -231,6 +234,11 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 	}
 	m.clients[instanceID] = client
 	m.mu.Unlock()
+
+	// Initialize call manager
+	if m.callRepo != nil {
+		client.InitCallManager(m.callRepo)
+	}
 
 	// Start connection in background
 	go func() {

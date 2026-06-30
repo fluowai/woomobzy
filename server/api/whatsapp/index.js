@@ -4,6 +4,8 @@ import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { createPresignedGetUrl, isMinioConfigured } from '../../lib/minio-storage.js';
 import jwt from 'jsonwebtoken';
+import { createArraphaRouter } from './providers/arrapha-router.js';
+import { getWhatsAppProviderConfig, isArraphaProvider } from './providers/provider-config.js';
 
 const router = Router();
 const WHATSAPP_DB_ENV_KEYS = [
@@ -36,7 +38,8 @@ const rewriteWhatsAppPath = (path) => {
 };
 
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
-  const target = resolveWhatsAppTarget(process.env.WHATSAPP_API_URL);
+  const providerConfig = getWhatsAppProviderConfig();
+  const target = resolveWhatsAppTarget(providerConfig.targetUrl);
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const isProduction = process.env.NODE_ENV === 'production';
   const envAllowedOrigins = process.env.ALLOWED_ORIGINS
@@ -108,6 +111,21 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       res.status(500).json({ error: err.message });
     }
   });
+
+  if (isArraphaProvider()) {
+    console.log('[WhatsApp API 2.0] Provider ativo: Arrapha/WAHA em modo white label.');
+    app.use(
+      '/api/whatsapp',
+      createArraphaRouter({
+        verifyAuth,
+        requireTenant,
+        applyCorsHeaders,
+      })
+    );
+    return null;
+  }
+
+  console.log('[WhatsApp API 2.0] Provider ativo: WhatsMeow legado.');
 
   const proxy = createProxyMiddleware({
     target,
@@ -412,7 +430,7 @@ async function retryWhatsAppMedia(req, res) {
       return res.status(404).json({ error: 'Midia nao encontrada.' });
     }
 
-    const retryCount = Number(media.retry_count || 0) + 1;
+    const retryCount = Math.min(Number(media.retry_count || 0), 7);
     const { error: mediaError } = await supabase
       .from('whatsapp_media')
       .update({

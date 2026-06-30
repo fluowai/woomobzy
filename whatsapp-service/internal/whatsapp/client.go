@@ -57,6 +57,8 @@ type Client struct {
 	reconnectMu    sync.Mutex
 	reconnectTry   int
 	manualStop     bool
+
+	callManager *CallManager
 }
 
 // NewClient creates a new WhatsApp client wrapper
@@ -329,6 +331,19 @@ func (c *Client) GetWAClient() *whatsmeow.Client {
 	return c.waClient
 }
 
+// InitCallManager initializes the CallManager with the given bridge and repository.
+func (c *Client) InitCallManager(repo *repository.CallRepo) {
+	cm := NewCallManager(c, repo, c.hub, c.logger)
+	vb := newVoipBridge(c.waClient, c.logger)
+	cm.SetBridge(vb)
+	c.callManager = cm
+}
+
+// CallManager returns the call manager for this client.
+func (c *Client) CallManager() *CallManager {
+	return c.callManager
+}
+
 // StorageBucket returns the configured WhatsApp media bucket.
 func (c *Client) StorageBucket() string {
 	return c.storageBucket
@@ -385,6 +400,26 @@ func (c *Client) eventHandler(evt interface{}) {
 
 	case *events.Receipt:
 		c.handleReceipt(v)
+
+	case *events.CallOffer:
+		if cm := c.callManager; cm != nil {
+			cm.handleCallEventOffer(c.ctx, v)
+		}
+
+	case *events.CallAccept:
+		if cm := c.callManager; cm != nil {
+			cm.handleCallEventAccept(c.ctx, v)
+		}
+
+	case *events.CallTransport:
+		if cm := c.callManager; cm != nil {
+			cm.handleCallEventTransport(c.ctx, v)
+		}
+
+	case *events.CallTerminate:
+		if cm := c.callManager; cm != nil {
+			cm.handleCallEventTerminate(v)
+		}
 	}
 }
 

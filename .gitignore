@@ -32,12 +32,16 @@ dist-ssr
 
 # Secrets backup
 *.secrets.md
+portainer-stack-*-filled.yml
 
 # Debug files
 debug_scrape.html
 *.debug
 scratch/
 outputs/
+WaCalls_repo/
+whatsapp-service/run_*.txt
+whatsapp-service/internal/voip/media/mlow/testdata/
 scripts/debug/
 imobzy-message-isolation-report-*.json
 owner-access-repair-*.json

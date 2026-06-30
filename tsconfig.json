@@ -34,6 +34,7 @@
     "scripts",
     "coverage",
     "outputs",
+    "WaCalls_repo",
     "whatsapp-service",
     "ai_worker",
     "server/agro-intelligence"

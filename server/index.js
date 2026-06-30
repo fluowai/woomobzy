@@ -58,7 +58,8 @@ const REQUIRED_ENV_VARS = [
 const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
 
 console.log('\n--- WhatsApp Check ---');
-console.log(`WhatsMeow URL: ${process.env.WHATSAPP_API_URL ? '✅ Configurada' : '❌ AUSENTE'}`);
+console.log(`WhatsApp Provider: ${process.env.WHATSAPP_PROVIDER || 'whatsmeow'}`);
+console.log(`WhatsApp URL: ${process.env.WHATSAPP_API_URL || process.env.WAHA_API_URL || process.env.ARRAPHA_API_URL ? 'configurada' : 'ausente'}`);
 console.log('-------------------------\n');
 
 if (missingVars.length > 0) {
@@ -356,6 +357,35 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     }
   } catch (error) {
     console.error('[Traefik] Failed to synchronize platform services:', error.message);
+  }
+});
+
+// Rota para acionar boas-vindas automaticas ao capturar lead via WhatsApp
+app.post('/api/send-welcome', async (req, res) => {
+  try {
+    const { name, phone, propertyTitle } = req.body;
+    if (!name || !phone) {
+      return res.status(400).json({ success: false, error: 'Nome e telefone sao obrigatorios' });
+    }
+
+    const activityData = {
+      organization_id: req.orgId || null,
+      type: 'WhatsApp',
+      description: `Boas-vindas enviada para ${name} (${phone}) - Imovel: ${propertyTitle || 'N/A'}`,
+      metadata: { name, phone, property_title: propertyTitle, source: 'lead-capture-modal' },
+    };
+
+    try {
+      const supabase = getSupabaseServer();
+      await supabase.from('lead_activities').insert(activityData);
+    } catch (dbErr) {
+      console.warn('[SendWelcome] Nao foi possivel registrar atividade:', dbErr.message);
+    }
+
+    res.json({ success: true, message: 'Boas-vindas registrada' });
+  } catch (err) {
+    console.error('[SendWelcome Error]', err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

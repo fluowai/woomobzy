@@ -64,6 +64,7 @@ func main() {
 	contactRepo := repository.NewContactRepo(pool, log)
 	messageRepo := repository.NewMessageRepo(pool, log)
 	mediaRepo := repository.NewMediaRepo(pool, log)
+	callRepo := repository.NewCallRepo(pool, log)
 
 	// Initialize WebSocket hub
 	hub := ws.NewHub(log, cfg.CORSOrigins)
@@ -72,7 +73,7 @@ func main() {
 
 	// Initialize WhatsApp manager
 	manager := whatsapp.NewManager(
-		instanceRepo, chatRepo, contactRepo, messageRepo, mediaRepo,
+		instanceRepo, chatRepo, contactRepo, messageRepo, mediaRepo, callRepo,
 		hub, log, cfg.SupabaseDBURL,
 		cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.StorageBucket,
 		cfg.MinIOEndpoint, cfg.MinIOPublicURL, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIORegion,
@@ -87,6 +88,7 @@ func main() {
 	instanceHandler := handlers.NewInstanceHandler(manager, instanceRepo, log)
 	chatHandler := handlers.NewChatHandler(chatRepo, contactRepo, instanceRepo, log)
 	messageHandler := handlers.NewMessageHandler(messageRepo, mediaRepo, chatRepo, manager, log)
+	callHandler := handlers.NewCallHandler(manager, instanceRepo, callRepo, log)
 
 	// Setup Gin router
 	router := gin.New()
@@ -158,6 +160,23 @@ func main() {
 			messages.POST("/:chatId/send", messageHandler.SendMessage)
 			messages.POST("/:chatId/send-media", messageHandler.SendMediaMessage)
 		}
+
+		// Call routes
+		calls := api.Group("/instances/:id/calls")
+		{
+			calls.POST("", callHandler.StartCall)
+			calls.POST("/accept", callHandler.AcceptCall)
+			calls.POST("/reject", callHandler.RejectCall)
+			calls.POST("/:callId/end", callHandler.EndCall)
+			calls.POST("/webrtc", callHandler.ExchangeWebRTC)
+			calls.GET("", callHandler.ListActiveCalls)
+		}
+
+		// Call history routes
+		api.GET("/calls", callHandler.ListReports)
+		api.GET("/calls/stats", callHandler.GetCallStats)
+		api.GET("/calls/:callId", callHandler.GetCallReport)
+		api.GET("/instances/:id/calls/summary", callHandler.GetDailySummary)
 	}
 
 	// Start server

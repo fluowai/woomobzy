@@ -71,8 +71,13 @@ services:
       NODE_ENV: production
       PORT: 3002
       TRAEFIK_DYNAMIC_DIR: /traefik/dynamic
+      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-whatsmeow}
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100
+      ARRAPHA_API_URL: http://arrapha:3000
+      WAHA_API_URL: http://arrapha:3000
+      ARRAPHA_API_KEY: ${ARRAPHA_API_KEY:-}
+      WAHA_API_KEY: ${WAHA_API_KEY:-}
       WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:?set WHATSAPP_SERVICE_TOKEN}
       WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}
       WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:?set WHATSAPP_WS_JWT_SECRET}
@@ -97,6 +102,25 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    networks:
+      - imobzy
+    cpus: "1.00"
+    mem_limit: 768m
+    logging: *default-logging
+    restart: unless-stopped
+
+  arrapha:
+    image: devlikeapro/waha:latest
+    profiles:
+      - arrapha
+    environment:
+      WHATSAPP_API_KEY: ${ARRAPHA_API_KEY:-}
+      WAHA_PRINT_QR: "false"
+      WAHA_LOG_FORMAT: JSON
+    volumes:
+      - arrapha_sessions:/app/.sessions
+    expose:
+      - "3000"
     networks:
       - imobzy
     cpus: "1.00"
@@ -177,6 +201,7 @@ services:
 
 volumes:
   whatsapp_sessions:
+  arrapha_sessions:
   traefik_acme:
 
 networks:

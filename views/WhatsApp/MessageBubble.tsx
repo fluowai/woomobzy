@@ -3,7 +3,7 @@ import { Check, CheckCheck, Clock, Contact, FileText, FileVideo, Image, MapPin }
 import AudioMessagePlayer from './AudioMessagePlayer';
 import { formatPhoneDisplay, mediaApi, type Message } from './hooks/api';
 
-/** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
+/** WhatsApp CDN profile-pic URLs expire and require WA session - never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
   if (!url) return false;
   return url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net');
@@ -16,25 +16,43 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenDetails }) => {
-  const [imgError, setImgError] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
   const [mediaSourceUrl, setMediaSourceUrl] = useState(message.media_url || '');
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [mediaLoadError, setMediaLoadError] = useState('');
   const isSent = message.is_from_me;
   const content = (message.content || '').trim();
   const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
   const isRenderable = message.type !== 'text' || content || hasMedia;
 
   useEffect(() => {
+    let active = true;
+
     setMediaSourceUrl(message.media_url || '');
+    setMediaLoadError('');
+    setMediaError(false);
     if (!message.media_id || message.type === 'audio') return;
 
-    let active = true;
+    setMediaLoading(true);
     mediaApi
       .getUrl(message.media_id)
       .then((result) => {
-        if (active && result?.url) setMediaSourceUrl(result.url);
+        if (!active) return;
+        if (result?.url) {
+          setMediaSourceUrl(result.url);
+          setMediaLoadError('');
+          return;
+        }
+        setMediaLoadError(result?.error || 'Midia ainda em processamento.');
       })
-      .catch(() => {
-        if (active) setMediaSourceUrl(message.media_url || '');
+      .catch((error: any) => {
+        if (!active) return;
+        setMediaSourceUrl(message.media_url || '');
+        setMediaLoadError(error?.message || 'Nao foi possivel carregar a midia.');
+      })
+      .finally(() => {
+        if (active) setMediaLoading(false);
       });
 
     return () => {
@@ -60,26 +78,51 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
     });
   };
 
+  const refreshMediaUrl = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!message.media_id || mediaLoading) return;
+    setMediaLoading(true);
+    setMediaLoadError('');
+    setMediaError(false);
+    mediaApi
+      .getUrl(message.media_id, 900)
+      .then((result) => {
+        if (result?.url) {
+          setMediaSourceUrl(result.url);
+          return;
+        }
+        setMediaSourceUrl('');
+        setMediaLoadError(result?.error || 'Midia ainda em processamento.');
+      })
+      .catch((error: any) => {
+        setMediaLoadError(error?.message || 'Nao foi possivel carregar a midia.');
+      })
+      .finally(() => setMediaLoading(false));
+  };
+
   const renderMedia = () => {
     switch (message.type) {
       case 'image':
         return (
           <div className="wa-bubble-media">
-            {mediaSourceUrl ? (
+            {mediaSourceUrl && !mediaError ? (
               <img
                 src={mediaSourceUrl}
                 alt="Imagem"
                 className="wa-bubble-image"
                 loading="lazy"
+                onError={() => setMediaError(true)}
                 onClick={(event) => {
                   event.stopPropagation();
                   window.open(mediaSourceUrl, '_blank');
                 }}
               />
             ) : (
-              <div className="wa-bubble-media-placeholder">
-                <Image size={24} />
-              </div>
+              <MediaPlaceholder
+                icon={<Image size={24} />}
+                label={mediaPlaceholderLabel(message, mediaLoading, mediaLoadError)}
+                onRetry={message.media_id ? refreshMediaUrl : undefined}
+              />
             )}
             {content && <p className="wa-bubble-caption">{content}</p>}
           </div>
@@ -95,24 +138,31 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       case 'video':
         return (
           <div className="wa-bubble-media">
-            {mediaSourceUrl ? (
-              <video controls preload="none" className="wa-bubble-video" onClick={(event) => event.stopPropagation()}>
+            {mediaSourceUrl && !mediaError ? (
+              <video
+                controls
+                preload="none"
+                className="wa-bubble-video"
+                onClick={(event) => event.stopPropagation()}
+                onError={() => setMediaError(true)}
+              >
                 <source src={mediaSourceUrl} type={message.media_mimetype || 'video/mp4'} />
               </video>
             ) : (
-              <div className="wa-bubble-media-placeholder">
-                <FileVideo size={24} />
-                <span>Video</span>
-              </div>
+              <MediaPlaceholder
+                icon={<FileVideo size={24} />}
+                label={mediaPlaceholderLabel(message, mediaLoading, mediaLoadError, 'Video')}
+                onRetry={message.media_id ? refreshMediaUrl : undefined}
+              />
             )}
             {content && <p className="wa-bubble-caption">{content}</p>}
           </div>
         );
 
       case 'document':
-        return (
+        return mediaSourceUrl ? (
           <a
-            href={mediaSourceUrl || '#'}
+            href={mediaSourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="wa-bubble-document"
@@ -124,6 +174,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
               {message.media_mimetype && <span className="wa-doc-type">{message.media_mimetype}</span>}
             </div>
           </a>
+        ) : (
+          <MediaPlaceholder
+            icon={<FileText size={24} />}
+            label={mediaPlaceholderLabel(message, mediaLoading, mediaLoadError, message.media_filename || 'Documento')}
+            onRetry={message.media_id ? refreshMediaUrl : undefined}
+          />
         );
 
       case 'location':
@@ -145,10 +201,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       case 'sticker':
         return (
           <div className="wa-bubble-sticker">
-            {message.media_url ? (
-              <img src={message.media_url} alt="Sticker" className="wa-sticker-img" />
+            {mediaSourceUrl && !mediaError ? (
+              <img
+                src={mediaSourceUrl}
+                alt="Sticker"
+                className="wa-sticker-img"
+                loading="lazy"
+                onError={() => setMediaError(true)}
+              />
             ) : (
-              <span>Sticker</span>
+              <MediaPlaceholder
+                icon={<Image size={22} />}
+                label={mediaPlaceholderLabel(message, mediaLoading, mediaLoadError, 'Figurinha')}
+                onRetry={message.media_id ? refreshMediaUrl : undefined}
+              />
             )}
           </div>
         );
@@ -162,8 +228,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
     <div className={`wa-bubble-wrapper ${isSent ? 'sent' : 'received'}`}>
       {!isSent && (
         <div className="wa-message-avatar">
-          {message.sender_avatar_url && !isWhatsAppCdnUrl(message.sender_avatar_url) && !imgError ? (
-            <img src={message.sender_avatar_url} alt="" className="wa-avatar-img" onError={() => setImgError(true)} />
+          {message.sender_avatar_url && !isWhatsAppCdnUrl(message.sender_avatar_url) && !avatarError ? (
+            <img src={message.sender_avatar_url} alt="" className="wa-avatar-img" onError={() => setAvatarError(true)} />
           ) : (
             <span>{senderInitial}</span>
           )}
@@ -201,5 +267,47 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
     </div>
   );
 };
+
+interface MediaPlaceholderProps {
+  icon: React.ReactNode;
+  label: string;
+  onRetry?: (event: React.MouseEvent) => void;
+}
+
+const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({ icon, label, onRetry }) => (
+  <button
+    type="button"
+    className="wa-bubble-media-placeholder"
+    onClick={onRetry}
+    disabled={!onRetry}
+    title={onRetry ? 'Tentar carregar midia novamente' : undefined}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
+);
+
+function mediaPlaceholderLabel(
+  message: Message,
+  loading: boolean,
+  loadError: string,
+  fallback = 'Imagem'
+): string {
+  if (loading) return 'Carregando midia';
+  if (loadError) return loadError;
+  if (message.media_error) return message.media_error;
+  switch (message.media_status) {
+    case 'pending':
+    case 'downloading':
+    case 'processing':
+      return 'Processando midia';
+    case 'failed':
+      return 'Falha ao carregar midia';
+    case 'expired':
+      return 'Midia expirada';
+    default:
+      return fallback;
+  }
+}
 
 export default MessageBubble;

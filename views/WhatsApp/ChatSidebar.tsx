@@ -155,22 +155,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             ))}
           </select>
         </div>
-        {(importingHistory || historyImportStats.importedMessages > 0 || historyImportStats.requestedChats > 0) && (
-          <div className="wa-history-progress">
-            <div>
-              <span>Tempo</span>
-              <strong>{formatImportElapsed(historyImportStats.elapsedSeconds)}</strong>
-            </div>
-            <div>
-              <span>Mensagens</span>
-              <strong>{historyImportStats.importedMessages}</strong>
-            </div>
-            <div>
-              <span>Chats</span>
-              <strong>{historyImportStats.importedChats}/{historyImportStats.requestedChats || '-'}</strong>
-            </div>
+        <div className="wa-history-progress">
+          <div>
+            <span>Tempo</span>
+            <strong>{formatImportElapsed(historyImportStats.elapsedSeconds)}</strong>
           </div>
-        )}
+          <div>
+            <span>Mensagens</span>
+            <strong>{historyImportStats.importedMessages}</strong>
+          </div>
+          <div>
+            <span>Chats</span>
+            <strong>{historyImportStats.importedChats}/{historyImportStats.requestedChats || '-'}</strong>
+          </div>
+        </div>
         <button
           type="button"
           className="wa-sidebar-import-btn"

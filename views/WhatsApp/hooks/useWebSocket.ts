@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getAuthorizedWhatsAppWsUrl } from './api';
+import { getAuthorizedWhatsAppWsUrl, normalizeStorageUrls } from './api';
 
 interface WSEvent {
   event: string;
@@ -42,7 +42,8 @@ export function useWebSocket(enabled = true) {
             const wsEvent: WSEvent = JSON.parse(msgStr);
             const handlers = handlersRef.current.get(wsEvent.event);
             if (handlers) {
-              handlers.forEach((handler) => handler(wsEvent.data));
+              const normalizedData = normalizeStorageUrls(wsEvent.data);
+              handlers.forEach((handler) => handler(normalizedData));
             }
           }
         } catch (err) {

@@ -8,7 +8,7 @@ const RAW_WHATSAPP_API_URL = getRuntimeEnv('VITE_WHATSAPP_API_URL', DEFAULT_WHAT
 const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
 const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
 const LEGACY_STORAGE_HOSTS = ['n.woopanel.com.br'];
-const STORAGE_PUBLIC_URL = getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://nb.consultio.com.br').replace(/\/$/, '');
+const STORAGE_PUBLIC_URL = normalizeStoragePublicBase(getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://nb.consultio.com.br'));
 export const WS_URL = normalizeWhatsAppWsUrl(
   getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
 );
@@ -280,7 +280,7 @@ function withTenantBody(body: BodyInit | null | undefined, tenantId?: string | n
   return body;
 }
 
-function normalizeStorageUrls(value: unknown): unknown {
+export function normalizeStorageUrls(value: unknown): unknown {
   if (typeof value === 'string') return normalizeStorageUrl(value);
   if (Array.isArray(value)) return value.map(normalizeStorageUrls);
   if (value && typeof value === 'object') {
@@ -303,6 +303,17 @@ function normalizeStorageUrl(value: string): string {
     return url.toString();
   } catch {
     return value;
+  }
+}
+
+function normalizeStoragePublicBase(value: string): string {
+  const fallback = 'https://nb.consultio.com.br';
+  try {
+    const url = new URL(value || fallback);
+    if (LEGACY_STORAGE_HOSTS.includes(url.hostname)) return fallback;
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return fallback;
   }
 }
 

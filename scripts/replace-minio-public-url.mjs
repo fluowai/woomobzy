@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config();
 
 const apply = process.argv.includes('--apply');
+const quiet = process.argv.includes('--quiet') || process.argv.includes('--summary-only');
 const oldBase = cleanArg('--old') || process.env.OLD_MINIO_PUBLIC_URL || 'https://n.woopanel.com.br';
 const newBase = cleanArg('--new') || process.env.NEW_MINIO_PUBLIC_URL || process.env.MINIO_PUBLIC_URL || 'https://nb.consultio.com.br';
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -38,43 +39,53 @@ let updated = 0;
 
 for (const entry of TABLES) {
   const columns = [entry.id, ...entry.columns].join(', ');
-  const { data, error } = await supabase
-    .from(entry.table)
-    .select(columns)
-    .limit(10000);
+  let from = 0;
+  const pageSize = 1000;
 
-  if (error) {
-    console.warn(`${entry.table}: ignorado (${error.message})`);
-    continue;
-  }
-
-  for (const row of data || []) {
-    scanned++;
-    const patch = {};
-
-    for (const column of entry.columns) {
-      const nextValue = replaceUrl(row[column]);
-      if (JSON.stringify(nextValue) !== JSON.stringify(row[column])) patch[column] = nextValue;
-    }
-
-    if (!Object.keys(patch).length) continue;
-    matched++;
-
-    if (!apply) {
-      console.log(`${entry.table}.${entry.id}=${row[entry.id]} seria atualizado: ${Object.keys(patch).join(', ')}`);
-      continue;
-    }
-
-    const { error: updateError } = await supabase
+  while (true) {
+    const { data, error } = await supabase
       .from(entry.table)
-      .update(patch)
-      .eq(entry.id, row[entry.id]);
+      .select(columns)
+      .range(from, from + pageSize - 1);
 
-    if (updateError) {
-      console.warn(`${entry.table}.${entry.id}=${row[entry.id]} falhou: ${updateError.message}`);
-    } else {
-      updated++;
+    if (error) {
+      console.warn(`${entry.table}: ignorado (${error.message})`);
+      break;
     }
+    if (!data?.length) break;
+
+    for (const row of data || []) {
+      scanned++;
+      const patch = {};
+
+      for (const column of entry.columns) {
+        const nextValue = replaceUrl(row[column]);
+        if (JSON.stringify(nextValue) !== JSON.stringify(row[column])) patch[column] = nextValue;
+      }
+
+      if (!Object.keys(patch).length) continue;
+      matched++;
+
+      if (!apply) {
+        if (quiet) continue;
+        console.log(`${entry.table}.${entry.id}=${row[entry.id]} seria atualizado: ${Object.keys(patch).join(', ')}`);
+        continue;
+      }
+
+      const { error: updateError } = await supabase
+        .from(entry.table)
+        .update(patch)
+        .eq(entry.id, row[entry.id]);
+
+      if (updateError) {
+        console.warn(`${entry.table}.${entry.id}=${row[entry.id]} falhou: ${updateError.message}`);
+      } else {
+        updated++;
+      }
+    }
+
+    if (data.length < pageSize) break;
+    from += pageSize;
   }
 }
 

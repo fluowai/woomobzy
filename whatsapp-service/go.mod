@@ -10,6 +10,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.45
+	github.com/rs/zerolog v1.35.1
 	go.mau.fi/whatsmeow v0.0.0-20260630180629-b572e5bcb92b
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.36.11
@@ -67,7 +68,6 @@ require (
 	github.com/pion/turn/v5 v5.0.9 // indirect
 	github.com/pion/webrtc/v4 v4.2.15 // indirect
 	github.com/rs/xid v1.6.0 // indirect
-	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/tinylib/msgp v1.6.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect

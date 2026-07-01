@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -214,8 +215,9 @@ func (s *CallRecordingService) StopRecording(callID string) (*RecordingResult, e
 			// Fall back to local file
 			result = s.saveLocal(data, callID, objectKey, durationSecs)
 		} else {
+			publicBase := strings.TrimRight(s.publicStorageBaseURL(), "/")
 			publicURL := fmt.Sprintf("%s/%s/%s",
-				os.Getenv("MINIO_PUBLIC_URL"),
+				publicBase,
 				s.bucket,
 				objectKey,
 			)
@@ -233,6 +235,15 @@ func (s *CallRecordingService) StopRecording(callID string) (*RecordingResult, e
 	}
 
 	return result, nil
+}
+
+func (s *CallRecordingService) publicStorageBaseURL() string {
+	for _, key := range []string{"NEW_MINIO_PUBLIC_URL", "MINIO_PUBLIC_URL", "MINIO_PUBLIC_ENDPOINT", "S3_PUBLIC_URL"} {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" && !isLegacyStorageHost(value) {
+			return value
+		}
+	}
+	return "https://nb.consultio.com.br"
 }
 
 func (s *CallRecordingService) saveLocal(data []byte, callID, objectKey string, durationSecs int) *RecordingResult {

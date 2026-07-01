@@ -356,15 +356,16 @@ export function getMinioConfig() {
     withPort(minioRuntimeConfig.endpoint || firstEnv(['MINIO_ENDPOINT', 'S3_ENDPOINT', 'AWS_ENDPOINT_URL']), minioRuntimeConfig.port),
     useSSLRaw
   );
+  const publicUrl = normalizeEndpoint(
+    minioRuntimeConfig.publicUrl || firstEnv(['MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) || endpoint,
+    typeof minioRuntimeConfig.useSsl === 'boolean'
+      ? String(minioRuntimeConfig.useSsl)
+      : firstEnv(['MINIO_PUBLIC_USE_SSL', 'MINIO_USE_SSL', 'S3_USE_SSL'])
+  );
 
   return {
     endpoint,
-    publicUrl: normalizeEndpoint(
-      minioRuntimeConfig.publicUrl || firstEnv(['MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) || endpoint,
-      typeof minioRuntimeConfig.useSsl === 'boolean'
-        ? String(minioRuntimeConfig.useSsl)
-        : firstEnv(['MINIO_PUBLIC_USE_SSL', 'MINIO_USE_SSL', 'S3_USE_SSL'])
-    ),
+    publicUrl: safePublicStorageUrl(publicUrl),
     accessKey: minioRuntimeConfig.accessKey || firstEnv(['MINIO_ACCESS_KEY', 'MINIO_ROOT_USER', 'AWS_ACCESS_KEY_ID', 'S3_ACCESS_KEY_ID']),
     secretKey: minioRuntimeConfig.secretKey || firstEnv(['MINIO_SECRET_KEY', 'MINIO_ROOT_PASSWORD', 'AWS_SECRET_ACCESS_KEY', 'S3_SECRET_ACCESS_KEY']),
     region: minioRuntimeConfig.region || firstEnv(['MINIO_REGION', 'AWS_REGION', 'S3_REGION']) || DEFAULT_REGION,
@@ -487,6 +488,28 @@ function normalizeEndpoint(raw, useSSLRaw) {
 
   const useSSL = cleanEnv(useSSLRaw).toLowerCase() === 'true';
   return `${useSSL ? 'https' : 'http'}://${trimSlash(value)}`;
+}
+
+function safePublicStorageUrl(value) {
+  if (!isLegacyStorageHost(value)) return value;
+
+  for (const key of ['NEW_MINIO_PUBLIC_URL', 'MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) {
+    const candidate = normalizeEndpoint(process.env[key], process.env.MINIO_PUBLIC_USE_SSL || process.env.MINIO_USE_SSL || process.env.S3_USE_SSL);
+    if (candidate && !isLegacyStorageHost(candidate)) return candidate;
+  }
+
+  return 'https://nb.consultio.com.br';
+}
+
+function isLegacyStorageHost(value) {
+  const raw = cleanEnv(value);
+  if (!raw) return false;
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    return url.hostname.toLowerCase() === 'n.woopanel.com.br';
+  } catch {
+    return raw.toLowerCase().includes('n.woopanel.com.br');
+  }
 }
 
 function trimSlash(value) {

@@ -144,10 +144,7 @@ func (c *Client) contentAddressedStoragePath(folder, sha, ext string) string {
 
 func (c *Client) storagePublicURL(path string) string {
 	if c.isMinIOConfigured() {
-		publicBase := c.minioPublicURL
-		if publicBase == "" {
-			publicBase = c.minioEndpoint
-		}
+		publicBase := c.publicStorageBaseURL()
 		return fmt.Sprintf("%s/%s/%s", strings.TrimRight(publicBase, "/"), url.PathEscape(c.storageBucket), encodeStoragePath(path))
 	}
 	return fmt.Sprintf("%s/storage/v1/object/public/%s/%s", c.supabaseURL, c.storageBucket, path)
@@ -242,10 +239,7 @@ func (c *Client) uploadToMinIO(ctx context.Context, path string, data []byte, co
 		return "", fmt.Errorf("minio upload failed: %w", err)
 	}
 
-	publicBase := c.minioPublicURL
-	if publicBase == "" {
-		publicBase = c.minioEndpoint
-	}
+	publicBase := c.publicStorageBaseURL()
 	publicURL := fmt.Sprintf("%s/%s/%s", strings.TrimRight(publicBase, "/"), url.PathEscape(c.storageBucket), encodeStoragePath(path))
 
 	c.logger.Info("Media uploaded to MinIO",
@@ -256,6 +250,39 @@ func (c *Client) uploadToMinIO(ctx context.Context, path string, data []byte, co
 	)
 
 	return publicURL, nil
+}
+
+func (c *Client) publicStorageBaseURL() string {
+	publicBase := strings.TrimSpace(c.minioPublicURL)
+	if publicBase == "" {
+		publicBase = strings.TrimSpace(c.minioEndpoint)
+	}
+	if !isLegacyStorageHost(publicBase) {
+		return publicBase
+	}
+
+	for _, key := range []string{"NEW_MINIO_PUBLIC_URL", "MINIO_PUBLIC_URL", "MINIO_PUBLIC_ENDPOINT", "S3_PUBLIC_URL"} {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" && !isLegacyStorageHost(value) {
+			return value
+		}
+	}
+	return "https://nb.consultio.com.br"
+}
+
+func isLegacyStorageHost(value string) bool {
+	raw := strings.TrimSpace(value)
+	if raw == "" {
+		return false
+	}
+	if !strings.Contains(raw, "://") {
+		raw = "https://" + raw
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return strings.Contains(strings.ToLower(value), "n.woopanel.com.br")
+	}
+	return strings.EqualFold(parsed.Hostname(), "n.woopanel.com.br")
 }
 
 // extensionFromMime returns a file extension for a given MIME type

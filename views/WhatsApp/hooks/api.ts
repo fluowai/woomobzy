@@ -328,6 +328,13 @@ export interface HistoryImportResponse {
   imported_messages?: number;
 }
 
+export interface PairCodeResponse {
+  pairing_code: string;
+  phone: string;
+  expires_in: number;
+  message: string;
+}
+
 export interface Chat {
   id: string;
   instance_id: string;
@@ -480,6 +487,12 @@ export const instanceApi = {
 
   getQRCode: (id: string) =>
     apiRequest<{ qr_code?: string; status: string; expires_at?: string }>(`/instances/${id}/qrcode`),
+
+  requestPairingCode: (id: string, phone: string) =>
+    apiRequest<PairCodeResponse>(`/instances/${id}/pair-code`, {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    }),
 
   connect: (id: string) =>
     apiRequest(`/instances/${id}/connect`, { method: 'POST' }),

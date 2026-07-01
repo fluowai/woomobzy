@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"whatsapp-service/internal/models"
 	"whatsapp-service/internal/repository"
 	"whatsapp-service/internal/ws"
+	"whatsapp-service/pkg/phone"
 )
 
 // Manager manages multiple WhatsApp instances
@@ -50,6 +52,8 @@ type Manager struct {
 	nodeURL           string
 	internalToken     string
 	automationEnabled bool
+	pairClientType    whatsmeow.PairClientType
+	pairClientName    string
 	ctx               context.Context
 	cancel            context.CancelFunc
 	sessionStore      *sqlstore.Container
@@ -77,6 +81,8 @@ func NewManager(
 	nodeURL string,
 	internalToken string,
 	automationEnabled bool,
+	pairClientType string,
+	pairClientName string,
 ) *Manager {
 	managerCtx, cancel := context.WithCancel(context.Background())
 	configureHistorySyncCapabilities()
@@ -103,8 +109,35 @@ func NewManager(
 		nodeURL:           nodeURL,
 		internalToken:     internalToken,
 		automationEnabled: automationEnabled,
+		pairClientType:    normalizePairClientType(pairClientType),
+		pairClientName:    pairClientName,
 		ctx:               managerCtx,
 		cancel:            cancel,
+	}
+}
+
+// normalizePairClientType maps env-friendly names to whatsmeow constants.
+// WhatsApp validates the companion display/type during phone-code pairing.
+func normalizePairClientType(value string) whatsmeow.PairClientType {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "edge":
+		return whatsmeow.PairClientEdge
+	case "firefox":
+		return whatsmeow.PairClientFirefox
+	case "opera":
+		return whatsmeow.PairClientOpera
+	case "safari":
+		return whatsmeow.PairClientSafari
+	case "electron":
+		return whatsmeow.PairClientElectron
+	case "macos":
+		return whatsmeow.PairClientMacOS
+	case "android":
+		return whatsmeow.PairClientAndroid
+	case "chrome", "":
+		return whatsmeow.PairClientChrome
+	default:
+		return whatsmeow.PairClientChrome
 	}
 }
 
@@ -156,6 +189,10 @@ func (m *Manager) CreateInstance(ctx context.Context, name string, tenantID *uui
 
 // ConnectInstance starts a WhatsApp session for an instance
 func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) error {
+	return m.connectInstance(ctx, instanceID, "")
+}
+
+func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pairPhone string) error {
 	m.mu.Lock()
 	if client, exists := m.clients[instanceID]; exists {
 		if client.IsConnected() {
@@ -226,7 +263,12 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 		m.nodeURL,
 		m.internalToken,
 		m.automationEnabled,
+		m.pairClientType,
+		m.pairClientName,
 	)
+	if pairPhone != "" {
+		client.PreparePairCode(pairPhone)
+	}
 
 	m.mu.Lock()
 	if old := m.clients[instanceID]; old != nil {
@@ -257,6 +299,56 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 	}()
 
 	return nil
+}
+
+// RequestPairCode generates the code shown in WhatsApp's "link with phone
+// number" flow. It intentionally reuses the QR pre-login connection required
+// by whatsmeow instead of creating a separate login path.
+func (m *Manager) RequestPairCode(ctx context.Context, instanceID uuid.UUID, phoneNumber string) (*models.PairCodeResponse, error) {
+	normalizedPhone := phone.Normalize(phoneNumber)
+	if !phone.IsValidBR(normalizedPhone) {
+		return nil, fmt.Errorf("telefone invalido: use DDI + DDD + numero, ex: +5511999999999")
+	}
+
+	m.mu.RLock()
+	client, exists := m.clients[instanceID]
+	m.mu.RUnlock()
+	if exists && client.IsConnected() {
+		return nil, fmt.Errorf("instancia ja conectada")
+	}
+
+	if exists {
+		client.PreparePairCode(normalizedPhone)
+		if client.CurrentQRCode() != "" {
+			go client.generatePendingPairCode(ctx, 160*time.Second)
+		}
+	} else if err := m.connectInstance(ctx, instanceID, normalizedPhone); err != nil {
+		return nil, err
+	}
+
+	m.mu.RLock()
+	client, exists = m.clients[instanceID]
+	m.mu.RUnlock()
+	if !exists {
+		return nil, fmt.Errorf("cliente WhatsApp nao inicializado")
+	}
+
+	waitCtx, cancel := context.WithTimeout(ctx, 25*time.Second)
+	defer cancel()
+	code, pairedPhone, err := client.WaitPairCode(waitCtx)
+	if err != nil {
+		return nil, err
+	}
+	if code == "" {
+		return nil, fmt.Errorf("codigo de pareamento nao foi gerado")
+	}
+
+	return &models.PairCodeResponse{
+		PairingCode: code,
+		Phone:       pairedPhone,
+		ExpiresIn:   160,
+		Message:     "Digite este codigo no WhatsApp em Aparelhos conectados > Conectar com numero de telefone.",
+	}, nil
 }
 
 func (m *Manager) deviceForInstance(ctx context.Context, inst *models.Instance) (*store.Device, error) {

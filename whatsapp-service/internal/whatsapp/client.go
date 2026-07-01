@@ -57,6 +57,14 @@ type Client struct {
 	reconnectMu    sync.Mutex
 	reconnectTry   int
 	manualStop     bool
+	pairClientType whatsmeow.PairClientType
+	pairClientName string
+	pairMu         sync.Mutex
+	pairPhone      string
+	pairCode       string
+	pairErr        error
+	pairReady      chan struct{}
+	pairDone       bool
 
 	callManager *CallManager
 }
@@ -86,6 +94,8 @@ func NewClient(
 	nodeURL string,
 	internalToken string,
 	automationEnabled bool,
+	pairClientType whatsmeow.PairClientType,
+	pairClientName string,
 ) *Client {
 	clientCtx, cancel := context.WithCancel(parentCtx)
 	var automation *AutomationClient
@@ -116,6 +126,8 @@ func NewClient(
 		minioSecretKey: minioSecretKey,
 		minioRegion:    minioRegion,
 		automation:     automation,
+		pairClientType: pairClientType,
+		pairClientName: pairClientName,
 	}
 }
 
@@ -171,6 +183,7 @@ func (c *Client) Connect(ctx context.Context) error {
 					QRCode:     evt.Code,
 					ExpiresAt:  time.Now().Add(evt.Timeout),
 				})
+				c.generatePendingPairCode(ctx, evt.Timeout)
 
 			case whatsmeow.QRChannelSuccess.Event:
 				c.mu.Lock()
@@ -214,6 +227,99 @@ func (c *Client) Connect(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// PreparePairCode arms the next pre-login QR event to also request a phone
+// pairing code. WhatsApp only accepts PairPhone after the login websocket is up.
+func (c *Client) PreparePairCode(phoneNumber string) {
+	c.pairMu.Lock()
+	defer c.pairMu.Unlock()
+	if c.pairReady == nil || c.pairDone {
+		c.pairReady = make(chan struct{})
+	}
+	c.pairPhone = phone.Normalize(phoneNumber)
+	c.pairCode = ""
+	c.pairErr = nil
+	c.pairDone = false
+}
+
+// WaitPairCode waits until PairPhone finishes or the request times out.
+func (c *Client) WaitPairCode(ctx context.Context) (string, string, error) {
+	c.pairMu.Lock()
+	ready := c.pairReady
+	if c.pairDone {
+		code, normalizedPhone, err := c.pairCode, c.pairPhone, c.pairErr
+		c.pairMu.Unlock()
+		return code, normalizedPhone, err
+	}
+	c.pairMu.Unlock()
+
+	if ready == nil {
+		return "", "", fmt.Errorf("pairing code was not requested")
+	}
+
+	select {
+	case <-ctx.Done():
+		return "", "", ctx.Err()
+	case <-ready:
+		c.pairMu.Lock()
+		defer c.pairMu.Unlock()
+		return c.pairCode, c.pairPhone, c.pairErr
+	}
+}
+
+// generatePendingPairCode calls whatsmeow.PairPhone once the QR channel proves
+// the pre-login session is ready. The QR remains available as a fallback.
+func (c *Client) generatePendingPairCode(ctx context.Context, qrTimeout time.Duration) {
+	c.pairMu.Lock()
+	phoneNumber := c.pairPhone
+	if phoneNumber == "" || c.pairDone {
+		c.pairMu.Unlock()
+		return
+	}
+	c.pairDone = true
+	ready := c.pairReady
+	c.pairMu.Unlock()
+
+	clientType := c.pairClientType
+	if clientType == "" {
+		clientType = whatsmeow.PairClientChrome
+	}
+	clientName := strings.TrimSpace(c.pairClientName)
+	if clientName == "" {
+		clientName = "Chrome (Windows)"
+	}
+
+	code, err := c.waClient.PairPhone(ctx, phoneNumber, true, clientType, clientName)
+
+	c.pairMu.Lock()
+	c.pairCode = code
+	c.pairErr = err
+	c.pairMu.Unlock()
+	if ready != nil {
+		close(ready)
+	}
+
+	if err != nil {
+		c.logger.Warn("Failed to generate WhatsApp pairing code",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("phone", phoneNumber),
+			zap.Error(err),
+		)
+		return
+	}
+
+	expiresAt := time.Now().Add(qrTimeout)
+	c.logger.Info("WhatsApp pairing code generated",
+		zap.String("instance", c.instanceID.String()),
+		zap.String("phone", phoneNumber),
+	)
+	c.broadcastEvent("pairing_code", models.PairCodeEvent{
+		InstanceID:  c.instanceID,
+		PairingCode: code,
+		Phone:       phoneNumber,
+		ExpiresAt:   expiresAt,
+	})
 }
 
 func pairingFailureMessage(event string) (string, bool) {

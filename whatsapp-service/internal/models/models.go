@@ -161,6 +161,19 @@ type HistoryImportRequest struct {
 	SinceDays int `json:"since_days,omitempty"`
 }
 
+// PairCodeRequest requests a WhatsApp linked-device pairing code for a phone.
+type PairCodeRequest struct {
+	Phone string `json:"phone" binding:"required"`
+}
+
+// PairCodeResponse returns the code the user must type on the phone.
+type PairCodeResponse struct {
+	PairingCode string `json:"pairing_code"`
+	Phone       string `json:"phone"`
+	ExpiresIn   int    `json:"expires_in"`
+	Message     string `json:"message"`
+}
+
 // HistoryImportResponse summarizes a requested import/analysis run.
 type HistoryImportResponse struct {
 	Message              string `json:"message"`
@@ -215,6 +228,14 @@ type QRCodeEvent struct {
 	InstanceID uuid.UUID `json:"instance_id"`
 	QRCode     string    `json:"qr_code"`
 	ExpiresAt  time.Time `json:"expires_at"`
+}
+
+// PairCodeEvent is emitted when a phone pairing code is generated.
+type PairCodeEvent struct {
+	InstanceID  uuid.UUID `json:"instance_id"`
+	PairingCode string    `json:"pairing_code"`
+	Phone       string    `json:"phone"`
+	ExpiresAt   time.Time `json:"expires_at"`
 }
 
 // InstanceStatusEvent is emitted when an instance status changes

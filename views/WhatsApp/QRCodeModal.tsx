@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './whatsapp.css';
 import { useWebSocket } from './hooks/useWebSocket';
 import { instanceApi, type Instance } from './hooks/api';
-import { X, QrCode, Loader2, CheckCircle2, RefreshCw, Smartphone } from 'lucide-react';
+import { X, QrCode, Loader2, CheckCircle2, RefreshCw, Smartphone, KeyRound, Phone } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface QRCodeModalProps {
@@ -15,6 +15,10 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const [status, setStatus] = useState<Instance['status']>(instance.status);
   const [loading, setLoading] = useState(!instance.qr_code);
   const [pairingError, setPairingError] = useState('');
+  const [pairingMode, setPairingMode] = useState<'qr' | 'code'>('qr');
+  const [pairingPhone, setPairingPhone] = useState(instance.phone || '');
+  const [pairingCode, setPairingCode] = useState('');
+  const [pairingLoading, setPairingLoading] = useState(false);
   const [expiresAt, setExpiresAt] = useState('');
   const { on } = useWebSocket();
   const pollingRef = useRef<ReturnType<typeof setInterval>>();
@@ -33,6 +37,17 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         setQrCode(data.qr_code);
         setLoading(false);
         setStatus('qr_pending');
+        setPairingError('');
+        setExpiresAt(data.expires_at || '');
+      }
+    });
+
+    const unsubPairingCode = on('pairing_code', (data: any) => {
+      if (data.instance_id === instance.id) {
+        setPairingMode('code');
+        setPairingCode(data.pairing_code);
+        setPairingPhone(data.phone || pairingPhone);
+        setPairingLoading(false);
         setPairingError('');
         setExpiresAt(data.expires_at || '');
       }
@@ -59,6 +74,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
 
     return () => {
       unsubQR();
+      unsubPairingCode();
       unsubStatus();
       if (pollingRef.current) clearInterval(pollingRef.current);
       if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
@@ -101,6 +117,22 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
     }
   };
 
+  const requestPairingCode = async () => {
+    try {
+      setPairingLoading(true);
+      setPairingError('');
+      setPairingCode('');
+      const data = await instanceApi.requestPairingCode(instance.id, pairingPhone);
+      setPairingCode(data.pairing_code);
+      setPairingPhone(data.phone || pairingPhone);
+      setExpiresAt(data.expires_in ? new Date(Date.now() + data.expires_in * 1000).toISOString() : '');
+    } catch (error: any) {
+      setPairingError(error.message || 'Nao foi possivel gerar o codigo de pareamento.');
+    } finally {
+      setPairingLoading(false);
+    }
+  };
+
   return (
     <div className="modal-overlay" style={{ zIndex: 110 }} onClick={onClose}>
       <div className="wa-qr-modal" onClick={(e) => e.stopPropagation()}>
@@ -119,11 +151,20 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         ) : (
           <>
             <div className="wa-qr-header">
-              <QrCode size={28} className="text-[#25D366]" />
+              {pairingMode === 'qr' ? <QrCode size={28} className="text-[#25D366]" /> : <KeyRound size={28} className="text-[#25D366]" />}
               <div>
                 <h3>Conectar WhatsApp</h3>
                 <p className="wa-qr-subtitle">{instance.name}</p>
               </div>
+            </div>
+
+            <div className="wa-pair-tabs">
+              <button className={pairingMode === 'qr' ? 'active' : ''} onClick={() => setPairingMode('qr')}>
+                <QrCode size={15} /> QR
+              </button>
+              <button className={pairingMode === 'code' ? 'active' : ''} onClick={() => setPairingMode('code')}>
+                <KeyRound size={15} /> Codigo
+              </button>
             </div>
 
             <div className="wa-qr-instructions">
@@ -146,7 +187,24 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
             </div>
 
             <div className="wa-qr-container">
-              {loading ? (
+              {pairingMode === 'code' ? (
+                <div className="wa-pair-code-box">
+                  <label className="wa-pair-phone">
+                    <Phone size={16} />
+                    <input
+                      value={pairingPhone}
+                      onChange={(event) => setPairingPhone(event.target.value)}
+                      placeholder="+55 11 99999-9999"
+                    />
+                  </label>
+                  <button onClick={requestPairingCode} className="wa-qr-retry" disabled={pairingLoading || !pairingPhone.trim()}>
+                    {pairingLoading ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+                    Gerar codigo
+                  </button>
+                  {pairingCode && <strong className="wa-pair-code">{pairingCode}</strong>}
+                  {pairingError && <p className="wa-pair-error">{pairingError}</p>}
+                </div>
+              ) : loading ? (
                 <div className="wa-qr-loading">
                   <Loader2 size={40} className="animate-spin" />
                   <p>Gerando QR Code...</p>
@@ -191,7 +249,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
               )}
             </div>
 
-            {qrCode && (
+            {(qrCode || pairingCode) && (
               <p className="wa-qr-note">
                 O QR Code é renovado automaticamente
                 {expiresAt ? ` até ${new Date(expiresAt).toLocaleTimeString('pt-BR')}` : ''}.

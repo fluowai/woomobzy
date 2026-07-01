@@ -77,7 +77,7 @@ func main() {
 		hub, log, cfg.SupabaseDBURL,
 		cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.StorageBucket,
 		cfg.MinIOEndpoint, cfg.MinIOPublicURL, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIORegion,
-		cfg.NodeURL, cfg.InternalToken, cfg.AutomationEnabled,
+		cfg.NodeURL, cfg.InternalToken, cfg.AutomationEnabled, cfg.PairClientType, cfg.PairClientName,
 	)
 
 	// Auto-reconnect existing sessions
@@ -138,6 +138,7 @@ func main() {
 			instances.GET("/:id", instanceHandler.GetInstance)
 			instances.DELETE("/:id", instanceHandler.DeleteInstance)
 			instances.GET("/:id/qrcode", instanceHandler.GetQRCode)
+			instances.POST("/:id/pair-code", instanceHandler.RequestPairCode)
 			instances.POST("/:id/connect", instanceHandler.ConnectInstance)
 			instances.POST("/:id/logout", instanceHandler.LogoutInstance)
 			instances.POST("/:id/import-history", instanceHandler.ImportHistory)

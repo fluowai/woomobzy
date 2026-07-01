@@ -183,6 +183,40 @@ func (h *InstanceHandler) GetQRCode(c *gin.Context) {
 	})
 }
 
+// RequestPairCode handles POST /api/instances/:id/pair-code
+func (h *InstanceHandler) RequestPairCode(c *gin.Context) {
+	tenantID, ok := requireTenantID(c)
+	if !ok {
+		return
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instance ID"})
+		return
+	}
+
+	if _, err := h.instanceRepo.GetByIDForTenant(c.Request.Context(), id, tenantID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Instance not found for tenant"})
+		return
+	}
+
+	var req models.PairCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Phone is required"})
+		return
+	}
+
+	result, err := h.manager.RequestPairCode(c.Request.Context(), id, req.Phone)
+	if err != nil {
+		h.logger.Warn("Failed to request WhatsApp pairing code", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // ConnectInstance handles POST /api/instances/:id/connect
 func (h *InstanceHandler) ConnectInstance(c *gin.Context) {
 	tenantID, ok := requireTenantID(c)

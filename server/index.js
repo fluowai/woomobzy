@@ -7,7 +7,11 @@ import { dirname, join } from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
-import { normalizeDomain, syncPlatformTraefikServices } from './domainService.js';
+import {
+  normalizeDomain,
+  syncPlatformTraefikServices,
+  syncRegisteredDockerDomains,
+} from './domainService.js';
 
 // --- Middlewares & Services ---
 import { getSupabaseServer } from './lib/supabase-server.js';
@@ -355,8 +359,14 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     if (!traefikSync.skipped) {
       console.log(`[Traefik] Platform services synchronized: ${traefikSync.configPath}`);
     }
+
+    const supabase = getSupabaseServer();
+    const domainSync = await syncRegisteredDockerDomains(supabase, { validateDns: true });
+    const syncedCount = domainSync.results.filter((result) => result.status === 'success').length;
+    const skippedCount = domainSync.results.filter((result) => result.status !== 'success').length;
+    console.log(`[Traefik] Registered domains synchronized: ${syncedCount} ok, ${skippedCount} skipped`);
   } catch (error) {
-    console.error('[Traefik] Failed to synchronize platform services:', error.message);
+    console.error('[Traefik] Failed to synchronize dynamic configuration:', error.message);
   }
 });
 

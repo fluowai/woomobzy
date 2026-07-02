@@ -7,6 +7,7 @@ import {
   checkDockerDomainStatus,
   getPlatformDnsRecords,
   normalizeDomain,
+  syncRegisteredDockerDomains,
   validateDockerDomainDns,
 } from '../domainService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
@@ -196,30 +197,12 @@ router.post('/sync-all', verifyAdmin, async (req, res) => {
   }
 
   try {
-    const { data: orgs, error } = await supabase
-      .from('organizations')
-      .select('id, custom_domain')
-      .not('custom_domain', 'is', null);
-
-    if (error) throw error;
-
-    const results = [];
-    for (const org of orgs) {
-      if (!org.custom_domain) continue;
-      
-      try {
-        const cleanDomain = normalizeDomain(org.custom_domain);
-        await addDockerDomain(cleanDomain);
-        results.push({ domain: cleanDomain, status: 'success' });
-      } catch (err) {
-        results.push({ domain: org.custom_domain, status: 'error', error: err.message });
-      }
-    }
+    const sync = await syncRegisteredDockerDomains(getSupabaseServer(), { validateDns: true });
 
     res.json({
       success: true,
-      message: `Sincronizacao concluida. Processados ${results.length} dominios.`,
-      results
+      message: `Sincronizacao concluida. Processados ${sync.processed} dominios.`,
+      results: sync.results
     });
   } catch (error) {
     console.error('Domain Sync Route Error:', error);

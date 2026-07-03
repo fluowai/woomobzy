@@ -127,7 +127,7 @@ app.use(
             "img-src": ["'self'", "data:", "blob:", "https:"],
             "media-src": ["'self'", "data:", "blob:", "https:"],
             "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://app.imobfluow.com.br", "wss://app.imobfluow.com.br", "https://imobfluow.com.br", "wss://imobfluow.com.br", "https://okaimoveis.com.br", "wss://okaimoveis.com.br", "https://www.okaimoveis.com.br", "wss://www.okaimoveis.com.br"],
+            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://app.imobfluow.com.br", "wss://app.imobfluow.com.br", "https://imobfluow.com.br", "wss://imobfluow.com.br", "https://okaimoveis.com.br", "wss://okaimoveis.com.br", "https://www.okaimoveis.com.br", "wss://www.okaimoveis.com.br", "https://fazendasbrasil.com", "wss://fazendasbrasil.com", "https://www.fazendasbrasil.com", "wss://www.fazendasbrasil.com", "https://fazendasbrasil.com.br", "wss://fazendasbrasil.com.br", "https://www.fazendasbrasil.com.br", "wss://www.fazendasbrasil.com.br"],
             "frame-ancestors": ["'self'"],
           },
         }
@@ -156,6 +156,10 @@ const staticAllowedOrigins = [
   "https://www.imobfluow.com.br",
   "https://okaimoveis.com.br",
   "https://www.okaimoveis.com.br",
+  "https://fazendasbrasil.com",
+  "https://www.fazendasbrasil.com",
+  "https://fazendasbrasil.com.br",
+  "https://www.fazendasbrasil.com.br",
 ];
 const envAllowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)

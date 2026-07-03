@@ -70,7 +70,14 @@ function cleanDomain(domain: string) {
   return domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }
 
-const OKA_PUBLIC_DOMAINS = new Set(['okaimoveis.com.br', 'www.okaimoveis.com.br']);
+const PUBLIC_DOMAIN_SLUGS: Record<string, string> = {
+  'okaimoveis.com.br': 'okaimoveis',
+  'www.okaimoveis.com.br': 'okaimoveis',
+  'fazendasbrasil.com': 'fazendasbrasil',
+  'www.fazendasbrasil.com': 'fazendasbrasil',
+  'fazendasbrasil.com.br': 'fazendasbrasil',
+  'www.fazendasbrasil.com.br': 'fazendasbrasil',
+};
 
 const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const location = useLocation();
@@ -133,9 +140,10 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           }
 
           const normalizedHostname = hostname.toLowerCase();
-          if (OKA_PUBLIC_DOMAINS.has(normalizedHostname) || OKA_PUBLIC_DOMAINS.has(currentHost)) {
-            log('[Router] OKA public domain resolved');
-            setResolvedSlug('okaimoveis');
+          const mappedSlug = PUBLIC_DOMAIN_SLUGS[normalizedHostname] || PUBLIC_DOMAIN_SLUGS[currentHost];
+          if (mappedSlug) {
+            log(`[Router] Public domain resolved: ${mappedSlug}`);
+            setResolvedSlug(mappedSlug);
             setIsPublicSite(true);
             setLoading(false);
             return;

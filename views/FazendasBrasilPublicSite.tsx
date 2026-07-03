@@ -55,7 +55,7 @@ const FAZENDAS_ORG_SLUGS = [
 ];
 const FAZENDAS_ORG_ID = 'ee2eafa9-929a-460e-a38a-2e13d259e7cb';
 const WHATSAPP_NUMBER = '5544998433030';
-const PHONE_LABEL = '(11) 3813-2020';
+const PHONE_LABEL = '(44) 99843-3030';
 const EMAIL = 'contato@fazendasbrasil.com.br';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
 const BROKER_IMAGE = '/images/fazendas-brasil/broker-renato.jpeg';
@@ -1318,7 +1318,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
             </p>
             <div className="fb-broker-meta">
               <span><BadgeCheck size={14} />CRECI 16644F</span>
-              <span><Phone size={14} />44 99843-3030</span>
+              <span><Phone size={14} />{PHONE_LABEL}</span>
             </div>
           </div>
           <a className="fb-broker-action" href="#fazendas">
@@ -1379,7 +1379,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
             <h3>Contato</h3>
             <div className="fb-contact-row"><Phone size={14} /> <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">{PHONE_LABEL}</a></div>
             <div className="fb-contact-row"><Mail size={14} /> <a href={`mailto:${EMAIL}`}>{EMAIL}</a></div>
-            <div className="fb-contact-row"><MapPin size={14} /> <p>Av. Brigadeiro Faria Lima, 2369<br />Jardim Paulistano - Sao Paulo/SP<br />CEP 01452-000</p></div>
+            <div className="fb-contact-row"><MapPin size={14} /> <p>Rua Deputado Branco Mendes, 390<br />Centro - Colorado/PR</p></div>
           </div>
         </div>
         <div className="fb-footer-bottom">

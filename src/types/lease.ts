@@ -143,6 +143,30 @@ export interface Lease {
   renewal_count?: number;
   previous_lease_id?: string;
 
+  // Owner
+  owner_name?: string;
+  owner_cpf_cnpj?: string;
+  owner_email?: string;
+  owner_phone?: string;
+  owner_address_zip?: string;
+
+  // Tenant address
+  tenant_city?: string;
+  tenant_state?: string;
+  tenant_address_zip?: string;
+  tenant_address_street?: string;
+  tenant_address_number?: string;
+  tenant_address_complement?: string;
+  tenant_address_neighborhood?: string;
+  tenant_previous_landlord?: string;
+  tenant_previous_landlord_phone?: string;
+  tenant_employer_phone?: string;
+  income_proof_status?: string;
+
+  // Guarantor spouse
+  guarantor_spouse_name?: string;
+  guarantor_spouse_cpf?: string;
+
   created_by?: string;
   updated_by?: string;
 

@@ -514,13 +514,13 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
                         </label>
                         <input
                           type="number"
-                          value={propertyForm.features?.area}
+                          value={propertyForm.features?.areaM2}
                           onChange={(e) =>
                             onFormChange({
                               ...propertyForm,
                               features: {
                                 ...propertyForm.features!,
-                                area: Number(e.target.value),
+                                areaM2: Number(e.target.value),
                               },
                             })
                           }

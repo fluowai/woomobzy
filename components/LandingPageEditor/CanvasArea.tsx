@@ -219,71 +219,72 @@ function renderBlock(
     );
   }
 
+  const cfg = block.config as any;
   switch (block.type) {
     case BlockType.HEADER:
-      return <HeaderBlock config={block.config} theme={themeConfig} />;
+      return <HeaderBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.FOOTER:
-      return <FooterBlock config={block.config} theme={themeConfig} />;
+      return <FooterBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.HERO:
-      return <HeroBlock config={block.config} theme={themeConfig} />;
+      return <HeroBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.HERO_WITH_FORM:
-      return <HeroWithFormBlock config={block.config} theme={themeConfig} />;
+      return <HeroWithFormBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.PROPERTY_GRID:
-      return <PropertyGridBlock config={block.config} theme={themeConfig} />;
+      return <PropertyGridBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.TEXT:
-      return <TextBlock config={block.config} theme={themeConfig} />;
+      return <TextBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.IMAGE:
-      return <ImageBlock config={block.config} theme={themeConfig} />;
+      return <ImageBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.GALLERY:
-      return <GalleryBlock config={block.config} theme={themeConfig} />;
+      return <GalleryBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.PROPERTY_CAROUSEL:
       return (
-        <PropertyCarouselBlock config={block.config} theme={themeConfig} />
+        <PropertyCarouselBlock config={cfg} theme={themeConfig} />
       );
 
     case BlockType.STATS:
-      return <StatsBlock config={block.config} theme={themeConfig} />;
+      return <StatsBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.FORM:
-      return <FormBlock config={block.config} theme={themeConfig} />;
+      return <FormBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.CTA:
-      return <CTABlock config={block.config} theme={themeConfig} />;
+      return <CTABlock config={cfg} theme={themeConfig} />;
 
     case BlockType.MAP:
-      return <MapBlock config={block.config} theme={themeConfig} />;
+      return <MapBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.TIMELINE:
-      return <TimelineBlock config={block.config} theme={themeConfig} />;
+      return <TimelineBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.VIDEO:
-      return <VideoBlock config={block.config} theme={themeConfig} />;
+      return <VideoBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.TESTIMONIALS:
-      return <TestimonialsBlock config={block.config} theme={themeConfig} />;
+      return <TestimonialsBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.BROKER_CARD:
       return (
         <BrokerCardBlock
-          config={block.config}
+          config={cfg}
           theme={themeConfig}
           settings={settings}
         />
       );
 
     case BlockType.DIVIDER:
-      return <DividerBlock config={block.config} />;
+      return <DividerBlock config={cfg} />;
 
     case BlockType.SPACER:
-      return <SpacerBlock config={block.config} />;
+      return <SpacerBlock config={cfg} />;
 
     case BlockType.CUSTOM_HTML:
       return <CustomHTMLBlock config={block.config as any} />;

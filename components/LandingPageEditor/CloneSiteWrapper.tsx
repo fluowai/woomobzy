@@ -10,10 +10,10 @@ import AICloneModal from './AICloneModal';
 // ============================================
 
 const CloneSiteWrapper: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
 
   const handleCloneApply = async (layoutConfig: any) => {
-    if (!user?.id || !user?.organizationId) {
+    if (!profile?.id || !profile?.organization_id) {
       alert('Erro: usuário não autenticado');
       return;
     }
@@ -23,8 +23,8 @@ const CloneSiteWrapper: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       const slug = `site-clonado-${timestamp}`;
 
       const newPage = await landingPageService.create({
-        organizationId: user.organizationId,
-        userId: user.id,
+        organizationId: profile.organization_id,
+        userId: profile.id,
         name: `Site Clonado ${new Date().toLocaleTimeString()}`,
         slug: slug,
         title: 'Site Clonado',

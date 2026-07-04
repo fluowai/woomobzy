@@ -18,7 +18,7 @@ export function useLeaseWizard(existingLease?: Lease) {
     ...initialState,
     leaseId: existingLease?.id,
   });
-  const autoSaveTimer = useRef<ReturnType<typeof setInterval>>();
+  const autoSaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const isDraftRef = useRef(false);
 
   // Auto-save every 30 seconds if dirty

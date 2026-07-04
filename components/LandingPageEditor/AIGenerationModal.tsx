@@ -11,7 +11,7 @@ interface AIGenerationModalProps {
 }
 
 const AIGenerationModal: React.FC<AIGenerationModalProps> = ({ onGenerate, onClose }) => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [niche, setNiche] = useState<'rural' | 'urban'>('rural');
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({ onGenerate, onClo
       const response = await axios.post('/api/ai/generate-page', {
         prompt,
         niche,
-        organizationId: user?.organizationId,
+        organizationId: profile?.organization_id,
       });
 
       if (response.data.layout) {

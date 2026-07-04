@@ -93,6 +93,9 @@ export interface Property {
   purpose: PropertyPurpose;
   aptitude: PropertyAptitude[];
   status: PropertyStatus;
+  total_area_ha?: number;
+  property_type?: string;
+  updated_at?: string;
   location: {
     city: string;
     neighborhood: string;
@@ -114,6 +117,7 @@ export interface Property {
     suites?: number;
     banheiros?: number;
     vagas?: number;
+    andar?: number;
     condominio?: number;
     iptu?: number;
 
@@ -282,6 +286,8 @@ export interface Lead {
   email: string;
   phone: string;
   source: string;
+  niche?: string;
+  region?: string;
   status:
     | 'Novo'
     | 'Qualificação'
@@ -565,18 +571,20 @@ export interface LayoutConfig {
 export interface SiteSettings {
   id?: string;
   agencyName: string;
-  isLive?: boolean; // Novo controle de visibilidade
+  companyName?: string;
+  isLive?: boolean;
   templateId: 'modern' | 'classic' | 'minimal';
   primaryColor: string;
   secondaryColor: string;
-  headerColor?: string; // Add specific header color
+  headerColor?: string;
   logoUrl: string;
-  logoHeight?: number; // Tamanho da logo em pixels
-  fontFamily?: string; // Fonte principal
-  baseFontSize?: number; // Tamanho base do texto
-  headingFontSize?: number; // Tamanho dos títulos
+  logoHeight?: number;
+  fontFamily?: string;
+  baseFontSize?: number;
+  headingFontSize?: number;
   contactPhone: string;
   contactEmail: string;
+  contactWhatsappTemplate?: string;
   socialLinks: {
     instagram?: string;
     facebook?: string;
@@ -585,6 +593,11 @@ export interface SiteSettings {
     linkedin?: string;
   };
   footerText: string;
+  tracking_pixels?: {
+    facebook?: { enabled: boolean; pixelId: string; testMode?: boolean };
+    google_analytics?: { enabled: boolean; measurementId: string; testMode?: boolean };
+    google_ads?: { enabled: boolean; conversionId: string; conversionLabel?: string; testMode?: boolean };
+  };
   homeContent?: {
     heroTitle?: string;
     heroSubtitle?: string;
@@ -603,51 +616,19 @@ export interface SiteSettings {
     };
   };
   integrations?: {
-    groq?: {
-      apiKey: string;
-      model?: string;
-    };
-    gemini?: {
-      apiKey: string;
-    };
-    openai?: {
-      apiKey: string;
-      model?: string;
-    };
-    namoBana?: {
-      apiKey: string;
-    };
-    asaas?: {
-      apiKey: string;
-      environment?: 'sandbox' | 'production';
-    };
-    zapsign?: {
-      apiKey: string;
-    };
-    orulo?: {
-      enabled?: boolean;
-    };
-    vivareal?: {
-      enabled?: boolean;
-      apiKey?: string;
-      partnerId?: string;
-    };
-    zap?: {
-      enabled?: boolean;
-      apiKey?: string;
-      partnerId?: string;
-    };
-    quintoandar?: {
-      enabled?: boolean;
-      apiKey?: string;
-      secret?: string;
-    };
-    imovelweb?: {
-      enabled?: boolean;
-      apiKey?: string;
-    };
+    groq?: { apiKey: string; model?: string };
+    gemini?: { apiKey: string };
+    openai?: { apiKey: string; model?: string };
+    namoBana?: { apiKey: string };
+    asaas?: { apiKey: string; environment?: 'sandbox' | 'production' };
+    zapsign?: { apiKey: string };
+    orulo?: { enabled?: boolean };
+    evolutionApi?: { apiKey: string; url?: string; enabled?: boolean; baseUrl?: string; token?: string; instanceName?: string };
+    vivareal?: { enabled?: boolean; apiKey?: string; partnerId?: string };
+    zap?: { enabled?: boolean; apiKey?: string; partnerId?: string };
+    quintoandar?: { enabled?: boolean; apiKey?: string; secret?: string };
+    imovelweb?: { enabled?: boolean; apiKey?: string };
   };
-  // Visual Layout Editor
   layout_config?: LayoutConfig;
   custom_css?: string;
   custom_js?: string;

@@ -11,7 +11,7 @@ interface AICloneModalProps {
 }
 
 const AICloneModal: React.FC<AICloneModalProps> = ({ onClone, onClose }) => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,7 @@ const AICloneModal: React.FC<AICloneModalProps> = ({ onClone, onClose }) => {
       // Call Backend
       const response = await axios.post('/api/ai/clone-site', {
         url,
-        organizationId: user?.organizationId,
+        organizationId: profile?.organization_id,
       });
 
       const layoutData = response.data.layout;

@@ -4,6 +4,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from 'react';
 import { SiteSettings } from '../types';
@@ -15,6 +16,7 @@ import { callApi } from '../src/lib/api';
 interface SettingsContextType {
   settings: SiteSettings;
   updateSettings: (newSettings: SiteSettings) => Promise<void>;
+  refreshSettings: () => Promise<void>;
   loading: boolean;
 }
 
@@ -56,98 +58,88 @@ export const SettingsProvider: React.FC<{
   const profileOrgId = authContext?.profile?.organization_id;
   const authLoading = authContext?.loading || false;
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadSettings = useCallback(async () => {
+    // Determine which organization ID to load settings for
+    const activeOrgId = propsOrgId || profileOrgId;
 
-    const loadSettings = async () => {
-      // Determine which organization ID to load settings for
-      const activeOrgId = propsOrgId || profileOrgId;
+    // If no explicit org ID is provided and auth is still loading, wait before fetching
+    if (!propsOrgId && authLoading) {
+      return;
+    }
 
-      // If no explicit org ID is provided and auth is still loading, wait before fetching
-      if (!propsOrgId && authLoading) {
+    try {
+      setSettingsLoading(true);
+
+      if (!activeOrgId) {
+        logger.info(
+          '📡 [SettingsContext] No organization ID available, using defaults.'
+        );
+        setSettings(DEFAULT_SITE_SETTINGS);
         return;
       }
 
-      try {
-        if (isMounted) setSettingsLoading(true);
+      logger.info(
+        `📡 [SettingsContext] Loading site settings for org: ${activeOrgId}...`
+      );
 
-        if (!activeOrgId) {
-          logger.info(
-            '📡 [SettingsContext] No organization ID available, using defaults.'
-          );
-          if (isMounted) {
-            setSettings(DEFAULT_SITE_SETTINGS);
-          }
-          return;
-        }
+      // Fetch specific organization settings
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('organization_id', activeOrgId)
+        .maybeSingle();
 
+      if (error) {
+        logger.warn('⚠️ [SettingsContext] Load Error:', error.message);
+      } else if (data) {
+        const layoutConfig = data.layout_config || {};
         logger.info(
-          `📡 [SettingsContext] Loading site settings for org: ${activeOrgId}...`
+          '✅ [SettingsContext] Settings loaded:',
+          data.agency_name
         );
-
-        // Fetch specific organization settings
-        const { data, error } = await supabase
-          .from('site_settings')
-          .select('*')
-          .eq('organization_id', activeOrgId)
-          .maybeSingle();
-
-        if (error) {
-          logger.warn('⚠️ [SettingsContext] Load Error:', error.message);
-        } else if (data && isMounted) {
-          const layoutConfig = data.layout_config || {};
-          logger.info(
-            '✅ [SettingsContext] Settings loaded:',
-            data.agency_name
-          );
-          setSettings({
-            ...DEFAULT_SITE_SETTINGS,
-            id: data.id,
-            agencyName: data.agency_name,
-            primaryColor: normalizeBrandColor(data.primary_color),
-            secondaryColor:
-              data.secondary_color || DEFAULT_SITE_SETTINGS.secondaryColor,
-            headerColor: data.header_color,
-            logoUrl: data.logo_url,
-            logoHeight: layoutConfig.logoHeight,
-            isLive: layoutConfig.isLive ?? false,
-            fontFamily: layoutConfig.fontFamily,
-            baseFontSize: layoutConfig.baseFontSize,
-            headingFontSize: layoutConfig.headingFontSize,
-            footerText: data.footer_text,
-            templateId: layoutConfig.templateId || DEFAULT_SITE_SETTINGS.templateId,
-            contactEmail: data.contact_email || DEFAULT_SITE_SETTINGS.contactEmail,
-            contactPhone:
-              data.contact_phone ||
-              data.social_links?.whatsapp ||
-              DEFAULT_SITE_SETTINGS.contactPhone,
-            socialLinks: {
-              instagram: data.social_links?.instagram || data.instagram_url,
-              facebook: data.social_links?.facebook || data.facebook_url,
-              whatsapp: data.social_links?.whatsapp || data.whatsapp_url,
-              youtube: data.social_links?.youtube || data.youtube_url,
-              linkedin: data.social_links?.linkedin || data.linkedin_url,
-            },
-            homeContent: layoutConfig.homeContent || {},
-            integrations: sanitizeClientIntegrations(data.integrations),
-          });
-        }
-      } catch (e) {
-        logger.error('❌ [SettingsContext] Unexpected error:', e);
-      } finally {
-        if (isMounted) {
-          logger.info('🏁 [SettingsContext] finished loading cycle.');
-          setSettingsLoading(false);
-        }
+        setSettings({
+          ...DEFAULT_SITE_SETTINGS,
+          id: data.id,
+          agencyName: data.agency_name,
+          primaryColor: normalizeBrandColor(data.primary_color),
+          secondaryColor:
+            data.secondary_color || DEFAULT_SITE_SETTINGS.secondaryColor,
+          headerColor: data.header_color,
+          logoUrl: data.logo_url,
+          logoHeight: layoutConfig.logoHeight,
+          isLive: layoutConfig.isLive ?? false,
+          fontFamily: layoutConfig.fontFamily,
+          baseFontSize: layoutConfig.baseFontSize,
+          headingFontSize: layoutConfig.headingFontSize,
+          footerText: data.footer_text,
+          templateId: layoutConfig.templateId || DEFAULT_SITE_SETTINGS.templateId,
+          contactEmail: data.contact_email || DEFAULT_SITE_SETTINGS.contactEmail,
+          contactPhone:
+            data.contact_phone ||
+            data.social_links?.whatsapp ||
+            DEFAULT_SITE_SETTINGS.contactPhone,
+          socialLinks: {
+            instagram: data.social_links?.instagram || data.instagram_url,
+            facebook: data.social_links?.facebook || data.facebook_url,
+            whatsapp: data.social_links?.whatsapp || data.whatsapp_url,
+            youtube: data.social_links?.youtube || data.youtube_url,
+            linkedin: data.social_links?.linkedin || data.linkedin_url,
+          },
+          homeContent: layoutConfig.homeContent || {},
+          integrations: sanitizeClientIntegrations(data.integrations),
+        });
       }
-    };
-
-    loadSettings();
-
-    return () => {
-      isMounted = false;
-    };
+    } catch (e) {
+      logger.error('❌ [SettingsContext] Unexpected error:', e);
+    } finally {
+      logger.info('🏁 [SettingsContext] finished loading cycle.');
+      setSettingsLoading(false);
+    }
   }, [propsOrgId, profileOrgId, authLoading]);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   // Apply settings to CSS variables whenever settings change
   useEffect(() => {
@@ -246,7 +238,7 @@ export const SettingsProvider: React.FC<{
 
   return (
     <SettingsContext.Provider
-      value={{ settings, updateSettings, loading: settingsLoading }}
+      value={{ settings, updateSettings, refreshSettings: loadSettings, loading: settingsLoading }}
     >
       {children}
     </SettingsContext.Provider>

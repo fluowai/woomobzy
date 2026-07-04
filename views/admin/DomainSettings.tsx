@@ -59,7 +59,7 @@ const DomainSettings: React.FC = () => {
   const [verifyingDomain, setVerifyingDomain] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [showDnsModal, setShowDnsModal] = useState(false);
-  const verifyIntervalRef = useRef<NodeJS.Timeout>();
+  const verifyIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchCurrentDomain();

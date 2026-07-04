@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { siteService } from '../services/sites';
 import { Site, SitePage, SiteMenuItem } from '../types/site';
-import { Block, BlockType } from '../types/landingPage';
+import { Block, BlockType, LandingPageTheme } from '../types/landingPage';
 import HeaderBlock from '../components/LandingPageBlocks/HeaderBlock';
 import FooterBlock from '../components/LandingPageBlocks/FooterBlock';
 import HeroBlock from '../components/LandingPageBlocks/HeroBlock';
@@ -21,6 +21,7 @@ import TimelineBlock from '../components/LandingPageBlocks/TimelineBlock';
 import VideoBlock from '../components/LandingPageBlocks/VideoBlock';
 import TestimonialsBlock from '../components/LandingPageBlocks/TestimonialsBlock';
 import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
+import HeroWithFormBlock from '../components/LandingPageBlocks/HeroWithFormBlock';
 import { Loader2, Menu, X, Phone, Mail, MapPin, Instagram, Facebook, Youtube, Linkedin, MessageCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import FazendasBrasilPublicSite from './FazendasBrasilPublicSite';
@@ -169,48 +170,48 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
   };
 
   const renderBlock = (block: Block) => {
-    const blockProps = { key: block.id, ...block.config, styles: block.styles };
-    const commonProps = { properties };
+    const theme = (site?.globalTheme || {}) as LandingPageTheme;
+    const cfg = block.config as any;
 
     switch (block.type) {
       case BlockType.HEADER:
-        return <HeaderBlock key={block.id} />;
+        return <HeaderBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.FOOTER:
-        return <FooterBlock key={block.id} />;
+        return <FooterBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.HERO:
-        return <HeroBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <HeroBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.HERO_WITH_FORM:
-        return <HeroBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <HeroWithFormBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.PROPERTY_GRID:
-        return <PropertyGridBlock key={block.id} config={block.config} properties={properties} />;
+        return <PropertyGridBlock key={block.id} config={cfg} theme={theme} properties={properties} />;
       case BlockType.PROPERTY_CAROUSEL:
-        return <PropertyCarouselBlock key={block.id} config={block.config} properties={properties} />;
+        return <PropertyCarouselBlock key={block.id} config={cfg} theme={theme} properties={properties} />;
       case BlockType.TEXT:
-        return <TextBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <TextBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.IMAGE:
-        return <ImageBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <ImageBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.FORM:
-        return <FormBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <FormBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.CTA:
-        return <CTABlock key={block.id} {...block.config} styles={block.styles} />;
+        return <CTABlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.STATS:
-        return <StatsBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <StatsBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.TESTIMONIALS:
-        return <TestimonialsBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <TestimonialsBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.GALLERY:
-        return <GalleryBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <GalleryBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.MAP:
-        return <MapBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <MapBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.VIDEO:
-        return <VideoBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <VideoBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.SPACER:
-        return <SpacerBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <SpacerBlock key={block.id} config={cfg} />;
       case BlockType.DIVIDER:
-        return <DividerBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <DividerBlock key={block.id} config={cfg} />;
       case BlockType.TIMELINE:
-        return <TimelineBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <TimelineBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.BROKER_CARD:
-        return <BrokerCardBlock key={block.id} {...block.config} styles={block.styles} />;
+        return <BrokerCardBlock key={block.id} config={cfg} theme={theme} />;
       default:
         return null;
     }

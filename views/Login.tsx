@@ -220,7 +220,7 @@ const Login: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1">
                     <label className="text-sm font-semibold text-slate-700">Senha</label>
-                    <Link to="/forgot-password" size="sm" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                    <Link to="/forgot-password" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
                       Esqueceu a senha?
                     </Link>
                   </div>

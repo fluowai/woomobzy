@@ -5,7 +5,7 @@ export function useAutoSave(
   isDirty: boolean,
   intervalMs: number = 30000
 ) {
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isSavingRef = useRef(false);
 
   const triggerSave = useCallback(async () => {

@@ -700,7 +700,7 @@ const PropertyManagement: React.FC = () => {
                           </h3>
                           <span
                             className={`shrink-0 px-2 py-1 rounded-full text-[10px] font-bold uppercase whitespace-nowrap ${
-                              property.status === 'DisponÃ­vel'
+                              property.status === 'Disponível'
                                 ? 'bg-emerald-100 text-emerald-700'
                                 : property.status === 'Pendente'
                                   ? 'bg-orange-100 text-orange-700'

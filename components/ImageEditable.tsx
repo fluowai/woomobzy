@@ -34,7 +34,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
     return children;
   }
 
-  const currentUrl = texts[textKey] || children.props.src || '';
+  const currentUrl = texts[textKey] || (children.props as any).src || '';
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -103,8 +103,8 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
 
   // Clone item to inject the new src if edited
   const content = React.cloneElement(children, {
-    src: texts[textKey] || children.props.src,
-  });
+    src: texts[textKey] || (children.props as any).src,
+  } as any);
 
   return (
     <div

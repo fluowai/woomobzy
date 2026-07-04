@@ -57,14 +57,14 @@ const DossieInteligente: React.FC = () => {
     }
   };
 
-  const legal = selectedProperty?.features?.legal || {};
+  const legal = selectedProperty?.features?.legal;
   const validation = (selectedProperty?.features as any)?.rural_due_diligence?.validation;
   const riskScore = Number(validation?.riskScore || 0);
   const technicalItems = selectedProperty
     ? [
-        { label: 'Georreferenciamento', valid: Boolean(legal.geo || legal.geometry), icon: Map },
-        { label: 'CAR (Ambiental)', valid: Boolean(legal.car || legal.carNumber), icon: ShieldCheck },
-        { label: 'Matrícula', valid: Boolean(legal.matricula), icon: FileSearch },
+        { label: 'Georreferenciamento', valid: Boolean(legal?.geo || legal?.geometry), icon: Map },
+        { label: 'CAR (Ambiental)', valid: Boolean(legal?.car || legal?.carNumber), icon: ShieldCheck },
+        { label: 'Matrícula', valid: Boolean(legal?.matricula), icon: FileSearch },
       ]
     : [];
 

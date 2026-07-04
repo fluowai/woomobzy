@@ -21,8 +21,8 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const [pairingLoading, setPairingLoading] = useState(false);
   const [expiresAt, setExpiresAt] = useState('');
   const { on } = useWebSocket();
-  const pollingRef = useRef<ReturnType<typeof setInterval>>();
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const qrCodeRef = useRef(qrCode);
   const lastQRFetchRef = useRef(0);
 

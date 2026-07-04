@@ -9,7 +9,7 @@ interface Props {
 }
 
 const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
-const labelClass = 'text-[10px] font-black text-slate-500 uppercase tracking-widest';
+const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
 export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
   return (
@@ -18,7 +18,7 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Briefcase size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Dados Profissionais</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Dados Profissionais</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -52,7 +52,7 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600"><DollarSign size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Renda</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Renda</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -84,7 +84,7 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-purple-50 rounded-xl text-purple-600"><Upload size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Documentos Anexados</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Documentos Anexados</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[

@@ -50,7 +50,7 @@ const SellPropertyForm: React.FC = () => {
       className="bg-slate-900 p-8 rounded-3xl shadow-2xl text-white border border-slate-700"
     >
       <div className="mb-8">
-        <div className="inline-block px-3 py-1 bg-indigo-500 rounded-lg text-[10px] font-black uppercase tracking-widest mb-3">
+        <div className="inline-block px-3 py-1 bg-indigo-500 rounded-lg text-[10px] font-bold uppercase tracking-widest mb-3">
           Proprietários
         </div>
         <h2 className="text-2xl font-bold mb-2">Quer vender ou arrendar?</h2>

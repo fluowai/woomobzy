@@ -171,7 +171,7 @@ const SmartImporter: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
             <div className="p-2 bg-indigo-600 rounded-xl">
               <Zap className="text-white" size={24} />
             </div>
@@ -201,7 +201,7 @@ const SmartImporter: React.FC = () => {
               <Globe size={48} />
             </div>
             <div className="max-w-lg space-y-4">
-              <h2 className="text-4xl font-black text-slate-900 leading-tight">
+              <h2 className="text-4xl font-bold text-slate-900 leading-tight">
                 Vamos migrar para a{' '}
                 <span className="text-indigo-600 italic">IMOBZY</span>?
               </h2>
@@ -213,7 +213,7 @@ const SmartImporter: React.FC = () => {
             <div className="w-full max-w-xl space-y-4">
               {/* Organization Selector */}
               <div className="text-left space-y-2">
-                <label className="text-xs font-black uppercase text-slate-400 tracking-widest ml-1">
+                <label className="text-xs font-bold uppercase text-slate-400 tracking-widest ml-1">
                   Conta de Destino (Migrar para...)
                 </label>
                 <select
@@ -259,7 +259,7 @@ const SmartImporter: React.FC = () => {
               <button
                 onClick={handleStart}
                 disabled={!url || !authorized}
-                className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-xl font-black uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
+                className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-xl font-bold uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
               >
                 Analisar Site <ArrowRight size={24} />
               </button>
@@ -270,7 +270,7 @@ const SmartImporter: React.FC = () => {
         {step === 2 && (
           <div className="p-12 flex-1 animate-in slide-in-from-right duration-300">
             <div className="mb-12">
-              <h2 className="text-3xl font-black text-slate-900 mb-2">
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">
                 Como deseja proceder?
               </h2>
               <p className="text-slate-500">
@@ -320,7 +320,7 @@ const SmartImporter: React.FC = () => {
                   >
                     <m.icon size={28} />
                   </div>
-                  <h3 className="text-xl font-black mb-2">{m.title}</h3>
+                  <h3 className="text-xl font-bold mb-2">{m.title}</h3>
                   <p
                     className={`text-sm leading-relaxed ${mode === m.id ? 'text-indigo-100' : 'text-slate-500'}`}
                   >
@@ -346,7 +346,7 @@ const SmartImporter: React.FC = () => {
                   }
                 }}
                 disabled={status === 'analyzing'}
-                className="px-10 py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest flex items-center gap-3 hover:bg-black transition-all shadow-lg"
+                className="px-10 py-4 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest flex items-center gap-3 hover:bg-black transition-all shadow-lg"
               >
                 {status === 'analyzing' ? (
                   <Loader2 className="animate-spin" />
@@ -362,7 +362,7 @@ const SmartImporter: React.FC = () => {
         {step === 2.5 && (
           <div className="p-12 flex-1 animate-in slide-in-from-right duration-300">
             <div className="mb-12">
-              <h2 className="text-3xl font-black text-slate-900 mb-2">
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">
                 Upload de Dados
               </h2>
               <p className="text-slate-500">
@@ -421,7 +421,7 @@ const SmartImporter: React.FC = () => {
               </button>
               <button
                 onClick={() => setStep(5)}
-                className="px-10 py-4 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-lg"
+                className="px-10 py-4 bg-indigo-600 text-white rounded-xl font-bold uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-lg"
               >
                 Continuar para Revisão <ArrowRight size={20} />
               </button>
@@ -440,7 +440,7 @@ const SmartImporter: React.FC = () => {
             </div>
 
             <div className="space-y-4 max-w-lg">
-              <h2 className="text-4xl font-black text-slate-900">
+              <h2 className="text-4xl font-bold text-slate-900">
                 A Inteligência está trabalhando...
               </h2>
               <p className="text-slate-500 text-lg leading-relaxed">
@@ -510,7 +510,7 @@ const SmartImporter: React.FC = () => {
               <CheckCircle2 size={48} />
             </div>
             <div className="max-w-md space-y-4">
-              <h2 className="text-4xl font-black text-slate-900 leading-tight">
+              <h2 className="text-4xl font-bold text-slate-900 leading-tight">
                 Importação Concluída!
               </h2>
               <p className="text-slate-500 text-lg leading-relaxed">
@@ -521,11 +521,11 @@ const SmartImporter: React.FC = () => {
             <div className="flex gap-4">
               <button
                 onClick={() => setStep(1)}
-                className="px-8 py-4 border border-slate-200 rounded-2xl text-slate-600 hover:bg-slate-50 transition-all font-black uppercase tracking-widest text-sm"
+                className="px-8 py-4 border border-slate-200 rounded-2xl text-slate-600 hover:bg-slate-50 transition-all font-bold uppercase tracking-widest text-sm"
               >
                 Nova Importação
               </button>
-              <button className="px-8 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-xl shadow-slate-200 font-black uppercase tracking-widest text-sm">
+              <button className="px-8 py-4 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-xl shadow-slate-200 font-bold uppercase tracking-widest text-sm">
                 Ver Dashboard
               </button>
             </div>

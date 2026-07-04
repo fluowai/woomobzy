@@ -334,7 +334,7 @@ const ComplianceUrbano: React.FC = () => {
           <div className="flex items-center gap-3">
             <ClipboardCheck size={20} className="text-blue-600" />
             <h3 className="text-lg font-bold text-black">{title}</h3>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-2">
               {items.filter((d) => d.status === 'ok').length}/{items.length}
             </span>
           </div>
@@ -388,7 +388,7 @@ const ComplianceUrbano: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-black uppercase italic tracking-tighter flex items-center gap-3">
           <ClipboardCheck className="text-blue-600" size={32} />
           Compliance Urbano
         </h1>
@@ -452,7 +452,7 @@ const ComplianceUrbano: React.FC = () => {
               <div
                 className={`w-16 h-16 rounded-full border-4 ${colors.ring} flex items-center justify-center`}
               >
-                <span className={`text-xl font-black ${colors.text}`}>
+                <span className={`text-xl font-bold ${colors.text}`}>
                   {item.score}
                 </span>
               </div>
@@ -537,7 +537,7 @@ const ComplianceUrbano: React.FC = () => {
                   {item.source}
                 </p>
                 <p
-                  className={`text-lg font-black ${
+                  className={`text-lg font-bold ${
                     item.status === 'OK' ||
                     item.status === 'REGULAR' ||
                     item.status === 'NEGATIVA'
@@ -565,7 +565,7 @@ const ComplianceUrbano: React.FC = () => {
             return (
               <div key={key} className={`p-4 rounded-xl ${cfg.bg} text-center`}>
                 <Ic size={24} className={`mx-auto mb-2 ${cfg.color}`} />
-                <p className={`text-2xl font-black ${cfg.color}`}>{count}</p>
+                <p className={`text-2xl font-bold ${cfg.color}`}>{count}</p>
                 <p
                   className={`text-[10px] font-bold uppercase tracking-widest ${cfg.color}`}
                 >

@@ -14,7 +14,7 @@ const DnsHelp: React.FC = () => {
               <Globe size={24} />
             </span>
             <div>
-              <h1 className="text-2xl font-black">Guia DNS ImobFluow</h1>
+              <h1 className="text-2xl font-bold">Guia DNS ImobFluow</h1>
               <p className="text-sm text-slate-500">
                 Como apontar apenas o site do cliente para o servidor, sem mexer no e-mail.
               </p>
@@ -23,11 +23,11 @@ const DnsHelp: React.FC = () => {
         </header>
 
         <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-black">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
             <Server size={18} /> IP do servidor
           </h2>
           <div className="flex flex-col gap-3 rounded-lg bg-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <code className="font-mono text-lg font-black text-slate-950">{PLATFORM_IP}</code>
+            <code className="font-mono text-lg font-bold text-slate-950">{PLATFORM_IP}</code>
             <button
               type="button"
               onClick={() => copy(PLATFORM_IP)}
@@ -39,10 +39,10 @@ const DnsHelp: React.FC = () => {
         </section>
 
         <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-black">Registros que devem apontar para a ImobFluow</h2>
+          <h2 className="mb-4 text-lg font-bold">Registros que devem apontar para a ImobFluow</h2>
           <div className="overflow-hidden rounded-lg border border-slate-200">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-100 text-xs font-black uppercase text-slate-500">
+              <thead className="bg-slate-100 text-xs font-bold uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Nome</th>
                   <th className="px-4 py-3">Tipo</th>
@@ -73,7 +73,7 @@ const DnsHelp: React.FC = () => {
         </section>
 
         <section className="rounded-lg border border-amber-200 bg-amber-50 p-6">
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-black text-amber-950">
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-amber-950">
             <Mail size={18} /> Nao altere registros de e-mail
           </h2>
           <p className="text-sm leading-relaxed text-amber-900">
@@ -84,7 +84,7 @@ const DnsHelp: React.FC = () => {
 
         <section className="grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-slate-200 bg-white p-5">
-            <h3 className="mb-3 flex items-center gap-2 font-black">
+            <h3 className="mb-3 flex items-center gap-2 font-bold">
               <CheckCircle2 size={17} className="text-green-600" /> Quando estiver correto
             </h3>
             <p className="text-sm text-slate-600">
@@ -93,7 +93,7 @@ const DnsHelp: React.FC = () => {
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-5">
-            <h3 className="mb-3 flex items-center gap-2 font-black">
+            <h3 className="mb-3 flex items-center gap-2 font-bold">
               <AlertTriangle size={17} className="text-amber-600" /> Quando ainda estiver errado
             </h3>
             <p className="text-sm text-slate-600">

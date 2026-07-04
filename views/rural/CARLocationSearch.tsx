@@ -172,7 +172,7 @@ const CARLocationSearch: React.FC = () => {
     <div className="max-w-7xl mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-black uppercase italic tracking-tighter flex items-center gap-3">
+        <h1 className="text-3xl font-bold uppercase italic tracking-tighter flex items-center gap-3">
           <NavIcon className="text-emerald-600" size={32} />
           Localizar CAR por Localização
         </h1>
@@ -187,7 +187,7 @@ const CARLocationSearch: React.FC = () => {
           <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl space-y-4">
             <div className="flex items-center gap-2 text-slate-400">
               <Info size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Instruções</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Instruções</span>
             </div>
             <p className="text-sm text-slate-600">
               Cole o link do Google Maps da fazenda ou as coordenadas (lat, lng) para buscarmos o polígono do CAR.
@@ -245,7 +245,7 @@ const CARLocationSearch: React.FC = () => {
           {/* Lista de Candidatos */}
           {results.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">
+              <h3 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest px-2">
                 Imóveis Encontrados ({results.length})
               </h3>
               <div className="space-y-3">
@@ -260,14 +260,14 @@ const CARLocationSearch: React.FC = () => {
                     }`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                         selectedCandidate?.codImovel === candidate.codImovel ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'
                       }`}>
                         {candidate.confidence} Confiança
                       </span>
                       <ChevronRight size={16} />
                     </div>
-                    <p className="text-xs font-black truncate mb-1">{candidate.codImovel}</p>
+                    <p className="text-xs font-bold truncate mb-1">{candidate.codImovel}</p>
                     <div className={`flex gap-3 text-[10px] font-medium ${selectedCandidate?.codImovel === candidate.codImovel ? 'text-white/80' : 'text-slate-400'}`}>
                       <span>{candidate.areaHa?.toFixed(2)} ha</span>
                       <span>{candidate.municipio} - {candidate.uf}</span>
@@ -295,7 +295,7 @@ const CARLocationSearch: React.FC = () => {
               {inputData && (
                 <Marker position={[inputData.lat, inputData.lng]}>
                   <Popup>
-                    <div className="text-[10px] font-black uppercase">Ponto de Interesse</div>
+                    <div className="text-[10px] font-bold uppercase">Ponto de Interesse</div>
                   </Popup>
                 </Marker>
               )}
@@ -322,14 +322,14 @@ const CARLocationSearch: React.FC = () => {
           {selectedCandidate && (
             <div className="bg-emerald-900 text-white p-8 rounded-[40px] flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
               <div className="space-y-1">
-                <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">Imóvel Selecionado</p>
-                <h2 className="text-xl font-black">{selectedCandidate.codImovel}</h2>
+                <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Imóvel Selecionado</p>
+                <h2 className="text-xl font-bold">{selectedCandidate.codImovel}</h2>
                 <p className="text-emerald-200/60 text-xs font-medium italic">
                   Pronto para gerar dossiê ambiental e jurídico completo
                 </p>
               </div>
               <button 
-                className="group flex items-center gap-3 bg-white text-emerald-900 px-8 py-4 rounded-2xl font-black uppercase text-xs hover:bg-emerald-50 transition-all"
+                className="group flex items-center gap-3 bg-white text-emerald-900 px-8 py-4 rounded-2xl font-bold uppercase text-xs hover:bg-emerald-50 transition-all"
                 onClick={createPropertyFromCandidate}
                 disabled={savingCandidate}
               >

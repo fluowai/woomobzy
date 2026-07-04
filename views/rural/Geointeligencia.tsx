@@ -35,7 +35,7 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import { callApi } from '../../src/lib/api';
 import { EditControl } from 'react-leaflet-draw';
 import L from 'leaflet';
-import * as toGeoJSON from '@mapbox/togeojson';
+import * as toGeoJSON from '@tmcw/togeojson';
 import JSZip from 'jszip';
 import { propertyService } from '../../services/properties';
 import { toast } from 'sonner';
@@ -297,7 +297,7 @@ const Geointeligencia: React.FC = () => {
     <div className="space-y-8 p-4">
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter flex items-center gap-3">
+          <h1 className="text-3xl font-bold uppercase italic tracking-tighter flex items-center gap-3">
             <Layers className="text-emerald-600" size={32} />
             Geointeligência
           </h1>
@@ -315,14 +315,14 @@ const Geointeligencia: React.FC = () => {
             <div className="p-1.5 bg-emerald-500/20 rounded-lg">
               <Zap size={14} className="text-emerald-400" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Indicators / CEPEA</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Indicators / CEPEA</span>
           </div>
           <div className="flex gap-8 items-center">
             {Object.entries(marketPrices).map(([key, val]: [string, any]) => (
               <div key={key} className="flex flex-col">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{key.replace('_', ' ')}</span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xs font-black text-white">R$ {val.valor}</span>
+                  <span className="text-xs font-bold text-white">R$ {val.valor}</span>
                   <span className="text-[9px] text-slate-500 font-medium">/{val.unidade}</span>
                 </div>
               </div>
@@ -342,8 +342,8 @@ const Geointeligencia: React.FC = () => {
             <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}>
               <stat.icon size={24} />
             </div>
-            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{stat.label}</h3>
-            <p className="text-3xl font-black text-slate-900 tracking-tighter">{stat.value}</p>
+            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{stat.label}</h3>
+            <p className="text-3xl font-bold text-slate-900 tracking-tighter">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -370,7 +370,7 @@ const Geointeligencia: React.FC = () => {
             </label>
           </div>
           <div className="pt-4 border-t border-slate-100 space-y-3">
-            <h4 className="text-[10px] font-black uppercase text-slate-400">Vincular ao Imovel</h4>
+            <h4 className="text-[10px] font-bold uppercase text-slate-400">Vincular ao Imovel</h4>
             <select
               value={selectedPropertyId}
               onChange={(event) => setSelectedPropertyId(event.target.value)}
@@ -393,7 +393,7 @@ const Geointeligencia: React.FC = () => {
             </button>
           </div>
           <div className="pt-4 border-t border-slate-100 space-y-4">
-            <h4 className="text-[10px] font-black uppercase text-slate-400">Consulta API Live</h4>
+            <h4 className="text-[10px] font-bold uppercase text-slate-400">Consulta API Live</h4>
             <div className="flex gap-2">
               <input type="text" placeholder="Código CAR" value={carInput} onChange={(e) => setCarInput(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border rounded-lg text-[10px]" />
               <button onClick={consultCARapi} className="p-2 bg-emerald-600 text-white rounded-lg"><Zap size={14} /></button>

@@ -55,7 +55,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><PenTool size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Método de Assinatura</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Método de Assinatura</h4>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
@@ -83,7 +83,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><User size={20} /></div>
-            <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Signatários</h4>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Signatários</h4>
           </div>
           <div className="flex gap-2">
             {lease.guarantee_type === 'fiador' && lease.guarantor_name && !signers.find(s => s.signer_type === 'fiador') && (
@@ -142,7 +142,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Send size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Envio do Convite</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Envio do Convite</h4>
         </div>
         <div className="flex gap-3">
           {[
@@ -170,23 +170,23 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><CheckCircle size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Status da Assinatura</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Status da Assinatura</h4>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-2xl font-black text-slate-300">0</p>
+            <p className="text-2xl font-bold text-slate-300">0</p>
             <p className="text-[10px] font-bold text-slate-400 uppercase">Assinados</p>
           </div>
           <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-2xl font-black text-amber-500">{signers.length}</p>
+            <p className="text-2xl font-bold text-amber-500">{signers.length}</p>
             <p className="text-[10px] font-bold text-slate-400 uppercase">Pendentes</p>
           </div>
           <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-2xl font-black text-slate-300">0</p>
+            <p className="text-2xl font-bold text-slate-300">0</p>
             <p className="text-[10px] font-bold text-slate-400 uppercase">Recusados</p>
           </div>
           <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-2xl font-black text-blue-600">{signers.length}</p>
+            <p className="text-2xl font-bold text-blue-600">{signers.length}</p>
             <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>
           </div>
         </div>

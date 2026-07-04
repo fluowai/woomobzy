@@ -154,14 +154,14 @@ const BIUrbano: React.FC = () => {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter text-slate-950">
+          <h1 className="text-3xl font-bold uppercase italic tracking-tighter text-slate-950">
             BI Urbano
           </h1>
           <p className="mt-1 text-sm font-medium text-slate-500">
             Indicadores de carteira, leads, vendas, locação e performance comercial urbana.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-600 shadow-sm ring-1 ring-slate-200">
+        <button className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 shadow-sm ring-1 ring-slate-200">
           <Download size={16} /> Exportar
         </button>
       </div>
@@ -177,15 +177,15 @@ const BIUrbano: React.FC = () => {
             <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${item.bg}`}>
               <item.icon className={item.color} size={22} />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{item.label}</p>
-            <p className="mt-1 text-2xl font-black text-slate-950">{item.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{item.label}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-950">{item.value}</p>
           </div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm lg:col-span-2">
-          <h2 className="mb-6 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-900">
+          <h2 className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-900">
             <Activity size={18} className="text-blue-600" /> Evolução mensal
           </h2>
           <div className="h-72">
@@ -203,7 +203,7 @@ const BIUrbano: React.FC = () => {
         </div>
 
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-6 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-900">
+          <h2 className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-900">
             <Home size={18} className="text-blue-600" /> Mix de estoque
           </h2>
           <div className="h-72">
@@ -223,7 +223,7 @@ const BIUrbano: React.FC = () => {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-6 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-900">
+          <h2 className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-900">
             <MapPin size={18} className="text-blue-600" /> VGV por cidade
           </h2>
           <div className="h-72">
@@ -240,7 +240,7 @@ const BIUrbano: React.FC = () => {
         </div>
 
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-6 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-900">
+          <h2 className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-900">
             <Users size={18} className="text-blue-600" /> Leads por origem
           </h2>
           <div className="space-y-4">
@@ -251,7 +251,7 @@ const BIUrbano: React.FC = () => {
             ) : (
               leadSourceData.map((item, index) => (
                 <div key={item.name}>
-                  <div className="mb-1 flex justify-between text-xs font-black uppercase tracking-widest text-slate-500">
+                  <div className="mb-1 flex justify-between text-xs font-bold uppercase tracking-widest text-slate-500">
                     <span>{item.name}</span>
                     <span>{item.value}</span>
                   </div>

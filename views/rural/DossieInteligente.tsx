@@ -83,7 +83,7 @@ const DossieInteligente: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-black uppercase italic tracking-tighter leading-none mb-3">
+          <h1 className="text-4xl font-bold text-black uppercase italic tracking-tighter leading-none mb-3">
             Dossiê Inteligente <br />{' '}
             <span className="text-emerald-600">360 Premium</span>
           </h1>
@@ -99,7 +99,7 @@ const DossieInteligente: React.FC = () => {
                 const prop = properties.find(p => p.id === e.target.value);
                 setSelectedProperty(prop || null);
               }}
-              className="px-6 py-3 bg-slate-50 rounded-xl text-xs font-black uppercase outline-none focus:ring-2 focus:ring-emerald-500/20"
+              className="px-6 py-3 bg-slate-50 rounded-xl text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-emerald-500/20"
             >
               <option value="">Selecionar Imóvel</option>
               {properties.map(p => (
@@ -111,7 +111,7 @@ const DossieInteligente: React.FC = () => {
             type="button"
             onClick={downloadDossier}
             disabled={!selectedProperty}
-            className="h-12 px-6 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-40"
+            className="h-12 px-6 bg-black text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-40"
           >
              <Download size={14} /> Gerar PDF
           </button>
@@ -121,13 +121,13 @@ const DossieInteligente: React.FC = () => {
       {loading ? (
         <div className="py-32 text-center bg-white rounded-[3rem] border border-slate-100">
           <FileSearch size={64} className="text-slate-200 mx-auto mb-6 animate-pulse" />
-          <h3 className="text-2xl font-black text-black uppercase italic tracking-tighter">Carregando Ativos Rurais</h3>
+          <h3 className="text-2xl font-bold text-black uppercase italic tracking-tighter">Carregando Ativos Rurais</h3>
           <p className="text-slate-400 font-medium italic mt-2">Buscando apenas propriedades rurais da sua organizacao.</p>
         </div>
       ) : !selectedProperty ? (
         <div className="py-32 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
           <FileSearch size={64} className="text-slate-200 mx-auto mb-6" />
-          <h3 className="text-2xl font-black text-black uppercase italic tracking-tighter">Aguardando Seleção</h3>
+          <h3 className="text-2xl font-bold text-black uppercase italic tracking-tighter">Aguardando Seleção</h3>
           <p className="text-slate-400 font-medium italic mt-2">Escolha um imóvel para gerar o dossiê técnico 360.</p>
         </div>
       ) : (
@@ -150,14 +150,14 @@ const DossieInteligente: React.FC = () => {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-4">
-                      <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest rounded-full">
+                      <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[9px] font-bold uppercase tracking-widest rounded-full">
                         {selectedProperty.property_type}
                       </span>
-                      <span className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                         <Calendar size={12} /> Atualizado em: {new Date(selectedProperty.updated_at || '').toLocaleDateString()}
                       </span>
                     </div>
-                    <h2 className="text-3xl font-black text-black uppercase italic tracking-tighter leading-none mb-4">
+                    <h2 className="text-3xl font-bold text-black uppercase italic tracking-tighter leading-none mb-4">
                       {selectedProperty.title}
                     </h2>
                     <p className="text-sm text-slate-500 font-medium italic mb-6">
@@ -180,7 +180,7 @@ const DossieInteligente: React.FC = () => {
               {/* Technical Validation */}
               <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
                 <div className="flex items-center justify-between mb-8">
-                   <h3 className="text-sm font-black uppercase tracking-widest text-black">Validação Técnica</h3>
+                   <h3 className="text-sm font-bold uppercase tracking-widest text-black">Validação Técnica</h3>
                    <CheckCircle2 size={20} className="text-emerald-500" />
                 </div>
                 <div className="space-y-4">
@@ -190,7 +190,7 @@ const DossieInteligente: React.FC = () => {
                         <item.icon size={16} className="text-slate-400" />
                         <span className="text-xs font-bold text-slate-600">{item.label}</span>
                       </div>
-                      <span className={`text-[10px] font-black uppercase ${item.valid ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      <span className={`text-[10px] font-bold uppercase ${item.valid ? 'text-emerald-600' : 'text-amber-600'}`}>
                         {item.valid ? 'Informado' : 'Pendente'}
                       </span>
                     </div>
@@ -201,13 +201,13 @@ const DossieInteligente: React.FC = () => {
               {/* Market Intelligence */}
               <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
                 <div className="flex items-center justify-between mb-8">
-                   <h3 className="text-sm font-black uppercase tracking-widest text-black">Inteligência de Mercado</h3>
+                   <h3 className="text-sm font-bold uppercase tracking-widest text-black">Inteligência de Mercado</h3>
                    <TrendingUp size={20} className="text-indigo-500" />
                 </div>
                 <div className="space-y-4">
                   <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Valor do Hectare</p>
-                    <p className="text-lg font-black text-indigo-900">
+                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Valor do Hectare</p>
+                    <p className="text-lg font-bold text-indigo-900">
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((selectedProperty.price || 0) / (selectedProperty.total_area_ha || 1))}
                     </p>
                     <p className="text-[9px] text-indigo-400 italic mt-1">Calculado a partir do valor e da área cadastrados.</p>
@@ -224,8 +224,8 @@ const DossieInteligente: React.FC = () => {
                     <Zap size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black uppercase italic tracking-tighter text-amber-900">Análise de Risco IA</h3>
-                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Processamento Neural 360</p>
+                    <h3 className="text-lg font-bold uppercase italic tracking-tighter text-amber-900">Análise de Risco IA</h3>
+                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Processamento Neural 360</p>
                   </div>
                </div>
                <p className="text-sm text-amber-800 font-medium italic leading-relaxed">
@@ -245,15 +245,15 @@ const DossieInteligente: React.FC = () => {
             <AgroMarketWidget />
             
             <div className="bg-black rounded-[3rem] p-10 text-white shadow-2xl shadow-slate-200">
-               <h3 className="text-lg font-black uppercase italic tracking-tighter mb-8">Ferramentas de Venda</h3>
+               <h3 className="text-lg font-bold uppercase italic tracking-tighter mb-8">Ferramentas de Venda</h3>
                <div className="space-y-4">
                   <button onClick={shareOnWhatsApp} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-600 hover:border-emerald-500 transition-all text-left group">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/80 mb-1">Apresentação</p>
-                    <p className="text-sm font-black">Enviar para Cliente (WhatsApp)</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 group-hover:text-white/80 mb-1">Apresentação</p>
+                    <p className="text-sm font-bold">Enviar para Cliente (WhatsApp)</p>
                   </button>
                   <button onClick={() => toast.info('A minuta deve ser solicitada após a aprovação jurídica da due diligence.')} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-indigo-600 hover:border-indigo-500 transition-all text-left group">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/80 mb-1">Jurídico</p>
-                    <p className="text-sm font-black">Solicitar Minuta de Venda</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 group-hover:text-white/80 mb-1">Jurídico</p>
+                    <p className="text-sm font-bold">Solicitar Minuta de Venda</p>
                   </button>
                </div>
             </div>

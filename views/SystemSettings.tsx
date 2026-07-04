@@ -563,7 +563,7 @@ const SystemSettings: React.FC = () => {
 
                   <div className="rounded-xl border border-border-subtle bg-bg-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <h5 className="text-xs font-black uppercase tracking-widest text-text-primary">
+                      <h5 className="text-xs font-bold uppercase tracking-widest text-text-primary">
                         Minha conta Órulo
                       </h5>
                       <p className="mt-1 text-xs text-text-secondary">

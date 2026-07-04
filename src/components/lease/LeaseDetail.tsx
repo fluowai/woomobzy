@@ -86,7 +86,7 @@ export const LeaseDetail: React.FC = () => {
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-black text-black uppercase italic tracking-tighter">
+              <h1 className="text-2xl font-bold text-black uppercase italic tracking-tighter">
                 {lease.contract_number || 'Sem número'}
               </h1>
               <span className={`text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider ${
@@ -119,7 +119,7 @@ export const LeaseDetail: React.FC = () => {
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <User size={16} className="text-blue-500" />
-            <span className="text-[10px] font-black text-slate-400 uppercase">Locatário</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Locatário</span>
           </div>
           <p className="text-sm font-bold text-slate-800">{lease.tenant_name}</p>
           <p className="text-xs text-slate-400">{lease.tenant_cpf}</p>
@@ -127,7 +127,7 @@ export const LeaseDetail: React.FC = () => {
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Building2 size={16} className="text-blue-500" />
-            <span className="text-[10px] font-black text-slate-400 uppercase">Imóvel</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Imóvel</span>
           </div>
           <p className="text-sm font-bold text-slate-800">{lease.property_title || 'Não vinculado'}</p>
           <p className="text-xs text-slate-400">{lease.property_city && `${lease.property_city}/${lease.property_state}`}</p>
@@ -135,7 +135,7 @@ export const LeaseDetail: React.FC = () => {
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Calendar size={16} className="text-blue-500" />
-            <span className="text-[10px] font-black text-slate-400 uppercase">Período</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Período</span>
           </div>
           <p className="text-sm font-bold text-slate-800">
             {lease.start_date ? new Date(lease.start_date).toLocaleDateString('pt-BR') : 'N/A'} → {lease.end_date ? new Date(lease.end_date).toLocaleDateString('pt-BR') : 'N/A'}
@@ -145,7 +145,7 @@ export const LeaseDetail: React.FC = () => {
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <ShieldCheck size={16} className="text-blue-500" />
-            <span className="text-[10px] font-black text-slate-400 uppercase">Garantia</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Garantia</span>
           </div>
           <p className="text-sm font-bold text-slate-800">{lease.guarantee_type || 'Não definida'}</p>
           <p className="text-xs text-slate-400">{lease.guarantor_name}</p>
@@ -161,7 +161,7 @@ export const LeaseDetail: React.FC = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-widest transition-all ${
+                className={`flex items-center gap-2 px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all ${
                   activeTab === tab.key
                     ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30'
                     : 'text-slate-400 hover:text-slate-600'
@@ -201,15 +201,15 @@ export const LeaseDetail: React.FC = () => {
             <div>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="p-4 bg-emerald-50 rounded-xl text-center">
-                  <p className="text-2xl font-black text-emerald-700">{invoices.filter(i => i.status === 'pago').length}</p>
+                  <p className="text-2xl font-bold text-emerald-700">{invoices.filter(i => i.status === 'pago').length}</p>
                   <p className="text-[10px] font-bold text-emerald-600 uppercase">Pagos</p>
                 </div>
                 <div className="p-4 bg-amber-50 rounded-xl text-center">
-                  <p className="text-2xl font-black text-amber-700">{invoices.filter(i => i.status === 'pendente').length}</p>
+                  <p className="text-2xl font-bold text-amber-700">{invoices.filter(i => i.status === 'pendente').length}</p>
                   <p className="text-[10px] font-bold text-amber-600 uppercase">Pendentes</p>
                 </div>
                 <div className="p-4 bg-red-50 rounded-xl text-center">
-                  <p className="text-2xl font-black text-red-700">{invoices.filter(i => i.status === 'vencido').length}</p>
+                  <p className="text-2xl font-bold text-red-700">{invoices.filter(i => i.status === 'vencido').length}</p>
                   <p className="text-[10px] font-bold text-red-600 uppercase">Vencidos</p>
                 </div>
               </div>

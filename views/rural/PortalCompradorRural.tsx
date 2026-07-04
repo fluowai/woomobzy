@@ -157,7 +157,7 @@ const PortalCompradorRural: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="flex items-center gap-3 text-3xl font-black uppercase italic tracking-tighter text-black">
+        <h1 className="flex items-center gap-3 text-3xl font-bold uppercase italic tracking-tighter text-black">
           <Wheat className="text-emerald-600" size={32} />
           Portal do Investidor Rural
         </h1>
@@ -241,7 +241,7 @@ const PortalCompradorRural: React.FC = () => {
                     </div>
                     <div className="p-5">
                       <p className="text-xs font-bold uppercase text-emerald-600">{property.property_type || 'Imóvel rural'}</p>
-                      <h2 className="mt-1 text-lg font-black text-slate-900">{property.title}</h2>
+                      <h2 className="mt-1 text-lg font-bold text-slate-900">{property.title}</h2>
                       <p className="mt-1 flex items-center gap-1 text-sm text-slate-500">
                         <MapPin size={14} /> {[property.city, property.state].filter(Boolean).join(' / ') || 'Localização não informada'}
                       </p>
@@ -249,7 +249,7 @@ const PortalCompradorRural: React.FC = () => {
                         <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">{area.toLocaleString('pt-BR')} ha</span>
                         <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700">Score {score || 'pendente'}</span>
                       </div>
-                      <p className="mt-5 text-xl font-black text-emerald-600">{money(property.price || 0)}</p>
+                      <p className="mt-5 text-xl font-bold text-emerald-600">{money(property.price || 0)}</p>
                       <div className="mt-4 flex gap-2">
                         <button onClick={() => scheduleVisit(property)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700">
                           <Calendar size={15} /> Agendar
@@ -281,7 +281,7 @@ const PortalCompradorRural: React.FC = () => {
                     <p className="text-xs text-slate-500">{new Date(visit.scheduled_at).toLocaleString('pt-BR')}</p>
                   </div>
                 </div>
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase text-amber-700">{visit.status}</span>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold uppercase text-amber-700">{visit.status}</span>
               </div>
             ))
           )}

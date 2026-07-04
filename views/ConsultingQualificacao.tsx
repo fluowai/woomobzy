@@ -167,7 +167,7 @@ const ConsultingQualificacao: React.FC = () => {
           <button type="button" onClick={() => navigate('/consultoria')} className="flex items-center gap-3">
             <img src="/logo-imobfluow.svg" alt="ImobFluow" className="h-9 w-auto" />
           </button>
-          <div className="hidden items-center gap-2 rounded-full border border-emerald-100 bg-white px-4 py-2 text-xs font-black text-emerald-700 shadow-sm sm:flex">
+          <div className="hidden items-center gap-2 rounded-full border border-emerald-100 bg-white px-4 py-2 text-xs font-bold text-emerald-700 shadow-sm sm:flex">
             <ShieldCheck size={15} />
             Agenda própria ImobFluow
           </div>
@@ -175,11 +175,11 @@ const ConsultingQualificacao: React.FC = () => {
 
         <main className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
           <aside className="rounded-[24px] bg-[#07172a] p-6 text-white shadow-2xl shadow-slate-900/20 lg:p-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-black text-emerald-200">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-emerald-200">
               <Sparkles size={15} />
               Demonstração personalizada
             </div>
-            <h1 className="mt-6 text-3xl font-black leading-tight lg:text-4xl">
+            <h1 className="mt-6 text-3xl font-bold leading-tight lg:text-4xl">
               Antes da agenda, entendemos se a ImobFluow faz sentido para sua operação.
             </h1>
             <p className="mt-4 text-sm font-semibold leading-7 text-slate-300">
@@ -192,7 +192,7 @@ const ConsultingQualificacao: React.FC = () => {
                 ['2', 'Agenda própria de 30 minutos'],
                 ['3', 'Call comercial conduzida pela equipe ImobFluow'],
               ].map(([number, label]) => (
-                <div key={label} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 text-sm font-black">
+                <div key={label} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 text-sm font-bold">
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white">{number}</span>
                   {label}
                 </div>
@@ -204,8 +204,8 @@ const ConsultingQualificacao: React.FC = () => {
             {step === 'filter' && (
               <form onSubmit={handleQualification} className="space-y-6">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Filtro comercial</p>
-                  <h2 className="mt-2 text-2xl font-black">Conte um pouco sobre sua imobiliária.</h2>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">Filtro comercial</p>
+                  <h2 className="mt-2 text-2xl font-bold">Conte um pouco sobre sua imobiliária.</h2>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -220,7 +220,7 @@ const ConsultingQualificacao: React.FC = () => {
                 <OptionGroup title="Principal objetivo" value={formData.mainGoal} options={goalOptions} onChange={(value) => updateField('mainGoal', value)} />
                 <OptionGroup title="Urgência" value={formData.urgency} options={urgencyOptions} onChange={(value) => updateField('urgency', value)} />
 
-                <button type="submit" className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 text-sm font-black text-white shadow-xl shadow-emerald-900/15 hover:bg-emerald-700">
+                <button type="submit" className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xl shadow-emerald-900/15 hover:bg-emerald-700">
                   Ver disponibilidade <ArrowRight size={18} />
                 </button>
               </form>
@@ -230,10 +230,10 @@ const ConsultingQualificacao: React.FC = () => {
               <div className="space-y-6">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Agenda liberada</p>
-                    <h2 className="mt-2 text-2xl font-black">Escolha uma call de 30 minutos.</h2>
+                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">Agenda liberada</p>
+                    <h2 className="mt-2 text-2xl font-bold">Escolha uma call de 30 minutos.</h2>
                   </div>
-                  <button type="button" onClick={() => setStep('filter')} className="text-sm font-black text-slate-500 hover:text-emerald-700">
+                  <button type="button" onClick={() => setStep('filter')} className="text-sm font-bold text-slate-500 hover:text-emerald-700">
                     Editar respostas
                   </button>
                 </div>
@@ -244,7 +244,7 @@ const ConsultingQualificacao: React.FC = () => {
                   </div>
                 ) : slots.length === 0 ? (
                   <div className="rounded-[20px] border border-amber-100 bg-amber-50 p-6">
-                    <p className="font-black text-amber-800">Nenhum horário aberto agora.</p>
+                    <p className="font-bold text-amber-800">Nenhum horário aberto agora.</p>
                     <p className="mt-2 text-sm font-semibold leading-6 text-amber-700">
                       O super admin precisa abrir horários em Consultoria no painel.
                     </p>
@@ -262,8 +262,8 @@ const ConsultingQualificacao: React.FC = () => {
                           className={`rounded-[20px] border p-5 text-left transition ${isSelected ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-900/10' : 'border-slate-200 bg-white hover:border-emerald-300'}`}
                         >
                           <CalendarDays size={22} className={isSelected ? 'text-emerald-700' : 'text-slate-400'} />
-                          <p className="mt-4 text-sm font-black uppercase tracking-wide text-slate-500">{formatted.date}</p>
-                          <p className="mt-1 text-2xl font-black">{formatted.time}</p>
+                          <p className="mt-4 text-sm font-bold uppercase tracking-wide text-slate-500">{formatted.date}</p>
+                          <p className="mt-1 text-2xl font-bold">{formatted.time}</p>
                           <p className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-500"><Clock3 size={14} /> 30 minutos</p>
                         </button>
                       );
@@ -271,7 +271,7 @@ const ConsultingQualificacao: React.FC = () => {
                   </div>
                 )}
 
-                <button disabled={!selectedSlot || isSubmitting} onClick={handleBooking} className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 text-sm font-black text-white shadow-xl shadow-emerald-900/15 hover:bg-emerald-700 disabled:opacity-50">
+                <button disabled={!selectedSlot || isSubmitting} onClick={handleBooking} className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xl shadow-emerald-900/15 hover:bg-emerald-700 disabled:opacity-50">
                   {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <>Confirmar demonstração <ArrowRight size={18} /></>}
                 </button>
               </div>
@@ -306,7 +306,7 @@ const OptionGroup: React.FC<{
   onChange: (value: string) => void;
 }> = ({ title, value, options, onChange }) => (
   <div>
-    <p className="mb-3 text-sm font-black text-slate-900">{title}</p>
+    <p className="mb-3 text-sm font-bold text-slate-900">{title}</p>
     <div className="grid gap-2 sm:grid-cols-2">
       {options.map((option) => (
         <button
@@ -327,7 +327,7 @@ const ResultState: React.FC<{ icon: React.ElementType; title: string; text: stri
     <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-emerald-50 text-emerald-700">
       <Icon size={34} />
     </div>
-    <h2 className="mt-6 text-3xl font-black">{title}</h2>
+    <h2 className="mt-6 text-3xl font-bold">{title}</h2>
     <p className="mt-3 max-w-xl text-sm font-semibold leading-7 text-slate-600">{text}</p>
   </div>
 );

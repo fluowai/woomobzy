@@ -244,7 +244,7 @@ export default function ClientsManager() {
           <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <div>
-                <h3 className="text-2xl font-black text-slate-900">{editingId ? 'Editar Cliente' : 'Novo Cliente'}</h3>
+                <h3 className="text-2xl font-bold text-slate-900">{editingId ? 'Editar Cliente' : 'Novo Cliente'}</h3>
                 <p className="text-sm text-slate-500 mt-1">Informações do cliente e definição de papéis.</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors">

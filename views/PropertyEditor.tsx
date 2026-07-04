@@ -1792,12 +1792,12 @@ const PropertyEditor: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-black uppercase tracking-widest text-indigo-700">ICP</span>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-indigo-700">
+                    <span className="text-xs font-bold uppercase tracking-widest text-indigo-700">ICP</span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-indigo-700">
                       {acp.icp?.fit_score || acp.score || 0}%
                     </span>
                   </div>
-                  <h3 className="font-black text-slate-900 text-sm mb-2">
+                  <h3 className="font-bold text-slate-900 text-sm mb-2">
                     {acp.icp?.name || 'Comprador qualificado'}
                   </h3>
                   <p className="text-xs text-slate-600 leading-relaxed">
@@ -1808,9 +1808,9 @@ const PropertyEditor: React.FC = () => {
                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5">
                   <div className="flex items-center gap-2 mb-3 text-emerald-700">
                     <UserCheck size={16} />
-                    <span className="text-xs font-black uppercase tracking-widest">Persona & Oferta</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">Persona & Oferta</span>
                   </div>
-                  <h3 className="font-black text-slate-900 text-sm mb-2">
+                  <h3 className="font-bold text-slate-900 text-sm mb-2">
                     {acp.persona?.name || 'Persona urbana'}
                   </h3>
                   <p className="text-xs text-slate-600 leading-relaxed">
@@ -1821,12 +1821,12 @@ const PropertyEditor: React.FC = () => {
                 <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-5">
                   <div className="flex items-center gap-2 mb-3 text-amber-700">
                     <Megaphone size={16} />
-                    <span className="text-xs font-black uppercase tracking-widest">Meta Ads</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">Meta Ads</span>
                   </div>
                   <div className="space-y-2">
                     {(acp.meta_ads?.campaigns || []).slice(0, 2).map((campaign: any, index: number) => (
                       <div key={`${campaign.name || 'campaign'}-${index}`} className="rounded-xl bg-white/70 p-3">
-                        <p className="text-xs font-black text-slate-900">
+                        <p className="text-xs font-bold text-slate-900">
                           {campaign.angle || campaign.name}
                         </p>
                         <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
@@ -1840,7 +1840,7 @@ const PropertyEditor: React.FC = () => {
                 <div className="lg:col-span-3 rounded-2xl border border-slate-100 bg-slate-50 p-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
                         Perguntas SDR
                       </p>
                       <ul className="space-y-1 text-xs text-slate-600">
@@ -1850,7 +1850,7 @@ const PropertyEditor: React.FC = () => {
                       </ul>
                     </div>
                     <div>
-                      <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
                         Ideias de autoridade
                       </p>
                       <ul className="space-y-1 text-xs text-slate-600">

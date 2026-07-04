@@ -148,7 +148,7 @@ const PropertyDetail: React.FC = () => {
           </div>
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
             <h1
-              className="font-black text-black leading-tight max-w-4xl uppercase italic"
+              className="font-bold text-black leading-tight max-w-4xl uppercase italic"
               style={{
                 fontSize: `${(settings.headingFontSize || 48) * 0.7}px`,
               }}
@@ -160,7 +160,7 @@ const PropertyDetail: React.FC = () => {
                 Valor de Venda
               </span>
               <div
-                className="text-3xl font-black"
+                className="text-3xl font-bold"
                 style={{ color: settings.primaryColor }}
               >
                 {property.price > 0
@@ -232,7 +232,7 @@ const PropertyDetail: React.FC = () => {
 
             {/* Description */}
             <div>
-              <h2 className="text-xl font-black uppercase tracking-wider text-black mb-6 flex items-center gap-3">
+              <h2 className="text-xl font-bold uppercase tracking-wider text-black mb-6 flex items-center gap-3">
                 <div
                   className="w-8 h-1 rounded-full"
                   style={{ backgroundColor: settings.primaryColor }}
@@ -246,7 +246,7 @@ const PropertyDetail: React.FC = () => {
 
             {/* Ficha Técnica Rural */}
             <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
-              <h3 className="text-xl font-black uppercase tracking-wider text-slate-800 mb-8 border-b pb-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold uppercase tracking-wider text-slate-800 mb-8 border-b pb-4 flex justify-between items-center">
                 <span>Ficha Técnica</span>
                 <span className="text-[10px] bg-slate-100 px-3 py-1 rounded-full text-slate-500">
                   #{property.id.slice(0, 8)}
@@ -428,7 +428,7 @@ const PropertyDetail: React.FC = () => {
                         value === true && (
                           <span
                             key={key}
-                            className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-blue-100"
+                            className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-blue-100"
                           >
                             {key.charAt(0).toUpperCase() + key.slice(1)}
                           </span>
@@ -478,7 +478,7 @@ const PropertyDetail: React.FC = () => {
                             className={`w-2 h-2 rounded-full ${item.val ? 'bg-emerald-500' : 'bg-slate-300'}`}
                           ></div>
                           <div>
-                            <span className="block text-[10px] font-black uppercase tracking-widest text-slate-700">
+                            <span className="block text-[10px] font-bold uppercase tracking-widest text-slate-700">
                               {item.label}
                             </span>
                             <span className="text-[10px] font-bold text-slate-400">
@@ -493,7 +493,7 @@ const PropertyDetail: React.FC = () => {
                             href={item.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:underline flex items-center gap-1"
+                            className="text-[9px] font-bold uppercase tracking-widest text-indigo-600 hover:underline flex items-center gap-1"
                           >
                             Verificar <Share2 size={10} />
                           </a>
@@ -524,7 +524,7 @@ const PropertyDetail: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <h3 className="font-black text-lg text-black">
+                <h3 className="font-bold text-lg text-black">
                   {settings.agencyName}
                 </h3>
                 <p className="text-xs font-bold text-black/40 uppercase tracking-widest">
@@ -558,7 +558,7 @@ const PropertyDetail: React.FC = () => {
                 <p className="text-xs text-black/40 mb-2">
                   Gostou deste imóvel?
                 </p>
-                <button className="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-2">
+                <button className="text-xs font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-2">
                   <Heart size={14} /> Adicionar aos Favoritos
                 </button>
               </div>
@@ -605,7 +605,7 @@ const PropertyDetail: React.FC = () => {
               >
                 <Home className="text-white" size={32} />
               </div>
-              <span className="text-3xl font-black uppercase italic tracking-tighter">
+              <span className="text-3xl font-bold uppercase italic tracking-tighter">
                 ImobSaaS
               </span>
             </div>
@@ -616,7 +616,7 @@ const PropertyDetail: React.FC = () => {
             </p>
             <Link
               to="/admin"
-              className="text-[10px] font-black uppercase tracking-[0.5em] hover:opacity-100 transition-opacity flex items-center gap-2"
+              className="text-[10px] font-bold uppercase tracking-[0.5em] hover:opacity-100 transition-opacity flex items-center gap-2"
             >
               <Terminal size={12} /> Acesso Administrativo
             </Link>

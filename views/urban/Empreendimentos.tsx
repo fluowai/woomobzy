@@ -174,7 +174,7 @@ const Empreendimentos: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter flex items-center gap-3">
             <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/20">
               <Building2 className="text-white" size={32} />
             </div>
@@ -186,7 +186,7 @@ const Empreendimentos: React.FC = () => {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95"
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95"
         >
           <Plus size={20} /> Novo Loteamento
         </button>
@@ -235,10 +235,10 @@ const Empreendimentos: React.FC = () => {
             <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}>
               <stat.icon size={24} />
             </div>
-            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">
+            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">
               {stat.label}
             </h3>
-            <p className="text-3xl font-black text-slate-900 italic tracking-tighter">
+            <p className="text-3xl font-bold text-slate-900 italic tracking-tighter">
               {stat.value}
             </p>
           </div>
@@ -251,22 +251,22 @@ const Empreendimentos: React.FC = () => {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="text-left px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Loteamento / Localização
                 </th>
-                <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="text-left px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Matrícula Mãe
                 </th>
-                <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="text-left px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Estoque (Lotes)
                 </th>
-                <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="text-left px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Infraestrutura
                 </th>
-                <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="text-left px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Status
                 </th>
-                <th className="text-center px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="text-center px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Ações 360°
                 </th>
               </tr>
@@ -292,7 +292,7 @@ const Empreendimentos: React.FC = () => {
                     <tr key={dev.id} className="hover:bg-slate-50/50 transition-all group">
                       <td className="px-8 py-6">
                         <div className="flex flex-col">
-                          <span className="font-black text-slate-900 uppercase italic tracking-tighter text-lg leading-none">
+                          <span className="font-bold text-slate-900 uppercase italic tracking-tighter text-lg leading-none">
                             {dev.name}
                           </span>
                           <span className="text-xs text-slate-400 font-medium mt-1">
@@ -307,7 +307,7 @@ const Empreendimentos: React.FC = () => {
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-black text-emerald-600">
+                          <span className="text-lg font-bold text-emerald-600">
                             {dev.available_units}
                           </span>
                           <span className="text-xs font-bold text-slate-300">
@@ -317,7 +317,7 @@ const Empreendimentos: React.FC = () => {
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex flex-col gap-1.5 w-32">
-                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400">
+                          <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
                             <span>Progresso</span>
                             <span>{dev.progress_pct}%</span>
                           </div>
@@ -330,7 +330,7 @@ const Empreendimentos: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className={`text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider ${st.bg} ${st.color} border border-black/5`}>
+                        <span className={`text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider ${st.bg} ${st.color} border border-black/5`}>
                           {st.label}
                         </span>
                       </td>
@@ -372,7 +372,7 @@ const Empreendimentos: React.FC = () => {
                   <Building2 size={24} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">
+                  <h3 className="text-2xl font-bold text-slate-900 uppercase italic tracking-tighter">
                     {editingId ? 'Editar Empreendimento' : 'Novo Empreendimento'}
                   </h3>
                   <p className="text-slate-400 text-sm font-medium">Configure os dados básicos da loteadora.</p>
@@ -392,7 +392,7 @@ const Empreendimentos: React.FC = () => {
             <div className="space-y-6 max-h-[60vh] overflow-y-auto px-1 custom-scrollbar">
               <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                     Nome do Loteamento *
                   </label>
                   <input
@@ -406,7 +406,7 @@ const Empreendimentos: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                     Cidade
                   </label>
                   <input
@@ -416,7 +416,7 @@ const Empreendimentos: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                     Estado (UF)
                   </label>
                   <input
@@ -431,7 +431,7 @@ const Empreendimentos: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                     Matrícula Mãe / Registro
                   </label>
                   <input
@@ -445,7 +445,7 @@ const Empreendimentos: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                     Total de Lotes
                   </label>
                   <input
@@ -456,7 +456,7 @@ const Empreendimentos: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                     Infraestrutura (%)
                   </label>
                   <input
@@ -469,7 +469,7 @@ const Empreendimentos: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                     Status Inicial
                   </label>
                   <select
@@ -490,13 +490,13 @@ const Empreendimentos: React.FC = () => {
             <div className="mt-10 flex gap-4">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold uppercase tracking-widest hover:bg-slate-200 transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
-                className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-95"
+                className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-95"
               >
                 {editingId ? 'Atualizar Empreendimento' : 'Salvar Empreendimento'}
               </button>

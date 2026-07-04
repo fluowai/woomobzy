@@ -37,7 +37,7 @@ const IADashboardSummary: React.FC = () => {
           <div className="flex items-center gap-2 mb-1">
             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-full">
               <span className="h-1.5 w-1.5 bg-primary rounded-full animate-pulse"></span>
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">IA Insights • Ativo</span>
+              <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">IA Insights • Ativo</span>
             </div>
             <div className="h-1 w-1 bg-border rounded-full"></div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sincronizado</span>
@@ -59,7 +59,7 @@ const IADashboardSummary: React.FC = () => {
                       {insight.text}
                     </p>
                     {insight.actionLabel && (
-                      <button className="flex items-center gap-1.5 text-[10px] font-black text-primary uppercase tracking-widest group-hover/item:gap-2 transition-all">
+                      <button className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-widest group-hover/item:gap-2 transition-all">
                         {insight.actionLabel} <ArrowRight size={12} />
                       </button>
                     )}

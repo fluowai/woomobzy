@@ -354,7 +354,7 @@ export const PropertiesPanel: React.FC = () => {
       {/* Properties */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         <div className="space-y-4">
-          <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Configurações
           </h4>
           {renderConfigFields()}
@@ -362,7 +362,7 @@ export const PropertiesPanel: React.FC = () => {
 
         {/* Spacing Controls */}
         <div className="space-y-4 pt-4 border-t border-slate-100">
-          <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Espaçamento
           </h4>
 

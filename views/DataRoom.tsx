@@ -133,11 +133,11 @@ const DataRoom: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-indigo-600 mb-2">
             <Lock size={18} />
-            <span className="text-[10px] font-black uppercase tracking-widest">
+            <span className="text-[10px] font-bold uppercase tracking-widest">
               Acesso Restrito - VIP Data Room
             </span>
           </div>
-          <h1 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
+          <h1 className="text-4xl font-bold text-slate-900 uppercase italic tracking-tighter leading-none">
             Due Diligence <br />{' '}
             <span style={{ color: settings.primaryColor }}>
               Técnica & Jurídica
@@ -178,7 +178,7 @@ const DataRoom: React.FC = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 overflow-hidden">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-black uppercase italic tracking-tighter text-slate-900">
+              <h3 className="text-lg font-bold uppercase italic tracking-tighter text-slate-900">
                 Documentação {documents.length > 0 && `(${documents.length})`}
               </h3>
               {loading && <Loader2 size={18} className="animate-spin text-slate-400" />}
@@ -208,7 +208,7 @@ const DataRoom: React.FC = () => {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-black text-slate-900 text-sm uppercase">
+                            <h4 className="font-bold text-slate-900 text-sm uppercase">
                               {label.name}
                             </h4>
                             <span className="text-[10px] font-bold text-slate-300">
@@ -216,7 +216,7 @@ const DataRoom: React.FC = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-3 mt-1">
-                            <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${cfg.color.split(' ')[0]}`}>
+                            <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${cfg.color.split(' ')[0]}`}>
                               {getStatusIcon(cfg.status)}
                               {cfg.label}
                             </div>
@@ -263,16 +263,16 @@ const DataRoom: React.FC = () => {
               <ShieldCheck size={120} />
             </div>
             <div className="relative z-10">
-              <h3 className="text-xl font-black uppercase italic tracking-tighter mb-4">
+              <h3 className="text-xl font-bold uppercase italic tracking-tighter mb-4">
                 Status da Auditoria
               </h3>
               <div className="space-y-6 mt-8">
                 <div>
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">
                       Conformidade Geral
                     </span>
-                    <span className="text-xl font-black italic">{overallScore}%</span>
+                    <span className="text-xl font-bold italic">{overallScore}%</span>
                   </div>
                   <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
                     <div
@@ -286,42 +286,42 @@ const DataRoom: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-1">
                       Documentos OK
                     </p>
-                    <p className="text-sm font-black text-emerald-400">{validatedCount}</p>
+                    <p className="text-sm font-bold text-emerald-400">{validatedCount}</p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-1">
                       Pendentes
                     </p>
-                    <p className="text-sm font-black text-amber-400">{pendingCount}</p>
+                    <p className="text-sm font-bold text-amber-400">{pendingCount}</p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-1">
                       Inconsistentes
                     </p>
-                    <p className="text-sm font-black text-rose-400">{warningCount}</p>
+                    <p className="text-sm font-bold text-rose-400">{warningCount}</p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-1">
                       Status Geral
                     </p>
-                    <p className={`text-sm font-black ${getOverallStatus().color}`}>
+                    <p className={`text-sm font-bold ${getOverallStatus().color}`}>
                       {getOverallStatus().label}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <button className="w-full mt-8 py-4 bg-white text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-lg">
+              <button className="w-full mt-8 py-4 bg-white text-slate-900 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-lg">
                 Gerar Dossiê Completo (PDF)
               </button>
             </div>
           </div>
 
           <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
               <ExternalLink size={14} className="text-indigo-600" /> Canais Oficiais
             </h4>
             <div className="space-y-4">

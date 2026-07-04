@@ -100,7 +100,7 @@ const Matchmaking360: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-black uppercase italic tracking-tighter leading-none mb-3">
+          <h1 className="text-4xl font-bold text-black uppercase italic tracking-tighter leading-none mb-3">
             Inteligência <br />{' '}
             <span className="text-indigo-600">Matchmaking 360</span>
           </h1>
@@ -113,8 +113,8 @@ const Matchmaking360: React.FC = () => {
           <div className="bg-indigo-600 p-4 rounded-2xl text-white flex items-center gap-4 shadow-xl shadow-indigo-200">
             <Sparkles size={24} />
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-80">IA Ativa</p>
-              <p className="text-sm font-black uppercase">Sugestões Otimizadas</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">IA Ativa</p>
+              <p className="text-sm font-bold uppercase">Sugestões Otimizadas</p>
             </div>
           </div>
         </div>
@@ -123,7 +123,7 @@ const Matchmaking360: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Main Feed */}
         <div className="xl:col-span-2 space-y-6">
-          <h2 className="text-xs font-black uppercase tracking-[0.3em] text-black/40 px-2">Top Sugestões de Hoje</h2>
+          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-black/40 px-2">Top Sugestões de Hoje</h2>
           
           {loading ? (
             <div className="py-20 text-center">
@@ -140,12 +140,12 @@ const Matchmaking360: React.FC = () => {
                 <div className="flex flex-col lg:flex-row items-center gap-8">
                   {/* Lead Info */}
                   <div className="w-full lg:w-1/3 flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center text-indigo-600 font-black text-xl">
+                    <div className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center text-indigo-600 font-bold text-xl">
                       {match.lead.name.charAt(0)}
                     </div>
                     <div>
-                      <h4 className="font-black text-black uppercase tracking-tight">{match.lead.name}</h4>
-                      <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{match.lead.niche}</p>
+                      <h4 className="font-bold text-black uppercase tracking-tight">{match.lead.name}</h4>
+                      <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">{match.lead.niche}</p>
                     </div>
                   </div>
 
@@ -156,7 +156,7 @@ const Matchmaking360: React.FC = () => {
                         <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-slate-50" />
                         <circle cx="32" cy="32" r="28" stroke="#4f46e5" strokeWidth="4" fill="transparent" strokeDasharray={`${(match.score/100) * 175} 175`} />
                       </svg>
-                      <span className="text-sm font-black text-indigo-600">{match.score}%</span>
+                      <span className="text-sm font-bold text-indigo-600">{match.score}%</span>
                     </div>
                     <Zap size={14} className="text-amber-500 mt-2" />
                   </div>
@@ -174,7 +174,7 @@ const Matchmaking360: React.FC = () => {
                     </div>
                     <div>
                       <h4 className="font-bold text-black text-sm truncate max-w-[200px]">{match.property.title}</h4>
-                      <p className="text-[10px] font-black text-black/40 uppercase tracking-widest">
+                      <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(match.property.price || 0)}
                       </p>
                     </div>
@@ -188,7 +188,7 @@ const Matchmaking360: React.FC = () => {
 
                 <div className="mt-6 pt-6 border-t border-slate-50 flex flex-wrap gap-2">
                   {match.reasons.map((r, i) => (
-                    <span key={i} className="text-[9px] font-black uppercase tracking-widest px-3 py-1 bg-slate-50 text-slate-400 rounded-full">
+                    <span key={i} className="text-[9px] font-bold uppercase tracking-widest px-3 py-1 bg-slate-50 text-slate-400 rounded-full">
                       {r}
                     </span>
                   ))}
@@ -208,7 +208,7 @@ const Matchmaking360: React.FC = () => {
                 <div className="p-3 bg-white/10 rounded-2xl">
                   <TrendingUp size={24} className="text-indigo-400" />
                 </div>
-                <h3 className="text-lg font-black uppercase italic tracking-tighter">Tendências 360</h3>
+                <h3 className="text-lg font-bold uppercase italic tracking-tighter">Tendências 360</h3>
               </div>
 
               <p className="text-xs text-white/60 leading-relaxed italic">
@@ -222,20 +222,20 @@ const Matchmaking360: React.FC = () => {
                   { label: 'Conversão Estimada', value: 'R$ 4.2M' },
                 ].map((stat, i) => (
                   <div key={i} className="flex justify-between items-center pb-4 border-b border-white/5">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60">{stat.label}</span>
-                    <span className="text-sm font-black">{stat.value}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">{stat.label}</span>
+                    <span className="text-sm font-bold">{stat.value}</span>
                   </div>
                 ))}
               </div>
 
-              <button className="w-full py-4 bg-indigo-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:brightness-110 transition-all flex items-center justify-center gap-3">
+              <button className="w-full py-4 bg-indigo-600 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:brightness-110 transition-all flex items-center justify-center gap-3">
                 Exportar Sugestões <ArrowRight size={14} />
               </button>
             </div>
           </div>
 
           <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm">
-            <h3 className="text-xs font-black uppercase tracking-widest text-black/40 mb-6">Configurações de Filtro</h3>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-black/40 mb-6">Configurações de Filtro</h3>
             <div className="space-y-4">
               {['Precisão do Match', 'Priorizar Novas Captações', 'Notificar via WhatsApp'].map((opt, i) => (
                 <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">

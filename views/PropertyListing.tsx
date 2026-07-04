@@ -139,7 +139,7 @@ const PropertyListing: React.FC = () => {
       {/* Header Compacto */}
       <div className="bg-slate-900 pt-32 pb-12 px-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-black text-white mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Encontre sua Propriedade Rural
           </h1>
           <p className="text-slate-400 max-w-2xl">
@@ -401,11 +401,11 @@ const PropertyListing: React.FC = () => {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                     <div className="absolute top-4 left-4 flex gap-2">
-                      <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black uppercase tracking-wider rounded-lg shadow-sm">
+                      <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm">
                         {property.type}
                       </span>
                       {property.purpose === PropertyPurpose.RENT && (
-                        <span className="px-3 py-1 bg-amber-500/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-sm">
+                        <span className="px-3 py-1 bg-amber-500/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm">
                           Aluguel
                         </span>
                       )}
@@ -451,7 +451,7 @@ const PropertyListing: React.FC = () => {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                           Valor
                         </p>
-                        <p className="text-xl font-black text-slate-900">
+                        <p className="text-xl font-bold text-slate-900">
                           {new Intl.NumberFormat('pt-BR', {
                             style: 'currency',
                             currency: 'BRL',

@@ -92,7 +92,7 @@ const SuperAdminDashboard: React.FC = () => {
       {isFresh && (
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white mb-8 shadow-xl">
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-black mb-3 text-white">
+            <h2 className="text-3xl font-bold mb-3 text-white">
               Bem-vindo ao seu novo painel, Proprietário!
             </h2>
             <p className="text-blue-100 mb-6 text-lg">

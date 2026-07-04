@@ -289,7 +289,7 @@ const SiteSetupWizard: React.FC = () => {
           <div className="z-10 relative">
             <div className="flex items-center gap-2 mb-10">
               <Globe className="text-indigo-400" size={28} />
-              <h1 className="text-2xl font-black tracking-tight">
+              <h1 className="text-2xl font-bold tracking-tight">
                 Site Express
               </h1>
             </div>
@@ -328,7 +328,7 @@ const SiteSetupWizard: React.FC = () => {
           {/* --- STEP 1 --- */}
           {step === 1 && (
             <div className="flex-1 animate-fadeIn">
-              <h2 className="text-3xl font-black text-slate-800 mb-2">
+              <h2 className="text-3xl font-bold text-slate-800 mb-2">
                 Quem é você online?
               </h2>
               <p className="text-slate-500 mb-8">
@@ -387,7 +387,7 @@ const SiteSetupWizard: React.FC = () => {
           {/* --- STEP 2 --- */}
           {step === 2 && (
             <div className="flex-1 animate-fadeIn flex flex-col h-full">
-              <h2 className="text-3xl font-black text-slate-800 mb-2">
+              <h2 className="text-3xl font-bold text-slate-800 mb-2">
                 A Roupa do Site
               </h2>
               <p className="text-slate-500 mb-6">
@@ -593,7 +593,7 @@ const SiteSetupWizard: React.FC = () => {
           {/* --- STEP 3 --- */}
           {step === 3 && (
             <div className="flex-1 animate-fadeIn">
-              <h2 className="text-3xl font-black text-slate-800 mb-2">
+              <h2 className="text-3xl font-bold text-slate-800 mb-2">
                 Preenchendo as prateleiras
               </h2>
               <p className="text-slate-500 mb-8">
@@ -715,7 +715,7 @@ const SiteSetupWizard: React.FC = () => {
                               <p className="text-[10px] text-slate-500 mt-1 mb-2 line-clamp-1">
                                 {prop.city} - {prop.state}
                               </p>
-                              <p className="text-indigo-600 font-black text-sm mt-auto">
+                              <p className="text-indigo-600 font-bold text-sm mt-auto">
                                 {new Intl.NumberFormat('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
@@ -766,7 +766,7 @@ const SiteSetupWizard: React.FC = () => {
               <div className="w-24 h-24 bg-gradient-to-tr from-green-400 to-emerald-600 rounded-full flex items-center justify-center shadow-2xl shadow-green-200 mb-8 animate-bounce">
                 <Sparkles size={40} className="text-white" />
               </div>
-              <h2 className="text-4xl font-black text-slate-900 mb-4">
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">
                 Que Rufem os Tambores...
               </h2>
               <p className="text-slate-500 max-w-md mx-auto mb-10 text-lg leading-relaxed">
@@ -777,7 +777,7 @@ const SiteSetupWizard: React.FC = () => {
               <button
                 onClick={handlePublish}
                 disabled={finishing}
-                className="px-10 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg rounded-2xl font-black flex items-center gap-3 hover:shadow-[0_0_40px_rgba(79,70,229,0.4)] transition-all hover:scale-105"
+                className="px-10 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg rounded-2xl font-bold flex items-center gap-3 hover:shadow-[0_0_40px_rgba(79,70,229,0.4)] transition-all hover:scale-105"
               >
                 {finishing ? (
                   <Loader2 className="animate-spin" />

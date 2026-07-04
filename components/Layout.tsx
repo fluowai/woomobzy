@@ -146,17 +146,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Bottom: User Profile & Logout */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/60">
         <div className="flex items-center gap-3 mb-3 md:mb-4 p-2 rounded-xl border border-slate-200 bg-white">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm border border-primary/20">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border border-primary/20">
             {profile?.full_name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1">
-            <p className="text-xs font-black text-slate-900">
+            <p className="text-xs font-bold text-slate-900">
               {profile?.full_name || 'Carregando...'}
             </p>
 
             {/* ROLE BADGE */}
             {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black uppercase tracking-widest rounded-sm">
+              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-widest rounded-sm">
                 SUPER ADMIN
               </span>
             ) : (
@@ -176,7 +176,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all group"
         >
           <LogOut size={18} className="opacity-70 group-hover:opacity-100" />
-          <span className="text-xs font-black uppercase tracking-widest">
+          <span className="text-xs font-bold uppercase tracking-widest">
             Sair
           </span>
         </button>

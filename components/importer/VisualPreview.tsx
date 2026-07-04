@@ -17,7 +17,7 @@ const VisualPreview: React.FC<VisualPreviewProps> = ({
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-3xl font-black text-slate-900">
+          <h2 className="text-3xl font-bold text-slate-900">
             Identidade Visual Detectada
           </h2>
           <p className="text-slate-500">
@@ -59,7 +59,7 @@ const VisualPreview: React.FC<VisualPreviewProps> = ({
                   style={{ backgroundColor: color }}
                 />
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     {i === 0 ? 'Primária' : i === 1 ? 'Secundária' : 'Acento'}
                   </p>
                   <p className="font-mono text-sm font-bold text-slate-800">
@@ -99,7 +99,7 @@ const VisualPreview: React.FC<VisualPreviewProps> = ({
                   key={i}
                   className="p-4 bg-slate-50 rounded-2xl border border-slate-100"
                 >
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                     {i === 0 ? 'Títulos' : 'Interface'}
                   </p>
                   <p
@@ -146,7 +146,7 @@ const VisualPreview: React.FC<VisualPreviewProps> = ({
             <Paintbrush size={48} className="text-indigo-400" />
           </div>
           <div className="flex-1">
-            <h3 className="text-2xl font-black mb-2">
+            <h3 className="text-2xl font-bold mb-2">
               Tema Sugerido:{' '}
               <span className="text-indigo-400 uppercase tracking-tighter italic">
                 {identity.suggestedTheme}

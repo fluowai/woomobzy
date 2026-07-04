@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { AlertTriangle, DownloadCloud, Pause, Play, RotateCcw } from 'lucide-react';
 import { mediaApi, type Message } from './hooks/api';
 
@@ -35,17 +35,18 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
   useEffect(() => {
     let isMounted = true;
 
-    if (!message.media_id) {
-      setSourceUrl(message.media_url || '');
-      if (!message.media_url) {
-        setStatus(resolveInitialStatus(message));
-        setIsPlaying(false);
-        setDuration(0);
-        setCurrentTime(0);
-        return;
-      }
+    if (message.media_url) {
+      setSourceUrl(message.media_url);
+      setSourceMimeType(message.media_mimetype || 'audio/ogg');
+      setStatus('downloading');
+      setIsPlaying(false);
+      setDuration(0);
+      setCurrentTime(0);
+      return;
+    }
 
-      setStatus(resolveInitialStatus(message) === 'ready' ? 'downloading' : resolveInitialStatus(message));
+    if (!message.media_id) {
+      setStatus(resolveInitialStatus(message));
       setIsPlaying(false);
       setDuration(0);
       setCurrentTime(0);
@@ -80,7 +81,7 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
           setStatus(nextStatus === 'ready' ? 'pending' : nextStatus || 'pending');
           return;
         }
-        setStatus(message.media_url ? 'downloading' : 'failed');
+        setStatus('failed');
       });
 
     return () => {
@@ -102,6 +103,39 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
     setDuration(0);
     setCurrentTime(0);
   }, [message.media_status, message.media_url, sourceUrl]);
+
+  const fetchUrl = useCallback(() => {
+    if (!message.media_id) return;
+    mediaApi
+      .getUrl(message.media_id)
+      .then((response) => {
+        if (response.url) {
+          setSourceUrl(response.url);
+          setSourceMimeType(response.mime_type || message.media_mimetype || 'audio/ogg');
+          setStatus('downloading');
+        }
+      })
+      .catch(() => {});
+  }, [message.media_id, message.media_mimetype]);
+
+  useEffect(() => {
+    if (status !== 'pending' && status !== 'processing') return;
+    if (sourceUrl) return;
+    if (!message.media_id) return;
+
+    const pollInterval = setInterval(() => {
+      fetchUrl();
+    }, 4000);
+
+    const timeout = setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 120000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(timeout);
+    };
+  }, [status, sourceUrl, message.media_id, fetchUrl]);
 
   const togglePlayback = async (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -174,7 +208,7 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
               setRefreshAttempts((value) => value + 1);
               setStatus('downloading');
               mediaApi
-                .getUrl(message.media_id, 900)
+                .getUrl(message.media_id, 86400)
                 .then((response) => {
                   if (response.url) {
                     setSourceUrl(response.url);

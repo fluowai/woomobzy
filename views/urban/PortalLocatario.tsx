@@ -161,7 +161,7 @@ const PortalLocatario: React.FC = () => {
       <div className="bg-blue-600 text-white px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-black uppercase italic">
+            <h1 className="text-xl font-bold uppercase italic">
               Portal do Locatário
             </h1>
             <p className="text-blue-100 text-sm">
@@ -187,7 +187,7 @@ const PortalLocatario: React.FC = () => {
               </div>
               <span className="text-slate-500 text-sm">Próximo Vencimento</span>
             </div>
-            <p className="text-2xl font-black text-slate-900">
+            <p className="text-2xl font-bold text-slate-900">
               {proximoVencimento
                 ? new Date(proximoVencimento.due_date).toLocaleDateString(
                     'pt-BR'
@@ -203,7 +203,7 @@ const PortalLocatario: React.FC = () => {
               </div>
               <span className="text-slate-500 text-sm">Total a Pagar</span>
             </div>
-            <p className="text-2xl font-black text-slate-900">
+            <p className="text-2xl font-bold text-slate-900">
               R$ {totalReceber.toLocaleString('pt-BR')}
             </p>
           </div>
@@ -215,7 +215,7 @@ const PortalLocatario: React.FC = () => {
               </div>
               <span className="text-slate-500 text-sm">Total Pago (Ano)</span>
             </div>
-            <p className="text-2xl font-black text-slate-900">
+            <p className="text-2xl font-bold text-slate-900">
               R$ {totalRecebido.toLocaleString('pt-BR')}
             </p>
           </div>

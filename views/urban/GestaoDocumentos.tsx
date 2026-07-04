@@ -140,7 +140,7 @@ export default function GestaoDocumentos() {
               <item.icon size={22} className={item.color} />
             </div>
             <div>
-              <p className="text-2xl font-black text-slate-900">{item.value}</p>
+              <p className="text-2xl font-bold text-slate-900">{item.value}</p>
               <p className="text-xs font-semibold text-slate-500">{item.label}</p>
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function GestaoDocumentos() {
 
       <div className="card-premium overflow-hidden">
         <div className="flex items-center justify-between gap-4 border-b border-slate-100 p-5">
-          <h2 className="font-black text-slate-900">Documentos recentes</h2>
+          <h2 className="font-bold text-slate-900">Documentos recentes</h2>
           <div className="group relative w-full max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary" size={16} />
             <input

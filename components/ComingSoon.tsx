@@ -72,7 +72,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
             <span className="text-xs font-medium tracking-widest uppercase text-slate-300">Em Construção</span>
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
             {agencyName}
           </h1>
           

@@ -9,7 +9,7 @@ interface Props {
 }
 
 const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
-const labelClass = 'text-[10px] font-black text-slate-500 uppercase tracking-widest';
+const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
 export const StepCadastralAnalysis: React.FC<Props> = ({ lease, updateField }) => {
   return (
@@ -18,7 +18,7 @@ export const StepCadastralAnalysis: React.FC<Props> = ({ lease, updateField }) =
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-amber-50 rounded-xl text-amber-600"><ShieldCheck size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Status da Análise</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Status da Análise</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -61,7 +61,7 @@ export const StepCadastralAnalysis: React.FC<Props> = ({ lease, updateField }) =
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-red-50 rounded-xl text-red-600"><AlertTriangle size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Restrições Cadastrais</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Restrições Cadastrais</h4>
         </div>
         <label className="flex items-center gap-3 mb-4 p-4 bg-slate-50 rounded-xl cursor-pointer">
           <input
@@ -89,7 +89,7 @@ export const StepCadastralAnalysis: React.FC<Props> = ({ lease, updateField }) =
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><UserCheck size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Referências</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Referências</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -115,7 +115,7 @@ export const StepCadastralAnalysis: React.FC<Props> = ({ lease, updateField }) =
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><FileText size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Observações da Análise</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Observações da Análise</h4>
         </div>
         <textarea
           value={lease.analysis_notes || ''}

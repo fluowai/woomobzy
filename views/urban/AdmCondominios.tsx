@@ -147,7 +147,7 @@ export default function AdmCondominios() {
               <stat.icon size={24} className={stat.color} />
             </div>
             <div>
-              <p className="text-2xl font-black text-slate-900">{stat.value}</p>
+              <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
               <p className="mt-0.5 text-xs font-semibold text-slate-500">{stat.label}</p>
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function AdmCondominios() {
 
       <div className="card-premium overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-100 p-5">
-          <h2 className="flex items-center gap-2 text-lg font-black text-slate-900">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <Wrench size={20} className="text-primary" /> Chamados de Manutencao
           </h2>
           <button onClick={createTicket} className="btn btn-primary">+ Novo Chamado</button>

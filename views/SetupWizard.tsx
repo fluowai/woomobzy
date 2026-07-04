@@ -110,7 +110,7 @@ const SetupWizard: React.FC = () => {
         <div className="bg-indigo-600 p-8 text-center text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
           <Building className="mx-auto mb-4 text-indigo-200" size={48} />
-          <h1 className="text-2xl font-black uppercase tracking-wide relative z-10">
+          <h1 className="text-2xl font-bold uppercase tracking-wide relative z-10">
             Configuração Inicial
           </h1>
           <p className="text-indigo-100 text-sm mt-2 relative z-10">

@@ -137,7 +137,7 @@ const Login: React.FC = () => {
               </span>
             </div>
 
-            <h1 className="text-5xl font-extrabold text-slate-900 leading-tight mb-6">
+            <h1 className="text-5xl font-bold text-slate-900 leading-tight mb-6">
               Gerencie sua imobiliária com <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">inteligência</span>
             </h1>
             
@@ -195,7 +195,7 @@ const Login: React.FC = () => {
               )}
 
               <div className="mb-10 text-center lg:text-left">
-                <h2 className="text-3xl font-extrabold text-slate-900 mb-3">Login</h2>
+                <h2 className="text-3xl font-bold text-slate-900 mb-3">Login</h2>
                 <p className="text-slate-500">Entre com suas credenciais para acessar o painel administrativo.</p>
               </div>
 

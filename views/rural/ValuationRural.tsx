@@ -217,7 +217,7 @@ const ValuationRural: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
         <div>
           <p className="text-small font-bold text-primary uppercase tracking-widest">Consulta Pos-CAR</p>
-          <h2 className="text-3xl font-black text-slate-950 tracking-tight">Valuation CAR Rural</h2>
+          <h2 className="text-3xl font-bold text-slate-950 tracking-tight">Valuation CAR Rural</h2>
           <p className="text-sm text-slate-500 max-w-3xl mt-2">
             Informe um CAR e gere uma tela unica com fontes territoriais, ambientais, economicas e pesquisa regional via Groq.
           </p>
@@ -227,7 +227,7 @@ const ValuationRural: React.FC = () => {
             type="button"
             onClick={refreshCurrent}
             disabled={!selected || runningByCar}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-emerald-700 disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-emerald-700 disabled:opacity-40"
           >
             {runningByCar ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
             Atualizar
@@ -236,7 +236,7 @@ const ValuationRural: React.FC = () => {
             type="button"
             onClick={downloadDossier}
             disabled={!selected}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-xs font-bold uppercase tracking-widest text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
           >
             <Download size={16} />
             Baixar Dossie
@@ -247,7 +247,7 @@ const ValuationRural: React.FC = () => {
       <section className="rounded-lg border border-emerald-100 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 lg:items-end">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
               Numero do CAR
             </label>
             <div className="relative mt-2">
@@ -267,7 +267,7 @@ const ValuationRural: React.FC = () => {
             type="button"
             onClick={() => runValuationByCar()}
             disabled={runningByCar || !carNumber.trim()}
-            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-slate-800 disabled:opacity-40"
+            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-slate-800 disabled:opacity-40"
           >
             {runningByCar ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
             {runningByCar ? 'Consultando' : 'Gerar valuation'}
@@ -285,17 +285,17 @@ const ValuationRural: React.FC = () => {
           <section className="rounded-lg border border-slate-200 bg-white p-6">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">
                   {selected.property_type || 'Fazenda'}
                 </p>
-                <h3 className="mt-1 text-2xl font-black text-slate-950">{selected.title || `CAR ${carCode}`}</h3>
+                <h3 className="mt-1 text-2xl font-bold text-slate-950">{selected.title || `CAR ${carCode}`}</h3>
                 <p className="mt-2 text-sm font-semibold text-slate-500">
                   {[municipality, uf].filter(Boolean).join(' / ') || 'Localizacao nao informada'}
                 </p>
               </div>
               <div className="rounded-lg bg-slate-950 px-4 py-3 text-right text-white">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">CAR</p>
-                <p className="max-w-[360px] break-all text-xs font-black">{carCode}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CAR</p>
+                <p className="max-w-[360px] break-all text-xs font-bold">{carCode}</p>
               </div>
             </div>
           </section>
@@ -306,8 +306,8 @@ const ValuationRural: React.FC = () => {
                 <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg ${card.bg} ${card.tone}`}>
                   <card.icon size={20} />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{card.label}</p>
-                <p className="mt-1 text-lg font-black text-slate-950">{card.value}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{card.label}</p>
+                <p className="mt-1 text-lg font-bold text-slate-950">{card.value}</p>
               </div>
             ))}
           </section>
@@ -315,10 +315,10 @@ const ValuationRural: React.FC = () => {
           <section className="rounded-lg border border-emerald-100 bg-white p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Relatorio completo</p>
-                <h4 className="text-lg font-black text-slate-950">Laudo preliminar de valuation por CAR</h4>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Relatorio completo</p>
+                <h4 className="text-lg font-bold text-slate-950">Laudo preliminar de valuation por CAR</h4>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-black uppercase tracking-widest text-emerald-700">
+              <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-emerald-700">
                 <CalendarClock size={15} />
                 {dateTime(valuation.updated_at || valuation.valuation_date || enrichment.data_geracao)}
               </div>
@@ -331,13 +331,13 @@ const ValuationRural: React.FC = () => {
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-emerald-700">
                       <section.icon size={18} />
                     </div>
-                    <h5 className="text-sm font-black uppercase tracking-widest text-slate-900">{section.title}</h5>
+                    <h5 className="text-sm font-bold uppercase tracking-widest text-slate-900">{section.title}</h5>
                   </div>
                   <div className="space-y-2">
                     {section.rows.map(([label, value]) => (
                       <div key={label as string} className="flex items-start justify-between gap-4 border-t border-slate-200 pt-2">
-                        <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</span>
-                        <span className="max-w-[62%] text-right text-xs font-black text-slate-800">{String(value || 'Pendente')}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</span>
+                        <span className="max-w-[62%] text-right text-xs font-bold text-slate-800">{String(value || 'Pendente')}</span>
                       </div>
                     ))}
                   </div>
@@ -347,7 +347,7 @@ const ValuationRural: React.FC = () => {
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-6">
-            <h4 className="text-sm font-black uppercase tracking-widest text-slate-950">Fontes do Relatorio CAR</h4>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-slate-950">Fontes do Relatorio CAR</h4>
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {sources.map(([label, source]: any) => {
                 const status = source?.status || 'missing';
@@ -357,7 +357,7 @@ const ValuationRural: React.FC = () => {
                     <div className="flex items-center gap-3">
                       {done ? <CheckCircle2 size={16} /> : status === 'unavailable' ? <AlertTriangle size={16} /> : <Activity size={16} />}
                       <div>
-                        <p className="text-xs font-black text-slate-900">{label}</p>
+                        <p className="text-xs font-bold text-slate-900">{label}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wide">{sourceLabel(status)}</p>
                       </div>
                     </div>
@@ -374,8 +374,8 @@ const ValuationRural: React.FC = () => {
                 <Activity size={18} />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Groq pesquisa regional</p>
-                <h4 className="text-sm font-black uppercase tracking-widest text-slate-950">Leitura da regiao</h4>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Groq pesquisa regional</p>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-slate-950">Leitura da regiao</h4>
               </div>
             </div>
             <p className="mt-4 text-sm font-bold text-slate-700">
@@ -384,8 +384,8 @@ const ValuationRural: React.FC = () => {
             <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
               {regionalCards.map(([label, item]: any) => (
                 <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
-                  <p className="mt-2 text-sm font-black text-slate-900">{item?.summary || 'Sem detalhe disponivel.'}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+                  <p className="mt-2 text-sm font-bold text-slate-900">{item?.summary || 'Sem detalhe disponivel.'}</p>
                   <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
                     Confianca {item?.confidence || 'baixa'} | {item?.source || 'Fonte regional'}
                   </p>
@@ -396,7 +396,7 @@ const ValuationRural: React.FC = () => {
 
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-6">
-              <h4 className="text-sm font-black uppercase tracking-widest text-emerald-900">Pontos Que Ajudam</h4>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-emerald-900">Pontos Que Ajudam</h4>
               <div className="mt-4 space-y-2">
                 {(valuation.drivers || ['Rode a consulta para gerar os pontos positivos.']).map((item: string) => (
                   <div key={item} className="flex items-start gap-2 text-sm font-semibold text-emerald-900">
@@ -408,7 +408,7 @@ const ValuationRural: React.FC = () => {
             </div>
 
             <div className="rounded-lg border border-amber-100 bg-amber-50 p-6">
-              <h4 className="text-sm font-black uppercase tracking-widest text-amber-900">Pendencias Para Melhorar</h4>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-amber-900">Pendencias Para Melhorar</h4>
               <div className="mt-4 space-y-2">
                 {(valuation.risks || ['Rode a consulta para gerar as pendencias.']).map((item: string) => (
                   <div key={item} className="flex items-start gap-2 text-sm font-semibold text-amber-900">
@@ -422,23 +422,23 @@ const ValuationRural: React.FC = () => {
 
           {(ambiental.prodes || ambiental.deter || ambiental.mapbiomas || economico.producao_agricola) && (
             <section className="rounded-lg border border-slate-200 bg-white p-6">
-              <h4 className="text-sm font-black uppercase tracking-widest text-slate-950">Dados complementares consultados</h4>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-950">Dados complementares consultados</h4>
               <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="rounded-lg bg-slate-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">PRODES/DETER</p>
-                  <p className="mt-2 text-sm font-black text-slate-900">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">PRODES/DETER</p>
+                  <p className="mt-2 text-sm font-bold text-slate-900">
                     {ambiental.prodes?.possui_desmatamento === false ? 'Sem desmatamento detectado' : ambiental.prodes?.erro || 'Consulta executada'}
                   </p>
                 </div>
                 <div className="rounded-lg bg-slate-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">MapBiomas</p>
-                  <p className="mt-2 text-sm font-black text-slate-900">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">MapBiomas</p>
+                  <p className="mt-2 text-sm font-bold text-slate-900">
                     {ambiental.mapbiomas?.total_alertas !== undefined ? `${ambiental.mapbiomas.total_alertas} alerta(s)` : ambiental.mapbiomas?.mensagem || 'Consulta executada'}
                   </p>
                 </div>
                 <div className="rounded-lg bg-slate-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">IBGE Agro</p>
-                  <p className="mt-2 text-sm font-black text-slate-900">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IBGE Agro</p>
+                  <p className="mt-2 text-sm font-bold text-slate-900">
                     {economico.producao_agricola?.produtos_principais?.[0]?.produto || 'Dados municipais consultados'}
                   </p>
                 </div>

@@ -351,7 +351,7 @@ const EmailCenter: React.FC = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-emerald-500 text-emerald-600">
             <Mail size={19} />
           </div>
-          <span className="text-xl font-black text-slate-950">ImobFluow</span>
+          <span className="text-xl font-bold text-slate-950">ImobFluow</span>
         </div>
         <div className="relative max-w-[760px] flex-1">
           <Search size={21} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -376,7 +376,7 @@ const EmailCenter: React.FC = () => {
           ))}
           <button className="relative hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex">
             <Bell size={21} />
-            <span className="absolute right-1 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">3</span>
+            <span className="absolute right-1 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">3</span>
           </button>
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm font-bold text-slate-700">
             U
@@ -420,7 +420,7 @@ const EmailCenter: React.FC = () => {
           <div className="mt-auto space-y-3 px-4 pb-2">
             <button
               onClick={() => setConnectOpen(true)}
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-700 hover:border-emerald-300 hover:text-emerald-700"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-emerald-300 hover:text-emerald-700"
             >
               <Settings size={15} />
               Conectar conta
@@ -614,7 +614,7 @@ const EmailRow: React.FC<{ email: VisualEmail; active: boolean; onSelect: () => 
     <Star size={16} className={`mt-1 ${email.is_starred ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400'}`} />
     <div className="min-w-0">
       <div className="flex items-center gap-2">
-        <p className={`truncate text-sm ${email.is_read ? 'font-semibold text-slate-800' : 'font-black text-slate-950'}`}>
+        <p className={`truncate text-sm ${email.is_read ? 'font-semibold text-slate-800' : 'font-bold text-slate-950'}`}>
           {email.direction === 'outgoing' ? email.to_email?.[0] : email.from_name || email.from_email}
         </p>
         {email.label ? <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${email.labelColor}`}>{email.label}</span> : null}
@@ -645,7 +645,7 @@ const MessageBlock: React.FC<{ message: VisualEmail; first?: boolean; onReply?: 
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <p className="mb-0 truncate text-sm font-black text-slate-950">{sender}</p>
+              <p className="mb-0 truncate text-sm font-bold text-slate-950">{sender}</p>
               <span className="text-xs font-medium text-slate-500">&lt;{senderEmail}&gt;</span>
             </div>
             <p className="mb-0 mt-1 text-xs font-medium text-slate-500">
@@ -696,7 +696,7 @@ const LeadPanel: React.FC<{
 }> = ({ linkedLead, leads, selectedEmail, linkSelectedLead, archiveSelected, setView, loadAgenda, pendingCount, agenda }) => (
   <aside className="hidden min-w-0 border-l border-slate-200 bg-white 2xl:flex 2xl:flex-col">
     <div className="flex h-[58px] items-center justify-between border-b border-slate-200 px-5">
-      <h2 className="mb-0 text-sm font-black text-slate-900">Lead vinculado</h2>
+      <h2 className="mb-0 text-sm font-bold text-slate-900">Lead vinculado</h2>
       <div className="flex items-center gap-3 text-slate-600">
         <ExternalLink size={18} />
         <MoreVertical size={18} />
@@ -710,11 +710,11 @@ const LeadPanel: React.FC<{
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
-              <p className="mb-0 truncate text-sm font-black text-slate-950">
+              <p className="mb-0 truncate text-sm font-bold text-slate-950">
                 {linkedLead?.name || selectedEmail.from_name || selectedEmail.from_email}
               </p>
               {linkedLead ? (
-                <span className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">Lead</span>
+                <span className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700">Lead</span>
               ) : null}
             </div>
             <p className="mb-0 mt-1 truncate text-xs font-medium text-slate-500">{linkedLead?.email || selectedEmail.from_email}</p>
@@ -755,8 +755,8 @@ const LeadPanel: React.FC<{
 
       <div className="border-t border-slate-200 py-5">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="mb-0 text-sm font-black text-slate-900">Ultimas interacoes</h3>
-          {pendingCount ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">{pendingCount}</span> : null}
+          <h3 className="mb-0 text-sm font-bold text-slate-900">Ultimas interacoes</h3>
+          {pendingCount ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{pendingCount}</span> : null}
         </div>
         {agenda.map((item) => (
           <Interaction
@@ -840,7 +840,7 @@ const AgendaPanel: React.FC<{ agenda: EmailAgendaActivity[] }> = ({ agenda }) =>
           <Calendar size={22} />
         </div>
         <div>
-          <h1 className="mb-0 text-xl font-black text-slate-950">Diario de bordo</h1>
+          <h1 className="mb-0 text-xl font-bold text-slate-950">Diario de bordo</h1>
           <p className="mb-0 mt-1 text-xs font-semibold text-slate-500">Atividades criadas pelo agente a partir dos emails dos leads.</p>
         </div>
       </div>
@@ -848,7 +848,7 @@ const AgendaPanel: React.FC<{ agenda: EmailAgendaActivity[] }> = ({ agenda }) =>
     <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto p-5 xl:grid-cols-2">
       {agenda.map((item) => (
         <article key={item.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="mb-1 text-sm font-black text-slate-950">{item.title}</p>
+          <p className="mb-1 text-sm font-bold text-slate-950">{item.title}</p>
           <p className="mb-3 text-xs font-bold text-slate-500">{item.subject || item.type}</p>
           <p className="mb-4 text-sm font-medium leading-relaxed text-slate-700">{item.description}</p>
           <span className="text-xs font-bold text-slate-500">{formatDateTime(item.created_at)}</span>
@@ -870,7 +870,7 @@ const Modal: React.FC<{ title: string; onClose: () => void; children: React.Reac
   <div className="modal-overlay">
     <div className="modal-content max-w-2xl">
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="mb-0 text-lg font-black text-slate-950">{title}</h2>
+        <h2 className="mb-0 text-lg font-bold text-slate-950">{title}</h2>
         <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900">
           <X size={18} />
         </button>

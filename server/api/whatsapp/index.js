@@ -346,7 +346,7 @@ async function getWhatsAppMediaUrl(req, res) {
       return res.status(404).json({ error: 'Midia nao encontrada.' });
     }
 
-    if (!media.object_key && media.public_url) {
+    if (media.status === 'ready' && media.public_url) {
       return res.json({
         id: media.id,
         url: normalizeStoragePublicUrl(media.public_url),
@@ -358,6 +358,17 @@ async function getWhatsAppMediaUrl(req, res) {
     }
 
     if (String(media.provider || '').toLowerCase() !== 'minio' && media.public_url) {
+      return res.json({
+        id: media.id,
+        url: normalizeStoragePublicUrl(media.public_url),
+        status: media.status,
+        mime_type: media.mime_type,
+        filename: media.filename,
+        expires_in: null,
+      });
+    }
+
+    if (!media.object_key && media.public_url) {
       return res.json({
         id: media.id,
         url: normalizeStoragePublicUrl(media.public_url),

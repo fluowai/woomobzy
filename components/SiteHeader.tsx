@@ -126,7 +126,7 @@ const SiteHeader: React.FC = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-2xl"
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-2xl"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
                   I

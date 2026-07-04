@@ -10,7 +10,7 @@ interface Props {
 }
 
 const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
-const labelClass = 'text-[10px] font-black text-slate-500 uppercase tracking-widest';
+const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
 export const StepTenantData: React.FC<Props> = ({ lease, updateField, updateFields }) => {
   const { fetchCep, loading: cepLoading } = useCep();
@@ -43,7 +43,7 @@ export const StepTenantData: React.FC<Props> = ({ lease, updateField, updateFiel
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><User size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Tipo de Pessoa</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Tipo de Pessoa</h4>
         </div>
         <div className="flex gap-3">
           {(['PF', 'PJ'] as const).map((type) => (
@@ -66,7 +66,7 @@ export const StepTenantData: React.FC<Props> = ({ lease, updateField, updateFiel
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><User size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
             Dados do {lease.tenant_type === 'PJ' ? 'Representante Legal' : 'Locatário'}
           </h4>
         </div>
@@ -130,7 +130,7 @@ export const StepTenantData: React.FC<Props> = ({ lease, updateField, updateFiel
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Mail size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Contato</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Contato</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -159,7 +159,7 @@ export const StepTenantData: React.FC<Props> = ({ lease, updateField, updateFiel
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><MapPin size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Endereço</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Endereço</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
@@ -242,7 +242,7 @@ export const StepTenantData: React.FC<Props> = ({ lease, updateField, updateFiel
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Users size={20} /></div>
-            <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Co-locatários</h4>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Co-locatários</h4>
           </div>
           <button
             onClick={addCoTenant}

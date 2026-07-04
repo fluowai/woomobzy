@@ -67,7 +67,7 @@ const BrokerCardBlock: React.FC<BrokerCardBlockProps> = ({
                   <ShieldCheck size={24} />
                 </div>
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                     Especialista Certificado
                   </p>
                   <p className="text-sm font-bold text-slate-900">
@@ -82,7 +82,7 @@ const BrokerCardBlock: React.FC<BrokerCardBlockProps> = ({
           <div className="absolute -right-8 top-1/4 hidden lg:block z-20">
             <div className="bg-white rounded-2xl shadow-xl p-6 w-40 animate-pulse-slow">
               <p
-                className="text-3xl font-black mb-1"
+                className="text-3xl font-bold mb-1"
                 style={{ color: primaryColor }}
               >
                 500+
@@ -100,14 +100,14 @@ const BrokerCardBlock: React.FC<BrokerCardBlockProps> = ({
         {/* RIGHTSIDE: Content */}
         <div className="w-full lg:w-1/2">
           <span
-            className="text-xs font-black uppercase tracking-[0.3em] mb-4 block"
+            className="text-xs font-bold uppercase tracking-[0.3em] mb-4 block"
             style={{ color: primaryColor }}
           >
             {specialty}
           </span>
 
           <h2
-            className="text-4xl md:text-5xl font-black uppercase leading-tight mb-6"
+            className="text-4xl md:text-5xl font-bold uppercase leading-tight mb-6"
             style={{
               color: secondaryColor,
               fontFamily: theme.headingFontFamily,
@@ -184,7 +184,7 @@ const BrokerCardBlock: React.FC<BrokerCardBlockProps> = ({
                 href={`https://wa.me/55${normalizePhone(phone)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-8 py-4 text-white text-sm font-black uppercase tracking-wider hover:opacity-90 transition-all rounded-xl shadow-lg flex items-center justify-center gap-2"
+                className="px-8 py-4 text-white text-sm font-bold uppercase tracking-wider hover:opacity-90 transition-all rounded-xl shadow-lg flex items-center justify-center gap-2"
                 style={{ backgroundColor: primaryColor }}
               >
                 <Phone size={20} />
@@ -193,7 +193,7 @@ const BrokerCardBlock: React.FC<BrokerCardBlockProps> = ({
             )}
 
             <button
-              className="px-8 py-4 border-2 text-sm font-black uppercase tracking-wider transition-all rounded-xl flex items-center justify-center gap-2 hover:bg-slate-900 hover:text-white"
+              className="px-8 py-4 border-2 text-sm font-bold uppercase tracking-wider transition-all rounded-xl flex items-center justify-center gap-2 hover:bg-slate-900 hover:text-white"
               style={{ borderColor: secondaryColor, color: secondaryColor }}
             >
               Ver Propriedades

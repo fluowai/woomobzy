@@ -118,7 +118,7 @@ const FinanceiroRural: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter flex items-center gap-3">
             <Target className="text-indigo-600" size={32} />
             Metas & Vendas Rurais
           </h1>
@@ -129,19 +129,19 @@ const FinanceiroRural: React.FC = () => {
         
         <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
           <div className="px-4 py-2 border-r border-slate-100">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Meta Mensal VGV</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Meta Mensal VGV</p>
             <input
               type="number"
               min="0"
               value={goals.monthly_vgv}
               onChange={(event) => setGoals((current) => ({ ...current, monthly_vgv: Number(event.target.value) }))}
-              className="w-36 bg-transparent text-lg font-black text-indigo-600 outline-none"
+              className="w-36 bg-transparent text-lg font-bold text-indigo-600 outline-none"
               aria-label="Meta mensal de VGV rural"
             />
           </div>
           <div className="px-4 py-2">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progresso</p>
-            <p className="text-lg font-black text-emerald-600">{goalProgress.toFixed(1)}%</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progresso</p>
+            <p className="text-lg font-bold text-emerald-600">{goalProgress.toFixed(1)}%</p>
           </div>
           <button onClick={saveGoal} disabled={savingGoal} title="Salvar metas rurais" className="p-3 text-indigo-600 disabled:opacity-50">
             <Save size={20} />
@@ -189,10 +189,10 @@ const FinanceiroRural: React.FC = () => {
             <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
               <stat.icon size={24} />
             </div>
-            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">
+            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">
               {stat.label}
             </h3>
-            <p className="text-xl font-black text-slate-900 mb-2">
+            <p className="text-xl font-bold text-slate-900 mb-2">
               {stat.value}
             </p>
             <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
@@ -209,7 +209,7 @@ const FinanceiroRural: React.FC = () => {
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h4 className="text-xl font-black uppercase italic tracking-tighter">Performance de Vendas</h4>
+                <h4 className="text-xl font-bold uppercase italic tracking-tighter">Performance de Vendas</h4>
                 <p className="text-slate-400 text-sm">Volume de negócios em relação à meta do período.</p>
               </div>
               <BarChart3 className="text-indigo-400" size={32} />
@@ -218,8 +218,8 @@ const FinanceiroRural: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">Progresso VGV</span>
-                  <span className="text-xs font-black uppercase tracking-widest text-indigo-400">R$ {totalVgv.toLocaleString()} / R$ {goals.monthly_vgv.toLocaleString()}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Progresso VGV</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">R$ {totalVgv.toLocaleString()} / R$ {goals.monthly_vgv.toLocaleString()}</span>
                 </div>
                 <div className="h-4 bg-white/10 rounded-full overflow-hidden p-1">
                   <div 
@@ -231,13 +231,13 @@ const FinanceiroRural: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-8 pt-4">
                 <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Negócios em Aberto</p>
-                  <p className="text-2xl font-black">{leads.filter(l => l.status === 'Proposta').length} Propostas</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Negócios em Aberto</p>
+                  <p className="text-2xl font-bold">{leads.filter(l => l.status === 'Proposta').length} Propostas</p>
                   <p className="text-[10px] text-emerald-400 font-bold mt-1">Potencial: {proposalPotential.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                 </div>
                 <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Visitas Agendadas</p>
-                  <p className="text-2xl font-black">{leads.filter(l => l.status === 'Visita').length} Clientes</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Visitas Agendadas</p>
+                  <p className="text-2xl font-bold">{leads.filter(l => l.status === 'Visita').length} Clientes</p>
                   <p className="text-[10px] text-indigo-400 font-bold mt-1">Participação no funil: {visitConversion.toFixed(1)}%</p>
                 </div>
               </div>
@@ -250,7 +250,7 @@ const FinanceiroRural: React.FC = () => {
 
         {/* Funnel/Pipeline Card */}
         <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-          <h4 className="text-xl font-black uppercase italic tracking-tighter text-slate-900 mb-6">Funil de Vendas Rural</h4>
+          <h4 className="text-xl font-bold uppercase italic tracking-tighter text-slate-900 mb-6">Funil de Vendas Rural</h4>
           <div className="space-y-4">
             {[
               { stage: 'Novos Leads', count: leads.filter(l => l.status === 'Novo').length, color: 'bg-blue-500', width: 'w-full' },
@@ -261,8 +261,8 @@ const FinanceiroRural: React.FC = () => {
             ].map((item, idx) => (
               <div key={idx} className="relative">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.stage}</span>
-                  <span className="text-xs font-black text-slate-900">{item.count}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{item.stage}</span>
+                  <span className="text-xs font-bold text-slate-900">{item.count}</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className={`h-full ${item.color} ${item.width} rounded-full`} />
@@ -274,7 +274,7 @@ const FinanceiroRural: React.FC = () => {
           <div className="mt-8 p-6 bg-indigo-50 rounded-3xl">
             <div className="flex items-center gap-3 mb-2">
               <Users className="text-indigo-600" size={18} />
-              <span className="text-xs font-black uppercase tracking-widest text-indigo-900">Conversão</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-indigo-900">Conversão</span>
             </div>
             <p className="text-sm font-medium text-indigo-700">
               {leads.length > 0
@@ -288,8 +288,8 @@ const FinanceiroRural: React.FC = () => {
       {/* Recent Transactions / Goals List */}
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-          <h4 className="text-xl font-black uppercase italic tracking-tighter text-slate-900">Últimos Negócios Fechados</h4>
-          <button className="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors">
+          <h4 className="text-xl font-bold uppercase italic tracking-tighter text-slate-900">Últimos Negócios Fechados</h4>
+          <button className="text-xs font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors">
             Ver Relatório Completo
           </button>
         </div>
@@ -297,11 +297,11 @@ const FinanceiroRural: React.FC = () => {
           <table className="w-full">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Fazenda</th>
-                <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Vendedor</th>
-                <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor de Venda</th>
-                <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
+                <th className="px-8 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fazenda</th>
+                <th className="px-8 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vendedor</th>
+                <th className="px-8 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valor de Venda</th>
+                <th className="px-8 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                <th className="px-8 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -316,11 +316,11 @@ const FinanceiroRural: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-8 py-4 text-sm text-slate-500 font-medium">Equipe Interna</td>
-                  <td className="px-8 py-4 text-sm font-black text-emerald-600">
+                  <td className="px-8 py-4 text-sm font-bold text-emerald-600">
                     {prop.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </td>
                   <td className="px-8 py-4">
-                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest">
+                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-widest">
                       Finalizado
                     </span>
                   </td>

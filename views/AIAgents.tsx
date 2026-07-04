@@ -919,8 +919,8 @@ const AIAgents: React.FC = () => {
               <Home className="text-emerald-400" size={21} />
             </div>
             <div className="min-w-0">
-              <div className="text-lg font-black tracking-tight leading-none">ImobFluow</div>
-              <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 mt-1 truncate">
+              <div className="text-lg font-bold tracking-tight leading-none">ImobFluow</div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 mt-1 truncate">
                 Imobiliária Tradicional
               </div>
 
@@ -938,14 +938,14 @@ const AIAgents: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to={propertyPath}
-              className="h-11 px-4 rounded-lg bg-emerald-600 text-white text-sm font-black flex items-center gap-2 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700"
+              className="h-11 px-4 rounded-lg bg-emerald-600 text-white text-sm font-bold flex items-center gap-2 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700"
             >
               <Plus size={18} />
               Novo imóvel
             </Link>
             <button
               onClick={startBlankAgent}
-              className="h-11 px-4 rounded-lg bg-slate-950 text-white text-sm font-black flex items-center gap-2 shadow-sm hover:bg-slate-800"
+              className="h-11 px-4 rounded-lg bg-slate-950 text-white text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-slate-800"
             >
               <Bot size={18} />
               Novo agente
@@ -960,8 +960,8 @@ const AIAgents: React.FC = () => {
             <div className="p-5 border-b border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Central de Agentes</div>
-                  <h2 className="mt-2 text-xl font-black tracking-tight mb-0">Modelos e operação</h2>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Central de Agentes</div>
+                  <h2 className="mt-2 text-xl font-bold tracking-tight mb-0">Modelos e operação</h2>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <WandSparkles size={20} />
@@ -984,21 +984,21 @@ const AIAgents: React.FC = () => {
                   <div className="flex items-start gap-3">
                     <Avatar label={preset.avatar} gradient={preset.accent} />
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-black text-slate-950 mb-0 truncate">{preset.name}</h3>
+                      <h3 className="text-sm font-bold text-slate-950 mb-0 truncate">{preset.name}</h3>
                       <p className="text-[11px] font-bold text-slate-500 mb-0">{preset.role}</p>
                     </div>
                   </div>
                   <p className="mt-3 text-xs leading-relaxed text-slate-600 mb-0">{preset.description}</p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {preset.tags.map((tag) => (
-                      <span key={tag} className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
+                      <span key={tag} className="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
                         {tag}
                       </span>
                     ))}
                   </div>
                   <button
                     onClick={() => usePreset(preset)}
-                    className="mt-3 h-9 w-full rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-700 hover:bg-slate-100"
+                    className="mt-3 h-9 w-full rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-100"
                   >
                     Usar modelo
                   </button>
@@ -1009,7 +1009,7 @@ const AIAgents: React.FC = () => {
             {agents.length > 0 && (
               <div className="border-t border-slate-100 p-4 pt-3">
                 <div className="rounded-lg border border-slate-200 bg-white p-3">
-                  <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 mb-3">Agentes salvos</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 mb-3">Agentes salvos</div>
                   <div className="flex gap-2 overflow-x-auto">
                     {agents.slice(0, 5).map((agent) => (
                       <button
@@ -1020,7 +1020,7 @@ const AIAgents: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-xs font-black">{agent.name}</span>
+                          <span className="truncate text-xs font-bold">{agent.name}</span>
                           <span className={`h-2 w-2 rounded-full ${agent.is_active ? 'bg-emerald-400' : 'bg-slate-500'}`} />
                         </div>
                         <div className="text-[10px] font-bold text-slate-500 truncate">{agent.role}</div>
@@ -1037,11 +1037,11 @@ const AIAgents: React.FC = () => {
             <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div className="max-w-3xl">
-                  <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">
+                  <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-700">
                     <Sparkles size={15} />
                     IA e automação
                   </div>
-                  <h1 className="mt-4 text-3xl lg:text-4xl font-black tracking-tight text-slate-950 mb-0">
+                  <h1 className="mt-4 text-3xl lg:text-4xl font-bold tracking-tight text-slate-950 mb-0">
                     Construtor de Agente Autônomo
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm lg:text-base font-medium leading-relaxed text-slate-600 mb-0">
@@ -1053,7 +1053,7 @@ const AIAgents: React.FC = () => {
                   {selectedAgent && (
                     <button
                       onClick={removeAgent}
-                      className="h-10 px-3 rounded-lg border border-red-100 bg-red-50 text-red-600 font-black text-xs flex items-center gap-2 hover:bg-red-100"
+                      className="h-10 px-3 rounded-lg border border-red-100 bg-red-50 text-red-600 font-bold text-xs flex items-center gap-2 hover:bg-red-100"
                     >
                       <Trash2 size={15} />
                       Excluir
@@ -1072,7 +1072,7 @@ const AIAgents: React.FC = () => {
                         <step.icon size={17} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-black text-slate-950 mb-0 truncate">{step.title}</p>
+                        <p className="text-xs font-bold text-slate-950 mb-0 truncate">{step.title}</p>
                         <p className="text-[10px] font-bold text-slate-500 mb-0 truncate">{step.subtitle}</p>
                       </div>
                     </div>
@@ -1088,10 +1088,10 @@ const AIAgents: React.FC = () => {
               <div className="border-b border-slate-100 bg-white p-3">
                 <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                       Etapa {activeStepIndex + 1} de {tabs.length}
                     </div>
-                    <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-950">
+                    <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-950">
                       <activeStep.icon size={16} />
                       {activeStep.label}
                     </div>
@@ -1110,7 +1110,7 @@ const AIAgents: React.FC = () => {
                       key={tab.id}
                       onClick={() => goToStep(tab.id)}
                       aria-selected={activeTab === tab.id}
-                      className={`h-11 min-w-0 rounded-lg px-3 text-xs font-black flex items-center justify-center gap-2 transition ${
+                      className={`h-11 min-w-0 rounded-lg px-3 text-xs font-bold flex items-center justify-center gap-2 transition ${
                         activeTab === tab.id
                           ? 'bg-slate-100 text-slate-950'
                           : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1212,7 +1212,7 @@ const AIAgents: React.FC = () => {
                           <button
                             key={channel.id}
                             onClick={() => toggleChannel(channel.id)}
-                            className={`h-12 rounded-lg border px-3 text-sm font-black transition ${
+                            className={`h-12 rounded-lg border px-3 text-sm font-bold transition ${
                               (draft.channels || []).includes(channel.id)
                                 ? 'border-slate-300 bg-slate-100 text-slate-950'
                                 : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
@@ -1225,14 +1225,14 @@ const AIAgents: React.FC = () => {
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-white p-4">
                       <div className="mb-2 flex items-center justify-between gap-3">
-                        <label className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                        <label className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
                           Instancia WhatsApp
                         </label>
                         <button
                           type="button"
                           onClick={loadWhatsAppInstances}
                           disabled={instancesLoading}
-                          className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                          className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                         >
                           {instancesLoading ? 'Atualizando...' : 'Atualizar'}
                         </button>
@@ -1250,7 +1250,7 @@ const AIAgents: React.FC = () => {
                         ))}
                       </select>
                       <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex items-center gap-2 text-xs font-black text-slate-700">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
                           <Smartphone size={15} className={connectedWhatsAppInstances ? 'text-emerald-600' : 'text-amber-600'} />
                           {connectedWhatsAppInstances} de {whatsAppInstances.length} conectada(s)
                         </div>
@@ -1291,7 +1291,7 @@ const AIAgents: React.FC = () => {
                           </div>
                           {(draft.capabilities || []).includes(workspace.id) && <CheckCircle2 size={18} className="text-slate-900" />}
                         </div>
-                        <h3 className="mt-3 text-sm font-black text-slate-950 mb-0">{workspace.label}</h3>
+                        <h3 className="mt-3 text-sm font-bold text-slate-950 mb-0">{workspace.label}</h3>
                         <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">{workspace.description}</p>
                       </button>
                     ))}
@@ -1329,7 +1329,7 @@ const AIAgents: React.FC = () => {
                               <level.icon size={18} />
                             </div>
                             <div>
-                              <h3 className="text-sm font-black text-slate-950 mb-0">{level.label}</h3>
+                              <h3 className="text-sm font-bold text-slate-950 mb-0">{level.label}</h3>
                               <p className="text-[11px] font-bold text-slate-500 mb-0">Nível {level.id}</p>
                             </div>
                           </div>
@@ -1351,7 +1351,7 @@ const AIAgents: React.FC = () => {
                       <button
                         key={tool.id}
                         onClick={() => toggleListValue('tools', tool.id)}
-                        className={`h-10 rounded-lg border px-3 text-xs font-black flex items-center gap-2 transition ${
+                        className={`h-10 rounded-lg border px-3 text-xs font-bold flex items-center gap-2 transition ${
                           (draft.tools || []).includes(tool.id)
                             ? 'border-slate-300 bg-slate-100 text-slate-950'
                             : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -1387,7 +1387,7 @@ const AIAgents: React.FC = () => {
                           checked={Boolean((draft.handoff_rules || {})[rule.id])}
                           onChange={() => toggleHandoffRule(rule.id)}
                         />
-                        <span className="text-sm font-black">{rule.label}</span>
+                        <span className="text-sm font-bold">{rule.label}</span>
                       </label>
                     ))}
                   </div>
@@ -1405,37 +1405,37 @@ const AIAgents: React.FC = () => {
                       <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className="rounded-lg border border-slate-200 bg-white p-4">
                           <Brain size={18} className="text-slate-700" />
-                          <div className="mt-2 text-2xl font-black text-slate-950">
+                          <div className="mt-2 text-2xl font-bold text-slate-950">
                             {metricsLoading ? '-' : metrics?.total_conversations || 0}
                           </div>
-                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Conversas</div>
+                          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Conversas</div>
                         </div>
                         <div className="rounded-lg border border-slate-200 bg-white p-4">
                           <Star size={18} className="text-amber-500" />
-                          <div className="mt-2 text-2xl font-black text-slate-950">
+                          <div className="mt-2 text-2xl font-bold text-slate-950">
                             {metricsLoading ? '-' : metrics?.average_rating ? metrics.average_rating.toFixed(1) : '-'}
                           </div>
-                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Media avaliações</div>
+                          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Media avaliações</div>
                         </div>
                         <div className="rounded-lg border border-slate-200 bg-white p-4">
                           <Target size={18} className="text-emerald-600" />
-                          <div className="mt-2 text-2xl font-black text-slate-950">
+                          <div className="mt-2 text-2xl font-bold text-slate-950">
                             {metricsLoading ? '-' : metrics?.total_qualifications || 0}
                           </div>
-                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Qualificações</div>
+                          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Qualificações</div>
                         </div>
                         <div className="rounded-lg border border-slate-200 bg-white p-4">
                           <TrendingUp size={18} className="text-blue-600" />
-                          <div className="mt-2 text-2xl font-black text-slate-950">
+                          <div className="mt-2 text-2xl font-bold text-slate-950">
                             {metricsLoading ? '-' : metrics?.rating_distribution?.[5] || 0}
                           </div>
-                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Notas 5</div>
+                          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Notas 5</div>
                         </div>
                       </div>
 
                       {metrics && metrics.total_qualifications > 0 && (
                         <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                          <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 mb-3">
+                          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 mb-3">
                             Distribuição de notas
                           </div>
                           <div className="space-y-2">
@@ -1463,7 +1463,7 @@ const AIAgents: React.FC = () => {
                       <div className="mt-6 rounded-lg border border-amber-100 bg-amber-50 p-4">
                         <div className="flex items-center gap-2 text-amber-800">
                           <Star size={16} />
-                          <span className="text-xs font-black uppercase tracking-[0.14em]">Qualificar este agente</span>
+                          <span className="text-xs font-bold uppercase tracking-[0.14em]">Qualificar este agente</span>
                         </div>
                         <p className="mt-1 text-xs text-amber-700">
                           Sua avaliação ajuda o cerebro neural do agente a aprender e melhorar.
@@ -1493,7 +1493,7 @@ const AIAgents: React.FC = () => {
                         <button
                           onClick={handleQualify}
                           disabled={ratingInput === 0}
-                          className="mt-3 h-10 rounded-lg bg-amber-600 px-4 text-sm font-black text-white flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
+                          className="mt-3 h-10 rounded-lg bg-amber-600 px-4 text-sm font-bold text-white flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
                         >
                           <Star size={15} />
                           Registrar qualificação
@@ -1522,9 +1522,9 @@ const AIAgents: React.FC = () => {
                       <div className="border-b border-slate-200 bg-white p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
                         <Avatar label={(draft.name || 'A').charAt(0)} gradient="from-slate-700 to-slate-950" />
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-sm font-black text-slate-950 mb-0 truncate">{draft.name || 'Agente em teste'}</h3>
+                          <h3 className="text-sm font-bold text-slate-950 mb-0 truncate">{draft.name || 'Agente em teste'}</h3>
                           <p className="text-xs font-bold text-slate-500 mb-0 truncate">{draft.role || 'Atendimento e Qualificacao'}</p>
-                          <div className="mt-1 flex items-center gap-1.5 text-[11px] font-black text-emerald-600">
+                          <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600">
                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
                             {testMode === 'lead-simulator'
                               ? 'Voce fala como corretor'
@@ -1538,7 +1538,7 @@ const AIAgents: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setTestMode('lead-simulator')}
-                              className={`h-8 rounded-md px-3 text-[11px] font-black transition ${
+                              className={`h-8 rounded-md px-3 text-[11px] font-bold transition ${
                                 testMode === 'lead-simulator' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'
                               }`}
                             >
@@ -1547,7 +1547,7 @@ const AIAgents: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setTestMode('agent-reply')}
-                              className={`h-8 rounded-md px-3 text-[11px] font-black transition ${
+                              className={`h-8 rounded-md px-3 text-[11px] font-bold transition ${
                                 testMode === 'agent-reply' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'
                               }`}
                             >
@@ -1566,7 +1566,7 @@ const AIAgents: React.FC = () => {
                       </div>
 
                       <div className="agent-whatsapp-bg p-4">
-                        <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-400 shadow-sm">
+                        <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-400 shadow-sm">
                           Hoje
                         </div>
                         <div className="mt-3 max-h-[520px] min-h-[420px] space-y-3 overflow-y-auto pr-1">
@@ -1574,7 +1574,7 @@ const AIAgents: React.FC = () => {
                             <div className="flex h-[320px] items-center justify-center text-center">
                               <div className="max-w-sm rounded-lg border border-white/70 bg-white/80 px-5 py-4 shadow-sm">
                                 <MessageCircle className="mx-auto text-emerald-600" size={22} />
-                                <p className="mt-2 text-sm font-black text-slate-800 mb-0">
+                                <p className="mt-2 text-sm font-bold text-slate-800 mb-0">
                                   Escreva a primeira mensagem livre.
                                 </p>
                                 <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500 mb-0">
@@ -1641,7 +1641,7 @@ const AIAgents: React.FC = () => {
 
                     <div className="space-y-4">
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <h3 className="text-sm font-black text-slate-950 mb-0">Diagnostico do teste</h3>
+                        <h3 className="text-sm font-bold text-slate-950 mb-0">Diagnostico do teste</h3>
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           <Diagnostic label="Intencao" value={previewDiagnostics.intent} tone="green" />
                           <Diagnostic label="Orcamento" value={previewDiagnostics.budget} tone="slate" />
@@ -1649,8 +1649,8 @@ const AIAgents: React.FC = () => {
                           <Diagnostic label="Temperatura" value={previewDiagnostics.temperature} tone="orange" />
                         </div>
                         <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
-                          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Proxima acao</div>
-                          <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-950">
+                          <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Proxima acao</div>
+                          <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-950">
                             <LayoutGrid size={16} />
                             {previewDiagnostics.nextAction}
                           </div>
@@ -1663,7 +1663,7 @@ const AIAgents: React.FC = () => {
                             <Bot size={18} />
                           </div>
                           <div>
-                            <h3 className="text-sm font-black text-slate-950 mb-0">Resumo de publicacao</h3>
+                            <h3 className="text-sm font-bold text-slate-950 mb-0">Resumo de publicacao</h3>
                             <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
                               {draft.channels?.length || 1} canal(is), {draft.tools?.length || 0} ferramenta(s) e autonomia nivel {draft.autonomy_level || 2}.
                             </p>
@@ -1680,7 +1680,7 @@ const AIAgents: React.FC = () => {
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <button
                   onClick={resetDraft}
-                  className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 hover:bg-slate-50"
+                  className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50"
                 >
                   Cancelar
                 </button>
@@ -1688,7 +1688,7 @@ const AIAgents: React.FC = () => {
                   <button
                     onClick={goToPreviousStep}
                     disabled={isFirstStep}
-                    className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <ChevronLeft size={17} />
                     Voltar
@@ -1696,7 +1696,7 @@ const AIAgents: React.FC = () => {
                   {!isLastStep && (
                     <button
                       onClick={goToNextStep}
-                      className="h-11 rounded-lg bg-slate-950 px-5 text-sm font-black text-white flex items-center justify-center gap-2 hover:bg-slate-800"
+                      className="h-11 rounded-lg bg-slate-950 px-5 text-sm font-bold text-white flex items-center justify-center gap-2 hover:bg-slate-800"
                     >
                       Próxima etapa
                       <ArrowRight size={17} />
@@ -1705,7 +1705,7 @@ const AIAgents: React.FC = () => {
                   <button
                     onClick={() => saveAgent('Rascunho')}
                     disabled={saving}
-                    className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:opacity-60"
+                    className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:opacity-60"
                   >
                     {saving ? <Loader2 className="animate-spin" size={17} /> : <Save size={17} />}
                     Salvar rascunho
@@ -1713,7 +1713,7 @@ const AIAgents: React.FC = () => {
                   <button
                     onClick={() => saveAgent('Ativo')}
                     disabled={saving}
-                    className="h-11 rounded-lg bg-emerald-600 px-5 text-sm font-black text-white flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-60"
+                    className="h-11 rounded-lg bg-emerald-600 px-5 text-sm font-bold text-white flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-60"
                   >
                     {saving ? <Loader2 className="animate-spin" size={17} /> : <Rocket size={17} />}
                     Publicar agente
@@ -1777,17 +1777,17 @@ const SidebarItem: React.FC<{
   >
     <span className="min-w-0 flex items-center gap-3">
       <Icon size={16} className={active ? 'text-emerald-600' : 'text-slate-400'} />
-      <span className="truncate text-xs font-black">{label}</span>
+      <span className="truncate text-xs font-bold">{label}</span>
     </span>
     {typeof count === 'number' && (
-      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">{count}</span>
+      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{count}</span>
     )}
   </button>
 );
 
 const Avatar: React.FC<{ label: string; gradient: string }> = ({ label, gradient }) => (
   <div className={`h-11 w-11 shrink-0 rounded-lg bg-gradient-to-br ${gradient} p-[2px] shadow-sm`}>
-    <div className="h-full w-full rounded-[6px] bg-white/10 flex items-center justify-center text-sm font-black text-white">
+    <div className="h-full w-full rounded-[6px] bg-white/10 flex items-center justify-center text-sm font-bold text-white">
       {label}
     </div>
   </div>
@@ -1799,15 +1799,15 @@ const SectionHeading: React.FC<{ eyebrow: string; title: string; description: st
   description,
 }) => (
   <div>
-    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">{eyebrow}</div>
-    <h2 className="mt-1 text-lg font-black tracking-tight text-slate-950 mb-0">{title}</h2>
+    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{eyebrow}</div>
+    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950 mb-0">{title}</h2>
     <p className="mt-1 text-sm font-medium text-slate-500 mb-0">{description}</p>
   </div>
 );
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <label className="block">
-    <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">{label}</span>
+    <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</span>
     {children}
   </label>
 );
@@ -1822,7 +1822,7 @@ const StatusPill: React.FC<{ status: string; compact?: boolean }> = ({ status, c
       : 'border-slate-200 bg-slate-50 text-slate-500';
 
   return (
-    <span className={`h-9 rounded-lg border px-3 text-xs font-black inline-flex items-center gap-2 ${className}`}>
+    <span className={`h-9 rounded-lg border px-3 text-xs font-bold inline-flex items-center gap-2 ${className}`}>
       <span className={`h-2 w-2 rounded-full ${active ? 'bg-emerald-500' : draft ? 'bg-amber-500' : 'bg-slate-400'}`} />
       {compact ? status : `Agente ${status.toLowerCase()}`}
     </span>
@@ -1855,8 +1855,8 @@ const Diagnostic: React.FC<{ label: string; value: string; tone: 'green' | 'oran
 
   return (
     <div className={`rounded-lg border p-3 ${colors[tone]}`}>
-      <div className="text-[10px] font-black uppercase tracking-[0.14em] opacity-70">{label}</div>
-      <div className="mt-1 text-xs font-black">{value}</div>
+      <div className="text-[10px] font-bold uppercase tracking-[0.14em] opacity-70">{label}</div>
+      <div className="mt-1 text-xs font-bold">{value}</div>
     </div>
   );
 };
@@ -1871,8 +1871,8 @@ const PreviewMetric: React.FC<{
     <div className="h-8 w-8 rounded-lg bg-slate-50 text-slate-700 flex items-center justify-center">
       <Icon size={16} />
     </div>
-    <div className="mt-3 text-base font-black text-slate-950">{value}</div>
-    <div className="text-[10px] font-black text-emerald-600">{change}</div>
+    <div className="mt-3 text-base font-bold text-slate-950">{value}</div>
+    <div className="text-[10px] font-bold text-emerald-600">{change}</div>
     <div className="mt-1 text-[10px] font-bold leading-snug text-slate-500">{label}</div>
   </div>
 );

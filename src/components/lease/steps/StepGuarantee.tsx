@@ -10,7 +10,7 @@ interface Props {
 }
 
 const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
-const labelClass = 'text-[10px] font-black text-slate-500 uppercase tracking-widest';
+const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
 export const StepGuarantee: React.FC<Props> = ({ lease, updateField }) => {
   return (
@@ -19,7 +19,7 @@ export const StepGuarantee: React.FC<Props> = ({ lease, updateField }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Lock size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Tipo de Garantia</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Tipo de Garantia</h4>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {(['fiador', 'seguro_fianca', 'deposito_caucao', 'titulo_capitalizacao', 'sem'] as const).map((type) => (
@@ -44,7 +44,7 @@ export const StepGuarantee: React.FC<Props> = ({ lease, updateField }) => {
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 bg-amber-50 rounded-xl text-amber-600"><UserCheck size={20} /></div>
-              <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Dados do Fiador</h4>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Dados do Fiador</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
@@ -74,7 +74,7 @@ export const StepGuarantee: React.FC<Props> = ({ lease, updateField }) => {
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 bg-amber-50 rounded-xl text-amber-600"><UserCheck size={20} /></div>
-              <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Cônjuge do Fiador</h4>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Cônjuge do Fiador</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -95,7 +95,7 @@ export const StepGuarantee: React.FC<Props> = ({ lease, updateField }) => {
         <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><ShieldCheck size={20} /></div>
-            <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Dados do Seguro</h4>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Dados do Seguro</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -115,7 +115,7 @@ export const StepGuarantee: React.FC<Props> = ({ lease, updateField }) => {
         <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><DollarSign size={20} /></div>
-            <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Depósito Caução</h4>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Depósito Caução</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -134,18 +134,18 @@ export const StepGuarantee: React.FC<Props> = ({ lease, updateField }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><FileText size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Testemunhas</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Testemunhas</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Testemunha 1</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Testemunha 1</p>
             <div className="space-y-3">
               <input value={lease.witness_1_name || ''} onChange={(e) => updateField('witness_1_name', e.target.value)} className={inputClass} placeholder="Nome" />
               <input value={lease.witness_1_cpf || ''} onChange={(e) => updateField('witness_1_cpf', e.target.value)} className={inputClass} placeholder="CPF" />
             </div>
           </div>
           <div>
-            <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Testemunha 2</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Testemunha 2</p>
             <div className="space-y-3">
               <input value={lease.witness_2_name || ''} onChange={(e) => updateField('witness_2_name', e.target.value)} className={inputClass} placeholder="Nome" />
               <input value={lease.witness_2_cpf || ''} onChange={(e) => updateField('witness_2_cpf', e.target.value)} className={inputClass} placeholder="CPF" />

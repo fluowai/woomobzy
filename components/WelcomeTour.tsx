@@ -69,7 +69,7 @@ const WelcomeTour: React.FC = () => {
 
         <div className="mt-8 text-center">
           <span className="badge badge-primary mb-4">Etapa {currentStep + 1} de {steps.length}</span>
-          <h2 className="text-2xl font-black text-text-primary mb-4 leading-tight">
+          <h2 className="text-2xl font-bold text-text-primary mb-4 leading-tight">
             {steps[currentStep].title}
           </h2>
           <p className="text-secondary font-medium leading-relaxed mb-10">

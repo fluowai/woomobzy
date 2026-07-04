@@ -61,15 +61,15 @@ const Dashboard360: React.FC = () => {
         <div className="absolute top-0 right-0 w-64 h-64 bg-brand/10 blur-[80px] rounded-full pointer-events-none" />
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
-            <span className="px-3 py-1 bg-brand/10 text-brand text-[10px] font-black uppercase tracking-widest rounded-full border border-brand/20">
+            <span className="px-3 py-1 bg-brand/10 text-brand text-[10px] font-bold uppercase tracking-widest rounded-full border border-brand/20">
               Motor Operacional 360 v2.0
             </span>
-            <span className="flex items-center gap-2 px-3 py-1 bg-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest rounded-full border border-white/5">
+            <span className="flex items-center gap-2 px-3 py-1 bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-widest rounded-full border border-white/5">
               <div className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
               Sincronizado
             </span>
           </div>
-          <h1 className="text-4xl font-black text-white italic tracking-tighter leading-tight">
+          <h1 className="text-4xl font-bold text-white italic tracking-tighter leading-tight">
             Sua <span className="text-brand">Máquina de Vendas</span> <br />
             está em alta performance.
           </h1>
@@ -84,8 +84,8 @@ const Dashboard360: React.FC = () => {
                 <Target size={24} />
               </div>
               <div className="text-left">
-                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Inteligência Match</p>
-                <p className="text-lg font-black text-white">Ver Oportunidades →</p>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Inteligência Match</p>
+                <p className="text-lg font-bold text-white">Ver Oportunidades →</p>
               </div>
             </div>
           </Link>

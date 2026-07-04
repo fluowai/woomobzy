@@ -85,7 +85,7 @@ const AgroMarketWidget: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="flex items-center gap-1 justify-end">
-                <span className="text-sm font-black text-text-primary">
+                <span className="text-sm font-bold text-text-primary">
                   {data.moeda} {data.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
                 {data.valor > 100 ? (

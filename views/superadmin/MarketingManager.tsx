@@ -118,7 +118,7 @@ const MarketingManager: React.FC = () => {
                   <div className="flex items-center gap-6">
                     <div className="text-center">
                       <p className="text-xs text-slate-500 font-bold uppercase">Visitas</p>
-                      <p className="font-black text-slate-800">{page.visits}</p>
+                      <p className="font-bold text-slate-800">{page.visits}</p>
                     </div>
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
                       <button className="p-2 text-slate-400 hover:text-emerald-600 bg-slate-50 hover:bg-emerald-50 rounded-lg"><Eye size={16} /></button>
@@ -135,7 +135,7 @@ const MarketingManager: React.FC = () => {
       {activeTab === 'templates' && (
         <div className="space-y-10 animate-in fade-in">
           <div>
-            <h2 className="text-xl font-black text-slate-800 flex items-center gap-2 mb-6">
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6">
               <Tractor className="text-emerald-600" /> Templates Rurais
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -166,7 +166,7 @@ const MarketingManager: React.FC = () => {
           </div>
 
           <div>
-            <h2 className="text-xl font-black text-slate-800 flex items-center gap-2 mb-6">
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6">
               <Building2 className="text-blue-600" /> Templates Urbanos
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

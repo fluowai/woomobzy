@@ -141,7 +141,7 @@ export const TemplateEditor: React.FC = () => {
             <ArrowLeft size={20} className="text-slate-500" />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-black uppercase italic tracking-tighter">
+            <h1 className="text-2xl font-bold text-black uppercase italic tracking-tighter">
               {isEditing ? 'Editar' : 'Novo'} <span className="text-blue-600">Modelo</span>
             </h1>
             <p className="text-black/60 font-medium">
@@ -162,10 +162,10 @@ export const TemplateEditor: React.FC = () => {
         {/* Config */}
         <div className="lg:col-span-1 space-y-6">
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">Configuração</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">Configuração</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nome do Modelo</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nome do Modelo</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -174,7 +174,7 @@ export const TemplateEditor: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Descrição</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Descrição</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -205,7 +205,7 @@ export const TemplateEditor: React.FC = () => {
 
           {/* Upload DOCX */}
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">Upload de Arquivo</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">Upload de Arquivo</h3>
             <label className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-all">
               <Upload size={24} className="text-slate-300" />
               <span className="text-sm font-bold text-slate-500">Upload DOCX</span>
@@ -216,7 +216,7 @@ export const TemplateEditor: React.FC = () => {
 
           {/* Variáveis */}
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 mb-4">Variáveis</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">Variáveis</h3>
             <div className={`p-3 rounded-xl text-xs font-bold mb-4 ${
               isValid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
             }`}>
@@ -242,7 +242,7 @@ export const TemplateEditor: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Conteúdo do Contrato</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800">Conteúdo do Contrato</h3>
               <button
                 onClick={() => setShowPreview(!showPreview)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -273,7 +273,7 @@ export const TemplateEditor: React.FC = () => {
 
           {/* Atalhos de variáveis */}
           <section className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Inserir Variável</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Inserir Variável</p>
             <div className="flex flex-wrap gap-1.5">
               {REQUIRED_VARIABLES.map((v) => (
                 <button

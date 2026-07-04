@@ -73,7 +73,7 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
               <Sparkles size={20} className="text-white" />
             </div>
             <div>
-              <div className="font-black text-sm uppercase tracking-widest flex items-center gap-2">
+              <div className="font-bold text-sm uppercase tracking-widest flex items-center gap-2">
                 Clara <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Especialista ImobFluow</div>
@@ -158,7 +158,7 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
             </button>
           </form>
           <div className="mt-4 flex items-center justify-center gap-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1">
               <Bot size={12} className="text-emerald-500" /> Powered by ImobFluow AI
             </div>
           </div>

@@ -34,7 +34,7 @@ export const HeroBlock: React.FC<HeroBlockProps> = ({ block, isEditing }) => {
         }}
       >
         <h1
-          className="font-black mb-4 leading-tight"
+          className="font-bold mb-4 leading-tight"
           style={{ fontSize: 'clamp(32px, 5vw, 72px)' }}
         >
           {config.title || 'Título do Hero'}

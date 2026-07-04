@@ -73,7 +73,7 @@ const RuralTerritoryHub: React.FC = () => {
                   <tab.icon size={20} />
                 </div>
                 <div>
-                  <p className={`text-sm font-black ${isActive ? 'text-white' : 'text-text-primary'}`}>
+                  <p className={`text-sm font-bold ${isActive ? 'text-white' : 'text-text-primary'}`}>
                     {tab.label}
                   </p>
                   <p className={`text-[11px] leading-relaxed mt-1 ${isActive ? 'text-white/75' : 'text-text-tertiary'}`}>

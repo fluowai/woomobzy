@@ -149,7 +149,7 @@ export const WidgetPanel: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
         {WIDGET_CATEGORIES.map((category) => (
           <div key={category.name}>
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 px-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">
               {category.name}
             </h4>
             <div className="space-y-2">

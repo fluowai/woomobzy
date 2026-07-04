@@ -117,15 +117,15 @@ const ConsultingLeads: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-red-600">Super admin</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-red-600">Super admin</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
             Agenda de demonstrações
           </h1>
           <p className="mt-1 text-sm font-semibold text-slate-500">
             Configure horários próprios, acompanhe leads qualificados e gerencie calls de 30 minutos.
           </p>
         </div>
-        <button onClick={fetchOverview} className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50">
+        <button onClick={fetchOverview} className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50">
           <RefreshCw size={17} />
           Atualizar
         </button>
@@ -145,33 +145,33 @@ const ConsultingLeads: React.FC = () => {
               <Plus size={22} />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-900">Abrir agenda</h2>
+              <h2 className="text-lg font-bold text-slate-900">Abrir agenda</h2>
               <p className="text-xs font-bold text-slate-500">Cria blocos automáticos de 30 minutos.</p>
             </div>
           </div>
 
           <form onSubmit={createSlots} className="grid gap-4">
-            <label className="grid gap-2 text-sm font-black text-slate-700">
+            <label className="grid gap-2 text-sm font-bold text-slate-700">
               Data
               <input type="date" value={slotForm.date} onChange={(e) => setSlotForm({ ...slotForm, date: e.target.value })} className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100" />
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-black text-slate-700">
+              <label className="grid gap-2 text-sm font-bold text-slate-700">
                 Início
                 <input type="time" value={slotForm.startTime} onChange={(e) => setSlotForm({ ...slotForm, startTime: e.target.value })} className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100" />
               </label>
-              <label className="grid gap-2 text-sm font-black text-slate-700">
+              <label className="grid gap-2 text-sm font-bold text-slate-700">
                 Fim
                 <input type="time" value={slotForm.endTime} onChange={(e) => setSlotForm({ ...slotForm, endTime: e.target.value })} className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100" />
               </label>
             </div>
-            <button disabled={creating} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 text-sm font-black text-white shadow-lg shadow-red-900/15 hover:bg-red-700 disabled:opacity-60">
+            <button disabled={creating} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 text-sm font-bold text-white shadow-lg shadow-red-900/15 hover:bg-red-700 disabled:opacity-60">
               {creating ? <Loader2 className="animate-spin" size={18} /> : <><Plus size={18} /> Criar horários</>}
             </button>
           </form>
 
           <div className="mt-8">
-            <h3 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-500">Próximos horários</h3>
+            <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Próximos horários</h3>
             <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
               {loading ? (
                 <LoadingRows />
@@ -181,7 +181,7 @@ const ConsultingLeads: React.FC = () => {
                 openSlots.slice(0, 18).map((slot) => (
                   <div key={slot.id} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
                     <div>
-                      <p className="text-sm font-black text-slate-900">{formatDateTime(slot.startsAt)}</p>
+                      <p className="text-sm font-bold text-slate-900">{formatDateTime(slot.startsAt)}</p>
                       <p className="text-xs font-bold text-slate-500">30 minutos</p>
                     </div>
                     <button onClick={() => blockSlot(slot)} className="rounded-xl p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
@@ -198,7 +198,7 @@ const ConsultingLeads: React.FC = () => {
           <div className="border-b border-slate-100 p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h2 className="text-lg font-black text-slate-900">Agendamentos qualificados</h2>
+                <h2 className="text-lg font-bold text-slate-900">Agendamentos qualificados</h2>
                 <p className="text-xs font-bold text-slate-500">Todos passaram pelo filtro antes de escolher horário.</p>
               </div>
               <div className="relative w-full lg:w-80">
@@ -212,11 +212,11 @@ const ConsultingLeads: React.FC = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50/70">
-                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Lead</th>
-                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Horário</th>
-                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Filtro</th>
-                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Status</th>
-                  <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Ações</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Lead</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Horário</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Filtro</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Status</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -228,20 +228,20 @@ const ConsultingLeads: React.FC = () => {
                   filteredBookings.map((booking) => (
                     <tr key={booking.id} className="hover:bg-slate-50/70">
                       <td className="px-6 py-5">
-                        <p className="font-black text-slate-900">{booking.name}</p>
+                        <p className="font-bold text-slate-900">{booking.name}</p>
                         <p className="text-xs font-semibold text-slate-500">{booking.email}</p>
                         <p className="mt-1 text-xs font-bold text-slate-400">{booking.company || 'Sem empresa'}</p>
                       </td>
                       <td className="px-6 py-5">
-                        <p className="text-sm font-black text-slate-900">{formatDateTime(booking.slot?.startsAt)}</p>
+                        <p className="text-sm font-bold text-slate-900">{formatDateTime(booking.slot?.startsAt)}</p>
                         <p className="text-xs font-bold text-slate-500">Call própria de 30 minutos</p>
                       </td>
                       <td className="px-6 py-5">
-                        <p className="text-sm font-black text-emerald-700">Score {booking.score}</p>
+                        <p className="text-sm font-bold text-emerald-700">Score {booking.score}</p>
                         <p className="text-xs font-semibold text-slate-500">{booking.teamSize || '-'} corretores | {booking.monthlyLeads || '-'} leads</p>
                       </td>
                       <td className="px-6 py-5">
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-700">
                           {statusLabels[booking.status]}
                         </span>
                       </td>
@@ -283,8 +283,8 @@ const MetricCard: React.FC<{ label: string; value: number | string; icon: React.
         <Icon size={23} />
       </div>
       <div>
-        <p className="text-2xl font-black text-slate-900">{value}</p>
-        <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="text-2xl font-bold text-slate-900">{value}</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
       </div>
     </div>
   );

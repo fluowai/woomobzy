@@ -156,8 +156,6 @@ async function checkDnsRecord(domain) {
 export function buildTraefikDomainConfig(domainName) {
   const domain = assertValidDomain(domainName);
   const routerBaseName = sanitizeTraefikName(domain);
-  const apiServiceName = `${routerBaseName}_api_service`;
-  const frontendServiceName = `${routerBaseName}_frontend_service`;
 
   return `${GENERATED_MARKER}
 # Domain: ${domain}
@@ -171,7 +169,7 @@ http:
       priority: 1000
       tls:
         certResolver: letsencryptresolver
-      service: ${apiServiceName}
+      service: imobzy_api@file
 
     ${routerBaseName}_frontend:
       rule: "Host(\`${domain}\`)"
@@ -180,28 +178,13 @@ http:
       priority: 100
       tls:
         certResolver: letsencryptresolver
-      service: ${frontendServiceName}
-
-  services:
-    ${apiServiceName}:
-      loadBalancer:
-        passHostHeader: true
-        servers:
-          - url: "http://api:3002"
-          - url: "http://imobfluow_api:3002"
-
-    ${frontendServiceName}:
-      loadBalancer:
-        passHostHeader: true
-        servers:
-          - url: "http://frontend:80"
-          - url: "http://imobfluow_frontend:80"
+      service: imobzy_frontend@file
 `;
 }
 
 export function buildPlatformTraefikServicesConfig() {
-  const frontendUrl = process.env.TRAEFIK_FRONTEND_SERVICE_URL || 'http://imobfluow_frontend:80';
-  const apiUrl = process.env.TRAEFIK_API_SERVICE_URL || 'http://imobfluow_api:3002';
+  const frontendUrl = process.env.TRAEFIK_FRONTEND_SERVICE_URL || 'http://frontend:80';
+  const apiUrl = process.env.TRAEFIK_API_SERVICE_URL || 'http://api:3002';
 
   return `${PLATFORM_SERVICES_MARKER}
 http:
@@ -269,6 +252,23 @@ async function writeTraefikDomainConfig(domain) {
   return configPath;
 }
 
+export async function ensureDockerDomainConfig(domainName) {
+  const domain = assertValidDomain(domainName);
+  const configPath = await writeTraefikDomainConfig(domain);
+
+  return {
+    success: true,
+    domain,
+    configPath,
+    dnsRecords: getPlatformDnsRecords(domain),
+    routerNames: {
+      api: `${sanitizeTraefikName(domain)}_api`,
+      frontend: `${sanitizeTraefikName(domain)}_frontend`,
+    },
+    provisionedBy: 'docker',
+  };
+}
+
 export async function validateDockerDomainDns(domainName) {
   const domain = assertValidDomain(domainName);
   const dnsStatus = await checkDnsRecord(domain);
@@ -287,19 +287,11 @@ export async function validateDockerDomainDns(domainName) {
 
 export async function addDockerDomain(domainName) {
   const { domain, dnsStatus } = await validateDockerDomainDns(domainName);
-  const configPath = await writeTraefikDomainConfig(domain);
+  const provisioning = await ensureDockerDomainConfig(domain);
 
   return {
-    success: true,
-    domain,
-    configPath,
-    dnsRecords: getPlatformDnsRecords(domain),
+    ...provisioning,
     dnsStatus,
-    routerNames: {
-      api: `${sanitizeTraefikName(domain)}_api`,
-      frontend: `${sanitizeTraefikName(domain)}_frontend`,
-    },
-    provisionedBy: 'docker',
   };
 }
 
@@ -408,6 +400,15 @@ export async function checkDockerDomainStatus(domainName) {
       provisioned = false;
     }
 
+    if (dnsVerified && !provisioned) {
+      try {
+        await ensureDockerDomainConfig(domain);
+        provisioned = true;
+      } catch (error) {
+        console.error(`[Traefik] Failed to auto-provision ${domain}:`, error.message);
+      }
+    }
+
     return {
       success: true,
       configured: dnsVerified,
@@ -454,6 +455,60 @@ export async function checkDockerDomainStatus(domainName) {
       error: error.message,
     };
   }
+}
+
+export async function syncRegisteredDockerDomains(supabase, options = {}) {
+  const { validateDns = true } = options;
+  const domains = new Set();
+  const errors = [];
+
+  const addDomain = (value) => {
+    if (!value) return;
+    try {
+      domains.add(assertValidDomain(value));
+    } catch (error) {
+      errors.push({ domain: value, status: 'invalid', error: error.message });
+    }
+  };
+
+  const { data: orgs, error: orgError } = await supabase
+    .from('organizations')
+    .select('custom_domain')
+    .not('custom_domain', 'is', null);
+
+  if (orgError) throw orgError;
+  (orgs || []).forEach((org) => addDomain(org.custom_domain));
+
+  const { data: domainRows, error: domainsError } = await supabase
+    .from('domains')
+    .select('domain');
+
+  if (!domainsError) {
+    (domainRows || []).forEach((row) => addDomain(row.domain));
+  }
+
+  const results = [];
+  for (const domain of domains) {
+    try {
+      const provisioning = validateDns
+        ? await addDockerDomain(domain)
+        : await ensureDockerDomainConfig(domain);
+      results.push({ domain, status: 'success', configPath: provisioning.configPath });
+    } catch (error) {
+      results.push({
+        domain,
+        status: 'skipped',
+        code: error.code || 'DOMAIN_SYNC_FAILED',
+        error: error.message,
+      });
+    }
+  }
+
+  return {
+    success: true,
+    processed: results.length,
+    results: [...errors, ...results],
+  };
 }
 
 export async function provisionTenantDomain(subdomain) {

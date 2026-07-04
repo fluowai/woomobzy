@@ -50,6 +50,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
 
   const allowedOrigins = new Set([
     'https://app.imobfluow.com.br',
+    'https://imobfluow.consultio.com.br',
     'https://imobfluow.com.br',
     'https://www.imobfluow.com.br',
     'https://okaimoveis.com.br',
@@ -345,10 +346,10 @@ async function getWhatsAppMediaUrl(req, res) {
       return res.status(404).json({ error: 'Midia nao encontrada.' });
     }
 
-    if (!media.object_key && media.public_url) {
+    if (media.status === 'ready' && media.public_url) {
       return res.json({
         id: media.id,
-        url: media.public_url,
+        url: normalizeStoragePublicUrl(media.public_url),
         status: media.status,
         mime_type: media.mime_type,
         filename: media.filename,
@@ -359,7 +360,18 @@ async function getWhatsAppMediaUrl(req, res) {
     if (String(media.provider || '').toLowerCase() !== 'minio' && media.public_url) {
       return res.json({
         id: media.id,
-        url: media.public_url,
+        url: normalizeStoragePublicUrl(media.public_url),
+        status: media.status,
+        mime_type: media.mime_type,
+        filename: media.filename,
+        expires_in: null,
+      });
+    }
+
+    if (!media.object_key && media.public_url) {
+      return res.json({
+        id: media.id,
+        url: normalizeStoragePublicUrl(media.public_url),
         status: media.status,
         mime_type: media.mime_type,
         filename: media.filename,
@@ -384,7 +396,7 @@ async function getWhatsAppMediaUrl(req, res) {
       if (media.public_url) {
         return res.json({
           id: media.id,
-          url: media.public_url,
+          url: normalizeStoragePublicUrl(media.public_url),
           status: media.status,
           mime_type: media.mime_type,
           filename: media.filename,
@@ -403,7 +415,7 @@ async function getWhatsAppMediaUrl(req, res) {
 
     return res.json({
       id: media.id,
-      url,
+      url: normalizeStoragePublicUrl(url),
       status: media.status,
       mime_type: media.mime_type,
       filename: media.filename,
@@ -568,6 +580,36 @@ function normalizeInstanceRow(row) {
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+function normalizeStoragePublicUrl(value) {
+  if (!value || !/^https?:\/\//i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    if (url.hostname !== 'n.woopanel.com.br') return value;
+    const publicBase = storagePublicBaseURL();
+    const target = new URL(publicBase);
+    url.protocol = target.protocol;
+    url.hostname = target.hostname;
+    url.port = target.port;
+    return url.toString();
+  } catch {
+    return value;
+  }
+}
+
+function storagePublicBaseURL() {
+  for (const key of ['NEW_MINIO_PUBLIC_URL', 'MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) {
+    const value = String(process.env[key] || '').trim().replace(/\/$/, '');
+    if (!value) continue;
+    try {
+      const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+      if (url.hostname !== 'n.woopanel.com.br') return url.toString().replace(/\/$/, '');
+    } catch {
+      if (!value.includes('n.woopanel.com.br')) return value;
+    }
+  }
+  return 'https://nb.consultio.com.br';
 }
 
 function getDatabaseEnvStatus() {

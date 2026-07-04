@@ -125,20 +125,20 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
             className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2 mb-4 text-slate-900 font-black uppercase tracking-widest text-xs">
+            <div className="flex items-center gap-2 mb-4 text-slate-900 font-bold uppercase tracking-widest text-xs">
               <ImageIcon size={16} className="text-indigo-600" />
               <span>Trocar Imagem</span>
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">
+              <label className="block text-[10px] font-bold uppercase text-slate-400 mb-2 tracking-widest">
                 URL ou Upload
               </label>
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={triggerFileUpload}
                   disabled={isUploading || isSaving}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest border-2 border-dashed border-slate-300"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all font-bold uppercase text-[10px] tracking-widest border-2 border-dashed border-slate-300"
                 >
                   {isUploading ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -175,7 +175,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex-1 bg-indigo-600 text-white h-12 rounded-xl shadow-lg hover:bg-indigo-700 transition-all font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
+                className="flex-1 bg-indigo-600 text-white h-12 rounded-xl shadow-lg hover:bg-indigo-700 transition-all font-bold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
               >
                 {isSaving ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -187,7 +187,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
               </button>
               <button
                 onClick={handleCancel}
-                className="px-4 bg-slate-100 text-slate-600 h-12 rounded-xl hover:bg-slate-200 transition-all font-black uppercase text-[10px] tracking-widest"
+                className="px-4 bg-slate-100 text-slate-600 h-12 rounded-xl hover:bg-slate-200 transition-all font-bold uppercase text-[10px] tracking-widest"
               >
                 <X size={16} />
               </button>
@@ -196,7 +196,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
         </div>
       ) : (
         isHovered && (
-          <div className="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest flex items-center gap-2 shadow-xl animate-in fade-in zoom-in duration-200 pointer-events-none">
+          <div className="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] px-3 py-1.5 rounded-full font-bold uppercase tracking-widest flex items-center gap-2 shadow-xl animate-in fade-in zoom-in duration-200 pointer-events-none">
             <ImageIcon size={14} />
             <span>Trocar Imagem</span>
           </div>

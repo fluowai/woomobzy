@@ -29,7 +29,7 @@ const PropertyReviewTable: React.FC<PropertyReviewTableProps> = ({
     <div className="space-y-6 animate-in fade-in slide-in-from-right duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-black text-slate-900">
+          <h2 className="text-3xl font-bold text-slate-900">
             Revisão de Dados (IA)
           </h2>
           <p className="text-slate-500">
@@ -58,19 +58,19 @@ const PropertyReviewTable: React.FC<PropertyReviewTableProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">
+                <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest">
                   Imóvel Extrais
                 </th>
-                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">
+                <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest">
                   Mapeamento IA
                 </th>
-                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">
+                <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest">
                   Preço
                 </th>
-                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">
+                <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest">
                   Confiança
                 </th>
-                <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">
+                <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">
                   Ações
                 </th>
               </tr>
@@ -109,11 +109,11 @@ const PropertyReviewTable: React.FC<PropertyReviewTableProps> = ({
                   <td className="p-5">
                     <div className="flex items-center gap-2">
                       {prop.type === 'Rural' ? (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase">
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold uppercase">
                           <LandPlot size={12} /> Rural
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-black uppercase">
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-bold uppercase">
                           <Building size={12} /> Urbano
                         </span>
                       )}

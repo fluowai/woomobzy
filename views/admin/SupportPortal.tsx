@@ -265,7 +265,7 @@ const SupportPortal: React.FC = () => {
                     <div className="flex-1">
                       <div className={`rounded-2xl p-4 shadow-sm border ${msg.is_admin_reply ? 'bg-amber-50 border-amber-100' : 'bg-white border-gray-100'}`}>
                         {msg.is_admin_reply && (
-                          <span className="text-[10px] font-black uppercase text-amber-600 mb-1 block">Equipe de Suporte</span>
+                          <span className="text-[10px] font-bold uppercase text-amber-600 mb-1 block">Equipe de Suporte</span>
                         )}
                         <p className="text-sm text-gray-700 whitespace-pre-wrap">{msg.message}</p>
                       </div>
@@ -320,7 +320,7 @@ const SupportPortal: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[2rem] shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
-              <h3 className="text-2xl font-black italic tracking-tighter uppercase mb-1">Novo Chamado</h3>
+              <h3 className="text-2xl font-bold italic tracking-tighter uppercase mb-1">Novo Chamado</h3>
               <p className="text-indigo-100 text-sm opacity-80">Descreva sua dúvida ou problema detalhadamente.</p>
             </div>
             

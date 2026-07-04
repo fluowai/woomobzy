@@ -132,7 +132,7 @@ export default function ControleChaves() {
       <div className="grid grid-cols-3 gap-4">
         {stats.map((stat) => (
           <div key={stat.label} className="card-premium p-5 text-center">
-            <p className={`text-3xl font-black ${stat.color}`}>{stat.value}</p>
+            <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
             <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-500">{stat.label}</p>
           </div>
         ))}

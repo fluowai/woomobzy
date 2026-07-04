@@ -67,7 +67,7 @@ export const LeaseWizard: React.FC<LeaseWizardProps> = ({ existingLease, onCompl
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-slate-100 shrink-0">
         <div className="p-6 border-b border-slate-100">
-          <h2 className="text-lg font-black text-black uppercase italic tracking-tighter">
+          <h2 className="text-lg font-bold text-black uppercase italic tracking-tighter">
             Nova <span className="text-blue-600">Locação</span>
           </h2>
           <p className="text-xs text-slate-400 font-medium mt-1">
@@ -133,7 +133,7 @@ export const LeaseWizard: React.FC<LeaseWizardProps> = ({ existingLease, onCompl
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white shrink-0">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-black text-slate-900">
+            <h3 className="text-lg font-bold text-slate-900">
               {WIZARD_STEPS[wizard.currentStep - 1].label}
             </h3>
             <span className="text-xs text-slate-400 font-medium">

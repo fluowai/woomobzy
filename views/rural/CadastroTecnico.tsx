@@ -15,7 +15,7 @@ import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { isRuralProperty } from '../../utils/propertyNiche';
-import * as toGeoJSON from '@mapbox/togeojson';
+import * as toGeoJSON from '@tmcw/togeojson';
 import JSZip from 'jszip';
 import { toast } from 'sonner';
 
@@ -193,7 +193,7 @@ const CadastroTecnico: React.FC = () => {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter">
+        <h1 className="text-3xl font-bold text-black uppercase italic tracking-tighter">
           Cadastro Técnico
         </h1>
         <p className="text-black/60 font-medium">
@@ -214,10 +214,10 @@ const CadastroTecnico: React.FC = () => {
             >
               <stat.icon size={24} />
             </div>
-            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">
+            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">
               {stat.label}
             </h3>
-            <p className="text-3xl font-black text-slate-900 italic tracking-tighter">
+            <p className="text-3xl font-bold text-slate-900 italic tracking-tighter">
               {stat.value}
             </p>
           </div>
@@ -448,19 +448,19 @@ const CadastroTecnico: React.FC = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     Propriedade
                   </th>
-                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     Localização
                   </th>
-                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     Área (ha)
                   </th>
-                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     Status
                   </th>
-                  <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     Ações
                   </th>
                 </tr>

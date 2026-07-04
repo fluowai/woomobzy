@@ -98,7 +98,7 @@ const PortalProprietarioRural: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="flex items-center gap-3 text-3xl font-black uppercase italic tracking-tighter text-black">
+        <h1 className="flex items-center gap-3 text-3xl font-bold uppercase italic tracking-tighter text-black">
           <Home className="text-emerald-600" size={32} />
           Portal do Proprietário Rural
         </h1>
@@ -139,29 +139,29 @@ const PortalProprietarioRural: React.FC = () => {
                   <article key={property.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h2 className="text-lg font-black text-slate-900">{property.title}</h2>
+                        <h2 className="text-lg font-bold text-slate-900">{property.title}</h2>
                         <p className="mt-1 flex items-center gap-1 text-sm text-slate-500">
                           <MapPin size={14} /> {[property.city, property.state].filter(Boolean).join(' / ') || 'Localização não informada'}
                         </p>
                       </div>
-                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase text-emerald-700">
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-bold uppercase text-emerald-700">
                         {property.status || 'Sem status'}
                       </span>
                     </div>
                     <div className="mt-5 grid grid-cols-3 gap-3">
                       <div className="rounded-xl bg-slate-50 p-3 text-center">
                         <Eye className="mx-auto mb-1 text-blue-500" size={16} />
-                        <p className="font-black text-slate-900">{score || '—'}</p>
+                        <p className="font-bold text-slate-900">{score || '—'}</p>
                         <p className="text-[10px] font-bold uppercase text-slate-400">Score</p>
                       </div>
                       <div className="rounded-xl bg-slate-50 p-3 text-center">
                         <TrendingUp className="mx-auto mb-1 text-emerald-500" size={16} />
-                        <p className="font-black text-slate-900">{propertyLeads.length}</p>
+                        <p className="font-bold text-slate-900">{propertyLeads.length}</p>
                         <p className="text-[10px] font-bold uppercase text-slate-400">Leads</p>
                       </div>
                       <div className="rounded-xl bg-slate-50 p-3 text-center">
                         <FileText className="mx-auto mb-1 text-amber-500" size={16} />
-                        <p className="font-black text-slate-900">{propertyDocs.length}</p>
+                        <p className="font-bold text-slate-900">{propertyDocs.length}</p>
                         <p className="text-[10px] font-bold uppercase text-slate-400">Docs</p>
                       </div>
                     </div>
@@ -194,7 +194,7 @@ const PortalProprietarioRural: React.FC = () => {
                       <p className="text-xs text-slate-500">{property?.title || 'Propriedade rural'} · {new Date(document.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase ${validated ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase ${validated ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                     {validated ? 'Validado' : document.status || 'Pendente'}
                   </span>
                 </div>
@@ -213,8 +213,8 @@ const PortalProprietarioRural: React.FC = () => {
           ].map(([label, value, Icon, color]) => (
             <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-6">
               <Icon className={String(color)} size={24} />
-              <p className="mt-4 text-xs font-black uppercase tracking-widest text-slate-400">{label as string}</p>
-              <p className="mt-1 text-2xl font-black text-slate-900">{value as string}</p>
+              <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">{label as string}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{value as string}</p>
             </div>
           ))}
         </div>

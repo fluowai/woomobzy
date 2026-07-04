@@ -115,7 +115,7 @@ export default function PortalCompradorUrbano() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-3 text-3xl font-black uppercase italic tracking-tighter text-slate-900">
+        <h1 className="flex items-center gap-3 text-3xl font-bold uppercase italic tracking-tighter text-slate-900">
           <Building2 className="text-blue-600" size={32} />
           Portal do Comprador
         </h1>
@@ -160,7 +160,7 @@ export default function PortalCompradorUrbano() {
                 </div>
                 <div className="p-5">
                   <p className="text-xs font-bold uppercase text-blue-600">{property.property_type} - {property.purpose}</p>
-                  <h2 className="mt-1 font-black text-slate-900">{property.title}</h2>
+                  <h2 className="mt-1 font-bold text-slate-900">{property.title}</h2>
                   <p className="mt-1 flex items-center gap-1 text-sm text-slate-500"><MapPin size={14} /> {[property.neighborhood, property.city, property.state].filter(Boolean).join(', ')}</p>
                   <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
                     {features.dormitorios > 0 && <span className="flex items-center gap-1"><Bed size={15} /> {features.dormitorios}</span>}
@@ -168,7 +168,7 @@ export default function PortalCompradorUrbano() {
                     {features.vagas > 0 && <span className="flex items-center gap-1"><Car size={15} /> {features.vagas}</span>}
                     {area > 0 && <span className="flex items-center gap-1"><Maximize size={15} /> {area} m2</span>}
                   </div>
-                  <p className="mt-5 text-xl font-black text-blue-600">{money(property.price || 0)}</p>
+                  <p className="mt-5 text-xl font-bold text-blue-600">{money(property.price || 0)}</p>
                 </div>
               </article>
             );

@@ -97,7 +97,7 @@ const Migration: React.FC = () => {
           <Database className="text-white" size={32} />
         </div>
         <div>
-          <h1 className="text-3xl font-black text-slate-900">
+          <h1 className="text-3xl font-bold text-slate-900">
             Migrador de Imóveis
           </h1>
           <p className="text-slate-500 font-medium">
@@ -124,7 +124,7 @@ const Migration: React.FC = () => {
               <button
                 onClick={handleStartMigration}
                 disabled={status === 'running'}
-                className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg ${
+                className={`px-8 py-4 rounded-xl font-bold uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg ${
                   status === 'running'
                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                     : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 active:scale-95 shadow-indigo-200'
@@ -172,7 +172,7 @@ const Migration: React.FC = () => {
               <div className="flex items-center gap-2 opacity-80 mb-2 text-xs font-bold uppercase tracking-widest">
                 <BarChart3 size={16} /> Total Importado
               </div>
-              <div className="text-7xl font-black tracking-tighter mb-4">
+              <div className="text-7xl font-bold tracking-tighter mb-4">
                 {count}
               </div>
               <div className="flex items-center gap-2 text-indigo-100 bg-white/20 p-2 rounded-lg w-fit text-xs font-medium backdrop-blur-sm">

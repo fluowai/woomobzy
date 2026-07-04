@@ -159,7 +159,7 @@ const Simulator360: React.FC = () => {
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-3">
+          <h1 className="text-4xl font-bold text-slate-900 uppercase italic tracking-tighter leading-none mb-3">
             Simulador <span className="text-blue-600">Financeiro 360°</span>
           </h1>
           <p className="text-slate-500 font-medium italic">
@@ -168,10 +168,10 @@ const Simulator360: React.FC = () => {
         </div>
         
         <div className="flex gap-2">
-           <button onClick={printProposal} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-900/10">
+           <button onClick={printProposal} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-900/10">
               <Printer size={16} /> Imprimir PDF
            </button>
-           <button onClick={generateProposal} disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-500/20">
+           <button onClick={generateProposal} disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-500/20">
               <FileText size={16} /> Gerar Proposta
            </button>
         </div>
@@ -182,26 +182,26 @@ const Simulator360: React.FC = () => {
         <div className="lg:col-span-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-xl p-8 lg:p-12 space-y-10">
           <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
-               <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-2">Valor do Imóvel / Lote</label>
+               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-2">Valor do Imóvel / Lote</label>
                <div className="relative">
                  <DollarSign size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-600" />
                  <input 
                    type="number"
                    value={propertyPrice}
                    onChange={(e) => setPropertyPrice(Number(e.target.value))}
-                   className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none font-black text-xl text-slate-900"
+                   className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-xl text-slate-900"
                  />
                </div>
             </div>
             <div className="space-y-4">
-               <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-2">Valor da Entrada (Sinal)</label>
+               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-2">Valor da Entrada (Sinal)</label>
                <div className="relative">
                  <DollarSign size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-500" />
                  <input 
                    type="number"
                    value={entryValue}
                    onChange={(e) => setEntryValue(Number(e.target.value))}
-                   className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none font-black text-xl text-slate-900"
+                   className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-xl text-slate-900"
                  />
                </div>
             </div>
@@ -209,19 +209,19 @@ const Simulator360: React.FC = () => {
 
           <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
-               <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-2">Prazo (Meses)</label>
+               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-2">Prazo (Meses)</label>
                <div className="relative">
                  <Calendar size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-600" />
                  <input 
                    type="number"
                    value={installmentsCount}
                    onChange={(e) => setInstallmentsCount(Number(e.target.value))}
-                   className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none font-black text-xl text-slate-900"
+                   className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-xl text-slate-900"
                  />
                </div>
             </div>
             <div className="space-y-4">
-               <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-2">Taxa de Juros (% ao mês)</label>
+               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] ml-2">Taxa de Juros (% ao mês)</label>
                <div className="relative">
                  <Percent size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-amber-500" />
                  <input 
@@ -229,7 +229,7 @@ const Simulator360: React.FC = () => {
                    step="0.01"
                    value={interestRate}
                    onChange={(e) => setInterestRate(Number(e.target.value))}
-                   className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none font-black text-xl text-slate-900"
+                   className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-xl text-slate-900"
                  />
                </div>
             </div>
@@ -238,12 +238,12 @@ const Simulator360: React.FC = () => {
           {/* Seção de Balões */}
           <section className="space-y-6">
              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-               <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
                  <RefreshCw size={16} className="text-blue-600" /> Balões / Reforços
                </h3>
                <button 
                 onClick={addBalloon}
-                className="text-xs font-black text-blue-600 hover:text-blue-700 flex items-center gap-2 uppercase tracking-widest"
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-2 uppercase tracking-widest"
                >
                  <PlusCircle size={16} /> Adicionar Balão
                </button>
@@ -259,7 +259,7 @@ const Simulator360: React.FC = () => {
                    <div key={b.id} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 group">
                       <div className="flex-1 grid grid-cols-2 gap-4">
                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-black text-slate-400 uppercase">Mês:</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Mês:</span>
                             <input 
                               type="number"
                               value={b.month}
@@ -268,7 +268,7 @@ const Simulator360: React.FC = () => {
                             />
                          </div>
                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-black text-slate-400 uppercase">Valor:</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Valor:</span>
                             <input 
                               type="number"
                               value={b.amount}
@@ -294,8 +294,8 @@ const Simulator360: React.FC = () => {
         <aside className="lg:col-span-4 space-y-6">
           <div className="bg-slate-900 text-white rounded-[2.5rem] shadow-2xl p-10 space-y-10 sticky top-10">
              <div className="space-y-1">
-                <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest">Parcela Mensal Estimada</h3>
-                <p className="text-5xl font-black italic tracking-tighter leading-tight">
+                <h3 className="text-xs font-bold text-blue-400 uppercase tracking-widest">Parcela Mensal Estimada</h3>
+                <p className="text-5xl font-bold italic tracking-tighter leading-tight">
                    {formatCurrency(monthlyInstallment)}
                 </p>
              </div>
@@ -303,24 +303,24 @@ const Simulator360: React.FC = () => {
              <div className="space-y-6 border-t border-white/10 pt-8">
                 <div className="flex justify-between items-center">
                    <span className="text-xs font-bold text-white/40 uppercase">Total Financiado</span>
-                   <span className="text-lg font-black text-white">{formatCurrency(totalFinanced)}</span>
+                   <span className="text-lg font-bold text-white">{formatCurrency(totalFinanced)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                    <span className="text-xs font-bold text-white/40 uppercase">Total de Balões</span>
-                   <span className="text-lg font-black text-amber-400">
+                   <span className="text-lg font-bold text-amber-400">
                      {formatCurrency(balloons.reduce((acc, b) => acc + b.amount, 0))}
                    </span>
                 </div>
                 <div className="flex justify-between items-center">
                    <span className="text-xs font-bold text-white/40 uppercase">Total de Juros</span>
-                   <span className="text-lg font-black text-red-400">
+                   <span className="text-lg font-bold text-red-400">
                       {formatCurrency(totalCost - propertyPrice)}
                    </span>
                 </div>
                 
                 <div className="bg-white/5 p-6 rounded-3xl border border-white/10 mt-6">
-                   <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-2">VGV Total da Negociação</p>
-                   <p className="text-3xl font-black text-emerald-400 italic tracking-tighter">
+                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-2">VGV Total da Negociação</p>
+                   <p className="text-3xl font-bold text-emerald-400 italic tracking-tighter">
                      {formatCurrency(totalCost)}
                    </p>
                 </div>
@@ -342,7 +342,7 @@ const Simulator360: React.FC = () => {
                  {feedback}
                </p>
              )}
-             <button onClick={() => saveSimulation('draft')} disabled={saving} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all">
+             <button onClick={() => saveSimulation('draft')} disabled={saving} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-bold uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all">
                 Salvar Simulação no CRM
              </button>
           </div>

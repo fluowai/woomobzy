@@ -66,7 +66,7 @@ export const LeaseDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-black uppercase italic tracking-tighter flex items-center gap-3">
             <Key className="text-blue-600" size={32} />
             Gestão de <span className="text-blue-600">Locação</span>
           </h1>
@@ -89,8 +89,8 @@ export const LeaseDashboard: React.FC = () => {
             <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} w-fit mb-3`}>
               <stat.icon size={20} />
             </div>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{stat.label}</p>
-            <p className="text-xl font-black text-slate-900 italic tracking-tighter">{stat.value}</p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">{stat.label}</p>
+            <p className="text-xl font-bold text-slate-900 italic tracking-tighter">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -100,7 +100,7 @@ export const LeaseDashboard: React.FC = () => {
         <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center gap-2 mb-6">
             <Calendar size={18} className="text-blue-600" />
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Próximos Eventos</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800">Próximos Eventos</h3>
           </div>
           <div className="space-y-4">
             {events.length === 0 && (
@@ -118,7 +118,7 @@ export const LeaseDashboard: React.FC = () => {
                     <p className="text-xs font-bold text-slate-700 truncate">{event.label}</p>
                     <p className="text-[10px] text-slate-400 truncate">{event.description}</p>
                   </div>
-                  <span className={`text-[10px] font-black px-2 py-1 rounded-md ${
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${
                     event.days_until <= 5 ? 'bg-red-50 text-red-600' :
                     event.days_until <= 15 ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-500'
                   }`}>
@@ -133,7 +133,7 @@ export const LeaseDashboard: React.FC = () => {
         {/* Leases Table */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between p-6 border-b border-slate-100">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Contratos</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800">Contratos</h3>
             <div className="flex gap-1 bg-slate-50 rounded-xl p-1">
               {[
                 { status: 'active', label: 'Ativos' },
@@ -143,7 +143,7 @@ export const LeaseDashboard: React.FC = () => {
                 <button
                   key={f.status}
                   onClick={() => setFilterStatus(f.status)}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
                     filterStatus === f.status ? 'bg-white text-black shadow-sm' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >

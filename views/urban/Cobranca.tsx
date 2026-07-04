@@ -183,7 +183,7 @@ const Cobranca: React.FC = () => {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-black uppercase italic tracking-tighter flex items-center gap-3">
             <DollarSign className="text-blue-600" size={32} />
             Cobranças & Boletos
           </h1>
@@ -203,7 +203,7 @@ const Cobranca: React.FC = () => {
                <button
                  key={tab.id}
                  onClick={() => setActiveTab(tab.id as any)}
-                 className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
+                 className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
                >
                  {tab.label}
                </button>
@@ -261,10 +261,10 @@ const Cobranca: React.FC = () => {
               className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"
             >
               <stat.icon size={24} className={`${stat.color} mb-3`} />
-              <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+              <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
                 {stat.label}
               </h3>
-              <p className="text-2xl font-black text-slate-900">
+              <p className="text-2xl font-bold text-slate-900">
                 {stat.value?.toLocaleString('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
@@ -281,19 +281,19 @@ const Cobranca: React.FC = () => {
           <p className="text-emerald-600 text-xs font-bold uppercase">
             Recebido
           </p>
-          <p className="text-2xl font-black text-emerald-700">
+          <p className="text-2xl font-bold text-emerald-700">
             R$ {totalRecebido.toLocaleString('pt-BR')}
           </p>
         </div>
         <div className="bg-red-50 p-6 rounded-2xl border border-red-200">
           <p className="text-red-600 text-xs font-bold uppercase">Vencido</p>
-          <p className="text-2xl font-black text-red-700">
+          <p className="text-2xl font-bold text-red-700">
             R$ {totalVencido.toLocaleString('pt-BR')}
           </p>
         </div>
         <div className="bg-blue-50 p-6 rounded-2xl border border-blue-200">
           <p className="text-blue-600 text-xs font-bold uppercase">Aberto</p>
-          <p className="text-2xl font-black text-blue-700">
+          <p className="text-2xl font-bold text-blue-700">
             R$ {totalAberto.toLocaleString('pt-BR')}
           </p>
         </div>
@@ -321,25 +321,25 @@ const Cobranca: React.FC = () => {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">
                   Cliente / Contrato
                 </th>
-                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">
                   Tipo
                 </th>
-                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">
                   Vencimento
                 </th>
-                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">
                   Valor
                 </th>
-                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">
                   Status
                 </th>
-                <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                <th className="text-left px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">
                   Atraso
                 </th>
-                <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase">
+                <th className="text-right px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">
                   Ações
                 </th>
               </tr>
@@ -372,7 +372,7 @@ const Cobranca: React.FC = () => {
                         </p>
                       </td>
                       <td className="px-6 py-4">
-                         <span className="text-[10px] font-black uppercase px-2 py-1 bg-slate-100 rounded text-slate-500">
+                         <span className="text-[10px] font-bold uppercase px-2 py-1 bg-slate-100 rounded text-slate-500">
                            {b.description?.includes('Aluguel') ? 'Aluguel' : b.description?.includes('Parcela') ? 'Lote' : 'Venda'}
                          </span>
                       </td>
@@ -393,7 +393,7 @@ const Cobranca: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                          {b.status === 'vencido' ? (
-                           <span className="text-[10px] font-black text-red-600 bg-red-50 px-2 py-1 rounded">
+                           <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded">
                              {cobrancaService.calculateDiasVencido(b.due_date!)} DIAS
                            </span>
                          ) : '-'}

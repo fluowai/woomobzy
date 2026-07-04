@@ -39,7 +39,7 @@ export const TemplateList: React.FC = () => {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-black uppercase italic tracking-tighter flex items-center gap-3">
             <FileText className="text-blue-600" size={32} />
             Modelos de <span className="text-blue-600">Contrato</span>
           </h1>
@@ -87,7 +87,7 @@ export const TemplateList: React.FC = () => {
                   </div>
                 </div>
                 {template.is_default && (
-                  <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg uppercase">
+                  <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg uppercase">
                     Padrão
                   </span>
                 )}

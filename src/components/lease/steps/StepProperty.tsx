@@ -10,7 +10,7 @@ interface Props {
 }
 
 const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
-const labelClass = 'text-[10px] font-black text-slate-500 uppercase tracking-widest';
+const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
 export const StepProperty: React.FC<Props> = ({ lease, updateField }) => {
   const [properties, setProperties] = useState<any[]>([]);
@@ -43,7 +43,7 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Building2 size={20} /></div>
-          <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Selecionar Imóvel</h4>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Selecionar Imóvel</h4>
         </div>
 
         <div className="relative mb-4">
@@ -90,7 +90,7 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField }) => {
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><MapPin size={20} /></div>
-              <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Detalhes do Imóvel</h4>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Detalhes do Imóvel</h4>
             </div>
             <div className="p-4 bg-blue-50 rounded-xl">
               <p className="font-bold text-lg text-slate-800">{selectedProperty.title}</p>
@@ -109,7 +109,7 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField }) => {
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Home size={20} /></div>
-              <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">Utilidades e Encargos</h4>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Utilidades e Encargos</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>

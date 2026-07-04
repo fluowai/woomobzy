@@ -28,11 +28,11 @@ const LeadDetailsModal: React.FC<{
       <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100">
         <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-900 text-white">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center font-black text-xl">
+            <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center font-bold text-xl">
               {lead.name.charAt(0)}
             </div>
             <div>
-              <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-tight">
+              <h3 className="text-2xl font-bold uppercase italic tracking-tighter leading-tight">
                 {lead.name}
               </h3>
               <p className="text-white/60 text-xs font-bold uppercase tracking-widest">
@@ -49,7 +49,7 @@ const LeadDetailsModal: React.FC<{
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div className="space-y-6">
                <section>
-                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Informações de Contato</h5>
+                 <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Informações de Contato</h5>
                  <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><Phone size={14} /></div>
@@ -63,7 +63,7 @@ const LeadDetailsModal: React.FC<{
                </section>
 
                <section>
-                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Linha do Tempo</h5>
+                 <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Linha do Tempo</h5>
                  <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center"><Clock size={14} /></div>
@@ -78,18 +78,18 @@ const LeadDetailsModal: React.FC<{
 
             <div className="space-y-6">
                <section className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Origem & Marketing</h5>
+                 <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Origem & Marketing</h5>
                  <div className="space-y-5">
                     <div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Cadeia de Origem</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Cadeia de Origem</span>
                       <span className="px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-bold">{lead.source}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Canal Orgânico</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Canal Orgânico</span>
                       <span className="font-bold text-slate-700 text-sm">{lead.organic_channel || 'Indireto'}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Página Captura</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Página Captura</span>
                       <span className="font-bold text-orange-600 text-sm">{lead.campaign || 'Página de Lançamento'}</span>
                     </div>
                  </div>
@@ -98,7 +98,7 @@ const LeadDetailsModal: React.FC<{
           </div>
 
           <section>
-            <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Notas Técnicas</h5>
+            <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Notas Técnicas</h5>
             <div className="bg-slate-50 border border-slate-100 p-6 rounded-3xl">
                <p className="text-slate-500 font-medium italic text-sm">
                  {lead.notes || 'Nenhuma nota adicional registrada pelo sistema.'}
@@ -181,7 +181,7 @@ const WaitlistLeads: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight italic">
+          <h1 className="text-2xl font-bold text-slate-800 uppercase tracking-tight italic">
             Lista de{' '}
             <span className="text-orange-500">Espera e Pré-Lançamento</span>
           </h1>
@@ -201,16 +201,16 @@ const WaitlistLeads: React.FC = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
             Total de Interessados
           </p>
-          <p className="text-3xl font-black text-slate-800">{leads.length}</p>
+          <p className="text-3xl font-bold text-slate-800">{leads.length}</p>
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
             Novos (Últimos 7 dias)
           </p>
-          <p className="text-3xl font-black text-orange-500">
+          <p className="text-3xl font-bold text-orange-500">
             {
               leads.filter(
                 (l) =>
@@ -221,10 +221,10 @@ const WaitlistLeads: React.FC = () => {
           </p>
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
             Página de Origem
           </p>
-          <p className="text-3xl font-black text-slate-800">Coming Soon</p>
+          <p className="text-3xl font-bold text-slate-800">Coming Soon</p>
         </div>
       </div>
 
@@ -255,16 +255,16 @@ const WaitlistLeads: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-50">
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Interessado
                 </th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Contatos
                 </th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Canal de Origem
                 </th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Data de Inscrição
                 </th>
               </tr>

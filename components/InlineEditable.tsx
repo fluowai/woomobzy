@@ -145,7 +145,7 @@ const InlineEditable: React.FC<InlineEditableProps> = ({
         <>
           {children}
           {isHovered && !isEditing && (
-            <div className="absolute -top-6 left-0 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-t font-black uppercase tracking-widest flex items-center gap-1 shadow-lg pointer-events-none whitespace-nowrap">
+            <div className="absolute -top-6 left-0 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-t font-bold uppercase tracking-widest flex items-center gap-1 shadow-lg pointer-events-none whitespace-nowrap">
               <Edit2 size={10} />
               {textKey}
             </div>

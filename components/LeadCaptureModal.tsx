@@ -1,164 +1,168 @@
-import { logger } from '@/utils/logger';
-import React, { useState } from 'react';
-import { X, MessageCircle, Loader2 } from 'lucide-react';
-import { leadService } from '../services/leads';
+import { X, CheckCircle2 } from 'lucide-react';
+import { useTexts } from '../context/TextsContext';
 import { useSettings } from '../context/SettingsContext';
-import { callApi } from '../src/lib/api';
+import InlineEditable from './InlineEditable';
 
 interface LeadCaptureModalProps {
   isOpen: boolean;
+  isSubmitting: boolean;
+  leadSuccess: boolean;
+  leadForm: { name: string; phone: string; email: string; subject: string };
   onClose: () => void;
-  propertyTitle: string;
-  propertyId: string;
+  onSubmit: (e: React.FormEvent) => void;
+  onFormChange: (field: string, value: string) => void;
 }
 
 const LeadCaptureModal: React.FC<LeadCaptureModalProps> = ({
   isOpen,
+  isSubmitting,
+  leadSuccess,
+  leadForm,
   onClose,
-  propertyTitle,
-  propertyId,
+  onSubmit,
+  onFormChange,
 }) => {
+  const { t } = useTexts();
   const { settings } = useSettings();
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // 1. Save Lead to CRM (Non-blocking or handled gracefully)
-      try {
-        await leadService.create({
-          name,
-          phone,
-          propertyId: propertyId,
-          source: 'WhatsApp',
-          status: 'Novo',
-        });
-      } catch (dbError) {
-        logger.error('Failed to save lead to CRM:', dbError);
-        // Continue to redirect anyway
-      }
-
-      // 2. Trigger WhatsApp Automation (Serverless)
-      try {
-        await callApi('/api/send-welcome', {
-          method: 'POST',
-          body: JSON.stringify({
-            name,
-            phone,
-            propertyTitle,
-          }),
-        });
-      } catch (apiError) {
-        logger.error('Failed to trigger automation:', apiError);
-      }
-
-      // 3. Redirect to WhatsApp (User Interface)
-      const message = `Olá! Me chamo ${name}. Gostaria de mais informações sobre o imóvel: ${propertyTitle}`;
-      const whatsappNumber =
-        settings.socialLinks?.whatsapp?.replace(/\D/g, '') || '';
-
-      if (whatsappNumber) {
-        // Pequeno delay para garantir que a requisição anterior não seja cancelada pelo navegador
-        setTimeout(() => {
-          window.open(
-            `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`,
-            '_blank'
-          );
-          onClose();
-        }, 500);
-      } else {
-        onClose();
-      }
-    } catch (error) {
-      logger.error('Unexpected error:', error);
-      onClose();
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+        onClick={onClose}
+      ></div>
+      <div className="relative bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"
+          className="absolute top-8 right-8 w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-black transition-colors"
         >
-          <X size={20} className="text-slate-500" />
+          <X size={24} />
         </button>
-
-        <div className="p-8">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MessageCircle size={32} className="text-emerald-600" />
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 mb-2">
-              Falar no WhatsApp
+        <div className="p-12 md:p-16">
+          <div className="mb-10 text-center">
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.4em] mb-4 block"
+              style={{ color: settings.primaryColor }}
+            >
+              <InlineEditable textKey="lead_modal.badge">
+                {t('lead_modal.badge', 'Atendimento Select')}
+              </InlineEditable>
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-black uppercase italic tracking-tighter leading-none mb-4">
+              <InlineEditable textKey="lead_modal.title_line1">
+                {t('lead_modal.title_line1', 'Como podemos')}
+              </InlineEditable>{' '}
+              <br />
+              <span style={{ color: settings.primaryColor }}>
+                <InlineEditable textKey="lead_modal.title_line2">
+                  {t('lead_modal.title_line2', 'Ajudar você?')}
+                </InlineEditable>
+              </span>
             </h2>
-            <p className="text-slate-500 text-sm">
-              Preencha seus dados para iniciar o atendimento sobre o imóvel{' '}
-              <strong>{propertyTitle}</strong>.
+            <p className="text-black/60 font-medium italic">
+              <InlineEditable textKey="lead_modal.subtitle">
+                {t(
+                  'lead_modal.subtitle',
+                  'Preencha os dados abaixo e um consultor entrará em contato em instantes.'
+                )}
+              </InlineEditable>
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Seu Nome
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-                placeholder="Como gostaria de ser chamado?"
-                required
-              />
+          {leadSuccess ? (
+            <div className="text-center py-10 animate-bounce">
+              <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 size={40} className="text-emerald-600" />
+              </div>
+              <h3 className="text-xl font-bold text-black uppercase italic">
+                Mensagem Enviada!
+              </h3>
+              <p className="text-black/60">Obrigado pela confiança.</p>
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Seu WhatsApp
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
-                placeholder="(DDD) 99999-9999"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-[#25D366] hover:bg-[#20bd5a] text-white font-black rounded-xl uppercase tracking-widest shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  Iniciando...
-                </>
-              ) : (
-                <>
-                  <MessageCircle size={20} />
-                  Iniciar Conversa
-                </>
-              )}
-            </button>
-
-            <p className="text-center text-[10px] text-slate-400 mt-4">
-              Seus dados estão seguros e serão utilizados apenas para este
-              atendimento.
-            </p>
-          </form>
+          ) : (
+            <form onSubmit={onSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-4">
+                  <InlineEditable textKey="lead_modal.form_name_label">
+                    {t('lead_modal.form_name_label', 'Seu Nome Completo')}
+                  </InlineEditable>
+                </p>
+                <input
+                  required
+                  type="text"
+                  className="w-full px-8 py-5 rounded-full bg-slate-50 border border-slate-100 focus:border-slate-300 focus:bg-white transition-all outline-none font-bold text-slate-700"
+                  placeholder={t(
+                    'lead_modal.form_name_placeholder',
+                    'Ex: João da Silva'
+                  )}
+                  value={leadForm.name}
+                  onChange={(e) => onFormChange('name', e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-4">
+                    <InlineEditable textKey="lead_modal.form_phone_label">
+                      {t('lead_modal.form_phone_label', 'WhatsApp')}
+                    </InlineEditable>
+                  </p>
+                  <input
+                    required
+                    type="tel"
+                    className="w-full px-8 py-5 rounded-full bg-slate-50 border border-slate-100 focus:border-slate-300 focus:bg-white transition-all outline-none font-bold text-slate-700"
+                    placeholder={t(
+                      'lead_modal.form_phone_placeholder',
+                      '(00) 00000-0000'
+                    )}
+                    value={leadForm.phone}
+                    onChange={(e) => onFormChange('phone', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-4">
+                    <InlineEditable textKey="lead_modal.form_email_label">
+                      {t('lead_modal.form_email_label', 'E-mail (Opcional)')}
+                    </InlineEditable>
+                  </p>
+                  <input
+                    type="email"
+                    className="w-full px-8 py-5 rounded-full bg-slate-50 border border-slate-100 focus:border-slate-300 focus:bg-white transition-all outline-none font-bold text-slate-700"
+                    placeholder={t(
+                      'lead_modal.form_email_placeholder',
+                      'contato@email.com'
+                    )}
+                    value={leadForm.email}
+                    onChange={(e) => onFormChange('email', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="pt-4">
+                <button
+                  disabled={isSubmitting}
+                  type="submit"
+                  className="w-full py-6 rounded-full font-bold uppercase text-xs tracking-[0.3em] text-white transition-all shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50"
+                  style={{ backgroundColor: settings.primaryColor }}
+                >
+                  {isSubmitting
+                    ? t('lead_modal.submitting', 'Enviando...')
+                    : t(
+                        'lead_modal.submit_button',
+                        'Solicitar Atendimento Exclusivo'
+                      )}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+        <div className="bg-slate-50 p-6 text-center border-t border-slate-100">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+            {t(
+              'lead_modal.privacy_notice',
+              'Sua privacidade é nossa prioridade absoluta.'
+            )}
+          </p>
         </div>
       </div>
     </div>

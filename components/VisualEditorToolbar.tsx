@@ -29,7 +29,7 @@ const VisualEditorToolbar: React.FC = () => {
             <Layout size={20} />
           </div>
           <div>
-            <h4 className="text-white font-black text-sm uppercase tracking-widest">
+            <h4 className="text-white font-bold text-sm uppercase tracking-widest">
               Editor Visual
             </h4>
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
@@ -41,7 +41,7 @@ const VisualEditorToolbar: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => refresh()}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all text-xs font-black uppercase tracking-widest"
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all text-xs font-bold uppercase tracking-widest"
           >
             <Save size={16} />
             Sincronizar
@@ -49,7 +49,7 @@ const VisualEditorToolbar: React.FC = () => {
 
           <button
             onClick={() => setVisualMode(false)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-600/30"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all text-xs font-bold uppercase tracking-widest shadow-lg shadow-indigo-600/30"
           >
             <EyeOff size={16} />
             Sair do Editor

@@ -26,7 +26,7 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
       {config.editableFields?.length ? (
         <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
           <div className="mb-4">
-            <h3 className="text-sm font-black text-indigo-950">
+            <h3 className="text-sm font-bold text-indigo-950">
               Edicao rapida do tema
             </h3>
             <p className="mt-1 text-xs leading-5 text-indigo-700">
@@ -38,7 +38,7 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
           <div className="space-y-4">
             {config.editableFields.map((field) => (
               <div key={field.key}>
-                <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-indigo-900">
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-indigo-900">
                   {field.label}
                 </label>
                 {field.type === 'textarea' ? (

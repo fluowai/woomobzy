@@ -13,7 +13,7 @@ const SectionCard: React.FC<{ icon: React.ElementType; title: string; children: 
   <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
     <div className="flex items-center gap-3 mb-4">
       <div className="p-2 bg-blue-50 rounded-xl text-blue-600"><Icon size={18} /></div>
-      <h4 className="text-sm font-black uppercase tracking-widest text-slate-800">{title}</h4>
+      <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">{title}</h4>
     </div>
     {children}
   </section>
@@ -21,7 +21,7 @@ const SectionCard: React.FC<{ icon: React.ElementType; title: string; children: 
 
 const Field: React.FC<{ label: string; value?: string | number | null }> = ({ label, value }) => (
   <div>
-    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
     <p className="text-sm font-bold text-slate-700">{value || <span className="text-slate-300">Não informado</span>}</p>
   </div>
 );
@@ -38,7 +38,7 @@ export const StepReview: React.FC<Props> = ({ lease }) => {
             <CheckCircle size={24} />
           </div>
           <div>
-            <h3 className="text-lg font-black text-emerald-800">Revisão Final</h3>
+            <h3 className="text-lg font-bold text-emerald-800">Revisão Final</h3>
             <p className="text-sm text-emerald-600">
               Revise todos os dados antes de ativar o contrato. Após ativação, o contrato será gerado e os boletos poderão ser emitidos.
             </p>

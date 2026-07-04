@@ -200,7 +200,7 @@ const BIRural: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-white rounded-[3rem]">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          <p className="text-sm font-black uppercase tracking-widest text-black/40">
+          <p className="text-sm font-bold uppercase tracking-widest text-black/40">
             Sincronizando BI...
           </p>
         </div>
@@ -213,7 +213,7 @@ const BIRural: React.FC = () => {
       {/* Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-black uppercase italic tracking-tighter leading-none mb-3">
+          <h1 className="text-4xl font-bold text-black uppercase italic tracking-tighter leading-none mb-3">
             BI & Inteligência <br />{' '}
             <span style={{ color: settings.primaryColor }}>Rural Select</span>
           </h1>
@@ -228,7 +228,7 @@ const BIRural: React.FC = () => {
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
-                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${timeRange === range ? 'bg-black text-white' : 'text-black/40 hover:text-black'}`}
+                className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${timeRange === range ? 'bg-black text-white' : 'text-black/40 hover:text-black'}`}
               >
                 {range}
               </button>
@@ -295,15 +295,15 @@ const BIRural: React.FC = () => {
                   <kpi.icon size={24} />
                 </div>
                 <span
-                  className="text-[10px] font-black px-3 py-1 rounded-full bg-slate-100 text-slate-600"
+                  className="text-[10px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600"
                 >
                   {kpi.trend}
                 </span>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40 mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-black/40 mb-2">
                 {kpi.label}
               </p>
-              <h3 className="text-2xl font-black text-black italic tracking-tighter">
+              <h3 className="text-2xl font-bold text-black italic tracking-tighter">
                 {kpi.value}
               </h3>
             </div>
@@ -321,7 +321,7 @@ const BIRural: React.FC = () => {
                 style={{ backgroundColor: settings.primaryColor }}
               ></div>
               <div>
-                <h3 className="text-lg font-black uppercase italic tracking-tighter text-black">
+                <h3 className="text-lg font-bold uppercase italic tracking-tighter text-black">
                   Crescimento de Inventário
                 </h3>
                 <p className="text-xs font-medium text-black/40">
@@ -408,7 +408,7 @@ const BIRural: React.FC = () => {
         {/* Portfolio Distribution Pie Chart */}
         <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100">
           <div className="mb-10">
-            <h3 className="text-lg font-black uppercase italic tracking-tighter text-black">
+            <h3 className="text-lg font-bold uppercase italic tracking-tighter text-black">
               Mix de Produtos
             </h3>
             <p className="text-xs font-medium text-black/40">
@@ -454,7 +454,7 @@ const BIRural: React.FC = () => {
         {/* Regional Distribution Bar Chart */}
         <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100">
           <div className="mb-10">
-            <h3 className="text-lg font-black uppercase italic tracking-tighter text-black">
+            <h3 className="text-lg font-bold uppercase italic tracking-tighter text-black">
               Potencial por Região
             </h3>
             <p className="text-xs font-medium text-black/40">
@@ -500,7 +500,7 @@ const BIRural: React.FC = () => {
         {/* Lead Source Distribution */}
         <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100 overflow-hidden relative">
           <div className="mb-10 relative z-10">
-            <h3 className="text-lg font-black uppercase italic tracking-tighter text-black">
+            <h3 className="text-lg font-bold uppercase italic tracking-tighter text-black">
               Origem da Prospecção
             </h3>
             <p className="text-xs font-medium text-black/40">
@@ -512,10 +512,10 @@ const BIRural: React.FC = () => {
             {leadSourceData.map((source, idx) => (
               <div key={idx} className="space-y-2">
                 <div className="flex justify-between items-end">
-                  <span className="text-xs font-black uppercase tracking-widest text-black">
+                  <span className="text-xs font-bold uppercase tracking-widest text-black">
                     {source.name}
                   </span>
-                  <span className="text-xs font-black text-black/40">
+                  <span className="text-xs font-bold text-black/40">
                     {source.value}%
                   </span>
                 </div>
@@ -537,7 +537,7 @@ const BIRural: React.FC = () => {
               <div className="p-2 rounded-xl bg-white/10">
                 <TrendingUp size={20} className="text-white" />
               </div>
-              <h4 className="text-sm font-black uppercase tracking-tighter italic">
+              <h4 className="text-sm font-bold uppercase tracking-tighter italic">
                 Insight de Performance
               </h4>
             </div>

@@ -126,7 +126,7 @@ const ExportadorPortais: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="flex items-center gap-3 text-3xl font-black uppercase italic tracking-tighter text-black">
+        <h1 className="flex items-center gap-3 text-3xl font-bold uppercase italic tracking-tighter text-black">
           <Upload className="text-blue-600" size={32} />
           Exportador para Portais
         </h1>
@@ -139,8 +139,8 @@ const ExportadorPortais: React.FC = () => {
             <div className={`mb-4 w-fit rounded-2xl p-3 ${stat.bg} ${stat.color}`}>
               <stat.icon size={24} />
             </div>
-            <h3 className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</h3>
-            <p className="text-2xl font-black italic tracking-tighter text-slate-900">{stat.value}</p>
+            <h3 className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{stat.label}</h3>
+            <p className="text-2xl font-bold italic tracking-tighter text-slate-900">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -151,7 +151,7 @@ const ExportadorPortais: React.FC = () => {
             <div className="p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-700">{portal.badge}</span>
+                  <span className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700">{portal.badge}</span>
                   <div>
                     <h3 className="font-bold text-black">{portal.name}</h3>
                     <span className={`text-[10px] font-bold uppercase tracking-widest ${portal.connected ? 'text-emerald-600' : 'text-slate-400'}`}>

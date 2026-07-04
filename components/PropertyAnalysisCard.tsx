@@ -39,7 +39,7 @@ export const PropertyAnalysisCard: React.FC<PropertyAnalysisCardProps> = ({
     <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 border border-indigo-100">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+          <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <Cloud className="text-indigo-600" size={24} />
             Análise Climática e Aptidão
           </h3>
@@ -49,7 +49,7 @@ export const PropertyAnalysisCard: React.FC<PropertyAnalysisCardProps> = ({
           </p>
         </div>
         <div className="flex flex-col items-center">
-          <div className="text-4xl font-black text-indigo-600">
+          <div className="text-4xl font-bold text-indigo-600">
             {analysis.overallScore}
           </div>
           <div className="text-xs text-slate-500 uppercase tracking-wider">
@@ -104,7 +104,7 @@ export const PropertyAnalysisCard: React.FC<PropertyAnalysisCardProps> = ({
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-bold text-slate-700">🐄 Pecuária</h4>
-            <div className="text-2xl font-black text-emerald-600">
+            <div className="text-2xl font-bold text-emerald-600">
               {analysis.aptitude.cattle.score}/10
             </div>
           </div>
@@ -128,7 +128,7 @@ export const PropertyAnalysisCard: React.FC<PropertyAnalysisCardProps> = ({
         <div className="bg-white rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-bold text-slate-700">🌾 Agricultura</h4>
-            <div className="text-2xl font-black text-amber-600">
+            <div className="text-2xl font-bold text-amber-600">
               {analysis.aptitude.agriculture.score}/10
             </div>
           </div>

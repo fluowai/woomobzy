@@ -15,16 +15,6 @@ logger.info('Index.tsx: Creating root...');
 const root = ReactDOM.createRoot(rootElement);
 
 logger.info('Index.tsx: Rendering App...');
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker
-    .getRegistrations()
-    .then(async (registrations) => {
-      await Promise.all(registrations.map((registration) => registration.unregister()));
-      const cacheKeys = await caches.keys();
-      await Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey)));
-    })
-    .catch((error) => logger.warn('Falha ao remover cache antigo do painel:', error));
-}
 
 root.render(
   <React.StrictMode>

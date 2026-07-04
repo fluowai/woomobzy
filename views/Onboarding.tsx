@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { callApi } from '../src/lib/api';
 import {
   Building2,
@@ -18,7 +19,7 @@ import {
   Globe
 } from 'lucide-react';
 import { getTenantBaseUrl } from '../utils/platform';
-import { motion, AnimatePresence } from 'framer-motion';
+
 
 const SITE_TEMPLATES = {
   rural: [
@@ -118,9 +119,9 @@ const Onboarding: React.FC = () => {
   // =====================================
 
   const renderStep1 = () => (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+    <div className="animate-fade-in-slide space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-black text-slate-900">O Perfil da sua Imobiliária</h2>
+        <h2 className="text-2xl font-bold text-slate-900">O Perfil da sua Imobiliária</h2>
         <p className="text-slate-500 mt-2">Vamos preparar a sua fundação digital.</p>
       </div>
 
@@ -189,16 +190,16 @@ const Onboarding: React.FC = () => {
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 
   const renderStep2 = () => (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+    <div className="animate-fade-in-slide space-y-6">
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <Bot size={32} className="text-blue-600" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900">Inteligência Artificial</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Inteligência Artificial</h2>
         <p className="text-slate-500 mt-2">Conecte o "cérebro" que vai atender seus clientes 24h por dia.</p>
       </div>
 
@@ -215,16 +216,16 @@ const Onboarding: React.FC = () => {
         <input type="password" value={formData.apiKey} onChange={e => update('apiKey', e.target.value)} className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors font-mono text-sm" placeholder="sk-..." />
         <p className="text-xs text-slate-400 mt-2">Você pode pular e configurar isso mais tarde no painel.</p>
       </div>
-    </motion.div>
+    </div>
   );
 
   const renderStep3 = () => (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+    <div className="animate-fade-in-slide space-y-6">
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <MessageSquare size={32} className="text-emerald-600" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900">Conexão WhatsApp</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Conexão WhatsApp</h2>
         <p className="text-slate-500 mt-2">Onde a mágica do atendimento acontece.</p>
       </div>
 
@@ -239,16 +240,16 @@ const Onboarding: React.FC = () => {
         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Mensagem de Saudação da IA</label>
         <textarea value={formData.welcomeMessage} onChange={e => update('welcomeMessage', e.target.value)} className="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors resize-none h-24" />
       </div>
-    </motion.div>
+    </div>
   );
 
   const renderStep4 = () => (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+    <div className="animate-fade-in-slide space-y-6">
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <Users size={32} className="text-indigo-600" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900">Convide sua Equipe</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Convide sua Equipe</h2>
         <p className="text-slate-500 mt-2">Convide corretores ou sócios para colaborar com você. (Opcional)</p>
       </div>
 
@@ -263,20 +264,20 @@ const Onboarding: React.FC = () => {
           </div>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 
   const renderStep5 = () => {
     const slug = formData.agencyName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-6 py-8">
+      <div className="animate-fade-in-scale text-center space-y-6 py-8">
         <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-200">
           <CheckCircle2 size={48} className="text-white" />
         </div>
         
         <div>
-          <h2 className="text-3xl font-black text-slate-900">Tudo Pronto!</h2>
+          <h2 className="text-3xl font-bold text-slate-900">Tudo Pronto!</h2>
           <p className="text-slate-500 mt-2 text-lg">Sua infraestrutura de vendas foi gerada.</p>
         </div>
 
@@ -297,7 +298,7 @@ const Onboarding: React.FC = () => {
         <button onClick={() => navigate('/login')} className="w-full max-w-md mx-auto bg-slate-900 text-white p-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20">
           Acessar Meu Painel →
         </button>
-      </motion.div>
+      </div>
     );
   };
 
@@ -309,7 +310,7 @@ const Onboarding: React.FC = () => {
         {step < 5 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Passo {step} de 4</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Passo {step} de 4</span>
               <span className="text-xs font-bold text-blue-600">
                 {step === 1 && 'Fundação'}
                 {step === 2 && 'Inteligência'}
@@ -333,7 +334,7 @@ const Onboarding: React.FC = () => {
             </div>
           )}
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
             {step === 3 && renderStep3()}

@@ -223,7 +223,7 @@ const TemplateCustomizer: React.FC = () => {
               <div className="w-20 h-20 rounded-2xl bg-green-600 flex items-center justify-center mx-auto mb-6 shadow-xl">
                 <Mail size={40} className="text-white" />
               </div>
-              <h1 className="text-4xl font-black text-green-900 mb-3">
+              <h1 className="text-4xl font-bold text-green-900 mb-3">
                 📧 Formulário de Contato
               </h1>
               <p className="text-green-700 text-lg">
@@ -238,7 +238,7 @@ const TemplateCustomizer: React.FC = () => {
                   <Mail size={24} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-green-900">
+                  <h2 className="text-xl font-bold text-green-900">
                     Email de Notificação
                   </h2>
                   <p className="text-sm text-green-700">
@@ -278,7 +278,7 @@ const TemplateCustomizer: React.FC = () => {
                   <MessageCircle size={24} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-green-900">
+                  <h2 className="text-xl font-bold text-green-900">
                     Mensagem WhatsApp Automática
                   </h2>
                   <p className="text-sm text-green-700">
@@ -306,7 +306,7 @@ const TemplateCustomizer: React.FC = () => {
 
                 {/* Variables Guide */}
                 <div className="mt-6 bg-green-50 border-2 border-green-200 rounded-xl p-6">
-                  <h3 className="text-sm font-black text-green-900 mb-4 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-green-900 mb-4 flex items-center gap-2">
                     ✨ Variáveis Disponíveis
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -356,7 +356,7 @@ const TemplateCustomizer: React.FC = () => {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-lg hover:shadow-xl"
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-lg hover:shadow-xl"
               >
                 {saving ? (
                   <RefreshCw className="animate-spin" size={24} />
@@ -891,7 +891,7 @@ const TemplateCustomizer: React.FC = () => {
                     </button>
                     <div
                       onClick={() => brokerPhotoRef.current?.click()}
-                      className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[8px] font-black uppercase text-center py-1 cursor-pointer"
+                      className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[8px] font-bold uppercase text-center py-1 cursor-pointer"
                     >
                       Alterar
                     </div>
@@ -902,7 +902,7 @@ const TemplateCustomizer: React.FC = () => {
                     className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-indigo-400 transition-all cursor-pointer bg-white"
                   >
                     <Plus size={16} className="text-black/40 mx-auto mb-1" />
-                    <p className="text-[8px] font-black text-black/60 uppercase">
+                    <p className="text-[8px] font-bold text-black/60 uppercase">
                       Subir Foto
                     </p>
                   </div>
@@ -1274,7 +1274,7 @@ const TemplateCustomizer: React.FC = () => {
                     >
                       <ImageIcon size={18} />
                     </div>
-                    <span className="font-extrabold text-black tracking-tight">
+                    <span className="font-bold text-black tracking-tight">
                       Agência Imobiliária
                     </span>
                   </>
@@ -1375,7 +1375,7 @@ const TemplateCustomizer: React.FC = () => {
           </div>
 
           <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none z-50">
-            <span className="bg-white/95 backdrop-blur-md px-6 py-3 rounded-full text-xs font-extrabold text-black shadow-2xl border border-white flex items-center gap-2">
+            <span className="bg-white/95 backdrop-blur-md px-6 py-3 rounded-full text-xs font-bold text-black shadow-2xl border border-white flex items-center gap-2">
               PRÉ-VISUALIZAÇÃO EM TEMPO REAL
             </span>
           </div>

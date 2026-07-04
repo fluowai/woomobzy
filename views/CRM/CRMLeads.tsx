@@ -102,10 +102,10 @@ const CRMLeads: React.FC = () => {
             <article key={lead.id} className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-black text-slate-950 truncate">{lead.name}</p>
+                  <p className="font-bold text-slate-950 truncate">{lead.name}</p>
                   <p className="text-xs font-semibold text-slate-400">{lead.classification || 'Sem classificacao'}</p>
                 </div>
-                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-black text-primary">
+                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
                   {lead.status || 'Novo'}
                 </span>
               </div>
@@ -155,7 +155,7 @@ const CRMLeads: React.FC = () => {
                   </td>
                   <td className="px-5 py-4 text-slate-600">{lead.source || '-'}</td>
                   <td className="px-5 py-4">
-                    <span className="inline-flex px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-black">
+                    <span className="inline-flex px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                       {lead.status || 'Novo'}
                     </span>
                   </td>

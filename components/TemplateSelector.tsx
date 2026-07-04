@@ -137,7 +137,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             <LayoutTemplate size={16} />
             Temas estilo Elementor
           </div>
-          <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">
+          <h2 className="text-2xl font-bold text-slate-950 sm:text-3xl">
             Escolha um tema visual igual aos modelos premium
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
@@ -186,7 +186,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
         <div className="space-y-3">
           <div>
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
               Categoria
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -203,7 +203,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
           <div className="grid gap-3 xl:grid-cols-3">
             <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                 Objetivo
               </p>
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -219,7 +219,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                 Estilo
               </p>
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -235,7 +235,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                 Recurso
               </p>
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -277,18 +277,18 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
                 <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-white/95 px-3 py-1 text-xs font-black text-slate-900 shadow-sm">
+                  <span className="rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-slate-900 shadow-sm">
                     {template.group || template.category}
                   </span>
-                  <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-black text-white shadow-sm">
+                  <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white shadow-sm">
                     {sectionCount} secoes
                   </span>
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-white/80">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/80">
                     {template.objective || 'Landing imobiliaria'}
                   </p>
-                  <h3 className="mt-1 text-xl font-black leading-tight text-white">
+                  <h3 className="mt-1 text-xl font-bold leading-tight text-white">
                     {template.name}
                   </h3>
                 </div>
@@ -314,11 +314,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
                 <div className="mt-5 grid grid-cols-2 gap-3 text-xs text-slate-500">
                   <div className="rounded-xl bg-slate-50 p-3">
-                    <span className="block font-black text-slate-900">Pipeline</span>
+                    <span className="block font-bold text-slate-900">Pipeline</span>
                     <span>{template.pipeline || 'CRM integrado'}</span>
                   </div>
                   <div className="rounded-xl bg-slate-50 p-3">
-                    <span className="block font-black text-slate-900">Estilo</span>
+                    <span className="block font-bold text-slate-900">Estilo</span>
                     <span>{template.style || 'Profissional'}</span>
                   </div>
                 </div>
@@ -365,10 +365,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-6 py-4 shadow-2xl backdrop-blur">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-600">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">
                 Template selecionado
               </p>
-              <p className="font-black text-slate-950">
+              <p className="font-bold text-slate-950">
                 {selectedTemplate?.name || 'Modelo imobiliario'}
               </p>
             </div>
@@ -423,14 +423,14 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   />
                   <div className="p-5">
                     <div className="mb-3 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-black text-white">
+                      <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white">
                         {previewTemplate.group || previewTemplate.category}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
                         {previewTemplate.sectionCount || previewTemplate.sections?.length || previewTemplate.blocks.length} secoes
                       </span>
                     </div>
-                    <h3 className="text-2xl font-black text-slate-950">
+                    <h3 className="text-2xl font-bold text-slate-950">
                       {previewTemplate.name}
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -441,16 +441,16 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               </div>
 
               <div className="p-6">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">
                   Pagina completa
                 </p>
-                <h3 className="mt-2 text-2xl font-black text-slate-950">
+                <h3 className="mt-2 text-2xl font-bold text-slate-950">
                   {previewTemplate.objective || 'Landing page imobiliaria'}
                 </h3>
 
                 <div className="mt-5 grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-slate-200 p-4">
-                    <span className="text-xs font-black uppercase text-slate-400">
+                    <span className="text-xs font-bold uppercase text-slate-400">
                       Categoria
                     </span>
                     <p className="mt-1 font-bold text-slate-900">
@@ -458,7 +458,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     </p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-4">
-                    <span className="text-xs font-black uppercase text-slate-400">
+                    <span className="text-xs font-bold uppercase text-slate-400">
                       Pipeline
                     </span>
                     <p className="mt-1 font-bold text-slate-900">
@@ -468,7 +468,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 </div>
 
                 <div className="mt-5">
-                  <h4 className="mb-3 text-sm font-black text-slate-950">
+                  <h4 className="mb-3 text-sm font-bold text-slate-950">
                     Recursos inclusos
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -484,7 +484,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 </div>
 
                 <div className="mt-6">
-                  <h4 className="mb-3 text-sm font-black text-slate-950">
+                  <h4 className="mb-3 text-sm font-bold text-slate-950">
                     Estrutura da pagina
                   </h4>
                   <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
@@ -494,7 +494,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                           key={`${section}-${index}`}
                           className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"
                         >
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-black text-indigo-600 shadow-sm">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-bold text-indigo-600 shadow-sm">
                             {index + 1}
                           </span>
                           <span className="text-sm font-semibold text-slate-700">

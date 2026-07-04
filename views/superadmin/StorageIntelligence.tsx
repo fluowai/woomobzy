@@ -555,7 +555,7 @@ const MetricCard: React.FC<{ label: string; value: string; icon: React.ReactNode
     <div className="mb-3 flex items-center justify-between gap-3">
       <span className="rounded-lg bg-slate-100 p-2 text-slate-700">{icon}</span>
     </div>
-    <div className="text-xl font-black text-slate-950">{value}</div>
+    <div className="text-xl font-bold text-slate-950">{value}</div>
     <div className="mt-1 text-xs font-bold uppercase text-slate-500">{label}</div>
   </div>
 );
@@ -574,7 +574,7 @@ const MinioIntegrationPanel: React.FC<{
             <Server size={18} />
           </span>
           <div>
-            <h2 className="text-base font-black text-slate-950">Destino MinIO via S3</h2>
+            <h2 className="text-base font-bold text-slate-950">Destino MinIO via S3</h2>
             <p className="text-sm text-slate-500">Credenciais usadas pelo backend para uploads, auditoria e URLs assinadas.</p>
           </div>
         </div>
@@ -695,7 +695,7 @@ const MinioIntegrationPanel: React.FC<{
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <label className="block">
-    <span className="mb-1.5 block text-xs font-black uppercase text-slate-500">{label}</span>
+    <span className="mb-1.5 block text-xs font-bold uppercase text-slate-500">{label}</span>
     {children}
   </label>
 );
@@ -781,7 +781,7 @@ const ProtectedAction: React.FC<{
   onRun: () => void;
 }> = ({ title, confirmation, value, active, onChange, onRun }) => (
   <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-    <div className="text-sm font-black text-red-900">{title}</div>
+    <div className="text-sm font-bold text-red-900">{title}</div>
     <input
       value={value}
       onChange={(event) => onChange(event.target.value)}
@@ -809,7 +809,7 @@ const CriticalPanel: React.FC<{
   onRun: () => void;
 }> = ({ title, body, confirmation, value, active, onChange, onRun }) => (
   <div className="rounded-lg border border-slate-200 bg-white p-5">
-    <div className="flex items-center gap-2 text-sm font-black text-slate-950">
+    <div className="flex items-center gap-2 text-sm font-bold text-slate-950">
       <ShieldAlert size={17} className="text-red-600" />
       {title}
     </div>

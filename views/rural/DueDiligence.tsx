@@ -436,7 +436,7 @@ const DueDiligence: React.FC = () => {
           <div className="flex items-center gap-3">
             <Icon size={22} className="text-emerald-600" />
             <h3 className="text-lg font-bold text-black">{title}</h3>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-2">
               {items.filter((i) => i.status === 'approved').length}/
               {items.length} aprovados
             </span>
@@ -492,7 +492,7 @@ const DueDiligence: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-black text-black uppercase italic tracking-tighter flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-black uppercase italic tracking-tighter flex items-center gap-3">
           <ShieldCheck className="text-emerald-600" size={32} />
           Due Diligence Rural
         </h1>
@@ -543,7 +543,7 @@ const DueDiligence: React.FC = () => {
 
           {selectedProperty && (
             <div className="mt-4 border-t border-slate-100 pt-4">
-              <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 Documentos anexados: {documents.length}
               </p>
               <DocumentUpload
@@ -572,7 +572,7 @@ const DueDiligence: React.FC = () => {
               <div
                 className={`w-16 h-16 rounded-full border-4 ${colors.ring} flex items-center justify-center`}
               >
-                <span className={`text-xl font-black ${colors.text}`}>
+                <span className={`text-xl font-bold ${colors.text}`}>
                   {item.score}
                 </span>
               </div>
@@ -656,7 +656,7 @@ const DueDiligence: React.FC = () => {
                   {item.source}
                 </p>
                 <p
-                  className={`text-lg font-black ${
+                  className={`text-lg font-bold ${
                     item.status === 'ATIVO' ||
                     item.status === 'CERTIFICADO' ||
                     item.status === 'REGULAR'
@@ -701,7 +701,7 @@ const DueDiligence: React.FC = () => {
             return (
               <div key={idx} className={`p-4 rounded-xl ${cfg.bg} text-center`}>
                 <Ic size={24} className={`mx-auto mb-2 ${cfg.color}`} />
-                <p className={`text-2xl font-black ${cfg.color}`}>
+                <p className={`text-2xl font-bold ${cfg.color}`}>
                   {item.count}
                 </p>
                 <p

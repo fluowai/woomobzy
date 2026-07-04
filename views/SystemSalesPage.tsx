@@ -240,7 +240,7 @@ const SystemSalesPage: React.FC = () => {
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d89d12] text-white">
               <Building2 size={20} />
             </span>
-            <span className="text-lg font-black tracking-tight">
+            <span className="text-lg font-bold tracking-tight">
               Imob<span className="text-[#d89d12]">Flow</span>
             </span>
           </button>
@@ -266,7 +266,7 @@ const SystemSalesPage: React.FC = () => {
             </button>
             <button
               onClick={() => scrollToSection('demo-form')}
-              className="h-10 rounded-full bg-[#d89d12] px-5 text-sm font-black text-white shadow-lg shadow-[#d89d12]/30 transition hover:bg-[#efb21a]"
+              className="h-10 rounded-full bg-[#d89d12] px-5 text-sm font-bold text-white shadow-lg shadow-[#d89d12]/30 transition hover:bg-[#efb21a]"
             >
               Testar gratis 7 dias
             </button>
@@ -316,12 +316,12 @@ const SystemSalesPage: React.FC = () => {
 
           <div className="relative mx-auto grid min-h-[calc(92vh-4rem)] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1fr_0.95fr]">
             <div className="max-w-3xl">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#d89d12]/40 bg-[#d89d12]/12 px-4 py-2 text-xs font-black text-[#f2b51d]">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#d89d12]/40 bg-[#d89d12]/12 px-4 py-2 text-xs font-bold text-[#f2b51d]">
                 <Sparkles size={14} />
                 CRM imobiliario com IA - Brasil - 2026
               </div>
 
-              <h1 className="text-4xl font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
+              <h1 className="text-4xl font-bold leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
                 Seu proximo lead chega <span className="text-[#d89d12]">pre-qualificado</span> no WhatsApp.
               </h1>
 
@@ -332,7 +332,7 @@ const SystemSalesPage: React.FC = () => {
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={() => scrollToSection('demo-form')}
-                  className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#d89d12] px-8 text-base font-black text-white shadow-2xl shadow-[#d89d12]/30 transition hover:bg-[#efb21a]"
+                  className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[#d89d12] px-8 text-base font-bold text-white shadow-2xl shadow-[#d89d12]/30 transition hover:bg-[#efb21a]"
                 >
                   Testar gratis 7 dias <ArrowRight size={19} />
                 </button>
@@ -347,7 +347,7 @@ const SystemSalesPage: React.FC = () => {
               <div className="mt-10 grid max-w-2xl grid-cols-3 gap-3">
                 {heroMetrics.map((metric) => (
                   <div key={metric.label} className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur">
-                    <p className="text-2xl font-black text-[#f2b51d]">{metric.value}</p>
+                    <p className="text-2xl font-bold text-[#f2b51d]">{metric.value}</p>
                     <p className="mt-1 text-xs font-semibold text-white/62">{metric.label}</p>
                   </div>
                 ))}
@@ -361,7 +361,7 @@ const SystemSalesPage: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
                   <div className="absolute bottom-8 left-6 right-6">
                     <p className="text-sm font-bold text-white/78">Lead quente - Vila Velha</p>
-                    <h2 className="mt-1 text-3xl font-black">Apto vista mar</h2>
+                    <h2 className="mt-1 text-3xl font-bold">Apto vista mar</h2>
                     <p className="mt-2 text-sm font-bold text-white/84">110m2 - R$ 720.000</p>
                   </div>
                 </div>
@@ -369,9 +369,9 @@ const SystemSalesPage: React.FC = () => {
 
               <div className="absolute left-0 top-24 w-[290px] overflow-hidden rounded-[1.75rem] border-[8px] border-[#101716] bg-[#f6f0e6] shadow-2xl shadow-black/35">
                 <div className="flex items-center gap-3 bg-[#075c4d] px-4 py-3 text-white">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#d89d12] text-sm font-black">A</span>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#d89d12] text-sm font-bold">A</span>
                   <div>
-                    <p className="text-sm font-black">ImobFlow IA</p>
+                    <p className="text-sm font-bold">ImobFlow IA</p>
                     <p className="text-[11px] font-semibold text-emerald-200">online - respondendo agora</p>
                   </div>
                 </div>
@@ -394,7 +394,7 @@ const SystemSalesPage: React.FC = () => {
 
               <div className="absolute bottom-4 right-0 hidden w-44 space-y-2 sm:block">
                 {portalLogos.slice(0, 4).map((portal) => (
-                  <div key={portal.name} className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-lg">
+                  <div key={portal.name} className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 shadow-lg">
                     <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${portal.color} text-[10px] text-white`}>
                       {portal.text}
                     </span>
@@ -408,14 +408,14 @@ const SystemSalesPage: React.FC = () => {
 
         <section id="portais" className="border-b border-slate-100 bg-white py-14">
           <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
-            <p className="text-xs font-black uppercase tracking-[0.32em] text-slate-400">Seu imovel publicado automaticamente em</p>
+            <p className="text-xs font-bold uppercase tracking-[0.32em] text-slate-400">Seu imovel publicado automaticamente em</p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               {portalLogos.map((portal) => (
                 <div key={portal.name} className="flex h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 shadow-sm">
-                  <span className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-1 text-[10px] font-black text-white ${portal.color}`}>
+                  <span className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-1 text-[10px] font-bold text-white ${portal.color}`}>
                     {portal.text}
                   </span>
-                  <span className="text-sm font-black text-slate-950">{portal.name}</span>
+                  <span className="text-sm font-bold text-slate-950">{portal.name}</span>
                 </div>
               ))}
             </div>
@@ -427,9 +427,9 @@ const SystemSalesPage: React.FC = () => {
           <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1fr] lg:items-center">
             <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[2rem] border-[10px] border-[#101716] bg-[#f6f0e6] shadow-2xl shadow-slate-900/18">
               <div className="flex items-center gap-3 bg-[#075c4d] px-5 py-4 text-white">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#d89d12] font-black">A</span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#d89d12] font-bold">A</span>
                 <div>
-                  <p className="font-black">ImobFlow IA</p>
+                  <p className="font-bold">ImobFlow IA</p>
                   <p className="text-xs font-semibold text-emerald-200">online - respondendo agora</p>
                 </div>
               </div>
@@ -449,10 +449,10 @@ const SystemSalesPage: React.FC = () => {
             </div>
 
             <div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-xs font-black text-emerald-800">
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-800">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" /> Ao vivo - IA conversando
               </span>
-              <h2 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
+              <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
                 Sua IA atende enquanto voce dorme.
               </h2>
               <p className="mt-5 max-w-2xl text-lg font-medium leading-relaxed text-slate-600">
@@ -482,10 +482,10 @@ const SystemSalesPage: React.FC = () => {
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mb-12 grid gap-8 lg:grid-cols-[1fr_0.75fr] lg:items-end">
               <div>
-                <span className="rounded-full border border-[#d89d12]/30 bg-[#d89d12]/10 px-4 py-2 text-xs font-black text-[#b77f00]">
+                <span className="rounded-full border border-[#d89d12]/30 bg-[#d89d12]/10 px-4 py-2 text-xs font-bold text-[#b77f00]">
                   Seu estoque, brilhando
                 </span>
-                <h2 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
+                <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
                   Seus imoveis em 7 portais, com 1 cadastro so.
                 </h2>
               </div>
@@ -499,7 +499,7 @@ const SystemSalesPage: React.FC = () => {
                 <article key={property.title} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="relative h-48">
                     <img src={property.image} alt={property.title} className="h-full w-full object-cover" />
-                    <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-900">
+                    <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-bold text-emerald-900">
                       Publicado - 7 portais
                     </span>
                   </div>
@@ -507,9 +507,9 @@ const SystemSalesPage: React.FC = () => {
                     <p className="flex items-center gap-1 text-xs font-semibold text-slate-500">
                       <MapPin size={13} /> {property.city}
                     </p>
-                    <h3 className="mt-2 text-base font-black text-slate-950">{property.title}</h3>
+                    <h3 className="mt-2 text-base font-bold text-slate-950">{property.title}</h3>
                     <p className="mt-3 text-xs font-bold text-slate-500">{property.meta}</p>
-                    <p className="mt-4 text-xl font-black text-emerald-950">{property.price}</p>
+                    <p className="mt-4 text-xl font-bold text-emerald-950">{property.price}</p>
                   </div>
                 </article>
               ))}
@@ -520,8 +520,8 @@ const SystemSalesPage: React.FC = () => {
         <section id="funcionalidades" className="bg-[#fbfaf6] py-20 sm:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto mb-12 max-w-3xl text-center">
-              <span className="rounded-full bg-slate-200 px-4 py-2 text-xs font-black text-slate-700">Stack completo</span>
-              <h2 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
+              <span className="rounded-full bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700">Stack completo</span>
+              <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
                 Tudo que um corretor precisa, em um so lugar.
               </h2>
               <p className="mt-4 text-lg font-medium leading-relaxed text-slate-600">
@@ -544,12 +544,12 @@ const SystemSalesPage: React.FC = () => {
                       <feature.icon size={24} />
                     </span>
                     {feature.badge ? (
-                      <span className="rounded-full border border-[#d89d12]/30 bg-[#d89d12]/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#b77f00]">
+                      <span className="rounded-full border border-[#d89d12]/30 bg-[#d89d12]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-[#b77f00]">
                         {feature.badge}
                       </span>
                     ) : null}
                   </div>
-                  <h3 className="text-xl font-black text-slate-950">{feature.title}</h3>
+                  <h3 className="text-xl font-bold text-slate-950">{feature.title}</h3>
                   <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600">{feature.text}</p>
                 </article>
               ))}
@@ -560,10 +560,10 @@ const SystemSalesPage: React.FC = () => {
         <section id="fluxo" className="bg-gradient-to-br from-[#123a2c] to-[#09162b] py-20 text-white sm:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto mb-14 max-w-4xl text-center">
-              <span className="rounded-full border border-[#d89d12]/40 bg-[#d89d12]/12 px-4 py-2 text-xs font-black text-[#f2b51d]">
+              <span className="rounded-full border border-[#d89d12]/40 bg-[#d89d12]/12 px-4 py-2 text-xs font-bold text-[#f2b51d]">
                 Setup em minutos
               </span>
-              <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">
+              <h2 className="mt-5 text-3xl font-bold tracking-tight sm:text-5xl">
                 Da captacao ao fechamento em 3 passos.
               </h2>
             </div>
@@ -571,10 +571,10 @@ const SystemSalesPage: React.FC = () => {
             <div className="grid gap-6 md:grid-cols-3">
               {steps.map((step) => (
                 <article key={step.n} className="relative">
-                  <span className="mb-7 flex h-16 w-16 items-center justify-center rounded-full bg-[#d89d12] text-2xl font-black text-white shadow-xl shadow-[#d89d12]/25">
+                  <span className="mb-7 flex h-16 w-16 items-center justify-center rounded-full bg-[#d89d12] text-2xl font-bold text-white shadow-xl shadow-[#d89d12]/25">
                     {step.n}
                   </span>
-                  <h3 className="text-2xl font-black">{step.title}</h3>
+                  <h3 className="text-2xl font-bold">{step.title}</h3>
                   <p className="mt-3 text-sm font-medium leading-relaxed text-white/70">{step.text}</p>
                 </article>
               ))}
@@ -594,13 +594,13 @@ const SystemSalesPage: React.FC = () => {
                 <p className="flex items-center gap-2 text-xs font-bold text-slate-500">
                   <TrendingUp size={14} className="text-emerald-600" /> Performance do mes
                 </p>
-                <p className="mt-2 text-3xl font-black text-emerald-950">R$ 1,8M</p>
+                <p className="mt-2 text-3xl font-bold text-emerald-950">R$ 1,8M</p>
                 <p className="text-xs font-bold text-slate-500">em VGV fechado</p>
               </div>
             </div>
             <div>
-              <span className="rounded-full bg-[#d89d12]/12 px-4 py-2 text-xs font-black text-[#b77f00]">Feito pra voce</span>
-              <h2 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
+              <span className="rounded-full bg-[#d89d12]/12 px-4 py-2 text-xs font-bold text-[#b77f00]">Feito pra voce</span>
+              <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
                 Para corretor que quer vender mais sem trabalhar mais.
               </h2>
               <p className="mt-5 text-lg font-medium leading-relaxed text-slate-600">
@@ -620,8 +620,8 @@ const SystemSalesPage: React.FC = () => {
 
         <section className="bg-[#fbfaf6] py-20 sm:py-28">
           <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
-            <span className="rounded-full bg-slate-200 px-4 py-2 text-xs font-black text-slate-700">Inteligencia de mercado</span>
-            <h2 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
+            <span className="rounded-full bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700">Inteligencia de mercado</span>
+            <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
               Adaptado para o seu mercado.
             </h2>
             <p className="mt-4 text-lg font-medium text-slate-600">
@@ -629,7 +629,7 @@ const SystemSalesPage: React.FC = () => {
             </p>
             <div className="mx-auto mt-8 flex max-w-4xl flex-wrap justify-center gap-3">
               {markets.map((market) => (
-                <span key={market} className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm">
+                <span key={market} className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm">
                   {market}
                 </span>
               ))}
@@ -640,27 +640,27 @@ const SystemSalesPage: React.FC = () => {
         <section id="planos" className="bg-white py-20 sm:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto mb-10 max-w-3xl text-center">
-              <span className="rounded-full bg-[#d89d12]/12 px-4 py-2 text-xs font-black text-[#b77f00]">Planos transparentes</span>
-              <h2 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
+              <span className="rounded-full bg-[#d89d12]/12 px-4 py-2 text-xs font-bold text-[#b77f00]">Planos transparentes</span>
+              <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
                 Comece gratis. Escale quando quiser.
               </h2>
               <div className="mx-auto mt-7 inline-flex rounded-full bg-slate-100 p-1">
                 <button
                   onClick={() => setBilling('annual')}
-                  className={`h-9 rounded-full px-6 text-sm font-black ${billing === 'annual' ? 'bg-emerald-950 text-white' : 'text-slate-600'}`}
+                  className={`h-9 rounded-full px-6 text-sm font-bold ${billing === 'annual' ? 'bg-emerald-950 text-white' : 'text-slate-600'}`}
                 >
                   Anual
                 </button>
                 <button
                   onClick={() => setBilling('monthly')}
-                  className={`h-9 rounded-full px-6 text-sm font-black ${billing === 'monthly' ? 'bg-emerald-950 text-white' : 'text-slate-600'}`}
+                  className={`h-9 rounded-full px-6 text-sm font-bold ${billing === 'monthly' ? 'bg-emerald-950 text-white' : 'text-slate-600'}`}
                 >
                   Mensal
                 </button>
               </div>
             </div>
 
-            <div className="mx-auto mb-8 max-w-4xl rounded-3xl bg-gradient-to-r from-orange-400 to-orange-500 px-5 py-4 text-center text-sm font-black text-white shadow-xl shadow-orange-500/20">
+            <div className="mx-auto mb-8 max-w-4xl rounded-3xl bg-gradient-to-r from-orange-400 to-orange-500 px-5 py-4 text-center text-sm font-bold text-white shadow-xl shadow-orange-500/20">
               Preco promocional de lancamento: pode aumentar a qualquer momento
             </div>
 
@@ -675,20 +675,20 @@ const SystemSalesPage: React.FC = () => {
                   }`}
                 >
                   {plan.highlight ? (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#d89d12] px-5 py-1 text-xs font-black text-white">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#d89d12] px-5 py-1 text-xs font-bold text-white">
                       Mais popular
                     </span>
                   ) : null}
-                  <h3 className="text-2xl font-black">{plan.name}</h3>
+                  <h3 className="text-2xl font-bold">{plan.name}</h3>
                   <p className="mt-1 text-sm font-bold text-slate-500">{plan.tag}</p>
                   <div className="mt-7 flex items-end gap-1">
-                    <span className="text-4xl font-black">{plan.price}</span>
+                    <span className="text-4xl font-bold">{plan.price}</span>
                     <span className="pb-1 text-sm font-bold text-slate-500">/mes</span>
                   </div>
-                  <p className="mt-3 text-xs font-black text-orange-600">Garanta agora: preco de fundador</p>
+                  <p className="mt-3 text-xs font-bold text-orange-600">Garanta agora: preco de fundador</p>
                   <button
                     onClick={() => scrollToSection('demo-form')}
-                    className={`mt-6 h-12 w-full rounded-full text-sm font-black transition ${
+                    className={`mt-6 h-12 w-full rounded-full text-sm font-bold transition ${
                       plan.highlight
                         ? 'bg-[#d89d12] text-white hover:bg-[#efb21a]'
                         : 'bg-emerald-950 text-white hover:bg-emerald-900'
@@ -721,15 +721,15 @@ const SystemSalesPage: React.FC = () => {
         <section className="bg-white py-20 sm:py-28">
           <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
-              <span className="rounded-full bg-rose-50 px-4 py-2 text-xs font-black text-rose-700">Diagnostico</span>
-              <h2 className="mt-5 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">
+              <span className="rounded-full bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700">Diagnostico</span>
+              <h2 className="mt-5 text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">
                 O que melhora na Imobzy depois dessa virada.
               </h2>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-rose-100 bg-rose-50 p-6">
-                <p className="mb-5 text-sm font-black uppercase tracking-[0.16em] text-rose-700">Hoje, sem fluxo unico</p>
+                <p className="mb-5 text-sm font-bold uppercase tracking-[0.16em] text-rose-700">Hoje, sem fluxo unico</p>
                 <div className="space-y-4">
                   {oldWay.map((item) => (
                     <div key={item} className="flex gap-3">
@@ -741,7 +741,7 @@ const SystemSalesPage: React.FC = () => {
               </div>
 
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-                <p className="mb-5 text-sm font-black uppercase tracking-[0.16em] text-emerald-800">Com ImobFlow</p>
+                <p className="mb-5 text-sm font-bold uppercase tracking-[0.16em] text-emerald-800">Com ImobFlow</p>
                 <div className="space-y-4">
                   {newWay.map((item) => (
                     <div key={item} className="flex gap-3">
@@ -758,7 +758,7 @@ const SystemSalesPage: React.FC = () => {
         <section id="demo-form" className="bg-gradient-to-br from-[#123a2c] to-[#09162b] py-20 text-white sm:py-28">
           <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
-              <h2 className="text-4xl font-black leading-tight tracking-tight sm:text-6xl">
+              <h2 className="text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
                 Pronto para nunca mais <span className="text-[#d89d12]">perder um lead?</span>
               </h2>
               <p className="mt-5 text-lg font-medium leading-relaxed text-white/75">
@@ -772,7 +772,7 @@ const SystemSalesPage: React.FC = () => {
                   { icon: CalendarCheck, text: 'Agenda de implantacao' },
                   { icon: FileText, text: 'Prioridades tecnicas claras' },
                 ].map((item) => (
-                  <div key={item.text} className="flex items-center gap-3 rounded-xl border border-white/12 bg-white/8 p-4 text-sm font-black text-white/82">
+                  <div key={item.text} className="flex items-center gap-3 rounded-xl border border-white/12 bg-white/8 p-4 text-sm font-bold text-white/82">
                     <item.icon className="text-[#f2b51d]" size={18} />
                     {item.text}
                   </div>
@@ -820,7 +820,7 @@ const SystemSalesPage: React.FC = () => {
               />
               <button
                 disabled={isSubmitting}
-                className="mt-4 inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#d89d12] px-8 text-base font-black text-white transition hover:bg-[#efb21a] disabled:opacity-70"
+                className="mt-4 inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#d89d12] px-8 text-base font-bold text-white transition hover:bg-[#efb21a] disabled:opacity-70"
               >
                 {isSubmitting ? <Loader2 className="animate-spin" /> : 'Quero executar esse plano'}
                 {!isSubmitting ? <ArrowRight size={18} /> : null}
@@ -837,14 +837,14 @@ const SystemSalesPage: React.FC = () => {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d89d12] text-white">
                 <Building2 size={18} />
               </span>
-              <span className="font-black">ImobFlow</span>
+              <span className="font-bold">ImobFlow</span>
             </div>
             <p className="mt-4 max-w-xs text-sm font-medium leading-relaxed text-white/62">
               Captacao, atendimento e fechamento imobiliario com IA.
             </p>
           </div>
           <div>
-            <p className="font-black">Produto</p>
+            <p className="font-bold">Produto</p>
             <div className="mt-4 space-y-3 text-sm font-semibold text-white/62">
               <button onClick={() => scrollToSection('funcionalidades')} className="block hover:text-white">Funcionalidades</button>
               <button onClick={() => scrollToSection('whatsapp-ia')} className="block hover:text-white">WhatsApp + IA</button>
@@ -853,14 +853,14 @@ const SystemSalesPage: React.FC = () => {
             </div>
           </div>
           <div>
-            <p className="font-black">Empresa</p>
+            <p className="font-bold">Empresa</p>
             <div className="mt-4 space-y-3 text-sm font-semibold text-white/62">
               <button onClick={() => scrollToSection('demo-form')} className="block hover:text-white">Contato</button>
               <span className="block opacity-50">Blog em breve</span>
             </div>
           </div>
           <div>
-            <p className="font-black">Legal</p>
+            <p className="font-bold">Legal</p>
             <div className="mt-4 space-y-3 text-sm font-semibold text-white/62">
               <span className="block">Politica de Privacidade</span>
               <span className="block">Termos de Uso</span>

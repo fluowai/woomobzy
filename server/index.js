@@ -7,7 +7,11 @@ import { dirname, join } from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
-import { normalizeDomain, syncPlatformTraefikServices } from './domainService.js';
+import {
+  normalizeDomain,
+  syncPlatformTraefikServices,
+  syncRegisteredDockerDomains,
+} from './domainService.js';
 
 // --- Middlewares & Services ---
 import { getSupabaseServer } from './lib/supabase-server.js';
@@ -123,7 +127,7 @@ app.use(
             "img-src": ["'self'", "data:", "blob:", "https:"],
             "media-src": ["'self'", "data:", "blob:", "https:"],
             "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://app.imobfluow.com.br", "wss://app.imobfluow.com.br", "https://imobfluow.com.br", "wss://imobfluow.com.br", "https://okaimoveis.com.br", "wss://okaimoveis.com.br", "https://www.okaimoveis.com.br", "wss://www.okaimoveis.com.br"],
+            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://app.imobfluow.com.br", "wss://app.imobfluow.com.br", "https://imobfluow.com.br", "wss://imobfluow.com.br", "https://okaimoveis.com.br", "wss://okaimoveis.com.br", "https://www.okaimoveis.com.br", "wss://www.okaimoveis.com.br", "https://fazendasbrasil.com", "wss://fazendasbrasil.com", "https://www.fazendasbrasil.com", "wss://www.fazendasbrasil.com", "https://fazendasbrasil.com.br", "wss://fazendasbrasil.com.br", "https://www.fazendasbrasil.com.br", "wss://www.fazendasbrasil.com.br"],
             "frame-ancestors": ["'self'"],
           },
         }
@@ -152,6 +156,10 @@ const staticAllowedOrigins = [
   "https://www.imobfluow.com.br",
   "https://okaimoveis.com.br",
   "https://www.okaimoveis.com.br",
+  "https://fazendasbrasil.com",
+  "https://www.fazendasbrasil.com",
+  "https://fazendasbrasil.com.br",
+  "https://www.fazendasbrasil.com.br",
 ];
 const envAllowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
@@ -355,8 +363,14 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     if (!traefikSync.skipped) {
       console.log(`[Traefik] Platform services synchronized: ${traefikSync.configPath}`);
     }
+
+    const supabase = getSupabaseServer();
+    const domainSync = await syncRegisteredDockerDomains(supabase, { validateDns: true });
+    const syncedCount = domainSync.results.filter((result) => result.status === 'success').length;
+    const skippedCount = domainSync.results.filter((result) => result.status !== 'success').length;
+    console.log(`[Traefik] Registered domains synchronized: ${syncedCount} ok, ${skippedCount} skipped`);
   } catch (error) {
-    console.error('[Traefik] Failed to synchronize platform services:', error.message);
+    console.error('[Traefik] Failed to synchronize dynamic configuration:', error.message);
   }
 });
 

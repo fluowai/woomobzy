@@ -84,7 +84,7 @@ export default function FinanceiroUrbano() {
             <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${item.bg}`}>
               <item.icon size={20} className={item.color} />
             </div>
-            <p className={`text-2xl font-black ${item.color}`}>{item.value}</p>
+            <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
             <p className="mt-1 text-xs font-bold text-slate-700">{item.label}</p>
             <p className="mt-0.5 text-[11px] text-slate-400">{item.detalhe}</p>
           </div>
@@ -112,7 +112,7 @@ export default function FinanceiroUrbano() {
       {tab === 'cobranca' && (
         <div className="card-premium overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 p-5">
-            <h2 className="font-black text-slate-900">Cobrancas do periodo</h2>
+            <h2 className="font-bold text-slate-900">Cobrancas do periodo</h2>
             <div className="flex gap-2">
               <button className="btn bg-slate-100 text-sm text-slate-700"><Send size={15} /> Enviar Boletos</button>
               <button className="btn btn-primary text-sm">+ Gerar Cobranca</button>
@@ -161,7 +161,7 @@ export default function FinanceiroUrbano() {
       {(tab === 'fluxo' || tab === 'dre') && (
         <div className="card-premium p-16 text-center">
           {tab === 'fluxo' ? <BarChart2 size={48} className="mx-auto mb-4 text-slate-200" /> : <TrendingDown size={48} className="mx-auto mb-4 text-slate-200" />}
-          <h3 className="text-xl font-black text-slate-400">{tab === 'fluxo' ? 'Fluxo de Caixa' : 'DRE - Demonstrativo de Resultados'}</h3>
+          <h3 className="text-xl font-bold text-slate-400">{tab === 'fluxo' ? 'Fluxo de Caixa' : 'DRE - Demonstrativo de Resultados'}</h3>
           <p className="mt-2 text-sm text-slate-400">Base financeira conectada. A visualizacao analitica pode evoluir com centros de custo e repasses.</p>
         </div>
       )}

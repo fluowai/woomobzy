@@ -350,7 +350,7 @@ const LegalContracts: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-black uppercase italic tracking-tighter leading-none mb-3">
+          <h1 className="text-4xl font-bold text-black uppercase italic tracking-tighter leading-none mb-3">
             Gestão{' '}
             <span style={{ color: settings.primaryColor }}>Jurídica</span>
           </h1>
@@ -361,7 +361,7 @@ const LegalContracts: React.FC = () => {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-black uppercase text-xs tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
+          className="flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-bold uppercase text-xs tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
           style={{ backgroundColor: settings.primaryColor }}
         >
           <Plus size={18} /> Novo Contrato
@@ -377,7 +377,7 @@ const LegalContracts: React.FC = () => {
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterStatus === status ? 'bg-white text-black shadow-md' : 'text-black/40 hover:text-black'}`}
+                className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${filterStatus === status ? 'bg-white text-black shadow-md' : 'text-black/40 hover:text-black'}`}
               >
                 {status === 'All' ? 'Todos' : status}
               </button>
@@ -404,19 +404,19 @@ const LegalContracts: React.FC = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-50">
-                <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-widest text-black/30">
+                <th className="px-10 py-6 text-left text-[10px] font-bold uppercase tracking-widest text-black/30">
                   Documento
                 </th>
-                <th className="px-6 py-6 text-left text-[10px] font-black uppercase tracking-widest text-black/30">
+                <th className="px-6 py-6 text-left text-[10px] font-bold uppercase tracking-widest text-black/30">
                   Propriedade
                 </th>
-                <th className="px-6 py-6 text-left text-[10px] font-black uppercase tracking-widest text-black/30">
+                <th className="px-6 py-6 text-left text-[10px] font-bold uppercase tracking-widest text-black/30">
                   Cliente
                 </th>
-                <th className="px-6 py-6 text-left text-[10px] font-black uppercase tracking-widest text-black/30">
+                <th className="px-6 py-6 text-left text-[10px] font-bold uppercase tracking-widest text-black/30">
                   Status
                 </th>
-                <th className="px-10 py-6 text-right text-[10px] font-black uppercase tracking-widest text-black/30">
+                <th className="px-10 py-6 text-right text-[10px] font-bold uppercase tracking-widest text-black/30">
                   Ações
                 </th>
               </tr>
@@ -433,7 +433,7 @@ const LegalContracts: React.FC = () => {
                         <FileText size={20} />
                       </div>
                       <div>
-                        <p className="font-black text-black text-sm">
+                        <p className="font-bold text-black text-sm">
                           {contract.title}
                         </p>
                         <p className="text-[10px] font-bold text-black/30 uppercase tracking-widest">
@@ -456,7 +456,7 @@ const LegalContracts: React.FC = () => {
                   </td>
                   <td className="px-6 py-6">
                     <span
-                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(contract.status)} shadow-sm`}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${getStatusStyle(contract.status)} shadow-sm`}
                     >
                       <CheckCircle2 size={14} />
                       {contract.status}
@@ -506,7 +506,7 @@ const LegalContracts: React.FC = () => {
           <div className="relative bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="p-12">
               <div className="flex justify-between items-center mb-10">
-                <h2 className="text-2xl font-black text-black uppercase italic tracking-tighter">
+                <h2 className="text-2xl font-bold text-black uppercase italic tracking-tighter">
                   Novo{' '}
                   <span style={{ color: settings.primaryColor }}>
                     Contrato 360°
@@ -522,7 +522,7 @@ const LegalContracts: React.FC = () => {
 
               <form onSubmit={handleCreateContract} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                  <label className="text-[10px] font-bold uppercase text-black/40 tracking-[0.2em] ml-4">
                     Título do Documento
                   </label>
                   <input
@@ -539,7 +539,7 @@ const LegalContracts: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                    <label className="text-[10px] font-bold uppercase text-black/40 tracking-[0.2em] ml-4">
                       Propriedade
                     </label>
                     <select
@@ -562,7 +562,7 @@ const LegalContracts: React.FC = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                    <label className="text-[10px] font-bold uppercase text-black/40 tracking-[0.2em] ml-4">
                       Cliente / Lead
                     </label>
                     <select
@@ -591,7 +591,7 @@ const LegalContracts: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                  <label className="text-[10px] font-bold uppercase text-black/40 tracking-[0.2em] ml-4">
                     WhatsApp do Cliente (Com DDD)
                   </label>
                   <input
@@ -611,7 +611,7 @@ const LegalContracts: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                    <label className="text-[10px] font-bold uppercase text-black/40 tracking-[0.2em] ml-4">
                       Template
                     </label>
                     <select
@@ -633,7 +633,7 @@ const LegalContracts: React.FC = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                    <label className="text-[10px] font-bold uppercase text-black/40 tracking-[0.2em] ml-4">
                       Valor Total (R$)
                     </label>
                     <input
@@ -653,7 +653,7 @@ const LegalContracts: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                    <label className="text-[10px] font-bold uppercase text-black/40 tracking-[0.2em] ml-4">
                       Valor de Entrada (R$)
                     </label>
                     <input
@@ -669,7 +669,7 @@ const LegalContracts: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-black/40 tracking-[0.2em] ml-4">
+                    <label className="text-[10px] font-bold uppercase text-black/40 tracking-[0.2em] ml-4">
                       Número de Parcelas
                     </label>
                     <input
@@ -700,7 +700,7 @@ const LegalContracts: React.FC = () => {
                   />
                   <label
                     htmlFor="sendNow"
-                    className="text-xs font-black uppercase text-emerald-800 tracking-widest cursor-pointer select-none"
+                    className="text-xs font-bold uppercase text-emerald-800 tracking-widest cursor-pointer select-none"
                   >
                     Enviar p/ WhatsApp imediatamente ao salvar
                   </label>
@@ -708,7 +708,7 @@ const LegalContracts: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-5 bg-black text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all mt-6"
+                  className="w-full py-5 bg-black text-white rounded-2xl font-bold uppercase text-xs tracking-[0.3em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all mt-6"
                 >
                   Finalizar e Gerar Base
                 </button>
@@ -733,7 +733,7 @@ const LegalContracts: React.FC = () => {
                   <Sparkles size={20} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-black uppercase italic tracking-tighter leading-none">
+                  <h3 className="text-xl font-bold text-black uppercase italic tracking-tighter leading-none">
                     Minuta Inteligente
                   </h3>
                   <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mt-1">
@@ -742,21 +742,21 @@ const LegalContracts: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-black/60 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all">
+                <button className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-black/60 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all">
                   <Printer size={16} /> Imprimir
                 </button>
                 <button
                   disabled={isSendingWhatsApp}
                   onClick={() => sendViaWhatsApp(selectedContract)}
                   style={{ backgroundColor: '#25D366' }}
-                  className="flex items-center gap-2 px-6 py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-6 py-3 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg hover:scale-105 transition-all disabled:opacity-50"
                 >
                   <MessageSquare size={16} />
                   {isSendingWhatsApp ? 'Enviando...' : 'Enviar WhatsApp'}
                 </button>
                 <button
                   style={{ backgroundColor: settings.primaryColor }}
-                  className="flex items-center gap-2 px-6 py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 transition-all"
+                  className="flex items-center gap-2 px-6 py-3 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg hover:scale-105 transition-all"
                 >
                   <Download size={16} /> Exportar PDF
                 </button>
@@ -802,7 +802,7 @@ const LegalContracts: React.FC = () => {
 
                 <div className="mt-32 pt-20 border-t border-slate-100 flex justify-between gap-10">
                   <div className="flex-1 border-b border-black/20 pb-2 text-center">
-                    <p className="text-xs font-black uppercase tracking-[0.3em] mb-1">
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] mb-1">
                       Assinatura Vendedor
                     </p>
                     <p className="text-[10px] text-black/30">
@@ -810,7 +810,7 @@ const LegalContracts: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex-1 border-b border-black/20 pb-2 text-center">
-                    <p className="text-xs font-black uppercase tracking-[0.3em] mb-1">
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] mb-1">
                       Assinatura Comprador
                     </p>
                     <p className="text-[10px] text-black/30">

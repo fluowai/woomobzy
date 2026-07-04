@@ -2,41 +2,19 @@ import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import {
   Search,
-  MapPin,
   Maximize,
   ChevronRight,
   Home,
-  Globe,
-  Phone,
-  Info,
   Mail,
   Instagram,
-  Facebook,
   MessageCircle,
-  Clock,
-  Menu,
-  X,
-  CheckCircle2,
-  DollarSign,
-  Terminal,
-  Layers,
-  Sparkles,
-  Plus,
-  Trash2,
-  Loader2,
-  Bed,
-  Bath,
   Youtube,
-  Share2,
-  Image as ImageIcon,
 } from 'lucide-react';
 import { MOCK_PROPERTIES } from '../constants';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Property,
   PropertyType,
-  PropertyPurpose,
-  PropertyAptitude,
 } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { useTexts } from '../context/TextsContext';
@@ -48,27 +26,9 @@ import ContactForm from '../components/ContactForm';
 import InlineEditable from '../components/InlineEditable';
 import ImageEditable from '../components/ImageEditable';
 import VisualEditorToolbar from '../components/VisualEditorToolbar';
-
-// Helper to determine text color based on background luminance
-const getContrastColor = (hexcolor: string | undefined) => {
-  if (!hexcolor) return 'white';
-  const r = parseInt(hexcolor.slice(1, 3), 16);
-  const g = parseInt(hexcolor.slice(3, 5), 16);
-  const b = parseInt(hexcolor.slice(5, 7), 16);
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 128 ? 'black' : 'white';
-};
-
-const DotGrid: React.FC<{ className?: string }> = ({ className }) => (
-  <div
-    className={`absolute pointer-events-none opacity-[0.15] ${className}`}
-    style={{
-      backgroundImage:
-        'radial-gradient(circle, currentColor 1px, transparent 1px)',
-      backgroundSize: '32px 32px',
-    }}
-  ></div>
-);
+import DotGrid from '../components/DotGrid';
+import LeadCaptureModal from '../components/LeadCaptureModal';
+import PropertySubmissionModal from '../components/PropertySubmissionModal';
 
 interface LandingPageProps {
   organizationId?: string;
@@ -319,7 +279,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
       {/* Side Decorative Text */}
       <div className="fixed left-6 bottom-32 origin-bottom-left -rotate-90 pointer-events-none hidden xl:block">
         <span
-          className="text-[11px] font-black uppercase tracking-[1.2em] opacity-60 whitespace-nowrap"
+          className="text-[11px] font-bold uppercase tracking-[1.2em] opacity-60 whitespace-nowrap"
           style={{ color: settings.secondaryColor }}
         >
           {t('decorative.text1', 'Exclusividade & Tradição')}
@@ -327,7 +287,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
       </div>
       <div className="fixed right-6 top-1/2 -translate-y-1/2 origin-top-right rotate-90 pointer-events-none hidden xl:block">
         <span
-          className="text-[11px] font-black uppercase tracking-[1.2em] opacity-60 whitespace-nowrap"
+          className="text-[11px] font-bold uppercase tracking-[1.2em] opacity-60 whitespace-nowrap"
           style={{ color: settings.secondaryColor }}
         >
           {t('decorative.text2', 'Luxury Urban Living')}
@@ -353,14 +313,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 shadow-2xl">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-              <span className="text-[10px] font-black uppercase text-white/90 tracking-[0.3em] font-sans">
+              <span className="text-[10px] font-bold uppercase text-white/90 tracking-[0.3em] font-sans">
                 <InlineEditable textKey="hero.badge">
                   {t('hero.badge', 'Terras Produtivas & Investimento Rural')}
                 </InlineEditable>
               </span>
             </div>
             <h1
-              className="font-black text-white mb-6 leading-[0.85] uppercase italic tracking-tighter"
+              className="font-bold text-white mb-6 leading-[0.85] uppercase italic tracking-tighter"
               style={{
                 fontSize: 'clamp(60px, 9vw, 110px)',
                 textShadow: '0 10px 30px rgba(0,0,0,0.5)',
@@ -398,7 +358,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 {/* Filter 1: Property Type */}
                 <div className="relative">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
+                  <label className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2 block">
                     <InlineEditable textKey="hero.search.type_label">
                       {t('hero.search.type_label', 'Tipo')}
                     </InlineEditable>
@@ -425,7 +385,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
 
                 {/* Filter 2: City */}
                 <div className="relative">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
+                  <label className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2 block">
                     <InlineEditable textKey="hero.search.city_label">
                       {t('hero.search.city_label', 'Cidade')}
                     </InlineEditable>
@@ -444,7 +404,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
 
                 {/* Filter 3: Min Hectares */}
                 <div className="relative">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
+                  <label className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2 block">
                     <InlineEditable textKey="hero.search.min_area_label">
                       {t('hero.search.min_area_label', 'Área Mín (ha)')}
                     </InlineEditable>
@@ -460,7 +420,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
 
                 {/* Filter 4: Max Hectares */}
                 <div className="relative">
-                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
+                  <label className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2 block">
                     <InlineEditable textKey="hero.search.max_area_label">
                       {t('hero.search.max_area_label', 'Área Máx (ha)')}
                     </InlineEditable>
@@ -482,7 +442,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                         .getElementById('properties-section')
                         ?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="w-full p-4 rounded-xl text-white font-black uppercase text-xs tracking-wider hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
+                    className="w-full p-4 rounded-xl text-white font-bold uppercase text-xs tracking-wider hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-2"
                     style={{ backgroundColor: settings.primaryColor }}
                   >
                     <Search size={18} />
@@ -498,7 +458,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                 <div className="mt-6 pt-6 border-t border-slate-100">
                   <p className="text-sm text-slate-600 font-medium text-center">
                     <span
-                      className="font-black"
+                      className="font-bold"
                       style={{ color: settings.primaryColor }}
                     >
                       {filteredProperties.length}
@@ -542,7 +502,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                 {t('stats.transactions', '+1.5k')}
               </InlineEditable>
             </h3>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover:text-amber-600 transition-colors">
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 group-hover:text-amber-600 transition-colors">
               <InlineEditable textKey="stats.transactions_label">
                 {t('stats.transactions_label', 'Transações Realizadas')}
               </InlineEditable>
@@ -561,7 +521,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                 {t('stats.volume', '2Bi')}
               </InlineEditable>
             </h3>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover:text-amber-600 transition-colors">
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 group-hover:text-amber-600 transition-colors">
               <InlineEditable textKey="stats.volume_label">
                 {t('stats.volume_label', 'Volume Geral de Vendas')}
               </InlineEditable>
@@ -577,7 +537,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                 {t('stats.years', '15')}
               </InlineEditable>
             </h3>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover:text-amber-600 transition-colors">
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 group-hover:text-amber-600 transition-colors">
               <InlineEditable textKey="stats.years_label">
                 {t('stats.years_label', 'Anos de Excelência')}
               </InlineEditable>
@@ -599,7 +559,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
           >
             <Home className="text-white" size={24} />
           </div>
-          <span className="text-[8px] font-black uppercase tracking-widest leading-none">
+          <span className="text-[8px] font-bold uppercase tracking-widest leading-none">
             {settings.homeContent?.badgeText ||
               t('decorative.badge_text', 'Curadoria Especializada 2024')}
           </span>
@@ -608,14 +568,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
         <div className="flex flex-col md:flex-row items-end justify-between mb-24 gap-8">
           <div className="max-w-4xl w-full">
             <div className="flex gap-4 mb-6">
-              <div className="px-6 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.2em] bg-slate-900 border border-slate-900 text-white whitespace-nowrap">
+              <div className="px-6 py-2 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] bg-slate-900 border border-slate-900 text-white whitespace-nowrap">
                 <InlineEditable textKey="featured.badge">
                   {t('featured.badge', 'Venda Exclusiva de Fazendas e Sítios')}
                 </InlineEditable>
               </div>
             </div>
             <span
-              className="text-[10px] font-black uppercase tracking-[0.4em] mb-4 block"
+              className="text-[10px] font-bold uppercase tracking-[0.4em] mb-4 block"
               style={{ color: settings.primaryColor }}
             >
               <InlineEditable textKey="featured.category">
@@ -623,7 +583,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
               </InlineEditable>
             </span>
             <h2
-              className="font-black mb-8 uppercase italic leading-tight"
+              className="font-bold mb-8 uppercase italic leading-tight"
               style={{
                 color: settings.secondaryColor,
                 fontSize: `${(settings.headingFontSize || 48) * 0.8}px`,
@@ -698,13 +658,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                 {/* Floating Header */}
                 <div className="absolute top-6 left-0 right-0 z-20 px-6 flex justify-between items-start pointer-events-none">
                   <div className="bg-white/90 backdrop-blur-md px-5 py-2 rounded-full shadow-lg">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-900">
                       {property.location.neighborhood || property.location.city}
                     </span>
                   </div>
                   {property.type === PropertyType.FAZENDA && (
                     <div className="bg-black/80 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-lg">
-                      <span className="text-[9px] font-black uppercase tracking-widest">
+                      <span className="text-[9px] font-bold uppercase tracking-widest">
                         <InlineEditable textKey="property_type.farm_badge">
                           {t('property_type.farm_badge', 'Fazenda')}
                         </InlineEditable>
@@ -751,7 +711,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                       ) : (
                         <div className="flex flex-col items-center gap-4 opacity-20">
                           <Home size={64} />
-                          <span className="text-xs font-black uppercase tracking-widest">
+                          <span className="text-xs font-bold uppercase tracking-widest">
                             <InlineEditable textKey="properties.no_photo">
                               {t('properties.no_photo', 'Sem Foto')}
                             </InlineEditable>
@@ -817,7 +777,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                 {/* Bottom Minimal Info */}
                 <div className="p-8 bg-white flex items-center justify-between">
                   <div>
-                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">
+                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-1">
                       {t('properties.price_label', 'Valor de Venda')}
                     </p>
                     <p
@@ -844,7 +804,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
         {/* Pagination Info Bottom */}
         {!loading && totalPages > 1 && (
           <div className="mt-16 flex flex-col items-center justify-center gap-6">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
               {t('pagination.page', 'Página')} {currentPage}{' '}
               {t('pagination.of', 'de')} {totalPages}
             </span>
@@ -874,7 +834,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
           {/* Header */}
           <div className="text-center mb-20">
             <h2
-              className="text-5xl md:text-7xl font-black uppercase mb-6"
+              className="text-5xl md:text-7xl font-bold uppercase mb-6"
               style={{ color: settings.primaryColor }}
             >
               <InlineEditable textKey="services.title">
@@ -929,7 +889,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-black text-white uppercase">
+                  <h3 className="text-2xl font-bold text-white uppercase">
                     <InlineEditable textKey="services.buy.title">
                       {t('services.buy.title', 'Compra')}
                     </InlineEditable>
@@ -1011,7 +971,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-black text-white uppercase">
+                  <h3 className="text-2xl font-bold text-white uppercase">
                     <InlineEditable textKey="services.sell.title">
                       {t('services.sell.title', 'Venda')}
                     </InlineEditable>
@@ -1090,7 +1050,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-black text-white uppercase">
+                  <h3 className="text-2xl font-bold text-white uppercase">
                     <InlineEditable textKey="services.consulting.title">
                       {t('services.consulting.title', 'Consultoria')}
                     </InlineEditable>
@@ -1195,7 +1155,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                           <InlineEditable textKey="about.creci_badge">
                             {t('about.creci_badge', 'Especialista Certificado')}
                           </InlineEditable>
@@ -1214,7 +1174,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                 <div className="absolute -right-8 top-1/4 hidden lg:block">
                   <div className="bg-white rounded-2xl shadow-xl p-6 w-32">
                     <p
-                      className="text-3xl font-black mb-1"
+                      className="text-3xl font-bold mb-1"
                       style={{ color: settings.primaryColor }}
                     >
                       <InlineEditable textKey="about.stat_properties">
@@ -1237,7 +1197,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
             {/* Right: Content */}
             <div>
               <span
-                className="text-xs font-black uppercase tracking-[0.3em] mb-4 block"
+                className="text-xs font-bold uppercase tracking-[0.3em] mb-4 block"
                 style={{ color: settings.primaryColor }}
               >
                 <InlineEditable textKey="about.badge">
@@ -1246,7 +1206,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
               </span>
 
               <h2
-                className="text-4xl md:text-5xl font-black uppercase leading-tight mb-6"
+                className="text-4xl md:text-5xl font-bold uppercase leading-tight mb-6"
                 style={{ color: settings.secondaryColor }}
               >
                 <InlineEditable textKey="about.title">
@@ -1383,7 +1343,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                       '_blank'
                     )
                   }
-                  className="px-8 py-4 text-white text-sm font-black uppercase tracking-wider hover:opacity-90 transition-all rounded-xl shadow-lg flex items-center justify-center gap-2"
+                  className="px-8 py-4 text-white text-sm font-bold uppercase tracking-wider hover:opacity-90 transition-all rounded-xl shadow-lg flex items-center justify-center gap-2"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
                   <svg
@@ -1400,7 +1360,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
 
                 <button
                   onClick={() => navigate('/properties')}
-                  className="px-8 py-4 border-2 text-sm font-black uppercase tracking-wider hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all rounded-xl"
+                  className="px-8 py-4 border-2 text-sm font-bold uppercase tracking-wider hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all rounded-xl"
                   style={{
                     borderColor: settings.secondaryColor,
                     color: settings.secondaryColor,
@@ -1419,7 +1379,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
       {/* Floating WhatsApp Bridge */}
       <div className="fixed bottom-10 right-10 z-[100] group flex items-center gap-4">
         <div className="bg-white/95 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl border border-slate-100 opacity-0 group-hover:opacity-100 transition-all -translate-x-4 group-hover:translate-x-0 pointer-events-none">
-          <span className="text-[10px] font-black uppercase tracking-widest text-black">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-black">
             <InlineEditable textKey="floating.whatsapp_badge">
               {t('floating.whatsapp_badge', 'Fale com um corretor agora')}
             </InlineEditable>
@@ -1451,7 +1411,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
           {/* Brand */}
           <div className="md:col-span-1">
             <h2
-              className="text-3xl font-black mb-8 tracking-tight text-white"
+              className="text-3xl font-bold mb-8 tracking-tight text-white"
               style={{ fontFamily: 'Arial, sans-serif' }}
             >
               <InlineEditable textKey="footer.logo_text">
@@ -1491,7 +1451,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
 
           {/* Navigation */}
           <div>
-            <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-8 text-white">
+            <h4 className="text-sm font-bold uppercase tracking-[0.2em] mb-8 text-white">
               <InlineEditable textKey="footer.nav_title">
                 {t('footer.nav_title', 'Navegação')}
               </InlineEditable>
@@ -1526,7 +1486,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
 
           {/* Contact Info */}
           <div>
-            <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-8 text-white">
+            <h4 className="text-sm font-bold uppercase tracking-[0.2em] mb-8 text-white">
               {t('footer.contact_title', 'Contato')}
             </h4>
             <ul className="space-y-4 text-sm text-white/70">
@@ -1572,7 +1532,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
 
           {/* Newsletter */}
           <div>
-            <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-8 text-white">
+            <h4 className="text-sm font-bold uppercase tracking-[0.2em] mb-8 text-white">
               <InlineEditable textKey="footer.newsletter_title">
                 {t('footer.newsletter_title', 'Exclusive Updates')}
               </InlineEditable>
@@ -1594,7 +1554,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                 )}
                 className="bg-transparent outline-none text-white placeholder:text-white/20 w-full text-sm py-2"
               />
-              <button className="text-sm font-black uppercase tracking-widest text-white hover:text-green-500 transition-colors">
+              <button className="text-sm font-bold uppercase tracking-widest text-white hover:text-green-500 transition-colors">
                 <InlineEditable textKey="footer.newsletter_button">
                   {t('footer.newsletter_button', 'Assinar')}
                 </InlineEditable>
@@ -1624,960 +1584,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
         </div>
       </footer>
 
-      {/* Lead Capture Modal */}
-      {isLeadModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
-            onClick={() => setIsLeadModalOpen(false)}
-          ></div>
-          <div className="relative bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            <button
-              onClick={() => setIsLeadModalOpen(false)}
-              className="absolute top-8 right-8 w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-black transition-colors"
-            >
-              <X size={24} />
-            </button>
-            <div className="p-12 md:p-16">
-              <div className="mb-10 text-center">
-                <span
-                  className="text-[10px] font-black uppercase tracking-[0.4em] mb-4 block"
-                  style={{ color: settings.primaryColor }}
-                >
-                  <InlineEditable textKey="lead_modal.badge">
-                    {t('lead_modal.badge', 'Atendimento Select')}
-                  </InlineEditable>
-                </span>
-                <h2 className="text-3xl md:text-4xl font-black text-black uppercase italic tracking-tighter leading-none mb-4">
-                  <InlineEditable textKey="lead_modal.title_line1">
-                    {t('lead_modal.title_line1', 'Como podemos')}
-                  </InlineEditable>{' '}
-                  <br />
-                  <span style={{ color: settings.primaryColor }}>
-                    <InlineEditable textKey="lead_modal.title_line2">
-                      {t('lead_modal.title_line2', 'Ajudar você?')}
-                    </InlineEditable>
-                  </span>
-                </h2>
-                <p className="text-black/60 font-medium italic">
-                  <InlineEditable textKey="lead_modal.subtitle">
-                    {t(
-                      'lead_modal.subtitle',
-                      'Preencha os dados abaixo e um consultor entrará em contato em instantes.'
-                    )}
-                  </InlineEditable>
-                </p>
-              </div>
-
-              {leadSuccess ? (
-                <div className="text-center py-10 animate-bounce">
-                  <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 size={40} className="text-emerald-600" />
-                  </div>
-                  <h3 className="text-xl font-black text-black uppercase italic">
-                    Mensagem Enviada!
-                  </h3>
-                  <p className="text-black/60">Obrigado pela confiança.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleLeadSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">
-                      <InlineEditable textKey="lead_modal.form_name_label">
-                        {t('lead_modal.form_name_label', 'Seu Nome Completo')}
-                      </InlineEditable>
-                    </p>
-                    <input
-                      required
-                      type="text"
-                      className="w-full px-8 py-5 rounded-full bg-slate-50 border border-slate-100 focus:border-slate-300 focus:bg-white transition-all outline-none font-bold text-slate-700"
-                      placeholder={t(
-                        'lead_modal.form_name_placeholder',
-                        'Ex: João da Silva'
-                      )}
-                      value={leadForm.name}
-                      onChange={(e) =>
-                        setLeadForm({ ...leadForm, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">
-                        <InlineEditable textKey="lead_modal.form_phone_label">
-                          {t('lead_modal.form_phone_label', 'WhatsApp')}
-                        </InlineEditable>
-                      </p>
-                      <input
-                        required
-                        type="tel"
-                        className="w-full px-8 py-5 rounded-full bg-slate-50 border border-slate-100 focus:border-slate-300 focus:bg-white transition-all outline-none font-bold text-slate-700"
-                        placeholder={t(
-                          'lead_modal.form_phone_placeholder',
-                          '(00) 00000-0000'
-                        )}
-                        value={leadForm.phone}
-                        onChange={(e) =>
-                          setLeadForm({ ...leadForm, phone: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">
-                        <InlineEditable textKey="lead_modal.form_email_label">
-                          {t(
-                            'lead_modal.form_email_label',
-                            'E-mail (Opcional)'
-                          )}
-                        </InlineEditable>
-                      </p>
-                      <input
-                        type="email"
-                        className="w-full px-8 py-5 rounded-full bg-slate-50 border border-slate-100 focus:border-slate-300 focus:bg-white transition-all outline-none font-bold text-slate-700"
-                        placeholder={t(
-                          'lead_modal.form_email_placeholder',
-                          'contato@email.com'
-                        )}
-                        value={leadForm.email}
-                        onChange={(e) =>
-                          setLeadForm({ ...leadForm, email: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="pt-4">
-                    <button
-                      disabled={isSubmittingLead}
-                      type="submit"
-                      className="w-full py-6 rounded-full font-black uppercase text-xs tracking-[0.3em] text-white transition-all shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50"
-                      style={{ backgroundColor: settings.primaryColor }}
-                    >
-                      {isSubmittingLead
-                        ? t('lead_modal.submitting', 'Enviando...')
-                        : t(
-                            'lead_modal.submit_button',
-                            'Solicitar Atendimento Exclusivo'
-                          )}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-            <div className="bg-slate-50 p-6 text-center border-t border-slate-100">
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                {t(
-                  'lead_modal.privacy_notice',
-                  'Sua privacidade é nossa prioridade absoluta.'
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* LUXURY Property Submission Modal - RE-DESIGNED */}
-      {isSubmitModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12 backdrop-blur-md animate-in fade-in duration-500"
-          style={{ backgroundColor: settings.secondaryColor + 'cc' }}
-        >
-          <div className="bg-white w-full max-w-6xl h-full max-h-[850px] rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row relative animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
-            {/* Sidebar - Progressive Tracker */}
-            <div
-              className="w-full md:w-80 p-10 flex flex-col justify-between relative overflow-hidden shrink-0"
-              style={{ backgroundColor: settings.secondaryColor }}
-            >
-              {/* Background Glow */}
-              <div
-                className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at 0% 0%, ${settings.primaryColor}, transparent 70%)`,
-                }}
-              ></div>
-
-              <div className="relative z-10">
-                <div className="mb-12">
-                  <h2 className="text-white text-2xl font-black italic tracking-tighter uppercase leading-tight">
-                    <InlineEditable textKey="submit_modal.sidebar_title_line1">
-                      {t('submit_modal.sidebar_title_line1', 'Venda seu')}
-                    </InlineEditable>{' '}
-                    <br />
-                    <span style={{ color: settings.primaryColor }}>
-                      <InlineEditable textKey="submit_modal.sidebar_title_line2">
-                        {t('submit_modal.sidebar_title_line2', 'Imóvel Elite')}
-                      </InlineEditable>
-                    </span>
-                  </h2>
-                  <p className="text-lg font-medium tracking-tight opacity-70">
-                    <InlineEditable textKey="submit_modal.sidebar_subtitle">
-                      {t('submit_modal.sidebar_subtitle', 'Curadoria de Luxo')}
-                    </InlineEditable>
-                  </p>
-                </div>
-
-                <div className="space-y-10">
-                  {[
-                    {
-                      step: 1,
-                      label: t('submit_modal.step1_label', 'Proprietário'),
-                      icon: Info,
-                    },
-                    {
-                      step: 2,
-                      label: t('submit_modal.step2_label', 'O Imóvel'),
-                      icon: Home,
-                    },
-                    {
-                      step: 3,
-                      label: t('submit_modal.step3_label', 'Localização'),
-                      icon: MapPin,
-                    },
-                    {
-                      step: 4,
-                      label: t('submit_modal.step4_label', 'Mídias'),
-                      icon: ImageIcon,
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.step}
-                      className="flex items-center gap-5 group cursor-default"
-                    >
-                      <div
-                        className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 ${
-                          activeStep === item.step
-                            ? 'bg-white scale-110 shadow-[0_0_20px_rgba(255,255,255,0.3)]'
-                            : activeStep > item.step
-                              ? 'text-white'
-                              : 'bg-white/5 text-white/30'
-                        }`}
-                        style={{
-                          backgroundColor:
-                            activeStep > item.step
-                              ? settings.primaryColor
-                              : undefined,
-                          color:
-                            activeStep === item.step
-                              ? settings.secondaryColor
-                              : undefined,
-                        }}
-                      >
-                        {activeStep > item.step ? (
-                          <CheckCircle2 size={18} />
-                        ) : (
-                          <item.icon size={18} />
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <span
-                          className={`text-[10px] font-black uppercase tracking-widest transition-colors ${activeStep === item.step ? 'text-white' : 'text-white/20'}`}
-                        >
-                          Passo 0{item.step}
-                        </span>
-                        <span
-                          className={`text-sm font-bold transition-colors ${activeStep === item.step ? 'text-white' : 'text-white/40'}`}
-                        >
-                          {item.label}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="relative z-10 mt-12 pt-10 border-t border-white/10 hidden md:block">
-                <p className="text-[10px] text-white/30 font-medium leading-relaxed uppercase tracking-tighter">
-                  <InlineEditable textKey="submit_modal.disclaimer">
-                    {t(
-                      'submit_modal.disclaimer',
-                      'Ao submeter, você concorda que nossa equipe fará uma análise técnica detalhada antes da publicação final.'
-                    )}
-                  </InlineEditable>
-                </p>
-              </div>
-            </div>
-
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col h-full bg-slate-50/30">
-              {/* Top Bar */}
-              <div className="p-8 md:p-10 flex items-center justify-end">
-                <button
-                  onClick={() => setIsSubmitModalOpen(false)}
-                  className="w-12 h-12 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 rounded-full shadow-lg transition-all hover:rotate-90"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {submitSuccess ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  <div className="relative mb-10 group">
-                    <div
-                      className="absolute inset-0 blur-3xl rounded-full opacity-20 group-hover:blur-[60px] transition-all duration-1000"
-                      style={{ backgroundColor: settings.primaryColor }}
-                    ></div>
-                    <div
-                      className="w-28 h-28 text-white rounded-[2rem] flex items-center justify-center relative z-10 shadow-2xl animate-in zoom-in duration-500 rotate-3 group-hover:rotate-0 transition-transform"
-                      style={{ backgroundColor: settings.primaryColor }}
-                    >
-                      <CheckCircle2 size={48} strokeWidth={3} />
-                    </div>
-                  </div>
-                  <h3
-                    className="text-4xl font-black italic uppercase tracking-tighter mb-4"
-                    style={{ color: settings.secondaryColor }}
-                  >
-                    <InlineEditable textKey="submit_modal.success_title">
-                      {t('submit_modal.success_title', 'Proposta Recebida!')}
-                    </InlineEditable>
-                  </h3>
-                  <p className="text-black/60 max-w-sm mx-auto leading-relaxed font-medium">
-                    <InlineEditable textKey="submit_modal.success_desc">
-                      {t(
-                        'submit_modal.success_desc',
-                        'Excelente escolha. Nossa equipe de elite já foi notificada e entrará em contato em breve para os próximos passos.'
-                      )}
-                    </InlineEditable>
-                  </p>
-                  <button
-                    onClick={() => setIsSubmitModalOpen(false)}
-                    className="mt-12 px-12 py-5 text-white rounded-full font-black uppercase text-[11px] tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all"
-                    style={{ backgroundColor: settings.secondaryColor }}
-                  >
-                    <InlineEditable textKey="submit_modal.success_button">
-                      {t('submit_modal.success_button', 'Voltar para Home')}
-                    </InlineEditable>
-                  </button>
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto px-8 md:px-20 pb-10 custom-scrollbar flex flex-col">
-                  {/* Steps Content */}
-                  <div className="flex-1">
-                    {activeStep === 1 && (
-                      <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-10">
-                        <div>
-                          <h3
-                            className="text-3xl font-black italic uppercase tracking-tighter mb-2"
-                            style={{ color: settings.secondaryColor }}
-                          >
-                            <InlineEditable textKey="submit_modal.step1_title">
-                              {t(
-                                'submit_modal.step1_title',
-                                'Quem é o proprietário?'
-                              )}
-                            </InlineEditable>
-                          </h3>
-                          <p className="text-black/60 font-medium">
-                            <InlineEditable textKey="submit_modal.step1_subtitle">
-                              {t(
-                                'submit_modal.step1_subtitle',
-                                'Inicie com as informações básicas de contato.'
-                              )}
-                            </InlineEditable>
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-1 gap-8">
-                          <div className="group">
-                            <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1 transition-colors group-focus-within:text-black">
-                              <InlineEditable textKey="submit_modal.field_name_label">
-                                {t(
-                                  'submit_modal.field_name_label',
-                                  'Nome Completo'
-                                )}
-                              </InlineEditable>
-                            </label>
-                            <input
-                              required
-                              type="text"
-                              value={propertyForm.ownerInfo?.name}
-                              onChange={(e) =>
-                                setPropertyForm({
-                                  ...propertyForm,
-                                  ownerInfo: {
-                                    ...propertyForm.ownerInfo!,
-                                    name: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
-                              style={
-                                {
-                                  '--tw-ring-color':
-                                    settings.primaryColor + '15',
-                                  borderColor: 'var(--focus-border-color)',
-                                } as any
-                              }
-                              onFocus={(e) =>
-                                (e.target.style.borderColor =
-                                  settings.primaryColor)
-                              }
-                              onBlur={(e) => (e.target.style.borderColor = '')}
-                              placeholder={t(
-                                'submit_modal.field_name_placeholder',
-                                'Ex: Rodrigo Albuquerque'
-                              )}
-                            />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="group">
-                              <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                                <InlineEditable textKey="submit_modal.field_email_label">
-                                  {t(
-                                    'submit_modal.field_email_label',
-                                    'E-mail Corporativo'
-                                  )}
-                                </InlineEditable>
-                              </label>
-                              <input
-                                required
-                                type="email"
-                                value={propertyForm.ownerInfo?.email}
-                                onChange={(e) =>
-                                  setPropertyForm({
-                                    ...propertyForm,
-                                    ownerInfo: {
-                                      ...propertyForm.ownerInfo!,
-                                      email: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
-                                onFocus={(e) =>
-                                  (e.target.style.borderColor =
-                                    settings.primaryColor)
-                                }
-                                onBlur={(e) =>
-                                  (e.target.style.borderColor = '')
-                                }
-                                placeholder={t(
-                                  'submit_modal.field_email_placeholder',
-                                  'rodrigo@email.com'
-                                )}
-                              />
-                            </div>
-                            <div className="group">
-                              <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                                <InlineEditable textKey="submit_modal.field_phone_label">
-                                  {t(
-                                    'submit_modal.field_phone_label',
-                                    'WhatsApp Direto'
-                                  )}
-                                </InlineEditable>
-                              </label>
-                              <input
-                                required
-                                type="tel"
-                                value={propertyForm.ownerInfo?.phone}
-                                onChange={(e) =>
-                                  setPropertyForm({
-                                    ...propertyForm,
-                                    ownerInfo: {
-                                      ...propertyForm.ownerInfo!,
-                                      phone: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
-                                onFocus={(e) =>
-                                  (e.target.style.borderColor =
-                                    settings.primaryColor)
-                                }
-                                onBlur={(e) =>
-                                  (e.target.style.borderColor = '')
-                                }
-                                placeholder={t(
-                                  'submit_modal.field_phone_placeholder',
-                                  '(00) 00000-0000'
-                                )}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeStep === 2 && (
-                      <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-10">
-                        <div>
-                          <h3
-                            className="text-3xl font-black italic uppercase tracking-tighter mb-2"
-                            style={{ color: settings.secondaryColor }}
-                          >
-                            <InlineEditable textKey="submit_modal.step2_title">
-                              {t(
-                                'submit_modal.step2_title',
-                                'Detalhes do Imóvel'
-                              )}
-                            </InlineEditable>
-                          </h3>
-                          <p className="text-black/60 font-medium">
-                            <InlineEditable textKey="submit_modal.step2_subtitle">
-                              {t(
-                                'submit_modal.step2_subtitle',
-                                'O que torna sua propriedade única?'
-                              )}
-                            </InlineEditable>
-                          </p>
-                        </div>
-                        <div className="space-y-8">
-                          <div className="group">
-                            <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                              <InlineEditable textKey="submit_modal.field_title_impact">
-                                {t(
-                                  'submit_modal.field_title_impact',
-                                  'Título de Impacto'
-                                )}
-                              </InlineEditable>
-                            </label>
-                            <input
-                              required
-                              type="text"
-                              value={propertyForm.title}
-                              onChange={(e) =>
-                                setPropertyForm({
-                                  ...propertyForm,
-                                  title: e.target.value,
-                                })
-                              }
-                              className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
-                              onFocus={(e) =>
-                                (e.target.style.borderColor =
-                                  settings.primaryColor)
-                              }
-                              onBlur={(e) => (e.target.style.borderColor = '')}
-                              placeholder={t(
-                                'submit_modal.field_title_placeholder',
-                                'Ex: Mansão suspensa com vista definitiva para o mar'
-                              )}
-                            />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="group">
-                              <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                                <InlineEditable textKey="submit_modal.field_type_label">
-                                  {t(
-                                    'submit_modal.field_type_label',
-                                    'Tipo de Imóvel'
-                                  )}
-                                </InlineEditable>
-                              </label>
-                              <div className="relative">
-                                <select
-                                  className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none appearance-none cursor-pointer shadow-sm transition-all"
-                                  value={propertyForm.type}
-                                  onChange={(e) =>
-                                    setPropertyForm({
-                                      ...propertyForm,
-                                      type: e.target.value as any,
-                                    })
-                                  }
-                                  onFocus={(e) =>
-                                    (e.target.style.borderColor =
-                                      settings.primaryColor)
-                                  }
-                                  onBlur={(e) =>
-                                    (e.target.style.borderColor = '')
-                                  }
-                                >
-                                  <option value="Apartamento">
-                                    {t(
-                                      'property_type.apt',
-                                      'Apartamento de Alto Padrão'
-                                    )}
-                                  </option>
-                                  <option value="Casa">
-                                    {t(
-                                      'property_type.house',
-                                      'Casa / Villa de Luxo'
-                                    )}
-                                  </option>
-                                  <option value="Terreno">
-                                    {t(
-                                      'property_type.farm',
-                                      'Fazenda / Haras / Rural'
-                                    )}
-                                  </option>
-                                  <option value="Comercial">
-                                    {t(
-                                      'property_type.com',
-                                      'Corporativo / Industrial'
-                                    )}
-                                  </option>
-                                </select>
-                                <ChevronRight
-                                  className="absolute right-8 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none"
-                                  size={16}
-                                />
-                              </div>
-                            </div>
-                            <div className="group">
-                              <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                                <InlineEditable textKey="submit_modal.field_price_label">
-                                  {t(
-                                    'submit_modal.field_price_label',
-                                    'Preço Sugerido (R$)'
-                                  )}
-                                </InlineEditable>
-                              </label>
-                              <input
-                                type="number"
-                                value={propertyForm.price}
-                                onChange={(e) =>
-                                  setPropertyForm({
-                                    ...propertyForm,
-                                    price: Number(e.target.value),
-                                  })
-                                }
-                                className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-black outline-none transition-all shadow-sm"
-                                style={{ color: settings.primaryColor }}
-                                onFocus={(e) =>
-                                  (e.target.style.borderColor =
-                                    settings.primaryColor)
-                                }
-                                onBlur={(e) =>
-                                  (e.target.style.borderColor = '')
-                                }
-                              />
-                            </div>
-                          </div>
-                          <div className="group w-1/2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                              <InlineEditable textKey="submit_modal.field_area_label">
-                                {t(
-                                  'submit_modal.field_area_label',
-                                  'Área Privativa (m²)'
-                                )}
-                              </InlineEditable>
-                            </label>
-                            <input
-                              type="number"
-                              value={propertyForm.features?.area}
-                              onChange={(e) =>
-                                setPropertyForm({
-                                  ...propertyForm,
-                                  features: {
-                                    ...propertyForm.features!,
-                                    area: Number(e.target.value),
-                                  },
-                                })
-                              }
-                              className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
-                              onFocus={(e) =>
-                                (e.target.style.borderColor =
-                                  settings.primaryColor)
-                              }
-                              onBlur={(e) => (e.target.style.borderColor = '')}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeStep === 3 && (
-                      <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-10">
-                        <div>
-                          <h3
-                            className="text-3xl font-black italic uppercase tracking-tighter mb-2"
-                            style={{ color: settings.secondaryColor }}
-                          >
-                            <InlineEditable textKey="submit_modal.step3_title">
-                              {t('submit_modal.step3_title', 'Onde fica?')}
-                            </InlineEditable>
-                          </h3>
-                          <p className="text-black/60 font-medium">
-                            <InlineEditable textKey="submit_modal.step3_subtitle">
-                              {t(
-                                'submit_modal.step3_subtitle',
-                                'Sua localização deve ser precisa para valorizar o m².'
-                              )}
-                            </InlineEditable>
-                          </p>
-                        </div>
-                        <div className="space-y-8">
-                          <div className="group">
-                            <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                              <InlineEditable textKey="submit_modal.field_address_label">
-                                {t(
-                                  'submit_modal.field_address_label',
-                                  'Endereço Completo'
-                                )}
-                              </InlineEditable>
-                            </label>
-                            <input
-                              required
-                              type="text"
-                              value={propertyForm.location?.address}
-                              onChange={(e) =>
-                                setPropertyForm({
-                                  ...propertyForm,
-                                  location: {
-                                    ...propertyForm.location!,
-                                    address: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
-                              onFocus={(e) =>
-                                (e.target.style.borderColor =
-                                  settings.primaryColor)
-                              }
-                              onBlur={(e) => (e.target.style.borderColor = '')}
-                              placeholder={t(
-                                'submit_modal.field_address_placeholder',
-                                'Rua, número e CEP'
-                              )}
-                            />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="group">
-                              <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                                <InlineEditable textKey="submit_modal.field_city_label">
-                                  {t(
-                                    'submit_modal.field_city_label',
-                                    'Cidade / Munícipio'
-                                  )}
-                                </InlineEditable>
-                              </label>
-                              <input
-                                required
-                                type="text"
-                                value={propertyForm.location?.city}
-                                onChange={(e) =>
-                                  setPropertyForm({
-                                    ...propertyForm,
-                                    location: {
-                                      ...propertyForm.location!,
-                                      city: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
-                                onFocus={(e) =>
-                                  (e.target.style.borderColor =
-                                    settings.primaryColor)
-                                }
-                                onBlur={(e) =>
-                                  (e.target.style.borderColor = '')
-                                }
-                                placeholder={t(
-                                  'submit_modal.field_city_placeholder',
-                                  'Ex: Ribeirão Preto'
-                                )}
-                              />
-                            </div>
-                            <div className="group">
-                              <label className="text-[10px] font-black uppercase text-slate-400 block mb-3 tracking-widest ml-1">
-                                <InlineEditable textKey="submit_modal.field_neighborhood_label">
-                                  {t(
-                                    'submit_modal.field_neighborhood_label',
-                                    'Bairro / Região'
-                                  )}
-                                </InlineEditable>
-                              </label>
-                              <input
-                                required
-                                type="text"
-                                value={propertyForm.location?.neighborhood}
-                                onChange={(e) =>
-                                  setPropertyForm({
-                                    ...propertyForm,
-                                    location: {
-                                      ...propertyForm.location!,
-                                      neighborhood: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
-                                onFocus={(e) =>
-                                  (e.target.style.borderColor =
-                                    settings.primaryColor)
-                                }
-                                onBlur={(e) =>
-                                  (e.target.style.borderColor = '')
-                                }
-                                placeholder={t(
-                                  'submit_modal.field_neighborhood_placeholder',
-                                  'Ex: Jardim Botânico'
-                                )}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeStep === 4 && (
-                      <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-10">
-                        <div>
-                          <h3
-                            className="text-3xl font-black italic uppercase tracking-tighter mb-2"
-                            style={{ color: settings.secondaryColor }}
-                          >
-                            <InlineEditable textKey="submit_modal.step4_title">
-                              {t(
-                                'submit_modal.step4_title',
-                                'Visuais & Galeria'
-                              )}
-                            </InlineEditable>
-                          </h3>
-                          <p className="text-black/60 font-medium">
-                            <InlineEditable textKey="submit_modal.step4_subtitle">
-                              {t(
-                                'submit_modal.step4_subtitle',
-                                'Bons visuais aumentam a conversão em até 80%.'
-                              )}
-                            </InlineEditable>
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                          {propertyForm.images?.map((img, idx) => (
-                            <div
-                              key={idx}
-                              className="relative aspect-[4/5] rounded-[2rem] overflow-hidden group border-2 border-white shadow-xl hover:scale-[1.02] transition-all"
-                            >
-                              <img
-                                src={img}
-                                className="w-full h-full object-cover"
-                              />
-                              <div
-                                className="absolute inset-0 bg-red-500/90 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all cursor-pointer"
-                                onClick={() =>
-                                  setPropertyForm((prev) => ({
-                                    ...prev,
-                                    images: prev.images?.filter(
-                                      (_, i) => i !== idx
-                                    ),
-                                  }))
-                                }
-                              >
-                                <Trash2 size={24} />
-                              </div>
-                            </div>
-                          ))}
-                          <label
-                            className="aspect-[4/5] border-3 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center text-slate-400 hover:border-slate-950 transition-all bg-white cursor-pointer group shadow-sm"
-                            style={{ borderColor: 'transparent' }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.borderColor =
-                                settings.secondaryColor)
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.borderColor = '')
-                            }
-                          >
-                            {uploadingImage ? (
-                              <Loader2
-                                className="animate-spin"
-                                size={32}
-                                style={{ color: settings.secondaryColor }}
-                              />
-                            ) : (
-                              <>
-                                <div
-                                  className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mb-4 group-hover:text-white transition-all"
-                                  style={
-                                    {
-                                      backgroundColor:
-                                        'var(--hover-bg, #f8fafc)',
-                                    } as any
-                                  }
-                                  onMouseEnter={(e) =>
-                                    (e.currentTarget.style.backgroundColor =
-                                      settings.secondaryColor)
-                                  }
-                                  onMouseLeave={(e) =>
-                                    (e.currentTarget.style.backgroundColor = '')
-                                  }
-                                >
-                                  <Plus size={24} />
-                                </div>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-center px-4">
-                                  <InlineEditable textKey="submit_modal.add_photos">
-                                    {t(
-                                      'submit_modal.add_photos',
-                                      'Adicionar Fotografias'
-                                    )}
-                                  </InlineEditable>
-                                </span>
-                              </>
-                            )}
-                            <input
-                              type="file"
-                              multiple
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleImageUpload}
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Navigation Buttons */}
-                  <div className="mt-20 pt-10 border-t border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-sm -mx-8 md:-mx-20 px-8 md:px-20 pb-10 sticky bottom-0">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        activeStep > 1 && setActiveStep(activeStep - 1)
-                      }
-                      disabled={activeStep === 1}
-                      className="text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-black disabled:opacity-0 transition-all flex items-center gap-2"
-                    >
-                      <ChevronRight className="rotate-180" size={16} />{' '}
-                      <InlineEditable textKey="submit_modal.nav_back">
-                        {t('submit_modal.nav_back', 'Voltar')}
-                      </InlineEditable>
-                    </button>
-
-                    {activeStep < 4 ? (
-                      <button
-                        type="button"
-                        onClick={() => setActiveStep(activeStep + 1)}
-                        className="px-12 py-5 text-white rounded-full font-black uppercase text-[11px] tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group"
-                        style={{
-                          backgroundColor: settings.primaryColor,
-                          color: getContrastColor(settings.primaryColor),
-                        }}
-                      >
-                        <InlineEditable textKey="submit_modal.nav_continue">
-                          {t(
-                            'submit_modal.nav_continue',
-                            'Continuar para Passo 0'
-                          )}
-                        </InlineEditable>{' '}
-                        {activeStep + 1}
-                        <ChevronRight
-                          size={16}
-                          className="group-hover:translate-x-1 transition-transform"
-                        />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSubmitProperty}
-                        disabled={isSubmittingProperty}
-                        className="px-16 py-5 text-white rounded-full font-black uppercase text-[11px] tracking-[0.3em] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group disabled:opacity-50"
-                        style={{
-                          backgroundColor: settings.primaryColor,
-                          color: getContrastColor(settings.primaryColor),
-                        }}
-                      >
-                        {isSubmittingProperty ? (
-                          <Loader2 className="animate-spin" size={18} />
-                        ) : (
-                          <Sparkles size={18} />
-                        )}
-                        <InlineEditable textKey="submit_modal.nav_finish">
-                          {t('submit_modal.nav_finish', 'Finalizar Submissão')}
-                        </InlineEditable>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <LeadCaptureModal
+        isOpen={isLeadModalOpen}
+        isSubmitting={isSubmittingLead}
+        leadSuccess={leadSuccess}
+        leadForm={leadForm}
+        onClose={() => setIsLeadModalOpen(false)}
+        onSubmit={handleLeadSubmit}
+        onFormChange={(field, value) =>
+          setLeadForm({ ...leadForm, [field]: value })
+        }
+      />
+      <PropertySubmissionModal
+        isOpen={isSubmitModalOpen}
+        isSubmitting={isSubmittingProperty}
+        submitSuccess={submitSuccess}
+        activeStep={activeStep}
+        propertyForm={propertyForm}
+        uploadingImage={uploadingImage}
+        onClose={() => setIsSubmitModalOpen(false)}
+        onFormChange={(form) => setPropertyForm(form)}
+        onStepChange={(step) => setActiveStep(step)}
+        onSubmit={handleSubmitProperty}
+        onImageUpload={handleImageUpload}
+      />
     </div>
   );
 };

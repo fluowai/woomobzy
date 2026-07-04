@@ -161,7 +161,7 @@ const AIAssistant: React.FC = () => {
               <div className="p-8 lg:p-12 border-r border-slate-50">
                  <div className="flex items-center gap-2 mb-4">
                     <DollarSign className="text-emerald-600" size={28} />
-                    <h2 className="text-2xl font-black text-slate-900 italic tracking-tighter">Agente de Cobrança & Negociação</h2>
+                    <h2 className="text-2xl font-bold text-slate-900 italic tracking-tighter">Agente de Cobrança & Negociação</h2>
                  </div>
                  <p className="text-slate-500 mb-8 text-sm">
                     Gere abordagens humanizadas para clientes inadimplentes e acelere a recuperação de crédito.
@@ -170,7 +170,7 @@ const AIAssistant: React.FC = () => {
                  <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Nome do Cliente</label>
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Nome do Cliente</label>
                           <input 
                             value={collectionData.name}
                             onChange={e => setCollectionData({...collectionData, name: e.target.value})}
@@ -178,7 +178,7 @@ const AIAssistant: React.FC = () => {
                           />
                        </div>
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Valor em Atraso</label>
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Valor em Atraso</label>
                           <input 
                             type="number"
                             value={collectionData.amount}
@@ -190,7 +190,7 @@ const AIAssistant: React.FC = () => {
                     <button 
                       onClick={handleGenerateCollection}
                       disabled={isGeneratingColl}
-                      className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                      className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 disabled:opacity-50"
                     >
                       {isGeneratingColl ? <RefreshCw className="animate-spin" size={18} /> : <Sparkles size={18} />}
                       Criar Abordagem de Negociação
@@ -214,7 +214,7 @@ const AIAssistant: React.FC = () => {
                  ) : (
                     <div className="h-full flex flex-col items-center justify-center text-slate-300 opacity-50 py-10">
                        <MessageSquare size={64} className="mb-4" />
-                       <p className="text-xs font-black uppercase tracking-[0.3em] text-center">Aguardando comando do agente...</p>
+                       <p className="text-xs font-bold uppercase tracking-[0.3em] text-center">Aguardando comando do agente...</p>
                     </div>
                  )}
               </div>

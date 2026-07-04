@@ -294,7 +294,7 @@ const PropertyManagement: React.FC = () => {
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-black uppercase tracking-widest text-slate-800">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
                 Importacao Orulo por regiao
               </h2>
               <p className="text-xs text-slate-500 mt-1">
@@ -425,7 +425,7 @@ const PropertyManagement: React.FC = () => {
           >
             Solicitações Externas
             {properties.filter((p) => p.status === 'Pendente').length > 0 && (
-              <span className="bg-accent text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg shadow-accent/20">
+              <span className="bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-accent/20">
                 {properties.filter((p) => p.status === 'Pendente').length}
               </span>
             )}
@@ -541,11 +541,11 @@ const PropertyManagement: React.FC = () => {
                           <div className="mb-3 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2 text-indigo-700">
                               <Brain size={16} />
-                              <span className="text-xs font-black uppercase tracking-widest">
+                              <span className="text-xs font-bold uppercase tracking-widest">
                                 ACP Comercial
                               </span>
                             </div>
-                            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black text-indigo-700 shadow-sm">
+                            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-indigo-700 shadow-sm">
                               ICP {acp.icp?.fit_score || acp.score || 0}%
                             </span>
                           </div>
@@ -578,7 +578,7 @@ const PropertyManagement: React.FC = () => {
                         </div>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className="text-xl font-black text-primary">
+                        <span className="text-xl font-bold text-primary">
                           {(property.price || 0).toLocaleString('pt-BR', {
                             style: 'currency',
                             currency: 'BRL',
@@ -695,7 +695,7 @@ const PropertyManagement: React.FC = () => {
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-sm font-black text-slate-900 leading-snug line-clamp-2">
+                          <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">
                             {property.title}
                           </h3>
                           <span
@@ -713,7 +713,7 @@ const PropertyManagement: React.FC = () => {
                         <p className="mt-1 text-xs text-slate-400">
                           {property.location?.neighborhood || 'S/ Bairro'}, {property.location?.city || 'S/ Cidade'}
                         </p>
-                        <p className="mt-2 text-base font-black text-primary">
+                        <p className="mt-2 text-base font-bold text-primary">
                           {(property.price || 0).toLocaleString('pt-BR', {
                             style: 'currency',
                             currency: 'BRL',
@@ -725,19 +725,19 @@ const PropertyManagement: React.FC = () => {
                     <div className="mt-4 grid grid-cols-3 gap-2">
                       <button
                         onClick={() => navigate(`${property.id}`)}
-                        className="h-10 rounded-xl bg-slate-50 text-xs font-black text-slate-600 flex items-center justify-center gap-1"
+                        className="h-10 rounded-xl bg-slate-50 text-xs font-bold text-slate-600 flex items-center justify-center gap-1"
                       >
                         <Edit3 size={14} /> Editar
                       </button>
                       <button
                         onClick={() => navigate(`/property/${property.id}`)}
-                        className="h-10 rounded-xl bg-slate-50 text-xs font-black text-slate-600 flex items-center justify-center gap-1"
+                        className="h-10 rounded-xl bg-slate-50 text-xs font-bold text-slate-600 flex items-center justify-center gap-1"
                       >
                         <Eye size={14} /> Ver
                       </button>
                       <button
                         onClick={() => handleDelete(property.id!)}
-                        className="h-10 rounded-xl bg-red-50 text-xs font-black text-red-600 flex items-center justify-center gap-1"
+                        className="h-10 rounded-xl bg-red-50 text-xs font-bold text-red-600 flex items-center justify-center gap-1"
                       >
                         <Trash2 size={14} /> Excluir
                       </button>

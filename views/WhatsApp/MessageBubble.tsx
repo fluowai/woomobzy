@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Check, CheckCheck, Clock, Contact, FileText, FileVideo, Image, MapPin } from 'lucide-react';
 import AudioMessagePlayer from './AudioMessagePlayer';
 import { formatPhoneDisplay, mediaApi, type Message } from './hooks/api';
@@ -29,10 +29,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
   useEffect(() => {
     let active = true;
 
-    setMediaSourceUrl(message.media_url || '');
+    const currentUrl = message.media_url || '';
+    setMediaSourceUrl(currentUrl);
     setMediaLoadError('');
     setMediaError(false);
+
     if (!message.media_id || message.type === 'audio') return;
+
+    if (currentUrl) return;
 
     setMediaLoading(true);
     mediaApi
@@ -48,7 +52,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       })
       .catch((error: any) => {
         if (!active) return;
-        setMediaSourceUrl(message.media_url || '');
         setMediaLoadError(error?.message || 'Nao foi possivel carregar a midia.');
       })
       .finally(() => {
@@ -78,14 +81,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
     });
   };
 
-  const refreshMediaUrl = (event: React.MouseEvent) => {
-    event.stopPropagation();
+  const refreshMediaUrl = (event?: React.MouseEvent, expiresInSeconds = 900) => {
+    if (event) event.stopPropagation();
     if (!message.media_id || mediaLoading) return;
     setMediaLoading(true);
     setMediaLoadError('');
     setMediaError(false);
     mediaApi
-      .getUrl(message.media_id, 900)
+      .getUrl(message.media_id, expiresInSeconds)
       .then((result) => {
         if (result?.url) {
           setMediaSourceUrl(result.url);
@@ -100,6 +103,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
       .finally(() => setMediaLoading(false));
   };
 
+  const autoRefreshMedia = useRef(false);
+  const handleMediaError = () => {
+    if (autoRefreshMedia.current) {
+      setMediaError(true);
+      return;
+    }
+    autoRefreshMedia.current = true;
+    if (message.media_id) {
+      refreshMediaUrl(undefined as any, 86400);
+    } else {
+      setMediaError(true);
+    }
+  };
+
   const renderMedia = () => {
     switch (message.type) {
       case 'image':
@@ -111,7 +128,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
                 alt="Imagem"
                 className="wa-bubble-image"
                 loading="lazy"
-                onError={() => setMediaError(true)}
+                onError={handleMediaError}
                 onClick={(event) => {
                   event.stopPropagation();
                   window.open(mediaSourceUrl, '_blank');
@@ -144,7 +161,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
                 preload="none"
                 className="wa-bubble-video"
                 onClick={(event) => event.stopPropagation()}
-                onError={() => setMediaError(true)}
+                onError={handleMediaError}
               >
                 <source src={mediaSourceUrl} type={message.media_mimetype || 'video/mp4'} />
               </video>
@@ -207,7 +224,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
                 alt="Sticker"
                 className="wa-sticker-img"
                 loading="lazy"
-                onError={() => setMediaError(true)}
+                onError={handleMediaError}
               />
             ) : (
               <MediaPlaceholder

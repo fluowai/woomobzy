@@ -250,10 +250,10 @@ const QuizCampaigns: React.FC = () => {
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-10">
       <header className="flex flex-col gap-5 border-b border-slate-200 pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className={`mb-3 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] ${isRural ? 'text-emerald-700' : 'text-orange-600'}`}>
+          <div className={`mb-3 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] ${isRural ? 'text-emerald-700' : 'text-orange-600'}`}>
             <FileQuestion size={16} /> Qualificacao de leads
           </div>
-          <h1 className="text-3xl font-black text-slate-950">Quiz de campanhas</h1>
+          <h1 className="text-3xl font-bold text-slate-950">Quiz de campanhas</h1>
           <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
             {isRural
               ? 'Crie uma URL por fazenda ou area, qualifique por criterios tecnicos rurais e envie ao Kanban apenas leads aderentes.'
@@ -263,7 +263,7 @@ const QuizCampaigns: React.FC = () => {
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-black text-white shadow-lg transition ${isRural ? 'bg-emerald-700 shadow-emerald-700/20 hover:bg-emerald-800' : 'bg-orange-600 shadow-orange-600/20 hover:bg-orange-700'}`}
+          className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-bold text-white shadow-lg transition ${isRural ? 'bg-emerald-700 shadow-emerald-700/20 hover:bg-emerald-800' : 'bg-orange-600 shadow-orange-600/20 hover:bg-orange-700'}`}
         >
           <Plus size={18} /> Nova campanha
         </button>
@@ -280,7 +280,7 @@ const QuizCampaigns: React.FC = () => {
       ) : campaigns.length === 0 ? (
         <div className="border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
           <FileQuestion className={`mx-auto ${isRural ? 'text-emerald-600' : 'text-orange-500'}`} size={34} />
-          <h2 className="mt-4 text-lg font-black text-slate-900">Crie a primeira campanha</h2>
+          <h2 className="mt-4 text-lg font-bold text-slate-900">Crie a primeira campanha</h2>
           <p className="mt-2 text-sm text-slate-500">A campanha gera um quiz publico e registra cada resposta no CRM.</p>
         </div>
       ) : (
@@ -294,19 +294,19 @@ const QuizCampaigns: React.FC = () => {
                   <div className="min-w-0">
                     <div className="mb-2 flex items-center gap-2">
                       <span className={`h-2.5 w-2.5 rounded-full ${campaign.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                         {campaign.status === 'active' ? 'Publicada' : 'Pausada'}
                       </span>
                     </div>
-                    <h2 className="text-lg font-black text-slate-950">{campaign.title}</h2>
+                    <h2 className="text-lg font-bold text-slate-950">{campaign.title}</h2>
                     <p className="mt-1 text-sm font-medium text-slate-500">{campaign.property_label}</p>
                     {campaign.branding?.lead_source && (
-                      <p className="mt-2 text-xs font-black uppercase tracking-wider text-slate-400">{campaign.branding.lead_source}</p>
+                      <p className="mt-2 text-xs font-bold uppercase tracking-wider text-slate-400">{campaign.branding.lead_source}</p>
                     )}
                   </div>
                   <div className={`${isRural ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'} px-3 py-2 text-center`}>
-                    <strong className="block text-xl font-black">{campaign.qualification_threshold}</strong>
-                    <span className="text-[10px] font-black uppercase">nota de corte</span>
+                    <strong className="block text-xl font-bold">{campaign.qualification_threshold}</strong>
+                    <span className="text-[10px] font-bold uppercase">nota de corte</span>
                   </div>
                 </div>
 
@@ -318,10 +318,10 @@ const QuizCampaigns: React.FC = () => {
                 </div>
 
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                  <button type="button" onClick={() => openResults(campaign)} className={`inline-flex items-center gap-2 text-sm font-black text-slate-700 ${isRural ? 'hover:text-emerald-700' : 'hover:text-orange-600'}`}>
+                  <button type="button" onClick={() => openResults(campaign)} className={`inline-flex items-center gap-2 text-sm font-bold text-slate-700 ${isRural ? 'hover:text-emerald-700' : 'hover:text-orange-600'}`}>
                     <BarChart3 size={17} /> {count} resposta{count === 1 ? '' : 's'}
                   </button>
-                  <button type="button" onClick={() => toggleCampaign(campaign)} className={`inline-flex h-9 items-center gap-2 border border-slate-200 px-3 text-xs font-black text-slate-600 ${isRural ? 'hover:border-emerald-300 hover:text-emerald-700' : 'hover:border-orange-300 hover:text-orange-600'}`}>
+                  <button type="button" onClick={() => toggleCampaign(campaign)} className={`inline-flex h-9 items-center gap-2 border border-slate-200 px-3 text-xs font-bold text-slate-600 ${isRural ? 'hover:border-emerald-300 hover:text-emerald-700' : 'hover:border-orange-300 hover:text-orange-600'}`}>
                     {campaign.status === 'active' ? <><Pause size={15} /> Pausar</> : <><Play size={15} /> Ativar</>}
                   </button>
                 </div>
@@ -336,7 +336,7 @@ const QuizCampaigns: React.FC = () => {
           <form onSubmit={createCampaign} className="max-h-[92vh] w-full max-w-3xl overflow-y-auto bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-200 p-6">
               <div>
-                <h2 className="text-2xl font-black text-slate-950">Nova campanha de quiz</h2>
+                <h2 className="text-2xl font-bold text-slate-950">Nova campanha de quiz</h2>
                 <p className="mt-1 text-sm text-slate-500">Suba o PDF do ICP/persona para a IA montar as perguntas, ou preencha manualmente.</p>
               </div>
               <button type="button" onClick={() => setShowCreate(false)} className="p-2 text-slate-400 hover:text-slate-900"><X size={22} /></button>
@@ -344,7 +344,7 @@ const QuizCampaigns: React.FC = () => {
 
             <div className={`${isRural ? 'bg-emerald-50/50' : 'bg-orange-50/50'} border-b border-slate-200 p-6`}>
               <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-                <label className="space-y-2 text-sm font-black text-slate-700">
+                <label className="space-y-2 text-sm font-bold text-slate-700">
                   <span className="inline-flex items-center gap-2"><UploadCloud size={17} className={isRural ? 'text-emerald-700' : 'text-orange-600'} /> PDF do ICP/persona</span>
                   <input
                     type="file"
@@ -353,14 +353,14 @@ const QuizCampaigns: React.FC = () => {
                       setPdfFile(event.target.files?.[0] || null);
                       setGeneratedCampaign(null);
                     }}
-                    className={`block w-full border bg-white px-3 py-2 text-sm font-semibold text-slate-700 file:mr-4 file:border-0 file:px-4 file:py-2 file:text-sm file:font-black file:text-white ${isRural ? 'border-emerald-200 file:bg-emerald-700' : 'border-orange-200 file:bg-orange-600'}`}
+                    className={`block w-full border bg-white px-3 py-2 text-sm font-semibold text-slate-700 file:mr-4 file:border-0 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white ${isRural ? 'border-emerald-200 file:bg-emerald-700' : 'border-orange-200 file:bg-orange-600'}`}
                   />
                 </label>
                 <button
                   type="button"
                   disabled={generating || !pdfFile}
                   onClick={generateCampaignFromPdf}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {generating ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />} Gerar pelo PDF
                 </button>
@@ -399,7 +399,7 @@ const QuizCampaigns: React.FC = () => {
               <p className="text-xs font-bold text-slate-500">
                 A campanha sera publicada em <span className={isRural ? 'text-emerald-700' : 'text-orange-600'}>{publicQuizBaseUrl}/{slugify(form.title) || 'nome-da-campanha'}</span>
               </p>
-              <button disabled={saving} type="submit" className={`inline-flex h-11 items-center gap-2 px-5 text-sm font-black text-white disabled:opacity-60 ${isRural ? 'bg-emerald-700' : 'bg-orange-600'}`}>
+              <button disabled={saving} type="submit" className={`inline-flex h-11 items-center gap-2 px-5 text-sm font-bold text-white disabled:opacity-60 ${isRural ? 'bg-emerald-700' : 'bg-orange-600'}`}>
                 {saving ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />} Criar e publicar
               </button>
             </div>
@@ -412,7 +412,7 @@ const QuizCampaigns: React.FC = () => {
           <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-200 p-6">
               <div>
-                <h2 className="text-xl font-black text-slate-950">Respostas da campanha</h2>
+                <h2 className="text-xl font-bold text-slate-950">Respostas da campanha</h2>
                 <p className="mt-1 text-sm text-slate-500">{selected.title}</p>
               </div>
               <button type="button" onClick={() => setSelected(null)} className="p-2 text-slate-400 hover:text-slate-900"><X size={22} /></button>
@@ -425,7 +425,7 @@ const QuizCampaigns: React.FC = () => {
               <div className="overflow-x-auto p-6">
                 <table className="w-full min-w-[720px] text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <tr className="border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-400">
                       <th className="pb-3">Lead</th>
                       <th className="pb-3">Contato</th>
                       <th className="pb-3">Score</th>
@@ -436,11 +436,11 @@ const QuizCampaigns: React.FC = () => {
                   <tbody>
                     {submissions.map((item) => (
                       <tr key={item.id} className="border-b border-slate-100 text-sm">
-                        <td className="py-4 font-black text-slate-900">{item.name}</td>
+                        <td className="py-4 font-bold text-slate-900">{item.name}</td>
                         <td className="py-4 text-slate-600">{item.phone}<br /><span className="text-xs text-slate-400">{item.email || 'Sem e-mail'}</span></td>
-                        <td className="py-4 font-black text-slate-900">{item.score}/100</td>
+                        <td className="py-4 font-bold text-slate-900">{item.score}/100</td>
                         <td className="py-4">
-                          <span className={`px-2.5 py-1 text-xs font-black ${item.qualification_status === 'qualified' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                          <span className={`px-2.5 py-1 text-xs font-bold ${item.qualification_status === 'qualified' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                             {item.qualification_status === 'qualified' ? 'Qualificado' : 'Oportunidade futura'}
                           </span>
                         </td>
@@ -462,21 +462,21 @@ const Metric = ({ icon: Icon, label, value, tone }: { icon: React.ElementType; l
   <div className="flex items-center gap-4 border border-slate-200 bg-white p-4 shadow-sm">
     <div className={`flex h-11 w-11 items-center justify-center ${tone === 'rural' ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-600'}`}><Icon size={21} /></div>
     <div>
-      <strong className="block text-2xl font-black text-slate-950">{value}</strong>
+      <strong className="block text-2xl font-bold text-slate-950">{value}</strong>
       <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</span>
     </div>
   </div>
 );
 
 const Field = ({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) => (
-  <label className="space-y-2 text-sm font-black text-slate-700">
+  <label className="space-y-2 text-sm font-bold text-slate-700">
     <span>{label}</span>
     <input required value={value} onChange={(event) => onChange(event.target.value)} className="h-11 w-full border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
   </label>
 );
 
 const NumberField = ({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) => (
-  <label className="space-y-2 text-sm font-black text-slate-700">
+  <label className="space-y-2 text-sm font-bold text-slate-700">
     <span>{label}</span>
     <input required type="number" min={0} value={value} onChange={(event) => onChange(Number(event.target.value))} className="h-11 w-full border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
   </label>

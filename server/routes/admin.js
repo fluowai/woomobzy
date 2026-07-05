@@ -1,4 +1,5 @@
 import express from 'express';
+import { createClient } from '@supabase/supabase-js';
 import { verifySuperAdmin, verifyAdmin, verifyAuth } from '../middleware/auth.js';
 import { requireTenant } from '../middleware/tenant.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
@@ -264,13 +265,17 @@ router.post('/impersonate', verifySuperAdmin, async (req, res) => {
 router.get('/organizations', verifySuperAdmin, async (req, res) => {
   try {
     console.log(`[Admin] 🏢 Fetching organizations for superadmin: ${req.user?.email}`);
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('id, name, slug, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, feature_flags, created_at, updated_at')
-      .order('created_at', { ascending: false, nullsFirst: false });
+    const { data, error } = await queryOrganizations(supabase);
     
     if (error) {
       console.error('[Admin] ❌ Error fetching organizations from Supabase:', error);
+      if (isInvalidSupabaseApiKeyError(error)) {
+        const fallback = await queryOrganizationsWithUserToken(req);
+        if (!fallback.error) {
+          return res.json({ success: true, organizations: fallback.data || [] });
+        }
+        console.error('[Admin] ❌ User-token fallback also failed:', fallback.error);
+      }
       throw error;
     }
     
@@ -405,6 +410,50 @@ router.post('/organizations/bulk-delete', verifySuperAdmin, async (req, res) => 
     res.status(500).json({ error: error.message });
   }
 });
+
+function queryOrganizations(client) {
+  return client
+    .from('organizations')
+    .select('id, name, slug, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, feature_flags, created_at, updated_at')
+    .order('created_at', { ascending: false, nullsFirst: false });
+}
+
+async function queryOrganizationsWithUserToken(req) {
+  const token = getBearerToken(req);
+  const url = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
+  const anonKey = (process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '').trim();
+
+  if (!token || !url || !anonKey) {
+    return {
+      data: null,
+      error: new Error('Fallback de listagem indisponivel: sessao ou credenciais publicas ausentes.'),
+    };
+  }
+
+  const userScopedSupabase = createClient(url, anonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+
+  return queryOrganizations(userScopedSupabase);
+}
+
+function getBearerToken(req) {
+  const authHeader = String(req.headers.authorization || '');
+  return authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : '';
+}
+
+function isInvalidSupabaseApiKeyError(error) {
+  const message = String(error?.message || error?.error || '').toLowerCase();
+  return message.includes('invalid api key') || message.includes('invalid apikey');
+}
 
 router.delete('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {

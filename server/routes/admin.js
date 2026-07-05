@@ -266,7 +266,7 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
     console.log(`[Admin] 🏢 Fetching organizations for superadmin: ${req.user.email}`);
     const { data, error } = await supabase
       .from('organizations')
-      .select('*, plans ( id, name, price_monthly )')
+      .select('*')
       .order('created_at', { ascending: false });
     
     if (error) {

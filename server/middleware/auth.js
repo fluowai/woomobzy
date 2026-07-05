@@ -805,6 +805,13 @@ export const requireRole = (...allowedRoles) => {
   };
 };
 
+/** Limpa o cache de perfil para forcar recarga na proxima requisicao */
+export function clearProfileCache(userId, email) {
+  const cacheKey = `${userId}:${String(email || '').toLowerCase()}`;
+  profileCache.delete(cacheKey);
+  console.log('[Auth] Cache de perfil limpo para', cacheKey);
+}
+
 /** Shortcut para rotas que exigem apenas Admin da própria Org */
 export const verifyAdmin = (req, res, next) => {
   verifyAuth(req, res, (err) => {

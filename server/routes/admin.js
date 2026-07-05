@@ -1,7 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
-import { verifySuperAdmin, verifyAdmin, verifyAuth } from '../middleware/auth.js';
+import { verifySuperAdmin, verifyAdmin, verifyAuth, clearProfileCache } from '../middleware/auth.js';
 import { requireTenant } from '../middleware/tenant.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import {
@@ -566,6 +566,70 @@ router.delete('/organizations/:id', verifySuperAdmin, async (req, res) => {
     res.json({ success: true, deleted: data });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// --- 🔗 Profile-Org Link (SuperAdmin) ---
+
+router.post('/link-profile', verifySuperAdmin, async (req, res) => {
+  try {
+    const { email, organization_id } = req.body;
+    if (!email || !organization_id) {
+      return res.status(400).json({ error: 'email e organization_id sao obrigatorios' });
+    }
+
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .eq('id', organization_id)
+      .maybeSingle();
+
+    if (orgError || !org) {
+      return res.status(404).json({ error: 'Organizacao nao encontrada' });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email, role, organization_id')
+      .ilike('email', email)
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      return res.status(404).json({ error: 'Perfil nao encontrado para este email' });
+    }
+
+    if (profile.organization_id === org.id) {
+      return res.json({ success: true, message: `Perfil de ${email} ja esta vinculado a ${org.name}.` });
+    }
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        organization_id: org.id,
+        role: 'admin',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', profile.id);
+
+    if (updateError) throw updateError;
+
+    clearProfileCache(profile.id, email);
+
+    console.log('[Admin] Perfil vinculado manualmente por superadmin', {
+      adminEmail: req.user?.email,
+      targetEmail: email,
+      orgId: org.id,
+      orgName: org.name,
+    });
+
+    return res.json({
+      success: true,
+      message: `Perfil de ${email} vinculado a ${org.name} com sucesso!`,
+      profile: { id: profile.id, email, organization_id: org.id },
+    });
+  } catch (err) {
+    console.error('[Admin] Link profile error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
 });
 

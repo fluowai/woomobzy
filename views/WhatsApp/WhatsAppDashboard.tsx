@@ -6,6 +6,7 @@ import {
   instanceApi,
   chatApi,
   messageApi,
+  accountApi,
   isSupportedChat,
   normalizeMessagePreview,
   type Instance,
@@ -72,6 +73,7 @@ const WhatsAppDashboard: React.FC = () => {
     startedAt: 0,
   });
   const [deletingChats, setDeletingChats] = useState(false);
+  const [recovering, setRecovering] = useState(false);
 
   // WebSocket
   const { isConnected, on } = useWebSocket(webSocketEnabled);
@@ -254,6 +256,25 @@ const WhatsAppDashboard: React.FC = () => {
       unsubReceipt();
     };
   }, [on, selectedChat, selectedInstance]);
+
+  const handleRecoverOrg = async () => {
+    setRecovering(true);
+    try {
+      const result = await accountApi.recoverOrg();
+      toast.success(result.message);
+      setTenantContextError('');
+      setLoading(true);
+      loadInstances();
+    } catch (err: any) {
+      if (err?.code === 'NO_ORG_FOUND') {
+        toast.error('Nenhuma organizacao encontrada para seu email. Crie uma conta em Onboarding.');
+      } else {
+        toast.error(err?.message || 'Erro ao recuperar organizacao.');
+      }
+    } finally {
+      setRecovering(false);
+    }
+  };
 
   const loadInstances = async () => {
     try {
@@ -541,6 +562,13 @@ const WhatsAppDashboard: React.FC = () => {
               className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium"
             >
               Tentar Novamente
+            </button>
+            <button
+              onClick={handleRecoverOrg}
+              disabled={recovering}
+              className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50"
+            >
+              {recovering ? 'Recuperando...' : 'Recuperar vinculacao'}
             </button>
             <button
               onClick={() => { window.location.href = '/onboarding'; }}

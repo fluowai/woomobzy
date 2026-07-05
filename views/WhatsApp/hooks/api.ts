@@ -670,6 +670,22 @@ export const mediaApi = {
     apiRequest<WhatsAppMediaRetryResponse>(`/media/${mediaId}/retry`, { method: 'POST' }),
 };
 
+export const accountApi = {
+  recoverOrg: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/account/recover-org', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+    });
+    const body = await res.json();
+    if (!res.ok) throw new WhatsAppApiError(body.error || 'Falha na recuperacao', res.status, body.code);
+    return body as { success: boolean; message: string; organization?: { id: string; name: string }; organization_id?: string };
+  },
+};
+
 // ---- Phone Utils ----
 export function formatPhone(number: string): string {
   const cleaned = number.replace(/\D/g, '').replace(/^0+/, '');

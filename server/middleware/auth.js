@@ -3,7 +3,7 @@ import {
   getSupabaseServer,
 } from '../lib/supabase-server.js';
 import jwt from 'jsonwebtoken';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { TtlCache } from '../lib/ttl-cache.js';
 
 const AUTH_CACHE_TTL_MS = 60_000;
@@ -684,8 +684,9 @@ async function ensureOrganizationForUser(supabase, user, email) {
     email.split('@')[0] ||
     'Usuario';
 
-  let slugBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  let orgName = `${userName} Imobiliaria`;
+  const slugBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const orgName = `${userName} Imobiliaria`;
+  const now = new Date().toISOString();
 
   // Search by owner_email first
   const { data: orgByEmail } = await supabase
@@ -698,37 +699,63 @@ async function ensureOrganizationForUser(supabase, user, email) {
   if (orgByEmail) return orgByEmail;
 
   // We must NOT search by slug and attach this user to another user's organization!
-  // Instead, to prevent unique constraint errors during insert, we append a short unique ID to the slug.
+  // Instead, to prevent unique constraint errors during insert, we append a unique ID to the slug.
+  // Try multiple slug variations if conflicts occur.
   const uniqueSuffix = user.id.split('-')[0];
-  slugBase = `${slugBase}-${uniqueSuffix}`;
+  const shortId = randomUUID().split('-')[0];
+  const slugCandidates = [
+    `${slugBase}-${uniqueSuffix}`,
+    `${slugBase}-${shortId}`,
+    `${slugBase}-${uniqueSuffix}-${shortId}`,
+  ];
 
+  for (const slug of slugCandidates) {
+    const result = await insertOrganization(supabase, orgName, slug, email, userName, now);
+    if (result) return result;
+  }
+
+  // Final fallback: pure random slug to guarantee no constraint violation
+  const fallbackSlug = `org-${randomUUID()}`;
+  const result = await insertOrganization(supabase, orgName, fallbackSlug, email, userName, now);
+  if (result) return result;
+
+  console.warn('[Auth] Todas as tentativas de criar organizacao automatica falharam', {
+    email,
+    authUserId: user.id,
+    attemptedSlugs: slugCandidates.concat(fallbackSlug),
+  });
+  return null;
+}
+
+async function insertOrganization(supabase, name, slug, ownerEmail, ownerName, now) {
   const { data: newOrg, error: createError } = await supabase
     .from('organizations')
     .insert({
-      name: orgName,
-      slug: slugBase,
-      owner_email: email,
-      owner_name: userName,
+      name,
+      slug,
+      owner_email: ownerEmail,
+      owner_name: ownerName,
       status: 'active',
       subscription_status: 'active',
       niche: 'urbano',
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     })
     .select('id, name, owner_name, owner_email')
     .single();
 
-  if (createError) {
-    console.warn('[Auth] Falha ao criar organizacao automatica:', createError.message, { email, authUserId: user.id });
-    return null;
+  if (!createError) {
+    console.warn('[Auth] Organizacao criada automaticamente', {
+      email: ownerEmail,
+      organizationId: newOrg.id,
+      slug,
+      orgName: name,
+    });
+    return newOrg;
   }
 
-  console.warn('[Auth] Organizacao criada automaticamente', {
-    email,
-    organizationId: newOrg.id,
-    orgName,
-  });
-
-  return newOrg;
+  console.warn(`[Auth] Slug "${slug}" falhou:`, createError.message);
+  return null;
 }
 
 async function createProfileForUser(supabase, user, { email, organizationId, name, role, source }) {

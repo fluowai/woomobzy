@@ -263,21 +263,22 @@ router.post('/impersonate', verifySuperAdmin, async (req, res) => {
 
 router.get('/organizations', verifySuperAdmin, async (req, res) => {
   try {
-    console.log(`[Admin] 🏢 Fetching organizations for superadmin: ${req.user.email}`);
+    console.log(`[Admin] 🏢 Fetching organizations for superadmin: ${req.user?.email}`);
     const { data, error } = await supabase
       .from('organizations')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, name, slug, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, feature_flags, created_at, updated_at')
+      .order('created_at', { ascending: false, nullsFirst: false });
     
     if (error) {
       console.error('[Admin] ❌ Error fetching organizations from Supabase:', error);
       throw error;
     }
     
-    res.json({ success: true, organizations: data });
+    res.json({ success: true, organizations: data || [] });
   } catch (error) {
-    console.error('[Admin] ❌ Internal Error in /organizations:', error.message);
-    res.status(500).json({ error: error.message });
+    console.error('[Admin] ❌ Internal Error in /organizations:', error);
+    const message = error?.message || error?.description || 'Erro interno ao listar organizações';
+    res.status(500).json({ error: message });
   }
 });
 

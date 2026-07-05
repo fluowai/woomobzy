@@ -49,12 +49,13 @@ services:
       NODE_ENV: development
       PORT: 3002
       WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-whatsmeow}
+      WAHA_ENGINE: ${WAHA_ENGINE:-noweb}
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100
-      ARRAPHA_API_URL: http://arrapha:3000
-      WAHA_API_URL: http://arrapha:3000
+      WAHA_API_URL: http://waha:3000
+      WAHA_API_KEY: ${WAHA_API_KEY:-${ARRAPHA_API_KEY:-}}
+      ARRAPHA_API_URL: http://waha:3000
       ARRAPHA_API_KEY: ${ARRAPHA_API_KEY:-}
-      WAHA_API_KEY: ${WAHA_API_KEY:-}
       WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:-local-whatsapp-service-token}
       WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:-local-whatsapp-internal-token}
       WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:-local-whatsapp-ws-secret-change-me}
@@ -86,16 +87,17 @@ services:
     logging: *default-logging
     restart: unless-stopped
 
-  arrapha:
+  waha:
     image: devlikeapro/waha:latest
     profiles:
-      - arrapha
+      - waha
     environment:
-      WHATSAPP_API_KEY: ${ARRAPHA_API_KEY:-local-arrapha-api-key}
+      WHATSAPP_API_KEY: ${WAHA_API_KEY:-${ARRAPHA_API_KEY:-local-waha-api-key}}
+      WAHA_ENGINE: ${WAHA_ENGINE:-noweb}
       WAHA_PRINT_QR: "false"
       WAHA_LOG_FORMAT: JSON
     volumes:
-      - arrapha_sessions:/app/.sessions
+      - waha_sessions:/app/.sessions
     expose:
       - "3000"
     ports:
@@ -180,7 +182,7 @@ services:
 
 volumes:
   whatsapp_sessions:
-  arrapha_sessions:
+  waha_sessions:
 
 networks:
   imobzy:

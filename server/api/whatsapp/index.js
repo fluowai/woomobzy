@@ -4,8 +4,8 @@ import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { createPresignedGetUrl, isMinioConfigured } from '../../lib/minio-storage.js';
 import jwt from 'jsonwebtoken';
-import { createArraphaRouter } from './providers/arrapha-router.js';
-import { getWhatsAppProviderConfig, isArraphaProvider } from './providers/provider-config.js';
+import { createWahaRouter } from './providers/waha-router.js';
+import { getWhatsAppProviderConfig } from './providers/provider-config.js';
 
 const router = Router();
 const WHATSAPP_DB_ENV_KEYS = [
@@ -39,7 +39,7 @@ const rewriteWhatsAppPath = (path) => {
 
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const providerConfig = getWhatsAppProviderConfig();
-  const target = resolveWhatsAppTarget(providerConfig.targetUrl);
+  const target = resolveWhatsAppTarget(providerConfig.whatsmeowUrl);
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const isProduction = process.env.NODE_ENV === 'production';
   const envAllowedOrigins = process.env.ALLOWED_ORIGINS
@@ -113,20 +113,19 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     }
   });
 
-  if (isArraphaProvider()) {
-    console.log('[WhatsApp API 2.0] Provider ativo: Arrapha/WAHA em modo white label.');
-    app.use(
-      '/api/whatsapp',
-      createArraphaRouter({
-        verifyAuth,
-        requireTenant,
-        applyCorsHeaders,
-      })
-    );
-    return null;
-  }
+  // WooAPI 2: WAHA provider montado em /api/whatsapp/waha
+  console.log('[WhatsApp] Montando WAHA provider (WooAPI 2) em /api/whatsapp/waha');
+  app.use(
+    '/api/whatsapp/waha',
+    createWahaRouter({
+      verifyAuth,
+      requireTenant,
+      applyCorsHeaders,
+    })
+  );
 
-  console.log('[WhatsApp API 2.0] Provider ativo: WhatsMeow legado.');
+  // WooAPI 1: whatsmeow provider padrao em /api/whatsapp
+  console.log('[WhatsApp] Montando WhatsMeow provider (WooAPI 1) em /api/whatsapp');
 
   const proxy = createProxyMiddleware({
     target,

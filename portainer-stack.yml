@@ -24,9 +24,6 @@ services:
       - "traefik.http.routers.imobfluow_frontend.priority=1"
       - "traefik.http.routers.imobfluow_frontend.service=imobfluow_frontend"
       - "traefik.http.services.imobfluow_frontend.loadbalancer.server.port=80"
-    deploy:
-      restart_policy:
-        condition: any
 
   api:
     image: ghcr.io/fluowai/woomobzy-api:latest
@@ -42,7 +39,7 @@ services:
       CORS_ORIGINS: "https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
       VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
       VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0OTc5NDcsImV4cCI6MjA4OTA3Mzk0N30.R88M8kQu0HGjUZBTccAMT4uqQYxd1Zneq6tkcKWII3k"
-      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwOjIwODkwNzM5NDd9.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
       SUPABASE_JWT_SECRET: "73DeEki4cY5JF5Rc07BwngLMiBc41yjQoDvuNGnC526kSmeJaIlgV0mArtRGJ4268vzu0/svBebqwAu0onL1mA=="
       DATABASE_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       SUPABASE_DB_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
@@ -86,9 +83,6 @@ services:
       - "traefik.http.routers.imobfluow_api.priority=10"
       - "traefik.http.routers.imobfluow_api.service=imobfluow_api"
       - "traefik.http.services.imobfluow_api.loadbalancer.server.port=3002"
-    deploy:
-      restart_policy:
-        condition: any
 
   waha:
     image: devlikeapro/waha:latest
@@ -101,9 +95,6 @@ services:
       - waha_sessions:/app/.sessions
     networks:
       - imobfluow_internal
-    deploy:
-      restart_policy:
-        condition: any
 
   whatsapp-service:
     image: ghcr.io/fluowai/woomobzy-whatsapp:latest
@@ -113,7 +104,7 @@ services:
       ALLOWED_ORIGINS: "https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
       CORS_ORIGINS: "https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
       SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co"
-      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwIjoyMDg5MDczOTQ3fQ.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxremNzYXlkcGNueXBkZXZvaWtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQ5Nzk0NywiZXhwOjIwODkwNzM5NDd9.2gh_dBVDDwGXSkAw0-z4gAGeY4MQRRASJmDGPdRaREE"
       SUPABASE_JWT_SECRET: "73DeEki4cY5JF5Rc07BwngLMiBc41yjQoDvuNGnC526kSmeJaIlgV0mArtRGJ4268vzu0/svBebqwAu0onL1mA=="
       SUPABASE_DB_URL: "postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       PGSSLMODE: require
@@ -133,9 +124,6 @@ services:
       - whatsapp_sessions:/app/.sessions
     networks:
       - imobfluow_internal
-    deploy:
-      restart_policy:
-        condition: any
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -152,17 +140,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 20s
-    deploy:
-      restart_policy:
-        condition: any
 
   agro-intelligence:
     image: ghcr.io/fluowai/woomobzy-agro:latest
     networks:
       - imobfluow_internal
-    deploy:
-      restart_policy:
-        condition: any
 
 volumes:
   whatsapp_sessions:

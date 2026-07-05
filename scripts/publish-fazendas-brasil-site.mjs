@@ -199,7 +199,7 @@ async function upsertSiteSettings(organizationId) {
     footer_text: `© ${new Date().getFullYear()} Fazendas Brasil. Todos os direitos reservados.`,
     social_links: JSON.stringify({ whatsapp: `https://wa.me/${FAZENDAS.phoneDigits}` }),
     home_content: JSON.stringify({
-      broker_name: 'Renato Vilmar Piovesana',
+      broker_name: 'Renato Piovesana',
       broker_creci: 'CRECI 16644F',
       broker_photo: FAZENDAS.brokerPhotoUrl,
       broker_bio:

@@ -59,7 +59,9 @@ const PHONE_LABEL = '(44) 99843-3030';
 const EMAIL = 'contato@fazendasbrasil.com.br';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
 const BROKER_IMAGE = '/images/fazendas-brasil/broker-renato.jpeg';
-const HERO_IMAGE = '/images/fazendas-brasil/reference-hero.webp';
+const HERO_IMAGE = 'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/hero/fazendas-brasil-hero-clean.webp';
+const CARD_FALLBACK_IMAGE = 'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/fallback/fazendas-brasil-card-fallback.webp';
+const BROKER_NAME = 'Renato Piovesana';
 const PROPERTIES_PER_PAGE = 12;
 const PROPERTIES_PER_GRID = 4;
 
@@ -185,6 +187,10 @@ function normalizeImages(images?: string[] | string) {
   return [];
 }
 
+function isLegacyBrokenImage(url: string) {
+  return /supabase\.(co|com)\/storage\/v1\/object\/public\/imobzyimg/i.test(String(url || ''));
+}
+
 function formatCurrency(value?: number) {
   const amount = toNumber(value);
   if (!amount) return 'Sob consulta';
@@ -247,8 +253,8 @@ function getAptitude(property: PublicProperty) {
 }
 
 function getPropertyImage(property: PublicProperty, index: number) {
-  const images = normalizeImages(property.images);
-  return images[0] || normalizeImages(fallbackProperties[index % fallbackProperties.length].images)[0] || HERO_IMAGE;
+  const images = normalizeImages(property.images).filter((image) => !isLegacyBrokenImage(image));
+  return images[0] || CARD_FALLBACK_IMAGE || normalizeImages(fallbackProperties[index % fallbackProperties.length].images)[0] || HERO_IMAGE;
 }
 
 function isUuid(value: string) {
@@ -436,7 +442,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
       await leadService.create({
         organization_id: resolvedOrganizationId,
         organization_slug: 'fazendasbrasil',
-        organization_domain: 'fazendasbrasil.com.br',
+        organization_domain: window.location.hostname.replace(/^www\./, '') || 'fazendasbrasil.com',
         owner_email: EMAIL,
         site_key: 'fazendasbrasil',
         referrer_url: window.location.href,
@@ -646,7 +652,6 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         .fb-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
         .fb-grid-group { margin-bottom: 18px; }
         .fb-grid-group:last-of-type { margin-bottom: 0; }
-        .fb-grid-title { margin: 0 0 12px; color: #244437; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 950; text-transform: uppercase; letter-spacing: .04em; }
         .fb-card { background: #fff; border: 1px solid rgba(0,88,42,.1); border-radius: 6px; overflow: hidden; box-shadow: 0 10px 26px rgba(7,36,20,.08); }
         .fb-card-image { height: 132px; background-position: center; background-size: cover; position: relative; }
         .fb-sale { position: absolute; left: 13px; top: 12px; border-radius: 4px; background: var(--fb-green); color: #fff; padding: 7px 11px; font-size: 10px; font-weight: 950; text-transform: uppercase; }
@@ -1223,8 +1228,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           </div>
 
           {propertyGrids.map((grid, gridIndex) => (
-            <div className="fb-grid-group" key={`grade-${gridIndex + 1}`}>
-              <h3 className="fb-grid-title">Grade {gridIndex + 1}</h3>
+            <div className="fb-grid-group" key={`grid-${gridIndex + 1}`}>
               <div className="fb-cards">
                 {grid.map((property, index) => {
                   const absoluteIndex = gridIndex * PROPERTIES_PER_GRID + index;
@@ -1307,12 +1311,12 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
         <section className="fb-broker" aria-label="Especialista responsavel">
           <div className="fb-broker-photo-wrap">
-            <img className="fb-broker-photo" src={BROKER_IMAGE} alt="Renato Vilmar Piovesana" />
+            <img className="fb-broker-photo" src={BROKER_IMAGE} alt={BROKER_NAME} />
             <img className="fb-broker-logo" src={LOGO_URL} alt="Fazendas Brasil" />
           </div>
           <div>
             <small>Especialista responsavel</small>
-            <h2>Renato Vilmar Piovesana</h2>
+            <h2>{BROKER_NAME}</h2>
             <p>
               Atendimento consultivo para compradores e investidores que buscam fazendas, areas rurais e oportunidades selecionadas em todo o Brasil.
             </p>

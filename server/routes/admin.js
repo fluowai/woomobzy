@@ -27,6 +27,13 @@ import {
   simulateCleanup,
   suspendVersioning,
 } from '../services/storageIntelligenceService.js';
+import {
+  assertValidDomain,
+  DomainProvisioningError,
+  ensureDockerDomainConfig,
+  normalizeDomain,
+  removeDockerDomain,
+} from '../domainService.js';
 
 const router = express.Router();
 
@@ -59,6 +66,130 @@ function normalizeNiche(niche, ...signals) {
   return /\b(rural|fazenda|fazendas|sitio|sítio|chacara|chácara|agro|haras)\b/.test(text)
     ? 'rural'
     : 'traditional';
+}
+
+function normalizeOptionalCustomDomain(value) {
+  const normalized = normalizeDomain(value || '');
+  return normalized ? assertValidDomain(normalized) : null;
+}
+
+async function assertCustomDomainAvailable(domain, organizationId = null) {
+  if (!domain) return;
+
+  const { data: existingOrg, error: orgError } = await supabase
+    .from('organizations')
+    .select('id, name')
+    .eq('custom_domain', domain)
+    .maybeSingle();
+
+  if (orgError) throw orgError;
+  if (existingOrg && existingOrg.id !== organizationId) {
+    throw new DomainProvisioningError(
+      'DOMAIN_ALREADY_EXISTS',
+      'Este dominio ja esta vinculado a outra organizacao.',
+      409,
+      { organizationId: existingOrg.id, organizationName: existingOrg.name }
+    );
+  }
+
+  const { data: existingDomain, error: domainError } = await supabase
+    .from('domains')
+    .select('organization_id, domain')
+    .eq('domain', domain)
+    .maybeSingle();
+
+  if (domainError) throw domainError;
+  if (existingDomain && existingDomain.organization_id !== organizationId) {
+    throw new DomainProvisioningError(
+      'DOMAIN_ALREADY_EXISTS',
+      'Este dominio ja esta cadastrado no Imobzy.',
+      409,
+      { organizationId: existingDomain.organization_id }
+    );
+  }
+}
+
+async function upsertDomainTracking({ organizationId, domain, status = 'pending_ssl' }) {
+  try {
+    const { error } = await supabase.from('domains').upsert({
+      organization_id: organizationId,
+      domain,
+      is_custom: true,
+      is_primary: true,
+      status,
+      ssl_status: status === 'active' ? 'active' : 'pending',
+      updated_at: new Date().toISOString(),
+    }, {
+      onConflict: 'domain',
+    });
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.warn('[Admin] Domain tracking upsert failed:', error.message);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function removePreviousCustomDomain({ organizationId, previousDomain }) {
+  const normalizedPrevious = previousDomain ? normalizeDomain(previousDomain) : null;
+  if (!normalizedPrevious) return null;
+
+  try {
+    await removeDockerDomain(normalizedPrevious);
+  } catch (error) {
+    console.warn(`[Admin] Failed to remove Traefik config for ${normalizedPrevious}:`, error.message);
+  }
+
+  const { error } = await supabase
+    .from('domains')
+    .delete()
+    .eq('domain', normalizedPrevious)
+    .eq('organization_id', organizationId);
+
+  if (error) {
+    console.warn(`[Admin] Failed to remove domain tracking for ${normalizedPrevious}:`, error.message);
+  }
+
+  return {
+    success: true,
+    domain: normalizedPrevious,
+  };
+}
+
+async function syncOrganizationCustomDomain({ organizationId, nextDomain, previousDomain = null }) {
+  const normalizedNext = nextDomain ? assertValidDomain(nextDomain) : null;
+  const normalizedPrevious = previousDomain ? normalizeDomain(previousDomain) : null;
+
+  if (!normalizedNext) {
+    return {
+      action: normalizedPrevious ? 'removed' : 'none',
+      removed: await removePreviousCustomDomain({ organizationId, previousDomain: normalizedPrevious }),
+    };
+  }
+
+  const provisioning = await ensureDockerDomainConfig(normalizedNext);
+  const tracking = await upsertDomainTracking({
+    organizationId,
+    domain: normalizedNext,
+    status: 'pending_ssl',
+  });
+
+  let removed = null;
+  if (normalizedPrevious && normalizedPrevious !== normalizedNext) {
+    removed = await removePreviousCustomDomain({ organizationId, previousDomain: normalizedPrevious });
+  }
+
+  return {
+    action: normalizedPrevious === normalizedNext ? 'ensured' : 'provisioned',
+    domain: normalizedNext,
+    provisioning,
+    tracking,
+    removed,
+  };
 }
 
 async function findAuthUserByEmail(email) {
@@ -283,6 +414,9 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
         }
         console.error('[Admin] ❌ Direct DB fallback also failed:', directDbFallback.error);
       }
+      if (isInvalidSupabaseApiKeyError(error)) {
+        return sendSupabaseServiceKeyError(res, { primaryError: error });
+      }
       throw error;
     }
     
@@ -290,6 +424,9 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
   } catch (error) {
     console.error('[Admin] ❌ Internal Error in /organizations:', error);
     const message = error?.message || error?.description || 'Erro interno ao listar organizações';
+    if (isInvalidSupabaseApiKeyError(error)) {
+      return sendSupabaseServiceKeyError(res, { primaryError: error });
+    }
     res.status(500).json({ error: message });
   }
 });
@@ -301,13 +438,16 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
     if (owner_email && (!password || password.length < 6)) {
       return res.status(400).json({ error: 'Senha de acesso deve ter no minimo 6 caracteres' });
     }
+
+    const normalizedCustomDomain = normalizeOptionalCustomDomain(custom_domain);
+    await assertCustomDomainAvailable(normalizedCustomDomain);
     
     const payload = { 
       name, 
       slug: slug || null, 
       status: status || 'active',
-      custom_domain: custom_domain || null,
-      niche: normalizeNiche(niche, name, slug, custom_domain, owner_email),
+      custom_domain: normalizedCustomDomain,
+      niche: normalizeNiche(niche, name, slug, normalizedCustomDomain, owner_email),
       owner_name: owner_name || null,
       owner_email: owner_email || null
     };
@@ -324,6 +464,13 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       .single();
     if (error) throw error;
 
+    const domainProvisioning = normalizedCustomDomain
+      ? await syncOrganizationCustomDomain({
+          organizationId: data.id,
+          nextDomain: normalizedCustomDomain,
+        })
+      : null;
+
     const ownerUser = await ensureOrganizationOwner({
       organization: data,
       ownerName: owner_name,
@@ -331,9 +478,19 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       password,
     });
 
-    res.json({ success: true, organization: data, owner_user_id: ownerUser?.id || null });
+    res.json({
+      success: true,
+      organization: data,
+      owner_user_id: ownerUser?.id || null,
+      domainProvisioning,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const status = error instanceof DomainProvisioningError ? error.statusCode : 500;
+    res.status(status).json({
+      error: error.message,
+      code: error.code || 'ORGANIZATION_CREATE_FAILED',
+      details: error.details,
+    });
   }
 });
 
@@ -341,6 +498,25 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, slug, plan_id, status, custom_domain, owner_name, owner_email, password, niche } = req.body;
+    let previousOrganization = null;
+    let normalizedCustomDomain;
+
+    if (custom_domain !== undefined) {
+      const { data: existingOrganization, error: existingError } = await supabase
+        .from('organizations')
+        .select('id, custom_domain')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+      if (!existingOrganization) {
+        return res.status(404).json({ error: 'Imobiliaria nao encontrada' });
+      }
+
+      previousOrganization = existingOrganization;
+      normalizedCustomDomain = normalizeOptionalCustomDomain(custom_domain);
+      await assertCustomDomainAvailable(normalizedCustomDomain, id);
+    }
     
     const payload = {};
     if (name !== undefined) payload.name = name;
@@ -353,8 +529,8 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
         payload.selected_plan_at = new Date().toISOString();
       }
     }
-    if (custom_domain !== undefined) payload.custom_domain = custom_domain || null;
-    if (niche !== undefined) payload.niche = normalizeNiche(niche, name, slug, custom_domain, owner_email);
+    if (custom_domain !== undefined) payload.custom_domain = normalizedCustomDomain;
+    if (niche !== undefined) payload.niche = normalizeNiche(niche, name, slug, normalizedCustomDomain ?? custom_domain, owner_email);
     if (owner_name !== undefined) payload.owner_name = owner_name;
     if (owner_email !== undefined) payload.owner_email = owner_email;
     
@@ -366,6 +542,14 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
       .single();
 
     if (updateError) throw updateError;
+
+    const domainProvisioning = custom_domain !== undefined
+      ? await syncOrganizationCustomDomain({
+          organizationId: id,
+          nextDomain: normalizedCustomDomain,
+          previousDomain: previousOrganization?.custom_domain,
+        })
+      : null;
 
     if (owner_email && password) {
       await ensureOrganizationOwner({
@@ -388,9 +572,14 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
       }
     }
 
-    res.json({ success: true, organization });
+    res.json({ success: true, organization, domainProvisioning });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const status = error instanceof DomainProvisioningError ? error.statusCode : 500;
+    res.status(status).json({
+      error: error.message,
+      code: error.code || 'ORGANIZATION_UPDATE_FAILED',
+      details: error.details,
+    });
   }
 });
 
@@ -421,7 +610,7 @@ router.post('/organizations/bulk-delete', verifySuperAdmin, async (req, res) => 
 function queryOrganizations(client) {
   return client
     .from('organizations')
-    .select('id, name, slug, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, created_at, updated_at')
+    .select('id, name, slug, custom_domain, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, created_at, updated_at')
     .order('created_at', { ascending: false, nullsFirst: false });
 }
 
@@ -457,9 +646,29 @@ function getBearerToken(req) {
   return authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : '';
 }
 
-function isInvalidSupabaseApiKeyError(error) {
+export function isInvalidSupabaseApiKeyError(error) {
   const message = String(error?.message || error?.error || '').toLowerCase();
   return message.includes('invalid api key') || message.includes('invalid apikey');
+}
+
+function sendSupabaseServiceKeyError(res, errors = {}) {
+  const response = {
+    success: false,
+    code: 'SUPABASE_SERVICE_ROLE_INVALID',
+    error:
+      'Credencial SUPABASE_SERVICE_ROLE_KEY invalida no backend. Atualize a stack/env do container e faca redeploy.',
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    response.diagnostics = Object.fromEntries(
+      Object.entries(errors).map(([key, value]) => [
+        key,
+        value?.message || value?.error || String(value || ''),
+      ])
+    );
+  }
+
+  return res.status(503).json(response);
 }
 
 export async function queryOrganizationsWithDirectDb() {
@@ -486,6 +695,7 @@ export async function queryOrganizationsWithDirectDb() {
         o.id,
         o.name,
         to_jsonb(o)->>'slug' AS slug,
+        to_jsonb(o)->>'custom_domain' AS custom_domain,
         to_jsonb(o)->>'owner_name' AS owner_name,
         to_jsonb(o)->>'owner_email' AS owner_email,
         COALESCE(to_jsonb(o)->>'status', 'active') AS status,
@@ -500,7 +710,11 @@ export async function queryOrganizationsWithDirectDb() {
           ELSE json_build_object('name', p.name)
         END AS plans
       FROM public.organizations o
-      LEFT JOIN public.plans p ON p.id = NULLIF(to_jsonb(o)->>'plan_id', '')::uuid
+      LEFT JOIN public.plans p ON p.id = CASE
+        WHEN (to_jsonb(o)->>'plan_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        THEN (to_jsonb(o)->>'plan_id')::uuid
+        ELSE NULL
+      END
       ORDER BY o.created_at DESC NULLS LAST
     `);
 

@@ -369,7 +369,7 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     }
 
     const supabase = getSupabaseServer();
-    const domainSync = await syncRegisteredDockerDomains(supabase, { validateDns: true });
+    const domainSync = await syncRegisteredDockerDomains(supabase, { validateDns: false });
     const syncedCount = domainSync.results.filter((result) => result.status === 'success').length;
     const skippedCount = domainSync.results.filter((result) => result.status !== 'success').length;
     console.log(`[Traefik] Registered domains synchronized: ${syncedCount} ok, ${skippedCount} skipped`);

@@ -94,17 +94,25 @@ function getSupabaseEnvDiagnostics() {
   const supabaseUrl = getEnvValue('VITE_SUPABASE_URL') || getEnvValue('SUPABASE_URL');
   const anonKey = getEnvValue('VITE_SUPABASE_ANON_KEY') || getEnvValue('SUPABASE_ANON_KEY');
   const serviceKey = getEnvValue('SUPABASE_SERVICE_ROLE_KEY');
+  const anonKeyInfo = describeSupabaseKey(anonKey);
+  const serviceKeyInfo = describeSupabaseKey(serviceKey);
 
   return {
     supabaseUrlPresent: Boolean(supabaseUrl),
     supabaseUrlValid: isValidUrl(supabaseUrl),
     supabaseProjectRef: getProjectRef(supabaseUrl),
     anonKeyPresent: Boolean(anonKey),
-    anonKeyLooksValid: looksLikeSupabaseKey(anonKey),
+    anonKeyLooksValid: isUsableAnonKey(anonKeyInfo),
     anonKeyPrefix: safePrefix(anonKey),
+    anonKeyKind: anonKeyInfo.kind,
+    anonKeyRole: anonKeyInfo.role || null,
+    anonKeyProjectRef: anonKeyInfo.jwtRef || null,
     serviceKeyPresent: Boolean(serviceKey),
-    serviceKeyLooksValid: looksLikeSupabaseKey(serviceKey),
+    serviceKeyLooksValid: isUsableServiceKey(serviceKeyInfo),
     serviceKeyPrefix: safePrefix(serviceKey),
+    serviceKeyKind: serviceKeyInfo.kind,
+    serviceKeyRole: serviceKeyInfo.role || null,
+    serviceKeyProjectRef: serviceKeyInfo.jwtRef || null,
     serviceRoleConfiguredSeparately: Boolean(serviceKey && serviceKey !== anonKey),
     nodeEnv: process.env.NODE_ENV || 'development',
   };
@@ -274,6 +282,8 @@ function getFinalStatus(diagnostics) {
 function inferProjectConsistency(env) {
   const urlProject = env.supabaseProjectRef;
   if (!urlProject) return false;
+  if (env.anonKeyProjectRef && env.anonKeyProjectRef !== urlProject) return false;
+  if (env.serviceKeyProjectRef && env.serviceKeyProjectRef !== urlProject) return false;
   return true;
 }
 
@@ -295,8 +305,35 @@ function isValidUrl(value) {
   }
 }
 
-function looksLikeSupabaseKey(value) {
-  return Boolean(value && value.length >= 40);
+function isUsableAnonKey(info) {
+  if (info.kind === 'publishable') return true;
+  return info.kind === 'jwt' && info.role === 'anon';
+}
+
+function isUsableServiceKey(info) {
+  if (info.kind === 'secret') return true;
+  return info.kind === 'jwt' && info.role === 'service_role';
+}
+
+function describeSupabaseKey(value) {
+  if (!value) return { kind: 'missing' };
+  if (value.startsWith('sb_publishable_')) return { kind: 'publishable' };
+  if (value.startsWith('sb_secret_')) return { kind: 'secret' };
+
+  const parts = value.split('.');
+  if (parts.length !== 3) return { kind: 'unknown' };
+
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    return {
+      kind: 'jwt',
+      role: payload.role || null,
+      jwtRef: payload.ref || null,
+      issuer: payload.iss || null,
+    };
+  } catch {
+    return { kind: 'unknown' };
+  }
 }
 
 function isInvalidApiKeyError(error) {

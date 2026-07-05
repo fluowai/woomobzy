@@ -20,6 +20,7 @@ import { requireTenant } from './middleware/tenant.js';
 
 // --- Modular Routes ---
 import adminRoutes from './routes/admin.js';
+import internalRoutes from './routes/internal.js';
 import importRoutes from './routes/import.js';
 import publicRoutes from './routes/public.js';
 import onboardingRoutes from './routes/onboarding.js';
@@ -277,6 +278,7 @@ app.use((req, res, next) => {
 // O cliente é criado sob demanda em cada rota via getSupabaseServer().
 
 // --- API Route Mapping ---
+app.use('/internal', internalRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/public', publicRoutes);

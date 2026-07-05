@@ -173,7 +173,7 @@ const LoteamentoDetails: React.FC = () => {
                   Espelho de Vendas 360°
                </span>
                <span className="text-[10px] font-bold text-slate-400">
-                  {development.city}, {development.state}
+                  {development.location?.city}, {development.location?.state}
                </span>
             </div>
           </div>

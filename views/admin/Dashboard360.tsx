@@ -74,7 +74,7 @@ const Dashboard360: React.FC = () => {
             está em alta performance.
           </h1>
           <p className="text-white/40 font-medium italic mt-4 max-w-xl">
-            Bem-vindo de volta, {profile?.name?.split(' ')[0]}. Identificamos 12 novas oportunidades de match para sua carteira rural hoje.
+            Bem-vindo de volta, {profile?.full_name?.split(' ')[0]}. Identificamos 12 novas oportunidades de match para sua carteira rural hoje.
           </p>
         </div>
         <div className="relative z-10 flex items-center gap-4">

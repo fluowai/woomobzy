@@ -24,6 +24,7 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
       : [
           {
             id: '1',
+            organization_id: '',
             title: 'Fazenda Premium',
             description: 'Linda fazenda com infraestrutura completa',
             price: 2500000,
@@ -56,6 +57,7 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
           },
           {
             id: '2',
+            organization_id: '',
             title: 'Sítio com Nascente',
             description: 'Sítio ideal para lazer e produção',
             price: 850000,
@@ -88,6 +90,7 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
           },
           {
             id: '3',
+            organization_id: '',
             title: 'Chácara de Lazer',
             description: 'Perfeita para finais de semana',
             price: 450000,

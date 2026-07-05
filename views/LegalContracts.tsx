@@ -216,6 +216,8 @@ const LegalContracts: React.FC = () => {
         clientPhone: '',
         templateId: 'venda-rural',
         value: 0,
+        entryValue: 0,
+        installments: 1,
         sendNow: false,
       });
     } catch (error) {

@@ -14,6 +14,7 @@ interface UserProfile {
   id: string;
   email: string;
   full_name: string;
+  name?: string;
   role: 'admin' | 'broker' | 'superadmin';
   avatar_url?: string;
   organization_id?: string;

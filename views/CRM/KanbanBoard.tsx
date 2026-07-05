@@ -59,7 +59,7 @@ const NewLeadModal: React.FC<NewLeadModalProps> = ({ isOpen, onClose, onSuccess,
     if (!formData.name.trim()) { toast.error('Nome é obrigatório'); return; }
     setLoading(true);
     try {
-      await leadService.create({ ...formData, organization_id: orgId });
+      await leadService.create({ ...formData, organization_id: orgId } as any);
       toast.success('Lead criado com sucesso!');
       onSuccess();
       onClose();
@@ -531,6 +531,7 @@ const KanbanColumn = React.memo(({
     return t > 0 ? t.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }) : null;
   }, [leads]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: leads.length,
     getScrollElement: () => scrollRef.current,
@@ -645,14 +646,15 @@ const KanbanBoard: React.FC = () => {
   const handleDragEnd = useCallback((result: DropResult) => {
     if (!result.destination || result.source.droppableId === result.destination.droppableId) return;
     const leadId = result.draggableId;
-    const newStatus = result.destination.droppableId;
+    const newStatus = result.destination.droppableId as Lead['status'];
     leadService.update(leadId, { status: newStatus } as any).catch((error) => { logger.error('Failed to move lead', error); toast.error('Erro ao mover lead'); });
     setLeads((prev) => prev.map((l) => l.id === leadId ? { ...l, status: newStatus } : l));
   }, []);
 
   const handleStatusChange = useCallback((leadId: string, newStatus: string) => {
-    leadService.update(leadId, { status: newStatus } as any).catch((error) => logger.error('Failed to update lead status', error));
-    setLeads((prev) => prev.map((l) => l.id === leadId ? { ...l, status: newStatus } : l));
+    const s = newStatus as Lead['status'];
+    leadService.update(leadId, { status: s } as any).catch((error) => logger.error('Failed to update lead status', error));
+    setLeads((prev) => prev.map((l) => l.id === leadId ? { ...l, status: s as any } : l));
   }, []);
 
   const handleBulkDelete = useCallback(async () => {

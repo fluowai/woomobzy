@@ -268,6 +268,9 @@ const SitePageEditor: React.FC = () => {
                   onSelectBlock={setSelectedBlockId}
                   onUpdateBlock={handleUpdateBlock}
                   onDeleteBlock={handleDeleteBlock}
+                  onDuplicateBlock={() => {}}
+                  themeConfig={site?.globalTheme as any || {}}
+                  viewMode={viewMode}
                 />
               </SortableContext>
             </DndContext>
@@ -280,6 +283,8 @@ const SitePageEditor: React.FC = () => {
             block={page.blocks.find((b) => b.id === selectedBlockId)!}
             onUpdate={(updates) => handleUpdateBlock(selectedBlockId, updates)}
             onClose={() => setSelectedBlockId(null)}
+            page={page as any}
+            onUpdatePage={(p) => setPage(p as any)}
           />
         )}
 
@@ -287,7 +292,7 @@ const SitePageEditor: React.FC = () => {
         {showThemeCustomizer && (
           <div className="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto">
             <ThemeCustomizer
-              theme={site?.globalTheme || {}}
+              themeConfig={site?.globalTheme as any || {}}
               onUpdate={(themeUpdates) => {
                 // Save global theme via site update
               }}
@@ -300,10 +305,8 @@ const SitePageEditor: React.FC = () => {
         {showSEOSettings && (
           <div className="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto p-4">
             <SEOSettings
-              metaTitle={page.metaTitle || page.title}
-              metaDescription={page.metaDescription || ''}
-              ogImage={page.ogImage || ''}
-              onUpdate={(seo) => setPage({ ...page, ...seo })}
+              page={page as any}
+              onUpdate={(seo) => setPage({ ...page, metaTitle: seo.metaTitle, metaDescription: seo.metaDescription, ogImage: seo.ogImage, metaKeywords: seo.metaKeywords } as any)}
               onClose={() => setShowSEOSettings(false)}
             />
           </div>

@@ -94,16 +94,17 @@ function renderBlockSettings(
     onUpdate({ config });
   };
 
+  const cfg = block.config as any;
   switch (block.type) {
     case 'hero':
       return (
-        <HeroBlockSettings config={block.config} onUpdate={updateConfig} />
+        <HeroBlockSettings config={cfg} onUpdate={updateConfig} />
       );
 
     case 'hero_with_form':
       return (
         <HeroWithFormBlockSettings
-          config={block.config}
+          config={cfg}
           onUpdate={updateConfig}
         />
       );
@@ -111,7 +112,7 @@ function renderBlockSettings(
     case 'property_grid':
       return (
         <PropertyGridBlockSettings
-          config={block.config}
+          config={cfg}
           onUpdate={updateConfig}
           page={page}
           onUpdatePage={onUpdatePage}
@@ -120,25 +121,25 @@ function renderBlockSettings(
 
     case 'text':
       return (
-        <TextBlockSettings config={block.config} onUpdate={updateConfig} />
+        <TextBlockSettings config={cfg} onUpdate={updateConfig} />
       );
 
     case 'form':
       return (
-        <FormBlockSettings config={block.config} onUpdate={updateConfig} />
+        <FormBlockSettings config={cfg} onUpdate={updateConfig} />
       );
 
     case 'cta':
-      return <CTABlockSettings config={block.config} onUpdate={updateConfig} />;
+      return <CTABlockSettings config={cfg} onUpdate={updateConfig} />;
 
     case 'spacer':
       return (
-        <SpacerBlockSettings config={block.config} onUpdate={updateConfig} />
+        <SpacerBlockSettings config={cfg} onUpdate={updateConfig} />
       );
 
     case 'custom_html':
       return (
-        <CustomHTMLBlockSettings config={block.config as any} onUpdate={updateConfig} />
+        <CustomHTMLBlockSettings config={cfg} onUpdate={updateConfig} />
       );
 
     default:

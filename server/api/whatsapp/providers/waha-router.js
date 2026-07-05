@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import { getSupabaseServer } from '../../../lib/supabase-server.js';
-import { ArraphaClient } from './arrapha-client.js';
+import { WahaClient } from './waha-client.js';
 import { getWhatsAppProviderConfig } from './provider-config.js';
 
 const upload = multer({
@@ -11,10 +11,10 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeaders }) {
+export function createWahaRouter({ verifyAuth, requireTenant, applyCorsHeaders }) {
   const router = Router();
   const config = getWhatsAppProviderConfig();
-  const client = new ArraphaClient(config);
+  const client = new WahaClient(config);
 
   router.use((req, res, next) => {
     applyCorsHeaders(req, res);
@@ -22,8 +22,8 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
     next();
   });
 
-  router.post('/internal/arrapha/webhook', async (req, res) => {
-    const expected = process.env.ARRAPHA_API_KEY || process.env.WAHA_API_KEY || process.env.WHATSAPP_INTERNAL_TOKEN || '';
+  router.post('/internal/waha/webhook', async (req, res) => {
+    const expected = process.env.WAHA_API_KEY || process.env.ARRAPHA_API_KEY || process.env.WHATSAPP_INTERNAL_TOKEN || '';
     const received =
       req.query.token ||
       req.headers['x-api-key'] ||
@@ -35,11 +35,11 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
     }
 
     try {
-      const result = await ingestArraphaWebhook(req.body);
+      const result = await ingestWahaWebhook(req.body);
       res.status(202).json({ ok: true, ...result });
     } catch (error) {
-      console.error('[WhatsApp API 2.0] Arrapha webhook failed:', error.message);
-      res.status(500).json({ error: 'Falha ao processar webhook Arrapha', message: error.message });
+      console.error('[WAHA] Webhook failed:', error.message);
+      res.status(500).json({ error: 'Falha ao processar webhook WAHA', message: error.message });
     }
   });
 
@@ -48,8 +48,8 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
     res.status(service.ok ? 200 : 503).json({
       ok: service.ok,
       version: '2.0',
-      provider: config.publicName,
-      engine: 'arrapha',
+      provider: 'WAHA',
+      engine: config.engine || 'noweb',
       service,
       node: { ok: true, uptime: process.uptime() },
     });
@@ -61,10 +61,20 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
       ok: service.ok,
       service: { ok: service.ok, status: service.status },
       provider: config.publicName,
-      engine: 'arrapha',
+      engine: 'waha',
       hint: service.ok
-        ? 'WhatsApp API 2.0 esta respondendo.'
-        : 'O motor WhatsApp API 2.0 esta temporariamente indisponivel.',
+        ? 'WAHA esta respondendo.'
+        : 'O servico WAHA esta temporariamente indisponivel.',
+    });
+  });
+
+  router.get('/provider', verifyAuth, requireTenant, (req, res) => {
+    res.json({
+      name: config.publicName,
+      version: '2.0',
+      engine: config.engine || 'noweb',
+      white_label: true,
+      tenant_id: req.orgId,
     });
   });
 
@@ -79,7 +89,7 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
         sub: req.user.id,
         org_id: req.orgId,
         purpose: 'whatsapp_ws',
-        provider: 'arrapha',
+        provider: 'waha',
       },
       secret,
       {
@@ -90,16 +100,6 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
     );
 
     res.json({ token, expires_in: 300 });
-  });
-
-  router.get('/provider', verifyAuth, requireTenant, (req, res) => {
-    res.json({
-      name: config.publicName,
-      version: '2.0',
-      engine: 'arrapha',
-      white_label: true,
-      tenant_id: req.orgId,
-    });
   });
 
   router.get('/instances', verifyAuth, requireTenant, async (req, res) => {
@@ -132,7 +132,7 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
     } catch (providerError) {
       await updateInstance(instance.id, req.orgId, { status: 'disconnected' });
       return res.status(502).json({
-        error: 'Motor WhatsApp 2.0 indisponivel',
+        error: 'Motor WAHA indisponivel',
         code: 'WHATSAPP_PROVIDER_UNREACHABLE',
         message: providerError.message,
         instance: normalizeInstanceRow({ ...instance, status: 'disconnected' }),
@@ -143,6 +143,15 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
   router.get('/instances/:id', verifyAuth, requireTenant, async (req, res) => {
     const instance = await getInstance(req.params.id, req.orgId);
     if (!instance) return res.status(404).json({ error: 'Instance not found' });
+
+    const status = await client.getSessionStatus(instance).catch(() => null);
+    if (status?.me) {
+      await updateInstance(instance.id, req.orgId, {
+        phone: status.me.id ? status.me.id.split('@')[0] : instance.phone,
+        jid: status.me.id || instance.jid,
+      });
+    }
+
     res.json(normalizeInstanceRow(instance));
   });
 
@@ -155,7 +164,7 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
       await updateInstance(instance.id, req.orgId, { status: 'qr_pending' });
       res.json({ message: 'Connection initiated' });
     } catch (error) {
-      res.status(502).json({ error: 'Falha ao iniciar motor WhatsApp 2.0', message: error.message });
+      res.status(502).json({ error: 'Falha ao iniciar WAHA', message: error.message });
     }
   });
 
@@ -166,15 +175,33 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
     try {
       const qrCode = await client.getQRCode(instance);
       if (!qrCode) {
-        return res.status(202).json({
-          message: 'QR code generating',
-          status: 'pending',
-        });
+        return res.status(202).json({ message: 'QR code generating', status: 'pending' });
       }
       await updateInstance(instance.id, req.orgId, { status: 'qr_pending', qr_code: qrCode });
       res.json({ qr_code: qrCode, status: 'ready' });
     } catch (error) {
       res.status(502).json({ error: 'QR code not available', message: error.message });
+    }
+  });
+
+  router.post('/instances/:id/pair-code', verifyAuth, requireTenant, async (req, res) => {
+    const instance = await getInstance(req.params.id, req.orgId);
+    if (!instance) return res.status(404).json({ error: 'Instance not found' });
+
+    const phone = String(req.body?.phone || '').replace(/\D/g, '');
+    if (!phone) return res.status(400).json({ error: 'Phone is required' });
+
+    try {
+      await client.ensureSession(instance);
+      const result = await client.requestPairingCode(instance, phone);
+      res.json({
+        pairing_code: result.code || result.pairingCode || '',
+        phone: result.phone || phone,
+        expires_in: result.expiresIn || result.expires_in || 120,
+        message: 'Pairing code generated',
+      });
+    } catch (error) {
+      res.status(502).json({ error: 'Pairing code not available', message: error.message });
     }
   });
 
@@ -299,7 +326,7 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
       await touchChat(chat.id, content, now);
       res.json(data);
     } catch (error) {
-      res.status(502).json({ error: 'Falha ao enviar mensagem pelo motor WhatsApp 2.0', message: error.message });
+      res.status(502).json({ error: 'Falha ao enviar mensagem pelo WAHA', message: error.message });
     }
   });
 
@@ -348,13 +375,13 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
       await touchChat(chat.id, preview, now);
       res.json({ message: 'Media sent', data });
     } catch (error) {
-      res.status(502).json({ error: 'Falha ao enviar midia pelo motor WhatsApp 2.0', message: error.message });
+      res.status(502).json({ error: 'Falha ao enviar midia pelo WAHA', message: error.message });
     }
   });
 
   router.post('/instances/:id/import-history', verifyAuth, requireTenant, (req, res) => {
     res.status(202).json({
-      message: 'Importacao de historico sera tratada pelo pipeline WhatsApp API 2.0.',
+      message: 'Importacao de historico sera tratada pelo pipeline WAHA.',
       requested: 0,
       analyzing: false,
       since_days: req.body?.since_days,
@@ -363,8 +390,8 @@ export function createArraphaRouter({ verifyAuth, requireTenant, applyCorsHeader
 
   router.all('/ws', verifyAuth, requireTenant, (req, res) => {
     res.status(501).json({
-      error: 'WebSocket Arrapha ainda nao esta habilitado; use webhooks para eventos nesta etapa.',
-      code: 'ARRAPHA_WS_NOT_IMPLEMENTED',
+      error: 'WebSocket WAHA ainda nao esta habilitado; use webhooks para eventos.',
+      code: 'WAHA_WS_NOT_IMPLEMENTED',
     });
   });
 
@@ -438,7 +465,7 @@ async function touchChat(chatId, lastMessage, lastMessageAt) {
     .eq('id', chatId);
 }
 
-async function ingestArraphaWebhook(body) {
+async function ingestWahaWebhook(body) {
   const event = String(body?.event || body?.type || '').toLowerCase();
   const session = getWebhookSession(body);
   const instance = await getInstanceBySession(session);
@@ -448,7 +475,7 @@ async function ingestArraphaWebhook(body) {
   }
 
   if (event.includes('session') || event.includes('status')) {
-    const status = mapProviderStatus(body?.payload?.status || body?.status || body?.payload?.state || body?.state);
+    const status = mapWahaStatus(body?.payload?.status || body?.status || body?.payload?.state || body?.state);
     if (status) await updateInstance(instance.id, instance.tenant_id, { status });
     return { processed: true, event, status };
   }
@@ -646,7 +673,7 @@ function mediaPreview(type) {
   return previews[type] || '';
 }
 
-function mapProviderStatus(value) {
+function mapWahaStatus(value) {
   const status = String(value || '').toLowerCase();
   if (!status) return null;
   if (['working', 'connected', 'authenticated', 'ready'].includes(status)) return 'connected';

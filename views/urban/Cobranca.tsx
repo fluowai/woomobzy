@@ -17,24 +17,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
-import { cobrancaService } from '../../services/cobrancaService';
+import { cobrancaService, Billing } from '../../services/cobrancaService';
 import { paymentService } from '../../services/paymentService';
-
-interface Billing {
-  id: string;
-  contract_id: string;
-  amount: number;
-  due_date: string;
-  payment_date?: string;
-  status: string;
-  description?: string;
-  contract?: {
-    tenant_name?: string;
-    property?: { title?: string };
-  };
-  invoice_url?: string;
-  payment_gateway_id?: string;
-}
 
 const Cobranca: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'rent' | 'sale' | 'lot' | 'late'>('all');
@@ -85,7 +69,7 @@ const Cobranca: React.FC = () => {
       description: form.description,
     });
     setShowModal(false);
-    setForm({ amount: 0, due_date: '', description: '' });
+    setForm({ amount: 0, due_date: '', description: '', type: 'aluguel' });
     setSelectedContract('');
     loadBillings();
   };

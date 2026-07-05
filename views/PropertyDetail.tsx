@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import LeadCaptureModal from '../components/LeadCaptureModal';
+import { leadService } from '../services/leads';
+import { useAuth } from '../context/AuthContext';
 
 const getContrastColor = (hexcolor: string | undefined) => {
   if (!hexcolor) return 'white';
@@ -38,6 +40,36 @@ const PropertyDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  const [leadSuccess, setLeadSuccess] = useState(false);
+  const [leadForm, setLeadForm] = useState({
+    name: '', phone: '', email: '', subject: 'Interesse no imóvel',
+  });
+  const { profile } = useAuth();
+
+  const handleLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingLead(true);
+    try {
+      await leadService.create({
+        name: leadForm.name,
+        phone: leadForm.phone,
+        email: leadForm.email,
+        source: `Site - ${leadForm.subject}`,
+        organization_id: profile?.organization_id,
+      } as any);
+      setLeadSuccess(true);
+      setTimeout(() => {
+        setIsLeadModalOpen(false);
+        setLeadSuccess(false);
+        setLeadForm({ name: '', phone: '', email: '', subject: 'Interesse no imóvel' });
+      }, 3000);
+    } catch (error) {
+      logger.error('Erro ao enviar lead', error);
+    } finally {
+      setIsSubmittingLead(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -626,9 +658,12 @@ const PropertyDetail: React.FC = () => {
 
       <LeadCaptureModal
         isOpen={isLeadModalOpen}
+        isSubmitting={isSubmittingLead}
+        leadSuccess={leadSuccess}
+        leadForm={leadForm}
         onClose={() => setIsLeadModalOpen(false)}
-        propertyTitle={property.title}
-        propertyId={property.id}
+        onSubmit={handleLeadSubmit}
+        onFormChange={(field, value) => setLeadForm({ ...leadForm, [field]: value })}
       />
     </div>
   );

@@ -244,7 +244,7 @@ const SupportPortal: React.FC = () => {
                 {/* Initial Description */}
                 <div className="flex gap-4">
                   <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 text-xs font-bold">
-                    {profile?.name?.charAt(0) || 'U'}
+                    {profile?.full_name?.charAt(0) || 'U'}
                   </div>
                   <div className="flex-1">
                     <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">

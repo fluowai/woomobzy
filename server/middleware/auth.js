@@ -673,6 +673,9 @@ function normalizeRole(role) {
   const normalized = String(role || '').toLowerCase().trim();
   if (normalized === 'superadmin') return 'superadmin';
   if (normalized === 'admin') return 'admin';
+  if (normalized === 'gerente') return 'gerente';
+  if (normalized === 'broker') return 'broker';
+  if (normalized === 'assistente') return 'assistente';
   if (normalized === 'user') return 'user';
   return null;
 }

@@ -3,7 +3,7 @@ import {
   getSupabaseServer,
 } from '../lib/supabase-server.js';
 import jwt from 'jsonwebtoken';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { TtlCache } from '../lib/ttl-cache.js';
 
 const AUTH_CACHE_TTL_MS = 60_000;
@@ -205,7 +205,7 @@ export const verifyAuth = async (req, res, next) => {
       req.orgId = null;
       req.isImpersonating = false;
     } else {
-      console.warn('[Auth] Perfil sem organizacao vinculada, tentando criar automaticamente', {
+      console.warn('[Auth] Perfil sem organizacao vinculada, tentando resolver organizacao existente', {
         userId: user.id,
         profileId: profile.id,
         email: maskEmail(user.email),
@@ -215,23 +215,24 @@ export const verifyAuth = async (req, res, next) => {
       const profileEmail = profile.email || user.email;
       if (profileEmail) {
         const normalizedEmail = String(profileEmail).toLowerCase().trim();
-        const createdOrg = await ensureOrganizationForUser(
+        const existingOrg = await findExistingOrganizationForUser(
           supabase,
           user,
-          normalizedEmail
+          normalizedEmail,
+          requestedOrgId
         );
 
-        if (createdOrg?.id) {
-          authDebug('Org encontrada/criada, vinculando ao perfil', {
+        if (existingOrg?.id) {
+          authDebug('Org existente encontrada, vinculando ao perfil', {
             userId: user.id,
             profileId: profile.id,
-            orgId: createdOrg.id,
+            orgId: existingOrg.id,
           });
 
           const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
             .update({
-              organization_id: createdOrg.id,
+              organization_id: existingOrg.id,
               role: 'admin',
               updated_at: new Date().toISOString(),
             })
@@ -243,11 +244,11 @@ export const verifyAuth = async (req, res, next) => {
             req.user = { ...user, id: updatedProfile.id || user.id };
             req.userRole = updatedProfile.role;
             req.realOrgId = updatedProfile.organization_id;
-            req.orgId = createdOrg.id;
+            req.orgId = existingOrg.id;
             req.isImpersonating = false;
-            authDebug('Organizacao criada e vinculada automaticamente', {
+            authDebug('Organizacao existente vinculada automaticamente', {
               userId: user.id,
-              orgId: createdOrg.id,
+              orgId: existingOrg.id,
             });
             return next();
           }
@@ -256,23 +257,23 @@ export const verifyAuth = async (req, res, next) => {
           console.warn('[Auth] Profile update falhou mas org existe, prosseguindo', {
             userId: user.id,
             profileId: profile.id,
-            orgId: createdOrg.id,
+            orgId: existingOrg.id,
             updateError: updateError?.message || 'sem dados retornados',
           });
           req.user = { ...user, id: profile.id || user.id };
           req.userRole = profile.role || 'admin';
-          req.realOrgId = createdOrg.id;
-          req.orgId = createdOrg.id;
+          req.realOrgId = existingOrg.id;
+          req.orgId = existingOrg.id;
           req.isImpersonating = false;
           return next();
         } else {
-          console.warn('[Auth] ensureOrganizationForUser retornou null', {
+          console.warn('[Auth] Nenhuma organizacao existente encontrada para vincular', {
             userId: user.id,
             email: maskEmail(normalizedEmail),
           });
         }
       } else {
-        console.warn('[Auth] Perfil sem email para criar organizacao', {
+        console.warn('[Auth] Perfil sem email para resolver organizacao', {
           userId: user.id,
           profileId: profile.id,
         });
@@ -511,26 +512,7 @@ async function resolveProfileForUser(supabase, user) {
     .maybeSingle();
 
   if (organizationError || !organization) {
-    console.warn('[Auth] Nenhuma organizacao encontrada pelo email; tentando criar organizacao automaticamente', {
-      email,
-      authUserId: user.id,
-    });
-
-    const resolvedOrg = await ensureOrganizationForUser(supabase, user, email);
-
-    if (resolvedOrg) {
-      const profile = await createProfileForUser(supabase, user, {
-        email,
-        organizationId: resolvedOrg.id,
-        name: resolvedOrg.owner_name || resolvedOrg.name || email,
-        role: 'admin',
-        source: 'auto_org_fallback',
-      });
-
-      if (profile) return profile;
-    }
-
-    console.warn('[Auth] Todas as tentativas de organizacao falharam; criando perfil minimo sem org', {
+    console.warn('[Auth] Nenhuma organizacao existente encontrada pelo email; criando perfil sem org', {
       email,
       authUserId: user.id,
     });
@@ -629,10 +611,6 @@ async function completeProfileOrganization(supabase, user, profile, { email, sou
     }
   }
 
-  if (!organization && email) {
-    organization = await ensureOrganizationForUser(supabase, user, email);
-  }
-
   if (!organization?.id) {
     return profile;
   }
@@ -680,84 +658,37 @@ function normalizeRole(role) {
   return null;
 }
 
-async function ensureOrganizationForUser(supabase, user, email) {
-  const userName =
-    user.user_metadata?.name ||
-    user.user_metadata?.full_name ||
-    email.split('@')[0] ||
-    'Usuario';
+async function findExistingOrganizationForUser(supabase, user, email, requestedOrgId = null) {
+  const metadataOrgId = String(
+    requestedOrgId ||
+      user.app_metadata?.organization_id ||
+      user.user_metadata?.organization_id ||
+      user.app_metadata?.org_id ||
+      user.user_metadata?.org_id ||
+      ''
+  ).trim();
 
-  const slugBase = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  const orgName = `${userName} Imobiliaria`;
-  const now = new Date().toISOString();
+  if (metadataOrgId) {
+    const { data: metadataOrg, error: metadataOrgError } = await supabase
+      .from('organizations')
+      .select('id, name, owner_name, owner_email')
+      .eq('id', metadataOrgId)
+      .maybeSingle();
 
-  // Search by owner_email first
-  const { data: orgByEmail } = await supabase
+    if (!metadataOrgError && metadataOrg) return metadataOrg;
+  }
+
+  if (!email) return null;
+
+  const { data: orgByEmail, error: orgByEmailError } = await supabase
     .from('organizations')
     .select('id, name, owner_name, owner_email')
     .ilike('owner_email', email)
     .limit(1)
     .maybeSingle();
 
-  if (orgByEmail) return orgByEmail;
+  if (!orgByEmailError && orgByEmail) return orgByEmail;
 
-  // We must NOT search by slug and attach this user to another user's organization!
-  // Instead, to prevent unique constraint errors during insert, we append a unique ID to the slug.
-  // Try multiple slug variations if conflicts occur.
-  const uniqueSuffix = user.id.split('-')[0];
-  const shortId = randomUUID().split('-')[0];
-  const slugCandidates = [
-    `${slugBase}-${uniqueSuffix}`,
-    `${slugBase}-${shortId}`,
-    `${slugBase}-${uniqueSuffix}-${shortId}`,
-  ];
-
-  for (const slug of slugCandidates) {
-    const result = await insertOrganization(supabase, orgName, slug, email, userName, now);
-    if (result) return result;
-  }
-
-  // Final fallback: pure random slug to guarantee no constraint violation
-  const fallbackSlug = `org-${randomUUID()}`;
-  const result = await insertOrganization(supabase, orgName, fallbackSlug, email, userName, now);
-  if (result) return result;
-
-  console.warn('[Auth] Todas as tentativas de criar organizacao automatica falharam', {
-    email,
-    authUserId: user.id,
-    attemptedSlugs: slugCandidates.concat(fallbackSlug),
-  });
-  return null;
-}
-
-async function insertOrganization(supabase, name, slug, ownerEmail, ownerName, now) {
-  const { data: newOrg, error: createError } = await supabase
-    .from('organizations')
-    .insert({
-      name,
-      slug,
-      owner_email: ownerEmail,
-      owner_name: ownerName,
-      status: 'active',
-      subscription_status: 'active',
-      niche: 'urbano',
-      created_at: now,
-      updated_at: now,
-    })
-    .select('id, name, owner_name, owner_email')
-    .single();
-
-  if (!createError) {
-    console.warn('[Auth] Organizacao criada automaticamente', {
-      email: ownerEmail,
-      organizationId: newOrg.id,
-      slug,
-      orgName: name,
-    });
-    return newOrg;
-  }
-
-  console.warn(`[Auth] Slug "${slug}" falhou:`, createError.message);
   return null;
 }
 

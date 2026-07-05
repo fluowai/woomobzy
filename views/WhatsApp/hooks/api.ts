@@ -124,13 +124,31 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       tenantIdCache = undefined;
     }
 
-    const message = error.code === 'TENANT_REQUIRED'
-      ? 'Selecione uma organização antes de acessar o WhatsApp.'
-      : error.error || `API Error: ${res.status}`;
+    const message = getFriendlyApiErrorMessage(error, res.status);
     throw new WhatsAppApiError(message, res.status, error.code);
   }
 
   return normalizeStorageUrls(await res.json()) as T;
+}
+
+function getFriendlyApiErrorMessage(error: any, status: number): string {
+  if (error?.code === 'TENANT_REQUIRED') {
+    return 'Selecione uma organizacao antes de acessar o WhatsApp.';
+  }
+
+  if (error?.code === 'PROFILE_NO_ORG') {
+    return 'Sua conta ainda nao esta vinculada a uma organizacao.';
+  }
+
+  if (error?.code === 'PROFILE_ORG_NOT_FOUND') {
+    return 'A organizacao vinculada ao seu perfil nao foi encontrada.';
+  }
+
+  if (error?.code === 'PROFILE_ORG_INACTIVE') {
+    return 'A organizacao vinculada ao seu perfil esta inativa.';
+  }
+
+  return error?.error || `API Error: ${status}`;
 }
 
 function buildApiHeaders(

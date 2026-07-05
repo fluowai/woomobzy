@@ -20,6 +20,7 @@ import { requireTenant } from './middleware/tenant.js';
 
 // --- Modular Routes ---
 import adminRoutes from './routes/admin.js';
+import internalRoutes from './routes/internal.js';
 import importRoutes from './routes/import.js';
 import publicRoutes from './routes/public.js';
 import onboardingRoutes from './routes/onboarding.js';
@@ -46,6 +47,7 @@ import valuationRoutes from './api/valuation/index.js';
 import documentRoutes from './api/documents/index.js';
 import externalDataRoutes from './api/external-data/index.js';
 import quizRoutes from './api/quiz/index.js';
+import accountRoutes from './routes/account.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -277,6 +279,7 @@ app.use((req, res, next) => {
 // O cliente é criado sob demanda em cada rota via getSupabaseServer().
 
 // --- API Route Mapping ---
+app.use('/internal', internalRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/public', publicRoutes);
@@ -301,6 +304,7 @@ app.use('/api/valuation', valuationRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/external-data', externalDataRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/account', accountRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 
@@ -365,7 +369,7 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     }
 
     const supabase = getSupabaseServer();
-    const domainSync = await syncRegisteredDockerDomains(supabase, { validateDns: true });
+    const domainSync = await syncRegisteredDockerDomains(supabase, { validateDns: false });
     const syncedCount = domainSync.results.filter((result) => result.status === 'success').length;
     const skippedCount = domainSync.results.filter((result) => result.status !== 'success').length;
     console.log(`[Traefik] Registered domains synchronized: ${syncedCount} ok, ${skippedCount} skipped`);

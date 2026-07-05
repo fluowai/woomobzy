@@ -6,6 +6,7 @@ import {
   instanceApi,
   chatApi,
   messageApi,
+  accountApi,
   isSupportedChat,
   normalizeMessagePreview,
   type Instance,
@@ -58,6 +59,7 @@ const WhatsAppDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [serviceError, setServiceError] = useState('');
+  const [tenantContextError, setTenantContextError] = useState('');
   const [webSocketEnabled, setWebSocketEnabled] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +73,7 @@ const WhatsAppDashboard: React.FC = () => {
     startedAt: 0,
   });
   const [deletingChats, setDeletingChats] = useState(false);
+  const [recovering, setRecovering] = useState(false);
 
   // WebSocket
   const { isConnected, on } = useWebSocket(webSocketEnabled);
@@ -254,12 +257,32 @@ const WhatsAppDashboard: React.FC = () => {
     };
   }, [on, selectedChat, selectedInstance]);
 
+  const handleRecoverOrg = async () => {
+    setRecovering(true);
+    try {
+      const result = await accountApi.recoverOrg();
+      toast.success(result.message);
+      setTenantContextError('');
+      setLoading(true);
+      loadInstances();
+    } catch (err: any) {
+      if (err?.code === 'NO_ORG_FOUND') {
+        toast.error('Nenhuma organizacao encontrada para seu email. Crie uma conta em Onboarding.');
+      } else {
+        toast.error(err?.message || 'Erro ao recuperar organizacao.');
+      }
+    } finally {
+      setRecovering(false);
+    }
+  };
+
   const loadInstances = async () => {
     try {
       const data = await instanceApi.list();
       setInstances(data);
       setServiceUnavailable(false);
       setServiceError('');
+      setTenantContextError('');
       setWebSocketEnabled(true);
       if (data.length > 0 && !selectedInstance) {
         const linkedInstance = deepLinkInstanceId ? data.find((i) => i.id === deepLinkInstanceId) : null;
@@ -270,6 +293,10 @@ const WhatsAppDashboard: React.FC = () => {
       if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         setServiceUnavailable(true);
         setServiceError(err.message.replace('WHATSAPP_UNAVAILABLE: ', ''));
+        setTenantContextError('');
+        setWebSocketEnabled(false);
+      } else if (isTenantContextError(err)) {
+        setTenantContextError(err.message || 'Organizacao nao identificada para acessar o WhatsApp.');
         setWebSocketEnabled(false);
       } else {
         logger.error('Failed to load instances:', err);
@@ -518,6 +545,43 @@ const WhatsAppDashboard: React.FC = () => {
     );
   }
 
+  if (tenantContextError) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[600px]">
+        <div className="text-center max-w-md px-6">
+          <div className="inline-flex p-5 bg-red-500/10 border border-red-500/20 rounded-2xl mb-6">
+            <WifiOff size={48} className="text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-text-primary mb-3">Organizacao Necessaria</h2>
+          <p className="text-text-secondary mb-6 leading-relaxed">
+            {tenantContextError}
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => { setLoading(true); setTenantContextError(''); loadInstances(); }}
+              className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium"
+            >
+              Tentar Novamente
+            </button>
+            <button
+              onClick={handleRecoverOrg}
+              disabled={recovering}
+              className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50"
+            >
+              {recovering ? 'Recuperando...' : 'Recuperar vinculacao'}
+            </button>
+            <button
+              onClick={() => { window.location.href = '/onboarding'; }}
+              className="px-6 py-3 bg-bg-hover text-text-primary border border-border rounded-xl hover:bg-bg-card transition-colors font-medium"
+            >
+              Ir para onboarding
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`wa-dashboard ${selectedChat ? 'wa-chat-open' : ''}`} id="whatsapp-dashboard">
       {/* Header Bar */}
@@ -692,6 +756,17 @@ function resultTypeFromFile(file: File): string {
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
   return 'document';
+}
+
+function isTenantContextError(error: any): boolean {
+  return [
+    'TENANT_REQUIRED',
+    'PROFILE_NO_ORG',
+    'PROFILE_ORG_NOT_FOUND',
+    'PROFILE_ORG_INACTIVE',
+    'INVALID_TENANT',
+    'INVALID_REQUESTED_ORG',
+  ].includes(error?.code);
 }
 
 export default WhatsAppDashboard;

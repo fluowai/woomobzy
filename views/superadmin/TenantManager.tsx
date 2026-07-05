@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
-import { getApiUrl } from '@/src/lib/api';
+import { callApi } from '@/src/lib/api';
 import { supabase } from '../../services/supabase';
 import {
   Building2,
@@ -78,33 +78,12 @@ const TenantManager: React.FC = () => {
     if (data) setPlans(data);
   };
 
-  // Helper para pegar o token JWT do Supabase
-  const getAuthHeaders = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session?.access_token}`,
-    };
-  };
-
   const fetchTenants = async () => {
     try {
       setLoading(true);
-      const headers = await getAuthHeaders();
-      const res = await fetch(getApiUrl('/api/admin/organizations'), { headers });
-      
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await res.text();
-        console.error('Resposta não é JSON:', text.substring(0, 200));
-        throw new Error('O servidor retornou uma resposta inválida (não JSON). Verifique se o backend está rodando.');
-      }
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao carregar');
+      const data = await callApi('/api/admin/organizations');
       setTenants(data.organizations || []);
+      setErrorMsg(null);
     } catch (error: any) {
       logger.error('Error fetching tenants:', error);
       setErrorMsg(error.message || 'Erro desconhecido');
@@ -149,7 +128,6 @@ const TenantManager: React.FC = () => {
     setFormLoading(true);
 
     try {
-      const headers = await getAuthHeaders();
       const payload = {
         name: formData.name,
         slug: formData.slug,
@@ -162,23 +140,19 @@ const TenantManager: React.FC = () => {
         niche: formData.niche,
       };
 
-      let res: Response;
+      let data: any;
       if (editingId) {
-        res = await fetch(getApiUrl(`/api/admin/organizations/${editingId}`), {
+        data = await callApi(`/api/admin/organizations/${editingId}`, {
           method: 'PUT',
-          headers,
           body: JSON.stringify(payload),
         });
       } else {
-        res = await fetch(getApiUrl('/api/admin/organizations'), {
+        data = await callApi('/api/admin/organizations', {
           method: 'POST',
-          headers,
           body: JSON.stringify(payload),
         });
       }
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
       if (
         formData.plan_id &&
         data.organization?.plan_id !== formData.plan_id
@@ -205,14 +179,10 @@ const TenantManager: React.FC = () => {
     if (!confirm(`Deseja alterar o status para ${newStatus}?`)) return;
 
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(getApiUrl(`/api/admin/organizations/${id}`), {
+      await callApi(`/api/admin/organizations/${id}`, {
         method: 'PUT',
-        headers,
         body: JSON.stringify({ status: newStatus }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       fetchTenants();
     } catch (error: any) {
       alert(`Erro ao atualizar status: ${error.message}`);
@@ -230,13 +200,9 @@ const TenantManager: React.FC = () => {
       return;
 
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(getApiUrl(`/api/admin/organizations/${id}`), {
+      await callApi(`/api/admin/organizations/${id}`, {
         method: 'DELETE',
-        headers,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       setSelectedTenantIds((prev) => prev.filter((item) => item !== id));
       fetchTenants();
     } catch (error: any) {
@@ -295,14 +261,10 @@ const TenantManager: React.FC = () => {
 
     setBulkDeleting(true);
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(getApiUrl('/api/admin/organizations/bulk-delete'), {
+      await callApi('/api/admin/organizations/bulk-delete', {
         method: 'POST',
-        headers,
         body: JSON.stringify({ ids: selectedTenantIds }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao excluir imobiliarias');
       setSelectedTenantIds([]);
       await fetchTenants();
     } catch (error: any) {

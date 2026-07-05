@@ -46,6 +46,21 @@ type PublicProperty = {
   aptitude?: string[] | string;
 };
 
+type PropertyFilters = {
+  state: string;
+  areaRange: string;
+  aptitude: string;
+  priceRange: string;
+  query: string;
+};
+
+type NumericRange = {
+  id: string;
+  label: string;
+  min?: number;
+  max?: number;
+};
+
 const FAZENDAS_ORG_SLUGS = [
   'fazendasbrasil',
   'fazendas-brasil',
@@ -59,9 +74,37 @@ const PHONE_LABEL = '(44) 99843-3030';
 const EMAIL = 'contato@fazendasbrasil.com.br';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
 const BROKER_IMAGE = '/images/fazendas-brasil/broker-renato.jpeg';
-const HERO_IMAGE = '/images/fazendas-brasil/reference-hero.webp';
+const HERO_IMAGE = 'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/hero/fazendas-brasil-hero-clean.webp';
+const CARD_FALLBACK_IMAGE = 'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/fallback/fazendas-brasil-card-fallback.webp';
+const BROKER_NAME = 'Renato Piovesana';
 const PROPERTIES_PER_PAGE = 12;
 const PROPERTIES_PER_GRID = 4;
+
+const EMPTY_FILTERS: PropertyFilters = {
+  state: '',
+  areaRange: '',
+  aptitude: '',
+  priceRange: '',
+  query: '',
+};
+
+const AREA_RANGES: NumericRange[] = [
+  { id: 'up-50', label: 'Ate 50 ha', max: 50 },
+  { id: '50-200', label: '50 a 200 ha', min: 50, max: 200 },
+  { id: '200-1000', label: '200 a 1.000 ha', min: 200, max: 1000 },
+  { id: '1000-3000', label: '1.000 a 3.000 ha', min: 1000, max: 3000 },
+  { id: 'over-3000', label: 'Acima de 3.000 ha', min: 3000 },
+  { id: 'unknown', label: 'Sob consulta' },
+];
+
+const PRICE_RANGES: NumericRange[] = [
+  { id: 'up-1m', label: 'Ate R$ 1 mi', max: 1_000_000 },
+  { id: '1m-5m', label: 'R$ 1 mi a R$ 5 mi', min: 1_000_000, max: 5_000_000 },
+  { id: '5m-20m', label: 'R$ 5 mi a R$ 20 mi', min: 5_000_000, max: 20_000_000 },
+  { id: '20m-70m', label: 'R$ 20 mi a R$ 70 mi', min: 20_000_000, max: 70_000_000 },
+  { id: 'over-70m', label: 'Acima de R$ 70 mi', min: 70_000_000 },
+  { id: 'unknown', label: 'Sob consulta' },
+];
 
 const quizQuestions = [
   {
@@ -185,6 +228,10 @@ function normalizeImages(images?: string[] | string) {
   return [];
 }
 
+function isLegacyBrokenImage(url: string) {
+  return /supabase\.(co|com)\/storage\/v1\/object\/public\/imobzyimg/i.test(String(url || ''));
+}
+
 function formatCurrency(value?: number) {
   const amount = toNumber(value);
   if (!amount) return 'Sob consulta';
@@ -247,8 +294,70 @@ function getAptitude(property: PublicProperty) {
 }
 
 function getPropertyImage(property: PublicProperty, index: number) {
-  const images = normalizeImages(property.images);
-  return images[0] || normalizeImages(fallbackProperties[index % fallbackProperties.length].images)[0] || HERO_IMAGE;
+  const images = normalizeImages(property.images).filter((image) => !isLegacyBrokenImage(image));
+  return images[0] || CARD_FALLBACK_IMAGE || normalizeImages(fallbackProperties[index % fallbackProperties.length].images)[0] || HERO_IMAGE;
+}
+
+function normalizeSearchValue(value: unknown) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function uniqueSorted(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, 'pt-BR')
+  );
+}
+
+function matchesNumberRange(value: number, rangeId: string, ranges: NumericRange[]) {
+  if (!rangeId) return true;
+  if (rangeId === 'unknown') return !value;
+
+  const range = ranges.find((item) => item.id === rangeId);
+  if (!range || !value) return false;
+  if (typeof range.min === 'number' && value < range.min) return false;
+  if (typeof range.max === 'number' && value > range.max) return false;
+  return true;
+}
+
+function propertyMatchesFilters(property: PublicProperty, filters: PropertyFilters) {
+  const area = getPropertyArea(property);
+  const price = toNumber(property.price);
+  const aptitude = getAptitude(property);
+
+  if (filters.state && normalizeSearchValue(property.state) !== normalizeSearchValue(filters.state)) {
+    return false;
+  }
+
+  if (filters.aptitude && normalizeSearchValue(aptitude) !== normalizeSearchValue(filters.aptitude)) {
+    return false;
+  }
+
+  if (!matchesNumberRange(area, filters.areaRange, AREA_RANGES)) {
+    return false;
+  }
+
+  if (!matchesNumberRange(price, filters.priceRange, PRICE_RANGES)) {
+    return false;
+  }
+
+  if (filters.query) {
+    const haystack = normalizeSearchValue([
+      property.title,
+      property.city,
+      property.state,
+      property.property_type,
+      aptitude,
+      JSON.stringify(property.features || {}),
+    ].join(' '));
+    return haystack.includes(normalizeSearchValue(filters.query));
+  }
+
+  return true;
 }
 
 function isUuid(value: string) {
@@ -261,8 +370,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   const [properties, setProperties] = useState<PublicProperty[]>(fallbackProperties);
   const [resolvedOrganizationId, setResolvedOrganizationId] = useState<string | undefined>(organizationId || FAZENDAS_ORG_ID);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalProperties, setTotalProperties] = useState(fallbackProperties.length);
   const [isUsingFallback, setIsUsingFallback] = useState(true);
+  const [draftFilters, setDraftFilters] = useState<PropertyFilters>(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<PropertyFilters>(EMPTY_FILTERS);
   const [selectedProperty, setSelectedProperty] = useState<PublicProperty | null>(null);
   const [leadStep, setLeadStep] = useState<'contact' | 'quiz' | 'success'>('contact');
   const [quizIndex, setQuizIndex] = useState(0);
@@ -299,58 +409,76 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
         if (!orgId) {
           setProperties(fallbackProperties);
-          setTotalProperties(fallbackProperties.length);
           setIsUsingFallback(true);
           return;
         }
 
-        const from = (currentPage - 1) * PROPERTIES_PER_PAGE;
-        const to = from + PROPERTIES_PER_PAGE - 1;
-
-        const { data, error, count } = await supabase
+        const { data, error } = await supabase
           .from('properties')
           .select(
-            'id,title,price,city,state,images,property_type,total_area_ha,useful_area_ha,features,aptitude',
-            { count: 'exact' }
+            'id,title,price,city,state,images,property_type,total_area_ha,useful_area_ha,features,aptitude'
           )
           .eq('organization_id', orgId)
-          .range(from, to);
+          .order('created_at', { ascending: false })
+          .range(0, 499);
 
         if (!error && data && data.length > 0) {
           setProperties(data.map(normalizeProperty));
-          setTotalProperties(count || data.length);
           setIsUsingFallback(false);
           return;
         }
 
         setProperties(fallbackProperties);
-        setTotalProperties(fallbackProperties.length);
         setIsUsingFallback(true);
       } catch (error) {
         console.warn('[Fazendas Brasil] Mantendo vitrine de fallback:', error);
         setResolvedOrganizationId(organizationId || FAZENDAS_ORG_ID);
         setProperties(fallbackProperties);
-        setTotalProperties(fallbackProperties.length);
         setIsUsingFallback(true);
       }
     };
 
     loadProperties();
-  }, [organizationId, currentPage]);
+  }, [organizationId]);
+
+  const stateOptions = useMemo(
+    () => uniqueSorted(properties.map((property) => property.state || '')),
+    [properties]
+  );
+
+  const aptitudeOptions = useMemo(
+    () => uniqueSorted(properties.map((property) => getAptitude(property))),
+    [properties]
+  );
+
+  const filteredProperties = useMemo(
+    () => properties.filter((property) => propertyMatchesFilters(property, appliedFilters)),
+    [properties, appliedFilters]
+  );
+
+  const totalFilteredProperties = filteredProperties.length;
+  const totalPages = Math.max(1, Math.ceil(totalFilteredProperties / PROPERTIES_PER_PAGE));
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const pagedProperties = useMemo(() => {
+    const from = (currentPage - 1) * PROPERTIES_PER_PAGE;
+    return filteredProperties.slice(from, from + PROPERTIES_PER_PAGE);
+  }, [filteredProperties, currentPage]);
 
   const propertyGrids = useMemo(() => {
     const grids: PublicProperty[][] = [];
-    for (let i = 0; i < properties.length; i += PROPERTIES_PER_GRID) {
-      grids.push(properties.slice(i, i + PROPERTIES_PER_GRID));
+    for (let i = 0; i < pagedProperties.length; i += PROPERTIES_PER_GRID) {
+      grids.push(pagedProperties.slice(i, i + PROPERTIES_PER_GRID));
     }
     return grids;
-  }, [properties]);
+  }, [pagedProperties]);
 
-  const totalPages = Math.max(1, Math.ceil(totalProperties / PROPERTIES_PER_PAGE));
-  const firstPropertyIndex = isUsingFallback ? 1 : (currentPage - 1) * PROPERTIES_PER_PAGE + 1;
-  const lastPropertyIndex = isUsingFallback
-    ? properties.length
-    : Math.min(currentPage * PROPERTIES_PER_PAGE, totalProperties);
+  const firstPropertyIndex = totalFilteredProperties === 0 ? 0 : (currentPage - 1) * PROPERTIES_PER_PAGE + 1;
+  const lastPropertyIndex = Math.min(currentPage * PROPERTIES_PER_PAGE, totalFilteredProperties);
+  const hasActiveFilters = Object.values(appliedFilters).some(Boolean);
 
   const goToPage = (page: number) => {
     const nextPage = Math.min(Math.max(page, 1), totalPages);
@@ -359,6 +487,21 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     window.requestAnimationFrame(() => {
       document.getElementById('fazendas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+  };
+
+  const handleFilterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAppliedFilters(draftFilters);
+    setCurrentPage(1);
+    window.requestAnimationFrame(() => {
+      document.getElementById('fazendas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const clearFilters = () => {
+    setDraftFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+    setCurrentPage(1);
   };
 
   const openLeadFlow = (property: PublicProperty) => {
@@ -436,7 +579,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
       await leadService.create({
         organization_id: resolvedOrganizationId,
         organization_slug: 'fazendasbrasil',
-        organization_domain: 'fazendasbrasil.com.br',
+        organization_domain: window.location.hostname.replace(/^www\./, '') || 'fazendasbrasil.com',
         owner_email: EMAIL,
         site_key: 'fazendasbrasil',
         referrer_url: window.location.href,
@@ -633,20 +776,68 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         .fb-search-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 180px; align-items: center; }
         .fb-filter { min-height: 58px; border-right: 1px solid var(--fb-line); padding: 0 22px 0 0; display: flex; align-items: center; gap: 16px; min-width: 0; }
         .fb-filter svg { color: #0c3520; flex: 0 0 auto; }
+        .fb-filter-panel { min-width: 0; flex: 1; }
         .fb-filter-label { color: #163327; font-size: 10px; font-weight: 950; text-transform: uppercase; margin-bottom: 7px; }
         .fb-filter-main { color: #68736f; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+        .fb-filter-control {
+          width: 100%;
+          min-width: 0;
+          border: 0;
+          outline: 0;
+          appearance: none;
+          background: transparent;
+          color: #51655d;
+          font: inherit;
+          cursor: pointer;
+        }
+        .fb-filter-control option { color: #102b1d; }
         .fb-search-button { height: 56px; border: 0; border-radius: 5px; background: var(--fb-green); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-size: 12px; font-weight: 950; text-transform: uppercase; }
         .fb-search-button svg { color: var(--fb-gold); }
-        .fb-advanced { border-top: 1px solid var(--fb-line); margin-top: 16px; padding-top: 13px; text-align: center; color: #0e2d1c; font-size: 11px; font-weight: 950; text-transform: uppercase; }
+        .fb-advanced { border-top: 1px solid var(--fb-line); margin-top: 16px; padding-top: 13px; display: flex; align-items: center; gap: 12px; color: #0e2d1c; font-size: 11px; font-weight: 950; text-transform: uppercase; }
+        .fb-advanced-field {
+          min-height: 38px;
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: #0c3520;
+        }
+        .fb-advanced-field input {
+          width: 100%;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: #30453b;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: none;
+        }
+        .fb-advanced-field input::placeholder { color: #68736f; }
+        .fb-clear-filters {
+          min-height: 34px;
+          border: 1px solid #bed5cb;
+          border-radius: 5px;
+          background: #fff;
+          color: var(--fb-green-dark);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 0 12px;
+          font-size: 11px;
+          font-weight: 950;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
         .fb-section { padding: 30px 0 24px; }
         .fb-section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 21px; }
         .fb-heading { margin: 0; color: var(--fb-green-dark); font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: 27px; line-height: 1; text-transform: uppercase; }
         .fb-heading:after { content: ""; width: 40px; height: 2px; background: var(--fb-gold); display: block; margin-top: 9px; }
-        .fb-all-link { color: var(--fb-green-dark); display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font-size: 11px; font-weight: 950; text-transform: uppercase; }
+        .fb-all-link { border: 0; background: transparent; color: var(--fb-green-dark); display: inline-flex; align-items: center; gap: 12px; padding: 0; text-decoration: none; font-size: 11px; font-weight: 950; text-transform: uppercase; cursor: pointer; }
         .fb-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
         .fb-grid-group { margin-bottom: 18px; }
         .fb-grid-group:last-of-type { margin-bottom: 0; }
-        .fb-grid-title { margin: 0 0 12px; color: #244437; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 950; text-transform: uppercase; letter-spacing: .04em; }
         .fb-card { background: #fff; border: 1px solid rgba(0,88,42,.1); border-radius: 6px; overflow: hidden; box-shadow: 0 10px 26px rgba(7,36,20,.08); }
         .fb-card-image { height: 132px; background-position: center; background-size: cover; position: relative; }
         .fb-sale { position: absolute; left: 13px; top: 12px; border-radius: 4px; background: var(--fb-green); color: #fff; padding: 7px 11px; font-size: 10px; font-weight: 950; text-transform: uppercase; }
@@ -657,6 +848,35 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         .fb-spec { display: flex; align-items: center; gap: 7px; min-width: 0; }
         .fb-price { display: block; color: var(--fb-green); font-family: Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 950; margin-bottom: 17px; }
         .fb-card-link { width: 100%; border: 0; border-top: 1px solid #b8ded0; padding: 12px 0 0; color: var(--fb-green); background: transparent; display: flex; justify-content: space-between; align-items: center; text-decoration: none; font-size: 11px; font-weight: 950; text-transform: uppercase; cursor: pointer; }
+        .fb-empty-results {
+          min-height: 180px;
+          border: 1px dashed #b8d2c6;
+          border-radius: 8px;
+          background: #f9fcfa;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 24px;
+          color: #244437;
+          text-align: center;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+        .fb-empty-results strong { color: var(--fb-green-dark); font-size: 16px; font-weight: 950; text-transform: uppercase; }
+        .fb-empty-results span { color: #607068; font-size: 13px; font-weight: 700; }
+        .fb-empty-results button {
+          min-height: 36px;
+          border: 0;
+          border-radius: 5px;
+          background: var(--fb-green);
+          color: #fff;
+          padding: 0 14px;
+          font-size: 11px;
+          font-weight: 950;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
         .fb-pagination {
           margin-top: 26px;
           border-top: 1px solid var(--fb-line);
@@ -1009,6 +1229,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-filter { border: 1px solid var(--fb-line); border-radius: 5px; padding: 10px 12px; }
           .fb-filter-main { min-width: 0; }
           .fb-search-button { grid-column: 1 / -1; }
+          .fb-advanced { align-items: stretch; flex-direction: column; }
+          .fb-advanced-field { border: 1px solid var(--fb-line); border-radius: 5px; padding: 0 12px; }
+          .fb-clear-filters { width: 100%; }
           .fb-hero-points { grid-template-columns: 1fr; }
           .fb-footer .fb-shell { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .fb-broker { padding: 20px; gap: 18px; }
@@ -1045,6 +1268,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-filter { min-height: 54px; gap: 12px; }
           .fb-filter svg { width: 20px; height: 20px; }
           .fb-filter-main { font-size: 12px; overflow-wrap: anywhere; }
+          .fb-filter-control { font-size: 12px; }
           .fb-heading { font-size: 24px; }
           .fb-section-head,
           .fb-pagination,
@@ -1180,82 +1404,151 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         </div>
       </header>
 
-      <section className="fb-search" aria-label="Busca de fazendas">
+      <form className="fb-search" aria-label="Busca de fazendas" onSubmit={handleFilterSubmit}>
         <div className="fb-search-row">
-          <div className="fb-filter">
+          <label className="fb-filter">
             <MapPin size={24} />
-            <div>
+            <span className="fb-filter-panel">
               <div className="fb-filter-label">Localizacao</div>
-              <div className="fb-filter-main">Selecione o estado <ChevronDown size={14} /></div>
-            </div>
-          </div>
-          <div className="fb-filter">
+              <span className="fb-filter-main">
+                <select
+                  className="fb-filter-control"
+                  value={draftFilters.state}
+                  onChange={(event) => setDraftFilters((current) => ({ ...current, state: event.target.value }))}
+                >
+                  <option value="">Todos os estados</option>
+                  {stateOptions.map((state) => (
+                    <option value={state} key={state}>{state}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} />
+              </span>
+            </span>
+          </label>
+          <label className="fb-filter">
             <SlidersHorizontal size={24} />
-            <div>
+            <span className="fb-filter-panel">
               <div className="fb-filter-label">Area total</div>
-              <div className="fb-filter-main">Selecione a area <ChevronDown size={14} /></div>
-            </div>
-          </div>
-          <div className="fb-filter">
+              <span className="fb-filter-main">
+                <select
+                  className="fb-filter-control"
+                  value={draftFilters.areaRange}
+                  onChange={(event) => setDraftFilters((current) => ({ ...current, areaRange: event.target.value }))}
+                >
+                  <option value="">Todas as areas</option>
+                  {AREA_RANGES.map((range) => (
+                    <option value={range.id} key={range.id}>{range.label}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} />
+              </span>
+            </span>
+          </label>
+          <label className="fb-filter">
             <Leaf size={24} />
-            <div>
+            <span className="fb-filter-panel">
               <div className="fb-filter-label">Atividade principal</div>
-              <div className="fb-filter-main">Selecione a atividade <ChevronDown size={14} /></div>
-            </div>
-          </div>
-          <div className="fb-filter">
+              <span className="fb-filter-main">
+                <select
+                  className="fb-filter-control"
+                  value={draftFilters.aptitude}
+                  onChange={(event) => setDraftFilters((current) => ({ ...current, aptitude: event.target.value }))}
+                >
+                  <option value="">Todas as atividades</option>
+                  {aptitudeOptions.map((aptitude) => (
+                    <option value={aptitude} key={aptitude}>{aptitude}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} />
+              </span>
+            </span>
+          </label>
+          <label className="fb-filter">
             <CircleDollarSign size={24} />
-            <div>
+            <span className="fb-filter-panel">
               <div className="fb-filter-label">Valor</div>
-              <div className="fb-filter-main">Selecione o valor <ChevronDown size={14} /></div>
-            </div>
-          </div>
-          <button className="fb-search-button" type="button">Buscar fazendas <Search size={17} /></button>
+              <span className="fb-filter-main">
+                <select
+                  className="fb-filter-control"
+                  value={draftFilters.priceRange}
+                  onChange={(event) => setDraftFilters((current) => ({ ...current, priceRange: event.target.value }))}
+                >
+                  <option value="">Todos os valores</option>
+                  {PRICE_RANGES.map((range) => (
+                    <option value={range.id} key={range.id}>{range.label}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} />
+              </span>
+            </span>
+          </label>
+          <button className="fb-search-button" type="submit">Buscar fazendas <Search size={17} /></button>
         </div>
-        <div className="fb-advanced"><Search size={14} /> Busca avancada <ChevronDown size={14} /></div>
-      </section>
+        <div className="fb-advanced">
+          <label className="fb-advanced-field">
+            <Search size={15} />
+            <input
+              value={draftFilters.query}
+              onChange={(event) => setDraftFilters((current) => ({ ...current, query: event.target.value }))}
+              placeholder="Buscar por cidade, titulo, estado ou atividade"
+            />
+          </label>
+          {hasActiveFilters && (
+            <button className="fb-clear-filters" type="button" onClick={clearFilters}>
+              Limpar filtros <X size={14} />
+            </button>
+          )}
+        </div>
+      </form>
 
       <main className="fb-shell">
         <section className="fb-section" id="fazendas">
           <div className="fb-section-head">
             <h2 className="fb-heading">Imoveis em destaque</h2>
-            <a className="fb-all-link" href="#fazendas">Ver todos os imoveis <ArrowRight size={17} /></a>
+            <button className="fb-all-link" type="button" onClick={clearFilters}>Ver todos os imoveis <ArrowRight size={17} /></button>
           </div>
 
-          {propertyGrids.map((grid, gridIndex) => (
-            <div className="fb-grid-group" key={`grade-${gridIndex + 1}`}>
-              <h3 className="fb-grid-title">Grade {gridIndex + 1}</h3>
-              <div className="fb-cards">
-                {grid.map((property, index) => {
-                  const absoluteIndex = gridIndex * PROPERTIES_PER_GRID + index;
-                  const area = getPropertyArea(property);
-                  return (
-                    <article className="fb-card" key={property.id}>
-                      <div className="fb-card-image" style={{ backgroundImage: `url("${getPropertyImage(property, absoluteIndex)}")` }}>
-                        <span className="fb-sale">{highlights[absoluteIndex % highlights.length]}</span>
-                      </div>
-                      <div className="fb-card-body">
-                        <h3>{property.title}</h3>
-                        <div className="fb-location"><MapPin size={12} />{property.city || property.state || 'Brasil'}</div>
-                        <div className="fb-specs">
-                          <span className="fb-spec"><BadgeCheck size={14} />{formatArea(area)}</span>
-                          <span className="fb-spec"><Heart size={14} />{getAptitude(property)}</span>
+          {propertyGrids.length > 0 ? (
+            propertyGrids.map((grid, gridIndex) => (
+              <div className="fb-grid-group" key={`grid-${gridIndex + 1}`}>
+                <div className="fb-cards">
+                  {grid.map((property, index) => {
+                    const absoluteIndex = (currentPage - 1) * PROPERTIES_PER_PAGE + gridIndex * PROPERTIES_PER_GRID + index;
+                    const area = getPropertyArea(property);
+                    return (
+                      <article className="fb-card" key={property.id}>
+                        <div className="fb-card-image" style={{ backgroundImage: `url("${getPropertyImage(property, absoluteIndex)}")` }}>
+                          <span className="fb-sale">{highlights[absoluteIndex % highlights.length]}</span>
                         </div>
-                        <strong className="fb-price">{formatCurrency(property.price)}</strong>
-                        <button className="fb-card-link" type="button" onClick={() => openLeadFlow(property)}>
-                          Ver detalhes <ArrowRight size={16} />
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
+                        <div className="fb-card-body">
+                          <h3>{property.title}</h3>
+                          <div className="fb-location"><MapPin size={12} />{property.city || property.state || 'Brasil'}</div>
+                          <div className="fb-specs">
+                            <span className="fb-spec"><BadgeCheck size={14} />{formatArea(area)}</span>
+                            <span className="fb-spec"><Heart size={14} />{getAptitude(property)}</span>
+                          </div>
+                          <strong className="fb-price">{formatCurrency(property.price)}</strong>
+                          <button className="fb-card-link" type="button" onClick={() => openLeadFlow(property)}>
+                            Ver detalhes <ArrowRight size={16} />
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="fb-empty-results">
+              <strong>Nenhum imovel encontrado</strong>
+              <span>Ajuste os filtros para ver outras oportunidades.</span>
+              <button type="button" onClick={clearFilters}>Limpar filtros</button>
             </div>
-          ))}
+          )}
 
           <div className="fb-pagination" aria-label="Paginacao de imoveis">
             <div className="fb-page-summary">
-              Mostrando {firstPropertyIndex} a {lastPropertyIndex} de {totalProperties} imoveis
+              Mostrando {firstPropertyIndex} a {lastPropertyIndex} de {totalFilteredProperties} imoveis
             </div>
             <div className="fb-page-controls">
               <button
@@ -1307,12 +1600,12 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
         <section className="fb-broker" aria-label="Especialista responsavel">
           <div className="fb-broker-photo-wrap">
-            <img className="fb-broker-photo" src={BROKER_IMAGE} alt="Renato Vilmar Piovesana" />
+            <img className="fb-broker-photo" src={BROKER_IMAGE} alt={BROKER_NAME} />
             <img className="fb-broker-logo" src={LOGO_URL} alt="Fazendas Brasil" />
           </div>
           <div>
             <small>Especialista responsavel</small>
-            <h2>Renato Vilmar Piovesana</h2>
+            <h2>{BROKER_NAME}</h2>
             <p>
               Atendimento consultivo para compradores e investidores que buscam fazendas, areas rurais e oportunidades selecionadas em todo o Brasil.
             </p>

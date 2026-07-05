@@ -79,9 +79,11 @@ router.post('/add', verifyAdmin, async (req, res) => {
     await supabase.from('domains').upsert({
       organization_id: organizationId,
       domain: cleanDomain,
+      is_custom: true,
       is_primary: true,
-      status: 'pending',
-      dns_records: JSON.stringify(getPlatformDnsRecords(cleanDomain)),
+      status: 'pending_ssl',
+      ssl_status: 'pending',
+      updated_at: new Date().toISOString(),
     }, {
       onConflict: 'domain',
     });
@@ -197,7 +199,7 @@ router.post('/sync-all', verifyAdmin, async (req, res) => {
   }
 
   try {
-    const sync = await syncRegisteredDockerDomains(getSupabaseServer(), { validateDns: true });
+    const sync = await syncRegisteredDockerDomains(getSupabaseServer(), { validateDns: false });
 
     res.json({
       success: true,

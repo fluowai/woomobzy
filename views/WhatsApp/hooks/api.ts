@@ -76,8 +76,9 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const impersonatedOrgId = USE_DIRECT_WHATSAPP_API
     ? await getValidImpersonatedOrgId(session?.user?.id)
     : getImpersonatedOrgId();
+  const activeOrgId = !impersonatedOrgId ? getActiveOrganizationId(session?.user?.id) : null;
   const tenantId = USE_DIRECT_WHATSAPP_API
-    ? impersonatedOrgId || await getTenantId(session?.user?.id)
+    ? impersonatedOrgId || activeOrgId || await getTenantId(session?.user?.id)
     : null;
   
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -89,7 +90,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   try {
     res = await fetch(url, {
       ...options,
-      headers: buildApiHeaders(options?.headers, session?.access_token, impersonatedOrgId),
+      headers: buildApiHeaders(options?.headers, session?.access_token, impersonatedOrgId, activeOrgId),
       body,
     });
 
@@ -98,7 +99,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       if (session) {
         res = await fetch(url, {
           ...options,
-          headers: buildApiHeaders(options?.headers, session.access_token, impersonatedOrgId),
+          headers: buildApiHeaders(options?.headers, session.access_token, impersonatedOrgId, activeOrgId),
           body,
         });
       }
@@ -123,24 +124,44 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       tenantIdCache = undefined;
     }
 
-    const message = error.code === 'TENANT_REQUIRED'
-      ? 'Selecione uma organização antes de acessar o WhatsApp.'
-      : error.error || `API Error: ${res.status}`;
+    const message = getFriendlyApiErrorMessage(error, res.status);
     throw new WhatsAppApiError(message, res.status, error.code);
   }
 
   return normalizeStorageUrls(await res.json()) as T;
 }
 
+function getFriendlyApiErrorMessage(error: any, status: number): string {
+  if (error?.code === 'TENANT_REQUIRED') {
+    return 'Selecione uma organizacao antes de acessar o WhatsApp.';
+  }
+
+  if (error?.code === 'PROFILE_NO_ORG') {
+    return 'Sua conta ainda nao esta vinculada a uma organizacao.';
+  }
+
+  if (error?.code === 'PROFILE_ORG_NOT_FOUND') {
+    return 'A organizacao vinculada ao seu perfil nao foi encontrada.';
+  }
+
+  if (error?.code === 'PROFILE_ORG_INACTIVE') {
+    return 'A organizacao vinculada ao seu perfil esta inativa.';
+  }
+
+  return error?.error || `API Error: ${status}`;
+}
+
 function buildApiHeaders(
   customHeaders: HeadersInit | undefined,
   accessToken: string | undefined,
-  impersonatedOrgId: string | null
+  impersonatedOrgId: string | null,
+  activeOrgId: string | null
 ) {
   const headers = new Headers(customHeaders);
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
   if (impersonatedOrgId) headers.set('x-impersonate-org-id', impersonatedOrgId);
+  else if (activeOrgId) headers.set('x-organization-id', activeOrgId);
   return headers;
 }
 
@@ -198,6 +219,16 @@ function getImpersonatedOrgId(): string | null {
   }
 
   return null;
+}
+
+function getActiveOrganizationId(userId?: string): string | null {
+  const storedUserId = sessionStorage.getItem('active_organization_user_id');
+  const storedOrgId = sessionStorage.getItem('active_organization_id');
+
+  if (!storedOrgId || storedOrgId === 'null' || storedOrgId === 'undefined') return null;
+  if (userId && storedUserId && storedUserId !== userId) return null;
+
+  return storedOrgId;
 }
 
 async function getValidImpersonatedOrgId(userId?: string): Promise<string | null> {
@@ -600,8 +631,9 @@ export const messageApi = {
   sendMedia: async (chatId: string, instanceId: string, file: File, content = '') => {
     const { data: { session } } = await supabase.auth.getSession();
     const impersonatedOrgId = getImpersonatedOrgId();
+    const activeOrgId = !impersonatedOrgId ? getActiveOrganizationId(session?.user?.id) : null;
     const tenantId = USE_DIRECT_WHATSAPP_API
-      ? impersonatedOrgId || await getTenantId(session?.user?.id)
+      ? impersonatedOrgId || activeOrgId || await getTenantId(session?.user?.id)
       : null;
     const formData = new FormData();
     formData.append('file', file);
@@ -613,6 +645,7 @@ export const messageApi = {
       headers: {
         Authorization: session ? `Bearer ${session.access_token}` : '',
         ...(impersonatedOrgId ? { 'x-impersonate-org-id': impersonatedOrgId } : {}),
+        ...(!impersonatedOrgId && activeOrgId ? { 'x-organization-id': activeOrgId } : {}),
       },
       body: formData,
     });
@@ -635,6 +668,22 @@ export const mediaApi = {
 
   retry: (mediaId: string) =>
     apiRequest<WhatsAppMediaRetryResponse>(`/media/${mediaId}/retry`, { method: 'POST' }),
+};
+
+export const accountApi = {
+  recoverOrg: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/account/recover-org', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+    });
+    const body = await res.json();
+    if (!res.ok) throw new WhatsAppApiError(body.error || 'Falha na recuperacao', res.status, body.code);
+    return body as { success: boolean; message: string; organization?: { id: string; name: string }; organization_id?: string };
+  },
 };
 
 // ---- Phone Utils ----

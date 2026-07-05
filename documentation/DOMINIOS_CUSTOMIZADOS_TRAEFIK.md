@@ -69,6 +69,51 @@ Portas obrigatorias:
 - `80/tcp`: HTTP Challenge do Let's Encrypt.
 - `443/tcp`: trafego HTTPS.
 
+## Portainer com Traefik em stack separada
+
+Quando o Traefik nao roda dentro da mesma stack da aplicacao, ele precisa montar o mesmo volume dinamico usado pela API. Sem isso, o backend grava o arquivo do dominio, mas o Traefik continua servindo o certificado default.
+
+Na stack da API:
+
+```yaml
+api:
+  environment:
+    TRAEFIK_DYNAMIC_DIR: /app/traefik/dynamic
+    TRAEFIK_FRONTEND_SERVICE: imobfluow_frontend@docker
+    TRAEFIK_API_SERVICE: imobfluow_api@docker
+  volumes:
+    - imobzy_traefik_dynamic:/app/traefik/dynamic
+
+volumes:
+  imobzy_traefik_dynamic:
+    external: true
+```
+
+Na stack do Traefik, uma unica vez:
+
+```yaml
+services:
+  traefik:
+    volumes:
+      - imobzy_traefik_dynamic:/traefik/dynamic:ro
+    command:
+      - "--providers.file.directory=/traefik/dynamic"
+      - "--providers.file.watch=true"
+
+volumes:
+  imobzy_traefik_dynamic:
+    external: true
+```
+
+Se o Traefik usa `traefik.yml` em vez de `command`, mantenha:
+
+```yaml
+providers:
+  file:
+    directory: /traefik/dynamic
+    watch: true
+```
+
 ## Boas praticas
 
 - Nao use `HostRegexp({host:.+})` para dominios de clientes; gere uma rota `Host()` por dominio.

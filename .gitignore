@@ -33,6 +33,7 @@ dist-ssr
 # Secrets backup
 *.secrets.md
 portainer-stack-*-filled.yml
+portainer-stack-pronta-corrigida.yml
 
 # Debug files
 debug_scrape.html

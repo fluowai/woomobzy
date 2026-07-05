@@ -1,5 +1,6 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
+import pg from 'pg';
 import { verifySuperAdmin, verifyAdmin, verifyAuth } from '../middleware/auth.js';
 import { requireTenant } from '../middleware/tenant.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
@@ -270,11 +271,17 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
     if (error) {
       console.error('[Admin] ❌ Error fetching organizations from Supabase:', error);
       if (isInvalidSupabaseApiKeyError(error)) {
-        const fallback = await queryOrganizationsWithUserToken(req);
-        if (!fallback.error) {
-          return res.json({ success: true, organizations: fallback.data || [] });
+        const userTokenFallback = await queryOrganizationsWithUserToken(req);
+        if (!userTokenFallback.error) {
+          return res.json({ success: true, organizations: userTokenFallback.data || [] });
         }
-        console.error('[Admin] ❌ User-token fallback also failed:', fallback.error);
+        console.error('[Admin] ❌ User-token fallback also failed:', userTokenFallback.error);
+
+        const directDbFallback = await queryOrganizationsWithDirectDb();
+        if (!directDbFallback.error) {
+          return res.json({ success: true, organizations: directDbFallback.data || [] });
+        }
+        console.error('[Admin] ❌ Direct DB fallback also failed:', directDbFallback.error);
       }
       throw error;
     }
@@ -414,7 +421,7 @@ router.post('/organizations/bulk-delete', verifySuperAdmin, async (req, res) => 
 function queryOrganizations(client) {
   return client
     .from('organizations')
-    .select('id, name, slug, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, feature_flags, created_at, updated_at')
+    .select('id, name, slug, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, created_at, updated_at')
     .order('created_at', { ascending: false, nullsFirst: false });
 }
 
@@ -453,6 +460,94 @@ function getBearerToken(req) {
 function isInvalidSupabaseApiKeyError(error) {
   const message = String(error?.message || error?.error || '').toLowerCase();
   return message.includes('invalid api key') || message.includes('invalid apikey');
+}
+
+export async function queryOrganizationsWithDirectDb() {
+  const rawConnectionString = getDirectDatabaseUrl();
+  const connectionString = normalizeDirectDatabaseUrl(rawConnectionString);
+  if (!connectionString) {
+    return {
+      data: null,
+      error: new Error('Fallback Postgres indisponivel: configure DATABASE_URL ou SUPABASE_DB_URL.'),
+    };
+  }
+
+  const pool = new pg.Pool({
+    connectionString,
+    ssl: shouldUseSsl(rawConnectionString) ? { rejectUnauthorized: false } : false,
+    max: 1,
+    idleTimeoutMillis: 1000,
+    connectionTimeoutMillis: 5000,
+  });
+
+  try {
+    const result = await pool.query(`
+      SELECT
+        o.id,
+        o.name,
+        to_jsonb(o)->>'slug' AS slug,
+        to_jsonb(o)->>'owner_name' AS owner_name,
+        to_jsonb(o)->>'owner_email' AS owner_email,
+        COALESCE(to_jsonb(o)->>'status', 'active') AS status,
+        to_jsonb(o)->>'plan_id' AS plan_id,
+        to_jsonb(o)->>'niche' AS niche,
+        to_jsonb(o)->>'subscription_status' AS subscription_status,
+        to_jsonb(o)->>'trial_ends_at' AS trial_ends_at,
+        to_jsonb(o)->>'created_at' AS created_at,
+        to_jsonb(o)->>'updated_at' AS updated_at,
+        CASE
+          WHEN p.id IS NULL THEN NULL
+          ELSE json_build_object('name', p.name)
+        END AS plans
+      FROM public.organizations o
+      LEFT JOIN public.plans p ON p.id = NULLIF(to_jsonb(o)->>'plan_id', '')::uuid
+      ORDER BY o.created_at DESC NULLS LAST
+    `);
+
+    return { data: result.rows, error: null };
+  } catch (error) {
+    return { data: null, error };
+  } finally {
+    await pool.end().catch(() => {});
+  }
+}
+
+export function normalizeDirectDatabaseUrl(connectionString) {
+  if (!connectionString) return '';
+
+  try {
+    const url = new URL(connectionString);
+    // The pg connection-string parser may turn sslmode=require into certificate
+    // verification. We pass SSL options explicitly to support Supabase pooler certs.
+    url.searchParams.delete('sslmode');
+    return url.toString();
+  } catch {
+    return connectionString;
+  }
+}
+
+export function getDirectDatabaseUrl() {
+  return [
+    'DATABASE_URL',
+    'SUPABASE_DB_URL',
+    'DATABASE_PRIVATE_URL',
+    'POSTGRES_URL',
+    'POSTGRES_PRIVATE_URL',
+    'POSTGRES_PRISMA_URL',
+    'POSTGRES_URL_NON_POOLING',
+    'POSTGRESQL_URL',
+    'PGDATABASE_URL',
+    'PG_URL',
+    'DB_URL',
+  ]
+    .map((key) => String(process.env[key] || '').trim())
+    .find(Boolean) || '';
+}
+
+export function shouldUseSsl(connectionString) {
+  if (process.env.PGSSLMODE === 'disable') return false;
+  if (process.env.NODE_ENV === 'production') return true;
+  return /supabase\.(co|com)|pooler\.supabase\.com|sslmode=require/i.test(connectionString);
 }
 
 router.delete('/organizations/:id', verifySuperAdmin, async (req, res) => {

@@ -23,6 +23,7 @@ interface UserProfile {
     name: string;
     slug: string;
     niche: 'rural' | 'traditional';
+    custom_domain?: string | null;
     plan_id?: string;
     trial_ends_at?: string;
     subscription_status?: 'trial' | 'active' | 'payment_required' | 'suspended';

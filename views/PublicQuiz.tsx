@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, MessageCircle, ShieldCheck } from 'lucide-react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { quizService, type QuizCampaign } from '../services/quiz';
+import { getTrackingData, trackFacebookEvent, trackGoogleEvent } from '../utils/tracking';
 
 type QuizResult = {
   qualified: boolean;
@@ -9,6 +10,13 @@ type QuizResult = {
   message: string;
   whatsapp_url?: string | null;
 };
+
+function trackingValue(value: unknown) {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'object' && typeof (value as Promise<unknown>).then === 'function') return '';
+  const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+  return String(serialized || '').slice(0, 500);
+}
 
 const PublicQuiz: React.FC = () => {
   const { slug = '' } = useParams();
@@ -44,13 +52,24 @@ const PublicQuiz: React.FC = () => {
   const canContinueQuestion = currentQuestion ? Boolean(answers[currentQuestion.id]) : false;
 
   const utm = useMemo(() => {
-    const values: Record<string, string> = {};
+    const values: Record<string, string> = {
+      quiz_slug: slug,
+      landing_page_url: window.location.href,
+      referrer_url: document.referrer || '',
+    };
+
+    if (campaign?.id) values.quiz_campaign_id = campaign.id;
+    Object.entries(getTrackingData()).forEach(([key, value]) => {
+      const parsed = trackingValue(value);
+      if (parsed) values[key] = parsed;
+    });
+
     ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach((key) => {
       const value = searchParams.get(key);
       if (value) values[key] = value;
     });
     return values;
-  }, [searchParams]);
+  }, [campaign?.id, searchParams, slug]);
 
   const branding = campaign?.branding || {};
   const primary = (branding.primary as string) || '#f04b12';
@@ -77,6 +96,20 @@ const PublicQuiz: React.FC = () => {
         utm,
       });
       setResult(response);
+      trackFacebookEvent('Lead', {
+        content_name: campaign.title,
+        content_category: 'Quiz',
+        status: response.qualified ? 'qualified' : 'nurture',
+        value: response.score,
+        currency: 'BRL',
+      });
+      trackGoogleEvent('generate_lead', {
+        event_category: 'Quiz',
+        event_label: campaign.title,
+        quiz_slug: campaign.slug,
+        qualified: response.qualified,
+        value: response.score,
+      });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Nao foi possivel concluir o quiz.');
     } finally {

@@ -57,6 +57,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const [showMainSite, setShowMainSite] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
+  const isImmediateOkaSite = activeSlug === 'okaimoveis';
 
   const isPreview = false;
   const page = landingPage;
@@ -77,12 +78,17 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   };
 
   useEffect(() => {
+    if (isImmediateOkaSite) {
+      setLoading(false);
+      return;
+    }
+
     if (activeSlug) {
       loadLandingPage(activeSlug);
     } else if (forceComingSoon) {
       setLoading(false);
     }
-  }, [activeSlug, searchParams.get('page')]);
+  }, [activeSlug, searchParams.get('page'), isImmediateOkaSite]);
 
   const loadLandingPage = async (slugOrOrg: string) => {
     try {
@@ -254,6 +260,10 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         </div>
       </div>
     );
+  }
+
+  if (isImmediateOkaSite) {
+    return <OkaPublicSite />;
   }
 
   const isSiteOwner =

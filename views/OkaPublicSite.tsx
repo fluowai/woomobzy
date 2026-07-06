@@ -1,104 +1,132 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BarChart3,
   BedDouble,
   Building2,
+  Car,
   ChevronDown,
   Heart,
+  Home,
+  Instagram,
   LayoutGrid,
+  Linkedin,
+  Mail,
   MapPin,
+  Maximize2,
+  Menu,
   MessageCircle,
   Phone,
+  Quote,
+  RotateCcw,
   Search,
   ShieldCheck,
   Sparkles,
   UserRoundCheck,
-  Menu,
   X,
-  ChevronRight,
-  Mail,
-  Instagram,
   Youtube,
-  Linkedin,
-  ChevronUp,
-  AlertCircle,
-  Maximize2,
 } from 'lucide-react';
-import { supabase } from '../services/supabase';
 
 interface OkaPublicSiteProps {
   organizationId?: string;
 }
 
-type PublicProperty = {
+type OkaProperty = {
   id: string;
+  tag: string;
   title: string;
-  price?: number;
-  city?: string;
-  state?: string;
-  neighborhood?: string;
-  images?: string[];
-  features?: Record<string, any>;
-  property_type?: string;
-  type?: string;
-  highlighted?: boolean;
+  type: string;
+  city: string;
+  state: string;
+  suites: number;
+  area: number;
+  vagas: number;
+  price: number;
+  yield: string;
+  image: string;
+  imagePosition?: string;
 };
 
 const WHATSAPP_NUMBER = '5547997755555';
 const PHONE_LABEL = '(47) 99775-5555';
-const OKA_ORG_SLUG = 'okaimoveis';
+const HERO_IMAGE = '/templates/urban/urban_luxury_pool.png';
+const SEA_VIEW_IMAGE = '/templates/urban/urban_sea_view.png';
+const GATED_IMAGE = '/templates/urban/urban_gated_community.png';
+const READY_IMAGE = '/templates/urban/urban_ready_move.png';
 
-const fallbackImages = [
-  '/templates/urban/urban_sea_view.png',
-  '/templates/urban/urban_luxury_pool.png',
-  '/templates/urban/urban_gated_community.png',
-  '/templates/urban/urban_ready_move.png',
-];
-
-const fallbackProperties: PublicProperty[] = [
+const properties: OkaProperty[] = [
   {
-    id: 'oka-demo-1',
+    id: 'frente-mar',
+    tag: 'Frente Mar',
     title: 'Apartamento Frente Mar',
-    price: 4950000,
+    type: 'Apartamento',
     city: 'Itapema',
     state: 'SC',
-    images: [fallbackImages[0]],
-    features: { dormitorios: 4, suites: 4, areaM2: 205, vagas: 3 },
-    highlighted: true,
+    suites: 4,
+    area: 205,
+    vagas: 3,
+    price: 4950000,
+    yield: '0,68% a.m.',
+    image: SEA_VIEW_IMAGE,
+    imagePosition: 'center 48%',
   },
   {
-    id: 'oka-demo-2',
-    title: 'Casa em Condomínio Fechado',
-    price: 2650000,
+    id: 'condominio',
+    tag: 'Condomínio Fechado',
+    title: 'Casa em Condomínio',
+    type: 'Casa',
     city: 'Curitiba',
     state: 'PR',
-    images: [fallbackImages[2]],
-    features: { dormitorios: 3, suites: 3, areaM2: 290, vagas: 4 },
-    highlighted: true,
+    suites: 3,
+    area: 290,
+    vagas: 4,
+    price: 2650000,
+    yield: '0,75% a.m.',
+    image: GATED_IMAGE,
+    imagePosition: 'center 68%',
   },
   {
-    id: 'oka-demo-3',
+    id: 'alto-padrao',
+    tag: 'Alto Padrão',
     title: 'Apartamento Alto Padrão',
-    price: 2260000,
+    type: 'Apartamento',
     city: 'Florianópolis',
     state: 'SC',
-    images: [fallbackImages[1]],
-    features: { dormitorios: 3, suites: 3, areaM2: 156, vagas: 2 },
+    suites: 3,
+    area: 156,
+    vagas: 2,
+    price: 2260000,
+    yield: '0,82% a.m.',
+    image: HERO_IMAGE,
+    imagePosition: 'center 44%',
   },
   {
-    id: 'oka-demo-4',
+    id: 'vista',
+    tag: 'Destaque',
     title: 'Apartamento com Vista',
-    price: 1180000,
+    type: 'Apartamento',
     city: 'Maringá',
     state: 'PR',
-    images: [fallbackImages[3]],
-    features: { dormitorios: 2, suites: 2, areaM2: 120, vagas: 2 },
+    suites: 2,
+    area: 120,
+    vagas: 2,
+    price: 1180000,
+    yield: '0,89% a.m.',
+    image: READY_IMAGE,
+    imagePosition: 'center 72%',
   },
 ];
 
-function formatCurrency(value?: number) {
-  if (!value) return 'Consulte';
+const cities = ['Itapema', 'Balneário Camboriú', 'Florianópolis', 'Curitiba', 'Maringá'];
+const propertyTypes = ['Apartamento', 'Casa', 'Comercial', 'Terreno'];
+const priceOptions = [
+  { label: 'Todos', value: 0 },
+  { label: 'Até R$ 1.500.000', value: 1500000 },
+  { label: 'Até R$ 3.000.000', value: 3000000 },
+  { label: 'Até R$ 5.000.000', value: 5000000 },
+];
+
+function formatCurrency(value: number) {
   return value.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -106,106 +134,16 @@ function formatCurrency(value?: number) {
   });
 }
 
-function numberFromFeature(features: Record<string, any> | undefined, keys: string[]) {
-  if (!features) return 0;
-  for (const key of keys) {
-    const value = features[key];
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-      const parsed = Number(value.replace(/[^\d.,]/g, '').replace(',', '.'));
-      if (!Number.isNaN(parsed)) return parsed;
-    }
-  }
-  return 0;
+function whatsappUrl(message = 'Olá! Quero falar com um especialista da OKA Imóveis.') {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-function propertyImage(property: PublicProperty, index: number) {
-  return property.images?.[0] || fallbackImages[index % fallbackImages.length];
-}
-
-const CIDADES = ['Itapema', 'Balneário Camboriú', 'Florianópolis', 'Curitiba', 'Maringá', 'Londrina', 'Joinville', 'São Paulo'];
-const PROPERTY_TYPES = ['Apartamento', 'Casa', 'Cobertura', 'Terreno'];
-
-const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
-  const [properties, setProperties] = useState<PublicProperty[]>(fallbackProperties);
+const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [filterObjetivo, setFilterObjetivo] = useState<'comprar' | 'investir'>('comprar');
-  const [filterType, setFilterType] = useState('');
-  const [filterCity, setFilterCity] = useState('');
-  const [filterPriceMax, setFilterPriceMax] = useState(0);
-  const [showAllProperties, setShowAllProperties] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const loadProperties = async () => {
-      try {
-        let orgId = organizationId;
-
-        if (!orgId) {
-          const { data: org } = await supabase
-            .from('organizations')
-            .select('id')
-            .eq('slug', OKA_ORG_SLUG)
-            .maybeSingle();
-          orgId = org?.id;
-        }
-
-        if (!orgId) return;
-
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('properties')
-          .select('id,title,price,city,state,neighborhood,images,features,property_type,type,highlighted')
-          .eq('organization_id', orgId)
-          .eq('status', 'Disponível')
-          .order('highlighted', { ascending: false })
-          .limit(20);
-
-        if (!error && data && data.length > 0) setProperties(data);
-        setLoading(false);
-      } catch (error) {
-        console.warn('[OKA] Mantendo imóveis de demonstração:', error);
-        setLoading(false);
-      }
-    };
-
-    loadProperties();
-  }, [organizationId]);
-
-  const filtered = useMemo(() => {
-    let list = [...properties];
-    if (filterCity) {
-      list = list.filter((p) => p.city?.toLowerCase().includes(filterCity.toLowerCase()));
-    }
-    if (filterType) {
-      list = list.filter((p) => {
-        const type = `${p.property_type || p.type || p.title}`.toLowerCase();
-        return type.includes(filterType.toLowerCase());
-      });
-    }
-    if (filterPriceMax > 0) {
-      list = list.filter((p) => (p.price || 0) <= filterPriceMax);
-    }
-    return list;
-  }, [properties, filterCity, filterPriceMax, filterType]);
-
-  const displayProperties = showAllProperties ? filtered : filtered.slice(0, 4);
-  const hasActiveFilters = filterCity || filterType || filterPriceMax > 0;
-  const uniqueCities = useMemo(() => {
-    const cities = new Set(properties.map((p) => p.city).filter(Boolean));
-    return [...CIDADES, ...cities].filter((v, i, a) => a.indexOf(v) === i);
-  }, [properties]);
-  const uniqueTypes = useMemo(() => {
-    const types = new Set(properties.map((p) => p.property_type || p.type).filter(Boolean));
-    return [...PROPERTY_TYPES, ...types].filter((v, i, a) => a.indexOf(v) === i);
-  }, [properties]);
-
-  const clearFilters = useCallback(() => {
-    setFilterCity('');
-    setFilterPriceMax(0);
-    setFilterObjetivo('comprar');
-    setFilterType('');
-  }, []);
+  const [purpose, setPurpose] = useState<'comprar' | 'investir'>('comprar');
+  const [type, setType] = useState('');
+  const [city, setCity] = useState('');
+  const [priceMax, setPriceMax] = useState(0);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -214,616 +152,1244 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
     };
   }, [menuOpen]);
 
+  const clearFilters = useCallback(() => {
+    setPurpose('comprar');
+    setType('');
+    setCity('');
+    setPriceMax(0);
+  }, []);
+
+  const filteredProperties = useMemo(() => {
+    return properties.filter((property) => {
+      if (type && property.type !== type) return false;
+      if (city && property.city !== city) return false;
+      if (priceMax > 0 && property.price > priceMax) return false;
+      return true;
+    });
+  }, [city, priceMax, type]);
+
   return (
     <div className="oka-site">
       <style>{`
         .oka-site {
-          --oka-orange: #f04b12;
-          --oka-charcoal: #242424;
-          --oka-muted: #6d7178;
-          --oka-line: #e9e2dc;
-          --oka-soft: #faf8f5;
+          --oka-orange: #ff4b18;
+          --oka-orange-dark: #ea3d0d;
+          --oka-black: #15191d;
+          --oka-text: #20242a;
+          --oka-muted: #6b717a;
+          --oka-line: #e8ebef;
+          --oka-soft: #f7f8fa;
+          --oka-shadow: 0 24px 58px rgba(28, 33, 40, .1);
           min-height: 100vh;
           background: #fff;
-          color: var(--oka-charcoal);
+          color: var(--oka-text);
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
         .oka-site * { box-sizing: border-box; }
-        .hidden { display: none !important; }
-        .oka-shell { width: min(1480px, calc(100% - 64px)); margin: 0 auto; }
+        .oka-shell {
+          width: min(1710px, calc(100% - 176px));
+          margin: 0 auto;
+        }
+        .oka-hidden { display: none !important; }
         .oka-nav {
-          position: sticky; top: 0; z-index: 30; height: 74px; background: rgba(255,255,255,.96);
-          border-bottom: 1px solid var(--oka-line); backdrop-filter: blur(18px);
-        }
-        .oka-nav-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .oka-logo-wrap { display: flex; align-items: center; gap: 0; flex-shrink: 0; text-decoration: none; }
-        .oka-logo-img { height: 57px; width: 178px; object-fit: contain; object-position: left center; display: block; }
-        .oka-logo-fallback { height: 57px; display: flex; align-items: center; font-family: Georgia, serif; font-size: 26px; font-weight: 700; color: var(--oka-charcoal); white-space: nowrap; }
-        .oka-logo-fallback span { color: var(--oka-orange); }
-        .oka-menu { display: flex; align-items: center; gap: 26px; font-size: 13px; font-weight: 750; }
-        .oka-menu a { color: #1f1f1f; text-decoration: none; }
-        .oka-menu a svg { display: none; }
-        .oka-menu a:first-child { color: var(--oka-orange); }
-        .oka-menu-close, .oka-mobile-menu-cta { display: none; }
-        .oka-actions { display: flex; align-items: center; gap: 12px; }
-        .oka-btn {
-          border: 1px solid var(--oka-line); background: #fff; color: #191919; height: 44px; padding: 0 20px;
-          border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-          font-size: 14px; font-weight: 800; text-decoration: none; white-space: nowrap; cursor: pointer;
-        }
-        .oka-btn-primary { background: var(--oka-orange); color: #fff; border-color: var(--oka-orange); box-shadow: 0 14px 30px rgba(240,75,18,.24); }
-        .oka-hero {
-          position: relative; min-height: 560px; overflow: visible; display: flex; align-items: center;
-          background:
-            linear-gradient(90deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.91) 34%, rgba(255,255,255,.36) 55%, rgba(255,255,255,.04) 78%),
-            linear-gradient(180deg, rgba(0,0,0,0) 65%, rgba(250,248,245,.7) 100%),
-            url('/templates/urban/urban_luxury_pool.png') center right / cover no-repeat;
-        }
-        .oka-hero-content { width: min(1480px, calc(100% - 64px)); margin: 0 auto; padding: 58px 0 136px; }
-        .oka-kicker { font-size: 10px; letter-spacing: .34em; font-weight: 900; text-transform: uppercase; margin: 0 0 12px; color: #222; }
-        .oka-title {
-          font-family: Georgia, "Times New Roman", serif; font-size: clamp(46px, 4.8vw, 78px); line-height: .98;
-          max-width: 760px; font-weight: 400; margin: 0 0 22px; letter-spacing: 0;
-        }
-        .oka-title span { color: var(--oka-orange); }
-        .oka-subtitle { color: #3f4349; font-size: 17px; line-height: 1.55; max-width: 600px; margin: 0 0 28px; }
-        .oka-hero-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-        .oka-intelligence {
-          width: min(1480px, calc(100% - 64px)); margin: -78px auto 0; position: relative; z-index: 5;
-          background: rgba(255,255,255,.97); border: 1px solid rgba(36,36,36,.08); border-radius: 8px;
-          box-shadow: 0 24px 70px rgba(38,31,26,.16); display: grid;
-          grid-template-columns: 260px minmax(0, 1fr); align-items: stretch; overflow: hidden;
+          height: 72px;
+          background: rgba(255, 255, 255, .98);
+          border-bottom: 1px solid rgba(18, 24, 32, .08);
+          position: sticky;
+          top: 0;
+          z-index: 60;
           backdrop-filter: blur(18px);
         }
-        .oka-intro { padding: 26px 28px; border-right: 1px solid var(--oka-line); background: var(--oka-soft); }
-        .oka-intro h2 { font-family: Georgia, "Times New Roman", serif; font-size: 26px; line-height: 1.04; font-weight: 400; margin: 0 0 10px; }
-        .oka-intro h2 span { color: var(--oka-orange); }
-        .oka-intro p { font-size: 13px; line-height: 1.45; color: var(--oka-muted); margin: 0; }
-        .oka-filter-panel { padding: 18px; display: grid; gap: 16px; }
-        .oka-purpose-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-        .oka-purpose-copy { color: var(--oka-muted); font-size: 12px; font-weight: 700; }
-        .oka-filter-row { display: grid; grid-template-columns: 1.1fr 1.1fr 1.4fr auto; gap: 12px; align-items: end; }
-        .oka-filter { padding: 0; min-width: 0; }
-        .oka-filter-label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 900; margin-bottom: 12px; }
-        .oka-step { width: 20px; height: 20px; border-radius: 999px; background: var(--oka-orange); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; }
-        .oka-segments { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; width: min(320px, 100%); }
-        .oka-segments.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
-        .oka-segment {
-          min-height: 46px; border: 1px solid var(--oka-line); border-radius: 5px; display: flex;
-          align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 800; background: #fff; color: #34363a;
+        .oka-nav-inner {
+          height: 100%;
+          display: grid;
+          grid-template-columns: 210px 1fr auto;
+          align-items: center;
+          gap: 26px;
         }
-        .oka-segment.active { border-color: var(--oka-orange); color: var(--oka-orange); background: #fff8f5; }
-        .oka-select, .oka-range {
-          height: 44px; border: 1px solid var(--oka-line); border-radius: 5px; display: flex; align-items: center;
-          justify-content: space-between; padding: 0 13px; color: #5c6167; font-size: 12px; background: #fff;
+        .oka-logo {
+          display: inline-flex;
+          align-items: center;
+          width: 154px;
+          height: 56px;
+          text-decoration: none;
         }
-        .oka-range { height: 62px; align-items: stretch; flex-direction: column; justify-content: center; gap: 11px; color: #333; font-weight: 800; }
-        .oka-range-line { height: 4px; border-radius: 999px; background: linear-gradient(90deg, var(--oka-orange), var(--oka-orange)); position: relative; }
-        .oka-range-line:before, .oka-range-line:after {
-          content: ""; position: absolute; top: 50%; transform: translateY(-50%); width: 18px; height: 18px;
-          border-radius: 999px; border: 3px solid #fff; background: var(--oka-orange); box-shadow: 0 0 0 1px var(--oka-orange);
+        .oka-logo img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          object-position: left center;
+          display: block;
         }
-        .oka-range-line:before { left: 0; } .oka-range-line:after { right: 0; }
-        .oka-search { display: flex; align-items: end; }
-        .oka-search .oka-btn { width: 100%; }
-        .oka-section { padding: 54px 0 0; }
-        .oka-section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
-        .oka-heading { font-family: Georgia, "Times New Roman", serif; font-size: 34px; font-weight: 400; margin: 0; }
-        .oka-heading span { color: var(--oka-orange); }
-        .oka-note { color: var(--oka-muted); font-size: 12px; margin-left: 8px; }
-        .oka-link { color: var(--oka-orange); font-size: 13px; font-weight: 800; text-decoration: none; display: inline-flex; gap: 8px; align-items: center; }
-        .oka-collections { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 18px; }
-        .oka-collection {
-          min-height: 124px; border-radius: 7px; overflow: hidden; position: relative; padding: 18px; color: #fff; display: flex; flex-direction: column; justify-content: space-between;
-          background-size: cover; background-position: center; isolation: isolate;
+        .oka-menu {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 48px;
+          font-size: 13px;
+          font-weight: 800;
         }
-        .oka-collection:before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.72), rgba(0,0,0,.08)); z-index: -1; }
-        .oka-collection.light { color: #252525; }
-        .oka-collection.light:before { background: linear-gradient(90deg, rgba(255,255,255,.86), rgba(255,255,255,.35)); }
-        .oka-collection h3 { font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-weight: 400; margin: 0 0 8px; }
-        .oka-collection p { font-size: 13px; line-height: 1.35; margin: 0; font-weight: 750; max-width: 270px; }
-        .oka-collection strong { color: var(--oka-orange); font-size: 13px; }
-        .oka-arrow { position: absolute; right: 14px; bottom: 14px; width: 36px; height: 36px; border-radius: 999px; background: #fff; color: var(--oka-orange); display: inline-flex; align-items: center; justify-content: center; }
-        .oka-toolbar { display: flex; align-items: center; gap: 12px; }
-        .oka-tool { height: 36px; padding: 0 14px; border: 1px solid var(--oka-line); border-radius: 5px; background: #fff; color: #333; display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 750; }
-        .oka-view { width: 42px; padding: 0; justify-content: center; }
-        .oka-view.active { border-color: var(--oka-orange); color: var(--oka-orange); background: #fff8f5; }
-        .oka-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 24px; }
-        .oka-card { border: 1px solid var(--oka-line); border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 14px 38px rgba(31,31,31,.07); }
-        .oka-card-image { height: 142px; background-size: cover; background-position: center; position: relative; }
-        .oka-tag { position: absolute; left: 12px; top: 10px; background: #fff; border-radius: 4px; padding: 7px 11px; font-size: 11px; font-weight: 900; color: #29313a; }
-        .oka-heart { position: absolute; right: 12px; top: 10px; color: #fff; filter: drop-shadow(0 2px 8px rgba(0,0,0,.32)); }
-        .oka-card-body { padding: 18px 18px 16px; }
-        .oka-card h3 { font-size: 20px; margin: 0 0 10px; font-weight: 850; }
-        .oka-location { color: #6f747a; font-size: 12px; display: flex; gap: 5px; align-items: center; margin-bottom: 12px; }
-        .oka-features { display: flex; gap: 16px; color: #6f747a; font-size: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-        .oka-features span { display: inline-flex; align-items: center; gap: 5px; }
-        .oka-price-row { display: flex; justify-content: space-between; align-items: end; gap: 10px; }
-        .oka-price { color: var(--oka-orange); font-size: 21px; font-weight: 900; }
-        .oka-yield { border: 1px solid var(--oka-line); border-radius: 4px; padding: 7px 11px; min-width: 88px; text-align: center; font-size: 11px; color: #62666c; }
-        .oka-yield strong { display: block; color: #1f1f1f; font-size: 12px; }
-        .oka-regions { padding: 72px 0 18px; }
-        .oka-regions-layout { display: grid; grid-template-columns: minmax(300px, .85fr) minmax(0, 1.6fr); gap: 36px; align-items: stretch; }
-        .oka-region-copy { padding: 8px 0; }
-        .oka-region-copy p { color: var(--oka-muted); font-size: 15px; line-height: 1.6; max-width: 520px; margin: 12px 0 24px; }
-        .oka-region-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        .oka-menu a {
+          color: #161b20;
+          text-decoration: none;
+        }
+        .oka-menu a:hover,
+        .oka-menu a:first-of-type {
+          color: var(--oka-orange);
+        }
+        .oka-actions {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+        }
+        .oka-btn {
+          height: 44px;
+          border-radius: 6px;
+          border: 1px solid var(--oka-line);
+          background: #fff;
+          color: #15191d;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 9px;
+          padding: 0 22px;
+          font-size: 13px;
+          font-weight: 900;
+          text-decoration: none;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+        }
+        .oka-btn:hover { transform: translateY(-1px); }
+        .oka-btn-primary {
+          background: var(--oka-orange);
+          border-color: var(--oka-orange);
+          color: #fff;
+          box-shadow: 0 12px 28px rgba(255, 75, 24, .22);
+        }
+        .oka-btn-primary:hover {
+          background: var(--oka-orange-dark);
+          border-color: var(--oka-orange-dark);
+        }
+        .oka-menu-toggle,
+        .oka-menu-close,
+        .oka-mobile-actions {
+          display: none;
+        }
+        .oka-hero {
+          min-height: 624px;
+          display: flex;
+          align-items: center;
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          background:
+            linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,.96) 34%, rgba(255,255,255,.66) 49%, rgba(255,255,255,.12) 70%, rgba(255,255,255,0) 100%),
+            linear-gradient(180deg, rgba(255,255,255,0) 62%, rgba(255,255,255,.72) 100%),
+            url('${HERO_IMAGE}') right center / cover no-repeat;
+        }
+        .oka-hero-content {
+          padding: 74px 0 98px;
+          max-width: 670px;
+        }
+        .oka-kicker {
+          margin: 0 0 22px;
+          color: #15191d;
+          font-size: 12px;
+          line-height: 1;
+          font-weight: 950;
+          letter-spacing: .34em;
+          text-transform: uppercase;
+        }
+        .oka-title {
+          margin: 0;
+          color: #16191f;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 64px;
+          font-weight: 400;
+          line-height: 1.07;
+          letter-spacing: 0;
+        }
+        .oka-title span,
+        .oka-heading span,
+        .oka-region-title span,
+        .oka-testimonial-title span {
+          color: var(--oka-orange);
+        }
+        .oka-subtitle {
+          max-width: 560px;
+          margin: 24px 0 0;
+          color: #23282f;
+          font-size: 17px;
+          line-height: 1.68;
+          font-weight: 500;
+        }
+        .oka-hero-actions {
+          display: flex;
+          gap: 22px;
+          align-items: center;
+          margin-top: 42px;
+        }
+        .oka-hero-actions .oka-btn {
+          height: 62px;
+          padding: 0 30px;
+        }
+        .oka-search-section {
+          padding: 56px 0 0;
+          background: #fff;
+        }
+        .oka-heading {
+          margin: 0;
+          color: #14181d;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 43px;
+          line-height: 1.12;
+          font-weight: 400;
+          letter-spacing: 0;
+        }
+        .oka-section-copy {
+          margin: 10px 0 0;
+          color: #737985;
+          font-size: 15px;
+          line-height: 1.55;
+        }
+        .oka-filter-card {
+          min-height: 220px;
+          margin-top: 30px;
+          padding: 36px 36px 26px;
+          border: 1px solid rgba(22, 28, 35, .08);
+          border-radius: 8px;
+          background: rgba(255,255,255,.98);
+          box-shadow: var(--oka-shadow);
+        }
+        .oka-filter-grid {
+          display: grid;
+          grid-template-columns: 292px 1fr 250px 250px 220px;
+          gap: 36px;
+          align-items: end;
+        }
+        .oka-filter-group {
+          min-width: 0;
+        }
+        .oka-filter-label {
+          display: block;
+          margin: 0 0 16px;
+          color: #242a31;
+          font-size: 12px;
+          font-weight: 950;
+        }
+        .oka-segment-row,
+        .oka-type-row {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+        .oka-choice {
+          height: 58px;
+          border: 1px solid var(--oka-line);
+          border-radius: 6px;
+          background: #fff;
+          color: #343a42;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 0 19px;
+          font-size: 12px;
+          font-weight: 900;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: border-color .18s ease, color .18s ease, background .18s ease;
+        }
+        .oka-choice:hover,
+        .oka-choice.active {
+          border-color: var(--oka-orange);
+          color: var(--oka-orange);
+          background: #fff7f3;
+        }
+        .oka-type-row .oka-choice {
+          min-width: 112px;
+        }
+        .oka-select-wrap {
+          height: 58px;
+          position: relative;
+        }
+        .oka-select-wrap select {
+          width: 100%;
+          height: 100%;
+          appearance: none;
+          border: 1px solid var(--oka-line);
+          border-radius: 6px;
+          background: #fff;
+          color: #737985;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 0 42px 0 16px;
+          outline: none;
+          cursor: pointer;
+        }
+        .oka-select-wrap svg {
+          pointer-events: none;
+          position: absolute;
+          right: 15px;
+          top: 50%;
+          color: #8a919b;
+          transform: translateY(-50%);
+        }
+        .oka-filter-action .oka-btn {
+          width: 100%;
+          height: 58px;
+          padding: 0 28px;
+          font-size: 14px;
+        }
+        .oka-clear-row {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 20px;
+        }
+        .oka-clear {
+          border: 0;
+          background: transparent;
+          color: var(--oka-orange);
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0;
+          font-size: 12px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+        .oka-featured {
+          padding: 64px 0 0;
+        }
+        .oka-section-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 24px;
+          margin-bottom: 26px;
+        }
+        .oka-count {
+          color: var(--oka-orange);
+          font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+          font-size: 12px;
+          font-weight: 950;
+          margin-left: 8px;
+        }
+        .oka-outline {
+          height: 48px;
+          border: 1px solid var(--oka-orange);
+          border-radius: 6px;
+          background: #fff;
+          color: var(--oka-orange);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 0 20px;
+          font-size: 12px;
+          font-weight: 950;
+          text-decoration: none;
+          cursor: pointer;
+        }
+        .oka-property-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 28px;
+        }
+        .oka-card {
+          min-width: 0;
+          overflow: hidden;
+          border: 1px solid rgba(22, 28, 35, .09);
+          border-radius: 8px;
+          background: #fff;
+          box-shadow: 0 15px 36px rgba(22, 28, 35, .08);
+        }
+        .oka-card a {
+          color: inherit;
+          text-decoration: none;
+          display: block;
+        }
+        .oka-card-image {
+          height: 214px;
+          position: relative;
+          overflow: hidden;
+          background: #eef0f2;
+        }
+        .oka-card-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          transition: transform .35s ease;
+        }
+        .oka-card:hover .oka-card-image img {
+          transform: scale(1.04);
+        }
+        .oka-tag {
+          position: absolute;
+          left: 14px;
+          top: 14px;
+          min-height: 28px;
+          border-radius: 5px;
+          background: #fff;
+          color: #2d3540;
+          display: inline-flex;
+          align-items: center;
+          padding: 0 12px;
+          font-size: 11px;
+          font-weight: 950;
+          box-shadow: 0 8px 18px rgba(17, 24, 32, .08);
+        }
+        .oka-heart {
+          position: absolute;
+          right: 16px;
+          top: 15px;
+          color: #fff;
+          filter: drop-shadow(0 2px 8px rgba(0,0,0,.35));
+        }
+        .oka-card-body {
+          padding: 24px 22px 28px;
+        }
+        .oka-card h3 {
+          margin: 0 0 14px;
+          color: #161b21;
+          font-size: 19px;
+          line-height: 1.2;
+          font-weight: 950;
+        }
+        .oka-location {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          color: #7b828d;
+          font-size: 12px;
+          font-weight: 700;
+          margin-bottom: 16px;
+        }
+        .oka-features {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          color: #7b828d;
+          font-size: 12px;
+          font-weight: 700;
+          margin-bottom: 27px;
+          flex-wrap: wrap;
+        }
+        .oka-features span {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+        }
+        .oka-price-row {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 14px;
+        }
+        .oka-price {
+          color: var(--oka-orange);
+          font-size: 21px;
+          line-height: 1;
+          font-weight: 950;
+        }
+        .oka-yield {
+          min-width: 86px;
+          border: 1px solid var(--oka-line);
+          border-radius: 5px;
+          padding: 8px 9px;
+          color: #8a919b;
+          font-size: 10px;
+          line-height: 1.2;
+          text-align: center;
+          font-weight: 800;
+        }
+        .oka-yield strong {
+          display: block;
+          margin-top: 3px;
+          color: #20242a;
+          font-size: 11px;
+        }
+        .oka-empty {
+          grid-column: 1 / -1;
+          padding: 42px;
+          border: 1px solid var(--oka-line);
+          border-radius: 8px;
+          color: #737985;
+          text-align: center;
+          font-size: 14px;
+        }
+        .oka-regions {
+          padding: 72px 0 0;
+        }
+        .oka-regions-layout {
+          display: grid;
+          grid-template-columns: 500px minmax(0, 1fr);
+          gap: 72px;
+          align-items: stretch;
+        }
+        .oka-region-copy {
+          padding-top: 18px;
+        }
+        .oka-region-title {
+          margin: 16px 0 0;
+          color: #15191d;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 37px;
+          font-weight: 400;
+          line-height: 1.16;
+          letter-spacing: 0;
+        }
+        .oka-region-copy p:not(.oka-kicker) {
+          margin: 24px 0 26px;
+          color: #727984;
+          font-size: 15px;
+          line-height: 1.7;
+        }
+        .oka-link {
+          color: var(--oka-orange);
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 950;
+        }
+        .oka-region-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 26px;
+        }
         .oka-region-card {
-          min-height: 220px; border-radius: 8px; overflow: hidden; position: relative; display: flex; align-items: flex-end;
-          padding: 20px; color: #fff; background-size: cover; background-position: center; text-decoration: none; isolation: isolate;
+          min-height: 372px;
+          border-radius: 8px;
+          overflow: hidden;
+          position: relative;
+          display: flex;
+          align-items: flex-end;
+          padding: 0 28px 34px;
+          color: #fff;
+          background-size: cover;
+          background-position: center;
+          text-decoration: none;
+          isolation: isolate;
+          box-shadow: 0 16px 32px rgba(22, 28, 35, .12);
         }
-        .oka-region-card:before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0,0,0,.06), rgba(0,0,0,.76)); }
-        .oka-region-card strong { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 24px; font-weight: 400; margin-bottom: 6px; }
-        .oka-region-card span { display: block; font-size: 12px; font-weight: 800; opacity: .9; }
-        .oka-bottom { margin-top: 52px; background: linear-gradient(90deg, rgba(250,248,245,.45), rgba(250,248,245,.95), rgba(250,248,245,.45)); border-top: 1px solid #f1ece8; border-bottom: 1px solid #f1ece8; padding: 28px 0; }
-        .oka-trust { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 20px; }
-        .oka-trust-item { display: flex; gap: 14px; align-items: center; justify-content: center; color: #555; font-size: 13px; }
-        .oka-trust-item strong { display: block; color: #2b2b2b; font-size: 13px; margin-bottom: 2px; }
-        .oka-float { position: fixed; right: 24px; bottom: 22px; z-index: 40; display: flex; align-items: end; gap: 10px; }
-        .oka-bubble { background: #fff; border: 1px solid var(--oka-line); box-shadow: 0 10px 28px rgba(0,0,0,.12); border-radius: 6px; padding: 11px 14px; font-size: 11px; font-weight: 800; color: #30343a; }
-        .oka-whatsapp { width: 58px; height: 58px; border-radius: 999px; background: #25d366; color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 12px 26px rgba(37,211,102,.32); }
-        .oka-mobile-toggle { display: none; }
-        .oka-menu-overlay { display: none; }
-
+        .oka-region-card:before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(12,16,20,.08), rgba(12,16,20,.83));
+          z-index: -1;
+        }
+        .oka-region-card strong {
+          display: block;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 31px;
+          font-weight: 400;
+          line-height: 1.1;
+          margin-bottom: 12px;
+        }
+        .oka-region-card span {
+          display: block;
+          max-width: 220px;
+          font-size: 14px;
+          line-height: 1.45;
+          font-weight: 900;
+        }
+        .oka-benefits {
+          padding: 78px 0 54px;
+        }
+        .oka-benefit-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 52px;
+        }
+        .oka-benefit {
+          display: grid;
+          grid-template-columns: 42px 1fr;
+          gap: 18px;
+          align-items: center;
+        }
+        .oka-benefit svg {
+          color: #1f2730;
+        }
+        .oka-benefit strong {
+          display: block;
+          color: #252b33;
+          font-size: 14px;
+          line-height: 1.25;
+          font-weight: 950;
+          margin-bottom: 4px;
+        }
+        .oka-benefit span {
+          display: block;
+          color: #737985;
+          font-size: 13px;
+          line-height: 1.35;
+          font-weight: 600;
+        }
+        .oka-testimonials {
+          border-top: 1px solid rgba(22, 28, 35, .08);
+          background: #fff;
+          padding: 58px 0 64px;
+        }
+        .oka-testimonial-head {
+          width: min(1510px, calc(100% - 260px));
+          margin: 0 auto 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+        }
+        .oka-testimonial-title {
+          margin: 0;
+          color: #15191d;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 35px;
+          line-height: 1.1;
+          font-weight: 400;
+        }
+        .oka-testimonial-grid {
+          width: min(1510px, calc(100% - 260px));
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 28px;
+        }
+        .oka-testimonial {
+          min-height: 202px;
+          border: 1px solid rgba(22, 28, 35, .12);
+          border-radius: 8px;
+          background: #fff;
+          padding: 30px 36px 28px;
+          color: #67707b;
+        }
+        .oka-testimonial svg {
+          color: #b8bec7;
+          margin-bottom: 12px;
+        }
+        .oka-testimonial p {
+          min-height: 74px;
+          margin: 0;
+          color: #6c737e;
+          font-size: 14px;
+          line-height: 1.55;
+          font-weight: 650;
+        }
+        .oka-author {
+          display: grid;
+          grid-template-columns: 42px 1fr;
+          gap: 12px;
+          align-items: center;
+          margin-top: 20px;
+        }
+        .oka-avatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          background: linear-gradient(135deg, #173344, #f05a25);
+          font-size: 12px;
+          font-weight: 950;
+        }
+        .oka-author strong {
+          display: block;
+          color: #252b33;
+          font-size: 13px;
+          line-height: 1.2;
+          font-weight: 950;
+        }
+        .oka-author span {
+          display: block;
+          color: #7b828d;
+          font-size: 12px;
+          line-height: 1.3;
+          margin-top: 3px;
+        }
+        .oka-dots {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 7px;
+          margin-top: 28px;
+        }
+        .oka-dots span {
+          width: 7px;
+          height: 7px;
+          border-radius: 999px;
+          background: #dde1e6;
+        }
+        .oka-dots span:first-child {
+          background: var(--oka-orange);
+        }
+        .oka-cta {
+          min-height: 204px;
+          color: #fff;
+          background:
+            linear-gradient(90deg, rgba(11,15,18,.92), rgba(11,15,18,.62), rgba(11,15,18,.9)),
+            url('${SEA_VIEW_IMAGE}') center 56% / cover no-repeat;
+          display: flex;
+          align-items: center;
+        }
+        .oka-cta-inner {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 48px;
+        }
+        .oka-cta h2 {
+          margin: 0;
+          max-width: 560px;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 43px;
+          line-height: 1.05;
+          font-weight: 400;
+        }
+        .oka-cta p {
+          max-width: 540px;
+          margin: 14px 0 0;
+          color: rgba(255,255,255,.82);
+          font-size: 15px;
+          line-height: 1.55;
+          font-weight: 600;
+        }
+        .oka-cta-actions {
+          display: flex;
+          align-items: center;
+          gap: 26px;
+        }
+        .oka-cta-actions .oka-btn {
+          height: 62px;
+          min-width: 310px;
+        }
         .oka-footer {
-          background: var(--oka-charcoal); color: #b0b3b8; margin-top: 64px; padding: 56px 0 0;
+          background: #101315;
+          color: #9ea5ad;
         }
-        .oka-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 40px; padding-bottom: 40px; }
-        .oka-footer-brand p { font-size: 13px; line-height: 1.6; margin: 16px 0 20px; color: #9a9ea6; }
-        .oka-footer-social { display: flex; gap: 10px; }
-        .oka-footer-social a {
-          width: 40px; height: 40px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); display: inline-flex;
-          align-items: center; justify-content: center; color: #b0b3b8; transition: all .2s;
+        .oka-footer-main {
+          padding: 54px 0 42px;
+          display: grid;
+          grid-template-columns: 1.5fr .8fr .85fr 1.2fr;
+          gap: 86px;
         }
-        .oka-footer-social a:hover { border-color: var(--oka-orange); color: var(--oka-orange); background: rgba(240,75,18,.08); }
-        .oka-footer h4 { color: #fff; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 18px; }
-        .oka-footer-links { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
-        .oka-footer-links a { color: #9a9ea6; font-size: 13px; text-decoration: none; transition: color .2s; display: inline-flex; align-items: center; gap: 6px; }
-        .oka-footer-links a:hover { color: var(--oka-orange); }
-        .oka-footer-contact { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
-        .oka-footer-contact li { display: flex; gap: 10px; font-size: 13px; color: #9a9ea6; }
-        .oka-footer-contact a { color: #9a9ea6; text-decoration: none; }
-        .oka-footer-contact a:hover { color: var(--oka-orange); }
-        .oka-footer-bottom { border-top: 1px solid rgba(255,255,255,.06); padding: 20px 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 12px; color: #7a7f89; }
-        .oka-footer-bottom a { color: #7a7f89; text-decoration: none; }
-        .oka-footer-bottom a:hover { color: var(--oka-orange); }
-        .oka-logo-footer { height: 42px; width: 130px; object-fit: contain; object-position: left center; }
-
-        .oka-mobile-menu { display: none; }
-        .oka-mobile-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--oka-charcoal); }
-
-        .oka-filter-active {
-          background: #fff8f5; padding: 10px 14px; border-radius: 5px; border: 1px solid #fdd7c8; margin-bottom: 8px;
-          display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--oka-orange); font-weight: 750;
+        .oka-footer-logo {
+          display: inline-flex;
+          align-items: flex-end;
+          gap: 3px;
+          color: #fff;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 39px;
+          line-height: 1;
+          letter-spacing: .05em;
+          text-decoration: none;
         }
-        .oka-filter-active button {
-          margin-left: auto; border: none; background: rgba(240,75,18,.1); color: var(--oka-orange); border-radius: 4px;
-          padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer;
+        .oka-footer-logo span:last-child {
+          color: var(--oka-orange);
         }
-        .oka-city-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 8px; }
-        .oka-city-btn {
-          height: 38px; border: 1px solid var(--oka-line); border-radius: 5px; background: #fff; font-size: 12px;
-          font-weight: 700; color: #34363a; cursor: pointer; transition: all .15s; padding: 0 10px;
+        .oka-footer-brand p {
+          max-width: 328px;
+          margin: 22px 0 26px;
+          color: #a7adb4;
+          font-size: 14px;
+          line-height: 1.7;
         }
-        .oka-city-btn:hover { border-color: var(--oka-orange); color: var(--oka-orange); }
-        .oka-city-btn.active { border-color: var(--oka-orange); background: #fff8f5; color: var(--oka-orange); }
-        .oka-more-btn {
-          display: block; width: 100%; padding: 14px; border: 1px solid var(--oka-line); border-radius: 5px;
-          background: #fff; font-size: 13px; font-weight: 800; color: var(--oka-orange); cursor: pointer;
-          text-align: center; margin-top: 18px; transition: all .15s;
+        .oka-social {
+          display: flex;
+          gap: 12px;
+          align-items: center;
         }
-        .oka-more-btn:hover { background: var(--oka-orange); color: #fff; border-color: var(--oka-orange); }
-        .oka-empty { text-align: center; padding: 48px 24px; color: var(--oka-muted); font-size: 13px; grid-column: 1 / -1; }
-        .oka-empty strong { display: block; font-size: 16px; color: var(--oka-charcoal); margin-bottom: 6px; }
-        .oka-card-image-wrap { position: relative; width: 100%; aspect-ratio: 16 / 11; overflow: hidden; background: #f5f3f0; }
-        .oka-card-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
-        .oka-card:hover .oka-card-image-wrap img { transform: scale(1.05); }
-        .oka-count { font-size: 12px; color: var(--oka-muted); margin-left: 8px; }
-
-        @media (max-width: 1180px) {
-          .oka-menu { gap: 18px; }
-          .oka-intelligence { grid-template-columns: 1fr; }
-          .oka-intro { border-right: 0; border-bottom: 1px solid var(--oka-line); }
-          .oka-filter-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
-          .oka-search { align-items: center; }
-          .oka-collections, .oka-grid, .oka-region-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-          .oka-regions-layout { grid-template-columns: 1fr; }
-          .oka-trust { grid-template-columns: repeat(2, minmax(0,1fr)); }
-          .oka-footer-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .oka-social a {
+          width: 34px;
+          height: 34px;
+          border: 1px solid rgba(255,255,255,.16);
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #b5bbc2;
+          text-decoration: none;
         }
-        @media (max-width: 1060px) {
-          .oka-menu { gap: 16px; font-size: 13px; }
-          .oka-actions { gap: 8px; }
-          .oka-actions .oka-btn { padding: 0 14px; font-size: 13px; }
+        .oka-footer h3 {
+          margin: 0 0 20px;
+          color: #fff;
+          font-size: 13px;
+          line-height: 1;
+          font-weight: 950;
+          letter-spacing: .14em;
+          text-transform: uppercase;
         }
-        @media (max-width: 960px) {
-          .oka-shell, .oka-hero-content, .oka-intelligence { width: min(100% - 28px, 620px); }
+        .oka-footer ul {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 12px;
+        }
+        .oka-footer a,
+        .oka-footer li {
+          color: #a7adb4;
+          font-size: 14px;
+          line-height: 1.45;
+          text-decoration: none;
+        }
+        .oka-footer-contact li {
+          display: grid;
+          grid-template-columns: 18px 1fr;
+          gap: 12px;
+          align-items: start;
+        }
+        .oka-footer-contact svg {
+          margin-top: 2px;
+          color: #b5bbc2;
+        }
+        .oka-footer-bottom {
+          border-top: 1px solid rgba(255,255,255,.06);
+          padding: 20px 0;
+          color: #747b83;
+          font-size: 12px;
+        }
+        .oka-footer-bottom .oka-shell {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 18px;
+          flex-wrap: wrap;
+        }
+        .oka-footer-bottom a {
+          color: #8c939a;
+          margin-left: 34px;
+        }
+        .oka-float {
+          position: fixed;
+          right: 28px;
+          bottom: 26px;
+          z-index: 80;
+          width: 60px;
+          height: 60px;
+          border-radius: 999px;
+          background: #20d466;
+          color: #fff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 16px 32px rgba(32, 212, 102, .32);
+          text-decoration: none;
+        }
+        @media (max-width: 1420px) {
+          .oka-shell { width: min(1180px, calc(100% - 64px)); }
+          .oka-nav-inner { grid-template-columns: 180px 1fr auto; }
+          .oka-menu { gap: 26px; }
+          .oka-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .oka-filter-action { grid-column: span 2; }
+          .oka-property-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .oka-regions-layout { grid-template-columns: 1fr; gap: 36px; }
+          .oka-region-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .oka-testimonial-head,
+          .oka-testimonial-grid { width: min(1180px, calc(100% - 64px)); }
+          .oka-footer-main { gap: 44px; }
+        }
+        @media (max-width: 980px) {
+          .oka-shell,
+          .oka-testimonial-head,
+          .oka-testimonial-grid {
+            width: min(640px, calc(100% - 32px));
+          }
           .oka-nav { height: auto; }
-          .oka-nav-inner { min-height: 70px; padding: 10px 0; justify-content: space-between; }
-          .oka-logo-img { height: 52px; width: 154px; }
-          .oka-actions { position: relative; z-index: 130; }
+          .oka-nav-inner {
+            min-height: 72px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .oka-logo { width: 134px; }
           .oka-actions .oka-btn { display: none; }
-          .oka-mobile-toggle {
-            display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
-            border: 1px solid var(--oka-line); border-radius: 6px; background: #fff;
+          .oka-menu-toggle {
+            width: 42px;
+            height: 42px;
+            border: 1px solid var(--oka-line);
+            border-radius: 6px;
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #15191d;
           }
           .oka-menu {
-            display: flex; flex-direction: column; align-items: stretch; position: fixed; top: 0; right: 0;
-            width: min(88vw, 380px); height: 100dvh; background: #fff; z-index: 120;
-            padding: 22px 24px 28px; gap: 0; overflow-y: auto; box-shadow: -18px 0 48px rgba(0,0,0,.18);
-            transform: translateX(104%); transition: transform .22s ease; visibility: hidden;
+            position: fixed;
+            inset: 0 0 0 auto;
+            width: min(360px, 86vw);
+            background: #fff;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            gap: 0;
+            padding: 22px 24px;
+            transform: translateX(105%);
+            transition: transform .22s ease;
+            box-shadow: -20px 0 44px rgba(15, 20, 26, .18);
           }
-          .oka-menu.open { transform: translateX(0); visibility: visible; }
-          .oka-menu.open a {
-            padding: 17px 0; font-size: 17px; border-bottom: 1px solid var(--oka-line); width: 100%;
-            display: flex; justify-content: space-between; align-items: center; color: #222;
-          }
-          .oka-menu a svg { display: block; }
+          .oka-menu.open { transform: translateX(0); }
           .oka-menu-close {
-            display: inline-flex; align-items: center; justify-content: center; align-self: flex-end;
-            width: 42px; height: 42px; margin-bottom: 14px; border: 1px solid var(--oka-line); border-radius: 6px;
-            background: #fff; color: var(--oka-charcoal); cursor: pointer;
+            width: 42px;
+            height: 42px;
+            margin: 0 0 12px auto;
+            border: 1px solid var(--oka-line);
+            border-radius: 6px;
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
           }
-          .oka-mobile-menu-cta { display: grid; gap: 10px; margin-top: 22px; }
-          .oka-mobile-menu-cta .oka-btn { display: inline-flex; width: 100%; border-bottom: 0; padding: 0 16px; font-size: 14px; }
-          .oka-menu-overlay.open { display: block; position: fixed; inset: 0; z-index: 110; background: rgba(0,0,0,.34); }
-          .oka-menu.open a:first-child { color: var(--oka-orange); }
-          .oka-hero { min-height: auto; background-position: 65% center; }
-          .oka-hero-content { padding: 30px 0 82px; }
-          .oka-title { font-size: clamp(32px, 8vw, 46px); max-width: 100%; letter-spacing: 0; }
-          .oka-subtitle { font-size: 15px; max-width: 100%; }
-          .oka-kicker { font-size: 10px; }
-          .oka-hero-actions { flex-direction: column; align-items: stretch; }
-          .oka-hero-actions .oka-btn { justify-content: center; }
-          .oka-intelligence { grid-template-columns: 1fr; margin-top: -32px; }
-          .oka-intro, .oka-filter { border-right: 0; }
-          .oka-purpose-row, .oka-filter-row { grid-template-columns: 1fr; display: grid; }
-          .oka-segments { width: 100%; }
-          .oka-search { padding-top: 4px; }
-          .oka-section-head { align-items: start; flex-direction: column; }
-          .oka-heading { font-size: 24px; }
-          .oka-toolbar { flex-wrap: wrap; }
-          .oka-collections, .oka-grid, .oka-trust, .oka-region-grid { grid-template-columns: 1fr; }
-          .oka-grid { gap: 16px; }
-          .oka-card-image-wrap { aspect-ratio: 16 / 10; }
-          .oka-card-body { padding: 12px 12px 14px; }
-          .oka-card h3 { font-size: 15px; }
-          .oka-price { font-size: 16px; }
-          .oka-features { gap: 12px; font-size: 11px; }
-          .oka-regions { padding-top: 48px; }
-          .oka-region-card { min-height: 180px; }
-          .oka-float { right: 14px; bottom: 14px; }
-          .oka-bubble { display: none; }
-          .oka-footer-grid { grid-template-columns: 1fr; gap: 32px; }
-          .oka-footer { padding: 40px 0 0; }
-          .oka-footer-bottom { flex-direction: column; text-align: center; }
-          .oka-segments { grid-template-columns: 1fr 1fr; }
-          .oka-segments.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+          .oka-menu a {
+            padding: 17px 0;
+            border-bottom: 1px solid var(--oka-line);
+            font-size: 16px;
+          }
+          .oka-mobile-actions {
+            display: grid;
+            gap: 12px;
+            margin-top: 24px;
+          }
+          .oka-mobile-actions .oka-btn {
+            display: inline-flex;
+            width: 100%;
+          }
+          .oka-hero {
+            min-height: auto;
+            background:
+              linear-gradient(90deg, rgba(255,255,255,.98), rgba(255,255,255,.86), rgba(255,255,255,.56)),
+              url('${HERO_IMAGE}') center / cover no-repeat;
+          }
+          .oka-hero-content { padding: 44px 0 72px; }
+          .oka-title { font-size: 44px; }
+          .oka-subtitle { font-size: 15px; }
+          .oka-hero-actions,
+          .oka-cta-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .oka-hero-actions .oka-btn,
+          .oka-cta-actions .oka-btn {
+            width: 100%;
+            min-width: 0;
+          }
+          .oka-heading { font-size: 33px; }
+          .oka-filter-grid { grid-template-columns: 1fr; gap: 24px; }
+          .oka-filter-action { grid-column: auto; }
+          .oka-type-row { flex-wrap: wrap; }
+          .oka-type-row .oka-choice { flex: 1 1 calc(50% - 8px); min-width: 0; }
+          .oka-property-grid,
+          .oka-region-grid,
+          .oka-benefit-grid,
+          .oka-testimonial-grid,
+          .oka-footer-main {
+            grid-template-columns: 1fr;
+          }
+          .oka-card-image { height: 220px; }
+          .oka-section-head,
+          .oka-testimonial-head,
+          .oka-cta-inner {
+            display: grid;
+            grid-template-columns: 1fr;
+            justify-items: start;
+          }
+          .oka-region-card { min-height: 260px; }
+          .oka-benefits { padding-top: 48px; }
+          .oka-cta { padding: 42px 0; }
+          .oka-cta h2 { font-size: 34px; }
+          .oka-footer-main { gap: 34px; }
+          .oka-footer-bottom .oka-shell { justify-content: center; text-align: center; }
+          .oka-footer-bottom a { margin: 0 12px; }
         }
-        @media (max-width: 480px) {
-          .oka-shell, .oka-hero-content, .oka-intelligence { width: calc(100% - 24px); }
-          .oka-title { font-size: 32px; }
-          .oka-segments { grid-template-columns: 1fr; }
-          .oka-segments.three { grid-template-columns: 1fr 1fr; }
-          .oka-collections, .oka-grid { gap: 12px; }
-          .oka-intro { padding: 18px; }
-          .oka-intro h2 { font-size: 22px; }
-          .oka-filter { padding: 16px 14px; }
-          .oka-card-image-wrap { aspect-ratio: 4 / 3; }
-          .oka-price { font-size: 15px; }
+        @media (max-width: 560px) {
+          .oka-shell,
+          .oka-testimonial-head,
+          .oka-testimonial-grid {
+            width: calc(100% - 28px);
+          }
+          .oka-kicker { font-size: 10px; letter-spacing: .24em; }
+          .oka-title { font-size: 35px; }
+          .oka-heading,
+          .oka-region-title,
+          .oka-testimonial-title { font-size: 29px; }
+          .oka-hero-actions .oka-btn,
+          .oka-cta-actions .oka-btn { height: 54px; }
+          .oka-search-section { padding-top: 38px; }
+          .oka-filter-card { padding: 22px 16px; }
+          .oka-segment-row { display: grid; grid-template-columns: 1fr 1fr; }
+          .oka-choice { padding: 0 12px; }
+          .oka-card-body { padding: 18px; }
+          .oka-price-row { align-items: flex-start; flex-direction: column; }
+          .oka-regions-layout { gap: 24px; }
+          .oka-benefit { grid-template-columns: 36px 1fr; }
+          .oka-testimonial { padding: 24px 22px; }
+          .oka-footer-main { padding-top: 42px; }
+          .oka-float { right: 18px; bottom: 18px; }
         }
       `}</style>
 
       <nav className="oka-nav">
         <div className="oka-shell oka-nav-inner">
-          <a className="oka-logo-wrap" href="/" aria-label="OKA Imóveis">
-            <img className="oka-logo-img" src="/clients/oka/logo.jpeg" alt="OKA Imóveis"
-              onError={(e) => { const t = e.currentTarget; t.style.display = 'none'; t.nextElementSibling?.classList.remove('hidden'); }}
-            />
-            <span className="oka-logo-fallback hidden">OKA<span>.</span></span>
+          <a className="oka-logo" href="#inicio" aria-label="OKA Imóveis">
+            <img src="/clients/oka/logo.jpeg" alt="OKA Imóveis" />
           </a>
+
           <div className={`oka-menu${menuOpen ? ' open' : ''}`} aria-label="Menu principal">
             <button className="oka-menu-close" type="button" onClick={() => setMenuOpen(false)} aria-label="Fechar menu">
               <X size={22} />
             </button>
-            <a href="#inicio" onClick={() => setMenuOpen(false)}>Início <ChevronRight size={16} /></a>
-            <a href="#imoveis" onClick={() => setMenuOpen(false)}>Imóveis <ChevronRight size={16} /></a>
-            <a href="#imoveis" onClick={() => setMenuOpen(false)}>Investimento <ChevronRight size={16} /></a>
-            <a href="#regioes" onClick={() => setMenuOpen(false)}>Regiões <ChevronRight size={16} /></a>
-            <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre <ChevronRight size={16} /></a>
-            <a href="#contato" onClick={() => setMenuOpen(false)}>Contato <ChevronRight size={16} /></a>
-            <div className="oka-mobile-menu-cta">
-              <a className="oka-btn" href={`tel:${WHATSAPP_NUMBER}`} onClick={() => setMenuOpen(false)}>
+            <a href="#inicio" onClick={() => setMenuOpen(false)}>Início</a>
+            <a href="#imoveis" onClick={() => setMenuOpen(false)}>Imóveis</a>
+            <a href="#investimento" onClick={() => setMenuOpen(false)}>Investimento</a>
+            <a href="#regioes" onClick={() => setMenuOpen(false)}>Regiões</a>
+            <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre</a>
+            <a href="#contato" onClick={() => setMenuOpen(false)}>Contato</a>
+            <div className="oka-mobile-actions">
+              <a className="oka-btn" href={`tel:${WHATSAPP_NUMBER}`}>
                 <Phone size={16} />
                 {PHONE_LABEL}
               </a>
-              <a className="oka-btn oka-btn-primary" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>
-                <MessageCircle size={17} />
+              <a className="oka-btn oka-btn-primary" href={whatsappUrl()} target="_blank" rel="noreferrer">
                 Falar com especialista
               </a>
             </div>
           </div>
+
           <div className="oka-actions">
             <a className="oka-btn" href={`tel:${WHATSAPP_NUMBER}`}>
               <Phone size={16} />
               {PHONE_LABEL}
             </a>
-            <a className="oka-btn oka-btn-primary" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
+            <a className="oka-btn oka-btn-primary" href={whatsappUrl()} target="_blank" rel="noreferrer">
               Falar com especialista
             </a>
-            <button
-              className="oka-mobile-toggle"
-              type="button"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-expanded={menuOpen}
-              aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
-            >
-              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            <button className="oka-menu-toggle" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu">
+              <Menu size={23} />
             </button>
           </div>
         </div>
-        <div className={`oka-menu-overlay${menuOpen ? ' open' : ''}`} onClick={() => setMenuOpen(false)} />
       </nav>
 
       <header id="inicio" className="oka-hero">
-        <div className="oka-hero-content">
-          <p className="oka-kicker">Alto padrão • Investimentos • Consultoria</p>
-          <h1 className="oka-title">
-            Imóveis que fazem sentido para sua <span>vida</span> e para seu <span>patrimônio</span>.
-          </h1>
-          <p className="oka-subtitle">
-            A OKA analisa cada imóvel com olhar consultivo, cruzando localização, padrão construtivo, liquidez e potencial de valorização. Você encontra opções selecionadas para morar bem, investir com clareza e tomar uma decisão sem perder tempo com ofertas sem aderência.
-          </p>
-          <div className="oka-hero-actions">
-            <a className="oka-btn oka-btn-primary" href="#imoveis">
-              Encontrar imóvel ideal
-              <ArrowRight size={18} />
-            </a>
-            <a className="oka-btn" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-              Falar com especialista
-              <MessageCircle size={18} />
-            </a>
-          </div>
-        </div>
-      </header>
-
-      <section className="oka-intelligence" aria-label="Filtro de imóveis">
-        <div className="oka-intro">
-          <h2>
-            Filtre seu <span>imóvel</span>
-          </h2>
-          <p>Escolha finalidade, tipo, cidade e valor. A vitrine abaixo atualiza com os imóveis disponíveis para a OKA apresentar.</p>
-        </div>
-        <div className="oka-filter-panel">
-          <div className="oka-purpose-row">
-            <div className="oka-filter">
-              <div className="oka-filter-label">
-                <span className="oka-step">1</span>
-                Finalidade
-              </div>
-              <div className="oka-segments">
-                <button className={`oka-segment${filterObjetivo === 'comprar' ? ' active' : ''}`} type="button" onClick={() => setFilterObjetivo('comprar')}>
-                  <Building2 size={19} />
-                  Comprar
-                </button>
-                <button className={`oka-segment${filterObjetivo === 'investir' ? ' active' : ''}`} type="button" onClick={() => setFilterObjetivo('investir')}>
-                  <BarChart3 size={19} />
-                  Investir
-                </button>
-              </div>
-            </div>
-            <span className="oka-purpose-copy">Curadoria com foco em liquidez, localização e aderência ao seu momento.</span>
-          </div>
-          <div className="oka-filter-row">
-            <div className="oka-filter">
-              <div className="oka-filter-label">
-                <span className="oka-step">2</span>
-                Tipo de imóvel
-              </div>
-              <div className="oka-city-list">
-                {uniqueTypes.slice(0, 4).map((type) => (
-                  <button key={type} className={`oka-city-btn${filterType === type ? ' active' : ''}`} type="button" onClick={() => setFilterType(filterType === type ? '' : String(type))}>
-                    {type}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="oka-filter">
-              <div className="oka-filter-label">
-                <span className="oka-step">3</span>
-                Cidade
-              </div>
-              <div className="oka-city-list">
-                {uniqueCities.slice(0, 4).map((city) => (
-                  <button key={city} className={`oka-city-btn${filterCity === city ? ' active' : ''}`} type="button" onClick={() => setFilterCity(filterCity === city ? '' : city)}>
-                    {city}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="oka-filter">
-              <div className="oka-filter-label">
-                <span className="oka-step">4</span>
-                Valor máximo
-              </div>
-              <div className="oka-city-list">
-                {[0, 500000, 1000000, 2000000, 5000000].map((val) => (
-                  <button key={val} className={`oka-city-btn${filterPriceMax === val ? ' active' : ''}`} type="button" onClick={() => setFilterPriceMax(filterPriceMax === val ? 0 : val)}>
-                    {val === 0 ? 'Todos' : formatCurrency(val)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="oka-search">
-              <a className="oka-btn oka-btn-primary" href="#imoveis">
-                Ver {filtered.length} imóveis
-                <Search size={17} />
+        <div className="oka-shell">
+          <div className="oka-hero-content">
+            <p className="oka-kicker">Alto padrão • Investimentos • Consultoria</p>
+            <h1 className="oka-title">
+              Imóveis que fazem sentido para sua <span>vida</span> e para seu <span>patrimônio</span>.
+            </h1>
+            <p className="oka-subtitle">
+              Curadoria especializada com foco em liquidez, localização e aderência ao seu momento.
+            </p>
+            <div className="oka-hero-actions">
+              <a className="oka-btn oka-btn-primary" href={whatsappUrl('Olá! Quero encontrar meu imóvel ideal com a OKA Imóveis.')} target="_blank" rel="noreferrer">
+                Fale com especialista
+                <UserRoundCheck size={17} />
+              </a>
+              <a className="oka-btn" href={whatsappUrl()} target="_blank" rel="noreferrer">
+                Fale pelo WhatsApp
+                <MessageCircle size={17} />
               </a>
             </div>
           </div>
         </div>
-      </section>
-      <main className="oka-shell">
-        <section id="imoveis" className="oka-section">
-          <div className="oka-section-head">
-            <div>
-              <h2 className="oka-heading">
-                {hasActiveFilters ? 'Resultado da busca' : 'Imóveis em destaque'}
-                <span className="oka-count">({filtered.length} imóveis)</span>
-              </h2>
+      </header>
+
+      <section className="oka-search-section" aria-label="Busca de imóveis">
+        <div className="oka-shell">
+          <h2 className="oka-heading">Encontre seu imóvel <span>ideal</span></h2>
+          <p className="oka-section-copy">Use os filtros abaixo para encontrar o imóvel ideal para você.</p>
+
+          <div className="oka-filter-card">
+            <div className="oka-filter-grid">
+              <div className="oka-filter-group">
+                <span className="oka-filter-label">Finalidade</span>
+                <div className="oka-segment-row">
+                  <button className={`oka-choice${purpose === 'comprar' ? ' active' : ''}`} type="button" onClick={() => setPurpose('comprar')}>
+                    <Home size={16} />
+                    Comprar
+                  </button>
+                  <button className={`oka-choice${purpose === 'investir' ? ' active' : ''}`} type="button" onClick={() => setPurpose('investir')}>
+                    <BarChart3 size={16} />
+                    Investir
+                  </button>
+                </div>
+              </div>
+
+              <div className="oka-filter-group">
+                <span className="oka-filter-label">Tipo de imóvel</span>
+                <div className="oka-type-row">
+                  {propertyTypes.map((item) => (
+                    <button key={item} className={`oka-choice${type === item ? ' active' : ''}`} type="button" onClick={() => setType(type === item ? '' : item)}>
+                      {item === 'Comercial' && <Building2 size={15} />}
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="oka-filter-group">
+                <span className="oka-filter-label">Cidade</span>
+                <div className="oka-select-wrap">
+                  <select value={city} onChange={(event) => setCity(event.target.value)} aria-label="Cidade">
+                    <option value="">Selecione a cidade</option>
+                    {cities.map((item) => (
+                      <option key={item} value={item}>{item}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} />
+                </div>
+              </div>
+
+              <div className="oka-filter-group">
+                <span className="oka-filter-label">Valor máximo</span>
+                <div className="oka-select-wrap">
+                  <select value={priceMax} onChange={(event) => setPriceMax(Number(event.target.value))} aria-label="Valor máximo">
+                    {priceOptions.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} />
+                </div>
+              </div>
+
+              <div className="oka-filter-action">
+                <a className="oka-btn oka-btn-primary" href="#imoveis">
+                  Ver imóveis
+                  <Search size={17} />
+                </a>
+              </div>
             </div>
-            <div className="oka-toolbar" aria-label="Opções da vitrine">
-              {hasActiveFilters && (
-                <button className="oka-tool" type="button" onClick={clearFilters} style={{ color: 'var(--oka-orange)', borderColor: '#fdd7c8' }}>
-                  <X size={15} />
-                  Limpar filtros
-                </button>
-              )}
-              <button className="oka-tool oka-view active" type="button" aria-label="Grade">
-                <LayoutGrid size={17} />
+
+            <div className="oka-clear-row">
+              <button className="oka-clear" type="button" onClick={clearFilters}>
+                Limpar filtros
+                <RotateCcw size={14} />
               </button>
             </div>
           </div>
+        </div>
+      </section>
 
-          {hasActiveFilters && (
-            <div className="oka-filter-active">
-              <AlertCircle size={14} />
-              Filtros ativos
-              {filterType && <span> · Tipo: <strong>{filterType}</strong></span>}
-              {filterCity && <span> · Cidade: <strong>{filterCity}</strong></span>}
-              {filterPriceMax > 0 && <span> · Até <strong>{formatCurrency(filterPriceMax)}</strong></span>}
-              <button type="button" onClick={clearFilters}>Limpar</button>
-            </div>
-          )}
-
-          <div className="oka-grid">
-            {displayProperties.length === 0 ? (
-              <div className="oka-empty">
-                <strong>Nenhum imóvel encontrado</strong>
-                Tente ajustar os filtros ou ampliar a busca
-              </div>
-            ) : (
-              displayProperties.map((property, index) => {
-                const suites = numberFromFeature(property.features, ['suites', 'bedrooms', 'dormitorios']);
-                const area = numberFromFeature(property.features, ['areaM2', 'area', 'areaConstruida', 'building_area']);
-                const vagas = numberFromFeature(property.features, ['vagas', 'garages', 'parking_spaces']);
-                const tag = index === 0 ? 'Oportunidade' : index === 1 ? 'Alto Potencial' : index === 2 ? 'Frente Mar' : 'Destaque';
-                const imgSrc = propertyImage(property, index);
-
-                return (
-                  <article className="oka-card" key={property.id}>
-                    <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Olá! Tenho interesse no imóvel: ${property.title} - ${formatCurrency(property.price)}`)}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
-                      <div className="oka-card-image-wrap">
-                        <img src={imgSrc} alt={property.title} loading="lazy" />
-                        <span className="oka-tag">{tag}</span>
-                        <Heart className="oka-heart" size={24} />
-                      </div>
-                      <div className="oka-card-body">
-                        <h3>{property.title}</h3>
-                        <div className="oka-location">
-                          <MapPin size={14} />
-                          {[property.city, property.state].filter(Boolean).join(' - ') || 'Localização sob consulta'}
-                        </div>
-                        <div className="oka-features">
-                          <span>
-                            <BedDouble size={15} />
-                            {suites || 3} suítes
-                          </span>
-                          <span>
-                            <Maximize2 size={14} />
-                            {area || 120}m²
-                          </span>
-                          <span>
-                            <Building2 size={15} />
-                            {vagas || 2} vagas
-                          </span>
-                        </div>
-                        <div className="oka-price-row">
-                          <strong className="oka-price">{formatCurrency(property.price)}</strong>
-                          <span className="oka-yield">
-                            Rentabilidade
-                            <strong>{(0.68 + index * 0.07).toFixed(2).replace('.', ',')}% a.m.</strong>
-                          </span>
-                        </div>
-                      </div>
-                    </a>
-                  </article>
-                );
-              })
-            )}
+      <main className="oka-shell">
+        <section id="imoveis" className="oka-featured">
+          <div className="oka-section-head">
+            <h2 className="oka-heading">
+              Imóveis em destaque <span className="oka-count">({filteredProperties.length} imóveis)</span>
+            </h2>
+            <a className="oka-outline" href={whatsappUrl('Olá! Quero ver todos os imóveis da OKA Imóveis.')} target="_blank" rel="noreferrer">
+              Ver todos
+              <LayoutGrid size={17} />
+            </a>
           </div>
 
-          {filtered.length > 4 && (
-            <button className="oka-more-btn" type="button" onClick={() => setShowAllProperties(!showAllProperties)}>
-              {showAllProperties ? 'Mostrar menos' : `Ver todos os ${filtered.length} imóveis`}
-              {showAllProperties ? <ChevronUp size={16} style={{ marginLeft: 6 }} /> : <ChevronDown size={16} style={{ marginLeft: 6 }} />}
-            </button>
-          )}
+          <div className="oka-property-grid">
+            {filteredProperties.length === 0 ? (
+              <div className="oka-empty">Nenhum imóvel encontrado com os filtros selecionados.</div>
+            ) : (
+              filteredProperties.map((property) => (
+                <article className="oka-card" key={property.id}>
+                  <a href={whatsappUrl(`Olá! Tenho interesse no imóvel: ${property.title} - ${formatCurrency(property.price)}`)} target="_blank" rel="noreferrer">
+                    <div className="oka-card-image">
+                      <img src={property.image} alt={property.title} style={{ objectPosition: property.imagePosition || 'center' }} loading="lazy" />
+                      <span className="oka-tag">{property.tag}</span>
+                      <Heart className="oka-heart" size={24} />
+                    </div>
+                    <div className="oka-card-body">
+                      <h3>{property.title}</h3>
+                      <div className="oka-location">
+                        <MapPin size={14} />
+                        {property.city} - {property.state}
+                      </div>
+                      <div className="oka-features">
+                        <span><BedDouble size={15} />{property.suites} suítes</span>
+                        <span><Maximize2 size={14} />{property.area}m²</span>
+                        <span><Car size={15} />{property.vagas} vagas</span>
+                      </div>
+                      <div className="oka-price-row">
+                        <strong className="oka-price">{formatCurrency(property.price)}</strong>
+                        <span className="oka-yield">
+                          Rentabilidade
+                          <strong>{property.yield}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+                </article>
+              ))
+            )}
+          </div>
         </section>
       </main>
 
       <section id="regioes" className="oka-regions">
         <div className="oka-shell oka-regions-layout">
           <div className="oka-region-copy">
-            <p className="oka-kicker">Regi&otilde;es selecionadas</p>
-            <h2 className="oka-heading">
-              Onde morar bem tamb&eacute;m precisa fazer sentido como <span>patrim&ocirc;nio</span>.
-            </h2>
+            <p className="oka-kicker">Regiões selecionadas</p>
+            <h2 className="oka-region-title">Onde morar bem também precisa fazer sentido como <span>patrimônio</span>.</h2>
             <p>
-              A vitrine da OKA fica mais objetiva quando a busca parte de pra&ccedil;as com demanda real,
-              padr&atilde;o construtivo consistente e potencial de revenda. Por isso, cada regi&atilde;o entra na conversa com crit&eacute;rio.
+              A vitrine da OKA fica mais objetiva quando a busca parte de praças com demanda real,
+              padrão construtivo consistente e potencial de revenda. Por isso, cada região entra na conversa com critério.
             </p>
-            <a className="oka-link" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-              Conversar sobre melhor regi&atilde;o
+            <a className="oka-link" href={whatsappUrl('Olá! Quero conversar sobre a melhor região para comprar ou investir.')} target="_blank" rel="noreferrer">
+              Conversar sobre melhor região
               <ArrowRight size={16} />
             </a>
           </div>
+
           <div className="oka-region-grid">
-            <a className="oka-region-card" href="#imoveis" style={{ backgroundImage: `url(${fallbackImages[0]})` }}>
+            <a className="oka-region-card" href="#imoveis" style={{ backgroundImage: `url(${SEA_VIEW_IMAGE})`, backgroundPosition: 'center 52%' }}>
               <span>
                 <strong>Litoral SC</strong>
-                Frente mar, liquidez e alto padr&atilde;o
+                Frente mar, liquidez e alto padrão
               </span>
             </a>
-            <a className="oka-region-card" href="#imoveis" style={{ backgroundImage: `url(${fallbackImages[2]})` }}>
+            <a className="oka-region-card" href="#imoveis" style={{ backgroundImage: `url(${GATED_IMAGE})`, backgroundPosition: 'center 62%' }}>
               <span>
-                <strong>Condom&iacute;nios</strong>
-                Privacidade, seguran&ccedil;a e &aacute;rea verde
+                <strong>Condomínios</strong>
+                Privacidade, segurança e área verde
               </span>
             </a>
-            <a className="oka-region-card" href="#imoveis" style={{ backgroundImage: `url(${fallbackImages[1]})` }}>
+            <a className="oka-region-card" href="#investimento" style={{ backgroundImage: `url(${HERO_IMAGE})`, backgroundPosition: 'center 45%' }}>
               <span>
                 <strong>Investimento</strong>
-                Im&oacute;veis com leitura de valoriza&ccedil;&atilde;o
+                Imóveis com leitura de valorização
               </span>
             </a>
           </div>
         </div>
       </section>
-      <section id="sobre" className="oka-bottom">
-        <div className="oka-shell oka-trust">
-          <div className="oka-trust-item">
-            <Sparkles size={32} />
+
+      <section id="sobre" className="oka-benefits">
+        <div className="oka-shell oka-benefit-grid">
+          <div className="oka-benefit">
+            <Sparkles size={34} />
             <span>
               <strong>Curadoria Especializada</strong>
               Análise criteriosa de cada imóvel.
             </span>
           </div>
-          <div className="oka-trust-item">
-            <ShieldCheck size={32} />
+          <div className="oka-benefit">
+            <ShieldCheck size={34} />
             <span>
               <strong>Consultoria Personalizada</strong>
               Entendemos seu objetivo e momento.
             </span>
           </div>
-          <div className="oka-trust-item">
-            <BarChart3 size={32} />
+          <div className="oka-benefit" id="investimento">
+            <BarChart3 size={34} />
             <span>
               <strong>Investimento Inteligente</strong>
               Decisões baseadas em dados reais.
             </span>
           </div>
-          <div className="oka-trust-item">
-            <UserRoundCheck size={32} />
+          <div className="oka-benefit">
+            <UserRoundCheck size={34} />
             <span>
               <strong>Atendimento Humanizado</strong>
               Acompanhamento completo em todas as etapas.
@@ -832,97 +1398,151 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         </div>
       </section>
 
-      <footer className="oka-footer" id="contato">
-        <div className="oka-shell">
-          <div className="oka-footer-grid">
-            <div className="oka-footer-brand">
-              <img className="oka-logo-footer" src="/clients/oka/logo.jpeg" alt="OKA Imóveis"
-                onError={(e) => { const t = e.currentTarget; t.style.display = 'none'; t.parentElement?.querySelector('.oka-logo-footer-fallback')?.classList.remove('hidden'); }}
-              />
-              <span className="oka-logo-footer-fallback hidden" style={{ height: 42, display: 'inline-flex', alignItems: 'center', fontFamily: 'Georgia, serif', fontSize: 20, fontWeight: 700, color: '#fff' }}>OKA<span style={{ color: 'var(--oka-orange)' }}>.</span></span>
-              <p>
-                A OKA Imóveis seleciona, analisa e apresenta apenas oportunidades reais de valorização.
-                Curadoria especializada em imóveis de alto padrão e investimentos inteligentes.
-              </p>
-              <div className="oka-footer-social">
-                <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" aria-label="WhatsApp">
-                  <MessageCircle size={18} />
-                </a>
-                <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram">
-                  <Instagram size={18} />
-                </a>
-                <a href="https://youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube">
-                  <Youtube size={18} />
-                </a>
-                <a href="https://linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn">
-                  <Linkedin size={18} />
-                </a>
-              </div>
+      <section className="oka-testimonials" aria-label="Depoimentos">
+        <div className="oka-testimonial-head">
+          <h2 className="oka-testimonial-title">O que nossos <span>clientes</span> dizem</h2>
+          <a className="oka-link" href={whatsappUrl('Olá! Quero conhecer mais depoimentos de clientes da OKA.')} target="_blank" rel="noreferrer">
+            Ver mais depoimentos
+            <ArrowRight size={15} />
+          </a>
+        </div>
+        <div className="oka-testimonial-grid">
+          <article className="oka-testimonial">
+            <Quote size={22} />
+            <p>A OKA entendeu exatamente o que procurávamos e apresentou opções que fizeram total sentido para nossa família e nosso futuro.</p>
+            <div className="oka-author">
+              <span className="oka-avatar">MJ</span>
+              <span>
+                <strong>Mariana e João</strong>
+                Balneário Camboriú - SC
+              </span>
             </div>
+          </article>
+          <article className="oka-testimonial">
+            <Quote size={22} />
+            <p>Investimos com segurança e transparência. O retorno superou nossas expectativas desde os primeiros meses.</p>
+            <div className="oka-author">
+              <span className="oka-avatar">CM</span>
+              <span>
+                <strong>Carlos Mendes</strong>
+                Investidor - Curitiba/PR
+              </span>
+            </div>
+          </article>
+          <article className="oka-testimonial">
+            <Quote size={22} />
+            <p>Atendimento impecável do início ao fim. Sentimos confiança em cada detalhe do processo.</p>
+            <div className="oka-author">
+              <span className="oka-avatar">FL</span>
+              <span>
+                <strong>Fernanda Lima</strong>
+                Florianópolis - SC
+              </span>
+            </div>
+          </article>
+        </div>
+        <div className="oka-dots" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </section>
 
-            <div>
-              <h4>Imóveis</h4>
-              <ul className="oka-footer-links">
-                <li><a href="#imoveis">Apartamentos <ChevronRight size={12} /></a></li>
-                <li><a href="#imoveis">Casas <ChevronRight size={12} /></a></li>
-                <li><a href="#imoveis">Coberturas <ChevronRight size={12} /></a></li>
-                <li><a href="#imoveis">Terrenos <ChevronRight size={12} /></a></li>
-                <li><a href="#imoveis">Comerciais <ChevronRight size={12} /></a></li>
-                <li><a href="#imoveis">Lançamentos <ChevronRight size={12} /></a></li>
-              </ul>
-            </div>
+      <section className="oka-cta">
+        <div className="oka-shell oka-cta-inner">
+          <div>
+            <h2>Pronto para encontrar seu próximo imóvel?</h2>
+            <p>Fale com um especialista e receba uma curadoria personalizada para o seu objetivo.</p>
+          </div>
+          <div className="oka-cta-actions">
+            <a className="oka-btn oka-btn-primary" href={whatsappUrl()} target="_blank" rel="noreferrer">
+              Falar com especialista
+              <UserRoundCheck size={17} />
+            </a>
+            <a className="oka-btn" href={whatsappUrl()} target="_blank" rel="noreferrer">
+              Fale pelo WhatsApp
+              <MessageCircle size={17} />
+            </a>
+          </div>
+        </div>
+      </section>
 
-            <div>
-              <h4>Institucional</h4>
-              <ul className="oka-footer-links">
-                <li><a href="#sobre">Sobre Nós <ChevronRight size={12} /></a></li>
-                <li><a href="#imoveis">Investimento <ChevronRight size={12} /></a></li>
-                <li><a href="#regioes">Regiões <ChevronRight size={12} /></a></li>
-                <li><a href="#contato">Contato <ChevronRight size={12} /></a></li>
-              </ul>
+      <footer id="contato" className="oka-footer">
+        <div className="oka-shell oka-footer-main">
+          <div className="oka-footer-brand">
+            <a className="oka-footer-logo" href="#inicio" aria-label="OKA Imóveis">
+              <span>OK</span><span>A</span>
+            </a>
+            <p>
+              A OKA Imóveis seleciona, analisa e apresenta apenas oportunidades reais de valorização.
+              Curadoria especializada em imóveis de alto padrão e investimentos inteligentes.
+            </p>
+            <div className="oka-social">
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram size={16} /></a>
+              <a href={whatsappUrl()} target="_blank" rel="noreferrer" aria-label="WhatsApp"><MessageCircle size={16} /></a>
+              <a href="https://youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube"><Youtube size={16} /></a>
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn"><Linkedin size={16} /></a>
             </div>
+          </div>
 
-            <div>
-              <h4>Contato</h4>
-              <ul className="oka-footer-contact">
-                <li>
-                  <Phone size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span>
-                    <a href={`tel:${WHATSAPP_NUMBER}`}>{PHONE_LABEL}</a>
-                    <br />
-                    <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">Fale pelo WhatsApp</a>
-                  </span>
-                </li>
-                <li>
-                  <Mail size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <a href="mailto:contato@okaimoveis.com.br">contato@okaimoveis.com.br</a>
-                </li>
-                <li>
-                  <MapPin size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span>Atendimento em todo o Brasil<br />Base: Santa Catarina</span>
-                </li>
-              </ul>
-            </div>
+          <div>
+            <h3>Imóveis</h3>
+            <ul>
+              <li><a href="#imoveis">Apartamentos</a></li>
+              <li><a href="#imoveis">Casas</a></li>
+              <li><a href="#imoveis">Coberturas</a></li>
+              <li><a href="#imoveis">Terrenos</a></li>
+              <li><a href="#imoveis">Comerciais</a></li>
+              <li><a href="#imoveis">Lançamentos</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>Institucional</h3>
+            <ul>
+              <li><a href="#sobre">Sobre Nós</a></li>
+              <li><a href="#investimento">Investimento</a></li>
+              <li><a href="#regioes">Regiões</a></li>
+              <li><a href="#contato">Contato</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>Contato</h3>
+            <ul className="oka-footer-contact">
+              <li>
+                <Phone size={15} />
+                <span>
+                  <a href={`tel:${WHATSAPP_NUMBER}`}>{PHONE_LABEL}</a><br />
+                  <a href={whatsappUrl()} target="_blank" rel="noreferrer">Fale pelo WhatsApp</a>
+                </span>
+              </li>
+              <li>
+                <Mail size={15} />
+                <a href="mailto:contato@okaimoveis.com.br">contato@okaimoveis.com.br</a>
+              </li>
+              <li>
+                <MapPin size={15} />
+                <span>Atendimento em todo o Brasil<br />Base: Santa Catarina</span>
+              </li>
+            </ul>
           </div>
         </div>
         <div className="oka-footer-bottom">
-          <div className="oka-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, width: '100%', flexWrap: 'wrap' }}>
-            <span>&copy; {new Date().getFullYear()} OKA Imóveis. Todos os direitos reservados.</span>
+          <div className="oka-shell">
+            <span>© 2026 OKA Imóveis. Todos os direitos reservados.</span>
             <span>
               <a href="#inicio">Política de Privacidade</a>
-              {' · '}
               <a href="#inicio">Termos de Uso</a>
             </span>
           </div>
         </div>
       </footer>
 
-      <div className="oka-float">
-        <div className="oka-bubble">Fale com um especialista agora!</div>
-        <a className="oka-whatsapp" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" aria-label="Falar no WhatsApp">
-          <MessageCircle size={31} />
-        </a>
-      </div>
+      <a className="oka-float" href={whatsappUrl()} target="_blank" rel="noreferrer" aria-label="Falar pelo WhatsApp">
+        <MessageCircle size={31} />
+      </a>
     </div>
   );
 };

@@ -201,6 +201,7 @@ const QuizCampaigns: React.FC = () => {
         aptitude: form.aptitude,
         niche: matchProfile,
         lead_source: sourceLabel,
+        qualification_threshold: form.threshold,
       });
       setGeneratedCampaign(campaign);
       setForm({

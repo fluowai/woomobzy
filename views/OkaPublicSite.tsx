@@ -47,8 +47,9 @@ type OkaProperty = {
   imagePosition?: string;
 };
 
-const WHATSAPP_NUMBER = '5547997755555';
-const PHONE_LABEL = '(47) 99775-5555';
+const WHATSAPP_NUMBER = '5544997223030';
+const PHONE_TEL = '+5544997223030';
+const PHONE_LABEL = '(44) 99722-3030';
 const HERO_IMAGE = '/templates/urban/urban_luxury_pool.png';
 const SEA_VIEW_IMAGE = '/templates/urban/urban_sea_view.png';
 const GATED_IMAGE = '/templates/urban/urban_gated_community.png';
@@ -144,6 +145,14 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
   const [type, setType] = useState('');
   const [city, setCity] = useState('');
   const [priceMax, setPriceMax] = useState(0);
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = 'OKA Imóveis';
+    return () => {
+      document.title = previousTitle;
+    };
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -1151,7 +1160,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
             <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre</a>
             <a href="#contato" onClick={() => setMenuOpen(false)}>Contato</a>
             <div className="oka-mobile-actions">
-              <a className="oka-btn" href={`tel:${WHATSAPP_NUMBER}`}>
+              <a className="oka-btn" href={`tel:${PHONE_TEL}`}>
                 <Phone size={16} />
                 {PHONE_LABEL}
               </a>
@@ -1162,7 +1171,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
           </div>
 
           <div className="oka-actions">
-            <a className="oka-btn" href={`tel:${WHATSAPP_NUMBER}`}>
+            <a className="oka-btn" href={`tel:${PHONE_TEL}`}>
               <Phone size={16} />
               {PHONE_LABEL}
             </a>
@@ -1514,7 +1523,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
               <li>
                 <Phone size={15} />
                 <span>
-                  <a href={`tel:${WHATSAPP_NUMBER}`}>{PHONE_LABEL}</a><br />
+                  <a href={`tel:${PHONE_TEL}`}>{PHONE_LABEL}</a><br />
                   <a href={whatsappUrl()} target="_blank" rel="noreferrer">Fale pelo WhatsApp</a>
                 </span>
               </li>
@@ -1524,7 +1533,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
               </li>
               <li>
                 <MapPin size={15} />
-                <span>Atendimento em todo o Brasil<br />Base: Santa Catarina</span>
+                <span>Rua Deputado Branco Mendes, 390<br />Centro - Colorado/PR</span>
               </li>
             </ul>
           </div>

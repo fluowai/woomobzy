@@ -298,6 +298,43 @@ function getPropertyImage(property: PublicProperty, index: number) {
   return images[0] || CARD_FALLBACK_IMAGE || normalizeImages(fallbackProperties[index % fallbackProperties.length].images)[0] || HERO_IMAGE;
 }
 
+function getPropertyLocation(property: PublicProperty) {
+  return [property.city, property.state].filter(Boolean).join(' / ') || 'Fazendas Brasil';
+}
+
+function getPropertyDetailTags(property: PublicProperty) {
+  const features = property.features || {};
+  const tags = [
+    features.topography ? `Topografia: ${features.topography}` : null,
+    features.soilTexture ? `Solo: ${features.soilTexture}` : null,
+    features.altitude ? `Altitude: ${features.altitude}m` : null,
+    features.infra?.casaSede ? 'Casa sede' : null,
+    features.infra?.curral ? 'Curral' : null,
+    features.infra?.brete ? 'Brete' : null,
+    features.infra?.balanca ? 'Balanca' : null,
+    features.infra?.energiaSolar ? 'Energia solar' : null,
+    features.infra?.pocoArtesiano ? 'Poco artesiano' : null,
+    features.infra?.irrigacao ? 'Irrigacao' : null,
+    features.infra?.pivotCentral ? 'Pivot central' : null,
+    features.water?.rio ? 'Rio' : null,
+    features.water?.corrego ? 'Corrego' : null,
+    features.water?.nascente ? 'Nascente' : null,
+    features.water?.represa ? 'Represa' : null,
+    features.legal?.car ? 'CAR' : null,
+    features.legal?.ccir ? 'CCIR' : null,
+    features.legal?.geo ? 'GEO' : null,
+    features.legal?.itr ? 'ITR' : null,
+    features.legal?.escritura ? 'Escritura' : null,
+  ].filter(Boolean) as string[];
+
+  return tags.length > 0 ? tags.slice(0, 12) : ['Detalhes complementares serao confirmados pelo corretor responsavel.'];
+}
+
+function getWhatsAppPropertyUrl(property: PublicProperty) {
+  const message = `Ola, quero continuar o atendimento pelo WhatsApp sobre o imovel ${property.title}.`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
 function normalizeSearchValue(value: unknown) {
   return String(value || '')
     .normalize('NFD')
@@ -374,7 +411,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   const [draftFilters, setDraftFilters] = useState<PropertyFilters>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<PropertyFilters>(EMPTY_FILTERS);
   const [selectedProperty, setSelectedProperty] = useState<PublicProperty | null>(null);
-  const [leadStep, setLeadStep] = useState<'contact' | 'quiz' | 'success'>('contact');
+  const [leadStep, setLeadStep] = useState<'contact' | 'quiz' | 'success' | 'details'>('contact');
   const [quizIndex, setQuizIndex] = useState(0);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState('');
@@ -996,6 +1033,22 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           font-weight: 950;
           text-transform: uppercase;
           cursor: pointer;
+          text-decoration: none;
+        }
+        .fb-lead-secondary {
+          min-height: 50px;
+          border: 1px solid #cfe0d7;
+          border-radius: 7px;
+          background: #fff;
+          color: var(--fb-green-dark);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 18px;
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+          cursor: pointer;
         }
         .fb-quiz-progress { color: #607168; font-size: 12px; font-weight: 900; margin-bottom: 9px; }
         .fb-quiz-question { margin: 0 0 16px; color: #082a18; font-size: 22px; line-height: 1.15; font-weight: 950; }
@@ -1033,6 +1086,59 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         }
         .fb-success-box h3 { margin: 12px 0 8px; font-size: 22px; font-weight: 950; }
         .fb-success-box p { margin: 0 0 18px; color: #315344; font-size: 14px; line-height: 1.5; }
+        .fb-property-details { display: grid; gap: 16px; color: #123622; }
+        .fb-detail-cover {
+          min-height: 210px;
+          border-radius: 10px;
+          background-position: center;
+          background-size: cover;
+          box-shadow: inset 0 -80px 80px rgba(0,0,0,.34);
+          display: flex;
+          align-items: flex-end;
+          padding: 14px;
+          overflow: hidden;
+        }
+        .fb-detail-cover span {
+          border-radius: 999px;
+          background: rgba(255,255,255,.92);
+          color: var(--fb-green-dark);
+          padding: 8px 12px;
+          font-size: 11px;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+        .fb-detail-title h3 { margin: 0 0 7px; color: var(--fb-blue); font-size: 22px; line-height: 1.12; font-weight: 950; }
+        .fb-detail-title p { margin: 0; display: flex; align-items: center; gap: 7px; color: #52635b; font-size: 13px; font-weight: 800; }
+        .fb-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .fb-detail-stat {
+          min-height: 92px;
+          border: 1px solid #dce9e1;
+          border-radius: 8px;
+          background: #f7fbf8;
+          padding: 13px;
+          display: grid;
+          gap: 6px;
+          align-content: start;
+        }
+        .fb-detail-stat svg { color: var(--fb-green); }
+        .fb-detail-stat span { color: #607168; font-size: 10px; font-weight: 950; text-transform: uppercase; }
+        .fb-detail-stat strong { color: #0d2c1d; font-size: 14px; line-height: 1.18; font-weight: 950; overflow-wrap: anywhere; }
+        .fb-detail-section {
+          border-top: 1px solid #dce9e1;
+          padding-top: 15px;
+        }
+        .fb-detail-section h4 { margin: 0 0 11px; color: var(--fb-green-dark); font-size: 13px; font-weight: 950; text-transform: uppercase; }
+        .fb-detail-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .fb-detail-tag {
+          border: 1px solid #cfe0d7;
+          border-radius: 999px;
+          background: #fff;
+          color: #1c3c2d;
+          padding: 8px 10px;
+          font-size: 12px;
+          font-weight: 850;
+        }
+        .fb-detail-actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
         .fb-why {
           margin: 0 auto 0;
           background: #fff;
@@ -1300,6 +1406,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           .fb-lead-property { grid-template-columns: 76px 1fr; }
           .fb-lead-thumb { height: 62px; }
           .fb-quiz-question { font-size: 19px; }
+          .fb-detail-cover { min-height: 180px; }
+          .fb-detail-grid,
+          .fb-detail-actions { grid-template-columns: 1fr; }
         }
         @media (max-width: 380px) {
           .fb-title { font-size: 36px; }
@@ -1689,7 +1798,13 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
             <div className="fb-lead-head">
               <div>
                 <small>Atendimento especializado</small>
-                <h2>{leadStep === 'success' ? 'Lead qualificado' : 'Receba informacoes deste imovel'}</h2>
+                <h2>
+                  {leadStep === 'success'
+                    ? 'Lead qualificado'
+                    : leadStep === 'details'
+                      ? 'Detalhes do imovel'
+                      : 'Receba informacoes deste imovel'}
+                </h2>
               </div>
               <button className="fb-lead-close" type="button" onClick={closeLeadFlow} aria-label="Fechar">
                 <X size={20} />
@@ -1705,7 +1820,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                 <div>
                   <strong>{selectedProperty.title}</strong>
                   <span>
-                    {[selectedProperty.city, selectedProperty.state].filter(Boolean).join(' / ') || 'Fazendas Brasil'} - {formatCurrency(selectedProperty.price)}
+                    {getPropertyLocation(selectedProperty)} - {formatCurrency(selectedProperty.price)}
                   </span>
                 </div>
               </div>
@@ -1790,11 +1905,64 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                   <ShieldCheck size={42} />
                   <h3>Cadastro enviado com sucesso</h3>
                   <p>
-                    Seu perfil foi qualificado e um card foi criado no Kanban da equipe Fazendas Brasil para atendimento consultivo.
+                    O corretor responsavel vai continuar o atendimento pelo WhatsApp.
                   </p>
-                  <button className="fb-lead-primary" type="button" onClick={closeLeadFlow}>
-                    Concluir
+                  <button className="fb-lead-primary" type="button" onClick={() => setLeadStep('details')}>
+                    Ver detalhes do imovel <ArrowRight size={17} />
                   </button>
+                </div>
+              )}
+
+              {leadStep === 'details' && (
+                <div className="fb-property-details">
+                  <div
+                    className="fb-detail-cover"
+                    style={{ backgroundImage: `url("${getPropertyImage(selectedProperty, 0)}")` }}
+                  >
+                    <span>{getAptitude(selectedProperty)}</span>
+                  </div>
+                  <div className="fb-detail-title">
+                    <h3>{selectedProperty.title}</h3>
+                    <p><MapPin size={14} />{getPropertyLocation(selectedProperty)}</p>
+                  </div>
+                  <div className="fb-detail-grid">
+                    <div className="fb-detail-stat">
+                      <CircleDollarSign size={18} />
+                      <span>Valor</span>
+                      <strong>{formatCurrency(selectedProperty.price)}</strong>
+                    </div>
+                    <div className="fb-detail-stat">
+                      <BadgeCheck size={18} />
+                      <span>Area</span>
+                      <strong>{formatArea(getPropertyArea(selectedProperty))}</strong>
+                    </div>
+                    <div className="fb-detail-stat">
+                      <Heart size={18} />
+                      <span>Aptidao</span>
+                      <strong>{getAptitude(selectedProperty)}</strong>
+                    </div>
+                    <div className="fb-detail-stat">
+                      <FileText size={18} />
+                      <span>Tipo</span>
+                      <strong>{selectedProperty.property_type || 'Rural'}</strong>
+                    </div>
+                  </div>
+                  <div className="fb-detail-section">
+                    <h4>Caracteristicas principais</h4>
+                    <div className="fb-detail-tags">
+                      {getPropertyDetailTags(selectedProperty).map((tag) => (
+                        <span className="fb-detail-tag" key={tag}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="fb-detail-actions">
+                    <a className="fb-lead-primary" href={getWhatsAppPropertyUrl(selectedProperty)} target="_blank" rel="noreferrer">
+                      <MessageCircle size={17} />Continuar no WhatsApp
+                    </a>
+                    <button className="fb-lead-secondary" type="button" onClick={closeLeadFlow}>
+                      Fechar
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -3,7 +3,13 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 
 const router = Router();
 
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 
 router.get('/', async (req, res) => {
   const tenantId = req.headers['x-tenant-id'];

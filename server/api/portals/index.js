@@ -12,7 +12,13 @@ import {
 } from '../../services/portalService.js';
 
 const router = Router();
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 
 router.get('/', verifyAuth, requireTenant, async (req, res) => {
   try {

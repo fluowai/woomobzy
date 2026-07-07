@@ -606,7 +606,7 @@ async function upsertWebhookMessage(instance, chat, message) {
         media_filename: message.mediaFilename,
         timestamp: message.timestamp,
       },
-      { onConflict: 'instance_id,message_id' }
+      { onConflict: 'instance_id,message_id', ignoreDuplicates: true }
     )
     .select('*')
     .single();

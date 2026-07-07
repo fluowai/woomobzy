@@ -23,6 +23,7 @@ interface UserProfile {
     name: string;
     slug: string;
     niche: 'rural' | 'traditional';
+    custom_domain?: string | null;
     plan_id?: string;
     trial_ends_at?: string;
     subscription_status?: 'trial' | 'active' | 'payment_required' | 'suspended';
@@ -132,10 +133,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
       logger.info('📡 [AuthContext] Querying profile for:', userId);
 
-      // Add a timeout promise to detect if query is hanging
+      // Keep the profile query lean. Joining organizations here can hang on slow
+      // PostgREST/RLS paths and block the whole app bootstrap.
       const queryPromise = supabase
         .from('profiles')
-        .select('*, full_name:name, organization:organizations(*)')
+        .select('id, email, name, role, avatar_url, organization_id, created_at')
         .eq('id', userId)
         .single();
 
@@ -172,7 +174,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           '✅ [AuthContext] Profile core data loaded:',
           profileData.role
         );
-        let finalProfile = { ...profileData };
+        let finalProfile = {
+          ...profileData,
+          full_name: profileData.full_name || profileData.name || '',
+        };
 
         const impOrgId = getImpersonatedOrgId();
 
@@ -185,14 +190,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           logger.info('🚀 [AuthContext] Checking impersonated org:', impOrgId);
           const { data: orgData, error: orgError } = await supabase
             .from('organizations')
-            .select('*')
+            .select('id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status')
             .eq('id', impOrgId)
             .single();
 
           if (!orgError && orgData) {
             logger.info('✅ [AuthContext] Impersonation active:', orgData.name);
             finalProfile = {
-              ...profileData,
+              ...finalProfile,
               organization_id: orgData.id,
               organization: orgData,
             };
@@ -209,6 +214,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           setIsImpersonating(false);
           if (impOrgId === 'null' || impOrgId === 'undefined') {
             clearImpersonationStorage();
+          }
+
+          if (finalProfile.organization_id) {
+            const { data: orgData, error: orgError } = await supabase
+              .from('organizations')
+              .select('id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status')
+              .eq('id', finalProfile.organization_id)
+              .maybeSingle();
+
+            if (!orgError && orgData) {
+              finalProfile.organization = orgData;
+            } else if (orgError) {
+              logger.warn('[AuthContext] Organization lookup failed:', orgError.message);
+            }
           }
         }
 
@@ -236,6 +255,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         await new Promise((resolve) => setTimeout(resolve, delay));
         fetchInProgress.current = null; // Reset to allow retry
         return loadProfile(userId);
+      }
+
+      if (profileRef.current?.id === userId) {
+        logger.warn('[AuthContext] Mantendo perfil atual apos timeout/falha temporaria.');
+        return;
       }
 
       syncActiveOrganization(null, userId);

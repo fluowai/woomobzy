@@ -6,7 +6,13 @@ import { matchLeadProperties } from '../../services/leadPropertyMatcher.js';
 
 const router = Router();
 
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 const KANBAN_CARD_SELECT = `
   id,
   organization_id,

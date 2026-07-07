@@ -10,6 +10,7 @@ import {
   Pause,
   Play,
   Plus,
+  Search,
   UploadCloud,
   Users,
   Wand2,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '../context/AuthContext';
 import {
   buildRentalQuestions,
   buildRuralQuestions,
@@ -67,11 +69,25 @@ function slugify(value: string) {
     .slice(0, 90);
 }
 
+function normalizeDomain(value?: string | null) {
+  return String(value || '')
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/+$/, '');
+}
+
+function buildPublicQuizBaseUrl(customDomain?: string | null) {
+  const domain = normalizeDomain(customDomain);
+  return `${domain ? `https://${domain}` : window.location.origin}/quiz`;
+}
+
 const QuizCampaigns: React.FC = () => {
   const { pathname } = useLocation();
+  const { profile } = useAuth();
   const isRural = pathname.startsWith('/rural');
   const initialForm = isRural ? ruralInitialForm : urbanInitialForm;
-  const publicQuizBaseUrl = `${window.location.origin}/quiz`;
+  const publicQuizBaseUrl = buildPublicQuizBaseUrl(profile?.organization?.custom_domain);
   const sourceLabel = isRural ? 'Quiz Rural' : 'Quiz Urbano';
   const matchProfile = isRural ? 'rural' : 'urbano';
 
@@ -82,6 +98,7 @@ const QuizCampaigns: React.FC = () => {
   const [form, setForm] = useState(initialForm);
   const [selected, setSelected] = useState<QuizCampaign | null>(null);
   const [submissions, setSubmissions] = useState<QuizSubmission[]>([]);
+  const [submissionSearch, setSubmissionSearch] = useState('');
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -112,6 +129,14 @@ const QuizCampaigns: React.FC = () => {
     () => campaigns.reduce((total, campaign) => total + Number(campaign.quiz_submissions?.[0]?.count || 0), 0),
     [campaigns]
   );
+
+  const filteredSubmissions = useMemo(() => {
+    const query = submissionSearch.trim().toLowerCase();
+    if (!query) return submissions;
+    return submissions.filter((item) =>
+      [item.name, item.phone, item.email || ''].some((value) => value.toLowerCase().includes(query))
+    );
+  }, [submissions, submissionSearch]);
 
   const manualCampaign = (): Omit<QuizCampaign, 'id' | 'created_at' | 'quiz_submissions'> => ({
     title: form.title,
@@ -168,8 +193,8 @@ const QuizCampaigns: React.FC = () => {
           }
         : manualCampaign();
 
-      await quizService.createCampaign(payload);
-      toast.success('Campanha criada e publicada.');
+      const created = await quizService.createCampaign(payload);
+      toast.success(`Campanha publicada em ${publicQuizBaseUrl}/${created.slug}`);
       setShowCreate(false);
       setForm(initialForm);
       setPdfFile(null);
@@ -232,6 +257,7 @@ const QuizCampaigns: React.FC = () => {
 
   const openResults = async (campaign: QuizCampaign) => {
     setSelected(campaign);
+    setSubmissionSearch('');
     setLoadingSubmissions(true);
     try {
       setSubmissions(await quizService.listSubmissions(campaign.id));
@@ -367,8 +393,43 @@ const QuizCampaigns: React.FC = () => {
                 </button>
               </div>
               {generatedCampaign && (
-                <div className="mt-4 border border-emerald-200 bg-white p-4 text-sm font-semibold text-emerald-800">
-                  Campanha gerada com {generatedCampaign.questions.length} perguntas. Confira os dados abaixo e publique quando estiver pronto.
+                <div className="mt-4 border border-emerald-200 bg-white p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-emerald-800">
+                        Campanha gerada com {generatedCampaign.questions.length} perguntas
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">{publicQuizBaseUrl}/{slugify(form.title) || generatedCampaign.slug}</p>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className={`inline-flex h-10 items-center justify-center gap-2 px-4 text-xs font-bold text-white disabled:opacity-60 ${isRural ? 'bg-emerald-700' : 'bg-orange-600'}`}
+                    >
+                      {saving ? <Loader2 className="animate-spin" size={15} /> : <Plus size={15} />} Salvar e publicar
+                    </button>
+                  </div>
+                  <div className="mt-4 max-h-72 space-y-3 overflow-y-auto pr-1">
+                    {generatedCampaign.questions.map((question, questionIndex) => (
+                      <div key={question.id} className="border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex items-start gap-3">
+                          <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${isRural ? 'bg-emerald-700' : 'bg-orange-600'}`}>
+                            {questionIndex + 1}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold leading-5 text-slate-900">{question.label}</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {question.options.map((option) => (
+                                <span key={option.value} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                  {option.label}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -424,6 +485,15 @@ const QuizCampaigns: React.FC = () => {
               <div className="p-14 text-center text-sm font-medium text-slate-500">Nenhuma resposta recebida ainda.</div>
             ) : (
               <div className="overflow-x-auto p-6">
+                <label className="mb-4 flex h-11 max-w-md items-center gap-2 border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-600">
+                  <Search size={16} className={isRural ? 'text-emerald-700' : 'text-orange-600'} />
+                  <input
+                    value={submissionSearch}
+                    onChange={(event) => setSubmissionSearch(event.target.value)}
+                    placeholder="Buscar por nome, telefone ou e-mail"
+                    className="h-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-slate-400"
+                  />
+                </label>
                 <table className="w-full min-w-[720px] text-left">
                   <thead>
                     <tr className="border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -435,7 +505,7 @@ const QuizCampaigns: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {submissions.map((item) => (
+                    {filteredSubmissions.map((item) => (
                       <tr key={item.id} className="border-b border-slate-100 text-sm">
                         <td className="py-4 font-bold text-slate-900">{item.name}</td>
                         <td className="py-4 text-slate-600">{item.phone}<br /><span className="text-xs text-slate-400">{item.email || 'Sem e-mail'}</span></td>
@@ -450,6 +520,11 @@ const QuizCampaigns: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+                {filteredSubmissions.length === 0 && (
+                  <div className="border border-dashed border-slate-200 py-10 text-center text-sm font-semibold text-slate-500">
+                    Nenhuma resposta encontrada para esta busca.
+                  </div>
+                )}
               </div>
             )}
           </div>

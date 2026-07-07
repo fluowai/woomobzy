@@ -8,7 +8,13 @@ import { verifyAdmin } from '../middleware/auth.js';
 import { requireTenant } from '../middleware/tenant.js';
 
 const router = express.Router();
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 
 const contactLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -47,8 +53,11 @@ const leadSchema = z.object({
   organic_channel: z.string().max(120).optional(),
   campaign: z.string().max(120).optional(),
   notes: z.string().max(2000).optional(),
-  budget: z.union([z.string().max(80), z.number()]).optional().nullable(),
-  aptitude_interest: z.string().max(120).optional(),
+  budget: z.union([z.string().max(120), z.number()]).optional().nullable(),
+  aptitude_interest: z
+    .union([z.string().max(120), z.array(z.string().max(120)).max(12)])
+    .optional()
+    .nullable(),
   property_id: z.string().uuid().optional().nullable(),
   status: z.enum(['Novo', 'Qualificação']).optional(),
   classification: z.string().max(120).optional(),
@@ -113,26 +122,36 @@ router.post('/leads', contactLimiter, async (req, res) => {
       return res.status(404).json({ error: 'Organizacao nao encontrada ou indisponivel.' });
     }
 
+    const leadPayload = {
+      organization_id: organization.id,
+      name,
+      email: email || null,
+      phone,
+      source: source || 'Public / Landing Page',
+      ad_reference,
+      organic_channel,
+      campaign,
+      notes,
+      property_id,
+      status: status || 'Novo',
+      classification,
+      lead_score,
+      match_profile,
+    };
+
+    const normalizedBudget = normalizeLeadBudget(budget);
+    if (normalizedBudget !== undefined) {
+      leadPayload.budget = normalizedBudget;
+    }
+
+    const normalizedAptitudeInterest = normalizeTextArray(aptitude_interest);
+    if (aptitude_interest !== undefined) {
+      leadPayload.aptitude_interest = normalizedAptitudeInterest;
+    }
+
     const { data: leadData, error: leadError } = await supabase
       .from('leads')
-      .insert([{
-        organization_id: organization.id,
-        name,
-        email,
-        phone,
-        source: source || 'Public / Landing Page',
-        ad_reference,
-        organic_channel,
-        campaign,
-        notes,
-        budget,
-        aptitude_interest,
-        property_id,
-        status: status || 'Novo',
-        classification,
-        lead_score,
-        match_profile,
-      }])
+      .insert([leadPayload])
       .select().single();
 
     if (leadError) throw leadError;
@@ -417,6 +436,65 @@ function normalizePublicOrgSignal(value) {
     .trim()
     .replace(/^@+/, '')
     .replace(/\s+/g, '-');
+}
+
+const PUBLIC_LEAD_MONEY_MULTIPLIERS = {
+  mil: 1_000,
+  milhao: 1_000_000,
+  milhoes: 1_000_000,
+  mi: 1_000_000,
+  m: 1_000_000,
+};
+
+function normalizeLeadBudget(value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  const text = normalizeTextForParsing(value);
+  if (!text) return null;
+
+  if (/\b(acima|above|maior|mais de)\b/.test(text)) {
+    return null;
+  }
+
+  const matches = [...text.matchAll(/(\d[\d.,]*)\s*(milhoes|milhao|mi|m|mil)?/g)];
+  if (!matches.length) return null;
+
+  const fallbackUnit = [...matches].reverse().find((match) => match[2])?.[2] || '';
+  const amounts = matches
+    .map((match) => parseMoneyAmount(match[1], match[2] || fallbackUnit))
+    .filter((amount) => Number.isFinite(amount) && amount > 0);
+
+  return amounts.length ? Math.max(...amounts) : null;
+}
+
+function parseMoneyAmount(rawNumber, rawUnit = '') {
+  const normalizedNumber = String(rawNumber || '')
+    .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+    .replace(',', '.');
+  const amount = Number(normalizedNumber);
+  if (!Number.isFinite(amount)) return null;
+
+  return amount * (PUBLIC_LEAD_MONEY_MULTIPLIERS[rawUnit] || 1);
+}
+
+function normalizeTextArray(value) {
+  if (value === undefined || value === null || value === '') return [];
+  const values = Array.isArray(value) ? value : [value];
+  const normalized = values.flatMap((item) => String(item || '').split(/[;,|]/));
+  return uniqueNonEmpty(normalized).slice(0, 12);
+}
+
+function normalizeTextForParsing(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 }
 
 function uniqueNonEmpty(values) {

@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './whatsapp.css';
 import { useWebSocket } from './hooks/useWebSocket';
 import {
@@ -44,6 +44,8 @@ const HISTORY_PERIOD_OPTIONS = [
   { value: 0, label: 'Tudo', chatLimit: 200, perChat: 100 },
 ];
 
+const INSTANCE_ACTIVITY_WINDOW_MS = 30 * 60 * 1000;
+
 const WhatsAppDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
   const deepLinkInstanceId = searchParams.get('instanceId');
@@ -74,9 +76,62 @@ const WhatsAppDashboard: React.FC = () => {
   });
   const [deletingChats, setDeletingChats] = useState(false);
   const [recovering, setRecovering] = useState(false);
+  const [instanceActivityAt, setInstanceActivityAt] = useState<Record<string, number>>({});
 
   // WebSocket
   const { isConnected, on } = useWebSocket(webSocketEnabled);
+
+  const noteInstanceActivity = useCallback((instanceId?: string, activityAt = Date.now()) => {
+    if (!instanceId) return;
+    setInstanceActivityAt((prev) => {
+      if ((prev[instanceId] || 0) >= activityAt) return prev;
+      return { ...prev, [instanceId]: activityAt };
+    });
+  }, []);
+
+  const clearInstanceActivity = useCallback((instanceId?: string) => {
+    if (!instanceId) return;
+    setInstanceActivityAt((prev) => {
+      if (!prev[instanceId]) return prev;
+      const next = { ...prev };
+      delete next[instanceId];
+      return next;
+    });
+  }, []);
+
+  const latestSelectedChatActivityAt = useMemo(
+    () => getLatestChatActivityAt(chats, selectedInstance?.id),
+    [chats, selectedInstance?.id]
+  );
+
+  const visualInstances = useMemo(
+    () =>
+      instances.map((inst) =>
+        withVisualInstanceStatus(
+          inst,
+          Boolean(instanceActivityAt[inst.id]) ||
+            (inst.id === selectedInstance?.id && hasRecentInstanceActivity(latestSelectedChatActivityAt))
+        )
+      ),
+    [instances, instanceActivityAt, latestSelectedChatActivityAt, selectedInstance?.id]
+  );
+
+  const selectedInstanceHasActivity = Boolean(
+    selectedInstance &&
+      (instanceActivityAt[selectedInstance.id] || hasRecentInstanceActivity(latestSelectedChatActivityAt))
+  );
+  const visualSelectedInstance = selectedInstance
+    ? withVisualInstanceStatus(selectedInstance, selectedInstanceHasActivity)
+    : null;
+
+  const instanceStatusOverrides = useMemo(() => {
+    const overrides: Record<string, Instance['status']> = {};
+    visualInstances.forEach((inst) => {
+      const raw = instances.find((item) => item.id === inst.id);
+      if (raw && raw.status !== inst.status) overrides[inst.id] = inst.status;
+    });
+    return overrides;
+  }, [instances, visualInstances]);
 
   // Load instances on mount
   useEffect(() => {
@@ -122,6 +177,7 @@ const WhatsAppDashboard: React.FC = () => {
   useEffect(() => {
     const unsubMessage = on('new_message', (data: any) => {
       const { message, chat } = data;
+      noteInstanceActivity(message?.instance_id || chat?.instance_id);
       if (!isSupportedChat(chat)) return;
       if (!selectedInstance || chat.instance_id !== selectedInstance.id || message.instance_id !== selectedInstance.id) return;
 
@@ -166,6 +222,11 @@ const WhatsAppDashboard: React.FC = () => {
     });
 
     const unsubStatus = on('instance_status', (data: any) => {
+      if (data.status === 'connected') {
+        noteInstanceActivity(data.instance_id);
+      } else {
+        clearInstanceActivity(data.instance_id);
+      }
       setInstances((prev) =>
         prev.map((inst) =>
           inst.id === data.instance_id
@@ -193,6 +254,7 @@ const WhatsAppDashboard: React.FC = () => {
 
     const unsubHistoryImported = on('history_imported', (data: any) => {
       if (!selectedInstance || data.instance_id !== selectedInstance.id) return;
+      noteInstanceActivity(data.instance_id);
       setHistoryImportStats((prev) => ({
         ...prev,
         importedMessages: prev.importedMessages + Number(data.messages || 0),
@@ -237,6 +299,7 @@ const WhatsAppDashboard: React.FC = () => {
     });
 
     const unsubReceipt = on('message_receipt', (data: WhatsAppMessageReceiptEvent) => {
+      noteInstanceActivity(data.instance_id);
       if (!selectedInstance || data.instance_id !== selectedInstance.id) return;
       const ids = new Set(data.message_ids || []);
       setMessages((prev) =>
@@ -255,7 +318,7 @@ const WhatsAppDashboard: React.FC = () => {
       unsubMediaFailed();
       unsubReceipt();
     };
-  }, [on, selectedChat, selectedInstance]);
+  }, [clearInstanceActivity, noteInstanceActivity, on, selectedChat, selectedInstance]);
 
   const handleRecoverOrg = async () => {
     setRecovering(true);
@@ -458,7 +521,7 @@ const WhatsAppDashboard: React.FC = () => {
     }
   };
 
-  const canImportHistory = Boolean(selectedInstance && selectedInstance.status === 'connected');
+  const canImportHistory = Boolean(visualSelectedInstance && visualSelectedInstance.status === 'connected');
   const canDeleteChats = Boolean(selectedInstance);
 
   const filteredChats = searchQuery
@@ -610,7 +673,7 @@ const WhatsAppDashboard: React.FC = () => {
               }}
               className="wa-instance-select"
             >
-              {instances.map((inst) => (
+              {visualInstances.map((inst) => (
                 <option key={inst.id} value={inst.id}>
                   {inst.name} {inst.status === 'connected' ? '🟢' : '🔴'}
                 </option>
@@ -705,7 +768,7 @@ const WhatsAppDashboard: React.FC = () => {
             </div>
             <h2>Mensagens</h2>
             <p>Selecione uma conversa para começar</p>
-            {selectedInstance?.status !== 'connected' && (
+            {visualSelectedInstance && visualSelectedInstance.status !== 'connected' && (
               <div className="wa-empty-warning">
                 <WifiOff size={16} />
                 <span>Instância desconectada. Vá em configurações para conectar.</span>
@@ -739,7 +802,8 @@ const WhatsAppDashboard: React.FC = () => {
       {/* Instance Manager Modal */}
       {showInstanceManager && (
         <InstanceManager
-          instances={instances}
+          instances={visualInstances}
+          statusOverrides={instanceStatusOverrides}
           onClose={() => {
             setShowInstanceManager(false);
             loadInstances();
@@ -767,6 +831,27 @@ function isTenantContextError(error: any): boolean {
     'INVALID_TENANT',
     'INVALID_REQUESTED_ORG',
   ].includes(error?.code);
+}
+
+function getLatestChatActivityAt(chats: Chat[], instanceId?: string): number {
+  return chats.reduce((latest, chat) => {
+    if (instanceId && chat.instance_id !== instanceId) return latest;
+    const activityAt = chat.last_message_at ? new Date(chat.last_message_at).getTime() : 0;
+    if (!Number.isFinite(activityAt)) return latest;
+    return Math.max(latest, activityAt);
+  }, 0);
+}
+
+function hasRecentInstanceActivity(activityAt = 0): boolean {
+  return activityAt > 0 && Date.now() - activityAt <= INSTANCE_ACTIVITY_WINDOW_MS;
+}
+
+function withVisualInstanceStatus(instance: Instance, hasActivity = false): Instance {
+  if (instance.status === 'connected') return instance;
+  if (hasActivity) {
+    return { ...instance, status: 'connected' };
+  }
+  return instance;
 }
 
 export default WhatsAppDashboard;

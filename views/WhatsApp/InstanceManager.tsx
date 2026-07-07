@@ -10,12 +10,14 @@ import {
 
 interface InstanceManagerProps {
   instances: Instance[];
+  statusOverrides?: Record<string, Instance['status']>;
   onClose: () => void;
   onInstanceCreated: () => void;
 }
 
 const InstanceManager: React.FC<InstanceManagerProps> = ({
   instances: initialInstances,
+  statusOverrides = {},
   onClose,
   onInstanceCreated,
 }) => {
@@ -45,6 +47,10 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
   const { checkLimit, currentPlan } = usePlans();
   const maxInstances = currentPlan?.limits?.whatsapp_instances || 0;
   const isLimitReached = instances.length >= maxInstances;
+  const displayInstances = instances.map((inst) => {
+    const visualStatus = statusOverrides[inst.id];
+    return visualStatus && visualStatus !== inst.status ? { ...inst, status: visualStatus } : inst;
+  });
 
   const handleCreate = async () => {
     if (isLimitReached) {
@@ -189,14 +195,14 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
                 <Loader2 size={20} className="animate-spin" />
                 <span>Carregando instâncias...</span>
               </div>
-            ) : instances.length === 0 ? (
+            ) : displayInstances.length === 0 ? (
               <div className="wa-inst-empty">
                 <Smartphone size={32} strokeWidth={1} />
                 <p>Nenhuma instância criada</p>
                 <span>Crie uma instância para conectar ao WhatsApp</span>
               </div>
             ) : (
-              instances.map((inst) => (
+              displayInstances.map((inst) => (
                 <div key={inst.id} className="wa-inst-card" id={`instance-${inst.id}`}>
                   <div className="wa-inst-info">
                     <div className="wa-inst-top">

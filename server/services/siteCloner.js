@@ -9,7 +9,13 @@ import {
     sanitizePropertyImageUrls,
 } from './importImageService.js';
 
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 import crypto from 'crypto';
 
 // Helper to get keys from DB

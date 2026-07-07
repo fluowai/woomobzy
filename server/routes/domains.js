@@ -13,7 +13,13 @@ import {
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 
 // ==========================================
 // POST /add — Link custom domain to Docker/Traefik & DB

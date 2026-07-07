@@ -367,11 +367,6 @@ function getPropertyDetailTags(property: PublicProperty) {
   return tags.length > 0 ? tags.slice(0, 12) : ['Detalhes complementares serao confirmados pelo corretor responsavel.'];
 }
 
-function getWhatsAppPropertyUrl(property: PublicProperty) {
-  const message = `Ola, quero continuar o atendimento pelo WhatsApp sobre o imovel ${property.title}.`;
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-}
-
 function normalizeSearchValue(value: unknown) {
   return String(value || '')
     .normalize('NFD')
@@ -432,6 +427,24 @@ function propertyMatchesFilters(property: PublicProperty, filters: PropertyFilte
   }
 
   return true;
+}
+
+function getLeadFirstName(name: string) {
+  return String(name || '').trim().split(/\s+/)[0] || 'tudo bem';
+}
+
+function buildInitialAttendanceMessage(leadName: string, property: PublicProperty) {
+  const location = getPropertyLocation(property);
+  const area = formatArea(getPropertyArea(property));
+  const price = formatCurrency(property.price);
+  const details = [
+    property.title,
+    location !== 'Fazendas Brasil' ? location : null,
+    area !== 'Sob consulta' ? `area ${area}` : null,
+    price !== 'Sob consulta' ? `valor ${price}` : null,
+  ].filter(Boolean).join(', ');
+
+  return `Oi ${getLeadFirstName(leadName)}, aqui e o ${BROKER_NAME} da Fazendas Brasil. Vi que voce se cadastrou para receber informacoes sobre a fazenda ${details}. Vou continuar seu atendimento por aqui.`;
 }
 
 function isUuid(value: string) {
@@ -673,8 +686,13 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     try {
       const score = qualifyScore(answers);
       const area = getPropertyArea(selectedProperty);
+      const initialAttendanceMessage = buildInitialAttendanceMessage(leadForm.name, selectedProperty);
       const notes = [
         `Lead qualificado pelo site Fazendas Brasil.`,
+        '',
+        'Mensagem inicial para atendimento:',
+        initialAttendanceMessage,
+        '',
         `Imovel de interesse: ${selectedProperty.title}`,
         selectedProperty.city || selectedProperty.state ? `Localizacao do imovel: ${[selectedProperty.city, selectedProperty.state].filter(Boolean).join(' / ')}` : null,
         area ? `Area do imovel: ${formatArea(area)}` : null,
@@ -1992,7 +2010,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                   <ShieldCheck size={42} />
                   <h3>Cadastro enviado com sucesso</h3>
                   <p>
-                    O corretor responsavel vai continuar o atendimento pelo WhatsApp.
+                    Atendimento iniciado. O corretor responsavel recebeu seus dados e vai continuar pelo WhatsApp.
                   </p>
                   <button className="fb-lead-primary" type="button" onClick={() => openPropertyDetails(selectedProperty, { captured: true })}>
                     Ver detalhes do imovel <ArrowRight size={17} />
@@ -2006,8 +2024,8 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                     <div className="fb-detail-success">
                       <ShieldCheck size={24} />
                       <div>
-                        <strong>Cadastro enviado com sucesso</strong>
-                        <span>O corretor responsavel vai continuar o atendimento pelo WhatsApp.</span>
+                        <strong>Atendimento iniciado</strong>
+                        <span>O corretor responsavel recebeu seus dados e o resumo deste imovel para continuar pelo WhatsApp.</span>
                       </div>
                     </div>
                   )}
@@ -2052,11 +2070,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                     </div>
                   </div>
                   <div className="fb-detail-actions">
-                    {leadCaptured ? (
-                      <a className="fb-lead-primary" href={getWhatsAppPropertyUrl(selectedProperty)} target="_blank" rel="noreferrer">
-                        <MessageCircle size={17} />Continuar no WhatsApp
-                      </a>
-                    ) : (
+                    {!leadCaptured && (
                       <button className="fb-lead-primary" type="button" onClick={() => openLeadFlow(selectedProperty)}>
                         Receber atendimento <ArrowRight size={17} />
                       </button>

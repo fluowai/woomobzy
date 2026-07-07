@@ -149,12 +149,30 @@ router.post('/leads', contactLimiter, async (req, res) => {
       leadPayload.aptitude_interest = normalizedAptitudeInterest;
     }
 
-    const { data: leadData, error: leadError } = await supabase
-      .from('leads')
-      .insert([leadPayload])
-      .select().single();
-
-    if (leadError) throw leadError;
+    const leadData = await insertPublicLeadWithFallback({
+      supabase,
+      payload: leadPayload,
+      fallbackPayload: buildPublicLeadFallbackPayload({
+        organizationId: organization.id,
+        name,
+        email,
+        phone,
+        source,
+        notes,
+        metadata: {
+          property_id,
+          ad_reference,
+          organic_channel,
+          campaign,
+          budget,
+          aptitude_interest,
+          status,
+          classification,
+          lead_score,
+          match_profile,
+        },
+      }),
+    });
 
     matchLeadProperties({
       supabase,
@@ -495,6 +513,83 @@ function normalizeTextForParsing(value) {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+}
+
+async function insertPublicLeadWithFallback({ supabase, payload, fallbackPayload }) {
+  const { data, error } = await supabase
+    .from('leads')
+    .insert([payload])
+    .select()
+    .single();
+
+  if (!error) return data;
+  if (!isRecoverablePublicLeadInsertError(error)) throw error;
+
+  console.warn('[Public API] Insert completo do lead falhou; tentando payload minimo:', {
+    code: error.code,
+    message: error.message,
+  });
+
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from('leads')
+    .insert([fallbackPayload])
+    .select()
+    .single();
+
+  if (fallbackError) throw fallbackError;
+  return fallbackData;
+}
+
+function buildPublicLeadFallbackPayload({
+  organizationId,
+  name,
+  email,
+  phone,
+  source,
+  notes,
+  metadata,
+}) {
+  return {
+    organization_id: organizationId,
+    name,
+    email: email || null,
+    phone,
+    status: 'Novo',
+    source: source || 'Public / Landing Page',
+    notes: appendPublicLeadMetadata(notes, metadata),
+  };
+}
+
+function appendPublicLeadMetadata(notes, metadata = {}) {
+  const lines = Object.entries(metadata)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => {
+      const serialized = Array.isArray(value) ? value.join(', ') : String(value);
+      return `${key}: ${serialized}`;
+    });
+
+  return [notes, lines.length ? `Dados da captura publica:\n${lines.join('\n')}` : '']
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function isRecoverablePublicLeadInsertError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    error?.code === '42703' ||
+    error?.code === '42804' ||
+    error?.code === '22P02' ||
+    error?.code === '23503' ||
+    error?.code === '23514' ||
+    error?.code === 'PGRST204' ||
+    message.includes('schema cache') ||
+    message.includes('could not find') ||
+    message.includes('column') ||
+    message.includes('violates foreign key') ||
+    message.includes('violates check constraint') ||
+    message.includes('invalid input syntax') ||
+    message.includes('invalid input value')
+  );
 }
 
 function uniqueNonEmpty(values) {

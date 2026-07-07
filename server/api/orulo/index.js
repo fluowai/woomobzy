@@ -24,7 +24,13 @@ import {
 } from '../../services/oruloService.js';
 
 const router = Router();
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 
 function defaultUpdatedAfter() {
   const date = new Date();

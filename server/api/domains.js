@@ -9,7 +9,13 @@ import {
 } from '../domainService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 
 export const addDomain = async (req, res) => {
   const { domain, organizationId } = req.body;

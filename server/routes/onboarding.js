@@ -4,7 +4,13 @@ import { rateLimit } from 'express-rate-limit';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
-const supabase = new Proxy({}, { get: (_, prop) => getSupabaseServer()[prop] });
+const supabase = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabaseServer();
+    const value = client[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});
 const PUBLIC_APP_URL = (process.env.PUBLIC_APP_URL || process.env.VITE_PUBLIC_APP_URL || 'https://imobfluow.com.br').replace(/\/$/, '');
 
 const authLimiter = rateLimit({

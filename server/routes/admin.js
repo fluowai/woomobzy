@@ -36,6 +36,7 @@ import {
 } from '../domainService.js';
 
 const router = express.Router();
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Proxy lazy: delega transparentemente para getSupabaseServer() na 1ª chamada
 // Isso permite usar supabase.from(), supabase.auth, etc. sem mudar o resto do código.
@@ -592,6 +593,11 @@ router.post('/organizations/bulk-delete', verifySuperAdmin, async (req, res) => 
     if (ids.length === 0) {
       return res.status(400).json({ error: 'Selecione ao menos uma imobiliaria para excluir' });
     }
+    if (ids.some((id) => !UUID_REGEX.test(id))) {
+      return res.status(400).json({ error: 'Lista de imobiliarias contem IDs invalidos.' });
+    }
+
+    await unlinkKnownOrganizationReferences(ids);
 
     const { data, error } = await supabase
       .from('organizations')
@@ -599,13 +605,67 @@ router.post('/organizations/bulk-delete', verifySuperAdmin, async (req, res) => 
       .in('id', ids)
       .select('id');
 
-    if (error) throw error;
+    if (error) {
+      if (isForeignKeyError(error)) {
+        const directDelete = await deleteOrganizationsWithDirectDb(ids);
+        if (!directDelete.error) {
+          return res.json({ success: true, deleted: directDelete.deleted, mode: 'direct-db' });
+        }
+        console.warn('[Admin] Bulk delete direct DB fallback failed:', directDelete.error.message);
+      }
+      throw error;
+    }
 
     res.json({ success: true, deleted: data || [] });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const status = isForeignKeyError(error) ? 409 : 500;
+    res.status(status).json({
+      error: isForeignKeyError(error)
+        ? 'Nao foi possivel excluir uma ou mais imobiliarias porque ainda existem registros vinculados.'
+        : error.message,
+      details: error.message,
+    });
   }
 });
+
+async function unlinkKnownOrganizationReferences(ids) {
+  await Promise.all([
+    updateOptionalReference('profiles', 'organization_id', ids),
+    updateOptionalReference('support_tickets', 'organization_id', ids),
+    updateOptionalReference('storage_objects', 'tenant_id', ids),
+    updateOptionalReference('call_sessions', 'tenant_id', ids),
+    updateOptionalReference('call_recordings', 'tenant_id', ids),
+    deleteOptionalReferenceRows('domains', 'organization_id', ids),
+  ]);
+}
+
+async function updateOptionalReference(table, column, ids) {
+  const { error } = await supabase
+    .from(table)
+    .update({ [column]: null })
+    .in(column, ids);
+  if (error && !isMissingOptionalRelation(error)) throw error;
+}
+
+async function deleteOptionalReferenceRows(table, column, ids) {
+  const { error } = await supabase
+    .from(table)
+    .delete()
+    .in(column, ids);
+  if (error && !isMissingOptionalRelation(error)) throw error;
+}
+
+function isMissingOptionalRelation(error) {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '');
+  return ['42P01', '42703', 'PGRST204', 'PGRST205'].includes(code) ||
+    /does not exist|could not find|schema cache/i.test(message);
+}
+
+function isForeignKeyError(error) {
+  return String(error?.code || '') === '23503' ||
+    /foreign key|violates.*constraint|still referenced/i.test(String(error?.message || ''));
+}
 
 function queryOrganizations(client) {
   return client
@@ -724,6 +784,86 @@ export async function queryOrganizationsWithDirectDb() {
   } finally {
     await pool.end().catch(() => {});
   }
+}
+
+async function deleteOrganizationsWithDirectDb(ids) {
+  const rawConnectionString = getDirectDatabaseUrl();
+  const connectionString = normalizeDirectDatabaseUrl(rawConnectionString);
+  if (!connectionString) {
+    return {
+      deleted: [],
+      error: new Error('Fallback Postgres indisponivel: configure DATABASE_URL ou SUPABASE_DB_URL.'),
+    };
+  }
+
+  const pool = new pg.Pool({
+    connectionString,
+    ssl: shouldUseSsl(rawConnectionString) ? { rejectUnauthorized: false } : false,
+    max: 1,
+    idleTimeoutMillis: 1000,
+    connectionTimeoutMillis: 5000,
+  });
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    const fkResult = await client.query(`
+      SELECT
+        ns.nspname AS schema_name,
+        rel.relname AS table_name,
+        attr.attname AS column_name,
+        attr.attnotnull AS not_null,
+        con.confdeltype AS delete_action
+      FROM pg_constraint con
+      JOIN pg_class rel ON rel.oid = con.conrelid
+      JOIN pg_namespace ns ON ns.oid = rel.relnamespace
+      JOIN LATERAL unnest(con.conkey) AS cols(attnum) ON true
+      JOIN pg_attribute attr ON attr.attrelid = con.conrelid AND attr.attnum = cols.attnum
+      WHERE con.contype = 'f'
+        AND con.confrelid = 'public.organizations'::regclass
+        AND array_length(con.conkey, 1) = 1
+    `);
+
+    for (const row of fkResult.rows) {
+      // PostgreSQL confdeltype: c=cascade, n=set null, d=set default, a=no action, r=restrict.
+      if (!['a', 'r'].includes(row.delete_action)) continue;
+
+      const tableName = `${quoteIdent(row.schema_name)}.${quoteIdent(row.table_name)}`;
+      const columnName = quoteIdent(row.column_name);
+
+      if (row.not_null) {
+        await client.query(
+          `DELETE FROM ${tableName} WHERE ${columnName} = ANY($1::uuid[])`,
+          [ids]
+        );
+      } else {
+        await client.query(
+          `UPDATE ${tableName} SET ${columnName} = NULL WHERE ${columnName} = ANY($1::uuid[])`,
+          [ids]
+        );
+      }
+    }
+
+    const deleted = await client.query(
+      'DELETE FROM public.organizations WHERE id = ANY($1::uuid[]) RETURNING id',
+      [ids]
+    );
+
+    await client.query('COMMIT');
+    return { deleted: deleted.rows, error: null };
+  } catch (error) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    return { deleted: [], error };
+  } finally {
+    if (client) client.release();
+    await pool.end().catch(() => {});
+  }
+}
+
+function quoteIdent(value) {
+  return `"${String(value).replace(/"/g, '""')}"`;
 }
 
 export function normalizeDirectDatabaseUrl(connectionString) {

@@ -79,6 +79,7 @@ const CARD_FALLBACK_IMAGE = 'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a
 const BROKER_NAME = 'Renato Piovesana';
 const PROPERTIES_PER_PAGE = 12;
 const PROPERTIES_PER_GRID = 4;
+const PROPERTY_QUERY_PARAM = 'imovel';
 
 const EMPTY_FILTERS: PropertyFilters = {
   state: '',
@@ -302,6 +303,42 @@ function getPropertyLocation(property: PublicProperty) {
   return [property.city, property.state].filter(Boolean).join(' / ') || 'Fazendas Brasil';
 }
 
+function getPropertyUrlToken(property: PublicProperty) {
+  return property.id || normalizeSearchValue(property.title);
+}
+
+function getPropertyTokenFromUrl() {
+  if (typeof window === 'undefined') return '';
+  return new URLSearchParams(window.location.search).get(PROPERTY_QUERY_PARAM) || '';
+}
+
+function findPropertyByUrlToken(properties: PublicProperty[], token: string) {
+  let decodedToken = token;
+  try {
+    decodedToken = decodeURIComponent(token);
+  } catch {
+    decodedToken = token;
+  }
+  const normalizedToken = normalizeSearchValue(decodedToken);
+  return properties.find((property) =>
+    property.id === decodedToken || normalizeSearchValue(property.title) === normalizedToken
+  );
+}
+
+function setPropertyUrl(property?: PublicProperty) {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+
+  if (property) {
+    url.searchParams.set(PROPERTY_QUERY_PARAM, getPropertyUrlToken(property));
+  } else {
+    url.searchParams.delete(PROPERTY_QUERY_PARAM);
+  }
+
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(window.history.state, '', nextUrl);
+}
+
 function getPropertyDetailTags(property: PublicProperty) {
   const features = property.features || {};
   const tags = [
@@ -415,6 +452,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   const [quizIndex, setQuizIndex] = useState(0);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState('');
+  const [leadCaptured, setLeadCaptured] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [leadForm, setLeadForm] = useState({
     name: '',
@@ -541,13 +579,26 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     setCurrentPage(1);
   };
 
+  const openPropertyDetails = (property: PublicProperty, options?: { captured?: boolean }) => {
+    setMobileMenuOpen(false);
+    setSelectedProperty(property);
+    setLeadStep('details');
+    setQuizIndex(0);
+    setLeadError('');
+    setLeadCaptured(Boolean(options?.captured));
+    setQuizAnswers({});
+    setPropertyUrl(property);
+  };
+
   const openLeadFlow = (property: PublicProperty) => {
     setMobileMenuOpen(false);
     setSelectedProperty(property);
     setLeadStep('contact');
     setQuizIndex(0);
     setLeadError('');
+    setLeadCaptured(false);
     setQuizAnswers({});
+    setPropertyUrl(property);
   };
 
   const closeLeadFlow = () => {
@@ -556,9 +607,29 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     setLeadStep('contact');
     setQuizIndex(0);
     setLeadError('');
+    setLeadCaptured(false);
     setLeadForm({ name: '', phone: '', email: '' });
     setQuizAnswers({});
+    setPropertyUrl();
   };
+
+  useEffect(() => {
+    if (selectedProperty) return;
+
+    const propertyToken = getPropertyTokenFromUrl();
+    if (!propertyToken) return;
+
+    const property = findPropertyByUrlToken(properties, propertyToken);
+    if (!property) return;
+
+    setMobileMenuOpen(false);
+    setSelectedProperty(property);
+    setLeadStep('details');
+    setQuizIndex(0);
+    setLeadError('');
+    setLeadCaptured(false);
+    setQuizAnswers({});
+  }, [properties, selectedProperty]);
 
   const qualifyScore = (answers: Record<string, string>) => {
     let score = 45;
@@ -637,7 +708,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         lead_score: score,
       } as any);
 
-      setLeadStep('success');
+      setLeadCaptured(true);
+      setLeadStep('details');
+      setPropertyUrl(selectedProperty);
     } catch (error: any) {
       setLeadError(error?.message || 'Erro ao cadastrar lead. Tente novamente.');
     } finally {
@@ -1087,6 +1160,20 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         .fb-success-box h3 { margin: 12px 0 8px; font-size: 22px; font-weight: 950; }
         .fb-success-box p { margin: 0 0 18px; color: #315344; font-size: 14px; line-height: 1.5; }
         .fb-property-details { display: grid; gap: 16px; color: #123622; }
+        .fb-detail-success {
+          border: 1px solid #c6ead4;
+          border-radius: 9px;
+          background: #effaf3;
+          color: #063f1d;
+          padding: 13px;
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 11px;
+          align-items: center;
+        }
+        .fb-detail-success svg { color: var(--fb-green); }
+        .fb-detail-success strong { display: block; font-size: 14px; font-weight: 950; margin-bottom: 3px; }
+        .fb-detail-success span { display: block; color: #315344; font-size: 13px; line-height: 1.35; font-weight: 750; }
         .fb-detail-cover {
           min-height: 210px;
           border-radius: 10px;
@@ -1637,7 +1724,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                             <span className="fb-spec"><Heart size={14} />{getAptitude(property)}</span>
                           </div>
                           <strong className="fb-price">{formatCurrency(property.price)}</strong>
-                          <button className="fb-card-link" type="button" onClick={() => openLeadFlow(property)}>
+                          <button className="fb-card-link" type="button" onClick={() => openPropertyDetails(property)}>
                             Ver detalhes <ArrowRight size={16} />
                           </button>
                         </div>
@@ -1907,7 +1994,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                   <p>
                     O corretor responsavel vai continuar o atendimento pelo WhatsApp.
                   </p>
-                  <button className="fb-lead-primary" type="button" onClick={() => setLeadStep('details')}>
+                  <button className="fb-lead-primary" type="button" onClick={() => openPropertyDetails(selectedProperty, { captured: true })}>
                     Ver detalhes do imovel <ArrowRight size={17} />
                   </button>
                 </div>
@@ -1915,6 +2002,15 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
               {leadStep === 'details' && (
                 <div className="fb-property-details">
+                  {leadCaptured && (
+                    <div className="fb-detail-success">
+                      <ShieldCheck size={24} />
+                      <div>
+                        <strong>Cadastro enviado com sucesso</strong>
+                        <span>O corretor responsavel vai continuar o atendimento pelo WhatsApp.</span>
+                      </div>
+                    </div>
+                  )}
                   <div
                     className="fb-detail-cover"
                     style={{ backgroundImage: `url("${getPropertyImage(selectedProperty, 0)}")` }}
@@ -1956,9 +2052,15 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                     </div>
                   </div>
                   <div className="fb-detail-actions">
-                    <a className="fb-lead-primary" href={getWhatsAppPropertyUrl(selectedProperty)} target="_blank" rel="noreferrer">
-                      <MessageCircle size={17} />Continuar no WhatsApp
-                    </a>
+                    {leadCaptured ? (
+                      <a className="fb-lead-primary" href={getWhatsAppPropertyUrl(selectedProperty)} target="_blank" rel="noreferrer">
+                        <MessageCircle size={17} />Continuar no WhatsApp
+                      </a>
+                    ) : (
+                      <button className="fb-lead-primary" type="button" onClick={() => openLeadFlow(selectedProperty)}>
+                        Receber atendimento <ArrowRight size={17} />
+                      </button>
+                    )}
                     <button className="fb-lead-secondary" type="button" onClick={closeLeadFlow}>
                       Fechar
                     </button>

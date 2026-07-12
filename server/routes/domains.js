@@ -58,7 +58,7 @@ router.post('/add', verifyAdmin, async (req, res) => {
 
     if (existingDomain && existingDomain.organization_id !== organizationId) {
       return res.status(409).json({
-        error: 'Este dominio ja esta cadastrado no Imobzy.',
+        error: 'Este dominio ja esta cadastrado na WooTech Imob.',
         code: 'DOMAIN_ALREADY_EXISTS',
       });
     }

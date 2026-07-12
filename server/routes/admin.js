@@ -103,7 +103,7 @@ async function assertCustomDomainAvailable(domain, organizationId = null) {
   if (existingDomain && existingDomain.organization_id !== organizationId) {
     throw new DomainProvisioningError(
       'DOMAIN_ALREADY_EXISTS',
-      'Este dominio ja esta cadastrado no Imobzy.',
+      'Este dominio ja esta cadastrado na WooTech Imob.',
       409,
       { organizationId: existingDomain.organization_id }
     );

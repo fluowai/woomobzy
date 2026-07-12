@@ -26,7 +26,7 @@ O valor total da transação é de **{{contract_value}}**.
 2. A posse definitiva será concedida após a assinatura da escritura pública.
 3. Este contrato é regido pelas leis civis brasileiras.
 
-Gerado via Imobzy 360 em {{current_date}}.
+Gerado via WooTech Imob em {{current_date}}.
     `,
   },
   {
@@ -51,7 +51,7 @@ O valor total do lote é de **{{contract_value}}**.
 
 **INFRAESTRUTURA:** A Loteadora se compromete a entregar a infraestrutura conforme o cronograma aprovado pela municipalidade.
 
-Documento assinado digitalmente via Imobzy 360 em {{current_date}}.
+Documento assinado digitalmente via WooTech Imob em {{current_date}}.
     `,
   },
   {
@@ -73,7 +73,7 @@ Documento assinado digitalmente via Imobzy 360 em {{current_date}}.
 
 **GARANTIA:** {{warranty_type}}.
 
-Gerado via Imobzy 360 em {{current_date}}.
+Gerado via WooTech Imob em {{current_date}}.
     `,
   },
   {
@@ -89,7 +89,7 @@ Gerado via Imobzy 360 em {{current_date}}.
 
 **PREÇO:** O valor total é de **{{contract_value}}**.
 
-Gerado via Imobzy 360 em {{current_date}}.
+Gerado via WooTech Imob em {{current_date}}.
     `,
   }
 ];

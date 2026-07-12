@@ -122,7 +122,7 @@ const Cobranca: React.FC = () => {
     const invoice = await paymentService.createInvoice({
       amount: billing.amount || 0,
       dueDate: billing.due_date || '',
-      description: billing.description || 'Cobrança Imobzy',
+      description: billing.description || 'Cobrança WooTech Imob',
       client: {
         name: billing.contract?.tenant_name || 'Cliente',
         email: 'cliente@email.com',

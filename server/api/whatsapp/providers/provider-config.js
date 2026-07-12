@@ -10,7 +10,7 @@ export function getWhatsAppProviderConfig() {
 
   return {
     provider,
-    publicName: 'IMOBZY WhatsApp API 2.0',
+    publicName: 'WooTech Imob WhatsApp API 2.0',
     targetUrl: provider === 'waha' ? wahaUrl : whatsmeowUrl,
     whatsmeowUrl,
     wahaUrl,

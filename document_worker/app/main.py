@@ -11,7 +11,7 @@ from pdf2image import convert_from_bytes
 from PIL import Image
 import google.generativeai as genai
 
-app = FastAPI(title="IMOBZY Document Intelligence Worker")
+app = FastAPI(title="WooTech Imob Document Intelligence Worker")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://api:3002/api/documents/webhook/worker-result")

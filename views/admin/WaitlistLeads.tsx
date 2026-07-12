@@ -137,7 +137,7 @@ const WaitlistLeads: React.FC = () => {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .in('source', ['Espera Imobzy', 'Espera ImobFluow', 'Espera WooTech Imob'])
+        .in('source', ['Espera WooTech Imob', 'Espera ImobFluow'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -170,7 +170,7 @@ const WaitlistLeads: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'lista_espera_imobzy.csv');
+    link.setAttribute('download', 'lista_espera_wootech_imob.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

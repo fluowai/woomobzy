@@ -203,7 +203,7 @@ const SmartImporter: React.FC = () => {
             <div className="max-w-lg space-y-4">
               <h2 className="text-4xl font-bold text-slate-900 leading-tight">
                 Vamos migrar para a{' '}
-                <span className="text-indigo-600 italic">IMOBZY</span>?
+                <span className="text-indigo-600 italic">WooTech Imob</span>?
               </h2>
               <p className="text-slate-500 text-lg">
                 Selecione a conta de destino e a URL do site original.
@@ -542,7 +542,7 @@ const SmartImporter: React.FC = () => {
           <div>
             <h4 className="font-bold text-slate-800">Sobre o Limite Legal</h4>
             <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-              O IMOBZY respeita as políticas de bots de terceiros. Se
+              A WooTech Imob respeita as políticas de bots de terceiros. Se
               encontrarmos bloqueios severos ou CAPTCHA, recomendamos o uso da
               importação por Feed XML padrão ZAP/VivaReal.
             </p>

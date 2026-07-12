@@ -328,7 +328,7 @@ const LegalContracts: React.FC = () => {
       .replace(/{{current_date}}/g, new Date().toLocaleDateString('pt-BR'))
       .replace(/{{duration}}/g, '12')
       .replace(/{{start_date}}/g, new Date().toLocaleDateString('pt-BR'))
-      .replace(/{{developer_name}}/g, settings.companyName || 'Imobzy 360')
+      .replace(/{{developer_name}}/g, settings.companyName || 'WooTech Imob')
       .replace(/{{developer_cnpj}}/g, '00.000.000/0001-00');
   };
 

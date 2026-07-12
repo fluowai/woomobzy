@@ -8,11 +8,9 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 
-const router = Router();
+import { isValidUUID } from '../../lib/shared-utils.js';
 
-function isValidUUID(id) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-}
+const router = Router();
 
 const leaseCreateSchema = z.object({
   property_id: z.string().uuid().optional(),

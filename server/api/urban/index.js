@@ -14,23 +14,13 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { sanitizeInput, isValidUUID, validateCPF_CNPJ } from '../../lib/shared-utils.js';
 
 const router = Router();
 
 const SNCR_API_BASE =
   'https://apigateway.conectagov.estaleiro.serpro.gov.br/api-sncr/v2';
 const ITR_API_BASE = 'https://servicos.receita.fazenda.gov.br';
-
-function sanitizeInput(input, maxLength = 50) {
-  if (typeof input !== 'string') return '';
-  return input.replace(/[^\w\-.]/g, '').slice(0, maxLength);
-}
-
-function isValidUUID(id) {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
-}
 
 const cpfCnpjSchema = z
   .string()
@@ -48,11 +38,6 @@ const cepSchema = z
   .string()
   .regex(/^\d{5}-?\d{3}$/, 'CEP inválido')
   .transform(sanitizeInput);
-
-function validateCPF_CNPJ(cpfCnpj) {
-  const cleaned = String(cpfCnpj).replace(/\D/g, '');
-  return cleaned.length >= 11 && cleaned.length <= 14;
-}
 
 /**
  * GET /api/urban/iptu/:inscricao

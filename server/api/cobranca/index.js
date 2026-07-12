@@ -12,14 +12,9 @@ import { Router } from 'express';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
+import { isValidUUID } from '../../lib/shared-utils.js';
 
 const router = Router();
-
-function isValidUUID(id) {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
-}
 
 /**
  * GET /api/cobranca

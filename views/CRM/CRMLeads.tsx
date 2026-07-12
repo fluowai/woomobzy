@@ -5,11 +5,15 @@ import { toast } from 'sonner';
 import { leadService } from '../../services/leads';
 import { Lead } from '../../types';
 import { logger } from '../../utils/logger';
+import { LeadDistributionModal } from './LeadDistributionModal';
+import { DripCampaignModal } from './DripCampaignModal';
 
 const CRMLeads: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
+  const [dripLeadId, setDripLeadId] = useState<string | null>(null);
 
   useEffect(() => {
     loadLeads();
@@ -71,6 +75,13 @@ const CRMLeads: React.FC = () => {
             <MessageSquare size={18} />
             Mensagens
           </Link>
+          <button
+            onClick={() => setIsDistributionModalOpen(true)}
+            className="workspace-primary-action bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
+          >
+            <Users size={18} />
+            Distribuir Leads
+          </button>
         </div>
       </div>
 
@@ -158,6 +169,12 @@ const CRMLeads: React.FC = () => {
                     <span className="inline-flex px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                       {lead.status || 'Novo'}
                     </span>
+                    <button
+                      onClick={() => setDripLeadId(lead.id)}
+                      className="ml-2 text-xs font-semibold text-slate-500 hover:text-primary transition-colors"
+                    >
+                      (Automação E-mail)
+                    </button>
                   </td>
                   <td className="px-5 py-4 text-slate-500">
                     {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '-'}
@@ -175,6 +192,21 @@ const CRMLeads: React.FC = () => {
           </table>
         </div>
       </section>
+
+      <LeadDistributionModal
+        isOpen={isDistributionModalOpen}
+        onClose={() => setIsDistributionModalOpen(false)}
+        selectedLeadIds={leads.filter(l => !l.status || l.status === 'Novo').map(l => l.id)}
+        onSuccess={() => loadLeads()}
+      />
+
+      {dripLeadId && (
+        <DripCampaignModal
+          isOpen={!!dripLeadId}
+          onClose={() => setDripLeadId(null)}
+          leadId={dripLeadId}
+        />
+      )}
     </div>
   );
 };

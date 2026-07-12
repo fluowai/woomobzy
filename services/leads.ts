@@ -154,6 +154,55 @@ export const leadService = {
     });
     return data;
   },
+
+  // Lead Distribution
+  async getDistributionStrategies() {
+    const data = await callApi('/api/crm/distribution-strategies');
+    return data.strategies || [];
+  },
+
+  async distribute(leadId: string, strategy: string = 'balanced') {
+    const data = await callApi('/api/crm/distribute', {
+      method: 'POST',
+      body: JSON.stringify({ lead_id: leadId, strategy }),
+    });
+    return data;
+  },
+
+  async bulkDistribute(leadIds: string[], strategy: string = 'balanced') {
+    const data = await callApi('/api/crm/bulk-distribute', {
+      method: 'POST',
+      body: JSON.stringify({ lead_ids: leadIds, strategy }),
+    });
+    return data;
+  },
+
+  // Email Drip Campaigns
+  async getDripTemplates() {
+    const data = await callApi('/api/crm/drip/templates');
+    return data.templates || [];
+  },
+
+  async startDripCampaign(leadId: string, templateKey: string, leadData?: any) {
+    const data = await callApi('/api/crm/drip/start', {
+      method: 'POST',
+      body: JSON.stringify({ lead_id: leadId, template_key: templateKey, lead_data: leadData }),
+    });
+    return data;
+  },
+
+  async cancelDripCampaigns(leadId: string) {
+    const data = await callApi('/api/crm/drip/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ lead_id: leadId }),
+    });
+    return data;
+  },
+
+  async getLeadDripCampaigns(leadId: string) {
+    const data = await callApi(`/api/crm/drip/lead/${leadId}`);
+    return data.campaigns || [];
+  },
 };
 
 const dedupeById = (items: any[]) => {

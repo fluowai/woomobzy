@@ -2265,7 +2265,7 @@
 }
 
 .wa-messages {
-  padding: 30px clamp(28px, 5vw, 76px);
+  padding: 24px clamp(14px, 1.6vw, 26px);
   gap: 10px;
   background:
     radial-gradient(circle at 22px 22px, rgba(22, 167, 101, 0.055) 1.2px, transparent 1.2px),
@@ -2290,19 +2290,38 @@
 }
 
 .wa-message-avatar {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   background: var(--wa-green-dark);
   font-weight: 900;
 }
 
 .wa-bubble-wrapper {
-  gap: 10px;
+  align-items: flex-end;
+  gap: 6px;
   margin-bottom: 8px;
 }
 
+.wa-bubble-wrapper.received {
+  justify-content: flex-start;
+  padding-right: 56px;
+}
+
+.wa-bubble-wrapper.sent {
+  justify-content: flex-end;
+  padding-left: 56px;
+}
+
+.wa-bubble-wrapper.received .wa-bubble {
+  margin-right: auto;
+}
+
+.wa-bubble-wrapper.sent .wa-bubble {
+  margin-left: auto;
+}
+
 .wa-bubble {
-  max-width: min(72%, 720px);
+  max-width: min(68%, 680px);
   padding: 12px 14px 8px;
   border: 1px solid var(--wa-line-soft);
   border-radius: 14px;
@@ -2318,6 +2337,17 @@
   background: #dff6e8;
   border-color: #c3ecd3;
   border-top-right-radius: 5px;
+}
+
+.wa-bubble-sender {
+  max-width: 100%;
+  margin-bottom: 4px;
+  color: var(--wa-green-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wa-bubble-text,
@@ -2620,6 +2650,12 @@
 
   .wa-messages {
     padding: 14px 10px;
+  }
+
+  .wa-bubble-wrapper.received,
+  .wa-bubble-wrapper.sent {
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .wa-bubble {

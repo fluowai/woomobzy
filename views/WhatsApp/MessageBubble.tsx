@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, CheckCheck, Clock, Contact, FileText, FileVideo, Image, MapPin } from 'lucide-react';
 import AudioMessagePlayer from './AudioMessagePlayer';
-import { formatPhoneDisplay, mediaApi, type Message } from './hooks/api';
+import { formatPhoneDisplay, isPlaceholderName, mediaApi, type Message } from './hooks/api';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session - never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
@@ -12,10 +12,11 @@ function isWhatsAppCdnUrl(url?: string): boolean {
 interface MessageBubbleProps {
   message: Message;
   isGroup: boolean;
+  chatDisplayName?: string;
   onOpenDetails?: () => void;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenDetails }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName, onOpenDetails }) => {
   const [avatarError, setAvatarError] = useState(false);
   const [mediaError, setMediaError] = useState(false);
   const [mediaSourceUrl, setMediaSourceUrl] = useState(message.media_url || '');
@@ -66,12 +67,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isGroup, onOpenD
   if (!isRenderable) return null;
 
   const senderPhone = formatPhoneDisplay(message.sender_phone);
-  const senderName =
-    message.sender_name && message.sender_name !== '~'
-      ? message.sender_name
-      : senderPhone || 'Contato sem telefone';
+  const senderName = resolveSenderName(message.sender_name, chatDisplayName, senderPhone);
   const senderInitial = (senderName.match(/[A-Za-z0-9]/)?.[0] || '?').toUpperCase();
-  const showSenderName = !isSent && isGroup;
+  const showSenderName = !isSent;
   const deliveryStatus = message.delivery_status || 'sent';
 
   const formatTime = (timestamp: string) => {
@@ -328,3 +326,13 @@ function mediaPlaceholderLabel(
 }
 
 export default MessageBubble;
+
+function resolveSenderName(rawName?: string, fallbackName?: string, fallbackPhone?: string): string {
+  const cleanName = (rawName || '').trim();
+  if (cleanName && !isPlaceholderName(cleanName)) return cleanName;
+
+  const cleanFallback = (fallbackName || '').trim();
+  if (cleanFallback && !isPlaceholderName(cleanFallback)) return cleanFallback;
+
+  return fallbackPhone || 'Contato sem telefone';
+}

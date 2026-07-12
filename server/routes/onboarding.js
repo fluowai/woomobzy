@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { rateLimit } from 'express-rate-limit';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import { PUBLIC_APP_URL } from '../lib/platform-config.js';
 
 const router = express.Router();
 const supabase = new Proxy({}, {
@@ -11,8 +12,6 @@ const supabase = new Proxy({}, {
     return typeof value === 'function' ? value.bind(client) : value;
   },
 });
-const PUBLIC_APP_URL = (process.env.PUBLIC_APP_URL || process.env.VITE_PUBLIC_APP_URL || 'https://imobfluow.com.br').replace(/\/$/, '');
-
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,

@@ -9,8 +9,8 @@ services:
       VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
       VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?Configure VITE_SUPABASE_URL no Portainer}"
       VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?Configure VITE_SUPABASE_ANON_KEY no Portainer}"
-      VITE_PANEL_URL: "https://imobfluow.consultio.com.br"
-      VITE_PUBLIC_APP_URL: "https://imobfluow.consultio.com.br"
+      VITE_PANEL_URL: "https://imob.wootech.com.br"
+      VITE_PUBLIC_APP_URL: "https://imob.wootech.com.br"
       VITE_PLATFORM_IP: "207.58.153.219"
     networks:
       - woopanel1
@@ -18,17 +18,17 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=woopanel1"
-      - "traefik.http.routers.imobfluow_frontend.rule=Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)"
-      - "traefik.http.routers.imobfluow_frontend.entrypoints=websecure"
-      - "traefik.http.routers.imobfluow_frontend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.imobfluow_frontend.priority=1"
-      - "traefik.http.routers.imobfluow_frontend.service=imobfluow_frontend"
+      - "traefik.http.routers.wootech_imob_frontend.rule=Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)"
+      - "traefik.http.routers.wootech_imob_frontend.entrypoints=websecure"
+      - "traefik.http.routers.wootech_imob_frontend.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.wootech_imob_frontend.priority=1"
+      - "traefik.http.routers.wootech_imob_frontend.service=wootech_imob_frontend"
       - "traefik.http.routers.fazendasbrasil_frontend.rule=Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)"
       - "traefik.http.routers.fazendasbrasil_frontend.entrypoints=websecure"
       - "traefik.http.routers.fazendasbrasil_frontend.tls.certresolver=letsencryptresolver"
       - "traefik.http.routers.fazendasbrasil_frontend.priority=2"
-      - "traefik.http.routers.fazendasbrasil_frontend.service=imobfluow_frontend"
-      - "traefik.http.services.imobfluow_frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.fazendasbrasil_frontend.service=wootech_imob_frontend"
+      - "traefik.http.services.wootech_imob_frontend.loadbalancer.server.port=80"
 
   api:
     image: ghcr.io/fluowai/woomobzy-api:latest
@@ -40,8 +40,8 @@ services:
       WAHA_API_URL: "http://waha:3000"
       WAHA_API_KEY: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
       WHATSAPP_WEBHOOK_URL: "http://api:3002"
-      ALLOWED_ORIGINS: "https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
-      CORS_ORIGINS: "https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
+      ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
+      CORS_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
       VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?Configure VITE_SUPABASE_URL no Portainer}"
       VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?Configure VITE_SUPABASE_ANON_KEY no Portainer}"
       SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?Configure SUPABASE_SERVICE_ROLE_KEY no Portainer}"
@@ -69,8 +69,8 @@ services:
       MINIO_REGION: "us-east-1"
       MINIO_WHATSAPP_BUCKET: "imobzywhatsapp"
       TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
-      TRAEFIK_FRONTEND_SERVICE: "imobfluow_frontend@docker"
-      TRAEFIK_API_SERVICE: "imobfluow_api@docker"
+      TRAEFIK_FRONTEND_SERVICE: "wootech_imob_frontend@docker"
+      TRAEFIK_API_SERVICE: "wootech_imob_api@docker"
     volumes:
       - imobzy_traefik_dynamic:/app/traefik/dynamic
     networks:
@@ -79,27 +79,27 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=woopanel1"
-      - "traefik.http.routers.imobfluow_whatsapp_ws.rule=(Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api/whatsapp/ws`)"
-      - "traefik.http.routers.imobfluow_whatsapp_ws.entrypoints=websecure"
-      - "traefik.http.routers.imobfluow_whatsapp_ws.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.imobfluow_whatsapp_ws.priority=20"
-      - "traefik.http.routers.imobfluow_whatsapp_ws.service=imobfluow_api"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.rule=(Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api/whatsapp/ws`)"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.entrypoints=websecure"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.priority=20"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.service=wootech_imob_api"
       - "traefik.http.routers.fazendasbrasil_whatsapp_ws.rule=(Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)) && PathPrefix(`/api/whatsapp/ws`)"
       - "traefik.http.routers.fazendasbrasil_whatsapp_ws.entrypoints=websecure"
       - "traefik.http.routers.fazendasbrasil_whatsapp_ws.tls.certresolver=letsencryptresolver"
       - "traefik.http.routers.fazendasbrasil_whatsapp_ws.priority=20"
-      - "traefik.http.routers.fazendasbrasil_whatsapp_ws.service=imobfluow_api"
-      - "traefik.http.routers.imobfluow_api.rule=(Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api`)"
-      - "traefik.http.routers.imobfluow_api.entrypoints=websecure"
-      - "traefik.http.routers.imobfluow_api.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.imobfluow_api.priority=10"
-      - "traefik.http.routers.imobfluow_api.service=imobfluow_api"
+      - "traefik.http.routers.fazendasbrasil_whatsapp_ws.service=wootech_imob_api"
+      - "traefik.http.routers.wootech_imob_api.rule=(Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api`)"
+      - "traefik.http.routers.wootech_imob_api.entrypoints=websecure"
+      - "traefik.http.routers.wootech_imob_api.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.wootech_imob_api.priority=10"
+      - "traefik.http.routers.wootech_imob_api.service=wootech_imob_api"
       - "traefik.http.routers.fazendasbrasil_api.rule=(Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)) && PathPrefix(`/api`)"
       - "traefik.http.routers.fazendasbrasil_api.entrypoints=websecure"
       - "traefik.http.routers.fazendasbrasil_api.tls.certresolver=letsencryptresolver"
       - "traefik.http.routers.fazendasbrasil_api.priority=10"
-      - "traefik.http.routers.fazendasbrasil_api.service=imobfluow_api"
-      - "traefik.http.services.imobfluow_api.loadbalancer.server.port=3002"
+      - "traefik.http.routers.fazendasbrasil_api.service=wootech_imob_api"
+      - "traefik.http.services.wootech_imob_api.loadbalancer.server.port=3002"
 
   waha:
     image: devlikeapro/waha:latest
@@ -118,8 +118,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3100
-      ALLOWED_ORIGINS: "https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
-      CORS_ORIGINS: "https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
+      ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
+      CORS_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
       SUPABASE_URL: "${VITE_SUPABASE_URL:?Configure VITE_SUPABASE_URL no Portainer}"
       SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?Configure SUPABASE_SERVICE_ROLE_KEY no Portainer}"
       SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET:?Configure SUPABASE_JWT_SECRET no Portainer}"

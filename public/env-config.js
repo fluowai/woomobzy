@@ -5,6 +5,6 @@ window.__IMOBZY_CONFIG__ = {
   VITE_MINIO_PUBLIC_URL: "https://nb.consultio.com.br",
   VITE_SUPABASE_URL: "https://lkzcsaydpcnypdevoikr.supabase.co",
   VITE_SUPABASE_ANON_KEY: "sb_publishable_RNOLdLi5q8CdBlXE3-XK1w_dPSIGPSe",
-  VITE_PANEL_URL: "https://app.imobfluow.com.br",
-  VITE_PUBLIC_APP_URL: "https://imobfluow.com.br"
+  VITE_PANEL_URL: "https://imob.wootech.com.br",
+  VITE_PUBLIC_APP_URL: "https://imob.wootech.com.br"
 };

@@ -34,7 +34,7 @@ providers:
 certificatesResolvers:
   letsencryptresolver:
     acme:
-      email: admin@imobfluow.com.br
+      email: admin@wootech.com.br
       storage: /traefik/acme.json
       httpChallenge:
         entryPoint: web

@@ -1,5 +1,8 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { sendContactFormEmail } from './emailService.js';
+import { PLATFORM_COMMERCIAL_NAME } from '../lib/platform-config.js';
+
+const NOTIFICATION_FROM_EMAIL = process.env.NOTIFICATION_FROM_EMAIL || 'noreply@wootech.com.br';
 
 const SIGNATURE_PROVIDERS = {
   proprio: { name: 'Assinatura Própria', apiUrl: null },
@@ -137,13 +140,13 @@ ${signatureLink}
 Este link é pessoal e intransferível.
 
 Atenciosamente,
-ImobFluow - Gestão de Locação
+${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     `.trim();
 
     await sendContactFormEmail(
       {
-        name: 'ImobFluow - Assinatura Digital',
-        email: 'noreply@imobfluow.com.br',
+        name: `${PLATFORM_COMMERCIAL_NAME} - Assinatura Digital`,
+        email: NOTIFICATION_FROM_EMAIL,
         phone: '',
         message,
       },

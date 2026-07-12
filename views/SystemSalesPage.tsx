@@ -211,7 +211,7 @@ const SystemSalesPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    sessionStorage.setItem('imobfluow_demo_lead', JSON.stringify(formData));
+    sessionStorage.setItem('wootech_imob_demo_lead', JSON.stringify(formData));
     toast.success('Vamos qualificar sua operacao antes de liberar a agenda.');
     setTimeout(() => {
       const params = new URLSearchParams({

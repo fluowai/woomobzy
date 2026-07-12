@@ -1,7 +1,7 @@
 http:
   routers:
     imobzy_platform_api:
-      rule: "(Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`) || Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`) || Host(`fazendasbrasil.com.br`) || Host(`www.fazendasbrasil.com.br`)) && PathPrefix(`/api`)"
+      rule: "(Host(`imob.wootech.com.br`) || Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`) || Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`) || Host(`fazendasbrasil.com.br`) || Host(`www.fazendasbrasil.com.br`)) && PathPrefix(`/api`)"
       entryPoints:
         - websecure
       priority: 1000
@@ -10,7 +10,7 @@ http:
       service: imobzy_api@file
 
     imobzy_platform_frontend:
-      rule: "Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`) || Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`) || Host(`fazendasbrasil.com.br`) || Host(`www.fazendasbrasil.com.br`)"
+      rule: "Host(`imob.wootech.com.br`) || Host(`app.imobfluow.com.br`) || Host(`imobfluow.com.br`) || Host(`www.imobfluow.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`) || Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`) || Host(`fazendasbrasil.com.br`) || Host(`www.fazendasbrasil.com.br`)"
       entryPoints:
         - websecure
       priority: 100

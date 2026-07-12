@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { COMMERCIAL_PRODUCT_NAME, PLATFORM_BRAND_NAME } from '../utils/branding';
 import { 
   Lock, 
   Mail, 
@@ -130,10 +131,10 @@ const Login: React.FC = () => {
           <div className="max-w-xl">
             <div className="flex items-center gap-3 mb-12">
               <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                <img src="/logo-imobfluow.svg" alt="ImobFluow" className="w-8 h-8 object-contain" />
+                <img src="/logo-wootech-imob.svg" alt={COMMERCIAL_PRODUCT_NAME} className="w-8 h-8 object-contain" />
               </div>
               <span className="text-3xl font-bold tracking-tight text-slate-900">
-                Imob<span className="text-emerald-600">Fluow</span>
+                WooTech <span className="text-emerald-600">Imob</span>
               </span>
             </div>
 
@@ -176,9 +177,9 @@ const Login: React.FC = () => {
             {/* Mobile Logo Only */}
             <div className="lg:hidden flex flex-col items-center mb-10">
               <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-200 mb-4">
-                <img src="/logo-imobfluow.svg" alt="ImobFluow" className="w-10 h-10 object-contain" />
+                <img src="/logo-wootech-imob.svg" alt={COMMERCIAL_PRODUCT_NAME} className="w-10 h-10 object-contain" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900">ImobFluow</h2>
+              <h2 className="text-2xl font-bold text-slate-900">{COMMERCIAL_PRODUCT_NAME}</h2>
             </div>
 
             <div className="bg-white/70 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-emerald-900/5 border border-white relative overflow-hidden">
@@ -196,7 +197,7 @@ const Login: React.FC = () => {
 
               <div className="mb-10 text-center lg:text-left">
                 <h2 className="text-3xl font-bold text-slate-900 mb-3">Login</h2>
-                <p className="text-slate-500">Entre com suas credenciais para acessar o painel administrativo.</p>
+                <p className="text-slate-500">Entre com suas credenciais para acessar o painel administrativo WooTech.</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -277,7 +278,7 @@ const Login: React.FC = () => {
 
             <div className="mt-8 text-center">
               <p className="text-xs text-slate-400">
-                &copy; {new Date().getFullYear()} ImobFluow Technology. Todos os direitos reservados.
+                &copy; {new Date().getFullYear()} {PLATFORM_BRAND_NAME}. Todos os direitos reservados.
               </p>
             </div>
           </div>

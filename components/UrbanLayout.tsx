@@ -171,8 +171,8 @@ const UrbanLayout: React.FC = () => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <img
-            src="/logo-imobfluow.svg"
-            alt="ImobFluow"
+                  src="/logo-wootech-imob.svg"
+                  alt="WooTech Imob"
             className="workspace-logo transition-transform group-hover:scale-[1.02]"
           />
         </Link>

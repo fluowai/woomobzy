@@ -100,8 +100,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <img
-            src="/logo-imobfluow.svg"
-            alt="ImobFluow"
+            src="/logo-wootech-imob.svg"
+            alt="WooTech Imob"
             className="workspace-logo"
           />
         </Link>

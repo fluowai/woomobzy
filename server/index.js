@@ -17,6 +17,7 @@ import {
 import { getSupabaseServer } from './lib/supabase-server.js';
 import { verifyAuth } from './middleware/auth.js';
 import { requireTenant } from './middleware/tenant.js';
+import { createCorsOptions } from './lib/cors-config.js';
 
 // --- Modular Routes ---
 import adminRoutes from './routes/admin.js';
@@ -48,6 +49,10 @@ import documentRoutes from './api/documents/index.js';
 import externalDataRoutes from './api/external-data/index.js';
 import quizRoutes from './api/quiz/index.js';
 import accountRoutes from './routes/account.js';
+import {
+  getPlatformOriginList,
+  PLATFORM_COMMERCIAL_NAME,
+} from './lib/platform-config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -80,6 +85,7 @@ if (missingVars.length > 0) {
 const app = express();
 app.set('trust proxy', 1);
 const isProduction = process.env.NODE_ENV === 'production';
+const platformOrigins = getPlatformOriginList();
 
 app.use((req, res, next) => {
   const startedAt = process.hrtime.bigint();
@@ -129,7 +135,7 @@ app.use(
             "img-src": ["'self'", "data:", "blob:", "https:"],
             "media-src": ["'self'", "data:", "blob:", "https:"],
             "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://app.imobfluow.com.br", "wss://app.imobfluow.com.br", "https://imobfluow.com.br", "wss://imobfluow.com.br", "https://okaimoveis.com.br", "wss://okaimoveis.com.br", "https://www.okaimoveis.com.br", "wss://www.okaimoveis.com.br", "https://fazendasbrasil.com", "wss://fazendasbrasil.com", "https://www.fazendasbrasil.com", "wss://www.fazendasbrasil.com", "https://fazendasbrasil.com.br", "wss://fazendasbrasil.com.br", "https://www.fazendasbrasil.com.br", "wss://www.fazendasbrasil.com.br"],
+            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", ...platformOrigins, ...platformOrigins.map((origin) => origin.replace(/^https:/, 'wss:')), "https://okaimoveis.com.br", "wss://okaimoveis.com.br", "https://www.okaimoveis.com.br", "wss://www.okaimoveis.com.br", "https://fazendasbrasil.com", "wss://fazendasbrasil.com", "https://www.fazendasbrasil.com", "wss://www.fazendasbrasil.com", "https://fazendasbrasil.com.br", "wss://fazendasbrasil.com.br", "https://www.fazendasbrasil.com.br", "wss://www.fazendasbrasil.com.br"],
             "frame-ancestors": ["'self'"],
           },
         }
@@ -151,106 +157,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- CORS Configuration ---
-const staticAllowedOrigins = [
-  "https://app.imobfluow.com.br",
-  "https://imobfluow.com.br",
-  "https://www.imobfluow.com.br",
-  "https://okaimoveis.com.br",
-  "https://www.okaimoveis.com.br",
-  "https://fazendasbrasil.com",
-  "https://www.fazendasbrasil.com",
-  "https://fazendasbrasil.com.br",
-  "https://www.fazendasbrasil.com.br",
-];
-const envAllowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : [];
-const productionAllowedOrigins = new Set([...staticAllowedOrigins, ...envAllowedOrigins]);
-const customOriginCache = new Map();
-const CUSTOM_ORIGIN_CACHE_TTL_MS = 60 * 1000;
-
-async function isAllowedCustomOrigin(origin) {
-  try {
-    const url = new URL(origin);
-    if (!['https:', 'http:'].includes(url.protocol)) return false;
-
-    const hostname = normalizeDomain(url.hostname);
-    const cached = customOriginCache.get(hostname);
-    if (cached && cached.expiresAt > Date.now()) return cached.allowed;
-
-    const supabase = getSupabaseServer();
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('custom_domain', hostname)
-      .maybeSingle();
-
-    let allowed = !!org;
-    if (!allowed) {
-      const { data: domainEntry } = await supabase
-        .from('domains')
-        .select('organization_id')
-        .eq('domain', hostname)
-        .maybeSingle();
-      allowed = !!domainEntry;
-    }
-
-    customOriginCache.set(hostname, {
-      allowed,
-      expiresAt: Date.now() + CUSTOM_ORIGIN_CACHE_TTL_MS,
-    });
-
-    return allowed;
-  } catch (error) {
-    console.error('CORS custom origin lookup failed:', error.message);
-    return false;
-  }
-}
-
-const dynamicOriginValidator = (origin, callback) => {
-  // Permitir requests sem origin (ex: chamadas S2S, cURL, PM2, healthcheck interno)
-  if (!origin) {
-    return callback(null, true);
-  }
-
-  // Permitir origins exatas
-  if (productionAllowedOrigins.has(origin)) {
-    return callback(null, true);
-  }
-
-  if (isProduction) {
-    isAllowedCustomOrigin(origin)
-      .then((allowed) => {
-        if (allowed) return callback(null, true);
-        console.error("CORS BLOCKED:", origin);
-        return callback(new Error(`CORS blocked for origin: ${origin}`));
-      })
-      .catch((error) => callback(error));
-    return;
-  }
-
-  // Permitir subdomínios da empresa e dev/staging
-  if (
-    origin.endsWith(".imobfluow.com.br") ||
-    origin.endsWith(".okaimoveis.com.br") ||
-    origin.endsWith(".pages.dev") ||
-    origin.endsWith(".onrender.com") ||
-    origin.startsWith("http://localhost") ||
-    origin.startsWith("http://127.0.0.1")
-  ) {
-    return callback(null, true);
-  }
-
-  console.error("❌ CORS BLOCKED:", origin);
-  return callback(new Error(`CORS blocked for origin: ${origin}`));
-};
-
-const corsOptions = {
-  origin: dynamicOriginValidator,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-};
+// --- CORS Configuration (extracted to lib/cors-config.js) ---
+const corsOptions = createCorsOptions({ isProduction, normalizeDomain, getSupabaseServer });
 
 app.use(cors(corsOptions));
 // MUITO IMPORTANTE: Garante o Preflight (OPTIONS)
@@ -319,7 +227,7 @@ app.get('/api/system-status', async (req, res) => {
     return res.status(200).json({
       success: true,
       status: "online",
-      service: "woomobzy-backend",
+      service: "wootech-imob-backend",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV
@@ -354,13 +262,13 @@ app.get('/api/system-status', async (req, res) => {
 app.get('/health', (req, res) =>
   res.json({ status: 'ok', uptime: process.uptime() })
 );
-app.get('/', (req, res) => res.send('ImobFluow Production API Online'));
+app.get('/', (req, res) => res.send(`${PLATFORM_COMMERCIAL_NAME} API Online`));
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 3002;
 
 const server = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`ImobFluow Server active on port ${PORT}`);
+  console.log(`${PLATFORM_COMMERCIAL_NAME} server active on port ${PORT}`);
 
   try {
     const traefikSync = await syncPlatformTraefikServices();

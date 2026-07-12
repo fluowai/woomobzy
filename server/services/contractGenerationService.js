@@ -80,7 +80,7 @@ function generatePDF(title, contentText) {
     const doc = new PDFDocument({
       size: 'A4',
       margins: { top: 60, bottom: 60, left: 50, right: 50 },
-      info: { Title: title, Creator: 'ImobFluow - Gestão de Locação' },
+      info: { Title: title, Creator: 'WooTech Imob - Gestao de Locacao' },
     });
 
     const chunks = [];

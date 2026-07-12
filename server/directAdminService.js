@@ -1,9 +1,9 @@
 import axios from 'axios';
+import { WHM_MAIN_DOMAIN } from './lib/platform-config.js';
 
 const DA_URL = process.env.DIRECT_ADMIN_URL;
 const DA_USER = process.env.DIRECT_ADMIN_USER;
 const DA_KEY = process.env.DIRECT_ADMIN_API_KEY;
-const MAIN_DOMAIN = process.env.WHM_MAIN_DOMAIN || 'imobfluow.com.br';
 const PLATFORM_PUBLIC_IP =
   process.env.PLATFORM_PUBLIC_IP ||
   process.env.SERVER_PUBLIC_IP ||
@@ -21,7 +21,7 @@ export const directAdminService = {
     try {
       const authHeader = Buffer.from(`${DA_USER}:${DA_KEY}`).toString('base64');
       const params = new URLSearchParams({
-        domain: MAIN_DOMAIN,
+        domain: WHM_MAIN_DOMAIN,
         action: 'add',
         type: 'A',
         name: subdomain,

@@ -161,7 +161,7 @@ const QuizCampaigns: React.FC = () => {
       charcoal: '#242424',
       muted: '#6d7178',
       background: '#faf8f5',
-      logo: '/logo-imobfluow.svg',
+      logo: '/logo-wootech-imob.svg',
       side_image: isRural ? '/templates/template_production.png' : '/templates/urban/urban_luxury_pool.png',
       footer_text: isRural ? 'Atendimento especializado em propriedades rurais' : 'Atendimento imobiliario especializado',
       qualification_label: isRural ? 'Pre-qualificacao rural' : 'Pre-qualificacao imobiliaria',

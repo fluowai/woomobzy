@@ -29,7 +29,8 @@ export default defineConfig(({ mode }) => {
           target: 'http://127.0.0.1:3002',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/whatsapp-api/, '/api/whatsapp'),
+          rewrite: (requestPath) =>
+            requestPath.replace(/^\/whatsapp-api/, '/api/whatsapp'),
         },
       },
     },
@@ -39,12 +40,17 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: null,
-        includeAssets: ['logo-imobfluow.png', 'logo-imobfluow.svg', 'icons/imobfluow-*.png'],
+        includeAssets: [
+          'logo-wootech-imob.svg',
+          'icons/icon-192x192.png',
+          'icons/icon-512x512.png',
+        ],
         manifest: {
           id: '/',
-          name: 'IMOBFLUOW - Gestão Imobiliária Inteligente',
-          short_name: 'IMOBFLUOW',
-          description: 'Sistema de gestão imobiliária completo para mercado rural e urbano.',
+          name: 'WooTech Imob',
+          short_name: 'Imob',
+          description:
+            'CRM imobiliario do ecossistema WooTech para operacao, captacao e crescimento.',
           theme_color: '#16a34a',
           background_color: '#f8fafc',
           display: 'standalone',
@@ -56,13 +62,13 @@ export default defineConfig(({ mode }) => {
           start_url: '/',
           icons: [
             {
-              src: '/icons/imobfluow-192x192.png',
+              src: '/icons/icon-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any maskable',
             },
             {
-              src: '/icons/imobfluow-512x512.png',
+              src: '/icons/icon-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable',
@@ -71,18 +77,18 @@ export default defineConfig(({ mode }) => {
           categories: ['business', 'productivity', 'real estate'],
           shortcuts: [
             {
-              name: 'Painel IMOBFLUOW',
+              name: 'Painel WooTech Imob',
               short_name: 'Painel',
               description: 'Abrir o painel do sistema',
               url: '/login',
-              icons: [{ src: '/icons/imobfluow-192x192.png', sizes: '192x192' }],
+              icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
             },
             {
-              name: 'Agendar demonstração',
+              name: 'Agendar demonstracao',
               short_name: 'Demo',
-              description: 'Solicitar uma demonstração da plataforma',
+              description: 'Solicitar uma demonstracao da plataforma',
               url: '/consultoria',
-              icons: [{ src: '/icons/imobfluow-192x192.png', sizes: '192x192' }],
+              icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
             },
           ],
         },
@@ -91,7 +97,11 @@ export default defineConfig(({ mode }) => {
           clientsClaim: true,
           skipWaiting: true,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
-          globIgnores: ['**/templates/**', '**/images/fazendas-brasil/**', '**/WhatsApp*.jpeg'],
+          globIgnores: [
+            '**/templates/**',
+            '**/images/fazendas-brasil/**',
+            '**/WhatsApp*.jpeg',
+          ],
           maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
           runtimeCaching: [
             {
@@ -99,7 +109,10 @@ export default defineConfig(({ mode }) => {
               handler: 'CacheFirst',
               options: {
                 cacheName: 'google-fonts-cache',
-                expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365,
+                },
               },
             },
             {
@@ -107,7 +120,10 @@ export default defineConfig(({ mode }) => {
               handler: 'CacheFirst',
               options: {
                 cacheName: 'gstatic-fonts-cache',
-                expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365,
+                },
               },
             },
             {
@@ -126,7 +142,13 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: [
         { find: '@', replacement: path.resolve(process.cwd(), '.') },
-        { find: /^leaflet-draw$/, replacement: path.resolve(process.cwd(), 'src/shims/leaflet-draw-default.ts') },
+        {
+          find: /^leaflet-draw$/,
+          replacement: path.resolve(
+            process.cwd(),
+            'src/shims/leaflet-draw-default.ts'
+          ),
+        },
       ],
     },
     build: {

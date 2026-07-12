@@ -54,6 +54,7 @@ import { toast } from 'sonner';
 import { aiAgentService, type AIAgent, type AIAgentPayload, type AgentMetrics } from '../services/aiAgents';
 import { callApi } from '../src/lib/api';
 import { instanceApi, type Instance as WhatsAppInstance } from './WhatsApp/hooks/api';
+import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 
 type BuilderDraft = AIAgentPayload & {
   status?: string;
@@ -919,7 +920,7 @@ const AIAgents: React.FC = () => {
               <Home className="text-emerald-400" size={21} />
             </div>
             <div className="min-w-0">
-              <div className="text-lg font-bold tracking-tight leading-none">ImobFluow</div>
+              <div className="text-lg font-bold tracking-tight leading-none">{COMMERCIAL_PRODUCT_NAME}</div>
               <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 mt-1 truncate">
                 Imobiliária Tradicional
               </div>

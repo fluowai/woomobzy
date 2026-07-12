@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PenTool, Send, Mail, MessageSquare, CheckCircle, XCircle, Clock, User } from 'lucide-react';
 import type { Lease, Signature } from '../../../types/lease';
+import { COMMERCIAL_PRODUCT_NAME } from '../../../../utils/branding';
 
 interface Props {
   lease: Partial<Lease>;
@@ -59,7 +60,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { id: 'proprio', label: 'Assinatura Própria', desc: 'Link seguro ImobFluow' },
+            { id: 'proprio', label: 'Assinatura Própria', desc: `Link seguro ${COMMERCIAL_PRODUCT_NAME}` },
             { id: 'clicksign', label: 'Clicksign', desc: 'Integração Clicksign' },
             { id: 'zapsign', label: 'ZapSign', desc: 'Integração ZapSign' },
             { id: 'docusign', label: 'DocuSign', desc: 'Integração DocuSign' },

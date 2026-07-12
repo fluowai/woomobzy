@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, CheckCircle2, Copy, Globe, Mail, Server } from 'lucide-react';
 import { PLATFORM_IP } from '../utils/platform';
+import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 
 const DnsHelp: React.FC = () => {
   const copy = (value: string) => navigator.clipboard?.writeText(value);
@@ -14,7 +15,7 @@ const DnsHelp: React.FC = () => {
               <Globe size={24} />
             </span>
             <div>
-              <h1 className="text-2xl font-bold">Guia DNS ImobFluow</h1>
+              <h1 className="text-2xl font-bold">Guia DNS {COMMERCIAL_PRODUCT_NAME}</h1>
               <p className="text-sm text-slate-500">
                 Como apontar apenas o site do cliente para o servidor, sem mexer no e-mail.
               </p>
@@ -39,7 +40,7 @@ const DnsHelp: React.FC = () => {
         </section>
 
         <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-bold">Registros que devem apontar para a ImobFluow</h2>
+          <h2 className="mb-4 text-lg font-bold">Registros que devem apontar para a {COMMERCIAL_PRODUCT_NAME}</h2>
           <div className="overflow-hidden rounded-lg border border-slate-200">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-100 text-xs font-bold uppercase text-slate-500">

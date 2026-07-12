@@ -3,6 +3,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { createPresignedGetUrl, isMinioConfigured } from '../../lib/minio-storage.js';
+import { getPlatformOriginList } from '../../lib/platform-config.js';
 import jwt from 'jsonwebtoken';
 import { createWahaRouter } from './providers/waha-router.js';
 import { getWhatsAppProviderConfig } from './providers/provider-config.js';
@@ -49,10 +50,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     : [];
 
   const allowedOrigins = new Set([
-    'https://app.imobfluow.com.br',
-    'https://imobfluow.consultio.com.br',
-    'https://imobfluow.com.br',
-    'https://www.imobfluow.com.br',
+    ...getPlatformOriginList(),
     'https://okaimoveis.com.br',
     'https://www.okaimoveis.com.br',
     ...envAllowedOrigins,

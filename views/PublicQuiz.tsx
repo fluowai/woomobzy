@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, MessageCircle, Shi
 import { useParams, useSearchParams } from 'react-router-dom';
 import { quizService, type QuizCampaign } from '../services/quiz';
 import { getTrackingData, trackFacebookEvent, trackGoogleEvent } from '../utils/tracking';
+import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 
 type QuizResult = {
   qualified: boolean;
@@ -73,7 +74,7 @@ const PublicQuiz: React.FC = () => {
 
   const branding = campaign?.branding || {};
   const primary = (branding.primary as string) || '#f04b12';
-  const logo = (branding.logo as string) || '/logo-imobfluow.svg';
+  const logo = (branding.logo as string) || '/logo-wootech-imob.svg';
   const sideImage = (branding.side_image as string) || '/templates/urban/urban_luxury_pool.png';
   const footerText = (branding.footer_text as string) || 'Atendimento imobiliario especializado';
   const qualificationLabel = (branding.qualification_label as string) || 'Pre-qualificacao imobiliaria';
@@ -125,7 +126,7 @@ const PublicQuiz: React.FC = () => {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#faf8f5] p-6">
         <div className="max-w-lg text-center">
-          <img src="/logo-imobfluow.svg" alt="ImobFluow" className="mx-auto h-20 w-auto object-contain" />
+          <img src="/logo-wootech-imob.svg" alt={COMMERCIAL_PRODUCT_NAME} className="mx-auto h-20 w-auto object-contain" />
           <h1 className="mt-7 text-2xl font-bold text-[#242424]">Quiz indisponivel</h1>
           <p className="mt-3 text-sm leading-6 text-[#6d7178]">{error || 'Esta campanha nao esta disponivel neste momento.'}</p>
         </div>
@@ -148,7 +149,7 @@ const PublicQuiz: React.FC = () => {
 
         <section className="flex min-h-screen flex-col bg-white">
           <header className="flex items-center justify-between border-b border-[#e9e2dc] px-5 py-4 sm:px-8 lg:px-12">
-            <img src={logo} alt="ImobFluow" className="h-14 w-40 object-contain object-left" />
+            <img src={logo} alt={COMMERCIAL_PRODUCT_NAME} className="h-14 w-40 object-contain object-left" />
             <div className="hidden items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6d7178] sm:flex"><ShieldCheck size={17} style={{ color: primary }} /> Seus dados protegidos</div>
           </header>
 

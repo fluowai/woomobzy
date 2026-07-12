@@ -34,15 +34,15 @@ services:
       args:
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
-        VITE_PANEL_URL: ${APP_URL:-https://app.imobfluow.com.br}
+        VITE_PANEL_URL: ${APP_URL:-https://imob.wootech.com.br}
     env_file:
       - .env.production
     environment:
       VITE_API_URL: same-origin
       VITE_WHATSAPP_API_URL: /api/whatsapp
       VITE_WHATSAPP_WS_URL: /api/whatsapp/ws
-      VITE_PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://imobfluow.com.br}
-      VITE_PANEL_URL: ${APP_URL:-https://app.imobfluow.com.br}
+      VITE_PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://imob.wootech.com.br}
+      VITE_PANEL_URL: ${APP_URL:-https://imob.wootech.com.br}
       VITE_PLATFORM_IP: ${PLATFORM_PUBLIC_IP:-207.58.153.219}
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
@@ -84,8 +84,8 @@ services:
       WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:?set WHATSAPP_WS_JWT_SECRET}
       AGRO_INTEL_URL: http://agro-intelligence:8000
       NODE_URL: http://api:3002
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://imob.wootech.com.br,https://app.wootech.com.br,https://wootech.com.br,https://www.wootech.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://imob.wootech.com.br,https://app.wootech.com.br,https://wootech.com.br,https://www.wootech.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
     volumes:
       - ./traefik/dynamic:/traefik/dynamic
     expose:
@@ -145,8 +145,8 @@ services:
       WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:?set WHATSAPP_SERVICE_TOKEN}
       WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}
       PGSSLMODE: require
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://app.imobfluow.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://imob.wootech.com.br,https://app.wootech.com.br,https://wootech.com.br,https://www.wootech.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://imob.wootech.com.br,https://app.wootech.com.br,https://wootech.com.br,https://www.wootech.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
     volumes:
       - whatsapp_sessions:/app/.sessions
     expose:

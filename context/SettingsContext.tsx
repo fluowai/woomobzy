@@ -12,6 +12,7 @@ import { DEFAULT_SITE_SETTINGS } from '../constants';
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
 import { callApi } from '../src/lib/api';
+import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 
 interface SettingsContextType {
   settings: SiteSettings;
@@ -100,7 +101,7 @@ export const SettingsProvider: React.FC<{
         setSettings({
           ...DEFAULT_SITE_SETTINGS,
           id: data.id,
-          agencyName: data.agency_name,
+          agencyName: data.agency_name || COMMERCIAL_PRODUCT_NAME,
           primaryColor: normalizeBrandColor(data.primary_color),
           secondaryColor:
             data.secondary_color || DEFAULT_SITE_SETTINGS.secondaryColor,

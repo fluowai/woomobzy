@@ -1,10 +1,12 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { sendContactFormEmail } from './emailService.js';
+import { PLATFORM_COMMERCIAL_NAME } from '../lib/platform-config.js';
 
 const DEFAULT_DAYS_BEFORE_DUE = 5;
 const DEFAULT_DAYS_BEFORE_ADJUSTMENT = 30;
 const DEFAULT_DAYS_BEFORE_EXPIRY = 30;
 const DEFAULT_OVERDUE_DAYS = 1;
+const NOTIFICATION_FROM_EMAIL = process.env.NOTIFICATION_FROM_EMAIL || 'noreply@wootech.com.br';
 
 export class LeaseNotificationWorker {
 
@@ -39,7 +41,7 @@ export class LeaseNotificationWorker {
         await sendContactFormEmail(
           {
             name: 'Sistema de Cobrança',
-            email: 'noreply@imobfluow.com.br',
+            email: NOTIFICATION_FROM_EMAIL,
             phone: '',
             message: this._buildDueSoonMessage(inv, lease),
           },
@@ -84,7 +86,7 @@ export class LeaseNotificationWorker {
         await sendContactFormEmail(
           {
             name: 'Sistema de Cobrança',
-            email: 'noreply@imobfluow.com.br',
+            email: NOTIFICATION_FROM_EMAIL,
             phone: '',
             message: this._buildOverdueMessage(inv, lease),
           },
@@ -124,7 +126,7 @@ export class LeaseNotificationWorker {
         await sendContactFormEmail(
           {
             name: 'Gestão de Locação',
-            email: 'noreply@imobfluow.com.br',
+            email: NOTIFICATION_FROM_EMAIL,
             phone: '',
             message: this._buildAdjustmentMessage(lease),
           },
@@ -164,7 +166,7 @@ export class LeaseNotificationWorker {
         await sendContactFormEmail(
           {
             name: 'Gestão de Locação',
-            email: 'noreply@imobfluow.com.br',
+            email: NOTIFICATION_FROM_EMAIL,
             phone: '',
             message: this._buildExpiryMessage(lease),
           },
@@ -201,7 +203,7 @@ Valor: ${amount}
 Para evitar multa e juros, realize o pagamento até a data de vencimento.
 
 Atenciosamente,
-ImobFluow - Gestão de Locação
+${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     `.trim();
   }
 
@@ -218,7 +220,7 @@ Valor original: ${amount}
 Regularize sua situação o quanto antes para evitar protesto e negativação do seu nome.
 
 Atenciosamente,
-ImobFluow - Gestão de Locação
+${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     `.trim();
   }
 
@@ -239,7 +241,7 @@ Periodicidade: ${lease.adjustment_period_months || 12} meses
 O novo valor será calculado com base no índice vigente e comunicado oportunamente.
 
 Atenciosamente,
-ImobFluow - Gestão de Locação
+${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     `.trim();
   }
 
@@ -257,7 +259,7 @@ Término previsto: ${endDate}
 Caso tenha interesse em renovar o contrato, entre em contato conosco para tratarmos das novas condições.
 
 Atenciosamente,
-ImobFluow - Gestão de Locação
+${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     `.trim();
   }
 }

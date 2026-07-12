@@ -47,6 +47,7 @@ import {
 } from '@/services/email';
 import { leadService } from '@/services/leads';
 import { Lead } from '@/types';
+import { COMMERCIAL_PRODUCT_NAME } from '@/utils/branding';
 
 type FolderKey = 'inbox' | 'sent' | 'drafts' | 'archived' | 'trash' | 'spam' | 'starred' | 'snoozed' | 'all';
 type ViewKey = 'mail' | 'agenda';
@@ -351,7 +352,7 @@ const EmailCenter: React.FC = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-emerald-500 text-emerald-600">
             <Mail size={19} />
           </div>
-          <span className="text-xl font-bold text-slate-950">ImobFluow</span>
+          <span className="text-xl font-bold text-slate-950">{COMMERCIAL_PRODUCT_NAME}</span>
         </div>
         <div className="relative max-w-[760px] flex-1">
           <Search size={21} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" />

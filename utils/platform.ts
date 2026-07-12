@@ -1,12 +1,13 @@
-import { getRuntimeEnv } from './runtimeConfig';
+import {
+  COMMERCIAL_PRODUCT_NAME,
+  PLATFORM_IP as BRAND_PLATFORM_IP,
+  PUBLIC_APP_URL,
+} from './branding';
 
-export const BRAND_NAME = 'ImobFluow';
-export const PLATFORM_DOMAIN = 'imobfluow.com.br';
-export const PLATFORM_BASE_URL = getRuntimeEnv(
-  'VITE_PUBLIC_APP_URL',
-  `https://${PLATFORM_DOMAIN}`
-).replace(/\/$/, '');
-export const PLATFORM_IP = getRuntimeEnv('VITE_PLATFORM_IP', '207.58.153.219');
+export const BRAND_NAME = COMMERCIAL_PRODUCT_NAME;
+export const PLATFORM_IP = BRAND_PLATFORM_IP;
+export const PLATFORM_DOMAIN = new URL(PUBLIC_APP_URL).hostname;
+export const PLATFORM_BASE_URL = PUBLIC_APP_URL;
 
 export function getTenantBaseUrl(slug?: string | null) {
   const cleanSlug = String(slug || '').replace(/^\/|\/$/g, '');

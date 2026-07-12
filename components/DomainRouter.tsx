@@ -1,9 +1,12 @@
 import { logger } from '@/utils/logger';
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
+import {
+  getAllPlatformHosts,
+  PANEL_HOST,
+} from '@/utils/branding';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { PLATFORM_DOMAIN } from '../utils/platform';
 
 const PublicLandingPage = lazy(() => import('../views/PublicLandingPage'));
 
@@ -102,13 +105,13 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
     const checkRoute = async () => {
       try {
         const hostname = window.location.hostname;
-        const panelUrl = getRuntimeEnv('VITE_PANEL_URL', `https://${PLATFORM_DOMAIN}`);
+        const panelUrl = getRuntimeEnv('VITE_PANEL_URL', 'https://imob.wootech.com.br');
         const panelHost = cleanDomain(panelUrl);
         const currentHost = cleanHost(hostname);
-        const platformHost = cleanHost(PLATFORM_DOMAIN);
+        const platformHosts = new Set(getAllPlatformHosts().map(cleanHost));
         const panelCleanHost = cleanHost(panelHost);
-        const isPlatformHost =
-          currentHost === platformHost || currentHost === panelCleanHost;
+        const isKnownPlatformHost =
+          platformHosts.has(currentHost) || currentHost === panelCleanHost;
 
         const log = (msg: string) => {
           logger.info(msg);
@@ -124,10 +127,8 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
         const isSystemDomain =
           hostname.includes('localhost') ||
-          hostname === 'app.imobfluow.com.br' ||
-          hostname === 'imobfluow.com.br' ||
-          hostname === 'www.imobfluow.com.br' ||
-          isPlatformHost;
+          hostname === '127.0.0.1' ||
+          isKnownPlatformHost;
 
         if (!isSystemDomain) {
           log(`[Router] Custom domain detected: ${hostname}`);
@@ -189,7 +190,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           }
 
           const pathSegments = currentPath.split('/').filter(Boolean);
-          if (pathSegments.length === 1 && isPlatformHost) {
+          if (pathSegments.length === 1 && isKnownPlatformHost) {
             const potentialSlug = pathSegments[0];
             log(`[Router] Potential tenant slug from path: ${potentialSlug}`);
 
@@ -247,7 +248,11 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
                 customDomain = orgDomain?.custom_domain;
               }
 
-              if (customDomain && isPlatformHost) {
+              if (
+                customDomain &&
+                isKnownPlatformHost &&
+                currentHost === cleanHost(PANEL_HOST)
+              ) {
                 const targetUrl = `https://${cleanDomain(customDomain)}${window.location.search || ''}`;
                 log(`[Router] Redirecting tenant site to custom domain: ${targetUrl}`);
                 window.location.replace(targetUrl);

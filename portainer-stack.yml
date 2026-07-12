@@ -7,8 +7,8 @@ services:
       VITE_API_URL: "same-origin"
       VITE_WHATSAPP_API_URL: "/api/whatsapp"
       VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
-      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?Configure VITE_SUPABASE_URL no Portainer}"
-      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?Configure VITE_SUPABASE_ANON_KEY no Portainer}"
+      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL}"
+      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY}"
       VITE_PANEL_URL: "https://imob.wootech.com.br"
       VITE_PUBLIC_APP_URL: "https://imob.wootech.com.br"
       VITE_PLATFORM_IP: "207.58.153.219"
@@ -42,12 +42,12 @@ services:
       WHATSAPP_WEBHOOK_URL: "http://api:3002"
       ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
       CORS_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
-      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL:?Configure VITE_SUPABASE_URL no Portainer}"
-      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY:?Configure VITE_SUPABASE_ANON_KEY no Portainer}"
-      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?Configure SUPABASE_SERVICE_ROLE_KEY no Portainer}"
-      SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET:?Configure SUPABASE_JWT_SECRET no Portainer}"
-      DATABASE_URL: "${DATABASE_URL:?Configure DATABASE_URL no Portainer}"
-      SUPABASE_DB_URL: "${SUPABASE_DB_URL:?Configure SUPABASE_DB_URL no Portainer}"
+      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL}"
+      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY}"
+      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
+      SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET}"
+      DATABASE_URL: "${DATABASE_URL}"
+      SUPABASE_DB_URL: "${SUPABASE_DB_URL}"
       PGSSLMODE: require
       WHATSAPP_API_URL: "http://whatsapp-service:3100"
       WHATSMEOW_URL: "http://whatsapp-service:3100"
@@ -120,10 +120,10 @@ services:
       PORT: 3100
       ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
       CORS_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
-      SUPABASE_URL: "${VITE_SUPABASE_URL:?Configure VITE_SUPABASE_URL no Portainer}"
-      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY:?Configure SUPABASE_SERVICE_ROLE_KEY no Portainer}"
-      SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET:?Configure SUPABASE_JWT_SECRET no Portainer}"
-      SUPABASE_DB_URL: "${SUPABASE_DB_URL:?Configure SUPABASE_DB_URL no Portainer}"
+      SUPABASE_URL: "${VITE_SUPABASE_URL}"
+      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
+      SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET}"
+      SUPABASE_DB_URL: "${SUPABASE_DB_URL}"
       PGSSLMODE: require
       NODE_URL: "http://api:3002"
       WHATSAPP_SERVICE_TOKEN: "b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833"
@@ -174,4 +174,4 @@ networks:
   woopanel1:
     external: true
   imobfluow_internal:
-    driver: overlay
+    driver: bridge

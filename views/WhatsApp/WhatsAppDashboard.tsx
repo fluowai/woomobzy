@@ -414,7 +414,7 @@ const WhatsAppDashboard: React.FC = () => {
       try {
         if (file) {
           const result: any = await messageApi.sendMedia(selectedChat.id, selectedInstance.id, file, content);
-          appendSentMessage(result?.data);
+          appendSentMessage(result?.data || result);
           updateChatPreview(selectedChat.id, content || `[${resultTypeFromFile(file)}]`);
           if (result?.data?.media_status === 'failed') {
             toast.error(result?.data?.media_error || 'Midia enviada, mas nao foi salva no MinIO.');
@@ -423,7 +423,7 @@ const WhatsAppDashboard: React.FC = () => {
           }
         } else {
           const result: any = await messageApi.send(selectedChat.id, selectedInstance.id, content);
-          appendSentMessage(result?.data);
+          appendSentMessage(result?.data || result);
           updateChatPreview(selectedChat.id, content);
         }
       } catch (err: any) {

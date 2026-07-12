@@ -5,11 +5,9 @@ import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { ValuationService } from '../../services/valuationService.js';
 
-const router = Router();
+import { isValidUUID } from '../../lib/shared-utils.js';
 
-function isValidUUID(id) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id));
-}
+const router = Router();
 
 router.post('/estimate/:propertyId', verifyAuth, requireTenant, async (req, res) => {
   try {

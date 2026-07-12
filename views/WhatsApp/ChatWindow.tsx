@@ -541,6 +541,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     key={key}
                     message={msg}
                     isGroup={chat.is_group}
+                    chatDisplayName={chatName}
                     onOpenDetails={() => setShowContactPanel(true)}
                   />
                 );

@@ -136,6 +136,46 @@ const statBadges = [
   { title: 'Ambiente seguro', subtitle: 'Dados protegidos' },
 ];
 
+const BrandLockup = ({ compact = false }: { compact?: boolean }) => (
+  <div className="flex items-center gap-3">
+    <div className={compact ? 'relative h-9 w-14 shrink-0' : 'relative h-12 w-[4.5rem] shrink-0'}>
+      <span
+        className={
+          compact
+            ? 'absolute left-0 top-0 text-4xl font-black leading-none tracking-[-0.18em] text-[#ff7a00]'
+            : 'absolute left-0 top-0 text-5xl font-black leading-none tracking-[-0.18em] text-[#ff7a00]'
+        }
+      >
+        W
+      </span>
+      <span
+        className={
+          compact
+            ? 'absolute left-6 top-0 text-4xl font-black leading-none tracking-[-0.18em] text-white'
+            : 'absolute left-8 top-0 text-5xl font-black leading-none tracking-[-0.18em] text-white'
+        }
+      >
+        W
+      </span>
+      <span
+        className={
+          compact
+            ? 'absolute bottom-0 left-5 h-1.5 w-7 rounded-full bg-[#ff7a00]'
+            : 'absolute bottom-0 left-6 h-2 w-9 rounded-full bg-[#ff7a00]'
+        }
+      />
+    </div>
+    <div className="leading-none text-left">
+      <p className={compact ? 'text-sm font-black tracking-tight text-white' : 'text-2xl font-black tracking-tight text-white'}>
+        WOOTECH
+      </p>
+      <p className={compact ? 'text-sm font-black tracking-tight text-[#ff7a00]' : 'text-2xl font-black tracking-tight text-[#ff7a00]'}>
+        IMOB
+      </p>
+    </div>
+  </div>
+);
+
 const SystemSalesPage: React.FC = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -180,11 +220,7 @@ const SystemSalesPage: React.FC = () => {
       <header className="sticky top-0 z-50 border-b border-white/8 bg-[#090909]/95 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-6 lg:px-8">
           <button type="button" onClick={() => scrollToSection('topo')} className="flex items-center gap-3">
-            <img src="/logo-wootech-imob-orbit.svg" alt={COMMERCIAL_PRODUCT_NAME} className="h-12 w-auto" />
-            <div className="leading-none text-left">
-              <p className="text-2xl font-black tracking-tight text-white">WOOTECH</p>
-              <p className="text-2xl font-black tracking-tight text-[#ff7a00]">IMOB</p>
-            </div>
+            <BrandLockup />
           </button>
 
           <nav className="hidden items-center gap-8 lg:flex">
@@ -292,8 +328,7 @@ const SystemSalesPage: React.FC = () => {
               <div className="grid gap-4 lg:grid-cols-[180px_1fr]">
                 <div className="rounded-[1.4rem] bg-[#111111] p-4">
                   <div className="flex items-center gap-2">
-                    <img src="/logo-wootech-imob-orbit.svg" alt={COMMERCIAL_PRODUCT_NAME} className="h-7 w-auto" />
-                    <span className="text-xs font-black text-white">WOOTECH IMOB</span>
+                    <BrandLockup compact />
                   </div>
                   <div className="mt-6 space-y-3 text-sm font-bold text-white/54">
                     {['Dashboard', 'Imoveis', 'Leads', 'Atendimento', 'Contratos', 'Clientes', 'Marketing', 'Locacao', 'Relatorios', 'Configuracoes'].map((item, index) => (
@@ -606,13 +641,7 @@ const SystemSalesPage: React.FC = () => {
       <footer className="border-t border-white/8 bg-[#0d0d0d]">
         <div className="mx-auto grid max-w-[1440px] gap-10 px-6 py-16 lg:grid-cols-[1.2fr_1fr_1fr_1fr] lg:px-8">
           <div>
-            <div className="flex items-center gap-3">
-              <img src="/logo-wootech-imob-orbit.svg" alt={COMMERCIAL_PRODUCT_NAME} className="h-12 w-auto" />
-              <div className="leading-none">
-                <p className="text-2xl font-black tracking-tight text-white">WOOTECH</p>
-                <p className="text-2xl font-black tracking-tight text-[#ff7a00]">IMOB</p>
-              </div>
-            </div>
+            <BrandLockup />
             <p className="mt-5 max-w-[320px] text-lg font-medium leading-relaxed text-white/62">
               O CRM imobiliario completo para imobiliarias urbanas e rurais que querem mais controle, produtividade e resultados.
             </p>

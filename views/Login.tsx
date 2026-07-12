@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { COMMERCIAL_PRODUCT_NAME, PLATFORM_BRAND_NAME } from '../utils/branding';
+import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 import {
   AlertCircle,
   ArrowRight,
@@ -43,6 +43,24 @@ const stats = [
   { value: '+ 3.5 mi', label: 'Leads processados' },
   { value: '99,9%', label: 'Uptime garantido' },
 ];
+
+const BrandLockup = () => (
+  <div className="flex items-center gap-4">
+    <div className="relative h-16 w-24 shrink-0">
+      <span className="absolute left-0 top-0 text-6xl font-black leading-none tracking-[-0.18em] text-[#ff7a00]">
+        W
+      </span>
+      <span className="absolute left-9 top-0 text-6xl font-black leading-none tracking-[-0.18em] text-white">
+        W
+      </span>
+      <span className="absolute bottom-0 left-7 h-2 w-10 rounded-full bg-[#ff7a00]" />
+    </div>
+    <div className="leading-none">
+      <p className="text-[1.85rem] font-black tracking-tight text-white">WOOTECH</p>
+      <p className="text-[1.85rem] font-black tracking-tight text-[#ff7a00]">IMOB</p>
+    </div>
+  </div>
+);
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -96,60 +114,55 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen overflow-hidden bg-[#060606] text-white">
-      <div className="relative min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,122,0,0.08),_transparent_22%),linear-gradient(90deg,#070707_0%,#090909_42%,#111827_42%,#111827_100%)]">
-        <div className="absolute inset-y-0 right-0 hidden w-[54%] lg:block">
+      <div className="relative min-h-screen bg-[#060606]">
+        <div className="absolute inset-y-0 right-0 hidden w-[50%] lg:block">
           <img
             src="/templates/urban/urban_ready_move.png"
             alt="Casa moderna WooTech Imob"
-            className="h-full w-full object-cover opacity-90"
+            className="h-full w-full object-cover opacity-88"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/25 via-slate-950/10 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#060606]/45 via-black/10 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-black/45" />
         </div>
 
-        <div className="absolute left-[42%] top-0 hidden h-full w-[18%] lg:block">
-          <div className="absolute left-[42%] top-[-10%] h-[120%] w-8 -rotate-[32deg] rounded-full bg-[#ff7a00]" />
-          <div className="absolute left-[32%] top-[-10%] h-[120%] w-1 -rotate-[32deg] rounded-full bg-[#4a4a4a]" />
-          <div className="absolute left-[7%] top-[10%] h-[74%] w-[72%] rounded-[4rem] border border-[#ff7a00]/45" />
+        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,#060606_0%,#070707_45%,rgba(6,6,6,0.52)_54%,rgba(6,6,6,0)_70%)] lg:block" />
+
+        <div className="absolute left-[47%] top-0 hidden h-full w-[12%] lg:block">
+          <div className="absolute left-[48%] top-[-12%] h-[124%] w-7 -rotate-[32deg] rounded-full bg-[#ff7a00]" />
+          <div className="absolute left-[28%] top-[-12%] h-[124%] w-px -rotate-[32deg] rounded-full bg-white/25" />
+          <div className="absolute left-[-10%] top-[13%] h-[72%] w-[86%] rounded-[4rem] border border-[#ff7a00]/45" />
         </div>
 
-        <div className="relative z-10 mx-auto flex min-h-screen max-w-[1600px] flex-col justify-between px-6 py-8 lg:px-10">
-          <div className="grid flex-1 gap-10 lg:grid-cols-[1fr_520px] lg:items-center">
-            <section className="max-w-[760px] pt-3 lg:pl-6">
-              <div className="mb-10 flex items-center gap-4">
-                <img
-                  src="/logo-wootech-imob-orbit.svg"
-                  alt={COMMERCIAL_PRODUCT_NAME}
-                  className="h-16 w-auto"
-                />
-                <div className="leading-none">
-                  <p className="text-[2rem] font-black tracking-tight text-white">WOOTECH</p>
-                  <p className="text-[2rem] font-black tracking-tight text-[#ff7a00]">IMOB</p>
-                </div>
+        <div className="relative z-10 mx-auto flex min-h-screen max-w-[1500px] flex-col justify-between px-6 py-7 lg:px-10">
+          <div className="grid flex-1 items-center gap-8 lg:grid-cols-[minmax(0,1fr)_500px]">
+            <section className="max-w-[690px] pt-3 lg:pl-5">
+              <div className="mb-8">
+                <BrandLockup />
               </div>
 
-              <div className="inline-flex rounded-full border border-[#ff7a00]/45 bg-[#1a120d] px-5 py-2 text-sm font-bold uppercase tracking-[0.22em] text-[#ff9a3d]">
+              <div className="inline-flex rounded-full border border-[#ff7a00]/55 bg-[#1a120d] px-5 py-2 text-xs font-bold uppercase tracking-[0.24em] text-[#ff9a3d]">
                 Mais que CRM: gestao completa para imobiliarias
               </div>
 
-              <h1 className="mt-8 max-w-[720px] text-5xl font-black leading-[1.02] tracking-tight text-white xl:text-7xl">
+              <h1 className="mt-8 max-w-[660px] text-4xl font-black leading-[1.03] tracking-tight text-white md:text-5xl xl:text-6xl">
                 A operacao da sua <span className="text-[#ff7a00]">imobiliaria</span>, elevada a outro nivel.
               </h1>
 
-              <p className="mt-6 max-w-[650px] text-xl font-medium leading-relaxed text-white/82">
+              <p className="mt-6 max-w-[610px] text-lg font-medium leading-relaxed text-white/82 xl:text-xl">
                 {COMMERCIAL_PRODUCT_NAME} integra atendimento, estoque, marketing,
                 contratos e inteligencia territorial em um unico sistema. Mais
                 controle, mais agilidade, mais resultado.
               </p>
 
-              <div className="mt-10 grid max-w-[760px] gap-5 md:grid-cols-2">
+              <div className="mt-9 grid max-w-[660px] gap-x-7 gap-y-6 md:grid-cols-2">
                 {featureItems.map((item) => (
                   <article key={item.title} className="flex items-start gap-4">
-                    <span className="mt-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#ff7a00]/55 bg-[#141414] text-[#ff7a00]">
-                      <item.icon size={26} />
+                    <span className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#ff7a00]/55 bg-[#141414] text-[#ff7a00]">
+                      <item.icon size={23} />
                     </span>
                     <div>
-                      <h3 className="text-2xl font-bold text-white">{item.title}</h3>
-                      <p className="mt-2 text-base font-medium leading-relaxed text-white/72">
+                      <h3 className="text-xl font-bold text-white">{item.title}</h3>
+                      <p className="mt-2 text-sm font-medium leading-relaxed text-white/72 xl:text-base">
                         {item.text}
                       </p>
                     </div>
@@ -157,14 +170,14 @@ const Login: React.FC = () => {
                 ))}
               </div>
 
-              <div className="mt-8 max-w-[760px] rounded-[2rem] border border-white/10 bg-white/[0.05] px-7 py-6 shadow-[0_12px_40px_rgba(0,0,0,0.2)]">
+              <div className="mt-7 max-w-[650px] rounded-[1.5rem] border border-white/10 bg-white/[0.05] px-6 py-5 shadow-[0_12px_40px_rgba(0,0,0,0.2)]">
                 <div className="flex items-start gap-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#ff7a00] text-white shadow-[0_10px_30px_rgba(255,122,0,0.35)]">
-                    <ShieldCheck size={26} />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#ff7a00] text-white shadow-[0_10px_30px_rgba(255,122,0,0.35)]">
+                    <ShieldCheck size={24} />
                   </span>
                   <div>
-                    <p className="text-2xl font-bold text-white">Seguro, confiavel e sempre disponivel.</p>
-                    <p className="mt-2 text-lg font-medium text-white/72">
+                    <p className="text-xl font-bold text-white">Seguro, confiavel e sempre disponivel.</p>
+                    <p className="mt-1 text-base font-medium text-white/72">
                       Seus dados protegidos com tecnologia de ponta.
                     </p>
                   </div>
@@ -172,8 +185,8 @@ const Login: React.FC = () => {
               </div>
             </section>
 
-            <section className="relative z-20 mx-auto w-full max-w-[520px]">
-              <div className="relative overflow-hidden rounded-[2.3rem] bg-white p-9 text-slate-950 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+            <section className="relative z-20 w-full max-w-[500px] justify-self-end">
+              <div className="relative overflow-hidden rounded-[2rem] bg-white p-8 text-slate-950 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
                 {isSuccess ? (
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/95 px-8 text-center backdrop-blur-sm">
                     <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-[#ff7a00]">
@@ -190,7 +203,7 @@ const Login: React.FC = () => {
                 <p className="text-sm font-black uppercase tracking-[0.28em] text-[#ff7a00]">
                   Painel administrativo
                 </p>
-                <h2 className="mt-6 text-[3.4rem] font-black leading-[0.98] tracking-tight text-[#141414]">
+                <h2 className="mt-6 text-4xl font-black leading-[1.02] tracking-tight text-[#141414] xl:text-5xl">
                   Bem-vindo(a) ao <span className="text-[#ff7a00]">WooTech Imob</span>
                 </h2>
                 <p className="mt-5 text-lg font-medium leading-relaxed text-slate-500">
@@ -198,7 +211,7 @@ const Login: React.FC = () => {
                   atendimento e operacoes urbanas e rurais.
                 </p>
 
-                <form onSubmit={handleSubmit} className="mt-9 space-y-6">
+                <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                   <div className="space-y-3">
                     <label className="text-base font-bold text-slate-700">E-mail corporativo</label>
                     <div className="relative">
@@ -208,7 +221,7 @@ const Login: React.FC = () => {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-16 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-lg font-semibold text-slate-900 outline-none transition focus:border-[#ff7a00] focus:ring-4 focus:ring-orange-100"
+                        className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-base font-semibold text-slate-900 outline-none transition focus:border-[#ff7a00] focus:ring-4 focus:ring-orange-100"
                         placeholder="seu@email.com.br"
                       />
                     </div>
@@ -228,7 +241,7 @@ const Login: React.FC = () => {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-16 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-lg font-semibold text-slate-900 outline-none transition focus:border-[#ff7a00] focus:ring-4 focus:ring-orange-100"
+                        className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-base font-semibold text-slate-900 outline-none transition focus:border-[#ff7a00] focus:ring-4 focus:ring-orange-100"
                         placeholder="Digite sua senha"
                       />
                     </div>
@@ -249,7 +262,7 @@ const Login: React.FC = () => {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#ff7a00] to-[#ff5f0a] text-xl font-black text-white transition hover:from-[#f17200] hover:to-[#f25a00] disabled:cursor-not-allowed disabled:opacity-70"
+                    className="inline-flex h-[3.75rem] w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#ff7a00] to-[#ff5f0a] py-4 text-lg font-black text-white transition hover:from-[#f17200] hover:to-[#f25a00] disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {submitting ? (
                       <Loader2 className="animate-spin" size={24} />
@@ -289,7 +302,7 @@ const Login: React.FC = () => {
             </section>
           </div>
 
-          <div className="mt-8 grid gap-4 rounded-[2rem] border border-white/10 bg-black/20 p-6 lg:grid-cols-4 lg:px-10">
+          <div className="mt-7 grid gap-4 rounded-[1.5rem] border border-white/10 bg-black/25 p-5 lg:grid-cols-4 lg:px-8">
             {stats.map((item) => (
               <div key={item.label} className="flex items-center gap-4 border-white/10 lg:border-r lg:last:border-r-0">
                 <span className="text-[#ff7a00]">

@@ -22,6 +22,45 @@ const signerSchema = z.object({
   signer_cpf: z.string().optional(),
 });
 
+export function getSignatureWebhookSecret(provider) {
+  const genericSecret = String(process.env.SIGNATURE_WEBHOOK_SECRET || '').trim();
+  const providerSecret =
+    provider === 'clicksign'
+      ? String(process.env.CLICKSIGN_WEBHOOK_SECRET || '').trim()
+      : provider === 'zapsign'
+        ? String(process.env.ZAPSIGN_WEBHOOK_SECRET || '').trim()
+        : '';
+
+  return providerSecret || genericSecret;
+}
+
+export function getIncomingSignatureWebhookSecret(req) {
+  return String(
+    req.query.token ||
+      req.query.secret ||
+      req.headers['x-signature-webhook-secret'] ||
+      req.headers['x-webhook-secret'] ||
+      req.headers.authorization?.replace(/^Bearer\s+/i, '') ||
+      ''
+  ).trim();
+}
+
+export function assertSignatureWebhookAuthorized(req, provider) {
+  const expectedSecret = getSignatureWebhookSecret(provider);
+  if (!expectedSecret) {
+    const error = new Error('Webhook de assinatura nao configurado');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const receivedSecret = getIncomingSignatureWebhookSecret(req);
+  if (!receivedSecret || receivedSecret !== expectedSecret) {
+    const error = new Error('Webhook de assinatura nao autorizado');
+    error.statusCode = 401;
+    throw error;
+  }
+}
+
 /**
  * GET /api/locacao/signatures/:lease_id
  */
@@ -246,6 +285,8 @@ router.post('/webhook/:provider', async (req, res) => {
     if (!['clicksign', 'zapsign'].includes(provider)) {
       return res.status(400).json({ error: 'Unsupported provider' });
     }
+
+    assertSignatureWebhookAuthorized(req, provider);
 
     const result = await SignatureInvitationService.handleWebhook(provider, req.body);
     res.json(result);

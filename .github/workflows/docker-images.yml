@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - codex/main-whatsapp-media-hotfix
   workflow_dispatch:
 
 permissions:

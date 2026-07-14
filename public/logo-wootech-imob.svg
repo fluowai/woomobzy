@@ -1,11 +1,12 @@
-<svg width="256" height="64" viewBox="0 0 256 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="18" fill="#0F766E"/>
-  <path d="M18 20H26L32 40L38 20H46L36.5 48H27.5L18 20Z" fill="#F8FAFC"/>
-  <path d="M53 16H61V48H53V16Z" fill="#CCFBF1"/>
-  <path d="M84 24C79.0294 24 75 28.0294 75 33C75 37.9706 79.0294 42 84 42C88.9706 42 93 37.9706 93 33C93 28.0294 88.9706 24 84 24ZM67 33C67 23.6112 74.6112 16 84 16C93.3888 16 101 23.6112 101 33C101 42.3888 93.3888 50 84 50C74.6112 50 67 42.3888 67 33Z" fill="#0F172A"/>
-  <path d="M109 24H117V27.5C119.083 24.75 122.333 23 126 23C132.904 23 138 28.2574 138 35.6667V49H130V36.6667C130 32.6026 127.467 30 123.667 30C119.867 30 117 32.6026 117 36.6667V49H109V24Z" fill="#0F172A"/>
-  <path d="M149 16H157V49H149V16Z" fill="#0F172A"/>
-  <path d="M175 23C182.18 23 188 28.8203 188 36C188 43.1797 182.18 49 175 49C167.82 49 162 43.1797 162 36C162 28.8203 167.82 23 175 23ZM175 30C172.239 30 170 32.2386 170 35C170 37.7614 172.239 40 175 40C177.761 40 180 37.7614 180 35C180 32.2386 177.761 30 175 30Z" fill="#0F172A"/>
-  <path d="M197 24H205V27.2143C206.875 24.7143 209.857 23 213.286 23C219.45 23 224 28.0571 224 35.5357V49H216V36.9643C216 32.9647 213.833 30.4286 210.286 30.4286C206.739 30.4286 205 32.9647 205 36.9643V49H197V24Z" fill="#0F172A"/>
-  <path d="M232 24H240V49H232V24ZM232 16H240V21H232V16Z" fill="#0F172A"/>
+<svg width="320" height="72" viewBox="0 0 320 72" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">WooTech Imob</title>
+  <rect x="4" y="4" width="64" height="64" rx="20" fill="#0B1C18"/>
+  <rect x="4" y="4" width="64" height="64" rx="20" stroke="#1F5F50" stroke-width="2"/>
+  <circle cx="36" cy="36" r="18" stroke="#C8FF66" stroke-width="3"/>
+  <path d="M24.5 44L29 27H33.2L37 39L41 27H45.1L49.5 44H45.2L42.6 32.5L38.8 44H35.3L31.5 32.5L28.8 44H24.5Z" fill="#F8FAFC"/>
+  <circle cx="51" cy="22" r="5.5" fill="#14B87A"/>
+  <text x="86" y="29" fill="#0B1C18" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="0.28em">WOOTECH</text>
+  <text x="86" y="56" fill="#0B1C18" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="800">Imob</text>
+  <path d="M171 40H245" stroke="#14B87A" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="256" cy="40" r="8" fill="#C8FF66"/>
 </svg>

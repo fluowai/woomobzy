@@ -22,7 +22,8 @@
     "setup-db": "node --env-file=.env scripts/setup-db.mjs",
     "run-migrations": "node --env-file=.env scripts/run-migrations.mjs",
     "migrate": "node --env-file=.env scripts/auto-migrate.mjs",
-    "start:prod": "node server/index.js"
+    "start:prod": "node server/index.js",
+    "preflight": "bash scripts/preflight.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

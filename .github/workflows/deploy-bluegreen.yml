@@ -1,0 +1,66 @@
+name: deploy-bluegreen
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_color:
+        description: 'Which color to deploy TO (idle side)'
+        required: true
+        default: 'green'
+        type: choice
+        options: [blue, green]
+
+concurrency:
+  group: deploy-bluegreen
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production-${{ inputs.target_color }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy to ${{ inputs.target_color }} (idle)
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          TARGET_COLOR: ${{ inputs.target_color }}
+        run: bash scripts/deploy-color.sh
+
+      - name: Health gate
+        env:
+          TARGET_URL: https://${{ inputs.target_color }}.woomobzy.com/api/health
+        run: |
+          for i in {1..10}; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$TARGET_URL")
+            [ "$code" = "200" ] || { echo "health check $i failed ($code)"; exit 1; }
+            sleep 3
+          done
+
+      - name: k6 smoke
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: tests/load/smoke.js
+        env:
+          BASE_URL: https://${{ inputs.target_color }}.woomobzy.com
+
+      - name: Swap traffic (promote ${{ inputs.target_color }} → active)
+        env:
+          LB_TOKEN: ${{ secrets.LB_TOKEN }}
+          TARGET_COLOR: ${{ inputs.target_color }}
+        run: bash scripts/swap-color.sh
+
+      - name: Post-swap monitor (5m error-rate < 1%)
+        env:
+          METRICS_URL: ${{ secrets.METRICS_URL }}
+        run: bash scripts/post-swap-monitor.sh
+
+      - name: Rollback on failure
+        if: failure()
+        env:
+          LB_TOKEN: ${{ secrets.LB_TOKEN }}
+        run: bash scripts/rollback-color.sh

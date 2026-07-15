@@ -14,10 +14,9 @@ dist-ssr
 
 # Environment files - NEVER COMMIT THESE
 .env
-.env.local
-.env.*.local
-.env.production
-.env.staging
+.env.*
+!.env.example
+!.env.*.example
 
 # Editor directories and files
 .vscode/*
@@ -60,3 +59,16 @@ coverage
 *.bak
 *.backup
 *.new
+
+# Database dumps / backups
+backups/
+*.sql.gz
+*.dump
+
+# Playwright / E2E artifacts
+playwright-report/
+test-results/
+.playwright/
+
+# Sourcemaps (never publish)
+*.map

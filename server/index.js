@@ -7,6 +7,8 @@ import { dirname, join } from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
+import { createRateLimiter } from './lib/rateLimiter.js';
+import { initSentry, sentryRequestHandler, sentryErrorHandler } from './lib/sentry.js';
 import {
   normalizeDomain,
   syncPlatformTraefikServices,
@@ -60,6 +62,9 @@ const __dirname = dirname(__filename);
 // Load .env only if it exists (for local development)
 dotenv.config({ path: join(__dirname, '../.env') });
 
+// Sentry (no-op se SENTRY_DSN ausente)
+await initSentry();
+
 // ── Validação de Variáveis de Ambiente Obrigatórias ───────────────────────
 const REQUIRED_ENV_VARS = [
   'VITE_SUPABASE_URL',
@@ -84,6 +89,7 @@ if (missingVars.length > 0) {
 
 const app = express();
 app.set('trust proxy', 1);
+app.use(sentryRequestHandler());
 const isProduction = process.env.NODE_ENV === 'production';
 const platformOrigins = getPlatformOriginList();
 
@@ -163,7 +169,7 @@ const corsOptions = createCorsOptions({ isProduction, normalizeDomain, getSupaba
 app.use(cors(corsOptions));
 // MUITO IMPORTANTE: Garante o Preflight (OPTIONS)
 app.options(/(.*)/, cors(corsOptions));
-const globalLimiter = rateLimit({
+const globalLimiter = await createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 1000, // Generoso para produção inicial
   message: { error: 'Muitas requisições. Tente novamente em 15 minutos.' },
@@ -326,6 +332,9 @@ app.all(/(.*)/, (req, res) => {
     error: "Route not found"
   });
 });
+
+// Sentry error handler antes do handler global
+app.use(sentryErrorHandler());
 
 // 7. TRATAMENTO GLOBAL DE ERROS
 app.use((err, req, res, next) => {

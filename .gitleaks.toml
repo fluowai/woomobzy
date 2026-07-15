@@ -1,0 +1,15 @@
+title = "woomobzy gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Falsos positivos conhecidos"
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''(^|/)HARDENING\.md$''',
+  '''(^|/)docs/''',
+]
+regexes = [
+  '''EXAMPLE_[A-Z0-9_]+''',
+]

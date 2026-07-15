@@ -19,12 +19,42 @@
       "jsx": true
     }
   },
-  "plugins": ["react", "react-hooks", "@typescript-eslint", "prettier"],
+  "plugins": [
+    "react",
+    "react-hooks",
+    "@typescript-eslint",
+    "prettier"
+  ],
   "rules": {
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+    "no-console": [
+      "warn",
+      {
+        "allow": [
+          "warn",
+          "error",
+          "info"
+        ]
+      }
+    ]
   },
+  "overrides": [
+    {
+      "files": [
+        "server/**/*.js",
+        "scripts/**/*.js",
+        "vite.config.ts",
+        "playwright.config.ts",
+        "**/*.test.*",
+        "**/*.spec.*"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ],
   "settings": {
     "react": {
       "version": "detect"

@@ -1,0 +1,29 @@
+# gitleaks config for woomobzy
+# Docs: https://github.com/gitleaks/gitleaks
+title = "woomobzy gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for known safe fixtures and templates"
+paths = [
+  '''.*\.env\.production\.template$''',
+  '''.*\.env\.example$''',
+  '''(^|/)mocks\.ts$''',
+  '''(^|/)fixtures/.*''',
+  '''(^|/)tests?/.*fixtures?/.*''',
+  '''package-lock\.json$''',
+]
+regexes = [
+  # Placeholders and obvious dummies used in docs / templates
+  '''(?i)(your[-_]?(api[-_]?key|token|secret)|changeme|placeholder|example[-_]?(key|token|secret))''',
+  '''sk_test_[A-Za-z0-9]{10,}''',
+  '''pk_test_[A-Za-z0-9]{10,}''',
+]
+
+[[rules]]
+id = "generic-jwt"
+description = "JSON Web Token"
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'''
+tags = ["jwt"]

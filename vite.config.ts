@@ -61,35 +61,13 @@ export default defineConfig(({ mode }) => {
           scope: '/',
           start_url: '/',
           icons: [
-            {
-              src: '/icons/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any maskable',
-            },
-            {
-              src: '/icons/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable',
-            },
+            { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
           ],
           categories: ['business', 'productivity', 'real estate'],
           shortcuts: [
-            {
-              name: 'Painel WooTech Imob',
-              short_name: 'Painel',
-              description: 'Abrir o painel do sistema',
-              url: '/login',
-              icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
-            },
-            {
-              name: 'Agendar demonstracao',
-              short_name: 'Demo',
-              description: 'Solicitar uma demonstracao da plataforma',
-              url: '/consultoria',
-              icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
-            },
+            { name: 'Painel WooTech Imob', short_name: 'Painel', description: 'Abrir o painel do sistema', url: '/login', icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }] },
+            { name: 'Agendar demonstracao', short_name: 'Demo', description: 'Solicitar uma demonstracao da plataforma', url: '/consultoria', icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }] },
           ],
         },
         workbox: {
@@ -97,44 +75,12 @@ export default defineConfig(({ mode }) => {
           clientsClaim: true,
           skipWaiting: true,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
-          globIgnores: [
-            '**/templates/**',
-            '**/images/fazendas-brasil/**',
-            '**/WhatsApp*.jpeg',
-          ],
+          globIgnores: ['**/templates/**', '**/images/fazendas-brasil/**', '**/WhatsApp*.jpeg'],
           maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
           runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
-                },
-              },
-            },
-            {
-              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'gstatic-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
-                },
-              },
-            },
-            {
-              urlPattern: /^https:\/\/api\.supabase\.(co|com)\/.*/i,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'supabase-cache',
-                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
-                networkTimeoutSeconds: 10,
-              },
-            },
+            { urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i, handler: 'CacheFirst', options: { cacheName: 'google-fonts-cache', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } } },
+            { urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i, handler: 'CacheFirst', options: { cacheName: 'gstatic-fonts-cache', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } } },
+            { urlPattern: /^https:\/\/api\.supabase\.(co|com)\/.*/i, handler: 'NetworkFirst', options: { cacheName: 'supabase-cache', expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 }, networkTimeoutSeconds: 10 } },
           ],
         },
       }),
@@ -142,16 +88,11 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: [
         { find: '@', replacement: path.resolve(process.cwd(), '.') },
-        {
-          find: /^leaflet-draw$/,
-          replacement: path.resolve(
-            process.cwd(),
-            'src/shims/leaflet-draw-default.ts'
-          ),
-        },
+        { find: /^leaflet-draw$/, replacement: path.resolve(process.cwd(), 'src/shims/leaflet-draw-default.ts') },
       ],
     },
     build: {
+      sourcemap: false,
       chunkSizeWarningLimit: 900,
       rollupOptions: {
         output: {

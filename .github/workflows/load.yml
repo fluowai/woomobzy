@@ -1,0 +1,24 @@
+name: load
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # semanal, seg 06:00 UTC
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup k6
+        run: |
+          curl -sL https://github.com/grafana/k6/releases/download/v0.51.0/k6-v0.51.0-linux-amd64.tar.gz \
+            | tar -xz --strip-components=1 -C /usr/local/bin k6-v0.51.0-linux-amd64/k6
+      - name: Baseline
+        env:
+          BASE_URL: ${{ secrets.LOAD_BASE_URL }}
+        run: k6 run tests/load/k6-baseline.js
+      - name: Webhook rejection
+        env:
+          BASE_URL: ${{ secrets.LOAD_BASE_URL }}
+        run: k6 run tests/load/k6-webhook.js

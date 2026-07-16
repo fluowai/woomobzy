@@ -1,0 +1,59 @@
+name: sbom
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * 1'
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  cyclonedx:
+    name: CycloneDX SBOM + Sigstore attest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root deps
+        run: npm ci --ignore-scripts || npm i --ignore-scripts
+
+      - name: Install server deps
+        working-directory: server
+        run: npm ci --ignore-scripts || npm i --ignore-scripts
+
+      - name: Generate CycloneDX SBOM (root)
+        run: npx --yes @cyclonedx/cyclonedx-npm@2 --output-file sbom-root.cdx.json --output-format json
+
+      - name: Generate CycloneDX SBOM (server)
+        working-directory: server
+        run: npx --yes @cyclonedx/cyclonedx-npm@2 --output-file ../sbom-server.cdx.json --output-format json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: |
+            sbom-root.cdx.json
+            sbom-server.cdx.json
+          retention-days: 90
+
+      - name: Sigstore attest SBOM (root)
+        uses: actions/attest-sbom@v1
+        with:
+          subject-path: sbom-root.cdx.json
+          sbom-path: sbom-root.cdx.json
+
+      - name: Sigstore attest SBOM (server)
+        uses: actions/attest-sbom@v1
+        with:
+          subject-path: sbom-server.cdx.json
+          sbom-path: sbom-server.cdx.json

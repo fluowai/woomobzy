@@ -87,6 +87,7 @@ if (missingVars.length > 0) {
 const app = express();
 app.set('trust proxy', 1);
 const isProduction = process.env.NODE_ENV === 'production';
+const isDev = !isProduction;
 const platformOrigins = getPlatformOriginList();
 
 app.use((req, res, next) => {

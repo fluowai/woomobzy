@@ -127,7 +127,10 @@ router.post('/:portal/publish/:propertyId', verifyAdmin, requireTenant, async (r
   } catch (err) {
     console.error('[Portals] Publish error:', err.message);
     res.status(err.statusCode || 500).json({ error: 'Erro ao publicar no portal' });
-  }, verifyAdmin, requireTenant, async (req, res) => {
+  }
+});
+
+router.delete('/:portal/publish/:propertyId', verifyAdmin, requireTenant, async (req, res) => {
   try {
     const result = await unpublishFromPortal({
       supabase,
@@ -140,7 +143,10 @@ router.post('/:portal/publish/:propertyId', verifyAdmin, requireTenant, async (r
   } catch (err) {
     console.error('[Portals] Unpublish error:', err.message);
     res.status(err.statusCode || 500).json({ error: 'Erro ao despublicar do portal' });
-  }, verifyAuth, requireTenant, async (req, res) => {
+  }
+});
+
+router.get('/:portal/publish/:propertyId', verifyAuth, requireTenant, async (req, res) => {
   try {
     const status = await getPortalPublishStatus({
       supabase,

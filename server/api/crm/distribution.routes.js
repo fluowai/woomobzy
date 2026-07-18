@@ -35,7 +35,8 @@ router.post('/distribute', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, broker, strategy: validStrategy });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Distribution] Single distribute error:', err.message);
+    res.status(500).json({ error: 'Erro ao distribuir lead' });
   }
 });
 
@@ -65,7 +66,8 @@ router.post('/bulk-distribute', verifyAuth, requireTenant, async (req, res) => {
       failed: results.filter((r) => !r.success).length,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Distribution] Bulk distribute error:', err.message);
+    res.status(500).json({ error: 'Erro ao distribuir leads em massa' });
   }
 });
 

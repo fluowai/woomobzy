@@ -106,8 +106,8 @@ const Login: React.FC = () => {
 
   return (
     <main className="min-h-screen bg-[#f4f7f2] text-slate-950">
-      <div className="grid min-h-screen lg:grid-cols-[minmax(0,0.92fr)_minmax(480px,1.08fr)]">
-        <section className="relative hidden overflow-hidden bg-[#0b1c18] px-10 py-8 text-white lg:flex lg:flex-col lg:justify-between">
+      <div className="flex min-h-screen w-full flex-col lg:flex-row">
+        <section className="relative hidden w-full overflow-hidden bg-[#0b1c18] px-10 py-8 text-white lg:flex lg:w-[45%] lg:flex-col lg:justify-between xl:w-[42%]">
           <div className="absolute inset-0">
             <img
               src="/templates/urban/urban_ready_move.png"
@@ -158,7 +158,7 @@ const Login: React.FC = () => {
           </div>
         </section>
 
-        <section className="flex min-h-screen items-center justify-center px-5 py-8 sm:px-8 lg:px-12">
+        <section className="flex min-h-screen w-full items-center justify-center px-5 py-8 sm:px-8 lg:w-[55%] lg:px-12 xl:w-[58%]">
           <div className="w-full max-w-[520px]">
             <div className="mb-10 flex items-center justify-between gap-4 lg:hidden">
               <Link to="/" aria-label="Voltar para a pagina inicial" className="inline-flex">

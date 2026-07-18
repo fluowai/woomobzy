@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { logger } from '@/utils/logger';
+import React, { useEffect, useState } from 'react';
 import {
   Sparkles,
   MessageSquare,
@@ -14,24 +15,54 @@ import {
   matchLeadWithProperties,
   generateCollectionMessage,
 } from '../services/geminiService';
-import { MOCK_PROPERTIES, MOCK_LEADS } from '../constants';
+import { propertyService } from '../services/properties';
+import { leadService } from '../services/leads';
+import type { Lead, Property } from '../types';
 
 const AIAssistant: React.FC = () => {
   const [descriptionResult, setDescriptionResult] = useState('');
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
-  const [selectedPropId, setSelectedPropId] = useState(MOCK_PROPERTIES[0].id);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loadingResources, setLoadingResources] = useState(true);
+  const [resourceError, setResourceError] = useState('');
+  const [selectedPropId, setSelectedPropId] = useState('');
 
   const [matchResult, setMatchResult] = useState('');
   const [isMatching, setIsMatching] = useState(false);
-  const [selectedLeadId, setSelectedLeadId] = useState(MOCK_LEADS[0].id);
+  const [selectedLeadId, setSelectedLeadId] = useState('');
 
   const [collectionResult, setCollectionResult] = useState('');
   const [isGeneratingColl, setIsGeneratingColl] = useState(false);
-  const [collectionData, setCollectionData] = useState({ name: 'João Silva', amount: 4500, days: 45 });
+  const [collectionData, setCollectionData] = useState({ name: '', amount: 0, days: 0 });
+
+  useEffect(() => {
+    const loadResources = async () => {
+      try {
+        setLoadingResources(true);
+        setResourceError('');
+        const [loadedProperties, loadedLeads] = await Promise.all([
+          propertyService.list(1, 200),
+          leadService.list(1, 200),
+        ]);
+        setProperties(loadedProperties);
+        setLeads(loadedLeads);
+        setSelectedPropId(loadedProperties[0]?.id || '');
+        setSelectedLeadId(loadedLeads[0]?.id || '');
+      } catch (error) {
+        logger.error('Erro ao carregar dados reais do AI Studio', error);
+        setResourceError('Não foi possível carregar imóveis e leads do sistema.');
+      } finally {
+        setLoadingResources(false);
+      }
+    };
+
+    void loadResources();
+  }, []);
 
   const handleGenerateDescription = async () => {
     setIsGeneratingDesc(true);
-    const prop = MOCK_PROPERTIES.find((p) => p.id === selectedPropId);
+    const prop = properties.find((p) => p.id === selectedPropId);
     if (prop) {
       const result = await generateSmartDescription(prop);
       setDescriptionResult(result || '');
@@ -41,10 +72,10 @@ const AIAssistant: React.FC = () => {
 
   const handleMatchLeads = async () => {
     setIsMatching(true);
-    const lead = MOCK_LEADS.find((l) => l.id === selectedLeadId);
+    const lead = leads.find((l) => l.id === selectedLeadId);
     if (lead) {
-      const result = await matchLeadWithProperties(lead, MOCK_PROPERTIES);
-      setMatchResult(result || '');
+      const result = await matchLeadWithProperties(lead, properties);
+      setMatchResult(result ? JSON.stringify(result, null, 2) : '');
     }
     setIsMatching(false);
   };
@@ -71,6 +102,11 @@ const AIAssistant: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {resourceError && (
+          <div className="md:col-span-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+            {resourceError}
+          </div>
+        )}
         {/* Copywriting AI */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
           <div className="p-8 border-b border-slate-50">
@@ -85,13 +121,14 @@ const AIAssistant: React.FC = () => {
                 onChange={(e) => setSelectedPropId(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
               >
-                {MOCK_PROPERTIES.map((p) => (
+                <option value="">{loadingResources ? 'Carregando imóveis...' : 'Selecione um imóvel'}</option>
+                {properties.map((p) => (
                   <option key={p.id} value={p.id}>{p.title}</option>
                 ))}
               </select>
               <button
                 onClick={handleGenerateDescription}
-                disabled={isGeneratingDesc}
+                disabled={isGeneratingDesc || loadingResources || !selectedPropId}
                 className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20"
               >
                 {isGeneratingDesc ? <RefreshCw className="animate-spin" size={18} /> : <Zap size={18} />}
@@ -127,13 +164,14 @@ const AIAssistant: React.FC = () => {
                 onChange={(e) => setSelectedLeadId(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
               >
-                {MOCK_LEADS.map((l) => (
+                <option value="">{loadingResources ? 'Carregando leads...' : 'Selecione um lead'}</option>
+                {leads.map((l) => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
               </select>
               <button
                 onClick={handleMatchLeads}
-                disabled={isMatching}
+                disabled={isMatching || loadingResources || !selectedLeadId || properties.length === 0}
                 className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all hover:bg-black disabled:opacity-50"
               >
                 {isMatching ? <RefreshCw className="animate-spin" size={18} /> : <ArrowRight size={18} />}
@@ -189,7 +227,7 @@ const AIAssistant: React.FC = () => {
                     </div>
                     <button 
                       onClick={handleGenerateCollection}
-                      disabled={isGeneratingColl}
+                      disabled={isGeneratingColl || !collectionData.name.trim() || collectionData.amount <= 0}
                       className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 disabled:opacity-50"
                     >
                       {isGeneratingColl ? <RefreshCw className="animate-spin" size={18} /> : <Sparkles size={18} />}

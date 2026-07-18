@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Plus, Edit, Copy, Trash2, CheckCircle, XCircle, Eye, Download, History } from 'lucide-react';
@@ -19,7 +20,7 @@ export const TemplateList: React.FC = () => {
       const { data } = await listTemplates();
       setTemplates(data || []);
     } catch (error) {
-      console.error('Load templates error:', error);
+      logger.error('Load templates error:', error);
     } finally {
       setLoading(false);
     }
@@ -31,7 +32,7 @@ export const TemplateList: React.FC = () => {
       await deleteTemplate(id);
       load();
     } catch (error) {
-      console.error('Delete template error:', error);
+      logger.error('Delete template error:', error);
     }
   };
 

@@ -389,7 +389,8 @@ router.post('/impersonate', verifySuperAdmin, async (req, res) => {
       orgId: org.id 
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Admin] Impersonation error:', err.message);
+    res.status(500).json({ error: 'Erro ao ativar modo suporte' });
   }
 });
 
@@ -983,7 +984,7 @@ router.post('/link-profile', verifySuperAdmin, async (req, res) => {
     });
   } catch (err) {
     console.error('[Admin] Link profile error:', err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Erro ao vincular perfil' });
   }
 });
 

@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import { callApi } from '../src/lib/api';
 import {
   FileText,
   Search,
@@ -25,7 +26,6 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
-import { MOCK_PROPERTIES, MOCK_LEADS } from '../constants.tsx';
 import {
   CONTRACT_TEMPLATES,
   ContractTemplate,
@@ -48,36 +48,7 @@ interface Contract {
 
 const LegalContracts: React.FC = () => {
   const { settings } = useSettings();
-  const [contracts, setContracts] = useState<Contract[]>([
-    {
-      id: 'cnt-01',
-      title: 'Compra e Venda - Fazenda Solar',
-      type: 'Venda',
-      propertyId: 'f1',
-      clientId: 'l1',
-      propertyName: 'Fazenda Rio Doce',
-      clientName: 'AgroInvest S.A.',
-      clientPhone: '5561988880000',
-      status: 'Active',
-      date: '2024-05-15',
-      value: 12500000,
-      templateId: 'venda-rural',
-    },
-    {
-      id: 'cnt-02',
-      title: 'Arrendamento Agrícola',
-      type: 'Arrendamento',
-      propertyId: 'f2',
-      clientId: 'l2',
-      propertyName: 'Sítio Primavera',
-      clientName: 'Carlos Mendes',
-      clientPhone: '5511977776666',
-      status: 'Pending',
-      date: '2024-06-01',
-      value: 45000,
-      templateId: 'arrendamento',
-    },
-  ]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('All');
@@ -117,7 +88,9 @@ const LegalContracts: React.FC = () => {
   }, []);
 
   const loadResources = async () => {
-    const { data: props } = await supabase.from('properties').select('id, title, price');
+    const { data: props } = await supabase
+      .from('properties')
+      .select('id, title, price, city, state, address, total_area_ha, features');
     const { data: leadsData } = await supabase.from('leads').select('id, name, phone');
     setDbProperties(props || []);
     setDbLeads(leadsData || []);
@@ -133,7 +106,7 @@ const LegalContracts: React.FC = () => {
 
       if (error) throw error;
 
-      const mapped: Contract[] = data.map((c) => ({
+      const mapped: Contract[] = (data || []).map((c) => ({
         id: c.id,
         title: c.title,
         type: c.type,
@@ -238,71 +211,35 @@ const LegalContracts: React.FC = () => {
     setIsSendingWhatsApp(true);
     setWhatsappStatus(null);
 
-    const { baseUrl, token, instanceName } = settings.integrations.evolutionApi;
-
-    // Normalização da URL (protocolo e barra final)
-    let normalizedBaseUrl = baseUrl.endsWith('/')
-      ? baseUrl.slice(0, -1)
-      : baseUrl;
-    if (!normalizedBaseUrl.startsWith('http')) {
-      normalizedBaseUrl = `https://${normalizedBaseUrl}`;
-    }
-
-    // Normalização do telefone para padrão internacional (DDI 55)
-    let cleanPhone = contract.clientPhone.replace(/\D/g, '');
-    if (
-      cleanPhone.length > 0 &&
-      !cleanPhone.startsWith('55') &&
-      cleanPhone.length <= 11
-    ) {
-      cleanPhone = `55${cleanPhone}`;
-    }
-
     const content = getGeneratedContent(contract);
     const message = `*DOCUMENTO JURÍDICO - ${contract.title.toUpperCase()}*\n\nOlá ${contract.clientName}, segue a minuta do contrato para sua análise:\n\n${content}`;
 
-    logger.info('Enviando via Evolution API:', {
-      url: `${normalizedBaseUrl}/message/sendText/${instanceName}`,
-      number: cleanPhone,
-    });
-
     try {
-      // Tentar endpoint v2 (mais comum)
-      const response = await fetch(
-        `${normalizedBaseUrl}/message/sendText/${instanceName}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: token,
-          },
-          body: JSON.stringify({
-            number: cleanPhone,
-            text: message,
-            delay: 1200,
-            linkPreview: false,
-          }),
-        }
-      );
+      const result = await callApi('/api/whatsapp-proxy/send-text', {
+        method: 'POST',
+        body: JSON.stringify({
+          phone: contract.clientPhone,
+          message,
+        }),
+      });
 
-      if (response.ok) {
+      if (result.success) {
         setWhatsappStatus({
           type: 'success',
           message: 'Contrato enviado com sucesso via WhatsApp!',
         });
       } else {
-        const errorData = await response.json().catch(() => ({}));
         setWhatsappStatus({
           type: 'error',
-          message: `Erro na API: ${errorData.message || response.statusText || 'Não autorizado/Erro no servidor'}`,
+          message: result.error || 'Erro ao enviar mensagem.',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Erro ao enviar WhatsApp:', error);
       setWhatsappStatus({
         type: 'error',
         message:
-          'Falha de conexão: Verifique se a URL da API está correta e se a instância está conectada.',
+          error.message || 'Falha de conexão com o servidor.',
       });
     } finally {
       setIsSendingWhatsApp(false);
@@ -313,14 +250,16 @@ const LegalContracts: React.FC = () => {
   const getGeneratedContent = (contract: Contract) => {
     const template = CONTRACT_TEMPLATES.find((t) => t.id === contract.templateId);
     if (!template) return '';
-    const property = MOCK_PROPERTIES.find((p) => p.id === contract.propertyId);
+    const property = dbProperties.find((p) => p.id === contract.propertyId);
+    const area = property?.total_area_ha || property?.features?.areaHectares || 0;
+    const registration = property?.features?.registration || property?.features?.legal?.registration;
 
     return template.content
       .replace(/{{client_name}}/g, contract.clientName)
       .replace(/{{property_name}}/g, contract.propertyName)
-      .replace(/{{property_location}}/g, property ? `${property.location.city}, ${property.location.state}` : 'Local não informado')
-      .replace(/{{property_registration}}/g, (property as any)?.registration || 'EM BREVE')
-      .replace(/{{property_area}}/g, property ? property.features.areaHectares.toString() : '0')
+      .replace(/{{property_location}}/g, property ? [property.city, property.state].filter(Boolean).join(', ') || property.address || 'Local não informado' : 'Local não informado')
+      .replace(/{{property_registration}}/g, registration || 'Não informada')
+      .replace(/{{property_area}}/g, String(area))
       .replace(/{{contract_value}}/g, contract.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
       .replace(/{{entry_value}}/g, ((contract as any).entryValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
       .replace(/{{installments}}/g, String((contract as any).installments || 1))

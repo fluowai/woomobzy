@@ -42,7 +42,8 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, portals: result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Portals] List error:', err.message);
+    res.status(500).json({ error: 'Erro ao listar portais' });
   }
 });
 
@@ -60,7 +61,8 @@ router.get('/:portal/config', verifyAdmin, requireTenant, async (req, res) => {
       config: data ? { enabled: data.enabled, ...maskSensitive(data.config) } : null,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Portals] Config get error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar configuracao do portal' });
   }
 });
 
@@ -95,7 +97,8 @@ router.put('/:portal/config', verifyAdmin, requireTenant, async (req, res) => {
 
     res.json({ success: true, message: `Configuração do portal ${req.params.portal} salva.` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Portals] Config save error:', err.message);
+    res.status(500).json({ error: 'Erro ao salvar configuracao do portal' });
   }
 });
 
@@ -122,11 +125,9 @@ router.post('/:portal/publish/:propertyId', verifyAdmin, requireTenant, async (r
 
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
-  }
-});
-
-router.post('/:portal/unpublish/:propertyId', verifyAdmin, requireTenant, async (req, res) => {
+    console.error('[Portals] Publish error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao publicar no portal' });
+  }, verifyAdmin, requireTenant, async (req, res) => {
   try {
     const result = await unpublishFromPortal({
       supabase,
@@ -137,11 +138,9 @@ router.post('/:portal/unpublish/:propertyId', verifyAdmin, requireTenant, async 
 
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
-  }
-});
-
-router.get('/:portal/status/:propertyId', verifyAuth, requireTenant, async (req, res) => {
+    console.error('[Portals] Unpublish error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao despublicar do portal' });
+  }, verifyAuth, requireTenant, async (req, res) => {
   try {
     const status = await getPortalPublishStatus({
       supabase,
@@ -152,7 +151,8 @@ router.get('/:portal/status/:propertyId', verifyAuth, requireTenant, async (req,
 
     res.json({ success: true, status });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
+    console.error('[Portals] Status error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao verificar status do portal' });
   }
 });
 

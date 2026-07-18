@@ -29,6 +29,7 @@ import { SiteSettings } from '../types';
 import { uploadFile } from '../services/storage';
 import { LayoutEditorProvider } from '../context/LayoutEditorContext';
 import { LayoutEditor } from '../components/LayoutEditor/LayoutEditor';
+import { callApi } from '../src/lib/api';
 
 const getContrastColor = (hexcolor: string | undefined) => {
   if (!hexcolor) return 'white';
@@ -1130,40 +1131,28 @@ const TemplateCustomizer: React.FC = () => {
                         return;
                       }
                       try {
-                        logger.info('🔌 Testando conexão Evolution API...');
+                        logger.info('Testando conexão Evolution API via backend...');
 
-                        // Em desenvolvimento, chamar a API diretamente
-                        const apiUrl = `${config.baseUrl}/instance/connectionState/${config.instanceName}`;
+                        // Save settings first so the backend can read the config
+                        updateSettings(localSettings);
 
-                        const res = await fetch(apiUrl, {
-                          method: 'GET',
-                          headers: {
-                            apikey: config.token,
-                          },
+                        const result = await callApi('/api/whatsapp-proxy/test-connection', {
+                          method: 'POST',
                         });
 
-                        if (!res.ok) {
-                          throw new Error(
-                            `Erro HTTP: ${res.status} - Verifique a URL base, token e nome da instância`
-                          );
-                        }
-
-                        const data = await res.json();
-                        const state = data?.instance?.state || data?.state;
-
-                        if (state === 'open' || state === 'connecting') {
+                        if (result.ok) {
                           alert(
-                            `✅ Conexão estabelecida com sucesso!\nEstado: ${state}`
+                            `Conexão estabelecida com sucesso!\nEstado: ${result.state || 'open'}`
                           );
                         } else {
                           alert(
-                            `⚠️ Instância encontrada, mas estado é: ${state || 'desconhecido'}`
+                            `Instância encontrada, mas estado é: ${result.state || 'desconhecido'}`
                           );
                         }
                       } catch (e: any) {
-                        logger.error('❌ Erro de conexão:', e);
+                        logger.error('Erro de conexão:', e);
                         alert(
-                          `❌ Falha na conexão: ${e.message}\n\nVerifique:\n- URL base está correta\n- Token (apikey) está válido\n- Nome da instância existe`
+                          `Falha na conexão: ${e.message}\n\nVerifique:\n- URL base está correta\n- Token (apikey) está válido\n- Nome da instância existe`
                         );
                       }
                     }}

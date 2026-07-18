@@ -24,7 +24,8 @@ router.get('/whatsapp/contact', verifyAuth, requireTenant, async (req, res) => {
     const tags = lead ? await getLeadTags(req.orgId, lead.id) : [];
     res.json({ success: true, lead, tags });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[WhatsApp] Contact lookup error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar contato' });
   }
 });
 
@@ -41,7 +42,8 @@ router.get('/whatsapp/assignees', verifyAuth, requireTenant, async (req, res) =>
       })),
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[WhatsApp] Assignees error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar corretors' });
   }
 });
 
@@ -87,7 +89,8 @@ router.patch('/whatsapp/contact-profile', verifyAuth, requireTenant, async (req,
 
     res.json({ success: true, lead: data, tags: await getLeadTags(req.orgId, data.id) });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
+    console.error('[WhatsApp] Profile update error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao atualizar perfil' });
   }
 });
 
@@ -112,7 +115,8 @@ router.post('/whatsapp/link-contact', verifyAuth, requireTenant, async (req, res
 
     res.json({ success: true, lead, tags: await getLeadTags(req.orgId, lead.id) });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
+    console.error('[WhatsApp] Link contact error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao vincular contato' });
   }
 });
 
@@ -144,7 +148,8 @@ router.post('/whatsapp/contact-tags', verifyAuth, requireTenant, async (req, res
 
     res.json({ success: true, lead, tags: await getLeadTags(req.orgId, lead.id) });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
+    console.error('[WhatsApp] Tags error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao atualizar tags' });
   }
 });
 
@@ -206,7 +211,8 @@ router.post('/whatsapp/transfer', verifyAuth, requireTenant, async (req, res) =>
       tags: await getLeadTags(req.orgId, data.id),
     });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
+    console.error('[WhatsApp] Transfer error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao transferir atendimento' });
   }
 });
 
@@ -239,7 +245,8 @@ router.post('/whatsapp/priority', verifyAuth, requireTenant, async (req, res) =>
 
     res.json({ success: true, lead: data, tags: await getLeadTags(req.orgId, data.id) });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
+    console.error('[WhatsApp] Priority error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao definir prioridade' });
   }
 });
 
@@ -294,7 +301,8 @@ router.post('/whatsapp/task', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, lead, task, tags: await getLeadTags(req.orgId, lead.id) });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
+    console.error('[WhatsApp] Task error:', err.message);
+    res.status(err.statusCode || 500).json({ error: 'Erro ao criar tarefa' });
   }
 });
 

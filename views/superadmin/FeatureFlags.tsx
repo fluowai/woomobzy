@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   ToggleRight,
@@ -102,21 +103,21 @@ const FeatureFlags: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        console.log('📡 [FeatureFlags] Buscando imobiliárias...');
+        logger.info('[FeatureFlags] Buscando imobiliárias...');
         const { data, error } = await supabase
           .from('organizations')
           .select('id, name, feature_flags')
           .order('name');
         
         if (error) {
-          console.error('❌ [FeatureFlags] Erro ao buscar imobiliárias:', error.message);
+          logger.error('[FeatureFlags] Erro ao buscar imobiliárias:', error.message);
           return;
         }
 
-        console.log(`✅ [FeatureFlags] ${data?.length || 0} imobiliárias carregadas.`);
+        logger.info(`[FeatureFlags] ${data?.length || 0} imobiliárias carregadas.`);
         setTenants(data || []);
       } catch (err: any) {
-        console.error('❌ [FeatureFlags] Erro inesperado:', err.message);
+        logger.error('[FeatureFlags] Erro inesperado:', err.message);
       }
     };
     load();

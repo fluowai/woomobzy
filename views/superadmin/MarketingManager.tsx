@@ -40,14 +40,9 @@ const SITE_TEMPLATES = [
   { id: 'u5', type: 'urban', name: 'Urban Grid', description: 'Visual em masonry (Pinterest-style) para um catálogo denso e diversificado.', color: 'violet' },
 ];
 
-const MOCK_SEO_PAGES: SeoPage[] = [
-  { id: '1', targetCity: 'Florianópolis', targetState: 'SC', keyword: 'crm para imobiliaria', urlSlug: '/crm-para-imobiliaria-em-florianopolis-sc', status: 'published', visits: 1240 },
-  { id: '2', targetCity: 'Porto Alegre', targetState: 'RS', keyword: 'crm para imobiliaria', urlSlug: '/crm-para-imobiliaria-em-porto-alegre-rs', status: 'published', visits: 890 },
-];
-
 const MarketingManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'seo' | 'templates'>('seo');
-  const [seoPages, setSeoPages] = useState<SeoPage[]>(MOCK_SEO_PAGES);
+  const [seoPages] = useState<SeoPage[]>([]);
 
   return (
     <div className="space-y-8">
@@ -80,9 +75,7 @@ const MarketingManager: React.FC = () => {
         <div className="space-y-6 animate-in fade-in">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-800">Estratégia de Dominação Local</h2>
-            <button className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center gap-2">
-              <Plus size={16} /> Nova Página Local
-            </button>
+            <span className="rounded-xl bg-amber-50 px-4 py-2 text-sm font-bold text-amber-700">Backend de SEO ainda não implementado</span>
           </div>
           
           <div className="grid gap-4 md:grid-cols-3">
@@ -98,7 +91,7 @@ const MarketingManager: React.FC = () => {
                 <input placeholder="Palavra-chave (ex: crm para imobiliaria)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500" />
                 <input placeholder="Cidade Alvo (ex: Curitiba)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500" />
                 <input placeholder="Estado (ex: PR)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500" />
-                <button className="w-full bg-slate-900 text-white font-bold py-2 rounded-lg hover:bg-slate-800 transition">Gerar e Publicar</button>
+                <button disabled className="w-full cursor-not-allowed bg-slate-300 text-white font-bold py-2 rounded-lg">Gerar e Publicar</button>
               </div>
             </div>
 
@@ -127,6 +120,11 @@ const MarketingManager: React.FC = () => {
                   </div>
                 </div>
               ))}
+              {seoPages.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+                  Nenhuma página SEO real está cadastrada. A persistência deste módulo ainda precisa ser implementada no backend.
+                </div>
+              )}
             </div>
           </div>
         </div>

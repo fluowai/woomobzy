@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { siteService } from '../services/sites';
@@ -149,7 +150,7 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
 
       setPages(mappedPages);
     } catch (error) {
-      console.error('Erro ao carregar site público:', error);
+      logger.error('Erro ao carregar site público:', error);
     } finally {
       setLoading(false);
     }
@@ -165,7 +166,7 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
         .limit(20);
       setProperties(data || []);
     } catch (error) {
-      console.error('Erro ao carregar imóveis:', error);
+      logger.error('Erro ao carregar imóveis:', error);
     }
   };
 

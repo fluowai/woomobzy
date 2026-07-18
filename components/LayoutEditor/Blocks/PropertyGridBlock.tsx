@@ -14,50 +14,7 @@ export const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
 }) => {
   const config = block.config as PropertyGridBlockConfig;
 
-  // Mock properties para preview
-  const mockProperties: Partial<Property>[] = [
-    {
-      id: '1',
-      title: 'Fazenda Produtiva',
-      price: 4500000,
-      images: ['https://images.unsplash.com/photo-1500382017468-9049fed747ef'],
-      location: {
-        city: 'Sorriso',
-        neighborhood: 'Centro',
-        state: 'MT',
-        address: '',
-      },
-      features: { areaHectares: 1200 } as any,
-    },
-    {
-      id: '2',
-      title: 'Haras de Luxo',
-      price: 8500000,
-      images: ['https://images.unsplash.com/photo-1534329535361-1f6a01149a4a'],
-      location: {
-        city: 'Tatuí',
-        neighborhood: 'Rural',
-        state: 'SP',
-        address: '',
-      },
-      features: { areaHectares: 50 } as any,
-    },
-    {
-      id: '3',
-      title: 'Sítio Café Gourmet',
-      price: 3200000,
-      images: ['https://images.unsplash.com/photo-1505330622279-bf7d7fc918f4'],
-      location: {
-        city: 'Três Pontas',
-        neighborhood: 'Sul de Minas',
-        state: 'MG',
-        address: '',
-      },
-      features: { areaHectares: 150 } as any,
-    },
-  ];
-
-  const displayProperties = mockProperties.slice(0, config.maxItems || 6);
+  const displayProperties: Partial<Property>[] = [];
 
   return (
     <div>
@@ -76,6 +33,9 @@ export const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
           gap: config.gap || 24,
         }}
       >
+        <div className="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+          A prévia usa somente imóveis reais; conecte uma fonte de propriedades ao bloco.
+        </div>
         {displayProperties.map((property) => (
           <div
             key={property.id}

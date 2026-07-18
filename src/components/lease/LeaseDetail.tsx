@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -45,7 +46,7 @@ export const LeaseDetail: React.FC = () => {
       setSignatures(signaturesRes.data);
       setInspections(inspectionsRes.data);
     } catch (error) {
-      console.error('Load lease error:', error);
+      logger.error('Load lease error:', error);
     } finally {
       setLoading(false);
     }

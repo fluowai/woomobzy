@@ -30,7 +30,7 @@ export default async function handler(req, res) {
                     if (error) errors.push({ key: update.key, error: error.message });
                     else results.push(data);
                 } catch (err) {
-                    errors.push({ key: update.key, error: err.message });
+                    errors.push({ key: update.key, error: 'Falha ao atualizar' });
                 }
             }
             

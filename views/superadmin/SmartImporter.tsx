@@ -21,13 +21,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '@/src/lib/api';
 
-const MOCK_IDENTITY = {
-  palette: ['#1e293b', '#3b82f6', '#f8fafc', '#64748b', '#0f172a'],
-  fonts: ['Inter', 'system-ui'],
-  primaryColor: '#1e293b',
-  secondaryColor: '#3b82f6',
-  suggestedTheme: 'modern',
-};
 import { supabase } from '../../services/supabase';
 import {
   ImportMode,
@@ -281,25 +274,11 @@ const SmartImporter: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
               {[
                 {
-                  id: 'visual',
-                  icon: Palette,
-                  title: 'Inspiração Visual',
-                  desc: 'Captura paleta, tipografia e estilo sem importar imóveis.',
-                  color: 'blue',
-                },
-                {
                   id: 'migration',
                   icon: Zap,
                   title: 'Migração Direta',
                   desc: 'Extração completa de imóveis, páginas e identidade via IA.',
                   color: 'indigo',
-                },
-                {
-                  id: 'feed',
-                  icon: Database,
-                  title: 'Feed / Arquivo',
-                  desc: 'Importação estruturada via XML, CSV ou Planilhas.',
-                  color: 'emerald',
                 },
               ].map((m) => (
                 <button
@@ -481,16 +460,6 @@ const SmartImporter: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="p-12 flex-1 animate-in zoom-in-95 duration-500">
-            <VisualPreview
-              identity={MOCK_IDENTITY}
-              onAccept={() => setStep(mode === 'visual' ? 6 : 5)}
-              onRetry={() => setStep(3)}
-            />
           </div>
         )}
 

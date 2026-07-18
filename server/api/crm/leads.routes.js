@@ -72,7 +72,8 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] List error:', err.message);
+    res.status(500).json({ error: 'Erro ao listar leads' });
   }
 });
 
@@ -107,7 +108,8 @@ router.get('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, lead, activities: activities || [] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Get error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar lead' });
   }
 });
 
@@ -188,7 +190,8 @@ router.post('/leads', verifyAuth, requireTenant, async (req, res) => {
 
     res.status(existingLead ? 200 : 201).json({ success: true, lead: matchedLead });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Create/match error:', err.message);
+    res.status(500).json({ error: 'Erro ao criar lead' });
   }
 });
 
@@ -249,7 +252,8 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, lead: matchedLead });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Update error:', err.message);
+    res.status(500).json({ error: 'Erro ao atualizar lead' });
   }
 });
 
@@ -282,7 +286,8 @@ router.post('/leads/:id/match-properties', verifyAuth, requireTenant, async (req
 
     res.json({ success: true, lead: matchedLead });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Match properties error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar propriedades' });
   }
 });
 
@@ -320,7 +325,8 @@ router.patch('/leads/:id/status', verifyAuth, requireTenant, async (req, res) =>
 
     res.json({ success: true, lead: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Status update error:', err.message);
+    res.status(500).json({ error: 'Erro ao alterar status' });
   }
 });
 
@@ -341,7 +347,8 @@ router.get('/leads/:id/activities', verifyAuth, requireTenant, async (req, res) 
 
     res.json({ success: true, activities: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Activities error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar atividades' });
   }
 });
 
@@ -391,7 +398,8 @@ router.post('/leads/:id/activities', verifyAuth, requireTenant, async (req, res)
 
     res.status(201).json({ success: true, activity: data, lead: updatedLead });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Create activity error:', err.message);
+    res.status(500).json({ error: 'Erro ao registrar atividade' });
   }
 });
 
@@ -417,7 +425,8 @@ router.delete('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
     if (error) throw error;
     res.json({ success: true, message: 'Lead excluido com sucesso' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Delete error:', err.message);
+    res.status(500).json({ error: 'Erro ao excluir lead' });
   }
 });
 
@@ -438,7 +447,8 @@ router.post('/leads/bulk-delete', verifyAuth, requireTenant, async (req, res) =>
     if (error) throw error;
     res.json({ success: true, message: `${ids.length} leads excluidos com sucesso` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Leads] Bulk delete error:', err.message);
+    res.status(500).json({ error: 'Erro ao excluir leads em massa' });
   }
 });
 

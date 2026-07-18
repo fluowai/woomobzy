@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
@@ -135,49 +136,6 @@ const quizQuestions = [
   },
 ];
 
-const fallbackProperties: PublicProperty[] = [
-  {
-    id: 'fazendas-demo-1',
-    title: 'Fazenda Santa Helena',
-    price: 85000000,
-    city: 'Goias',
-    state: 'GO',
-    images: ['/images/fazendas-brasil/card-santa-helena.webp'],
-    property_type: 'Pecuaria',
-    total_area_ha: 2350,
-  },
-  {
-    id: 'fazendas-demo-2',
-    title: 'Fazenda Boa Vista',
-    price: 62000000,
-    city: 'Mato Grosso',
-    state: 'MT',
-    images: ['/images/fazendas-brasil/card-boa-vista.webp'],
-    property_type: 'Agricultura',
-    total_area_ha: 1650,
-  },
-  {
-    id: 'fazendas-demo-3',
-    title: 'Fazenda Sao Bento',
-    price: 38000000,
-    city: 'Mato Grosso do Sul',
-    state: 'MS',
-    images: ['/images/fazendas-brasil/card-sao-bento.webp'],
-    property_type: 'Pecuaria',
-    total_area_ha: 1280,
-  },
-  {
-    id: 'fazendas-demo-4',
-    title: 'Fazenda Conquista',
-    price: 95000000,
-    city: 'Bahia',
-    state: 'BA',
-    images: ['/images/fazendas-brasil/card-conquista.webp'],
-    property_type: 'Pecuaria',
-    total_area_ha: 3600,
-  },
-];
-
 const highlights = ['Destaque', 'Exclusivo', 'Oportunidade', 'Destaque'];
 
 const benefits = [
@@ -294,9 +252,9 @@ function getAptitude(property: PublicProperty) {
   return property.property_type || 'Fazenda';
 }
 
-function getPropertyImage(property: PublicProperty, index: number) {
+function getPropertyImage(property: PublicProperty, _index: number) {
   const images = normalizeImages(property.images).filter((image) => !isLegacyBrokenImage(image));
-  return images[0] || CARD_FALLBACK_IMAGE || normalizeImages(fallbackProperties[index % fallbackProperties.length].images)[0] || HERO_IMAGE;
+  return images[0] || CARD_FALLBACK_IMAGE || HERO_IMAGE;
 }
 
 function getPropertyLocation(property: PublicProperty) {
@@ -454,7 +412,7 @@ function isUuid(value: string) {
 const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   organizationId,
 }) => {
-  const [properties, setProperties] = useState<PublicProperty[]>(fallbackProperties);
+  const [properties, setProperties] = useState<PublicProperty[]>([]);
   const [resolvedOrganizationId, setResolvedOrganizationId] = useState<string | undefined>(organizationId || FAZENDAS_ORG_ID);
   const [currentPage, setCurrentPage] = useState(1);
   const [isUsingFallback, setIsUsingFallback] = useState(true);
@@ -496,7 +454,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         setResolvedOrganizationId(orgId);
 
         if (!orgId) {
-          setProperties(fallbackProperties);
+          setProperties([]);
           setIsUsingFallback(true);
           return;
         }
@@ -516,12 +474,12 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           return;
         }
 
-        setProperties(fallbackProperties);
+        setProperties([]);
         setIsUsingFallback(true);
       } catch (error) {
-        console.warn('[Fazendas Brasil] Mantendo vitrine de fallback:', error);
+        logger.warn('[Fazendas Brasil] Não foi possível carregar a vitrine real:', error);
         setResolvedOrganizationId(organizationId || FAZENDAS_ORG_ID);
-        setProperties(fallbackProperties);
+        setProperties([]);
         setIsUsingFallback(true);
       }
     };

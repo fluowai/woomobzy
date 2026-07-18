@@ -19,7 +19,8 @@ router.get('/pipeline', verifyAuth, requireTenant, async (req, res) => {
     const summary = await getPipelineSummary(req.orgId);
     res.json({ success: true, ...summary });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Reports] Pipeline error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar pipeline' });
   }
 });
 
@@ -37,7 +38,8 @@ router.get('/ranking', verifyAuth, requireTenant, async (req, res) => {
     const ranking = await getBrokerRanking(req.orgId, dateRange);
     res.json({ success: true, ranking });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Reports] Ranking error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar ranking' });
   }
 });
 
@@ -55,7 +57,8 @@ router.get('/broker/:brokerId', verifyAuth, requireTenant, async (req, res) => {
     const report = await getBrokerPerformance(req.orgId, req.params.brokerId, dateRange);
     res.json({ success: true, report });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Reports] Broker performance error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar relatorio do corretor' });
   }
 });
 

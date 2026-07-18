@@ -21,6 +21,7 @@ import { createCorsOptions } from './lib/cors-config.js';
 
 // --- Modular Routes ---
 import adminRoutes from './routes/admin.js';
+import adminTemplateRoutes from './routes/admin-templates.js';
 import internalRoutes from './routes/internal.js';
 import importRoutes from './routes/import.js';
 import publicRoutes from './routes/public.js';
@@ -49,10 +50,16 @@ import documentRoutes from './api/documents/index.js';
 import externalDataRoutes from './api/external-data/index.js';
 import quizRoutes from './api/quiz/index.js';
 import accountRoutes from './routes/account.js';
+import whatsappProxyRoutes from './routes/whatsapp-proxy.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
 } from './lib/platform-config.js';
+import {
+  sendWelcomeLimiter,
+  publicLeadLimiter,
+  quizLimiter,
+} from './middleware/rateLimit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -68,18 +75,13 @@ const REQUIRED_ENV_VARS = [
 ];
 const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
 
-console.log('\n--- WhatsApp Check ---');
-console.log(`WhatsApp Provider: ${process.env.WHATSAPP_PROVIDER || 'whatsmeow'}`);
-console.log(`WhatsApp URL: ${process.env.WHATSAPP_API_URL || process.env.WAHA_API_URL || process.env.ARRAPHA_API_URL ? 'configurada' : 'ausente'}`);
-console.log('-------------------------\n');
-
 if (missingVars.length > 0) {
   console.error(
-    '\n❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias não encontradas:'
+    '\n ERRO CRITICO: Variaveis de ambiente obrigatorias nao encontradas:'
   );
-  missingVars.forEach((v) => console.error(`   ❗ ${v}`));
-  console.error('\n → Em producao Docker: adicione no stack/env do servico');
-  console.error(' → Em desenvolvimento: verifique o arquivo .env na raiz\n');
+  missingVars.forEach((v) => console.error(`   ${v}`));
+  console.error('\n -> Em producao Docker: adicione no stack/env do servico');
+  console.error(' -> Em desenvolvimento: verifique o arquivo .env na raiz\n');
 }
 
 const app = express();
@@ -144,18 +146,15 @@ app.use(
   })
 );
 
-// --- Debug Logger Middleware ---
-app.use((req, res, next) => {
-  if (!isProduction && !req.originalUrl.includes('/ws')) {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("METHOD:", req.method);
-    console.log("URL:", req.originalUrl);
-    console.log("ORIGIN:", req.headers.origin || 'No Origin');
-    console.log("IP:", req.ip);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━");
-  }
-  next();
-});
+// --- Debug Logger Middleware (apenas em desenvolvimento) ---
+if (!isProduction) {
+  app.use((req, res, next) => {
+    if (!req.originalUrl.includes('/ws')) {
+      console.log(`[DEV] ${req.method} ${req.originalUrl} | IP: ${req.ip}`);
+    }
+    next();
+  });
+}
 
 // --- CORS Configuration (extracted to lib/cors-config.js) ---
 const corsOptions = createCorsOptions({ isProduction, normalizeDomain, getSupabaseServer });
@@ -173,14 +172,14 @@ app.use(globalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request Logging
-app.use((req, res, next) => {
-  if (!isProduction) {
+// Request Logging (apenas em desenvolvimento)
+if (!isProduction) {
+  app.use((req, res, next) => {
     const auth = req.headers.authorization ? 'auth' : 'anon';
     console.log(`[${new Date().toISOString()}] ${auth} ${req.method} ${req.path}`);
-  }
-  next();
-});
+    next();
+  });
+}
 
 // --- Supabase Client (lazy, via shared singleton) ---
 // Nota: não criamos o client aqui para evitar crash se env vars estiverem ausentes.
@@ -189,6 +188,7 @@ app.use((req, res, next) => {
 // --- API Route Mapping ---
 app.use('/internal', internalRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/templates', adminTemplateRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/onboarding', onboardingRoutes);
@@ -213,6 +213,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/external-data', externalDataRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/account', accountRoutes);
+app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 
@@ -233,10 +234,10 @@ app.get('/api/system-status', async (req, res) => {
       environment: process.env.NODE_ENV
     });
   } catch (error) {
-    console.error("SYSTEM STATUS ERROR:", error);
+    console.error("SYSTEM STATUS ERROR:", error.message);
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: isDev ? error.message : 'Erro ao verificar status'
     });
   }
 });
@@ -287,7 +288,8 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
 });
 
 // Rota para acionar boas-vindas automaticas ao capturar lead via WhatsApp
-app.post('/api/send-welcome', async (req, res) => {
+// Protegida com rate limit especifico (rota sem auth)
+app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
   try {
     const { name, phone, propertyTitle } = req.body;
     if (!name || !phone) {
@@ -311,7 +313,7 @@ app.post('/api/send-welcome', async (req, res) => {
     res.json({ success: true, message: 'Boas-vindas registrada' });
   } catch (err) {
     console.error('[SendWelcome Error]', err.message);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'Erro ao enviar boas-vindas' });
   }
 });
 
@@ -335,7 +337,7 @@ app.use((err, req, res, next) => {
   if (err.message && err.message.includes("CORS")) {
     return res.status(403).json({
       success: false,
-      error: err.message,
+      error: isDev ? err.message : 'Acesso bloqueado por CORS',
       code: 'CORS_BLOCKED',
     });
   }

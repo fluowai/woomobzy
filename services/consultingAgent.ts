@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { geminiService } from './geminiService';
 import { leadService } from './leads';
 
@@ -48,7 +49,7 @@ export const consultingAgent = {
         status: 'Proposta',
       } as any);
     } catch (error) {
-      console.error('Error finalizing qualification:', error);
+      logger.error('Error finalizing qualification:', error);
     }
   },
 };

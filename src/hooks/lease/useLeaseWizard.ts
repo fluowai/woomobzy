@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Lease, LeaseWizardState } from '../../types/lease';
 import { createLease, updateLease } from '../../services/lease/leaseService';
@@ -126,7 +127,7 @@ export function useLeaseWizard(existingLease?: Lease) {
         })
       );
     } catch (error) {
-      console.error('Auto-save error:', error);
+      logger.error('Auto-save error:', error);
       setWizard((prev) => ({ ...prev, isSaving: false }));
     }
   }, [lease, wizard.leaseId, wizard.currentStep, wizard.completedSteps]);

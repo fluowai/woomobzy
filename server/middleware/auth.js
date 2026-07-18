@@ -86,20 +86,12 @@ export const verifyAuth = async (req, res, next) => {
       .toLowerCase()
       .trim();
 
-    // Break-glass final: em producao ja vimos tokens/perfis antigos chegarem
-    // sem metadata de role, mesmo com o perfil correto no banco.
-    if (effectiveProfileEmail === 'fluowai@gmail.com') {
-      if (profile.role !== 'superadmin' || profile.organization_id) {
-        console.warn('[Auth] Break-glass superadmin aplicado ao dono do sistema', {
-          userId: user.id,
-          profileId: profile.id,
-          previousRole: profile.role,
-          previousOrg: profile.organization_id || null,
-        });
-      }
-      profile.role = 'superadmin';
-      profile.organization_id = null;
-    }
+    // Nota: break-glass hardcoded removido por seguranca.
+    // O email 'fluowai@gmail.com' deve ter role='superadmin' definido no banco.
+
+    // Nota: break-glass hardcoded foi removido por seguranca.
+    // O role do usuario vem exclusivamente do banco de dados (profiles table).
+    // Se o dono do sistema precisar de superadmin, deve ser definido no banco.
 
     // Injetar dados no request
     req.user = { ...user, id: profile.id || user.id };
@@ -413,11 +405,8 @@ async function resolveProfileForUser(supabase, user) {
       user.user_metadata?.user_role
   );
 
-  // BREAK-GLASS RECOVERY: Se for o dono do sistema, garantir que é superadmin
-  // mesmo que o token ou o banco de dados tenham se corrompido ou sido rebaixados.
-  if (email === 'fluowai@gmail.com') {
-    metadataRole = 'superadmin';
-  }
+  // Nota: break-glass hardcoded removido por seguranca.
+  // Roles devem vir exclusivamente do banco de dados.
 
   const { data: profileById, error: profileByIdError } = await supabase
     .from('profiles')
@@ -426,9 +415,16 @@ async function resolveProfileForUser(supabase, user) {
     .maybeSingle();
 
   if (!profileByIdError && profileById) {
-    // FIX: Se o metadata diz que o usuário é superadmin, nós forçamos o role
-    // caso ele tenha sido rebaixado por engano pelo bug de auto-criação anterior.
+    // FIX: Se o metadata diz que o usuario e superadmin, nos forcamos o role
+    // somente se o banco estiver inconsistente com o metadata do auth.
+    // Isso e necessario porque usuarios criados com role='superadmin' no auth
+    // podem ter sido rebaixados por bugs anteriores de auto-criacao.
     if (metadataRole === 'superadmin' && profileById.role !== 'superadmin') {
+      console.warn('[Auth] Role do metadata (superadmin) difere do banco, atualizando', {
+        userId: user.id,
+        bankRole: profileById.role,
+        metadataRole,
+      });
       profileById.role = 'superadmin';
     }
     return completeProfileOrganization(supabase, user, profileById, {
@@ -451,6 +447,12 @@ async function resolveProfileForUser(supabase, user) {
       profileId: profileByEmail.id,
     });
     if (metadataRole === 'superadmin' && profileByEmail.role !== 'superadmin') {
+      console.warn('[Auth] Role do metadata (superadmin) difere do banco (email lookup), atualizando', {
+        userId: user.id,
+        email,
+        bankRole: profileByEmail.role,
+        metadataRole,
+      });
       profileByEmail.role = 'superadmin';
     }
     return completeProfileOrganization(supabase, user, profileByEmail, {

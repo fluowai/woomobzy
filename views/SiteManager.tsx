@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { siteService } from '../services/sites';
@@ -69,7 +70,7 @@ const SiteManager: React.FC = () => {
         setPages(sitePages);
       }
     } catch (error) {
-      console.error('Erro ao carregar site:', error);
+      logger.error('Erro ao carregar site:', error);
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,7 @@ const SiteManager: React.FC = () => {
     try {
       await siteService.update(site.id, updates);
     } catch (error) {
-      console.error('Erro ao salvar:', error);
+      logger.error('Erro ao salvar:', error);
     } finally {
       setSaving(false);
     }
@@ -102,7 +103,7 @@ const SiteManager: React.FC = () => {
       setShowCreatePage(false);
       navigate(`${basePanelPath}/site/pages/${page.id}`);
     } catch (error) {
-      console.error('Erro ao criar página:', error);
+      logger.error('Erro ao criar página:', error);
     }
   };
 
@@ -112,7 +113,7 @@ const SiteManager: React.FC = () => {
       await siteService.deletePage(pageId);
       setPages(pages.filter((p) => p.id !== pageId));
     } catch (error) {
-      console.error('Erro ao excluir página:', error);
+      logger.error('Erro ao excluir página:', error);
     }
   };
 
@@ -121,7 +122,7 @@ const SiteManager: React.FC = () => {
       const dup = await siteService.duplicatePage(pageId);
       setPages([...pages, dup]);
     } catch (error) {
-      console.error('Erro ao duplicar página:', error);
+      logger.error('Erro ao duplicar página:', error);
     }
   };
 
@@ -132,7 +133,7 @@ const SiteManager: React.FC = () => {
         : await siteService.unpublishPage(pageId);
       setPages(pages.map((p) => (p.id === pageId ? updated : p)));
     } catch (error) {
-      console.error('Erro ao publicar/despublicar:', error);
+      logger.error('Erro ao publicar/despublicar:', error);
     }
   };
 
@@ -159,7 +160,7 @@ const SiteManager: React.FC = () => {
       setShowTemplateModal(false);
       await loadSite();
     } catch (error) {
-      console.error('Erro ao aplicar template:', error);
+      logger.error('Erro ao aplicar template:', error);
     } finally {
       setSaving(false);
     }

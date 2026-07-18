@@ -70,7 +70,8 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Properties] List error:', err.message);
+    res.status(500).json({ error: 'Erro ao listar imoveis' });
   }
 });
 
@@ -100,7 +101,8 @@ router.post('/', verifyAdmin, requireTenant, async (req, res) => {
     if (error) throw error;
     res.status(201).json({ success: true, property: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Properties] Create error:', err.message);
+    res.status(500).json({ error: 'Erro ao criar imovel' });
   }
 });
 
@@ -128,7 +130,8 @@ router.put('/:id', verifyAdmin, requireTenant, async (req, res) => {
 
     res.json({ success: true, property: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Properties] Update error:', err.message);
+    res.status(500).json({ error: 'Erro ao atualizar imovel' });
   }
 });
 
@@ -147,7 +150,8 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
     if (error || !data) return res.status(404).json({ error: 'Imóvel não encontrado' });
     res.json({ success: true, property: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Properties] Get error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar imovel' });
   }
 });
 
@@ -185,7 +189,8 @@ router.post('/:id/acp', verifyAdmin, requireTenant, async (req, res) => {
 
     res.json({ success: true, property: data, acp: data.features?.acp || null });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Properties] ACP error:', err.message);
+    res.status(500).json({ error: 'Erro ao processar ACP' });
   }
 });
 
@@ -203,7 +208,8 @@ router.delete('/:id', verifyAdmin, requireTenant, async (req, res) => {
     if (error) throw error;
     res.json({ success: true, message: 'Imóvel excluído' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Properties] Delete error:', err.message);
+    res.status(500).json({ error: 'Erro ao excluir imovel' });
   }
 });
 

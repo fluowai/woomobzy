@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
@@ -55,7 +56,7 @@ const SitePageEditor: React.FC = () => {
         setSite(siteData);
       }
     } catch (error) {
-      console.error('Erro ao carregar página:', error);
+      logger.error('Erro ao carregar página:', error);
       navigate(`${basePanelPath}/site`);
     } finally {
       setLoading(false);
@@ -75,7 +76,7 @@ const SitePageEditor: React.FC = () => {
       setPage(updated);
       setLastSaved(new Date());
     } catch (error) {
-      console.error('Erro ao salvar:', error);
+      logger.error('Erro ao salvar:', error);
     } finally {
       setSaving(false);
     }

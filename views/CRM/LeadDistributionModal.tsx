@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { X, Play } from 'lucide-react';
 import { toast } from 'sonner';
@@ -34,7 +35,7 @@ export const LeadDistributionModal: React.FC<Props> = ({
         setSelectedStrategy(data[0].value);
       }
     } catch (error) {
-      console.error(error);
+      logger.error('Error loading distribution strategies:', error);
       toast.error('Erro ao carregar estratégias de distribuição');
     }
   };

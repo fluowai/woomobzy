@@ -1,43 +1,21 @@
 import { logger } from '@/utils/logger';
-import axios from 'axios';
+import { callApi } from '../src/lib/api';
 
 export const groqService = {
-  generateText: async (prompt: string, apiKey: string) => {
-    if (!apiKey) {
-      logger.warn('⚠️ Groq API Key não fornecida.');
-      return '{}';
-    }
-
+  generateText: async (prompt: string, _apiKey?: string) => {
     try {
-      const response = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            {
-              role: 'system',
-              content:
-                'Você é um especialista em marketing imobiliário rural e urbano.',
-            },
-            { role: 'user', content: prompt },
-          ],
+      const data = await callApi('/api/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          prompt,
           temperature: 0.2,
-          response_format: { type: 'json_object' },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+          jsonMode: true,
+        }),
+      });
 
-      return response.data.choices[0].message.content || '{}';
+      return data.text || '{}';
     } catch (error: any) {
-      logger.error(
-        'Error generating text with Groq:',
-        error.response?.data || error.message
-      );
+      logger.error('Error generating text via AI proxy:', error.message);
       return '{}';
     }
   },

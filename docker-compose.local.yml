@@ -59,6 +59,8 @@ services:
       WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:-local-whatsapp-service-token}
       WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:-local-whatsapp-internal-token}
       WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:-local-whatsapp-ws-secret-change-me}
+      DOCUMENT_WEBHOOK_SECRET: ${DOCUMENT_WEBHOOK_SECRET:-local-document-webhook-secret-change-me}
+      SIGNATURE_WEBHOOK_SECRET: ${SIGNATURE_WEBHOOK_SECRET:-local-signature-webhook-secret-change-me}
       AGRO_INTEL_URL: http://agro-intelligence:8000
       NODE_URL: http://api:3002
       ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
@@ -165,6 +167,7 @@ services:
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       WEBHOOK_URL: http://api:3002/api/documents/webhook/worker-result
+      DOCUMENT_WEBHOOK_SECRET: ${DOCUMENT_WEBHOOK_SECRET:-local-document-webhook-secret-change-me}
     expose:
       - "8001"
     healthcheck:

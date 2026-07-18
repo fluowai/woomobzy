@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
 import { callApi } from '../../../src/lib/api';
 
@@ -117,7 +118,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: res.statusText, code: undefined }));
     if (res.status === 401) {
-      console.warn('[WhatsApp API] Falha 401 apos renovar a sessao.');
+      logger.warn('[WhatsApp API] Falha 401 apos renovar a sessao.');
     }
     if (error.code === 'INVALID_TENANT' || error.code === 'INVALID_IMPERSONATED_ORG') {
       clearImpersonationStorage();
@@ -653,7 +654,7 @@ export const messageApi = {
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: res.statusText }));
       if (res.status === 401) {
-        console.warn('[WhatsApp API] Falha 401 na midia. Servidor Node.js pode estar com a Service Role Key incorreta.');
+        logger.warn('[WhatsApp API] Falha 401 na midia. Servidor Node.js pode estar com a Service Role Key incorreta.');
       }
       throw new Error(error.error || `API Error: ${res.status}`);
     }

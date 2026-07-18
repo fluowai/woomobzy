@@ -92,6 +92,6 @@ export const publicSupabase = createClient(
 export const refreshSupabaseHeaders = () => {
   // Como o client do Supabase é um singleton, em alguns casos é necessário
   // que o app recarregue ou que as chamadas individuais injetem os headers.
-  // No IMOBZY, o reload é o padrão após troca de tenant de suporte.
+  // Na WooTech Imob, o reload é o padrão após troca de tenant de suporte.
   window.location.reload();
 };

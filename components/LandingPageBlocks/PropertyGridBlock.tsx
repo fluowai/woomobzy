@@ -17,113 +17,7 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
   theme,
   properties = [],
 }) => {
-  // Mock properties para preview no editor
-  const mockProperties: Property[] =
-    properties.length > 0
-      ? properties
-      : [
-          {
-            id: '1',
-            organization_id: '',
-            title: 'Fazenda Premium',
-            description: 'Linda fazenda com infraestrutura completa',
-            price: 2500000,
-            type: 'Fazenda' as any,
-            purpose: 'Venda' as any,
-            aptitude: [],
-            status: 'Disponível' as any,
-            location: {
-              city: 'Umuarama',
-              neighborhood: 'Rural',
-              state: 'PR',
-              address: 'Rodovia PR-000',
-            },
-            features: {
-              areaHectares: 150,
-              casaSede: true,
-              caseiros: 2,
-              galpoes: 3,
-              currais: true,
-              tipoSolo: 'Argiloso',
-              usoAtual: ['Pasto', 'Agricultura'],
-              temGado: true,
-              fontesAgua: ['Rio', 'Represa'],
-            },
-            images: [
-              'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800',
-            ],
-            brokerId: '1',
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            organization_id: '',
-            title: 'Sítio com Nascente',
-            description: 'Sítio ideal para lazer e produção',
-            price: 850000,
-            type: 'Sítio' as any,
-            purpose: 'Venda' as any,
-            aptitude: [],
-            status: 'Disponível' as any,
-            location: {
-              city: 'Maringá',
-              neighborhood: 'Rural',
-              state: 'PR',
-              address: 'Estrada Municipal',
-            },
-            features: {
-              areaHectares: 45,
-              casaSede: true,
-              caseiros: 1,
-              galpoes: 1,
-              currais: false,
-              tipoSolo: 'Misto',
-              usoAtual: ['Pasto', 'Reflorestamento'],
-              temGado: false,
-              fontesAgua: ['Nascente'],
-            },
-            images: [
-              'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800',
-            ],
-            brokerId: '1',
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: '3',
-            organization_id: '',
-            title: 'Chácara de Lazer',
-            description: 'Perfeita para finais de semana',
-            price: 450000,
-            type: 'Chácara' as any,
-            purpose: 'Venda' as any,
-            aptitude: [],
-            status: 'Disponível' as any,
-            location: {
-              city: 'Cianorte',
-              neighborhood: 'Rural',
-              state: 'PR',
-              address: 'Estrada Velha',
-            },
-            features: {
-              areaHectares: 12,
-              casaSede: true,
-              caseiros: 0,
-              galpoes: 1,
-              currais: false,
-              tipoSolo: 'Arenoso',
-              usoAtual: ['Lazer'],
-              temGado: false,
-              fontesAgua: ['Poço Artesiano'],
-            },
-            images: [
-              'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800',
-            ],
-            brokerId: '1',
-            createdAt: new Date().toISOString(),
-          },
-        ];
-
-  const displayProperties = mockProperties.slice(0, config.maxItems);
+  const displayProperties = properties.slice(0, config.maxItems);
 
   const gridColsMap: Record<number, string> = {
     2: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2',
@@ -138,6 +32,11 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
           className={`grid ${gridColsMap[config.columns] || 'grid-cols-1 md:grid-cols-3 lg:grid-cols-3'}`}
           style={{ gap: `${config.gap}px` }}
         >
+          {displayProperties.length === 0 && (
+            <div className="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+              Nenhum imóvel real disponível para este bloco.
+            </div>
+          )}
           {displayProperties.map((property) => (
             <PropertyCard
               key={property.id}

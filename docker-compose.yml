@@ -82,6 +82,8 @@ services:
       WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:?set WHATSAPP_SERVICE_TOKEN}
       WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:?set WHATSAPP_INTERNAL_TOKEN}
       WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:?set WHATSAPP_WS_JWT_SECRET}
+      DOCUMENT_WEBHOOK_SECRET: ${DOCUMENT_WEBHOOK_SECRET:?set DOCUMENT_WEBHOOK_SECRET}
+      SIGNATURE_WEBHOOK_SECRET: ${SIGNATURE_WEBHOOK_SECRET:?set SIGNATURE_WEBHOOK_SECRET}
       AGRO_INTEL_URL: http://agro-intelligence:8000
       NODE_URL: http://api:3002
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://imob.wootech.com.br,https://app.wootech.com.br,https://wootech.com.br,https://www.wootech.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br}
@@ -186,6 +188,7 @@ services:
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       WEBHOOK_URL: http://api:3002/api/documents/webhook/worker-result
+      DOCUMENT_WEBHOOK_SECRET: ${DOCUMENT_WEBHOOK_SECRET:?set DOCUMENT_WEBHOOK_SECRET}
     expose:
       - "8001"
     healthcheck:

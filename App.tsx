@@ -1,4 +1,3 @@
-import { logger } from '@/utils/logger';
 import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter as Router,
@@ -27,7 +26,6 @@ import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { AuthProvider } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
-import { LEGACY_PANEL_HOSTS, PANEL_HOST } from './utils/branding';
 
 const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 
@@ -131,16 +129,6 @@ const EmailCenter = lazy(() => import('./views/EmailCenter'));
 // ==========================================
 const AppContent: React.FC = () => {
   const { loading } = useSettings();
-
-  React.useEffect(() => {
-    const panelHosts = new Set([PANEL_HOST, ...LEGACY_PANEL_HOSTS]);
-    if (
-      panelHosts.has(window.location.hostname) &&
-      window.location.pathname === '/'
-    ) {
-      window.location.href = '/login';
-    }
-  }, []);
 
   if (loading) return <FullScreenSpinner />;
 

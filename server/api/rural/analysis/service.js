@@ -99,7 +99,7 @@ export class AnalysisService {
       }
 
       doc.moveDown(4);
-      doc.fillColor('#64748b').fontSize(8).text('Documento gerado automaticamente pelo Sistema IMOBZY Rural.', { align: 'right' });
+      doc.fillColor('#64748b').fontSize(8).text('Documento gerado automaticamente pelo Sistema WooTech Imob Rural.', { align: 'right' });
       doc.text(`Data: ${new Date().toLocaleString()}`, { align: 'right' });
 
       doc.end();

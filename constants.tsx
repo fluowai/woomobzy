@@ -3,7 +3,6 @@ import {
 } from './types';
 import { COMMERCIAL_PRODUCT_NAME } from './utils/branding';
 
-export { MOCK_USER, MOCK_PROPERTIES, MOCK_LEADS } from './mocks';
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   agencyName: COMMERCIAL_PRODUCT_NAME,

@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Youtube,
 } from 'lucide-react';
-import { MOCK_PROPERTIES } from '../constants';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Property,

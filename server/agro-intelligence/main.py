@@ -6,7 +6,7 @@ import uvicorn
 from datetime import datetime
 from geoprocessor import GeoProcessor
 
-app = FastAPI(title="IMOBZY Agro-Intelligence Microservice")
+app = FastAPI(title="WooTech Imob Agro-Intelligence Microservice")
 
 @app.get("/")
 async def root():

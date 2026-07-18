@@ -22,6 +22,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
   const [mediaSourceUrl, setMediaSourceUrl] = useState(message.media_url || '');
   const [mediaLoading, setMediaLoading] = useState(false);
   const [mediaLoadError, setMediaLoadError] = useState('');
+  const autoRefreshMedia = useRef(false);
   const isSent = message.is_from_me;
   const content = (message.content || '').trim();
   const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
@@ -101,7 +102,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
       .finally(() => setMediaLoading(false));
   };
 
-  const autoRefreshMedia = useRef(false);
   const handleMediaError = () => {
     if (autoRefreshMedia.current) {
       setMediaError(true);

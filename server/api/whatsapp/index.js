@@ -7,6 +7,7 @@ import { getPlatformOriginList } from '../../lib/platform-config.js';
 import jwt from 'jsonwebtoken';
 import { createWahaRouter } from './providers/waha-router.js';
 import { getWhatsAppProviderConfig } from './providers/provider-config.js';
+import { whatsappInternalLimiter } from '../../middleware/rateLimit.js';
 
 const router = Router();
 const WHATSAPP_DB_ENV_KEYS = [
@@ -77,7 +78,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     );
   };
 
-  app.post('/api/whatsapp/internal/messages', async (req, res) => {
+  app.post('/api/whatsapp/internal/messages', whatsappInternalLimiter, async (req, res) => {
     const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
     const receivedToken = req.headers['x-whatsapp-internal-token'];
 
@@ -90,11 +91,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       res.json({ success: true, result });
     } catch (err) {
       console.error('[WhatsApp AI Automation Error]', err.message);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: 'Erro ao processar mensagem WhatsApp' });
     }
   });
 
-  app.post('/api/whatsapp/internal/imports/analyze', async (req, res) => {
+  app.post('/api/whatsapp/internal/imports/analyze', whatsappInternalLimiter, async (req, res) => {
     const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
     const receivedToken = req.headers['x-whatsapp-internal-token'];
 
@@ -107,7 +108,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       res.json({ success: true, result });
     } catch (err) {
       console.error('[WhatsApp AI Import Error]', err.message);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: 'Erro ao analisar conversas importadas' });
     }
   });
 

@@ -1,6 +1,7 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const DOCUMENT_WORKER_URL = process.env.DOCUMENT_WORKER_URL || 'http://localhost:8001';
+const DOCUMENT_WEBHOOK_SECRET = String(process.env.DOCUMENT_WEBHOOK_SECRET || '').trim();
 
 export class DocumentService {
   static async uploadAndProcess(file, propertyId, orgId, userId) {
@@ -46,9 +47,14 @@ export class DocumentService {
 
   static async _dispatchProcessing(documentId, fileUrl, orgId) {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (DOCUMENT_WEBHOOK_SECRET) {
+        headers['x-document-webhook-secret'] = DOCUMENT_WEBHOOK_SECRET;
+      }
+
       const response = await fetch(`${DOCUMENT_WORKER_URL}/document/extract`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ document_id: documentId, file_url: fileUrl, organization_id: orgId }),
         signal: AbortSignal.timeout(120000),
       });

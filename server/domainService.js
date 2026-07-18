@@ -234,7 +234,7 @@ async function ensureConfigCanBeWritten(configPath) {
     if (!existingConfig.startsWith(GENERATED_MARKER)) {
       throw new DomainProvisioningError(
         'TRAEFIK_CONFIG_CONFLICT',
-        'Ja existe uma configuracao Traefik nao gerenciada pelo Imobzy para este dominio.',
+        'Ja existe uma configuracao Traefik nao gerenciada pela WooTech Imob para este dominio.',
         409
       );
     }
@@ -310,7 +310,7 @@ export async function removeDockerDomain(domainName) {
     if (!existingConfig.startsWith(GENERATED_MARKER)) {
       throw new DomainProvisioningError(
         'TRAEFIK_CONFIG_CONFLICT',
-        'A configuracao Traefik deste dominio nao foi gerada pelo Imobzy.',
+        'A configuracao Traefik deste dominio nao foi gerada pela WooTech Imob.',
         409
       );
     }

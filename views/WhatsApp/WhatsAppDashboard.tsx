@@ -21,7 +21,6 @@ import InstanceManager from './InstanceManager';
 import {
   MessageSquare,
   Settings,
-  Wifi,
   WifiOff,
   Smartphone,
   DownloadCloud,
@@ -34,17 +33,16 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
-
-const HISTORY_PERIOD_OPTIONS = [
-  { value: 7, label: '7 dias', chatLimit: 80, perChat: 40 },
-  { value: 30, label: '30 dias', chatLimit: 120, perChat: 60 },
-  { value: 60, label: '60 dias', chatLimit: 160, perChat: 80 },
-  { value: 90, label: '90 dias', chatLimit: 180, perChat: 80 },
-  { value: 365, label: '1 ano', chatLimit: 200, perChat: 100 },
-  { value: 0, label: 'Tudo', chatLimit: 200, perChat: 100 },
-];
-
-const INSTANCE_ACTIVITY_WINDOW_MS = 30 * 60 * 1000;
+import {
+  HISTORY_PERIOD_OPTIONS,
+  resultTypeFromFile,
+  isTenantContextError,
+  getLatestChatActivityAt,
+  hasRecentInstanceActivity,
+  withVisualInstanceStatus,
+  formatElapsed,
+} from './WhatsAppDashboard/constants';
+import { ServiceUnavailableScreen, TenantContextErrorScreen } from './WhatsAppDashboard/ErrorScreens';
 
 const WhatsAppDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -490,12 +488,6 @@ const WhatsAppDashboard: React.FC = () => {
     return HISTORY_PERIOD_OPTIONS.find((option) => option.value === value)?.label || '60 dias';
   };
 
-  const formatElapsed = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const rest = seconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
-  };
-
   const handleDeleteAllChats = async () => {
     if (!selectedInstance || deletingChats) return;
 
@@ -575,73 +567,21 @@ const WhatsAppDashboard: React.FC = () => {
 
   if (serviceUnavailable) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[600px]">
-        <div className="text-center max-w-md px-6">
-          <div className="inline-flex p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-6">
-            <WifiOff size={48} className="text-amber-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-text-primary mb-3">WhatsApp Indisponível</h2>
-          <p className="text-text-secondary mb-6 leading-relaxed">
-            O painel não conseguiu consultar a API do WhatsApp. Verifique se o backend Node.js está online e se o proxy /api/whatsapp está chegando no servidor.
-          </p>
-          <div className="bg-bg-hover rounded-xl p-4 text-left text-sm text-text-secondary border border-border mb-6">
-            <p className="font-semibold text-text-primary mb-2">Checklist da conexão:</p>
-            <ul className="space-y-1.5">
-              <li>✅ Frontend chamando /api/whatsapp pelo mesmo domínio</li>
-              <li>✅ Backend Node.js online no servidor</li>
-              <li>✅ WhatsMeow (Go) rodando internamente em 127.0.0.1:3100</li>
-            </ul>
-            {serviceError && (
-              <p className="mt-3 rounded-lg bg-white/70 border border-border px-3 py-2 text-xs break-words">
-                {serviceError}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={() => { setLoading(true); setServiceUnavailable(false); loadInstances(); }}
-            className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium"
-          >
-            Tentar Novamente
-          </button>
-        </div>
-      </div>
+      <ServiceUnavailableScreen
+        serviceError={serviceError}
+        onRetry={() => { setLoading(true); setServiceUnavailable(false); loadInstances(); }}
+      />
     );
   }
 
   if (tenantContextError) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[600px]">
-        <div className="text-center max-w-md px-6">
-          <div className="inline-flex p-5 bg-red-500/10 border border-red-500/20 rounded-2xl mb-6">
-            <WifiOff size={48} className="text-red-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-text-primary mb-3">Organizacao Necessaria</h2>
-          <p className="text-text-secondary mb-6 leading-relaxed">
-            {tenantContextError}
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={() => { setLoading(true); setTenantContextError(''); loadInstances(); }}
-              className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium"
-            >
-              Tentar Novamente
-            </button>
-            <button
-              onClick={handleRecoverOrg}
-              disabled={recovering}
-              className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50"
-            >
-              {recovering ? 'Recuperando...' : 'Recuperar vinculacao'}
-            </button>
-            <button
-              onClick={() => { window.location.href = '/onboarding'; }}
-              className="px-6 py-3 bg-bg-hover text-text-primary border border-border rounded-xl hover:bg-bg-card transition-colors font-medium"
-            >
-              Ir para onboarding
-            </button>
-          </div>
-        </div>
-      </div>
+      <TenantContextErrorScreen
+        tenantContextError={tenantContextError}
+        recovering={recovering}
+        onRetry={() => { setLoading(true); setTenantContextError(''); loadInstances(); }}
+        onRecover={handleRecoverOrg}
+      />
     );
   }
 
@@ -814,44 +754,5 @@ const WhatsAppDashboard: React.FC = () => {
     </div>
   );
 };
-
-function resultTypeFromFile(file: File): string {
-  if (file.type.startsWith('image/')) return 'image';
-  if (file.type.startsWith('audio/')) return 'audio';
-  if (file.type.startsWith('video/')) return 'video';
-  return 'document';
-}
-
-function isTenantContextError(error: any): boolean {
-  return [
-    'TENANT_REQUIRED',
-    'PROFILE_NO_ORG',
-    'PROFILE_ORG_NOT_FOUND',
-    'PROFILE_ORG_INACTIVE',
-    'INVALID_TENANT',
-    'INVALID_REQUESTED_ORG',
-  ].includes(error?.code);
-}
-
-function getLatestChatActivityAt(chats: Chat[], instanceId?: string): number {
-  return chats.reduce((latest, chat) => {
-    if (instanceId && chat.instance_id !== instanceId) return latest;
-    const activityAt = chat.last_message_at ? new Date(chat.last_message_at).getTime() : 0;
-    if (!Number.isFinite(activityAt)) return latest;
-    return Math.max(latest, activityAt);
-  }, 0);
-}
-
-function hasRecentInstanceActivity(activityAt = 0): boolean {
-  return activityAt > 0 && Date.now() - activityAt <= INSTANCE_ACTIVITY_WINDOW_MS;
-}
-
-function withVisualInstanceStatus(instance: Instance, hasActivity = false): Instance {
-  if (instance.status === 'connected') return instance;
-  if (hasActivity) {
-    return { ...instance, status: 'connected' };
-  }
-  return instance;
-}
 
 export default WhatsAppDashboard;

@@ -286,7 +286,7 @@ const ChannelsSettings: React.FC = () => {
             </div>
             <h3 className="text-xl font-bold text-text-primary mb-2">Conectar Instagram Business</h3>
             <p className="text-text-secondary max-w-md mx-auto mb-8">
-              Responda DMs, gerencie comentários e automatize seu atendimento no Instagram diretamente pelo IMOBZY.
+              Responda DMs, gerencie comentários e automatize seu atendimento no Instagram diretamente pelo WooTech Imob.
             </p>
             
             <div className="inline-flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl text-left max-w-lg mx-auto mb-8">

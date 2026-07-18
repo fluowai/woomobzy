@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FileText, Save, Eye, Upload, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
@@ -72,7 +73,7 @@ export const TemplateEditor: React.FC = () => {
       setIsActive(data.is_active);
       setIsDefault(data.is_default);
     } catch (error) {
-      console.error('Load template error:', error);
+      logger.error('Load template error:', error);
     }
   };
 
@@ -112,7 +113,7 @@ export const TemplateEditor: React.FC = () => {
       }
       navigate('/urban/locacao/templates');
     } catch (error) {
-      console.error('Save template error:', error);
+      logger.error('Save template error:', error);
     } finally {
       setSaving(false);
     }

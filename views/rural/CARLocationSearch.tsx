@@ -3,6 +3,7 @@
  * 
  * Interface para busca de CAR/SICAR via localização ou link do Google Maps.
  */
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { 
@@ -32,7 +33,7 @@ if (typeof window !== 'undefined') {
       });
     }
   } catch (e) {
-    console.warn('[Leaflet] Erro ao configurar ícones padrão:', e);
+    logger.warn('[Leaflet] Erro ao configurar ícones padrão:', e);
   }
 }
 

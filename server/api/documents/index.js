@@ -4,6 +4,7 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { DocumentService } from '../../services/documentService.js';
+import { isValidUUID } from '../../lib/shared-utils.js';
 
 const router = Router();
 const upload = multer({
@@ -23,7 +24,22 @@ const upload = multer({
     }
   },
 });
-import { isValidUUID } from '../../lib/shared-utils.js';
+
+export function isDocumentWorkerWebhookAuthorized(req) {
+  const documentWebhookSecret = String(process.env.DOCUMENT_WEBHOOK_SECRET || '').trim();
+  if (!documentWebhookSecret) return false;
+
+  const receivedSecret = String(
+    req.headers['x-document-webhook-secret'] ||
+      req.headers['x-webhook-secret'] ||
+      req.query.token ||
+      req.query.secret ||
+      req.headers.authorization?.replace(/^Bearer\s+/i, '') ||
+      ''
+  ).trim();
+
+  return Boolean(receivedSecret) && receivedSecret === documentWebhookSecret;
+}
 
 router.post('/upload/:propertyId', verifyAuth, requireTenant, upload.single('file'), async (req, res) => {
   try {
@@ -105,15 +121,27 @@ router.delete('/:documentId', verifyAuth, requireTenant, async (req, res) => {
 });
 
 router.post('/webhook/worker-result', async (req, res) => {
+  const documentWebhookSecret = String(process.env.DOCUMENT_WEBHOOK_SECRET || '').trim();
+  if (!documentWebhookSecret) {
+    return res.status(503).json({ error: 'Webhook do worker nao configurado' });
+  }
+
+  if (!isDocumentWorkerWebhookAuthorized(req)) {
+    return res.status(401).json({ error: 'Webhook nao autorizado' });
+  }
+
   try {
-    const { document_id, result, error } = req.body;
+    const { document_id, result, error } = req.body || {};
+    if (!document_id || !isValidUUID(document_id)) {
+      return res.status(400).json({ error: 'document_id invalido' });
+    }
 
     if (error) {
       await DocumentService._updateStatus(document_id, 'failed', error);
       return res.json({ success: true });
     }
 
-    if (!document_id || !result) {
+    if (!result || typeof result !== 'object') {
       return res.status(400).json({ error: 'document_id e result obrigatorios' });
     }
 

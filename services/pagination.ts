@@ -1,7 +1,7 @@
 /**
  * services/pagination.ts
  *
- * Helper central para lidar com paginação no frontend IMOBZY.
+ * Helper central para lidar com paginação no frontend WooTech Imob.
  */
 
 export interface Pagination {

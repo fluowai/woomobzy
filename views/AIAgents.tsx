@@ -719,7 +719,7 @@ const AIAgents: React.FC = () => {
     setActiveTab('identity');
   };
 
-  const usePreset = (preset: TemplatePreset) => {
+  const applyPreset = (preset: TemplatePreset) => {
     setSelectedId('new');
     setDraft({
       ...emptyAgent,
@@ -998,7 +998,7 @@ const AIAgents: React.FC = () => {
                     ))}
                   </div>
                   <button
-                    onClick={() => usePreset(preset)}
+                    onClick={() => applyPreset(preset)}
                     className="mt-3 h-9 w-full rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-100"
                   >
                     Usar modelo

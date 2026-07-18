@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -91,7 +92,7 @@ const LoteamentoDetails: React.FC = () => {
         }))
       );
     } catch (err) {
-      console.error('Error loading lot data:', err);
+      logger.error('Error loading lot data:', err);
       toast.error('Erro ao carregar dados do loteamento');
     } finally {
       setLoading(false);

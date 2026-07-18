@@ -57,10 +57,10 @@ const PropertyListing: React.FC = () => {
     try {
       setLoading(true);
       const data = await propertyService.list();
-      console.log('🔍 Imóveis carregados do banco:', data);
+      logger.info('Imóveis carregados do banco:', data);
       setProperties(data);
     } catch (error) {
-      console.error('❌ Erro ao carregar imóveis:', error);
+      logger.error('Erro ao carregar imóveis:', error);
       logger.error('Erro ao carregar imóveis', error);
     } finally {
       setLoading(false);

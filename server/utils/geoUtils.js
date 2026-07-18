@@ -65,7 +65,7 @@ export async function reverseGeocode(lat, lng) {
     
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'ImobzyRural360/1.0 (paulo@imobzy.com.br)'
+        'User-Agent': 'WooTechImobRural360/1.0 (paulo@wootechimob.com.br)'
       },
       timeout: 5000
     });

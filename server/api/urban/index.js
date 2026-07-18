@@ -41,7 +41,7 @@ const cepSchema = z
 
 /**
  * GET /api/urban/iptu/:inscricao
- * Consulta dados de IPTU (simulado - integrar com IPTU API ou InfoSimples)
+ * Consulta dados de IPTU registrados no banco da organização.
  * SEGURANÇA: Exige autenticação + tenant + validação
  */
 router.get('/iptu/:inscricao', verifyAuth, requireTenant, async (req, res) => {
@@ -80,11 +80,11 @@ router.get('/iptu/:inscricao', verifyAuth, requireTenant, async (req, res) => {
         valorVenalTotal: urban.valorVenalTotal || property.price,
         anoConstrucao: urban.anoConstrucao,
         tipologia: urban.tipologia || property.property_type,
-        padraoConstrutivo: urban.padraoConstrutivo || 'Médio',
-        zonaUso: urban.zonaUso || 'Zona Residencial',
+        padraoConstrutivo: urban.padraoConstrutivo || null,
+        zonaUso: urban.zonaUso || null,
         frente: urban.frente,
         profundidade: urban.profundidade,
-        iptuStatus: urban.iptuStatus || 'REGULAR',
+        iptuStatus: urban.iptuStatus || null,
         ultimoPagamento: urban.ultimoPagamento,
       },
     });
@@ -96,7 +96,7 @@ router.get('/iptu/:inscricao', verifyAuth, requireTenant, async (req, res) => {
 
 /**
  * GET /api/urban/endereco/:cep
- * Consulta dados pelo CEP (simulado)
+ * Consulta imóveis da organização pelo CEP cadastrado.
  * SEGURANÇA: Exige autenticação + tenant + validação CEP
  */
 router.get('/endereco/:cep', verifyAuth, requireTenant, async (req, res) => {
@@ -132,7 +132,7 @@ router.get('/endereco/:cep', verifyAuth, requireTenant, async (req, res) => {
 
 /**
  * GET /api/urban/zoneamento/:municipio
- * Consulta zoneamento via SINTER (simulado)
+ * Consulta de zoneamento. Nenhum provedor oficial está configurado atualmente.
  * SEGURANÇA: Exige autenticação + tenant + validação
  */
 router.get(
@@ -146,20 +146,9 @@ router.get(
         return res.status(400).json({ error: 'Município inválido' });
       }
 
-      res.json({
-        success: true,
-        data: {
-          municipio,
-          zonaPrincipal: 'Zona Residencial 1 - ZR1',
-          coeffAproveitamento: 2.0,
-          taxaOcupacao: 0.6,
-          testadaMinima: 5,
-          recuoFrontal: 0,
-          recuoLaterais: 1.5,
-          alturamaxima: 12,
-          usoPermitido: ['Residencial', 'Comercial de baixo impacto'],
-          obs: 'Consulte a lei de uso e ocupação do solo municipal',
-        },
+      res.status(501).json({
+        success: false,
+        error: `Consulta oficial de zoneamento ainda não está integrada para ${municipio}.`,
       });
     } catch (error) {
       console.error('Zoneamento error:', error);

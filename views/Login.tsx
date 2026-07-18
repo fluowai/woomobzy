@@ -1,55 +1,58 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import {
-  COMMERCIAL_PRODUCT_NAME,
-  PLATFORM_BRAND_NAME,
-  PLATFORM_TAGLINE,
-} from '../utils/branding';
+import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 import {
   AlertCircle,
   ArrowRight,
+  Building2,
   CheckCircle2,
+  Eye,
+  EyeOff,
   Lock,
   Loader2,
   Mail,
-  Map,
-  MessageSquareText,
+  MapPin,
   ShieldCheck,
-  WalletCards,
+  Sparkles,
 } from 'lucide-react';
 
-const loginHighlights = [
+const capabilityItems = [
   {
-    icon: Map,
-    title: 'Rural com inteligencia territorial',
-    desc: 'CAR, SIGEF, dossie, mapas e operacao comercial no mesmo fluxo.',
+    icon: Building2,
+    label: 'Urbano e rural',
+    text: 'Carteiras, captacao, estoque e oportunidades no mesmo painel.',
   },
   {
-    icon: WalletCards,
-    title: 'ERP para a operacao inteira',
-    desc: 'Capte, distribua, acompanhe contratos, locacao e indicadores sem trocar de sistema.',
-  },
-  {
-    icon: MessageSquareText,
-    title: 'CRM + WhatsApp + IA',
-    desc: 'Lead entra, a IA qualifica e o corretor assume com contexto e prioridade.',
+    icon: MapPin,
+    label: 'Territorio inteligente',
+    text: 'Dados de localizacao e indicadores para decisoes comerciais.',
   },
   {
     icon: ShieldCheck,
-    title: 'Multiempresa com governanca',
-    desc: 'Controle por organizacao, permissoes, integracoes e dados centralizados.',
+    label: 'Operacao protegida',
+    text: 'Controle de acesso, contratos e rotinas com mais previsibilidade.',
   },
 ];
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const { signIn, user, profile, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('wootech-login-email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (
@@ -60,6 +63,7 @@ const Login: React.FC = () => {
       isSuccess
     ) {
       setIsSuccess(false);
+      setSubmitting(false);
       setError(
         'Sua conta ainda nao esta vinculada a uma empresa. Fale com o administrador para liberar o acesso ao painel.'
       );
@@ -68,8 +72,11 @@ const Login: React.FC = () => {
 
   if (user && authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0b1b17]">
-        <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-[#c8ff66]" />
+      <div className="flex min-h-screen items-center justify-center bg-[#f5f7f4]">
+        <div className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-600 shadow-sm">
+          <Loader2 className="animate-spin text-[#14b87a]" size={20} />
+          Preparando seu painel...
+        </div>
       </div>
     );
   }
@@ -84,7 +91,12 @@ const Login: React.FC = () => {
     setSubmitting(true);
 
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
+      if (rememberMe) {
+        localStorage.setItem('wootech-login-email', email.trim());
+      } else {
+        localStorage.removeItem('wootech-login-email');
+      }
       setIsSuccess(true);
     } catch (err: any) {
       setError(getLoginErrorMessage(err));
@@ -93,225 +105,206 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#071411] text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(120,255,214,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(192,255,99,0.12),_transparent_28%),linear-gradient(135deg,#071411_0%,#0d231d_50%,#10241f_100%)]" />
-      <div className="absolute left-[-8rem] top-20 h-72 w-72 rounded-full bg-[#14b87a]/10 blur-3xl" />
-      <div className="absolute bottom-[-6rem] right-[-4rem] h-80 w-80 rounded-full bg-[#c8ff66]/10 blur-3xl" />
-
-      <div className="relative z-10 grid min-h-screen lg:grid-cols-[1.15fr_0.85fr]">
-        <section className="hidden px-8 py-10 lg:flex lg:flex-col lg:justify-between lg:px-14 xl:px-20">
-          <div className="flex items-center gap-4">
+    <main className="min-h-screen bg-[#f4f7f2] text-slate-950">
+      <div className="flex min-h-screen w-full flex-col lg:flex-row">
+        <section className="relative hidden w-full overflow-hidden bg-[#0b1c18] px-10 py-8 text-white lg:flex lg:w-[45%] lg:flex-col lg:justify-between xl:w-[42%]">
+          <div className="absolute inset-0">
             <img
-              src="/logo-wootech-imob-orbit.svg"
-              alt={COMMERCIAL_PRODUCT_NAME}
-              className="h-14 w-auto"
+              src="/templates/urban/urban_ready_move.png"
+              alt="Apartamento moderno gerenciado pelo WooTech Imob"
+              className="h-full w-full object-cover opacity-26"
             />
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#c8ff66]">
-                {PLATFORM_BRAND_NAME}
-              </p>
-              <h1 className="text-2xl font-bold tracking-tight">{COMMERCIAL_PRODUCT_NAME}</h1>
-            </div>
+            <div className="absolute inset-0 bg-[linear-gradient(125deg,rgba(11,28,24,0.98),rgba(11,28,24,0.82)_48%,rgba(20,184,122,0.36))]" />
           </div>
 
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] text-[#c8ff66]">
-              Mais que CRM: ERP imobiliario urbano + rural
-            </span>
-            <h2 className="mt-7 text-5xl font-bold leading-[1.02] tracking-tight text-white xl:text-6xl">
-              A operacao da sua imobiliaria merece um sistema que pensa o negocio inteiro.
-            </h2>
-            <p className="mt-6 max-w-xl text-lg font-medium leading-relaxed text-white/72">
-              {COMMERCIAL_PRODUCT_NAME} conecta atendimento, estoque, marketing, locacao,
-              contratos e inteligencia territorial para imobiliarias urbanas e rurais
-              que precisam crescer com controle.
+          <div className="relative z-10">
+            <Link
+              to="/"
+              aria-label="Voltar para a pagina inicial"
+              className="inline-flex rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c8ff66] focus:ring-offset-4 focus:ring-offset-[#0b1c18]"
+            >
+              <img src="/logo-wootech-imob.svg" alt="WooTech Imob" className="h-12 w-auto brightness-0 invert" />
+            </Link>
+          </div>
+
+          <div className="relative z-10 max-w-[560px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#c8ff66]">
+              <Sparkles size={15} />
+              Painel operacional
+            </div>
+
+            <h1 className="mt-8 max-w-[560px] text-5xl font-black leading-[1.03] text-white xl:text-6xl">
+              Uma central unica para vender, atender e gerir imoveis.
+            </h1>
+
+            <p className="mt-6 max-w-[500px] text-lg font-medium leading-relaxed text-white/76">
+              {COMMERCIAL_PRODUCT_NAME} organiza leads, carteira, contratos e
+              inteligencia territorial para equipes urbanas e rurais.
             </p>
-
-            <div className="mt-10 grid gap-4 md:grid-cols-2">
-              {loginHighlights.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm transition hover:border-[#c8ff66]/30 hover:bg-white/[0.06]"
-                >
-                  <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#c8ff66]/12 text-[#c8ff66]">
-                    <item.icon size={20} />
-                  </span>
-                  <h3 className="text-lg font-bold text-white">{item.title}</h3>
-                  <p className="mt-2 text-sm font-medium leading-relaxed text-white/65">
-                    {item.desc}
-                  </p>
-                </article>
-              ))}
-            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-3">
-              {['ERP', 'CRM', 'Rural'].map((tag) => (
-                <div
-                  key={tag}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/10 text-[10px] font-black uppercase text-white backdrop-blur"
-                >
-                  {tag}
+          <div className="relative z-10 grid gap-3">
+            {capabilityItems.map((item) => (
+              <article key={item.label} className="flex items-start gap-4 rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#c8ff66] text-[#0b1c18]">
+                  <item.icon size={21} />
+                </span>
+                <div>
+                  <h2 className="mb-0 text-base font-bold text-white">{item.label}</h2>
+                  <p className="mb-0 mt-1 text-sm font-medium leading-relaxed text-white/66">{item.text}</p>
                 </div>
-              ))}
-            </div>
-            <p className="text-sm font-semibold text-white/55">
-              {PLATFORM_TAGLINE.replace('CRM imobiliario', 'Plataforma operacional imobiliaria')}
-            </p>
+              </article>
+            ))}
           </div>
         </section>
 
-        <section className="flex items-center justify-center px-5 py-8 sm:px-8 lg:px-10">
-          <div className="w-full max-w-lg">
-            <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <img
-                src="/logo-wootech-imob-orbit.svg"
-                alt={COMMERCIAL_PRODUCT_NAME}
-                className="h-12 w-auto"
-              />
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#c8ff66]">
-                  {PLATFORM_BRAND_NAME}
-                </p>
-                <h2 className="text-xl font-bold tracking-tight text-white">
-                  {COMMERCIAL_PRODUCT_NAME}
-                </h2>
-              </div>
+        <section className="flex min-h-screen w-full items-center justify-center px-5 py-8 sm:px-8 lg:w-[55%] lg:px-12 xl:w-[58%]">
+          <div className="w-full max-w-[520px]">
+            <div className="mb-10 flex items-center justify-between gap-4 lg:hidden">
+              <Link to="/" aria-label="Voltar para a pagina inicial" className="inline-flex">
+                <img src="/logo-wootech-imob.svg" alt="WooTech Imob" className="h-12 w-auto" />
+              </Link>
             </div>
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/95 p-7 text-slate-950 shadow-[0_30px_80px_rgba(0,0,0,0.35)] sm:p-9">
+            <div className="rounded-[28px] border border-white bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.12)] sm:p-8">
               {isSuccess ? (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/92 px-8 text-center backdrop-blur-sm">
-                  <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                    <CheckCircle2 size={40} />
+                <div className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-800">
+                  <CheckCircle2 className="mt-0.5 shrink-0" size={20} />
+                  <div>
+                    <p className="mb-0 text-sm font-bold">Acesso confirmado</p>
+                    <p className="mb-0 mt-1 text-sm font-medium text-emerald-700">
+                      Preparando seu ambiente de trabalho...
+                    </p>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-950">Acesso confirmado</h3>
-                  <p className="mt-2 text-sm font-medium text-slate-500">
-                    Preparando o ambiente da sua operacao e redirecionando...
-                  </p>
-                  <Loader2 className="mt-5 animate-spin text-emerald-600" size={24} />
                 </div>
               ) : null}
 
               <div className="mb-8">
-                <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-700">
+                <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#14b87a]">
                   Painel administrativo
-                </span>
-                <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950">
-                  Entre para operar com visao completa.
+                </p>
+                <h2 className="mb-0 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">
+                  Entrar no {COMMERCIAL_PRODUCT_NAME}
                 </h2>
-                <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500">
-                  Acesse seu ambiente para acompanhar leads, estoque, contratos,
-                  atendimento e operacao rural ou urbana em um unico lugar.
+                <p className="mb-0 mt-4 text-base font-medium leading-relaxed text-slate-500">
+                  Acesse seu ambiente para acompanhar leads, imoveis, contratos,
+                  atendimento e operacoes.
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <label className="ml-1 text-sm font-bold text-slate-700">
+                  <label htmlFor="email" className="block text-sm font-bold text-slate-800">
                     E-mail corporativo
                   </label>
                   <div className="relative">
-                    <Mail
-                      size={18}
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
+                    <Mail size={19} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
+                      id="email"
                       type="email"
                       required
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                      placeholder="voce@empresa.com.br"
+                      className="h-14 w-full rounded-2xl border border-slate-200 bg-[#f8fafc] pl-12 pr-4 text-base font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#14b87a] focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                      placeholder="voce@imobiliaria.com.br"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="ml-1 text-sm font-bold text-slate-700">Senha</label>
-                    <Link
-                      to="/forgot-password"
-                      className="text-xs font-bold text-emerald-700 transition hover:text-emerald-800"
-                    >
+                  <div className="flex items-center justify-between gap-4">
+                    <label htmlFor="password" className="block text-sm font-bold text-slate-800">
+                      Senha
+                    </label>
+                    <Link to="/forgot-password" className="text-sm font-bold text-[#0d8f62] hover:text-[#06704b]">
                       Esqueci minha senha
                     </Link>
                   </div>
                   <div className="relative">
-                    <Lock
-                      size={18}
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
+                    <Lock size={19} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
-                      type="password"
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                      className="h-14 w-full rounded-2xl border border-slate-200 bg-[#f8fafc] pl-12 pr-12 text-base font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#14b87a] focus:bg-white focus:ring-4 focus:ring-emerald-100"
                       placeholder="Digite sua senha"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((current) => !current)}
+                      className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
+
+                <label className="flex items-center gap-3 text-sm font-semibold text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#14b87a] focus:ring-[#14b87a]"
+                  />
+                  Lembrar meu e-mail neste dispositivo
+                </label>
 
                 {error ? (
                   <div className="flex items-start gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-700">
                     <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                    <p className="text-sm font-semibold leading-relaxed">{error}</p>
+                    <p className="mb-0 text-sm font-semibold leading-relaxed">{error}</p>
                   </div>
                 ) : null}
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#0d6b52] text-base font-bold text-white transition hover:bg-[#0a5b45] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#0b1c18] px-5 text-base font-black text-white shadow-[0_16px_36px_rgba(11,28,24,0.22)] transition hover:bg-[#123329] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {submitting ? (
-                    <Loader2 className="animate-spin" size={22} />
+                    <>
+                      <Loader2 className="animate-spin" size={21} />
+                      Entrando...
+                    </>
                   ) : (
                     <>
                       Entrar no painel
-                      <ArrowRight size={18} />
+                      <ArrowRight size={19} />
                     </>
                   )}
                 </button>
               </form>
 
-              <div className="mt-7 grid gap-3 rounded-[1.5rem] border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="mt-7 rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
-                  <p className="font-semibold">
-                    Operacao urbana e rural com a mesma base de dados.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
-                  <p className="font-semibold">
-                    CRM, ERP, marketing e atendimento conectados em um unico ambiente.
-                  </p>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-[#0d8f62]">
+                    <ShieldCheck size={20} />
+                  </span>
+                  <div>
+                    <p className="mb-0 text-sm font-bold text-slate-900">Acesso seguro</p>
+                    <p className="mb-0 mt-1 text-sm font-medium leading-relaxed text-slate-500">
+                      Use as credenciais liberadas pelo administrador da sua imobiliaria.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-7 border-t border-slate-100 pt-7 text-center">
-                <p className="text-sm font-medium text-slate-500">
-                  Ainda nao tem acesso liberado?
-                </p>
-                <Link
-                  to="/register"
-                  className="mt-4 inline-flex items-center justify-center rounded-full border border-slate-200 px-6 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Solicitar criacao de conta
+              <p className="mb-0 mt-7 text-center text-sm font-medium text-slate-500">
+                Ainda nao tem acesso?{' '}
+                <Link to="/register" className="font-black text-[#0d8f62] hover:text-[#06704b]">
+                  Solicitar acesso
                 </Link>
-              </div>
+              </p>
             </div>
-
-            <p className="mt-6 text-center text-xs font-semibold text-white/40">
-              &copy; {new Date().getFullYear()} {PLATFORM_BRAND_NAME}. Todos os direitos reservados.
-            </p>
           </div>
         </section>
       </div>
-    </div>
+    </main>
   );
 };
 

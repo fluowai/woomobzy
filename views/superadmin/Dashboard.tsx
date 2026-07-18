@@ -1,15 +1,13 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { Users, Building2, Server, DollarSign, Activity } from 'lucide-react';
+import { Users, Building2, Activity } from 'lucide-react';
 
 const SuperAdminDashboard: React.FC = () => {
   logger.info('📊 [SuperAdminDashboard] Rendering...');
   const [stats, setStats] = useState({
     totalTenants: 0,
     activeTenants: 0,
-    totalRevenue: 0,
-    serverStatus: 'Online',
   });
   const [loading, setLoading] = useState(true);
   const [isFresh, setIsFresh] = useState(false);
@@ -31,14 +29,9 @@ const SuperAdminDashboard: React.FC = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      // 3. Calc Revenue (Mock for now, would sum plans value)
-      const revenue = active ? active * 97 : 0; // Assuming basic plan price avg
-
       setStats({
         totalTenants: total || 0,
         activeTenants: active || 0,
-        totalRevenue: revenue,
-        serverStatus: 'Online',
       });
       setIsFresh((total || 0) === 0);
     } catch (error) {
@@ -60,18 +53,6 @@ const SuperAdminDashboard: React.FC = () => {
       value: stats.activeTenants,
       icon: Users,
       color: 'bg-green-500',
-    },
-    {
-      title: 'Receita Mensal (Est.)',
-      value: `R$ ${stats.totalRevenue.toLocaleString()}`,
-      icon: DollarSign,
-      color: 'bg-indigo-500',
-    },
-    {
-      title: 'Status do Servidor',
-      value: stats.serverStatus,
-      icon: Server,
-      color: 'bg-purple-500',
     },
   ];
 
@@ -117,7 +98,7 @@ const SuperAdminDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {modules.map((mod, index) => {
           const Icon = mod.icon;
           return (

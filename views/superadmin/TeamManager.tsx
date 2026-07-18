@@ -105,7 +105,7 @@ const TeamManager: React.FC = () => {
             Equipe Super Admin
           </h1>
           <p className="text-gray-500 mt-1">
-            Gerencie os administradores e agentes de suporte internos da IMOBZY.
+            Gerencie os administradores e agentes de suporte internos da WooTech Imob.
           </p>
         </div>
         <button

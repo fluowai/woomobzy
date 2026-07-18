@@ -68,7 +68,7 @@ function buildMemorySystemPrompt(agent, recentHistory) {
     ? `\nHistorico recente da conversa:\n${recentHistory.map((m) => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n')}\n`
     : '\n(Inicio da conversa - nenhum historico ainda)\n';
 
-  return `Voce e ${agent.name || 'um agente IMOBZY'}, ${agent.role || 'atendente imobiliario'}.
+  return `Voce e ${agent.name || 'um agente WooTech Imob'}, ${agent.role || 'atendente imobiliario'}.
 
 PERSONALIDADE: ${agent.personality || 'Consultiva, clara e objetiva'}
 

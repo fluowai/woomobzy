@@ -24,7 +24,8 @@ router.get('/templates', verifyAuth, requireTenant, async (req, res) => {
     }));
     res.json({ success: true, templates });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Drip] Templates error:', err.message);
+    res.status(500).json({ error: 'Erro ao listar templates' });
   }
 });
 
@@ -47,7 +48,8 @@ router.post('/start', verifyAuth, requireTenant, async (req, res) => {
     const result = await startDripCampaign(req.orgId, lead_id, template_key, lead_data || {});
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Drip] Start error:', err.message);
+    res.status(500).json({ error: 'Erro ao iniciar campanha' });
   }
 });
 
@@ -65,7 +67,8 @@ router.post('/cancel', verifyAuth, requireTenant, async (req, res) => {
     const result = await cancelDripCampaigns(req.orgId, lead_id);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Drip] Cancel error:', err.message);
+    res.status(500).json({ error: 'Erro ao cancelar campanha' });
   }
 });
 
@@ -78,7 +81,8 @@ router.get('/lead/:leadId', verifyAuth, requireTenant, async (req, res) => {
     const campaigns = await getLeadDripCampaigns(req.orgId, req.params.leadId);
     res.json({ success: true, campaigns });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Drip] Lead campaigns error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar campanhas' });
   }
 });
 

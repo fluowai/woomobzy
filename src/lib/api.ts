@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { supabase } from '../../services/supabase';
 import { getRuntimeEnv } from '../../utils/runtimeConfig';
 
@@ -107,7 +108,7 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     }
 
     if (response.status === 401) {
-      console.warn(
+      logger.warn(
         refreshErrorMessage
           ? `[API] Falha de autenticacao detectada (401); renovacao falhou: ${refreshErrorMessage}`
           : '[API] Falha de autenticacao detectada (401) apos renovar a sessao.'

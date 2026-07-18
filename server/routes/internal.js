@@ -75,19 +75,24 @@ router.get('/auth-debug', async (req, res) => {
   return res.status(statusCode).json(diagnostics);
 });
 
-function isDebugAccessAllowed(req, bearerToken) {
+export function isDebugAccessAllowed(req, bearerToken) {
   const configuredToken = String(process.env.INTERNAL_AUTH_DEBUG_TOKEN || '').trim();
-  if (!configuredToken) {
-    return Boolean(bearerToken) || process.env.NODE_ENV !== 'production';
+  if (configuredToken) {
+    const providedToken = String(
+      req.headers['x-internal-debug-token'] ||
+        req.headers['x-auth-debug-token'] ||
+        bearerToken ||
+        ''
+    ).trim();
+
+    return providedToken === configuredToken;
   }
 
-  const providedToken = String(
-    req.headers['x-internal-debug-token'] ||
-      req.headers['x-auth-debug-token'] ||
-      ''
-  ).trim();
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
 
-  return providedToken && providedToken === configuredToken;
+  return Boolean(bearerToken);
 }
 
 function getSupabaseEnvDiagnostics() {

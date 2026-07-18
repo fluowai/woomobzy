@@ -115,7 +115,7 @@ ${content || 'Midia sem texto.'}
 ${historyBlock} 
 
 Agente ativo:
-- Nome: ${agent?.name || 'Agente IMOBZY'}
+- Nome: ${agent?.name || 'Agente WooTech Imob'}
 - Funcao: ${agent?.role || 'Atendimento imobiliario'}
 - Personalidade: ${agent?.personality || 'consultiva, clara e objetiva'}
 - Estilo: ${agent?.response_style || 'consultivo'}

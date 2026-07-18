@@ -27,7 +27,6 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { kml } from '@tmcw/togeojson';
-import { MOCK_PROPERTIES } from '../constants';
 import {
   Property,
   PropertyType,

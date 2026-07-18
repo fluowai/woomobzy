@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { logger } from '@/utils/logger';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   BarChart3,
   Users,
@@ -44,10 +45,16 @@ const AnalyticsDashboard: React.FC = () => {
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
   const [period, setPeriod] = useState('30d');
+  const [organizations, setOrganizations] = useState<Array<{ created_at: string; niche?: string | null }>>([]);
+  const [propertyDates, setPropertyDates] = useState<Array<{ created_at: string }>>([]);
+  const [leadDates, setLeadDates] = useState<Array<{ created_at: string }>>([]);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const load = async () => {
-      const [tenants, properties, leads] = await Promise.all([
+      const days = Number.parseInt(period, 10);
+      const since = new Date(Date.now() - days * 86_400_000).toISOString();
+      const [tenants, properties, leads, orgRows, propertyRows, leadRows] = await Promise.all([
         supabase
           .from('organizations')
           .select('id', { count: 'exact', head: true }),
@@ -55,46 +62,49 @@ const AnalyticsDashboard: React.FC = () => {
           .from('properties')
           .select('id', { count: 'exact', head: true }),
         supabase.from('leads').select('id', { count: 'exact', head: true }),
+        supabase.from('organizations').select('created_at,niche').gte('created_at', since),
+        supabase.from('properties').select('created_at').gte('created_at', since),
+        supabase.from('leads').select('created_at').gte('created_at', since),
       ]);
+      const firstError = tenants.error || properties.error || leads.error || orgRows.error || propertyRows.error || leadRows.error;
+      if (firstError) {
+        logger.error('Erro ao carregar analytics reais', firstError);
+        setLoadError('Não foi possível carregar todas as métricas reais.');
+      } else {
+        setLoadError('');
+      }
       setTenantCount(tenants.count || 0);
       setPropertyCount(properties.count || 0);
       setLeadCount(leads.count || 0);
+      setOrganizations(orgRows.data || []);
+      setPropertyDates(propertyRows.data || []);
+      setLeadDates(leadRows.data || []);
     };
     load();
-  }, []);
+  }, [period]);
 
-  const growthData = [
-    { name: 'Jan', tenants: 1, properties: 5, leads: 12 },
-    { name: 'Fev', tenants: 2, properties: 12, leads: 28 },
-    {
-      name: 'Mar',
-      tenants: tenantCount,
-      properties: propertyCount,
-      leads: leadCount,
-    },
-  ];
+  const growthData = useMemo(() => {
+    const rows = new Map<string, { name: string; tenants: number; properties: number; leads: number }>();
+    const add = (date: string, key: 'tenants' | 'properties' | 'leads') => {
+      const name = new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const row = rows.get(name) || { name, tenants: 0, properties: 0, leads: 0 };
+      row[key] += 1;
+      rows.set(name, row);
+    };
+    organizations.forEach((item) => add(item.created_at, 'tenants'));
+    propertyDates.forEach((item) => add(item.created_at, 'properties'));
+    leadDates.forEach((item) => add(item.created_at, 'leads'));
+    return [...rows.values()];
+  }, [organizations, propertyDates, leadDates]);
 
-  const nicheData = [
-    { name: 'Rural', value: 40 },
-    { name: 'Tradicional', value: 50 },
-    { name: 'Híbrido', value: 10 },
-  ];
-
-  const planData = [
-    { name: 'Starter', count: 5 },
-    { name: 'Professional', count: 3 },
-    { name: 'Enterprise', count: 1 },
-  ];
-
-  const featureUsage = [
-    { feature: 'CRM/Kanban', usage: 95 },
-    { feature: 'Landing Pages', usage: 82 },
-    { feature: 'WhatsApp', usage: 78 },
-    { feature: 'Geointeligência', usage: 45 },
-    { feature: 'Due Diligence', usage: 38 },
-    { feature: 'Data Room', usage: 25 },
-    { feature: 'AI Assistant', usage: 18 },
-  ];
+  const nicheData = useMemo(() => {
+    const counts = new Map<string, number>();
+    organizations.forEach((item) => {
+      const label = item.niche?.trim() || 'Não informado';
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+    return [...counts].map(([name, value]) => ({ name, value }));
+  }, [organizations]);
 
   return (
     <div className="space-y-8">
@@ -121,14 +131,15 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
+      {loadError && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
+
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           {
             icon: Building2,
             label: 'Tenants',
             value: String(tenantCount),
-            change: '+100%',
             color: 'text-blue-600',
             bg: 'bg-blue-50',
           },
@@ -136,7 +147,6 @@ const AnalyticsDashboard: React.FC = () => {
             icon: Home,
             label: 'Imóveis',
             value: String(propertyCount),
-            change: '+45%',
             color: 'text-emerald-600',
             bg: 'bg-emerald-50',
           },
@@ -144,17 +154,8 @@ const AnalyticsDashboard: React.FC = () => {
             icon: Users,
             label: 'Leads',
             value: String(leadCount),
-            change: '+67%',
             color: 'text-indigo-600',
             bg: 'bg-indigo-50',
-          },
-          {
-            icon: DollarSign,
-            label: 'MRR',
-            value: `R$ ${(tenantCount * 97).toLocaleString()}`,
-            change: '+100%',
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
           },
         ].map((stat, i) => (
           <div
@@ -165,9 +166,6 @@ const AnalyticsDashboard: React.FC = () => {
               <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color}`}>
                 <stat.icon size={20} />
               </div>
-              <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-                {stat.change} <ArrowUpRight size={14} />
-              </span>
             </div>
             <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
             <p className="text-xs text-gray-400 mt-1">{stat.label}</p>
@@ -293,29 +291,8 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Feature Usage */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-bold text-gray-800 mb-6">
-          Uso de Features por Tenants
-        </h3>
-        <div className="space-y-4">
-          {featureUsage.map((feat, i) => (
-            <div key={i} className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-700 w-36">
-                {feat.feature}
-              </span>
-              <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 transition-all duration-700"
-                  style={{ width: `${feat.usage}%` }}
-                />
-              </div>
-              <span className="text-sm font-bold text-gray-800 w-12 text-right">
-                {feat.usage}%
-              </span>
-            </div>
-          ))}
-        </div>
+      <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+        Uso de funcionalidades e MRR não são exibidos porque o sistema ainda não possui telemetria e faturamento consolidados para calcular esses indicadores com dados verificáveis.
       </div>
     </div>
   );

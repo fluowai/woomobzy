@@ -49,13 +49,7 @@ export const SettingsProvider: React.FC<{
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [settingsLoading, setSettingsLoading] = useState(true);
 
-  // Use Auth context, safely handling if it's missing (though it shouldn't be in this app structure)
-  let authContext: any = null;
-  try {
-    authContext = useAuth();
-  } catch (e) {
-    // If used completely outside AuthProvider
-  }
+  const authContext = useAuth();
   const profileOrgId = authContext?.profile?.organization_id;
   const authLoading = authContext?.loading || false;
 

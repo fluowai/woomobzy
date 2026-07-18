@@ -1,41 +1,21 @@
 import { logger } from '@/utils/logger';
-import axios from 'axios';
+import { callApi } from '../src/lib/api';
 
 export const openaiService = {
-  generateText: async (prompt: string, apiKey: string) => {
-    if (!apiKey) {
-      logger.warn('⚠️ OpenAI API Key não fornecida.');
-      return '{}';
-    }
-
+  generateText: async (prompt: string, _apiKey?: string) => {
     try {
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'system',
-              content: 'Você é um especialista em marketing imobiliário.',
-            },
-            { role: 'user', content: prompt },
-          ],
+      const data = await callApi('/api/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          prompt,
           temperature: 0.2,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+          jsonMode: false,
+        }),
+      });
 
-      return response.data.choices[0].message.content || '{}';
+      return data.text || '{}';
     } catch (error: any) {
-      logger.error(
-        'Error generating text with OpenAI:',
-        error.response?.data || error.message
-      );
+      logger.error('Error generating text via AI proxy:', error.message);
       return '{}';
     }
   },

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   Building2,
@@ -115,7 +116,7 @@ const Empreendimentos: React.FC = () => {
           .eq('organization_id', profile.organization_id)
       : await supabase.from('developments').insert(payload);
     if (error) {
-      console.error('Erro ao salvar empreendimento:', error);
+      logger.error('Erro ao salvar empreendimento:', error);
       return;
     }
     setShowModal(false);
@@ -158,7 +159,7 @@ const Empreendimentos: React.FC = () => {
       .eq('id', id)
       .eq('organization_id', profile?.organization_id);
     if (error) {
-      console.error('Erro ao excluir empreendimento:', error);
+      logger.error('Erro ao excluir empreendimento:', error);
       return;
     }
     load();

@@ -11,10 +11,11 @@ from pdf2image import convert_from_bytes
 from PIL import Image
 import google.generativeai as genai
 
-app = FastAPI(title="IMOBZY Document Intelligence Worker")
+app = FastAPI(title="WooTech Imob Document Intelligence Worker")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://api:3002/api/documents/webhook/worker-result")
+DOCUMENT_WEBHOOK_SECRET = os.getenv("DOCUMENT_WEBHOOK_SECRET", "")
 
 DOCUMENT_TYPES = ["ESCRITURA", "MATRICULA", "CAR", "CCIR", "ITR", "IPTU", "CONTRATO", "CND", "OUTRO"]
 
@@ -138,10 +139,14 @@ Texto do documento:
     result = ExtractResponse(**result_dict)
 
     try:
+        headers = {}
+        if DOCUMENT_WEBHOOK_SECRET:
+            headers["x-document-webhook-secret"] = DOCUMENT_WEBHOOK_SECRET
+
         requests.post(WEBHOOK_URL, json={
             "document_id": req.document_id,
             "result": result_dict,
-        }, timeout=10)
+        }, headers=headers, timeout=10)
     except Exception as e:
         print(f"[Worker] Webhook failed: {e}")
 

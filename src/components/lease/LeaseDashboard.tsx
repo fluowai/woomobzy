@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -30,7 +31,7 @@ export const LeaseDashboard: React.FC = () => {
       setEvents(eventsRes.data);
       setLeases(leasesRes.data);
     } catch (error) {
-      console.error('Dashboard load error:', error);
+      logger.error('Dashboard load error:', error);
     }
   };
 

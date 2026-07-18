@@ -4,13 +4,22 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import FullScreenSpinner from './FullScreenSpinner';
 
-export function isRuralOrganization(niche?: string, name?: string, slug?: string) {
-  const normalizedNiche = String(niche || '').toLowerCase().trim();
+export function isRuralOrganization(
+  niche?: string,
+  name?: string,
+  slug?: string
+) {
+  const normalizedNiche = String(niche || '')
+    .toLowerCase()
+    .trim();
   if (normalizedNiche === 'rural') return true;
-  if (['traditional', 'urban', 'urbano'].includes(normalizedNiche)) return false;
+  if (['traditional', 'urban', 'urbano'].includes(normalizedNiche))
+    return false;
 
   const text = `${name || ''} ${slug || ''}`.toLowerCase();
-  return /\b(rural|fazenda|fazendas|sitio|sítio|chacara|chácara|agro|haras)\b/.test(text);
+  return /\b(rural|fazenda|fazendas|sitio|sítio|chacara|chácara|agro|haras)\b/.test(
+    text
+  );
 }
 
 const NicheRedirect: React.FC = () => {
@@ -33,7 +42,9 @@ const NicheRedirect: React.FC = () => {
   const rural = isRuralOrganization(rawNiche, orgName, orgSlug);
   const target = rural ? '/rural' : '/urban';
 
-  logger.info(`NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${rural})`);
+  logger.info(
+    `NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${rural})`
+  );
   return <Navigate to={target} replace />;
 };
 

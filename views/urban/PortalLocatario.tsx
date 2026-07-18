@@ -74,7 +74,9 @@ const PortalLocatario: React.FC = () => {
       .order('created_at', { ascending: false });
 
     contractQuery = cpf
-      ? contractQuery.or(`tenant_cpf.eq.${cpf},tenant_email.ilike.${profile.email}`)
+      ? contractQuery.or(
+          `tenant_cpf.eq.${cpf},tenant_email.ilike.${profile.email}`
+        )
       : contractQuery.ilike('tenant_email', profile.email);
 
     const { data: contractData } = await contractQuery;

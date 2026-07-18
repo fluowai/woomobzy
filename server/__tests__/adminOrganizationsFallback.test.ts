@@ -7,9 +7,17 @@ import {
 
 describe('admin organizations fallback helpers', () => {
   it('detects Supabase invalid API key errors', () => {
-    expect(isInvalidSupabaseApiKeyError({ message: 'Invalid API key' })).toBe(true);
-    expect(isInvalidSupabaseApiKeyError({ error: 'invalid apikey' })).toBe(true);
-    expect(isInvalidSupabaseApiKeyError(new Error('permission denied for table organizations'))).toBe(false);
+    expect(isInvalidSupabaseApiKeyError({ message: 'Invalid API key' })).toBe(
+      true
+    );
+    expect(isInvalidSupabaseApiKeyError({ error: 'invalid apikey' })).toBe(
+      true
+    );
+    expect(
+      isInvalidSupabaseApiKeyError(
+        new Error('permission denied for table organizations')
+      )
+    ).toBe(false);
   });
 
   it('normalizes direct database URLs for pg fallback', () => {
@@ -22,7 +30,13 @@ describe('admin organizations fallback helpers', () => {
   });
 
   it('enables SSL for Supabase pooler connections', () => {
-    expect(shouldUseSsl('postgresql://user:pass@aws-1.pooler.supabase.com:5432/postgres')).toBe(true);
-    expect(shouldUseSsl('postgresql://user:pass@localhost:5432/postgres')).toBe(false);
+    expect(
+      shouldUseSsl(
+        'postgresql://user:pass@aws-1.pooler.supabase.com:5432/postgres'
+      )
+    ).toBe(true);
+    expect(shouldUseSsl('postgresql://user:pass@localhost:5432/postgres')).toBe(
+      false
+    );
   });
 });

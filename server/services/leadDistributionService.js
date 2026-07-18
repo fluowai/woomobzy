@@ -44,7 +44,9 @@ async function getBrokerLeadCounts(organizationId, brokerIds) {
   if (error) throw error;
 
   const counts = {};
-  brokerIds.forEach((id) => { counts[id] = 0; });
+  brokerIds.forEach((id) => {
+    counts[id] = 0;
+  });
   (data || []).forEach((lead) => {
     if (counts[lead.broker_id] !== undefined) {
       counts[lead.broker_id]++;
@@ -91,7 +93,9 @@ async function performance(organizationId, brokers) {
     .in('broker_id', brokerIds);
 
   const stats = {};
-  brokerIds.forEach((id) => { stats[id] = { total: 0, closed: 0 }; });
+  brokerIds.forEach((id) => {
+    stats[id] = { total: 0, closed: 0 };
+  });
   (data || []).forEach((lead) => {
     if (stats[lead.broker_id]) {
       stats[lead.broker_id].total++;
@@ -100,10 +104,14 @@ async function performance(organizationId, brokers) {
   });
 
   return brokers.reduce((best, broker) => {
-    const bestRate = stats[best.id]?.total > 0
-      ? stats[best.id].closed / stats[best.id].total : 0;
-    const rate = stats[broker.id]?.total > 0
-      ? stats[broker.id].closed / stats[broker.id].total : 0;
+    const bestRate =
+      stats[best.id]?.total > 0
+        ? stats[best.id].closed / stats[best.id].total
+        : 0;
+    const rate =
+      stats[broker.id]?.total > 0
+        ? stats[broker.id].closed / stats[broker.id].total
+        : 0;
     return rate > bestRate ? broker : best;
   }, brokers[0]);
 }
@@ -111,10 +119,17 @@ async function performance(organizationId, brokers) {
 /**
  * Main distribution function. Assigns a lead to a broker based on strategy.
  */
-export async function distributeLead(organizationId, leadId, strategy = DISTRIBUTION_STRATEGIES.BALANCED) {
+export async function distributeLead(
+  organizationId,
+  leadId,
+  strategy = DISTRIBUTION_STRATEGIES.BALANCED
+) {
   const brokers = await getActiveBrokers(organizationId);
   if (!brokers.length) {
-    console.warn('[LeadDistribution] No active brokers found for org:', organizationId);
+    console.warn(
+      '[LeadDistribution] No active brokers found for org:',
+      organizationId
+    );
     return null;
   }
 
@@ -139,7 +154,10 @@ export async function distributeLead(organizationId, leadId, strategy = DISTRIBU
       break;
     case DISTRIBUTION_STRATEGIES.BALANCED:
     default: {
-      const leadCounts = await getBrokerLeadCounts(organizationId, brokers.map((b) => b.id));
+      const leadCounts = await getBrokerLeadCounts(
+        organizationId,
+        brokers.map((b) => b.id)
+      );
       selectedBroker = balanced(brokers, leadCounts);
       break;
     }
@@ -162,7 +180,11 @@ export async function distributeLead(organizationId, leadId, strategy = DISTRIBU
 /**
  * Bulk distribute multiple leads.
  */
-export async function bulkDistributeLeads(organizationId, leadIds, strategy = DISTRIBUTION_STRATEGIES.BALANCED) {
+export async function bulkDistributeLeads(
+  organizationId,
+  leadIds,
+  strategy = DISTRIBUTION_STRATEGIES.BALANCED
+) {
   const results = [];
   for (const leadId of leadIds) {
     try {

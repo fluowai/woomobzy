@@ -1,112 +1,112 @@
-version: "3.8"
+version: '3.8'
 
 services:
   frontend:
     image: ghcr.io/fluowai/woomobzy-frontend:latest
     environment:
-      VITE_API_URL: "same-origin"
-      VITE_WHATSAPP_API_URL: "/api/whatsapp"
-      VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
-      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL}"
-      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY}"
-      VITE_PANEL_URL: "https://imob.wootech.com.br"
-      VITE_PUBLIC_APP_URL: "https://imob.wootech.com.br"
-      VITE_PLATFORM_IP: "207.58.153.219"
+      VITE_API_URL: 'same-origin'
+      VITE_WHATSAPP_API_URL: '/api/whatsapp'
+      VITE_WHATSAPP_WS_URL: '/api/whatsapp/ws'
+      VITE_SUPABASE_URL: '${VITE_SUPABASE_URL}'
+      VITE_SUPABASE_ANON_KEY: '${VITE_SUPABASE_ANON_KEY}'
+      VITE_PANEL_URL: 'https://imob.wootech.com.br'
+      VITE_PUBLIC_APP_URL: 'https://imob.wootech.com.br'
+      VITE_PLATFORM_IP: '207.58.153.219'
     networks:
       - woopanel1
       - imobfluow_internal
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=woopanel1"
-      - "traefik.http.routers.wootech_imob_frontend.rule=Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)"
-      - "traefik.http.routers.wootech_imob_frontend.entrypoints=websecure"
-      - "traefik.http.routers.wootech_imob_frontend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.wootech_imob_frontend.priority=1"
-      - "traefik.http.routers.wootech_imob_frontend.service=wootech_imob_frontend"
-      - "traefik.http.routers.fazendasbrasil_frontend.rule=Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)"
-      - "traefik.http.routers.fazendasbrasil_frontend.entrypoints=websecure"
-      - "traefik.http.routers.fazendasbrasil_frontend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.fazendasbrasil_frontend.priority=2"
-      - "traefik.http.routers.fazendasbrasil_frontend.service=wootech_imob_frontend"
-      - "traefik.http.services.wootech_imob_frontend.loadbalancer.server.port=80"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=woopanel1'
+      - 'traefik.http.routers.wootech_imob_frontend.rule=Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)'
+      - 'traefik.http.routers.wootech_imob_frontend.entrypoints=websecure'
+      - 'traefik.http.routers.wootech_imob_frontend.tls.certresolver=letsencryptresolver'
+      - 'traefik.http.routers.wootech_imob_frontend.priority=1'
+      - 'traefik.http.routers.wootech_imob_frontend.service=wootech_imob_frontend'
+      - 'traefik.http.routers.fazendasbrasil_frontend.rule=Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)'
+      - 'traefik.http.routers.fazendasbrasil_frontend.entrypoints=websecure'
+      - 'traefik.http.routers.fazendasbrasil_frontend.tls.certresolver=letsencryptresolver'
+      - 'traefik.http.routers.fazendasbrasil_frontend.priority=2'
+      - 'traefik.http.routers.fazendasbrasil_frontend.service=wootech_imob_frontend'
+      - 'traefik.http.services.wootech_imob_frontend.loadbalancer.server.port=80'
 
   api:
     image: ghcr.io/fluowai/woomobzy-api:latest
     environment:
       NODE_ENV: production
       PORT: 3002
-      WHATSAPP_PROVIDER: "waha"
-      WAHA_ENGINE: "noweb"
-      WAHA_API_URL: "http://waha:3000"
-      WAHA_API_KEY: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
-      WHATSAPP_WEBHOOK_URL: "http://api:3002"
-      ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
-      CORS_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
-      VITE_SUPABASE_URL: "${VITE_SUPABASE_URL}"
-      VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY}"
-      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
-      SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET}"
-      DATABASE_URL: "${DATABASE_URL}"
-      SUPABASE_DB_URL: "${SUPABASE_DB_URL}"
+      WHATSAPP_PROVIDER: 'waha'
+      WAHA_ENGINE: 'noweb'
+      WAHA_API_URL: 'http://waha:3000'
+      WAHA_API_KEY: '61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b'
+      WHATSAPP_WEBHOOK_URL: 'http://api:3002'
+      ALLOWED_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br'
+      CORS_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br'
+      VITE_SUPABASE_URL: '${VITE_SUPABASE_URL}'
+      VITE_SUPABASE_ANON_KEY: '${VITE_SUPABASE_ANON_KEY}'
+      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
+      SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET}'
+      DATABASE_URL: '${DATABASE_URL}'
+      SUPABASE_DB_URL: '${SUPABASE_DB_URL}'
       PGSSLMODE: require
-      WHATSAPP_API_URL: "http://whatsapp-service:3100"
-      WHATSMEOW_URL: "http://whatsapp-service:3100"
-      NODE_URL: "http://api:3002"
-      AGRO_INTEL_URL: "http://agro-intelligence:8000"
-      OPENAI_API_KEY: ""
-      GEMINI_API_KEY: "sua-api-key-do-gemini"
-      GROQ_API_KEY: "sua-api-key-do-groq"
-      WHATSAPP_SERVICE_TOKEN: "b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833"
-      WHATSAPP_INTERNAL_TOKEN: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
-      WHATSAPP_WS_JWT_SECRET: "f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2"
-      WHATSAPP_AI_AUTOMATION: "true"
-      RABBITMQ_URL: "amqp://imobzy:Argo%4015077399brsc@rabbitmq:5672/"
-      MEDIA_STORAGE_PROVIDER: "minio"
-      MINIO_ENDPOINT: "https://nb.consultio.com.br"
-      MINIO_PUBLIC_URL: "https://nb.consultio.com.br"
-      MINIO_ACCESS_KEY: "8aHPnW4JQsRWhbKld9Yw"
-      MINIO_SECRET_KEY: "YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc"
-      MINIO_REGION: "us-east-1"
-      MINIO_WHATSAPP_BUCKET: "imobzywhatsapp"
-      TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
-      TRAEFIK_FRONTEND_SERVICE: "wootech_imob_frontend@docker"
-      TRAEFIK_API_SERVICE: "wootech_imob_api@docker"
+      WHATSAPP_API_URL: 'http://whatsapp-service:3100'
+      WHATSMEOW_URL: 'http://whatsapp-service:3100'
+      NODE_URL: 'http://api:3002'
+      AGRO_INTEL_URL: 'http://agro-intelligence:8000'
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: 'sua-api-key-do-gemini'
+      GROQ_API_KEY: 'sua-api-key-do-groq'
+      WHATSAPP_SERVICE_TOKEN: 'b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833'
+      WHATSAPP_INTERNAL_TOKEN: '61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b'
+      WHATSAPP_WS_JWT_SECRET: 'f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2'
+      WHATSAPP_AI_AUTOMATION: 'true'
+      RABBITMQ_URL: 'amqp://imobzy:Argo%4015077399brsc@rabbitmq:5672/'
+      MEDIA_STORAGE_PROVIDER: 'minio'
+      MINIO_ENDPOINT: 'https://nb.consultio.com.br'
+      MINIO_PUBLIC_URL: 'https://nb.consultio.com.br'
+      MINIO_ACCESS_KEY: '8aHPnW4JQsRWhbKld9Yw'
+      MINIO_SECRET_KEY: 'YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc'
+      MINIO_REGION: 'us-east-1'
+      MINIO_WHATSAPP_BUCKET: 'imobzywhatsapp'
+      TRAEFIK_DYNAMIC_DIR: '/app/traefik/dynamic'
+      TRAEFIK_FRONTEND_SERVICE: 'wootech_imob_frontend@docker'
+      TRAEFIK_API_SERVICE: 'wootech_imob_api@docker'
     volumes:
       - imobzy_traefik_dynamic:/app/traefik/dynamic
     networks:
       - woopanel1
       - imobfluow_internal
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=woopanel1"
-      - "traefik.http.routers.wootech_imob_whatsapp_ws.rule=(Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api/whatsapp/ws`)"
-      - "traefik.http.routers.wootech_imob_whatsapp_ws.entrypoints=websecure"
-      - "traefik.http.routers.wootech_imob_whatsapp_ws.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.wootech_imob_whatsapp_ws.priority=20"
-      - "traefik.http.routers.wootech_imob_whatsapp_ws.service=wootech_imob_api"
-      - "traefik.http.routers.fazendasbrasil_whatsapp_ws.rule=(Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)) && PathPrefix(`/api/whatsapp/ws`)"
-      - "traefik.http.routers.fazendasbrasil_whatsapp_ws.entrypoints=websecure"
-      - "traefik.http.routers.fazendasbrasil_whatsapp_ws.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.fazendasbrasil_whatsapp_ws.priority=20"
-      - "traefik.http.routers.fazendasbrasil_whatsapp_ws.service=wootech_imob_api"
-      - "traefik.http.routers.wootech_imob_api.rule=(Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api`)"
-      - "traefik.http.routers.wootech_imob_api.entrypoints=websecure"
-      - "traefik.http.routers.wootech_imob_api.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.wootech_imob_api.priority=10"
-      - "traefik.http.routers.wootech_imob_api.service=wootech_imob_api"
-      - "traefik.http.routers.fazendasbrasil_api.rule=(Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)) && PathPrefix(`/api`)"
-      - "traefik.http.routers.fazendasbrasil_api.entrypoints=websecure"
-      - "traefik.http.routers.fazendasbrasil_api.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.fazendasbrasil_api.priority=10"
-      - "traefik.http.routers.fazendasbrasil_api.service=wootech_imob_api"
-      - "traefik.http.services.wootech_imob_api.loadbalancer.server.port=3002"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=woopanel1'
+      - 'traefik.http.routers.wootech_imob_whatsapp_ws.rule=(Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api/whatsapp/ws`)'
+      - 'traefik.http.routers.wootech_imob_whatsapp_ws.entrypoints=websecure'
+      - 'traefik.http.routers.wootech_imob_whatsapp_ws.tls.certresolver=letsencryptresolver'
+      - 'traefik.http.routers.wootech_imob_whatsapp_ws.priority=20'
+      - 'traefik.http.routers.wootech_imob_whatsapp_ws.service=wootech_imob_api'
+      - 'traefik.http.routers.fazendasbrasil_whatsapp_ws.rule=(Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)) && PathPrefix(`/api/whatsapp/ws`)'
+      - 'traefik.http.routers.fazendasbrasil_whatsapp_ws.entrypoints=websecure'
+      - 'traefik.http.routers.fazendasbrasil_whatsapp_ws.tls.certresolver=letsencryptresolver'
+      - 'traefik.http.routers.fazendasbrasil_whatsapp_ws.priority=20'
+      - 'traefik.http.routers.fazendasbrasil_whatsapp_ws.service=wootech_imob_api'
+      - 'traefik.http.routers.wootech_imob_api.rule=(Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`) || Host(`okaimoveis.com.br`) || Host(`www.okaimoveis.com.br`)) && PathPrefix(`/api`)'
+      - 'traefik.http.routers.wootech_imob_api.entrypoints=websecure'
+      - 'traefik.http.routers.wootech_imob_api.tls.certresolver=letsencryptresolver'
+      - 'traefik.http.routers.wootech_imob_api.priority=10'
+      - 'traefik.http.routers.wootech_imob_api.service=wootech_imob_api'
+      - 'traefik.http.routers.fazendasbrasil_api.rule=(Host(`fazendasbrasil.com`) || Host(`www.fazendasbrasil.com`)) && PathPrefix(`/api`)'
+      - 'traefik.http.routers.fazendasbrasil_api.entrypoints=websecure'
+      - 'traefik.http.routers.fazendasbrasil_api.tls.certresolver=letsencryptresolver'
+      - 'traefik.http.routers.fazendasbrasil_api.priority=10'
+      - 'traefik.http.routers.fazendasbrasil_api.service=wootech_imob_api'
+      - 'traefik.http.services.wootech_imob_api.loadbalancer.server.port=3002'
 
   waha:
     image: devlikeapro/waha:latest
     environment:
-      WHATSAPP_API_KEY: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
-      WAHA_ENGINE: "noweb"
-      WAHA_PRINT_QR: "false"
+      WHATSAPP_API_KEY: '61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b'
+      WAHA_ENGINE: 'noweb'
+      WAHA_PRINT_QR: 'false'
       WAHA_LOG_FORMAT: JSON
     volumes:
       - waha_sessions:/app/.sessions
@@ -118,25 +118,25 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3100
-      ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
-      CORS_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
-      SUPABASE_URL: "${VITE_SUPABASE_URL}"
-      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
-      SUPABASE_JWT_SECRET: "${SUPABASE_JWT_SECRET}"
-      SUPABASE_DB_URL: "${SUPABASE_DB_URL}"
+      ALLOWED_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br'
+      CORS_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br'
+      SUPABASE_URL: '${VITE_SUPABASE_URL}'
+      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
+      SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET}'
+      SUPABASE_DB_URL: '${SUPABASE_DB_URL}'
       PGSSLMODE: require
-      NODE_URL: "http://api:3002"
-      WHATSAPP_SERVICE_TOKEN: "b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833"
-      WHATSAPP_INTERNAL_TOKEN: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
-      WHATSAPP_WS_JWT_SECRET: "f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2"
-      WHATSAPP_AI_AUTOMATION: "true"
-      MEDIA_STORAGE_PROVIDER: "minio"
-      MINIO_ENDPOINT: "https://nb.consultio.com.br"
-      MINIO_PUBLIC_URL: "https://nb.consultio.com.br"
-      MINIO_ACCESS_KEY: "8aHPnW4JQsRWhbKld9Yw"
-      MINIO_SECRET_KEY: "YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc"
-      MINIO_REGION: "us-east-1"
-      MINIO_WHATSAPP_BUCKET: "imobzywhatsapp"
+      NODE_URL: 'http://api:3002'
+      WHATSAPP_SERVICE_TOKEN: 'b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833'
+      WHATSAPP_INTERNAL_TOKEN: '61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b'
+      WHATSAPP_WS_JWT_SECRET: 'f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2'
+      WHATSAPP_AI_AUTOMATION: 'true'
+      MEDIA_STORAGE_PROVIDER: 'minio'
+      MINIO_ENDPOINT: 'https://nb.consultio.com.br'
+      MINIO_PUBLIC_URL: 'https://nb.consultio.com.br'
+      MINIO_ACCESS_KEY: '8aHPnW4JQsRWhbKld9Yw'
+      MINIO_SECRET_KEY: 'YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc'
+      MINIO_REGION: 'us-east-1'
+      MINIO_WHATSAPP_BUCKET: 'imobzywhatsapp'
     volumes:
       - whatsapp_sessions:/app/.sessions
     networks:
@@ -145,14 +145,14 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     environment:
-      RABBITMQ_DEFAULT_USER: "imobzy"
-      RABBITMQ_DEFAULT_PASS: "Argo@15077399brsc"
+      RABBITMQ_DEFAULT_USER: 'imobzy'
+      RABBITMQ_DEFAULT_PASS: 'Argo@15077399brsc'
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - imobfluow_internal
     healthcheck:
-      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      test: ['CMD-SHELL', 'rabbitmq-diagnostics -q ping']
       interval: 30s
       timeout: 10s
       retries: 5

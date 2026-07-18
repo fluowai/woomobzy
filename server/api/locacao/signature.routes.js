@@ -15,7 +15,14 @@ const router = Router();
 
 const signerSchema = z.object({
   lease_id: z.string().uuid(),
-  signer_type: z.enum(['locador', 'locatario', 'fiador', 'co_locatario', 'testemunha_1', 'testemunha_2']),
+  signer_type: z.enum([
+    'locador',
+    'locatario',
+    'fiador',
+    'co_locatario',
+    'testemunha_1',
+    'testemunha_2',
+  ]),
   signer_name: z.string().min(3),
   signer_email: z.string().email().optional(),
   signer_phone: z.string().optional(),
@@ -23,7 +30,9 @@ const signerSchema = z.object({
 });
 
 export function getSignatureWebhookSecret(provider) {
-  const genericSecret = String(process.env.SIGNATURE_WEBHOOK_SECRET || '').trim();
+  const genericSecret = String(
+    process.env.SIGNATURE_WEBHOOK_SECRET || ''
+  ).trim();
   const providerSecret =
     provider === 'clicksign'
       ? String(process.env.CLICKSIGN_WEBHOOK_SECRET || '').trim()
@@ -67,7 +76,8 @@ export function assertSignatureWebhookAuthorized(req, provider) {
 router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { lease_id } = req.params;
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!isValidUUID(lease_id))
+      return res.status(400).json({ error: 'ID inválido' });
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
@@ -93,7 +103,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
     const validation = signerSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();
@@ -149,7 +161,8 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
       .single();
 
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Signatário não encontrado' });
+    if (!data)
+      return res.status(404).json({ error: 'Signatário não encontrado' });
 
     // Check if all signers have signed
     const { data: allSignatures } = await supabase
@@ -158,7 +171,8 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
       .eq('lease_id', data.lease_id);
 
     const totalSigners = allSignatures?.length || 0;
-    const signedCount = allSignatures?.filter(s => s.status === 'signed').length || 0;
+    const signedCount =
+      allSignatures?.filter((s) => s.status === 'signed').length || 0;
 
     if (totalSigners > 0 && signedCount === totalSigners) {
       await supabase
@@ -188,92 +202,124 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
  * POST /api/locacao/signatures/:id/send-invitation
  * Legacy: atualiza status para sent
  */
-router.post('/:id/send-invitation', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { method = 'ambos' } = req.body;
+router.post(
+  '/:id/send-invitation',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { method = 'ambos' } = req.body;
 
-    if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
+      if (!isValidUUID(id))
+        return res.status(400).json({ error: 'ID inválido' });
 
-    const supabase = getSupabaseServer();
+      const supabase = getSupabaseServer();
 
-    const { data: signature, error } = await supabase
-      .from('signatures')
-      .update({
-        status: 'sent',
-        invitation_sent_at: new Date().toISOString(),
-        invitation_method: method,
-      })
-      .eq('id', id)
-      .eq('organization_id', req.orgId)
-      .select()
-      .single();
+      const { data: signature, error } = await supabase
+        .from('signatures')
+        .update({
+          status: 'sent',
+          invitation_sent_at: new Date().toISOString(),
+          invitation_method: method,
+        })
+        .eq('id', id)
+        .eq('organization_id', req.orgId)
+        .select()
+        .single();
 
-    if (error) throw error;
-    if (!signature) return res.status(404).json({ error: 'Signatário não encontrado' });
+      if (error) throw error;
+      if (!signature)
+        return res.status(404).json({ error: 'Signatário não encontrado' });
 
-    // Update lease signature status
-    await supabase
-      .from('leases')
-      .update({ signature_status: 'sent' })
-      .eq('id', signature.lease_id)
-      .eq('organization_id', req.orgId);
+      // Update lease signature status
+      await supabase
+        .from('leases')
+        .update({ signature_status: 'sent' })
+        .eq('id', signature.lease_id)
+        .eq('organization_id', req.orgId);
 
-    res.json({ success: true, data: signature });
-  } catch (error) {
-    console.error('[SignatureRoutes] Send invitation error:', error);
-    res.status(500).json({ error: error.message });
+      res.json({ success: true, data: signature });
+    } catch (error) {
+      console.error('[SignatureRoutes] Send invitation error:', error);
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 /**
  * POST /api/locacao/signatures/invite/:signature_id
  * Envia convite com email/whatsapp via SignatureInvitationService
  */
-router.post('/invite/:signature_id', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { signature_id } = req.params;
-    if (!isValidUUID(signature_id)) return res.status(400).json({ error: 'ID inválido' });
+router.post(
+  '/invite/:signature_id',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { signature_id } = req.params;
+      if (!isValidUUID(signature_id))
+        return res.status(400).json({ error: 'ID inválido' });
 
-    const result = await SignatureInvitationService.sendInvitation(signature_id, req.orgId);
-    res.json({ success: true, data: result });
-  } catch (error) {
-    console.error('[SignatureRoutes] Invite error:', error);
-    res.status(500).json({ error: error.message });
+      const result = await SignatureInvitationService.sendInvitation(
+        signature_id,
+        req.orgId
+      );
+      res.json({ success: true, data: result });
+    } catch (error) {
+      console.error('[SignatureRoutes] Invite error:', error);
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 /**
  * POST /api/locacao/signatures/invite/bulk/:lease_id
  * Envia convite para todos os signatários de um contrato
  */
-router.post('/invite/bulk/:lease_id', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { lease_id } = req.params;
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+router.post(
+  '/invite/bulk/:lease_id',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { lease_id } = req.params;
+      if (!isValidUUID(lease_id))
+        return res.status(400).json({ error: 'ID inválido' });
 
-    const results = await SignatureInvitationService.sendBulkInvitations(lease_id, req.orgId);
-    res.json({ success: true, data: results });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+      const results = await SignatureInvitationService.sendBulkInvitations(
+        lease_id,
+        req.orgId
+      );
+      res.json({ success: true, data: results });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 /**
  * GET /api/locacao/signatures/check-provider/:lease_id
  * Verifica status das assinaturas no provedor externo
  */
-router.get('/check-provider/:lease_id', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { lease_id } = req.params;
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+router.get(
+  '/check-provider/:lease_id',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { lease_id } = req.params;
+      if (!isValidUUID(lease_id))
+        return res.status(400).json({ error: 'ID inválido' });
 
-    const statuses = await SignatureInvitationService.checkProviderSignatureStatus(lease_id);
-    res.json({ success: true, data: statuses });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+      const statuses =
+        await SignatureInvitationService.checkProviderSignatureStatus(lease_id);
+      res.json({ success: true, data: statuses });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 /**
  * POST /api/locacao/signatures/webhook/:provider
@@ -288,7 +334,10 @@ router.post('/webhook/:provider', async (req, res) => {
 
     assertSignatureWebhookAuthorized(req, provider);
 
-    const result = await SignatureInvitationService.handleWebhook(provider, req.body);
+    const result = await SignatureInvitationService.handleWebhook(
+      provider,
+      req.body
+    );
     res.json(result);
   } catch (error) {
     console.error('[SignatureWebhook] Error:', error.message);

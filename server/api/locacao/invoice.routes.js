@@ -20,7 +20,8 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
     const { lease_id } = req.params;
     const { status, year, month } = req.query;
 
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!isValidUUID(lease_id))
+      return res.status(400).json({ error: 'ID inválido' });
 
     const supabase = getSupabaseServer();
     let query = supabase
@@ -31,7 +32,10 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
       .order('due_date', { ascending: false });
 
     if (status) query = query.eq('status', status);
-    if (year) query = query.gte('due_date', `${year}-01-01`).lte('due_date', `${year}-12-31`);
+    if (year)
+      query = query
+        .gte('due_date', `${year}-01-01`)
+        .lte('due_date', `${year}-12-31`);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -51,7 +55,8 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { lease_id, start_month, months = 12 } = req.body;
 
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!isValidUUID(lease_id))
+      return res.status(400).json({ error: 'ID inválido' });
 
     const supabase = getSupabaseServer();
 
@@ -62,17 +67,30 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (!lease) return res.status(404).json({ error: 'Locação não encontrada' });
-    if (!lease.due_day) return res.status(400).json({ error: 'Dia de vencimento não configurado' });
+    if (!lease)
+      return res.status(404).json({ error: 'Locação não encontrada' });
+    if (!lease.due_day)
+      return res
+        .status(400)
+        .json({ error: 'Dia de vencimento não configurado' });
 
     const startDate = start_month ? new Date(start_month) : new Date();
     const generated = [];
 
     for (let i = 0; i < months; i++) {
-      const dueDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, lease.due_day);
-      const refMonth = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+      const dueDate = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth() + i,
+        lease.due_day
+      );
+      const refMonth = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth() + i,
+        1
+      );
 
-      const total = (lease.monthly_rent || 0) +
+      const total =
+        (lease.monthly_rent || 0) +
         (lease.condominium_fee || 0) +
         (lease.iptu_amount || 0);
 
@@ -99,7 +117,9 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
       if (invoice) generated.push(invoice);
     }
 
-    res.status(201).json({ success: true, data: generated, count: generated.length });
+    res
+      .status(201)
+      .json({ success: true, data: generated, count: generated.length });
   } catch (error) {
     console.error('[InvoiceRoutes] Generate error:', error);
     res.status(500).json({ error: error.message });
@@ -112,7 +132,8 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
 router.put('/:id/pay', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
-    const { payment_date, payment_method, paid_amount, payment_proof_url } = req.body;
+    const { payment_date, payment_method, paid_amount, payment_proof_url } =
+      req.body;
 
     if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
 

@@ -123,7 +123,11 @@ const Login: React.FC = () => {
               aria-label="Voltar para a pagina inicial"
               className="inline-flex rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c8ff66] focus:ring-offset-4 focus:ring-offset-[#0b1c18]"
             >
-              <img src="/logo-wootech-imob.svg" alt="WooTech Imob" className="h-12 w-auto brightness-0 invert" />
+              <img
+                src="/logo-wootech-imob.svg"
+                alt="WooTech Imob"
+                className="h-12 w-auto brightness-0 invert"
+              />
             </Link>
           </div>
 
@@ -145,13 +149,20 @@ const Login: React.FC = () => {
 
           <div className="relative z-10 grid gap-3">
             {capabilityItems.map((item) => (
-              <article key={item.label} className="flex items-start gap-4 rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur">
+              <article
+                key={item.label}
+                className="flex items-start gap-4 rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur"
+              >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#c8ff66] text-[#0b1c18]">
                   <item.icon size={21} />
                 </span>
                 <div>
-                  <h2 className="mb-0 text-base font-bold text-white">{item.label}</h2>
-                  <p className="mb-0 mt-1 text-sm font-medium leading-relaxed text-white/66">{item.text}</p>
+                  <h2 className="mb-0 text-base font-bold text-white">
+                    {item.label}
+                  </h2>
+                  <p className="mb-0 mt-1 text-sm font-medium leading-relaxed text-white/66">
+                    {item.text}
+                  </p>
                 </div>
               </article>
             ))}
@@ -161,8 +172,16 @@ const Login: React.FC = () => {
         <section className="flex min-h-screen w-full items-center justify-center px-5 py-8 sm:px-8 lg:w-[55%] lg:px-12 xl:w-[58%]">
           <div className="w-full max-w-[520px]">
             <div className="mb-10 flex items-center justify-between gap-4 lg:hidden">
-              <Link to="/" aria-label="Voltar para a pagina inicial" className="inline-flex">
-                <img src="/logo-wootech-imob.svg" alt="WooTech Imob" className="h-12 w-auto" />
+              <Link
+                to="/"
+                aria-label="Voltar para a pagina inicial"
+                className="inline-flex"
+              >
+                <img
+                  src="/logo-wootech-imob.svg"
+                  alt="WooTech Imob"
+                  className="h-12 w-auto"
+                />
               </Link>
             </div>
 
@@ -194,11 +213,17 @@ const Login: React.FC = () => {
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-bold text-slate-800">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-bold text-slate-800"
+                  >
                     E-mail corporativo
                   </label>
                   <div className="relative">
-                    <Mail size={19} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Mail
+                      size={19}
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
                     <input
                       id="email"
                       type="email"
@@ -214,15 +239,24 @@ const Login: React.FC = () => {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-4">
-                    <label htmlFor="password" className="block text-sm font-bold text-slate-800">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-bold text-slate-800"
+                    >
                       Senha
                     </label>
-                    <Link to="/forgot-password" className="text-sm font-bold text-[#0d8f62] hover:text-[#06704b]">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm font-bold text-[#0d8f62] hover:text-[#06704b]"
+                    >
                       Esqueci minha senha
                     </Link>
                   </div>
                   <div className="relative">
-                    <Lock size={19} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Lock
+                      size={19}
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
                     <input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
@@ -237,7 +271,9 @@ const Login: React.FC = () => {
                       type="button"
                       onClick={() => setShowPassword((current) => !current)}
                       className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                      aria-label={
+                        showPassword ? 'Ocultar senha' : 'Mostrar senha'
+                      }
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -257,7 +293,9 @@ const Login: React.FC = () => {
                 {error ? (
                   <div className="flex items-start gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-700">
                     <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                    <p className="mb-0 text-sm font-semibold leading-relaxed">{error}</p>
+                    <p className="mb-0 text-sm font-semibold leading-relaxed">
+                      {error}
+                    </p>
                   </div>
                 ) : null}
 
@@ -286,9 +324,12 @@ const Login: React.FC = () => {
                     <ShieldCheck size={20} />
                   </span>
                   <div>
-                    <p className="mb-0 text-sm font-bold text-slate-900">Acesso seguro</p>
+                    <p className="mb-0 text-sm font-bold text-slate-900">
+                      Acesso seguro
+                    </p>
                     <p className="mb-0 mt-1 text-sm font-medium leading-relaxed text-slate-500">
-                      Use as credenciais liberadas pelo administrador da sua imobiliaria.
+                      Use as credenciais liberadas pelo administrador da sua
+                      imobiliaria.
                     </p>
                   </div>
                 </div>
@@ -296,7 +337,10 @@ const Login: React.FC = () => {
 
               <p className="mb-0 mt-7 text-center text-sm font-medium text-slate-500">
                 Ainda nao tem acesso?{' '}
-                <Link to="/register" className="font-black text-[#0d8f62] hover:text-[#06704b]">
+                <Link
+                  to="/register"
+                  className="font-black text-[#0d8f62] hover:text-[#06704b]"
+                >
                   Solicitar acesso
                 </Link>
               </p>
@@ -320,7 +364,10 @@ function getLoginErrorMessage(err: any) {
     return 'E-mail ainda nao confirmado. Peca ao administrador para confirmar ou recriar o acesso.';
   }
 
-  return err?.message || 'Nao foi possivel entrar agora. Verifique suas credenciais e tente novamente.';
+  return (
+    err?.message ||
+    'Nao foi possivel entrar agora. Verifique suas credenciais e tente novamente.'
+  );
 }
 
 export default Login;

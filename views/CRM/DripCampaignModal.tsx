@@ -9,7 +9,11 @@ interface Props {
   leadId: string;
 }
 
-export const DripCampaignModal: React.FC<Props> = ({ isOpen, onClose, leadId }) => {
+export const DripCampaignModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  leadId,
+}) => {
   const [templates, setTemplates] = useState<any[]>([]);
   const [activeCampaigns, setActiveCampaigns] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -78,8 +82,13 @@ export const DripCampaignModal: React.FC<Props> = ({ isOpen, onClose, leadId }) 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-900">Automação de E-mails (Drip)</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-md text-slate-400">
+          <h3 className="font-semibold text-slate-900">
+            Automação de E-mails (Drip)
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
+          >
             <X size={18} />
           </button>
         </div>
@@ -89,7 +98,9 @@ export const DripCampaignModal: React.FC<Props> = ({ isOpen, onClose, leadId }) 
             <div className="text-sm text-slate-500">Carregando...</div>
           ) : activeCampaigns.length > 0 ? (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-              <h4 className="text-sm font-bold text-emerald-800 mb-2">Campanha em Andamento</h4>
+              <h4 className="text-sm font-bold text-emerald-800 mb-2">
+                Campanha em Andamento
+              </h4>
               {activeCampaigns.map((camp: any, idx) => (
                 <div key={idx} className="text-xs text-emerald-700">
                   Template: {camp.template_key} | Status: {camp.status}
@@ -107,9 +118,10 @@ export const DripCampaignModal: React.FC<Props> = ({ isOpen, onClose, leadId }) 
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-slate-600">
-                Selecione uma sequência de e-mails para nutrir este lead automaticamente.
+                Selecione uma sequência de e-mails para nutrir este lead
+                automaticamente.
               </p>
-              
+
               <div className="space-y-2">
                 {templates.map((tpl) => (
                   <label
@@ -129,7 +141,9 @@ export const DripCampaignModal: React.FC<Props> = ({ isOpen, onClose, leadId }) 
                         onChange={(e) => setSelectedTemplate(e.target.value)}
                         className="mr-3"
                       />
-                      <span className="text-sm font-medium text-slate-800">{tpl.name}</span>
+                      <span className="text-sm font-medium text-slate-800">
+                        {tpl.name}
+                      </span>
                     </div>
                     <div className="ml-7 mt-1 text-xs text-slate-500">
                       {tpl.steps} passos • Duração: {tpl.durationHours}h

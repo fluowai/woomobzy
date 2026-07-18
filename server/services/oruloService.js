@@ -4,7 +4,12 @@ const ORULO_API_BASE_URL = 'https://www.orulo.com.br';
 const ORULO_TOKEN_URL = `${ORULO_API_BASE_URL}/oauth/token`;
 const ORULO_AUTHORIZE_URL = `${ORULO_API_BASE_URL}/oauth/authorize`;
 const DEFAULT_IMAGE_DIMENSIONS = ['1024x1024', '520x280'];
-const RURAL_ORULO_TYPES = new Set(['Fazenda/Sítio', 'Fazenda', 'Sítio', 'Chácara']);
+const RURAL_ORULO_TYPES = new Set([
+  'Fazenda/Sítio',
+  'Fazenda',
+  'Sítio',
+  'Chácara',
+]);
 
 const ARRAY_FILTER_KEYS = new Set([
   'area',
@@ -80,11 +85,21 @@ const tokenCacheByClient = new Map();
 
 function normalizeCredentials(credentials = {}) {
   const useProvidedCredentials = Object.keys(credentials || {}).length > 0;
-  const clientId = (useProvidedCredentials ? credentials.clientId : process.env.ORULO_CLIENT_ID || '').trim();
-  const clientSecret = (useProvidedCredentials ? credentials.clientSecret : process.env.ORULO_CLIENT_SECRET || '').trim();
+  const clientId = (
+    useProvidedCredentials
+      ? credentials.clientId
+      : process.env.ORULO_CLIENT_ID || ''
+  ).trim();
+  const clientSecret = (
+    useProvidedCredentials
+      ? credentials.clientSecret
+      : process.env.ORULO_CLIENT_SECRET || ''
+  ).trim();
 
   if (!clientId || !clientSecret) {
-    const error = new Error('Credenciais da Órulo não configuradas no servidor.');
+    const error = new Error(
+      'Credenciais da Órulo não configuradas no servidor.'
+    );
     error.statusCode = 400;
     throw error;
   }
@@ -97,7 +112,11 @@ async function getClientToken({ credentials, forceRefresh = false } = {}) {
   const cacheKey = `${clientId}:${clientSecret.slice(-8)}`;
   const cached = tokenCacheByClient.get(cacheKey);
 
-  if (!forceRefresh && cached?.accessToken && cached.expiresAt > Date.now() + 60000) {
+  if (
+    !forceRefresh &&
+    cached?.accessToken &&
+    cached.expiresAt > Date.now() + 60000
+  ) {
     return cached.accessToken;
   }
 
@@ -115,7 +134,9 @@ async function getClientToken({ credentials, forceRefresh = false } = {}) {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    const error = new Error(`Falha ao autenticar na Órulo (${response.status}).`);
+    const error = new Error(
+      `Falha ao autenticar na Órulo (${response.status}).`
+    );
     error.detail = detail;
     error.statusCode = response.status === 401 ? 401 : 502;
     throw error;
@@ -132,7 +153,10 @@ async function getClientToken({ credentials, forceRefresh = false } = {}) {
 
 function appendQuery(url, query = {}) {
   Object.entries(query || {}).forEach(([rawKey, value]) => {
-    const key = ARRAY_FILTER_KEYS.has(rawKey) && !rawKey.endsWith('[]') ? `${rawKey}[]` : rawKey;
+    const key =
+      ARRAY_FILTER_KEYS.has(rawKey) && !rawKey.endsWith('[]')
+        ? `${rawKey}[]`
+        : rawKey;
     if (Array.isArray(value)) {
       value
         .filter((item) => item !== undefined && item !== null && item !== '')
@@ -143,8 +167,11 @@ function appendQuery(url, query = {}) {
   });
 }
 
-async function oruloRequest(path, { credentials, query, retry = true, token, method = 'GET', body } = {}) {
-  const accessToken = token || await getClientToken({ credentials });
+async function oruloRequest(
+  path,
+  { credentials, query, retry = true, token, method = 'GET', body } = {}
+) {
+  const accessToken = token || (await getClientToken({ credentials }));
   const url = new URL(path, ORULO_API_BASE_URL);
   appendQuery(url, query);
 
@@ -159,12 +186,20 @@ async function oruloRequest(path, { credentials, query, retry = true, token, met
 
   if (response.status === 401 && retry && !token) {
     await getClientToken({ credentials, forceRefresh: true });
-    return oruloRequest(path, { credentials, query, retry: false, method, body });
+    return oruloRequest(path, {
+      credentials,
+      query,
+      retry: false,
+      method,
+      body,
+    });
   }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    const error = new Error(`Erro na API Órulo (${response.status}) em ${path}.`);
+    const error = new Error(
+      `Erro na API Órulo (${response.status}) em ${path}.`
+    );
     error.detail = detail;
     error.statusCode = response.status >= 500 ? 502 : response.status;
     throw error;
@@ -191,7 +226,11 @@ function hasCatalogFilters(filters = {}) {
   return Object.keys(sanitizeBuildingFilters(filters)).length > 0;
 }
 
-export function buildEndUserAuthorizationUrl({ credentials, redirectUri, state }) {
+export function buildEndUserAuthorizationUrl({
+  credentials,
+  redirectUri,
+  state,
+}) {
   const { clientId } = normalizeCredentials(credentials);
   const url = new URL(ORULO_AUTHORIZE_URL);
   url.searchParams.set('client_id', clientId);
@@ -219,7 +258,9 @@ export async function exchangeEndUserCode({ credentials, code, redirectUri }) {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    const error = new Error(`Falha ao conectar corretor na Ã“rulo (${response.status}).`);
+    const error = new Error(
+      `Falha ao conectar corretor na Ã“rulo (${response.status}).`
+    );
     error.detail = detail;
     error.statusCode = response.status >= 500 ? 502 : response.status;
     throw error;
@@ -230,14 +271,18 @@ export async function exchangeEndUserCode({ credentials, code, redirectUri }) {
     accessToken: data.access_token,
     refreshToken: data.refresh_token || null,
     tokenType: data.token_type || 'Bearer',
-    expiresAt: new Date(Date.now() + Number(data.expires_in || 3600) * 1000).toISOString(),
+    expiresAt: new Date(
+      Date.now() + Number(data.expires_in || 3600) * 1000
+    ).toISOString(),
     connectedAt: new Date().toISOString(),
   };
 }
 
 export async function refreshEndUserToken({ credentials, refreshToken }) {
   if (!refreshToken) {
-    const error = new Error('A autorização Órulo do corretor expirou. Conecte a conta novamente.');
+    const error = new Error(
+      'A autorização Órulo do corretor expirou. Conecte a conta novamente.'
+    );
     error.statusCode = 401;
     throw error;
   }
@@ -257,7 +302,9 @@ export async function refreshEndUserToken({ credentials, refreshToken }) {
   });
 
   if (!response.ok) {
-    const error = new Error('Não foi possível renovar a autorização Órulo do corretor.');
+    const error = new Error(
+      'Não foi possível renovar a autorização Órulo do corretor.'
+    );
     error.statusCode = 401;
     throw error;
   }
@@ -267,7 +314,9 @@ export async function refreshEndUserToken({ credentials, refreshToken }) {
     accessToken: data.access_token,
     refreshToken: data.refresh_token || refreshToken,
     tokenType: data.token_type || 'Bearer',
-    expiresAt: new Date(Date.now() + Number(data.expires_in || 3600) * 1000).toISOString(),
+    expiresAt: new Date(
+      Date.now() + Number(data.expires_in || 3600) * 1000
+    ).toISOString(),
     connectedAt: new Date().toISOString(),
   };
 }
@@ -297,7 +346,9 @@ export async function fetchEndUserProtectedResource({ token, resource }) {
 }
 
 function buildAddress(address = {}) {
-  return [address.street_type, address.street, address.number].filter(Boolean).join(' ');
+  return [address.street_type, address.street, address.number]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function mapPropertyType(type) {
@@ -306,8 +357,10 @@ function mapPropertyType(type) {
   if (normalized.includes('loft')) return 'Loft';
   if (normalized.includes('cobertura')) return 'Cobertura';
   if (normalized.includes('casa')) return 'Casa';
-  if (normalized.includes('terreno') || normalized.includes('lote')) return 'Terreno Urbano';
-  if (normalized.includes('sala') || normalized.includes('loja')) return 'Sala Comercial';
+  if (normalized.includes('terreno') || normalized.includes('lote'))
+    return 'Terreno Urbano';
+  if (normalized.includes('sala') || normalized.includes('loja'))
+    return 'Sala Comercial';
   if (normalized.includes('galp')) return 'Galpão Industrial';
   return 'Apartamento';
 }
@@ -331,8 +384,12 @@ function buildDescription(building, typology) {
     address.area || address.city
       ? `Localização: ${[address.area, address.city, address.state].filter(Boolean).join(', ')}.`
       : null,
-    building.stage || building.status ? `Status do empreendimento: ${building.stage || building.status}.` : null,
-    typology.private_area ? `Área privativa a partir de ${typology.private_area} m².` : null,
+    building.stage || building.status
+      ? `Status do empreendimento: ${building.stage || building.status}.`
+      : null,
+    typology.private_area
+      ? `Área privativa a partir de ${typology.private_area} m².`
+      : null,
   ];
 
   return parts.filter(Boolean).join('\n\n');
@@ -340,12 +397,21 @@ function buildDescription(building, typology) {
 
 function mapTypologyToProperty({ building, typology, images, organizationId }) {
   const address = building.address || {};
-  const price = money(typology.discount_price || typology.original_price || typology.price || building.min_price);
+  const price = money(
+    typology.discount_price ||
+      typology.original_price ||
+      typology.price ||
+      building.min_price
+  );
   const externalId = `${building.id}:${typology.id}`;
   const bedrooms = Number(typology.bedrooms ?? building.min_bedrooms ?? 0) || 0;
   const suites = Number(typology.suites ?? building.min_suites ?? 0) || 0;
-  const bathrooms = Number(typology.bathrooms ?? building.min_bathrooms ?? 0) || 0;
-  const parking = Number(typology.parking ?? typology.parking_spaces ?? building.min_parking ?? 0) || 0;
+  const bathrooms =
+    Number(typology.bathrooms ?? building.min_bathrooms ?? 0) || 0;
+  const parking =
+    Number(
+      typology.parking ?? typology.parking_spaces ?? building.min_parking ?? 0
+    ) || 0;
   const areaM2 = Number(typology.private_area ?? building.min_area ?? 0) || 0;
 
   return {
@@ -357,7 +423,11 @@ function mapTypologyToProperty({ building, typology, images, organizationId }) {
     imported_at: new Date().toISOString(),
     niche: 'urbano',
     status: 'Pendente',
-    title: [mapPropertyType(typology.type), building.name, bedrooms ? `${bedrooms} dorm.` : null]
+    title: [
+      mapPropertyType(typology.type),
+      building.name,
+      bedrooms ? `${bedrooms} dorm.` : null,
+    ]
       .filter(Boolean)
       .join(' - '),
     description: buildDescription(building, typology),
@@ -392,18 +462,21 @@ function mapTypologyToProperty({ building, typology, images, organizationId }) {
 }
 
 async function fetchBuildingBundle(buildingId, credentials) {
-  const [building, typologiesResponse, imagesResponse, floorPlansResponse] = await Promise.all([
-    oruloRequest(`/api/v2/buildings/${buildingId}`, { credentials }),
-    oruloRequest(`/api/v2/buildings/${buildingId}/typologies`, { credentials }),
-    oruloRequest(`/api/v2/buildings/${buildingId}/images`, {
-      credentials,
-      query: { 'dimensions[]': DEFAULT_IMAGE_DIMENSIONS },
-    }).catch(() => ({ images: [] })),
-    oruloRequest(`/api/v2/buildings/${buildingId}/floor_plans`, {
-      credentials,
-      query: { 'dimensions[]': DEFAULT_IMAGE_DIMENSIONS },
-    }).catch(() => ({ floor_plans: [] })),
-  ]);
+  const [building, typologiesResponse, imagesResponse, floorPlansResponse] =
+    await Promise.all([
+      oruloRequest(`/api/v2/buildings/${buildingId}`, { credentials }),
+      oruloRequest(`/api/v2/buildings/${buildingId}/typologies`, {
+        credentials,
+      }),
+      oruloRequest(`/api/v2/buildings/${buildingId}/images`, {
+        credentials,
+        query: { 'dimensions[]': DEFAULT_IMAGE_DIMENSIONS },
+      }).catch(() => ({ images: [] })),
+      oruloRequest(`/api/v2/buildings/${buildingId}/floor_plans`, {
+        credentials,
+        query: { 'dimensions[]': DEFAULT_IMAGE_DIMENSIONS },
+      }).catch(() => ({ floor_plans: [] })),
+    ]);
 
   return {
     building,
@@ -413,20 +486,40 @@ async function fetchBuildingBundle(buildingId, credentials) {
   };
 }
 
-export async function importBuildingTypologies({ supabase, organizationId, buildingId, credentials }) {
-  const { building, typologies, images, floorPlans } = await fetchBuildingBundle(buildingId, credentials);
-  const urbanTypologies = typologies.filter((typology) => !RURAL_ORULO_TYPES.has(typology.type));
+export async function importBuildingTypologies({
+  supabase,
+  organizationId,
+  buildingId,
+  credentials,
+}) {
+  const { building, typologies, images, floorPlans } =
+    await fetchBuildingBundle(buildingId, credentials);
+  const urbanTypologies = typologies.filter(
+    (typology) => !RURAL_ORULO_TYPES.has(typology.type)
+  );
 
   if (!urbanTypologies.length) {
-    return { buildingId, imported: 0, skipped: typologies.length, properties: [] };
+    return {
+      buildingId,
+      imported: 0,
+      skipped: typologies.length,
+      properties: [],
+    };
   }
 
   const payload = [];
 
   for (const typology of urbanTypologies) {
-    const property = mapTypologyToProperty({ building, typology, images, organizationId });
+    const property = mapTypologyToProperty({
+      building,
+      typology,
+      images,
+      organizationId,
+    });
     property.features.orulo.floor_plans = floorPlans;
-    payload.push(await enrichPropertyWithAcp({ supabase, organizationId, property }));
+    payload.push(
+      await enrichPropertyWithAcp({ supabase, organizationId, property })
+    );
   }
 
   const data = await saveOruloProperties(supabase, payload);
@@ -484,7 +577,13 @@ async function saveOruloProperties(supabase, properties) {
   return saved;
 }
 
-export async function syncActiveBuildings({ supabase, organizationId, updatedAfter, maxBuildings = 25, credentials }) {
+export async function syncActiveBuildings({
+  supabase,
+  organizationId,
+  updatedAfter,
+  maxBuildings = 25,
+  credentials,
+}) {
   let page = 1;
   let processed = 0;
   const results = [];
@@ -526,7 +625,13 @@ export async function syncActiveBuildings({ supabase, organizationId, updatedAft
   };
 }
 
-export async function syncBuildingsByFilters({ supabase, organizationId, filters = {}, maxBuildings = 25, credentials }) {
+export async function syncBuildingsByFilters({
+  supabase,
+  organizationId,
+  filters = {},
+  maxBuildings = 25,
+  credentials,
+}) {
   let page = 1;
   let processed = 0;
   const results = [];
@@ -591,17 +696,28 @@ export async function listOruloMetadata({ type, credentials, query = {} }) {
   return oruloRequest(path, { credentials, query });
 }
 
-export async function updatePublicationLinks({ credentials, buildingId, publicationLinks }) {
+export async function updatePublicationLinks({
+  credentials,
+  buildingId,
+  publicationLinks,
+}) {
   return oruloRequest(`/api/v2/buildings/${buildingId}/publication_links`, {
     credentials,
     method: 'PUT',
     body: {
-      publication_links: Array.isArray(publicationLinks) ? publicationLinks : [],
+      publication_links: Array.isArray(publicationLinks)
+        ? publicationLinks
+        : [],
     },
   });
 }
 
-export async function markRemovedBuildings({ supabase, organizationId, updatedAfter, credentials }) {
+export async function markRemovedBuildings({
+  supabase,
+  organizationId,
+  updatedAfter,
+  credentials,
+}) {
   const response = await oruloRequest('/api/v2/buildings/ids/removed', {
     credentials,
     query: { updated_after: updatedAfter, results_per_page: 500, page: 1 },
@@ -623,7 +739,12 @@ export async function markRemovedBuildings({ supabase, organizationId, updatedAf
   return { removed: removed.length };
 }
 
-export async function markBuildingRemovedById({ supabase, organizationId, buildingId, reason = 'removed' }) {
+export async function markBuildingRemovedById({
+  supabase,
+  organizationId,
+  buildingId,
+  reason = 'removed',
+}) {
   if (!buildingId) return { removed: 0 };
 
   const { error, count } = await supabase

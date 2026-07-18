@@ -15,14 +15,15 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Invista em Terra: Segurança e Alta Rentabilidade',
-          subtitle: 'Oportunidades exclusivas em áreas de expansão agrícola com alto potencial de valorização.',
+          subtitle:
+            'Oportunidades exclusivas em áreas de expansão agrícola com alto potencial de valorização.',
           ctaText: 'Falar com Especialista',
           ctaLink: '#contato',
           backgroundImage: '/templates/template_investment.png',
           overlayOpacity: 0.5,
-          height: '80vh'
+          height: '80vh',
         },
-        styles: { padding: '0', textAlign: 'center' }
+        styles: { padding: '0', textAlign: 'center' },
       },
       {
         id: 'stats-1',
@@ -33,10 +34,10 @@ export const LANDING_PAGE_MODELS = [
           items: [
             { label: 'Hectares Disponíveis', value: '50.000+', icon: 'Map' },
             { label: 'Valorização Média aa', value: '15%', icon: 'TrendingUp' },
-            { label: 'Anos de Mercado', value: '25', icon: 'ShieldCheck' }
-          ]
+            { label: 'Anos de Mercado', value: '25', icon: 'ShieldCheck' },
+          ],
         },
-        styles: { padding: '60px 0', backgroundColor: '#f8fafc' }
+        styles: { padding: '60px 0', backgroundColor: '#f8fafc' },
       },
       {
         id: 'property-grid-1',
@@ -47,11 +48,11 @@ export const LANDING_PAGE_MODELS = [
           title: 'Áreas de Destaque',
           mode: 'filter',
           filters: { type: ['FAZENDA'], minArea: 500 },
-          columns: 3
+          columns: 3,
         },
-        styles: { padding: '80px 0' }
-      }
-    ]
+        styles: { padding: '80px 0' },
+      },
+    ],
   },
   {
     id: 'production-ready',
@@ -67,12 +68,13 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Fazenda Pronta para Produzir',
-          subtitle: 'Infraestrutura completa para soja, milho e algodão. Sede moderna e silos de alta capacidade.',
+          subtitle:
+            'Infraestrutura completa para soja, milho e algodão. Sede moderna e silos de alta capacidade.',
           ctaText: 'Ver Detalhas das Instalações',
           backgroundImage: '/templates/template_production.png',
-          height: '70vh'
+          height: '70vh',
         },
-        styles: { padding: '0' }
+        styles: { padding: '0' },
       },
       {
         id: 'property-featured-1',
@@ -81,11 +83,11 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Imóvel em Destaque: Ouro do Cerrado',
-          propertyId: 'auto'
+          propertyId: 'auto',
         },
-        styles: { padding: '80px 0' }
-      }
-    ]
+        styles: { padding: '80px 0' },
+      },
+    ],
   },
   {
     id: 'livestock-focus',
@@ -101,13 +103,14 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Ideal para Pecuária Lucrativa',
-          subtitle: 'Capacidade para 1.000+ cabeças, pastagens rotacionadas e currais de ponta.',
+          subtitle:
+            'Capacidade para 1.000+ cabeças, pastagens rotacionadas e currais de ponta.',
           ctaText: 'Agendar Visita Técnica',
-          backgroundImage: '/templates/template_livestock.png'
+          backgroundImage: '/templates/template_livestock.png',
         },
-        styles: { padding: '0' }
-      }
-    ]
+        styles: { padding: '0' },
+      },
+    ],
   },
   {
     id: 'opportunity-sale',
@@ -123,13 +126,14 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Oportunidade Única à Vista',
-          subtitle: 'Desconto exclusivo para pagamento imediato. Área com documentação 100% ok.',
+          subtitle:
+            'Desconto exclusivo para pagamento imediato. Área com documentação 100% ok.',
           ctaText: 'Garantir Prioridade',
-          backgroundImage: '/templates/template_opportunity.png'
+          backgroundImage: '/templates/template_opportunity.png',
         },
-        styles: { padding: '0' }
-      }
-    ]
+        styles: { padding: '0' },
+      },
+    ],
   },
   {
     id: 'lifestyle-rural',
@@ -145,13 +149,14 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Pronta para Morar e Produzir',
-          subtitle: 'Casa sede cinematográfica, corrego de água cristalina e horta orgânica.',
+          subtitle:
+            'Casa sede cinematográfica, corrego de água cristalina e horta orgânica.',
           ctaText: 'Conhecer meu Novo Lar',
-          backgroundImage: '/templates/template_lifestyle.png'
+          backgroundImage: '/templates/template_lifestyle.png',
         },
-        styles: { padding: '0' }
-      }
-    ]
+        styles: { padding: '0' },
+      },
+    ],
   },
   {
     id: 'location-strategic',
@@ -167,13 +172,14 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Localização que Valoriza seu Investimento',
-          subtitle: 'A apenas 30 min da cidade e 2h do aeroporto internacional.',
+          subtitle:
+            'A apenas 30 min da cidade e 2h do aeroporto internacional.',
           ctaText: 'Ver Mapa de Logística',
-          backgroundImage: '/templates/template_location_val.png'
+          backgroundImage: '/templates/template_location_val.png',
         },
-        styles: { padding: '0' }
-      }
-    ]
+        styles: { padding: '0' },
+      },
+    ],
   },
   {
     id: 'high-productivity',
@@ -189,13 +195,14 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Terra de Alta Produtividade',
-          subtitle: 'Solo de terra roxa com alto teor de argila e excelente regime pluviométrico.',
+          subtitle:
+            'Solo de terra roxa com alto teor de argila e excelente regime pluviométrico.',
           ctaText: 'Receber Laudo de Solo',
-          backgroundImage: '/templates/template_tractor_soil.png'
+          backgroundImage: '/templates/template_tractor_soil.png',
         },
-        styles: { padding: '0' }
-      }
-    ]
+        styles: { padding: '0' },
+      },
+    ],
   },
   {
     id: 'last-units-scarcity',
@@ -211,13 +218,14 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Últimas Unidades Disponíveis!',
-          subtitle: 'Oportunidade final de adquirir seu lote rural no Condomínio do Sol.',
+          subtitle:
+            'Oportunidade final de adquirir seu lote rural no Condomínio do Sol.',
           ctaText: 'Reservar Agora',
-          backgroundImage: '/templates/template_last_units.png'
+          backgroundImage: '/templates/template_last_units.png',
         },
-        styles: { padding: '0' }
-      }
-    ]
+        styles: { padding: '0' },
+      },
+    ],
   },
   {
     id: 'inflation-hedge',
@@ -233,13 +241,14 @@ export const LANDING_PAGE_MODELS = [
         visible: true,
         settings: {
           title: 'Invista em Terra: Proteção contra Inflação',
-          subtitle: 'Mantenha seu patrimônio seguro em ativos reais de liquidez crescente.',
+          subtitle:
+            'Mantenha seu patrimônio seguro em ativos reais de liquidez crescente.',
           ctaText: 'Falar com Consultor Financeiro',
-          backgroundImage: '/templates/template_inflation_hedge.png'
+          backgroundImage: '/templates/template_inflation_hedge.png',
         },
-        styles: { padding: '0' }
-      }
-    ]
+        styles: { padding: '0' },
+      },
+    ],
   },
   {
     id: 'legacy-heritage',
@@ -257,10 +266,10 @@ export const LANDING_PAGE_MODELS = [
           title: 'O Legado que sua Família Merece',
           subtitle: 'Construa um patrimônio sólido para as próximas gerações.',
           ctaText: 'Planejar Sucessão',
-          backgroundImage: '/templates/template_broker_legacy.png'
+          backgroundImage: '/templates/template_broker_legacy.png',
         },
-        styles: { padding: '0' }
-      }
-    ]
-  }
+        styles: { padding: '0' },
+      },
+    ],
+  },
 ];

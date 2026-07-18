@@ -61,7 +61,9 @@ router.post('/send-text', verifyAuth, requireTenant, async (req, res) => {
 
     const { phone, message } = req.body;
     if (!phone || !message) {
-      return res.status(400).json({ error: 'phone e message são obrigatórios.' });
+      return res
+        .status(400)
+        .json({ error: 'phone e message são obrigatórios.' });
     }
 
     const cleanPhone = normalizePhone(phone);
@@ -97,7 +99,9 @@ router.post('/send-text', verifyAuth, requireTenant, async (req, res) => {
       code: 'EVOLUTION_API_ERROR',
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message || 'Falha ao enviar mensagem.' });
+    return res
+      .status(500)
+      .json({ error: error.message || 'Falha ao enviar mensagem.' });
   }
 });
 

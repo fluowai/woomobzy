@@ -68,8 +68,8 @@ const getInitialData = (searchParams: URLSearchParams): DemoQualification => {
   try {
     stored = JSON.parse(
       sessionStorage.getItem(DEMO_LEAD_STORAGE_KEY) ||
-      sessionStorage.getItem(LEGACY_DEMO_LEAD_STORAGE_KEY) ||
-      '{}'
+        sessionStorage.getItem(LEGACY_DEMO_LEAD_STORAGE_KEY) ||
+        '{}'
     );
   } catch {
     stored = {};
@@ -90,8 +90,12 @@ const getInitialData = (searchParams: URLSearchParams): DemoQualification => {
 const ConsultingQualificacao: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<DemoQualification>(() => getInitialData(searchParams));
-  const [step, setStep] = useState<'filter' | 'schedule' | 'confirmed' | 'nurture'>('filter');
+  const [formData, setFormData] = useState<DemoQualification>(() =>
+    getInitialData(searchParams)
+  );
+  const [step, setStep] = useState<
+    'filter' | 'schedule' | 'confirmed' | 'nurture'
+  >('filter');
   const [slots, setSlots] = useState<DemoSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState('');
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
@@ -172,8 +176,16 @@ const ConsultingQualificacao: React.FC = () => {
     <div className="min-h-screen bg-[#f5f7fb] px-5 py-8 font-sans text-[#07172a]">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-center justify-between">
-          <button type="button" onClick={() => navigate('/consultoria')} className="flex items-center gap-3">
-            <img src="/logo-wootech-imob.svg" alt={COMMERCIAL_PRODUCT_NAME} className="h-9 w-auto" />
+          <button
+            type="button"
+            onClick={() => navigate('/consultoria')}
+            className="flex items-center gap-3"
+          >
+            <img
+              src="/logo-wootech-imob.svg"
+              alt={COMMERCIAL_PRODUCT_NAME}
+              className="h-9 w-auto"
+            />
           </button>
           <div className="hidden items-center gap-2 rounded-full border border-emerald-100 bg-white px-4 py-2 text-xs font-bold text-emerald-700 shadow-sm sm:flex">
             <ShieldCheck size={15} />
@@ -188,20 +200,30 @@ const ConsultingQualificacao: React.FC = () => {
               Demonstração personalizada
             </div>
             <h1 className="mt-6 text-3xl font-bold leading-tight lg:text-4xl">
-              Antes da agenda, entendemos se a {COMMERCIAL_PRODUCT_NAME} faz sentido para sua operação.
+              Antes da agenda, entendemos se a {COMMERCIAL_PRODUCT_NAME} faz
+              sentido para sua operação.
             </h1>
             <p className="mt-4 text-sm font-semibold leading-7 text-slate-300">
-              O filtro evita reuniões genéricas. Leads qualificados liberam uma call de 30 minutos direto na agenda interna.
+              O filtro evita reuniões genéricas. Leads qualificados liberam uma
+              call de 30 minutos direto na agenda interna.
             </p>
 
             <div className="mt-8 grid gap-3">
               {[
                 ['1', 'Qualificação rápida'],
                 ['2', 'Agenda própria de 30 minutos'],
-                ['3', `Call comercial conduzida pela equipe ${COMMERCIAL_PRODUCT_NAME}`],
+                [
+                  '3',
+                  `Call comercial conduzida pela equipe ${COMMERCIAL_PRODUCT_NAME}`,
+                ],
               ].map(([number, label]) => (
-                <div key={label} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 text-sm font-bold">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white">{number}</span>
+                <div
+                  key={label}
+                  className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 text-sm font-bold"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                    {number}
+                  </span>
                   {label}
                 </div>
               ))}
@@ -212,23 +234,75 @@ const ConsultingQualificacao: React.FC = () => {
             {step === 'filter' && (
               <form onSubmit={handleQualification} className="space-y-6">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">Filtro comercial</p>
-                  <h2 className="mt-2 text-2xl font-bold">Conte um pouco sobre sua imobiliária.</h2>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">
+                    Filtro comercial
+                  </p>
+                  <h2 className="mt-2 text-2xl font-bold">
+                    Conte um pouco sobre sua imobiliária.
+                  </h2>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <input required value={formData.name} onChange={(e) => updateField('name', e.target.value)} placeholder="Nome completo" className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" />
-                  <input required type="email" value={formData.email} onChange={(e) => updateField('email', e.target.value)} placeholder="E-mail profissional" className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" />
-                  <input required value={formData.phone} onChange={(e) => updateField('phone', e.target.value)} placeholder="WhatsApp" className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" />
-                  <input required value={formData.company} onChange={(e) => updateField('company', e.target.value)} placeholder="Nome da imobiliária" className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" />
+                  <input
+                    required
+                    value={formData.name}
+                    onChange={(e) => updateField('name', e.target.value)}
+                    placeholder="Nome completo"
+                    className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  />
+                  <input
+                    required
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateField('email', e.target.value)}
+                    placeholder="E-mail profissional"
+                    className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  />
+                  <input
+                    required
+                    value={formData.phone}
+                    onChange={(e) => updateField('phone', e.target.value)}
+                    placeholder="WhatsApp"
+                    className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  />
+                  <input
+                    required
+                    value={formData.company}
+                    onChange={(e) => updateField('company', e.target.value)}
+                    placeholder="Nome da imobiliária"
+                    className="h-12 rounded-2xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  />
                 </div>
 
-                <OptionGroup title="Tamanho da equipe" value={formData.teamSize} options={teamOptions} onChange={(value) => updateField('teamSize', value)} />
-                <OptionGroup title="Volume médio de leads" value={formData.monthlyLeads} options={leadOptions} onChange={(value) => updateField('monthlyLeads', value)} />
-                <OptionGroup title="Principal objetivo" value={formData.mainGoal} options={goalOptions} onChange={(value) => updateField('mainGoal', value)} />
-                <OptionGroup title="Urgência" value={formData.urgency} options={urgencyOptions} onChange={(value) => updateField('urgency', value)} />
+                <OptionGroup
+                  title="Tamanho da equipe"
+                  value={formData.teamSize}
+                  options={teamOptions}
+                  onChange={(value) => updateField('teamSize', value)}
+                />
+                <OptionGroup
+                  title="Volume médio de leads"
+                  value={formData.monthlyLeads}
+                  options={leadOptions}
+                  onChange={(value) => updateField('monthlyLeads', value)}
+                />
+                <OptionGroup
+                  title="Principal objetivo"
+                  value={formData.mainGoal}
+                  options={goalOptions}
+                  onChange={(value) => updateField('mainGoal', value)}
+                />
+                <OptionGroup
+                  title="Urgência"
+                  value={formData.urgency}
+                  options={urgencyOptions}
+                  onChange={(value) => updateField('urgency', value)}
+                />
 
-                <button type="submit" className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xl shadow-emerald-900/15 hover:bg-emerald-700">
+                <button
+                  type="submit"
+                  className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xl shadow-emerald-900/15 hover:bg-emerald-700"
+                >
                   Ver disponibilidade <ArrowRight size={18} />
                 </button>
               </form>
@@ -238,23 +312,37 @@ const ConsultingQualificacao: React.FC = () => {
               <div className="space-y-6">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">Agenda liberada</p>
-                    <h2 className="mt-2 text-2xl font-bold">Escolha uma call de 30 minutos.</h2>
+                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">
+                      Agenda liberada
+                    </p>
+                    <h2 className="mt-2 text-2xl font-bold">
+                      Escolha uma call de 30 minutos.
+                    </h2>
                   </div>
-                  <button type="button" onClick={() => setStep('filter')} className="text-sm font-bold text-slate-500 hover:text-emerald-700">
+                  <button
+                    type="button"
+                    onClick={() => setStep('filter')}
+                    className="text-sm font-bold text-slate-500 hover:text-emerald-700"
+                  >
                     Editar respostas
                   </button>
                 </div>
 
                 {isLoadingSlots ? (
                   <div className="flex h-64 items-center justify-center">
-                    <Loader2 className="animate-spin text-emerald-600" size={32} />
+                    <Loader2
+                      className="animate-spin text-emerald-600"
+                      size={32}
+                    />
                   </div>
                 ) : slots.length === 0 ? (
                   <div className="rounded-[20px] border border-amber-100 bg-amber-50 p-6">
-                    <p className="font-bold text-amber-800">Nenhum horário aberto agora.</p>
+                    <p className="font-bold text-amber-800">
+                      Nenhum horário aberto agora.
+                    </p>
                     <p className="mt-2 text-sm font-semibold leading-6 text-amber-700">
-                      O super admin precisa abrir horários em Consultoria no painel.
+                      O super admin precisa abrir horários em Consultoria no
+                      painel.
                     </p>
                   </div>
                 ) : (
@@ -269,18 +357,39 @@ const ConsultingQualificacao: React.FC = () => {
                           onClick={() => setSelectedSlot(slot.id)}
                           className={`rounded-[20px] border p-5 text-left transition ${isSelected ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-900/10' : 'border-slate-200 bg-white hover:border-emerald-300'}`}
                         >
-                          <CalendarDays size={22} className={isSelected ? 'text-emerald-700' : 'text-slate-400'} />
-                          <p className="mt-4 text-sm font-bold uppercase tracking-wide text-slate-500">{formatted.date}</p>
-                          <p className="mt-1 text-2xl font-bold">{formatted.time}</p>
-                          <p className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-500"><Clock3 size={14} /> 30 minutos</p>
+                          <CalendarDays
+                            size={22}
+                            className={
+                              isSelected ? 'text-emerald-700' : 'text-slate-400'
+                            }
+                          />
+                          <p className="mt-4 text-sm font-bold uppercase tracking-wide text-slate-500">
+                            {formatted.date}
+                          </p>
+                          <p className="mt-1 text-2xl font-bold">
+                            {formatted.time}
+                          </p>
+                          <p className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-500">
+                            <Clock3 size={14} /> 30 minutos
+                          </p>
                         </button>
                       );
                     })}
                   </div>
                 )}
 
-                <button disabled={!selectedSlot || isSubmitting} onClick={handleBooking} className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xl shadow-emerald-900/15 hover:bg-emerald-700 disabled:opacity-50">
-                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <>Confirmar demonstração <ArrowRight size={18} /></>}
+                <button
+                  disabled={!selectedSlot || isSubmitting}
+                  onClick={handleBooking}
+                  className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xl shadow-emerald-900/15 hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="animate-spin" size={20} />
+                  ) : (
+                    <>
+                      Confirmar demonstração <ArrowRight size={18} />
+                    </>
+                  )}
                 </button>
               </div>
             )}
@@ -289,7 +398,11 @@ const ConsultingQualificacao: React.FC = () => {
               <ResultState
                 icon={CheckCircle2}
                 title="Demonstração agendada."
-                text={confirmedSlot ? `Sua call de 30 minutos está marcada para ${formatSlot(confirmedSlot).date} às ${formatSlot(confirmedSlot).time}. A equipe ${COMMERCIAL_PRODUCT_NAME} entrará em contato pelo WhatsApp informado.` : 'Sua call de 30 minutos foi confirmada.'}
+                text={
+                  confirmedSlot
+                    ? `Sua call de 30 minutos está marcada para ${formatSlot(confirmedSlot).date} às ${formatSlot(confirmedSlot).time}. A equipe ${COMMERCIAL_PRODUCT_NAME} entrará em contato pelo WhatsApp informado.`
+                    : 'Sua call de 30 minutos foi confirmada.'
+                }
               />
             )}
 
@@ -330,13 +443,19 @@ const OptionGroup: React.FC<{
   </div>
 );
 
-const ResultState: React.FC<{ icon: React.ElementType; title: string; text: string }> = ({ icon: Icon, title, text }) => (
+const ResultState: React.FC<{
+  icon: React.ElementType;
+  title: string;
+  text: string;
+}> = ({ icon: Icon, title, text }) => (
   <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
     <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-emerald-50 text-emerald-700">
       <Icon size={34} />
     </div>
     <h2 className="mt-6 text-3xl font-bold">{title}</h2>
-    <p className="mt-3 max-w-xl text-sm font-semibold leading-7 text-slate-600">{text}</p>
+    <p className="mt-3 max-w-xl text-sm font-semibold leading-7 text-slate-600">
+      {text}
+    </p>
   </div>
 );
 

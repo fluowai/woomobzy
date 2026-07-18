@@ -13,7 +13,7 @@ import {
   Search,
   Settings,
   User,
-  X
+  X,
 } from 'lucide-react';
 
 const LeadDetailsModal: React.FC<{
@@ -40,7 +40,10 @@ const LeadDetailsModal: React.FC<{
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-white/10 rounded-full transition-colors">
+          <button
+            onClick={onClose}
+            className="p-3 hover:bg-white/10 rounded-full transition-colors"
+          >
             <X size={24} />
           </button>
         </div>
@@ -48,72 +51,110 @@ const LeadDetailsModal: React.FC<{
         <div className="p-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div className="space-y-6">
-               <section>
-                 <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Informações de Contato</h5>
-                 <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><Phone size={14} /></div>
-                      <span className="font-bold text-slate-700">{lead.phone}</span>
+              <section>
+                <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">
+                  Informações de Contato
+                </h5>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <Phone size={14} />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><Mail size={14} /></div>
-                      <span className="font-bold text-slate-700">{lead.email || 'Não informado'}</span>
+                    <span className="font-bold text-slate-700">
+                      {lead.phone}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <Mail size={14} />
                     </div>
-                 </div>
-               </section>
+                    <span className="font-bold text-slate-700">
+                      {lead.email || 'Não informado'}
+                    </span>
+                  </div>
+                </div>
+              </section>
 
-               <section>
-                 <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Linha do Tempo</h5>
-                 <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center"><Clock size={14} /></div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inscrito em</span>
-                        <span className="font-bold text-slate-700">{new Date(lead.created_at).toLocaleString('pt-BR')}</span>
-                      </div>
+              <section>
+                <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">
+                  Linha do Tempo
+                </h5>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center">
+                      <Clock size={14} />
                     </div>
-                 </div>
-               </section>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Inscrito em
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {new Date(lead.created_at).toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
 
             <div className="space-y-6">
-               <section className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                 <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Origem & Marketing</h5>
-                 <div className="space-y-5">
-                    <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Cadeia de Origem</span>
-                      <span className="px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-bold">{lead.source}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Canal Orgânico</span>
-                      <span className="font-bold text-slate-700 text-sm">{lead.organic_channel || 'Indireto'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Página Captura</span>
-                      <span className="font-bold text-orange-600 text-sm">{lead.campaign || 'Página de Lançamento'}</span>
-                    </div>
-                 </div>
-               </section>
+              <section className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">
+                  Origem & Marketing
+                </h5>
+                <div className="space-y-5">
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">
+                      Cadeia de Origem
+                    </span>
+                    <span className="px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-bold">
+                      {lead.source}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">
+                      Canal Orgânico
+                    </span>
+                    <span className="font-bold text-slate-700 text-sm">
+                      {lead.organic_channel || 'Indireto'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">
+                      Página Captura
+                    </span>
+                    <span className="font-bold text-orange-600 text-sm">
+                      {lead.campaign || 'Página de Lançamento'}
+                    </span>
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
 
           <section>
-            <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Notas Técnicas</h5>
+            <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">
+              Notas Técnicas
+            </h5>
             <div className="bg-slate-50 border border-slate-100 p-6 rounded-3xl">
-               <p className="text-slate-500 font-medium italic text-sm">
-                 {lead.notes || 'Nenhuma nota adicional registrada pelo sistema.'}
-               </p>
+              <p className="text-slate-500 font-medium italic text-sm">
+                {lead.notes ||
+                  'Nenhuma nota adicional registrada pelo sistema.'}
+              </p>
             </div>
           </section>
         </div>
 
         <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-4">
-           <button onClick={onClose} className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-colors">
-              Fechar
-           </button>
-           <button className="px-8 py-3 bg-orange-500 text-white rounded-2xl font-bold text-sm hover:bg-orange-600 transition-shadow shadow-lg shadow-orange-500/20">
-              Transformar em Lead CRM
-           </button>
+          <button
+            onClick={onClose}
+            className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-colors"
+          >
+            Fechar
+          </button>
+          <button className="px-8 py-3 bg-orange-500 text-white rounded-2xl font-bold text-sm hover:bg-orange-600 transition-shadow shadow-lg shadow-orange-500/20">
+            Transformar em Lead CRM
+          </button>
         </div>
       </div>
     </div>
@@ -327,8 +368,12 @@ const WaitlistLeads: React.FC = () => {
                     </td>
                     <td className="px-8 py-6 text-sm font-bold text-slate-500">
                       <div className="flex flex-col">
-                        <span className="text-slate-800">{lead.organic_channel || 'Orgânico / Direto'}</span>
-                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter italic">Via {lead.source}</span>
+                        <span className="text-slate-800">
+                          {lead.organic_channel || 'Orgânico / Direto'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter italic">
+                          Via {lead.source}
+                        </span>
                       </div>
                     </td>
                     <td className="px-8 py-6">
@@ -345,7 +390,7 @@ const WaitlistLeads: React.FC = () => {
         </div>
       </div>
 
-      <LeadDetailsModal 
+      <LeadDetailsModal
         lead={selectedLead}
         isOpen={isDetailsOpen}
         onClose={() => {

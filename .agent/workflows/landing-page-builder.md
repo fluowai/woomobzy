@@ -176,33 +176,33 @@ CREATE POLICY "Public can view published landing pages"
 // types/landingPage.ts
 
 export enum LandingPageStatus {
-  DRAFT = "draft",
-  PUBLISHED = "published",
-  ARCHIVED = "archived",
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
+  ARCHIVED = 'archived',
 }
 
 export enum BlockType {
-  HERO = "hero",
-  PROPERTY_GRID = "property_grid",
-  PROPERTY_CAROUSEL = "property_carousel",
-  PROPERTY_FEATURED = "property_featured",
-  TEXT = "text",
-  IMAGE = "image",
-  VIDEO = "video",
-  GALLERY = "gallery",
-  TESTIMONIALS = "testimonials",
-  STATS = "stats",
-  CTA = "cta",
-  FORM = "form",
-  MAP = "map",
-  BROKER_CARD = "broker_card",
-  SPACER = "spacer",
-  DIVIDER = "divider",
-  CUSTOM_HTML = "custom_html",
+  HERO = 'hero',
+  PROPERTY_GRID = 'property_grid',
+  PROPERTY_CAROUSEL = 'property_carousel',
+  PROPERTY_FEATURED = 'property_featured',
+  TEXT = 'text',
+  IMAGE = 'image',
+  VIDEO = 'video',
+  GALLERY = 'gallery',
+  TESTIMONIALS = 'testimonials',
+  STATS = 'stats',
+  CTA = 'cta',
+  FORM = 'form',
+  MAP = 'map',
+  BROKER_CARD = 'broker_card',
+  SPACER = 'spacer',
+  DIVIDER = 'divider',
+  CUSTOM_HTML = 'custom_html',
 }
 
 export interface PropertySelectionConfig {
-  mode: "manual" | "filter" | "all";
+  mode: 'manual' | 'filter' | 'all';
   propertyIds?: string[];
   filters?: {
     type?: PropertyType[];
@@ -214,8 +214,8 @@ export interface PropertySelectionConfig {
     maxArea?: number;
     status?: PropertyStatus[];
   };
-  sortBy?: "price" | "area" | "date" | "random";
-  sortOrder?: "asc" | "desc";
+  sortBy?: 'price' | 'area' | 'date' | 'random';
+  sortOrder?: 'asc' | 'desc';
   limit?: number;
 }
 
@@ -235,8 +235,8 @@ export interface BlockConfig {
     boxShadow?: string;
   };
   responsive?: {
-    mobile?: Partial<BlockConfig["styles"]>;
-    tablet?: Partial<BlockConfig["styles"]>;
+    mobile?: Partial<BlockConfig['styles']>;
+    tablet?: Partial<BlockConfig['styles']>;
   };
 }
 
@@ -310,7 +310,7 @@ export interface LandingPage {
 export interface LandingPageAnalytics {
   id: string;
   landingPageId: string;
-  eventType: "view" | "click" | "form_submit" | "property_view";
+  eventType: 'view' | 'click' | 'form_submit' | 'property_view';
   eventData?: Record<string, any>;
   visitorId: string;
   ipAddress?: string;
@@ -791,34 +791,29 @@ export const landingPageService = {
 ### Para o Corretor:
 
 1. **Criar Nova Landing Page**
-
    - Acessa "Landing Pages" no menu
    - Clica em "Nova Landing Page"
    - Escolhe um template ou começa do zero
    - Define nome e slug
 
 2. **Editar Conteúdo**
-
    - Arrasta blocos da sidebar para o canvas
    - Configura cada bloco (textos, imagens, cores)
    - Seleciona imóveis para exibir
    - Customiza formulário de contato
 
 3. **Personalizar Visual**
-
    - Ajusta cores do tema
    - Escolhe fontes
    - Define espaçamentos
    - Adiciona CSS customizado (opcional)
 
 4. **Configurar SEO**
-
    - Define meta title e description
    - Adiciona keywords
    - Faz upload de imagem Open Graph
 
 5. **Preview e Publicar**
-
    - Visualiza em diferentes dispositivos
    - Testa formulário
    - Publica quando estiver satisfeito
@@ -851,8 +846,8 @@ export const landingPageService = {
 ### Tipografia
 
 ```css
---font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
---font-heading: "Poppins", sans-serif;
+--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+--font-heading: 'Poppins', sans-serif;
 
 --text-xs: 0.75rem; /* 12px */
 --text-sm: 0.875rem; /* 14px */

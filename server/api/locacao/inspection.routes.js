@@ -27,18 +27,24 @@ const inspectionSchema = z.object({
   inspector_name: z.string().optional(),
   tenant_present: z.boolean().optional(),
   owner_present: z.boolean().optional(),
-  items: z.array(z.object({
-    room: z.string(),
-    item: z.string(),
-    condition: z.enum(['otimo', 'bom', 'regular', 'ruim', 'inexistente']),
-    observation: z.string().optional(),
-    photo_urls: z.array(z.string()).optional(),
-  })).optional(),
-  meter_readings: z.object({
-    water_meter: z.string().optional(),
-    energy_meter: z.string().optional(),
-    gas_meter: z.string().optional(),
-  }).optional(),
+  items: z
+    .array(
+      z.object({
+        room: z.string(),
+        item: z.string(),
+        condition: z.enum(['otimo', 'bom', 'regular', 'ruim', 'inexistente']),
+        observation: z.string().optional(),
+        photo_urls: z.array(z.string()).optional(),
+      })
+    )
+    .optional(),
+  meter_readings: z
+    .object({
+      water_meter: z.string().optional(),
+      energy_meter: z.string().optional(),
+      gas_meter: z.string().optional(),
+    })
+    .optional(),
   notes: z.string().optional(),
 });
 
@@ -48,7 +54,8 @@ const inspectionSchema = z.object({
 router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { lease_id } = req.params;
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!isValidUUID(lease_id))
+      return res.status(400).json({ error: 'ID inválido' });
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
@@ -74,7 +81,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
     const validation = inspectionSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();
@@ -106,7 +115,9 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     const validation = inspectionSchema.partial().safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();
@@ -119,7 +130,8 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
       .single();
 
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Vistoria não encontrada' });
+    if (!data)
+      return res.status(404).json({ error: 'Vistoria não encontrada' });
 
     res.json({ success: true, data });
   } catch (error) {
@@ -132,87 +144,96 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
  * POST /api/locacao/inspections/:id/photos
  * Upload photos for an inspection item. Accepts multiple files.
  */
-router.post('/:id/photos', verifyAuth, requireTenant, upload.array('photos', 20), async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
+router.post(
+  '/:id/photos',
+  verifyAuth,
+  requireTenant,
+  upload.array('photos', 20),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidUUID(id))
+        return res.status(400).json({ error: 'ID inválido' });
 
-    if (!req.files?.length) {
-      return res.status(400).json({ error: 'Nenhuma foto enviada' });
-    }
-
-    const supabase = getSupabaseServer();
-    const { data: inspection, error: findError } = await supabase
-      .from('inspections')
-      .select('id, organization_id, items')
-      .eq('id', id)
-      .eq('organization_id', req.orgId)
-      .single();
-
-    if (findError || !inspection) {
-      return res.status(404).json({ error: 'Vistoria não encontrada' });
-    }
-
-    const room = req.body.room || 'Geral';
-    const item = req.body.item || 'Foto';
-    const photoUrls = [];
-
-    for (const file of req.files) {
-      const fileName = `inspections/${req.orgId}/${id}/${room}_${item}_${Date.now()}_${file.originalname}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('property-images')
-        .upload(fileName, file.buffer, { contentType: file.mimetype });
-
-      if (uploadError) {
-        console.warn('[InspectionPhotos] Upload error:', uploadError.message);
-        continue;
+      if (!req.files?.length) {
+        return res.status(400).json({ error: 'Nenhuma foto enviada' });
       }
 
-      const { data: urlData } = supabase.storage
-        .from('property-images')
-        .getPublicUrl(uploadData.path);
+      const supabase = getSupabaseServer();
+      const { data: inspection, error: findError } = await supabase
+        .from('inspections')
+        .select('id, organization_id, items')
+        .eq('id', id)
+        .eq('organization_id', req.orgId)
+        .single();
 
-      photoUrls.push(urlData.publicUrl);
-    }
+      if (findError || !inspection) {
+        return res.status(404).json({ error: 'Vistoria não encontrada' });
+      }
 
-    // Update items with new photos
-    const items = Array.isArray(inspection.items) ? [...inspection.items] : [];
-    const existingItemIndex = items.findIndex(
-      (i) => i.room === room && i.item === item
-    );
+      const room = req.body.room || 'Geral';
+      const item = req.body.item || 'Foto';
+      const photoUrls = [];
 
-    if (existingItemIndex >= 0) {
-      items[existingItemIndex].photo_urls = [
-        ...(items[existingItemIndex].photo_urls || []),
-        ...photoUrls,
-      ];
-    } else {
-      items.push({
-        room,
-        item,
-        condition: 'bom',
+      for (const file of req.files) {
+        const fileName = `inspections/${req.orgId}/${id}/${room}_${item}_${Date.now()}_${file.originalname}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('property-images')
+          .upload(fileName, file.buffer, { contentType: file.mimetype });
+
+        if (uploadError) {
+          console.warn('[InspectionPhotos] Upload error:', uploadError.message);
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(uploadData.path);
+
+        photoUrls.push(urlData.publicUrl);
+      }
+
+      // Update items with new photos
+      const items = Array.isArray(inspection.items)
+        ? [...inspection.items]
+        : [];
+      const existingItemIndex = items.findIndex(
+        (i) => i.room === room && i.item === item
+      );
+
+      if (existingItemIndex >= 0) {
+        items[existingItemIndex].photo_urls = [
+          ...(items[existingItemIndex].photo_urls || []),
+          ...photoUrls,
+        ];
+      } else {
+        items.push({
+          room,
+          item,
+          condition: 'bom',
+          photo_urls: photoUrls,
+          observation: req.body.observation || '',
+        });
+      }
+
+      const { error: updateError } = await supabase
+        .from('inspections')
+        .update({ items })
+        .eq('id', id)
+        .eq('organization_id', req.orgId);
+
+      if (updateError) throw updateError;
+
+      res.json({
+        success: true,
+        photos_uploaded: photoUrls.length,
         photo_urls: photoUrls,
-        observation: req.body.observation || '',
       });
+    } catch (error) {
+      console.error('[InspectionRoutes] Photo upload error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    const { error: updateError } = await supabase
-      .from('inspections')
-      .update({ items })
-      .eq('id', id)
-      .eq('organization_id', req.orgId);
-
-    if (updateError) throw updateError;
-
-    res.json({
-      success: true,
-      photos_uploaded: photoUrls.length,
-      photo_urls: photoUrls,
-    });
-  } catch (error) {
-    console.error('[InspectionRoutes] Photo upload error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 export default router;

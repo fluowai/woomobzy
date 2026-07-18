@@ -1,8 +1,5 @@
-import {
-  SiteSettings,
-} from './types';
+import { SiteSettings } from './types';
 import { COMMERCIAL_PRODUCT_NAME } from './utils/branding';
-
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   agencyName: COMMERCIAL_PRODUCT_NAME,

@@ -44,16 +44,21 @@ import { toast } from 'sonner';
 if (typeof window !== 'undefined') {
   delete (L.Icon.Default.prototype as any)._getIconUrl;
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    iconRetinaUrl:
+      'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl:
+      'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl:
+      'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   });
 }
 
 // Global Constants for long strings to avoid cluttering JSX
-const SAT_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const SAT_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const TOPO_URL = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
-const LABEL_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+const LABEL_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
 
 interface LayerConfig {
   name: string;
@@ -66,10 +71,38 @@ interface LayerConfig {
 
 const Geointeligencia: React.FC = () => {
   const [layers, setLayers] = useState<LayerConfig[]>([
-    { name: 'SIGEF / INCRA (Certificado)', url: 'https://acervofundiario.incra.gov.br/i3geo/ogc.php', layer: 'certificada_sigef_particular', active: true, icon: Map, color: 'text-emerald-600' },
-    { name: 'CAR (Cadastro Ambiental)', url: 'https://geoserver.car.gov.br/geoserver/wms', layer: 'car_imoveis', active: false, icon: TreePine, color: 'text-green-600' },
-    { name: 'Uso Solo (MapBiomas)', url: 'https://workspace.mapbiomas.org/geoserver/wms', layer: 'mapbiomas_cobertura_vegetal', active: false, icon: Eye, color: 'text-blue-600' },
-    { name: 'Desmatamento (PRODES)', url: 'https://terrabrasilis.dpi.inpe.br/geoserver/wms', layer: 'prodes_cerrado', active: false, icon: AlertTriangle, color: 'text-red-600' },
+    {
+      name: 'SIGEF / INCRA (Certificado)',
+      url: 'https://acervofundiario.incra.gov.br/i3geo/ogc.php',
+      layer: 'certificada_sigef_particular',
+      active: true,
+      icon: Map,
+      color: 'text-emerald-600',
+    },
+    {
+      name: 'CAR (Cadastro Ambiental)',
+      url: 'https://geoserver.car.gov.br/geoserver/wms',
+      layer: 'car_imoveis',
+      active: false,
+      icon: TreePine,
+      color: 'text-green-600',
+    },
+    {
+      name: 'Uso Solo (MapBiomas)',
+      url: 'https://workspace.mapbiomas.org/geoserver/wms',
+      layer: 'mapbiomas_cobertura_vegetal',
+      active: false,
+      icon: Eye,
+      color: 'text-blue-600',
+    },
+    {
+      name: 'Desmatamento (PRODES)',
+      url: 'https://terrabrasilis.dpi.inpe.br/geoserver/wms',
+      layer: 'prodes_cerrado',
+      active: false,
+      icon: AlertTriangle,
+      color: 'text-red-600',
+    },
   ]);
 
   const [geometries, setGeometries] = useState<any[]>([]);
@@ -77,8 +110,12 @@ const Geointeligencia: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<[number, number] | null>(null);
-  const [searchBounds, setSearchBounds] = useState<[[number, number], [number, number]] | null>(null);
+  const [searchResult, setSearchResult] = useState<[number, number] | null>(
+    null
+  );
+  const [searchBounds, setSearchBounds] = useState<
+    [[number, number], [number, number]] | null
+  >(null);
   const [carInput, setCarInput] = useState('');
   const [sigefInput, setSigefInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
@@ -110,7 +147,10 @@ const Geointeligencia: React.FC = () => {
     }
 
     const property = properties.find((item) => item.id === selectedPropertyId);
-    const featureCollection = { type: 'FeatureCollection', features: geometries };
+    const featureCollection = {
+      type: 'FeatureCollection',
+      features: geometries,
+    };
     const areaHectares = Number((calculatedArea * 0.0001).toFixed(4));
 
     setSavingGeometry(true);
@@ -144,19 +184,25 @@ const Geointeligencia: React.FC = () => {
   };
 
   const toggleLayer = (idx: number) => {
-    setLayers((prev) => prev.map((l, i) => (i === idx ? { ...l, active: !l.active } : l)));
+    setLayers((prev) =>
+      prev.map((l, i) => (i === idx ? { ...l, active: !l.active } : l))
+    );
   };
 
   const handleCreated = (e: any) => {
     const { layerType, layer } = e;
     if (layerType === 'polygon') {
-      const area = L.GeometryUtil.geodesicArea((layer as L.Polygon).getLatLngs()[0] as L.LatLng[]);
+      const area = L.GeometryUtil.geodesicArea(
+        (layer as L.Polygon).getLatLngs()[0] as L.LatLng[]
+      );
       setCalculatedArea(area);
-      setGeometries(prev => [...prev, layer.toGeoJSON()]);
+      setGeometries((prev) => [...prev, layer.toGeoJSON()]);
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
@@ -164,7 +210,9 @@ const Geointeligencia: React.FC = () => {
       let kmlText = '';
       if (file.name.endsWith('.kmz')) {
         const zip = await JSZip.loadAsync(file);
-        const kmlFile = Object.values(zip.files).find(f => f.name.endsWith('.kml'));
+        const kmlFile = Object.values(zip.files).find((f) =>
+          f.name.endsWith('.kml')
+        );
         if (kmlFile) kmlText = await kmlFile.async('string');
       } else {
         kmlText = await file.text();
@@ -173,14 +221,20 @@ const Geointeligencia: React.FC = () => {
       const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
       const converted = toGeoJSON.kml(kmlDoc);
       if (converted.features.length > 0) {
-        setGeometries(prev => [...prev, ...converted.features]);
+        setGeometries((prev) => [...prev, ...converted.features]);
         let totalArea = 0;
         converted.features.forEach((feature: any) => {
           if (feature.geometry.type === 'Polygon') {
-            totalArea += L.GeometryUtil.geodesicArea(feature.geometry.coordinates[0].map((c: any) => L.latLng(c[1], c[0])));
+            totalArea += L.GeometryUtil.geodesicArea(
+              feature.geometry.coordinates[0].map((c: any) =>
+                L.latLng(c[1], c[0])
+              )
+            );
           } else if (feature.geometry.type === 'MultiPolygon') {
             feature.geometry.coordinates.forEach((poly: any) => {
-              totalArea += L.GeometryUtil.geodesicArea(poly[0].map((c: any) => L.latLng(c[1], c[0])));
+              totalArea += L.GeometryUtil.geodesicArea(
+                poly[0].map((c: any) => L.latLng(c[1], c[0]))
+              );
             });
           }
         });
@@ -208,7 +262,9 @@ const Geointeligencia: React.FC = () => {
     }
     setIsSearching(true);
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`
+      );
       const data = await response.json();
       if (data && data.length > 0) {
         const { lat, lon, boundingbox } = data[0];
@@ -216,7 +272,10 @@ const Geointeligencia: React.FC = () => {
         const lonF = parseFloat(lon);
         setSearchResult([latF, lonF]);
         if (boundingbox) {
-          setSearchBounds([[parseFloat(boundingbox[0]), parseFloat(boundingbox[2])],[parseFloat(boundingbox[1]), parseFloat(boundingbox[3])]]);
+          setSearchBounds([
+            [parseFloat(boundingbox[0]), parseFloat(boundingbox[2])],
+            [parseFloat(boundingbox[1]), parseFloat(boundingbox[3])],
+          ]);
         }
       }
     } catch (err) {
@@ -230,7 +289,9 @@ const Geointeligencia: React.FC = () => {
     if (!carInput) return;
     try {
       setIsValidating(true);
-      const result = await callApi(`/api/rural/car/consultar/${encodeURIComponent(carInput)}`);
+      const result = await callApi(
+        `/api/rural/car/consultar/${encodeURIComponent(carInput)}`
+      );
       if (result.success) {
         setSearchResult(result.coords);
         setSearchBounds(result.bounds);
@@ -249,7 +310,9 @@ const Geointeligencia: React.FC = () => {
     if (!sigefInput) return;
     try {
       setIsValidating(true);
-      const result = await callApi(`/api/rural/sigef/consultar/${encodeURIComponent(sigefInput)}`);
+      const result = await callApi(
+        `/api/rural/sigef/consultar/${encodeURIComponent(sigefInput)}`
+      );
       if (result.success) {
         setSearchResult(result.coords);
         setSearchBounds(result.bounds);
@@ -273,7 +336,10 @@ const Geointeligencia: React.FC = () => {
     const map = useMap();
     useEffect(() => {
       if (geometries.length > 0) {
-        const bounds = L.geoJSON({ type: 'FeatureCollection', features: geometries } as any).getBounds();
+        const bounds = L.geoJSON({
+          type: 'FeatureCollection',
+          features: geometries,
+        } as any).getBounds();
         if (bounds.isValid()) {
           if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
             map.setView(bounds.getCenter(), 16);
@@ -301,11 +367,22 @@ const Geointeligencia: React.FC = () => {
             <Layers className="text-emerald-600" size={32} />
             Geointeligência
           </h1>
-          <p className="text-slate-500 font-medium small uppercase tracking-widest text-[10px]">Portal de Análise Territorial Rural</p>
+          <p className="text-slate-500 font-medium small uppercase tracking-widest text-[10px]">
+            Portal de Análise Territorial Rural
+          </p>
         </div>
         <form onSubmit={handleSearch} className="relative w-full md:w-96">
-          <input type="text" placeholder="Coordenadas ou Endereço..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl text-sm focus:border-emerald-500 outline-none" />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input
+            type="text"
+            placeholder="Coordenadas ou Endereço..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl text-sm focus:border-emerald-500 outline-none"
+          />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            size={20}
+          />
         </form>
       </div>
 
@@ -315,15 +392,23 @@ const Geointeligencia: React.FC = () => {
             <div className="p-1.5 bg-emerald-500/20 rounded-lg">
               <Zap size={14} className="text-emerald-400" />
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Indicators / CEPEA</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              Indicators / CEPEA
+            </span>
           </div>
           <div className="flex gap-8 items-center">
             {Object.entries(marketPrices).map(([key, val]: [string, any]) => (
               <div key={key} className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{key.replace('_', ' ')}</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                  {key.replace('_', ' ')}
+                </span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xs font-bold text-white">R$ {val.valor}</span>
-                  <span className="text-[9px] text-slate-500 font-medium">/{val.unidade}</span>
+                  <span className="text-xs font-bold text-white">
+                    R$ {val.valor}
+                  </span>
+                  <span className="text-[9px] text-slate-500 font-medium">
+                    /{val.unidade}
+                  </span>
                 </div>
               </div>
             ))}
@@ -333,17 +418,50 @@ const Geointeligencia: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { icon: Layers, label: 'Hectares', value: areaHectares + ' ha', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { icon: Mountain, label: 'Alqueire MG', value: alqMG + ' aq', color: 'text-amber-600', bg: 'bg-amber-50' },
-          { icon: AlertTriangle, label: 'Alqueire SP', value: alqSP + ' aq', color: 'text-blue-600', bg: 'bg-blue-50' },
-          { icon: Droplets, label: 'Geometrias', value: String(geometries.length), color: 'text-orange-600', bg: 'bg-orange-50' },
+          {
+            icon: Layers,
+            label: 'Hectares',
+            value: areaHectares + ' ha',
+            color: 'text-emerald-600',
+            bg: 'bg-emerald-50',
+          },
+          {
+            icon: Mountain,
+            label: 'Alqueire MG',
+            value: alqMG + ' aq',
+            color: 'text-amber-600',
+            bg: 'bg-amber-50',
+          },
+          {
+            icon: AlertTriangle,
+            label: 'Alqueire SP',
+            value: alqSP + ' aq',
+            color: 'text-blue-600',
+            bg: 'bg-blue-50',
+          },
+          {
+            icon: Droplets,
+            label: 'Geometrias',
+            value: String(geometries.length),
+            color: 'text-orange-600',
+            bg: 'bg-orange-50',
+          },
         ].map((stat, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-100">
-            <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}>
+          <div
+            key={idx}
+            className="bg-white p-6 rounded-3xl border border-slate-100"
+          >
+            <div
+              className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}
+            >
               <stat.icon size={24} />
             </div>
-            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{stat.label}</h3>
-            <p className="text-3xl font-bold text-slate-900 tracking-tighter">{stat.value}</p>
+            <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+              {stat.label}
+            </h3>
+            <p className="text-3xl font-bold text-slate-900 tracking-tighter">
+              {stat.value}
+            </p>
           </div>
         ))}
       </div>
@@ -351,13 +469,24 @@ const Geointeligencia: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
           <div>
-            <h3 className="font-bold text-black flex items-center gap-2 mb-4">Camadas GIS</h3>
+            <h3 className="font-bold text-black flex items-center gap-2 mb-4">
+              Camadas GIS
+            </h3>
             <div className="space-y-2">
               {layers.map((layer, idx) => (
-                <button key={idx} onClick={() => toggleLayer(idx)} className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${layer.active ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-transparent'}`}>
+                <button
+                  key={idx}
+                  onClick={() => toggleLayer(idx)}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${layer.active ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-transparent'}`}
+                >
                   <div className="flex items-center gap-3">
-                    <layer.icon size={18} className={layer.active ? layer.color : 'text-slate-400'} />
-                    <span className="text-xs font-bold uppercase">{layer.name}</span>
+                    <layer.icon
+                      size={18}
+                      className={layer.active ? layer.color : 'text-slate-400'}
+                    />
+                    <span className="text-xs font-bold uppercase">
+                      {layer.name}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -366,11 +495,18 @@ const Geointeligencia: React.FC = () => {
           <div className="pt-4 border-t border-slate-100">
             <label className="w-full flex items-center gap-2 justify-center p-3 bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer">
               <Download size={14} /> Importar KMZ
-              <input type="file" className="hidden" accept=".kml,.kmz" onChange={handleFileUpload} />
+              <input
+                type="file"
+                className="hidden"
+                accept=".kml,.kmz"
+                onChange={handleFileUpload}
+              />
             </label>
           </div>
           <div className="pt-4 border-t border-slate-100 space-y-3">
-            <h4 className="text-[10px] font-bold uppercase text-slate-400">Vincular ao Imovel</h4>
+            <h4 className="text-[10px] font-bold uppercase text-slate-400">
+              Vincular ao Imovel
+            </h4>
             <select
               value={selectedPropertyId}
               onChange={(event) => setSelectedPropertyId(event.target.value)}
@@ -386,27 +522,60 @@ const Geointeligencia: React.FC = () => {
             <button
               type="button"
               onClick={saveGeometryToProperty}
-              disabled={savingGeometry || !selectedPropertyId || geometries.length === 0}
+              disabled={
+                savingGeometry || !selectedPropertyId || geometries.length === 0
+              }
               className="w-full p-3 bg-slate-900 text-white rounded-xl text-xs font-bold disabled:opacity-50"
             >
               {savingGeometry ? 'Salvando...' : 'Salvar Geometria'}
             </button>
           </div>
           <div className="pt-4 border-t border-slate-100 space-y-4">
-            <h4 className="text-[10px] font-bold uppercase text-slate-400">Consulta API Live</h4>
+            <h4 className="text-[10px] font-bold uppercase text-slate-400">
+              Consulta API Live
+            </h4>
             <div className="flex gap-2">
-              <input type="text" placeholder="Código CAR" value={carInput} onChange={(e) => setCarInput(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border rounded-lg text-[10px]" />
-              <button onClick={consultCARapi} className="p-2 bg-emerald-600 text-white rounded-lg"><Zap size={14} /></button>
+              <input
+                type="text"
+                placeholder="Código CAR"
+                value={carInput}
+                onChange={(e) => setCarInput(e.target.value)}
+                className="flex-1 px-3 py-2 bg-slate-50 border rounded-lg text-[10px]"
+              />
+              <button
+                onClick={consultCARapi}
+                className="p-2 bg-emerald-600 text-white rounded-lg"
+              >
+                <Zap size={14} />
+              </button>
             </div>
             <div className="flex gap-2">
-              <input type="text" placeholder="Código SIGEF" value={sigefInput} onChange={(e) => setSigefInput(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border rounded-lg text-[10px]" />
-              <button onClick={consultSIGEFapi} className="p-2 bg-blue-600 text-white rounded-lg"><Activity size={14} /></button>
+              <input
+                type="text"
+                placeholder="Código SIGEF"
+                value={sigefInput}
+                onChange={(e) => setSigefInput(e.target.value)}
+                className="flex-1 px-3 py-2 bg-slate-50 border rounded-lg text-[10px]"
+              />
+              <button
+                onClick={consultSIGEFapi}
+                className="p-2 bg-blue-600 text-white rounded-lg"
+              >
+                <Activity size={14} />
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 overflow-hidden relative" style={{ minHeight: '600px' }}>
-          <MapContainer center={[-14.235, -51.925]} zoom={5} style={{ height: '600px', width: '100%' }}>
+        <div
+          className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 overflow-hidden relative"
+          style={{ minHeight: '600px' }}
+        >
+          <MapContainer
+            center={[-14.235, -51.925]}
+            zoom={5}
+            style={{ height: '600px', width: '100%' }}
+          >
             <MapUpdater />
             <LayersControl position="topright">
               <LayersControl.BaseLayer checked name="Satélite">
@@ -417,23 +586,56 @@ const Geointeligencia: React.FC = () => {
               </LayersControl.BaseLayer>
             </LayersControl>
             <FeatureGroup>
-              <EditControl position="topleft" onCreated={handleCreated} draw={{ rectangle: false, circle: false, circlemarker: false, marker: true, polyline: true, polygon: { allowIntersection: false, shapeOptions: { color: '#10b981' } } }} />
+              <EditControl
+                position="topleft"
+                onCreated={handleCreated}
+                draw={{
+                  rectangle: false,
+                  circle: false,
+                  circlemarker: false,
+                  marker: true,
+                  polyline: true,
+                  polygon: {
+                    allowIntersection: false,
+                    shapeOptions: { color: '#10b981' },
+                  },
+                }}
+              />
             </FeatureGroup>
             {searchResult && (
               <Marker position={searchResult}>
-                <Popup><div className="text-xs font-bold">Local Localizado</div></Popup>
+                <Popup>
+                  <div className="text-xs font-bold">Local Localizado</div>
+                </Popup>
               </Marker>
             )}
-            {layers.filter(l => l.active && l.url).map((layer, idx) => (
-              <WMSTileLayer key={layer.name} url={layer.url} layers={layer.layer} format="image/png" transparent={true} version="1.1.1" zIndex={20 - idx} />
-            ))}
-            {geometries.length > 0 && <GeoJSON data={{ type: 'FeatureCollection', features: geometries } as any} style={{ color: '#10b981', weight: 3, fillOpacity: 0.2 }} />}
+            {layers
+              .filter((l) => l.active && l.url)
+              .map((layer, idx) => (
+                <WMSTileLayer
+                  key={layer.name}
+                  url={layer.url}
+                  layers={layer.layer}
+                  format="image/png"
+                  transparent={true}
+                  version="1.1.1"
+                  zIndex={20 - idx}
+                />
+              ))}
+            {geometries.length > 0 && (
+              <GeoJSON
+                data={
+                  { type: 'FeatureCollection', features: geometries } as any
+                }
+                style={{ color: '#10b981', weight: 3, fillOpacity: 0.2 }}
+              />
+            )}
             <TileLayer url={LABEL_URL} zIndex={100} />
           </MapContainer>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[1000] opacity-30">
-             <div className="w-10 h-10 border-2 border-white rounded-full flex items-center justify-center">
-                <div className="w-1 h-1 bg-white rounded-full"></div>
-             </div>
+            <div className="w-10 h-10 border-2 border-white rounded-full flex items-center justify-center">
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+            </div>
           </div>
         </div>
       </div>

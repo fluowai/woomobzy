@@ -241,9 +241,13 @@ const DueDiligence: React.FC = () => {
 
     callApi(`/api/documents/${selectedProperty}`)
       .then((result) => setDocuments(result.documents || []))
-      .catch((error) => logger.warn('Nao foi possivel carregar documentos rurais:', error));
+      .catch((error) =>
+        logger.warn('Nao foi possivel carregar documentos rurais:', error)
+      );
 
-    const selected = properties.find((property) => property.id === selectedProperty);
+    const selected = properties.find(
+      (property) => property.id === selectedProperty
+    );
     const savedChecklist = selected?.features?.rural_due_diligence?.checklist;
     if (Array.isArray(savedChecklist) && savedChecklist.length > 0) {
       setChecklist(savedChecklist);
@@ -284,7 +288,9 @@ const DueDiligence: React.FC = () => {
   ) => {
     if (!selectedProperty || !profile?.organization_id) return;
 
-    const current = properties.find((property) => property.id === selectedProperty);
+    const current = properties.find(
+      (property) => property.id === selectedProperty
+    );
     const nextFeatures = {
       ...(current?.features || {}),
       rural_due_diligence: {
@@ -350,16 +356,26 @@ const DueDiligence: React.FC = () => {
         let validated = false;
 
         if (item.validationSource === 'CAR' && newValidation.carStatus) {
-          newStatus = newValidation.carStatus === 'ATIVO' ? 'approved' : 'rejected';
+          newStatus =
+            newValidation.carStatus === 'ATIVO' ? 'approved' : 'rejected';
           validated = true;
-        } else if (item.validationSource === 'SNCR' && newValidation.ccirStatus) {
-          newStatus = newValidation.ccirStatus === 'ATIVO' ? 'approved' : 'pending';
+        } else if (
+          item.validationSource === 'SNCR' &&
+          newValidation.ccirStatus
+        ) {
+          newStatus =
+            newValidation.ccirStatus === 'ATIVO' ? 'approved' : 'pending';
           validated = true;
-        } else if (item.validationSource === 'SIGEF' && newValidation.geoStatus) {
-          newStatus = newValidation.geoStatus === 'CERTIFICADO' ? 'approved' : 'rejected';
+        } else if (
+          item.validationSource === 'SIGEF' &&
+          newValidation.geoStatus
+        ) {
+          newStatus =
+            newValidation.geoStatus === 'CERTIFICADO' ? 'approved' : 'rejected';
           validated = true;
         } else if (item.validationSource === 'ITR' && newValidation.itrStatus) {
-          newStatus = newValidation.itrStatus === 'REGULAR' ? 'approved' : 'rejected';
+          newStatus =
+            newValidation.itrStatus === 'REGULAR' ? 'approved' : 'rejected';
           validated = true;
         }
 

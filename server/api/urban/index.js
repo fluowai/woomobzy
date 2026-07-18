@@ -14,7 +14,11 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
-import { sanitizeInput, isValidUUID, validateCPF_CNPJ } from '../../lib/shared-utils.js';
+import {
+  sanitizeInput,
+  isValidUUID,
+  validateCPF_CNPJ,
+} from '../../lib/shared-utils.js';
 
 const router = Router();
 

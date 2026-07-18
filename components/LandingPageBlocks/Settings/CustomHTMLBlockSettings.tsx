@@ -7,7 +7,10 @@ interface CustomHTMLBlockSettingsProps {
   onUpdate: (config: CustomHTMLBlockConfig) => void;
 }
 
-const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ config, onUpdate }) => {
+const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({
+  config,
+  onUpdate,
+}) => {
   const handleChange = (key: keyof CustomHTMLBlockConfig, value: string) => {
     onUpdate({ ...config, [key]: value });
   };
@@ -30,8 +33,8 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
               Edicao rapida do tema
             </h3>
             <p className="mt-1 text-xs leading-5 text-indigo-700">
-              Altere os textos principais sem mexer no HTML. As mudancas aparecem
-              direto na previa da landing page.
+              Altere os textos principais sem mexer no HTML. As mudancas
+              aparecem direto na previa da landing page.
             </p>
           </div>
 
@@ -67,7 +70,9 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
       ) : null}
 
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-2">HTML Content</label>
+        <label className="block text-sm font-bold text-gray-700 mb-2">
+          HTML Content
+        </label>
         <textarea
           value={config.html || ''}
           onChange={(e) => handleChange('html', e.target.value)}
@@ -78,7 +83,9 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
       </div>
 
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-2">Internal CSS (Opcional)</label>
+        <label className="block text-sm font-bold text-gray-700 mb-2">
+          Internal CSS (Opcional)
+        </label>
         <textarea
           value={config.css || ''}
           onChange={(e) => handleChange('css', e.target.value)}
@@ -89,7 +96,9 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
       </div>
 
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-2">Scripts JS (Opcional)</label>
+        <label className="block text-sm font-bold text-gray-700 mb-2">
+          Scripts JS (Opcional)
+        </label>
         <textarea
           value={config.js || ''}
           onChange={(e) => handleChange('js', e.target.value)}
@@ -97,7 +106,9 @@ const CustomHTMLBlockSettings: React.FC<CustomHTMLBlockSettingsProps> = ({ confi
           className="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none"
           placeholder="logger.info('Hello from JS');"
         />
-        <p className="text-[10px] text-amber-600 mt-1 font-medium">⚠️ Cuidado ao injetar scripts externos.</p>
+        <p className="text-[10px] text-amber-600 mt-1 font-medium">
+          ⚠️ Cuidado ao injetar scripts externos.
+        </p>
       </div>
     </div>
   );

@@ -43,7 +43,7 @@ const client = new pg.Client({
   database,
   user,
   password,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 async function runMigrations() {
@@ -65,10 +65,14 @@ async function runMigrations() {
 
     for (let i = 0; i < migrations.length; i++) {
       const file = migrations[i];
-      console.log(`${colors.blue}ℹ [${i + 1}/${migrations.length}] ${file}${colors.reset}`);
+      console.log(
+        `${colors.blue}ℹ [${i + 1}/${migrations.length}] ${file}${colors.reset}`
+      );
 
       if (!fs.existsSync(file)) {
-        console.log(`${colors.red}❌ Arquivo não encontrado: ${file}${colors.reset}`);
+        console.log(
+          `${colors.red}❌ Arquivo não encontrado: ${file}${colors.reset}`
+        );
         continue;
       }
 
@@ -84,9 +88,10 @@ async function runMigrations() {
     }
 
     console.log(`\n${colors.green}🎉 Processo concluído!${colors.reset}`);
-
   } catch (error) {
-    console.error(`${colors.red}❌ Erro de conexão: ${error.message}${colors.reset}`);
+    console.error(
+      `${colors.red}❌ Erro de conexão: ${error.message}${colors.reset}`
+    );
   } finally {
     await client.end();
   }

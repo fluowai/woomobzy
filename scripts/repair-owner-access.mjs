@@ -34,7 +34,9 @@ const { data: organizations, error: orgError } = await supabase
 if (orgError) throw orgError;
 
 for (const org of organizations || []) {
-  const email = String(org.owner_email || '').toLowerCase().trim();
+  const email = String(org.owner_email || '')
+    .toLowerCase()
+    .trim();
   if (!email) continue;
 
   try {
@@ -69,27 +71,31 @@ for (const org of organizations || []) {
       action = 'created_auth_user';
     }
 
-    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
-      password: temporaryPassword,
-      email_confirm: true,
-      user_metadata: {
-        ...(user.user_metadata || {}),
-        name: org.owner_name || user.user_metadata?.name || org.name,
-        agencyName: org.name,
-      },
-    });
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      user.id,
+      {
+        password: temporaryPassword,
+        email_confirm: true,
+        user_metadata: {
+          ...(user.user_metadata || {}),
+          name: org.owner_name || user.user_metadata?.name || org.name,
+          agencyName: org.name,
+        },
+      }
+    );
     if (updateError) throw updateError;
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({
+    const { error: profileError } = await supabase.from('profiles').upsert(
+      {
         id: user.id,
         organization_id: org.id,
         name: org.owner_name || user.user_metadata?.name || org.name,
         email,
         role: 'admin',
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
+      },
+      { onConflict: 'id' }
+    );
     if (profileError) throw profileError;
 
     report.fixed.push({
@@ -110,7 +116,10 @@ for (const org of organizations || []) {
   }
 }
 
-const reportPath = path.join(process.cwd(), `owner-access-repair-${Date.now()}.json`);
+const reportPath = path.join(
+  process.cwd(),
+  `owner-access-repair-${Date.now()}.json`
+);
 fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf8');
 
 console.log(`Apply: ${apply}`);
@@ -121,10 +130,15 @@ console.log(`Report: ${reportPath}`);
 
 async function findAuthUserByEmail(email) {
   for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
     if (error) throw error;
 
-    const user = data?.users?.find((item) => item.email?.toLowerCase() === email);
+    const user = data?.users?.find(
+      (item) => item.email?.toLowerCase() === email
+    );
     if (user) return user;
     if (!data?.users || data.users.length < 1000) break;
   }

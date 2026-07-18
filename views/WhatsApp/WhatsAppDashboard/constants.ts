@@ -29,20 +29,30 @@ export function isTenantContextError(error: any): boolean {
   ].includes(error?.code);
 }
 
-export function getLatestChatActivityAt(chats: Chat[], instanceId?: string): number {
+export function getLatestChatActivityAt(
+  chats: Chat[],
+  instanceId?: string
+): number {
   return chats.reduce((latest, chat) => {
     if (instanceId && chat.instance_id !== instanceId) return latest;
-    const activityAt = chat.last_message_at ? new Date(chat.last_message_at).getTime() : 0;
+    const activityAt = chat.last_message_at
+      ? new Date(chat.last_message_at).getTime()
+      : 0;
     if (!Number.isFinite(activityAt)) return latest;
     return Math.max(latest, activityAt);
   }, 0);
 }
 
 export function hasRecentInstanceActivity(activityAt = 0): boolean {
-  return activityAt > 0 && Date.now() - activityAt <= INSTANCE_ACTIVITY_WINDOW_MS;
+  return (
+    activityAt > 0 && Date.now() - activityAt <= INSTANCE_ACTIVITY_WINDOW_MS
+  );
 }
 
-export function withVisualInstanceStatus(instance: Instance, hasActivity = false): Instance {
+export function withVisualInstanceStatus(
+  instance: Instance,
+  hasActivity = false
+): Instance {
   if (instance.status === 'connected') return instance;
   if (hasActivity) {
     return { ...instance, status: 'connected' };

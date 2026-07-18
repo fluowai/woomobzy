@@ -15,7 +15,10 @@ export class AgroIntelligenceService {
       return response.data;
     } catch (error) {
       console.error('[AgroIntelligence] Error fetching prices:', error.message);
-      return { success: false, error: 'Serviço de inteligência agro indisponível.' };
+      return {
+        success: false,
+        error: 'Serviço de inteligência agro indisponível.',
+      };
     }
   }
 
@@ -24,11 +27,19 @@ export class AgroIntelligenceService {
    */
   static async getMunicipalProduction(ibgeCode) {
     try {
-      const response = await axios.get(`${this.API_BASE}/production/municipality/${ibgeCode}`);
+      const response = await axios.get(
+        `${this.API_BASE}/production/municipality/${ibgeCode}`
+      );
       return response.data;
     } catch (error) {
-      console.error('[AgroIntelligence] Error fetching production:', error.message);
-      return { success: false, error: 'Falha ao buscar dados produtivos do município.' };
+      console.error(
+        '[AgroIntelligence] Error fetching production:',
+        error.message
+      );
+      return {
+        success: false,
+        error: 'Falha ao buscar dados produtivos do município.',
+      };
     }
   }
 
@@ -37,15 +48,21 @@ export class AgroIntelligenceService {
    */
   static async performEnvironmentalAnalysis(geometry) {
     try {
-      const response = await axios.post(`${this.API_BASE}/analysis/environmental`, { geometry });
+      const response = await axios.post(
+        `${this.API_BASE}/analysis/environmental`,
+        { geometry }
+      );
       return response.data;
     } catch (error) {
-      console.error('[AgroIntelligence] Error in environmental analysis:', error.message);
-      return { 
-        success: false, 
-        risk_score: 0, 
-        status: 'OFFLINE', 
-        findings: ['Servidor de inteligência ambiental indisponível.'] 
+      console.error(
+        '[AgroIntelligence] Error in environmental analysis:',
+        error.message
+      );
+      return {
+        success: false,
+        risk_score: 0,
+        status: 'OFFLINE',
+        findings: ['Servidor de inteligência ambiental indisponível.'],
       };
     }
   }
@@ -58,10 +75,15 @@ export class AgroIntelligenceService {
       const response = await axios.post(`${this.API_BASE}/geoprocess`, params);
       return response.data;
     } catch (error) {
-      console.error('[AgroIntelligence] Error in geoprocessing:', error.response?.data?.detail || error.message);
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || 'Falha ao processar dados geoespaciais.' 
+      console.error(
+        '[AgroIntelligence] Error in geoprocessing:',
+        error.response?.data?.detail || error.message
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          'Falha ao processar dados geoespaciais.',
       };
     }
   }

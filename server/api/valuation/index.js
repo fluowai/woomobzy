@@ -9,50 +9,75 @@ import { isValidUUID } from '../../lib/shared-utils.js';
 
 const router = Router();
 
-router.post('/estimate/:propertyId', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { propertyId } = req.params;
-    if (!isValidUUID(propertyId)) {
-      return res.status(400).json({ error: 'ID de propriedade invalido' });
+router.post(
+  '/estimate/:propertyId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      if (!isValidUUID(propertyId)) {
+        return res.status(400).json({ error: 'ID de propriedade invalido' });
+      }
+
+      const valuation = await ValuationService.estimateValue(
+        propertyId,
+        req.orgId,
+        req.user.id
+      );
+      res.json({ success: true, valuation });
+    } catch (error) {
+      console.error('[Valuation] Estimate error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    const valuation = await ValuationService.estimateValue(propertyId, req.orgId, req.user.id);
-    res.json({ success: true, valuation });
-  } catch (error) {
-    console.error('[Valuation] Estimate error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
-router.get('/history/:propertyId', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { propertyId } = req.params;
-    if (!isValidUUID(propertyId)) {
-      return res.status(400).json({ error: 'ID de propriedade invalido' });
+router.get(
+  '/history/:propertyId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      if (!isValidUUID(propertyId)) {
+        return res.status(400).json({ error: 'ID de propriedade invalido' });
+      }
+
+      const history = await ValuationService.getValuationHistory(
+        propertyId,
+        req.orgId
+      );
+      res.json({ success: true, history });
+    } catch (error) {
+      console.error('[Valuation] History error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    const history = await ValuationService.getValuationHistory(propertyId, req.orgId);
-    res.json({ success: true, history });
-  } catch (error) {
-    console.error('[Valuation] History error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
-router.get('/comparables/:propertyId', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { propertyId } = req.params;
-    if (!isValidUUID(propertyId)) {
-      return res.status(400).json({ error: 'ID de propriedade invalido' });
+router.get(
+  '/comparables/:propertyId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      if (!isValidUUID(propertyId)) {
+        return res.status(400).json({ error: 'ID de propriedade invalido' });
+      }
+
+      const comparables = await ValuationService.getComparables(
+        propertyId,
+        req.orgId
+      );
+      res.json({ success: true, comparables });
+    } catch (error) {
+      console.error('[Valuation] Comparables error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    const comparables = await ValuationService.getComparables(propertyId, req.orgId);
-    res.json({ success: true, comparables });
-  } catch (error) {
-    console.error('[Valuation] Comparables error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 router.get('/rules', verifyAuth, requireTenant, async (req, res) => {
   try {

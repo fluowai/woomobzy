@@ -234,7 +234,11 @@
 
   .workspace-shell {
     background:
-      radial-gradient(circle at top left, rgba(22, 163, 74, 0.06), transparent 30rem),
+      radial-gradient(
+        circle at top left,
+        rgba(22, 163, 74, 0.06),
+        transparent 30rem
+      ),
       linear-gradient(180deg, #f8fafc 0%, #f3f6fa 100%);
     color: #111827;
     font-family: var(--font-sans);
@@ -270,7 +274,10 @@
     color: #4b5563;
     font-size: 13px;
     font-weight: 600;
-    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease,
+      border-color 160ms ease;
   }
 
   .workspace-nav-item:hover {
@@ -300,7 +307,10 @@
     font-size: 14px;
     font-weight: 500;
     outline: none;
-    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
   }
 
   .workspace-search:focus {
@@ -318,7 +328,10 @@
     border-radius: 999px;
     border: 1px solid transparent;
     color: #536176;
-    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease,
+      border-color 160ms ease;
   }
 
   .workspace-icon-button:hover {
@@ -341,7 +354,10 @@
     font-size: 13px;
     font-weight: 700;
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease;
   }
 
   .workspace-primary-action:hover {
@@ -364,7 +380,10 @@
   }
 
   .workspace-card-hover {
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
   }
 
   .workspace-card-hover:hover {
@@ -441,7 +460,10 @@
     color: #1f2937;
     font-size: 14px;
     outline: none;
-    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
   }
 
   .workspace-input:focus {

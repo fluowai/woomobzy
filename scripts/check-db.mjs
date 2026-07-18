@@ -17,10 +17,14 @@ const colors = {
   cyan: '\x1b[36m',
 };
 
-console.log(`${colors.cyan}Verificando status do banco de dados...${colors.reset}\n`);
+console.log(
+  `${colors.cyan}Verificando status do banco de dados...${colors.reset}\n`
+);
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error(`${colors.red}Variaveis de ambiente nao configuradas${colors.reset}`);
+  console.error(
+    `${colors.red}Variaveis de ambiente nao configuradas${colors.reset}`
+  );
   process.exit(1);
 }
 
@@ -68,8 +72,12 @@ async function main() {
   let allExist = true;
   for (const table of tables) {
     const result = await checkTable(table);
-    const status = result.ok ? `${colors.green}OK${colors.reset}` : `${colors.red}FAIL${colors.reset}`;
-    const detail = result.ok ? '' : ` (${result.status || result.error || 'falha'})`;
+    const status = result.ok
+      ? `${colors.green}OK${colors.reset}`
+      : `${colors.red}FAIL${colors.reset}`;
+    const detail = result.ok
+      ? ''
+      : ` (${result.status || result.error || 'falha'})`;
     console.log(`  ${status} ${table}${detail}`);
     if (!result.ok) allExist = false;
   }
@@ -77,10 +85,16 @@ async function main() {
   console.log();
   if (allExist) {
     console.log(`${colors.green}Todas as tabelas existem.${colors.reset}`);
-    console.log(`${colors.cyan}Seu banco esta pronto para usar.${colors.reset}\n`);
+    console.log(
+      `${colors.cyan}Seu banco esta pronto para usar.${colors.reset}\n`
+    );
   } else {
-    console.log(`${colors.red}Algumas tabelas faltam ou nao responderam.${colors.reset}`);
-    console.log(`${colors.yellow}Execute as migrations SQL e valide RLS no Supabase.${colors.reset}`);
+    console.log(
+      `${colors.red}Algumas tabelas faltam ou nao responderam.${colors.reset}`
+    );
+    console.log(
+      `${colors.yellow}Execute as migrations SQL e valide RLS no Supabase.${colors.reset}`
+    );
   }
 }
 

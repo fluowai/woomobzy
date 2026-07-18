@@ -42,18 +42,23 @@ export function normalizeText(value: unknown) {
 export function normalizeNiche(value: unknown): 'rural' | 'urbano' | '' {
   const normalized = normalizeText(value);
   if (normalized === 'rural') return 'rural';
-  if (['urbano', 'urban', 'traditional', 'tradicional'].includes(normalized)) return 'urbano';
+  if (['urbano', 'urban', 'traditional', 'tradicional'].includes(normalized))
+    return 'urbano';
   return '';
 }
 
 export function isRuralType(value: unknown) {
   const normalized = normalizeText(value);
-  return RURAL_PROPERTY_TYPES.some((type) => normalizeText(type) === normalized);
+  return RURAL_PROPERTY_TYPES.some(
+    (type) => normalizeText(type) === normalized
+  );
 }
 
 export function isUrbanType(value: unknown) {
   const normalized = normalizeText(value);
-  return URBAN_PROPERTY_TYPES.some((type) => normalizeText(type) === normalized);
+  return URBAN_PROPERTY_TYPES.some(
+    (type) => normalizeText(type) === normalized
+  );
 }
 
 export function getPropertyType(property: any) {

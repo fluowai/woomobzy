@@ -293,11 +293,13 @@ const LandingPageManager: React.FC = () => {
               {/* Preview Image */}
               <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600 relative overflow-hidden group">
                 {(() => {
-                  const template = LANDING_PAGE_TEMPLATES.find(t => t.id === page.templateId);
+                  const template = LANDING_PAGE_TEMPLATES.find(
+                    (t) => t.id === page.templateId
+                  );
                   if (template?.thumbnail) {
                     return (
-                      <img 
-                        src={template.thumbnail} 
+                      <img
+                        src={template.thumbnail}
                         alt={page.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -307,7 +309,9 @@ const LandingPageManager: React.FC = () => {
                     <div className="absolute inset-0 flex items-center justify-center text-white">
                       <div className="text-center">
                         <Globe size={48} className="mx-auto mb-2 opacity-50" />
-                        <p className="text-sm opacity-75">Preview não disponível</p>
+                        <p className="text-sm opacity-75">
+                          Preview não disponível
+                        </p>
                       </div>
                     </div>
                   );
@@ -349,7 +353,11 @@ const LandingPageManager: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      const prefix = window.location.pathname.startsWith('/urban') ? '/urban' : '/rural';
+                      const prefix = window.location.pathname.startsWith(
+                        '/urban'
+                      )
+                        ? '/urban'
+                        : '/rural';
                       window.location.href = `${prefix}/landing-pages/${page.id}`;
                     }}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

@@ -2,7 +2,15 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Plus, Filter, Search, Grid, List, ChevronDown, Loader2, DownloadCloud, RefreshCw,
+  Plus,
+  Filter,
+  Search,
+  Grid,
+  List,
+  ChevronDown,
+  Loader2,
+  DownloadCloud,
+  RefreshCw,
 } from 'lucide-react';
 import { propertyService } from '../services/properties';
 import { oruloService } from '../services/orulo';
@@ -17,8 +25,16 @@ import PropertyMobileCard from './PropertyManagement/PropertyMobileCard';
 import PropertyTableRow from './PropertyManagement/PropertyTableRow';
 
 const INITIAL_ORULO_FILTERS = {
-  state: '', city: '', areas: '', minPrice: '', maxPrice: '',
-  bedrooms: '', parking: '', status: '', portfolio: '', maxBuildings: '25',
+  state: '',
+  city: '',
+  areas: '',
+  minPrice: '',
+  maxPrice: '',
+  bedrooms: '',
+  parking: '',
+  status: '',
+  portfolio: '',
+  maxBuildings: '25',
 };
 
 const PropertyManagement: React.FC = () => {
@@ -36,13 +52,18 @@ const PropertyManagement: React.FC = () => {
 
   const { profile } = useAuth();
 
-  useEffect(() => { loadProperties(); }, []);
+  useEffect(() => {
+    loadProperties();
+  }, []);
 
   const loadProperties = async () => {
     try {
       setLoading(true);
       const data = await propertyService.list(1, 100, currentNiche);
-      logger.debug('[PropertyManagement] Imoveis carregados', { total: data.length, currentNiche });
+      logger.debug('[PropertyManagement] Imoveis carregados', {
+        total: data.length,
+        currentNiche,
+      });
       setProperties(data);
     } catch (error: any) {
       logger.error('Erro ao carregar imóveis:', error);
@@ -66,12 +87,20 @@ const PropertyManagement: React.FC = () => {
   const handleApprove = async (id: string) => {
     try {
       const property = properties.find((item) => item.id === id);
-      await propertyService.update(id, { status: 'Disponível' as any, published_at: new Date().toISOString() } as any);
+      await propertyService.update(id, {
+        status: 'Disponível' as any,
+        published_at: new Date().toISOString(),
+      } as any);
       toast.success('Imóvel publicado com sucesso!');
       const buildingId = (property?.features as any)?.orulo?.building_id;
       if ((property as any)?.source === 'orulo' && buildingId) {
-        oruloService.updatePublicationLinks(buildingId, [{ url: `${window.location.origin}/property/${id}`, active: true }])
-          .catch((error) => logger.warn('Falha ao atualizar link de publicacao Orulo', error));
+        oruloService
+          .updatePublicationLinks(buildingId, [
+            { url: `${window.location.origin}/property/${id}`, active: true },
+          ])
+          .catch((error) =>
+            logger.warn('Falha ao atualizar link de publicacao Orulo', error)
+          );
       }
       loadProperties();
     } catch (error: any) {
@@ -80,22 +109,36 @@ const PropertyManagement: React.FC = () => {
   };
 
   const handleOruloSync = async () => {
-    if (currentNiche !== 'urbano') { toast.info('A integração da Órulo está disponível apenas no urbano.'); return; }
+    if (currentNiche !== 'urbano') {
+      toast.info('A integração da Órulo está disponível apenas no urbano.');
+      return;
+    }
     try {
       setOruloSyncing(true);
       const filters: Record<string, any> = {};
-      const areaList = oruloFilters.areas.split(',').map((item) => item.trim()).filter(Boolean);
-      if (oruloFilters.state.trim()) filters.state = oruloFilters.state.trim().toUpperCase();
+      const areaList = oruloFilters.areas
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      if (oruloFilters.state.trim())
+        filters.state = oruloFilters.state.trim().toUpperCase();
       if (oruloFilters.city.trim()) filters.city = oruloFilters.city.trim();
       if (areaList.length) filters.area = areaList;
-      if (oruloFilters.minPrice) filters.min_price = Number(oruloFilters.minPrice);
-      if (oruloFilters.maxPrice) filters.max_price = Number(oruloFilters.maxPrice);
+      if (oruloFilters.minPrice)
+        filters.min_price = Number(oruloFilters.minPrice);
+      if (oruloFilters.maxPrice)
+        filters.max_price = Number(oruloFilters.maxPrice);
       if (oruloFilters.bedrooms) filters.bedrooms = [oruloFilters.bedrooms];
       if (oruloFilters.parking) filters.parking = [oruloFilters.parking];
       if (oruloFilters.status) filters.status = [oruloFilters.status];
       if (oruloFilters.portfolio) filters.portfolio = [oruloFilters.portfolio];
-      const result = await oruloService.sync({ max_buildings: Math.min(Number(oruloFilters.maxBuildings || 25), 100), filters });
-      toast.success(`Órulo sincronizada: ${result.imported || 0} fichas para revisão.`);
+      const result = await oruloService.sync({
+        max_buildings: Math.min(Number(oruloFilters.maxBuildings || 25), 100),
+        filters,
+      });
+      toast.success(
+        `Órulo sincronizada: ${result.imported || 0} fichas para revisão.`
+      );
       await loadProperties();
     } catch (error: any) {
       toast.error('Erro ao sincronizar Órulo: ' + error.message);
@@ -104,13 +147,18 @@ const PropertyManagement: React.FC = () => {
     }
   };
 
-  const [portalPublishing, setPortalPublishing] = useState<{ propertyId: string; portal: string } | null>(null);
+  const [portalPublishing, setPortalPublishing] = useState<{
+    propertyId: string;
+    portal: string;
+  } | null>(null);
 
   const handlePortalPublish = async (propertyId: string, portal: string) => {
     try {
       setPortalPublishing({ propertyId, portal });
       await portalService.publish(portal, propertyId);
-      toast.success(`Publicado no ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'} com sucesso!`);
+      toast.success(
+        `Publicado no ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'} com sucesso!`
+      );
       loadProperties();
     } catch (error: any) {
       toast.error(`Erro ao publicar: ${error.message}`);
@@ -120,17 +168,25 @@ const PropertyManagement: React.FC = () => {
   };
 
   const handlePortalUnpublish = async (propertyId: string, portal: string) => {
-    if (!confirm(`Remover anúncio do ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'}?`)) return;
+    if (
+      !confirm(
+        `Remover anúncio do ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'}?`
+      )
+    )
+      return;
     try {
       await portalService.unpublish(portal, propertyId);
-      toast.success(`Removido do ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'}.`);
+      toast.success(
+        `Removido do ${portal === 'vivareal' ? 'VivaReal' : 'Zap Imóveis'}.`
+      );
       loadProperties();
     } catch (error: any) {
       toast.error(`Erro ao remover: ${error.message}`);
     }
   };
 
-  const getPortalPublishes = (property: Property) => (property as any).portal_publishes || {};
+  const getPortalPublishes = (property: Property) =>
+    (property as any).portal_publishes || {};
 
   const filteredProperties = properties.filter((p) => {
     const matchesNiche = isRural ? isRuralProperty(p) : isUrbanProperty(p);
@@ -141,10 +197,15 @@ const PropertyManagement: React.FC = () => {
 
   const getUrbanFeatureSummary = (property: Property) => {
     const features: any = property.features || {};
-    const area = features.areaM2 || features.area_m2 || features.physical?.area || features.physical?.builtArea;
+    const area =
+      features.areaM2 ||
+      features.area_m2 ||
+      features.physical?.area ||
+      features.physical?.builtArea;
     const bedrooms = features.dormitorios || features.bedrooms;
     const bathrooms = features.banheiros || features.bathrooms;
-    const parking = features.vagas || features.parking_spaces || features.parking;
+    const parking =
+      features.vagas || features.parking_spaces || features.parking;
     const items = [
       area ? `${Number(area).toLocaleString('pt-BR')} m²` : null,
       bedrooms ? `${bedrooms} dorm.` : null,
@@ -156,7 +217,10 @@ const PropertyManagement: React.FC = () => {
 
   const getPropertySummary = (property: Property) => {
     if (!isRural) return getUrbanFeatureSummary(property);
-    return [`${property.features?.areaHectares || 0} ha`, property.features?.tipoSolo || 'Solo N/A'];
+    return [
+      `${property.features?.areaHectares || 0} ha`,
+      property.features?.tipoSolo || 'Solo N/A',
+    ];
   };
 
   if (loading) {
@@ -171,25 +235,59 @@ const PropertyManagement: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold mb-1">Gerenciamento de Imóveis</h1>
-          <p className="text-sm text-slate-500">Gerencie todos os seus anúncios públicos e privados.</p>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-1">
+            Gerenciamento de Imóveis
+          </h1>
+          <p className="text-sm text-slate-500">
+            Gerencie todos os seus anúncios públicos e privados.
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-            <button onClick={() => setViewType('grid')} className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}><Grid size={18} /></button>
-            <button onClick={() => setViewType('list')} className={`p-2 rounded-lg transition-all ${viewType === 'list' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}><List size={18} /></button>
+            <button
+              onClick={() => setViewType('grid')}
+              className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              <Grid size={18} />
+            </button>
+            <button
+              onClick={() => setViewType('list')}
+              className={`p-2 rounded-lg transition-all ${viewType === 'list' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              <List size={18} />
+            </button>
           </div>
-          <button onClick={() => navigate('new')} className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20">
-            <Plus size={18} /><span className="hidden sm:inline">Cadastrar Imóvel</span><span className="sm:hidden">Novo</span>
+          <button
+            onClick={() => navigate('new')}
+            className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">Cadastrar Imóvel</span>
+            <span className="sm:hidden">Novo</span>
           </button>
           {!isRural && (
             <>
-              <button onClick={() => setShowOruloFilters((v) => !v)} className="bg-white text-slate-700 border border-slate-200 px-3 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-all font-bold text-sm shadow-sm" title="Filtros Orulo">
-                <Filter size={18} /><span className="hidden sm:inline">Filtros Orulo</span>
+              <button
+                onClick={() => setShowOruloFilters((v) => !v)}
+                className="bg-white text-slate-700 border border-slate-200 px-3 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-all font-bold text-sm shadow-sm"
+                title="Filtros Orulo"
+              >
+                <Filter size={18} />
+                <span className="hidden sm:inline">Filtros Orulo</span>
               </button>
-              <button onClick={handleOruloSync} disabled={oruloSyncing} className="bg-slate-900 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition-all font-bold text-sm shadow-lg disabled:opacity-60" title="Importar catálogo urbano da Órulo para revisão">
-                {oruloSyncing ? <RefreshCw size={18} className="animate-spin" /> : <DownloadCloud size={18} />}
-                <span className="hidden sm:inline">Importar Órulo</span><span className="sm:hidden">Órulo</span>
+              <button
+                onClick={handleOruloSync}
+                disabled={oruloSyncing}
+                className="bg-slate-900 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition-all font-bold text-sm shadow-lg disabled:opacity-60"
+                title="Importar catálogo urbano da Órulo para revisão"
+              >
+                {oruloSyncing ? (
+                  <RefreshCw size={18} className="animate-spin" />
+                ) : (
+                  <DownloadCloud size={18} />
+                )}
+                <span className="hidden sm:inline">Importar Órulo</span>
+                <span className="sm:hidden">Órulo</span>
               </button>
             </>
           )}
@@ -199,7 +297,9 @@ const PropertyManagement: React.FC = () => {
       {!isRural && showOruloFilters && (
         <OruloFiltersPanel
           filters={oruloFilters}
-          onUpdate={(key, value) => setOruloFilters((prev) => ({ ...prev, [key]: value }))}
+          onUpdate={(key, value) =>
+            setOruloFilters((prev) => ({ ...prev, [key]: value }))
+          }
           onReset={() => setOruloFilters(INITIAL_ORULO_FILTERS)}
         />
       )}
@@ -207,18 +307,32 @@ const PropertyManagement: React.FC = () => {
       {/* Tabs */}
       <div className="flex border-b border-border-subtle items-center justify-between">
         <div className="flex">
-          <button onClick={() => setActiveTab('all')} className={`px-8 py-4 text-sm font-bold border-b-2 transition-all tracking-wide ${activeTab === 'all' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}>Meus Imóveis</button>
-          <button onClick={() => setActiveTab('pending')} className={`px-8 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-3 tracking-wide ${activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-8 py-4 text-sm font-bold border-b-2 transition-all tracking-wide ${activeTab === 'all' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
+          >
+            Meus Imóveis
+          </button>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`px-8 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-3 tracking-wide ${activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
+          >
             Solicitações Externas
             {properties.filter((p) => p.status === 'Pendente').length > 0 && (
-              <span className="bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-accent/20">{properties.filter((p) => p.status === 'Pendente').length}</span>
+              <span className="bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-accent/20">
+                {properties.filter((p) => p.status === 'Pendente').length}
+              </span>
             )}
           </button>
         </div>
         {properties.length > 0 && filteredProperties.length === 0 && (
           <div className="px-6 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 font-medium mr-4 flex items-center gap-2">
-            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span></span>
-            Atenção: Você tem {properties.length} imóveis cadastrados, mas todos são do nicho {isRural ? 'Urbano' : 'Rural'}.
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            Atenção: Você tem {properties.length} imóveis cadastrados, mas todos
+            são do nicho {isRural ? 'Urbano' : 'Rural'}.
           </div>
         )}
       </div>
@@ -226,20 +340,39 @@ const PropertyManagement: React.FC = () => {
       {/* Filters Bar */}
       <div className="card p-4 flex flex-col lg:flex-row gap-4 items-center bg-bg-card/50 backdrop-blur-md">
         <div className="flex-1 relative w-full group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors" size={18} />
-          <input type="text" placeholder="Buscar por título, bairro ou ID..." className="input-field pl-12" />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Buscar por título, bairro ou ID..."
+            className="input-field pl-12"
+          />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto">
-          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">Tipo <ChevronDown size={14} /></button>
-          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">Status <ChevronDown size={14} /></button>
-          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold"><Filter size={14} /> Filtros</button>
+          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+            Tipo <ChevronDown size={14} />
+          </button>
+          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+            Status <ChevronDown size={14} />
+          </button>
+          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+            <Filter size={14} /> Filtros
+          </button>
         </div>
       </div>
 
       {filteredProperties.length === 0 ? (
         <div className="text-center py-16 sm:py-24 border-2 border-dashed border-slate-200 rounded-2xl">
-          <h3 className="text-lg sm:text-xl font-bold text-slate-400 mb-2">Nenhum imóvel encontrado</h3>
-          <p className="text-sm text-slate-400 max-w-md mx-auto px-4">{activeTab === 'pending' ? 'Não há solicitações pendentes no momento.' : 'Comece cadastrando seu primeiro imóvel.'}</p>
+          <h3 className="text-lg sm:text-xl font-bold text-slate-400 mb-2">
+            Nenhum imóvel encontrado
+          </h3>
+          <p className="text-sm text-slate-400 max-w-md mx-auto px-4">
+            {activeTab === 'pending'
+              ? 'Não há solicitações pendentes no momento.'
+              : 'Comece cadastrando seu primeiro imóvel.'}
+          </p>
         </div>
       ) : (
         <>
@@ -265,15 +398,30 @@ const PropertyManagement: React.FC = () => {
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
               <div className="divide-y divide-slate-100 md:hidden">
                 {filteredProperties.map((property) => (
-                  <PropertyMobileCard key={property.id} property={property} onDelete={handleDelete} />
+                  <PropertyMobileCard
+                    key={property.id}
+                    property={property}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </div>
               <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto hidden md:block">
                 <table className="w-full text-left min-w-[640px]">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
-                      {['Imóvel', 'Localização', 'Valor', 'Status', 'Ações'].map((h) => (
-                        <th key={h} className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
+                      {[
+                        'Imóvel',
+                        'Localização',
+                        'Valor',
+                        'Status',
+                        'Ações',
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-wider"
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>

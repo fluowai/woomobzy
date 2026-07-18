@@ -8,8 +8,12 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const colors = {
-  reset: '\x1b[0m', green: '\x1b[32m', red: '\x1b[31m',
-  yellow: '\x1b[33m', blue: '\x1b[34m', cyan: '\x1b[36m',
+  reset: '\x1b[0m',
+  green: '\x1b[32m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  cyan: '\x1b[36m',
 };
 const log = {
   info: (m) => console.log(`${colors.blue}\u2139${colors.reset} ${m}`),
@@ -19,7 +23,9 @@ const log = {
 };
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  log.error('VITE_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY n\u00E3o configuradas');
+  log.error(
+    'VITE_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY n\u00E3o configuradas'
+  );
   process.exit(1);
 }
 
@@ -121,7 +127,7 @@ ${colors.reset}`);
       created_at: rc.created_at,
       updated_at: rc.updated_at,
       // Extra fields from v4
-      guarantee_type: (rc.guarantee_type || null),
+      guarantee_type: rc.guarantee_type || null,
       evaluation_score: rc.evaluation_score || 0,
       evaluation_status: rc.evaluation_status || 'em_analise',
       credit_score: rc.credit_score || null,
@@ -147,21 +153,22 @@ ${colors.reset}`);
     }
 
     // Track migration
-    await supabase
-      .from('_rental_contracts_migration')
-      .insert({
-        rental_contract_id: rc.id,
-        lease_id: lease.id,
-        organization_id: rc.organization_id,
-        status: 'migrated',
-      });
+    await supabase.from('_rental_contracts_migration').insert({
+      rental_contract_id: rc.id,
+      lease_id: lease.id,
+      organization_id: rc.organization_id,
+      status: 'migrated',
+    });
 
     migrated++;
-    if (migrated % 10 === 0) process.stdout.write(`${colors.green}.${colors.reset}`);
+    if (migrated % 10 === 0)
+      process.stdout.write(`${colors.green}.${colors.reset}`);
   }
 
   console.log('');
-  log.success(`Contracts: ${migrated} migrated, ${skipped} skipped, ${errors} errors`);
+  log.success(
+    `Contracts: ${migrated} migrated, ${skipped} skipped, ${errors} errors`
+  );
 
   // Step 2: Migrate billing -> invoices
   log.info('Step 2: Migrating billing records to invoices...');
@@ -198,22 +205,20 @@ ${colors.reset}`);
         protesto: 'protestado',
       };
 
-      const { error: invError } = await supabase
-        .from('invoices')
-        .insert({
-          lease_id: mapping.lease_id,
-          organization_id: bill.organization_id,
-          invoice_number: bill.nossonumero || null,
-          due_date: bill.due_date,
-          amount: bill.amount || 0,
-          total: bill.amount || 0,
-          status: statusMap[bill.status] || 'pendente',
-          payment_date: bill.payment_date || null,
-          barcode: bill.barcode || null,
-          nossonumero: bill.nossonumero || null,
-          invoice_url: bill.invoice_url || null,
-          created_at: bill.created_at,
-        });
+      const { error: invError } = await supabase.from('invoices').insert({
+        lease_id: mapping.lease_id,
+        organization_id: bill.organization_id,
+        invoice_number: bill.nossonumero || null,
+        due_date: bill.due_date,
+        amount: bill.amount || 0,
+        total: bill.amount || 0,
+        status: statusMap[bill.status] || 'pendente',
+        payment_date: bill.payment_date || null,
+        barcode: bill.barcode || null,
+        nossonumero: bill.nossonumero || null,
+        invoice_url: bill.invoice_url || null,
+        created_at: bill.created_at,
+      });
 
       if (invError) {
         bErrors++;
@@ -248,22 +253,26 @@ ${colors.reset}`);
         .eq('rental_contract_id', pay.contract_id)
         .single();
 
-      if (!mapping) { pErrors++; continue; }
+      if (!mapping) {
+        pErrors++;
+        continue;
+      }
 
-      const { error: histError } = await supabase
-        .from('lease_history')
-        .insert({
-          lease_id: mapping.lease_id,
-          organization_id: pay.organization_id,
-          action: 'payment',
-          description: `Pagamento: ${pay.amount_paid || 0} em ${pay.payment_date || ''}`,
-          field_changed: 'payment_status',
-          old_value: pay.status,
-          new_value: pay.status === 'pago' ? 'em_dia' : pay.status,
-          created_at: pay.created_at || pay.payment_date,
-        });
+      const { error: histError } = await supabase.from('lease_history').insert({
+        lease_id: mapping.lease_id,
+        organization_id: pay.organization_id,
+        action: 'payment',
+        description: `Pagamento: ${pay.amount_paid || 0} em ${pay.payment_date || ''}`,
+        field_changed: 'payment_status',
+        old_value: pay.status,
+        new_value: pay.status === 'pago' ? 'em_dia' : pay.status,
+        created_at: pay.created_at || pay.payment_date,
+      });
 
-      if (histError) { pErrors++; continue; }
+      if (histError) {
+        pErrors++;
+        continue;
+      }
       pMigrated++;
     }
 
@@ -293,7 +302,10 @@ ${colors.reset}`);
         .eq('rental_contract_id', ren.contract_id)
         .single();
 
-      if (!mapping) { rErrors++; continue; }
+      if (!mapping) {
+        rErrors++;
+        continue;
+      }
 
       const { error: adjError } = await supabase
         .from('rent_adjustments')
@@ -303,12 +315,17 @@ ${colors.reset}`);
           previous_rent: ren.old_rent || 0,
           new_rent: ren.new_rent || 0,
           adjustment_index: ren.adjustment_index || 'IGPM',
-          adjustment_date: ren.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+          adjustment_date:
+            ren.created_at?.split('T')[0] ||
+            new Date().toISOString().split('T')[0],
           approved: true,
           created_at: ren.created_at,
         });
 
-      if (adjError) { rErrors++; continue; }
+      if (adjError) {
+        rErrors++;
+        continue;
+      }
       rMigrated++;
     }
 
@@ -318,13 +335,19 @@ ${colors.reset}`);
   }
 
   // Summary
-  console.log(`\n${colors.cyan}\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550${colors.reset}`);
+  console.log(
+    `\n${colors.cyan}\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550${colors.reset}`
+  );
   log.success(`Migration complete!`);
   console.log(`  Contracts migrated: ${migrated}`);
   console.log(`  Contracts skipped (already migrated): ${skipped}`);
   console.log(`  Contract errors: ${errors}`);
-  console.log(`\n${colors.yellow}Note: The old rental_contracts table is kept intact.`);
-  console.log(`The migration tracking table _rental_contracts_migration maps old IDs to new lease IDs.`);
+  console.log(
+    `\n${colors.yellow}Note: The old rental_contracts table is kept intact.`
+  );
+  console.log(
+    `The migration tracking table _rental_contracts_migration maps old IDs to new lease IDs.`
+  );
   console.log(`To verify: npm run check-db${colors.reset}`);
 }
 

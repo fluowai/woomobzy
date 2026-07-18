@@ -2,7 +2,8 @@ import { getSupabaseServer } from '../lib/supabase-server.js';
 import { sendContactFormEmail } from './emailService.js';
 import { PLATFORM_COMMERCIAL_NAME } from '../lib/platform-config.js';
 
-const NOTIFICATION_FROM_EMAIL = process.env.NOTIFICATION_FROM_EMAIL || 'noreply@wootech.com.br';
+const NOTIFICATION_FROM_EMAIL =
+  process.env.NOTIFICATION_FROM_EMAIL || 'noreply@wootech.com.br';
 
 const SIGNATURE_PROVIDERS = {
   proprio: { name: 'Assinatura Própria', apiUrl: null },
@@ -12,7 +13,6 @@ const SIGNATURE_PROVIDERS = {
 };
 
 export class SignatureInvitationService {
-
   static async sendInvitation(signatureId, orgId) {
     const supabase = getSupabaseServer();
 
@@ -22,7 +22,10 @@ export class SignatureInvitationService {
       .eq('id', signatureId)
       .single();
 
-    if (sigError || !sig) throw new Error('Signature not found: ' + (sigError?.message || 'unknown'));
+    if (sigError || !sig)
+      throw new Error(
+        'Signature not found: ' + (sigError?.message || 'unknown')
+      );
 
     const { data: lease } = await supabase
       .from('leases')
@@ -39,7 +42,10 @@ export class SignatureInvitationService {
     const results = { email: null, whatsapp: null, provider: null };
 
     // Send email invitation
-    if (sig.signer_email && (sig.invitation_method === 'email' || sig.invitation_method === 'ambos')) {
+    if (
+      sig.signer_email &&
+      (sig.invitation_method === 'email' || sig.invitation_method === 'ambos')
+    ) {
       try {
         await this._sendEmailInvitation(sig, lease);
         results.email = { sent: true, to: sig.signer_email };
@@ -49,7 +55,11 @@ export class SignatureInvitationService {
     }
 
     // Send WhatsApp invitation
-    if (sig.signer_phone && (sig.invitation_method === 'whatsapp' || sig.invitation_method === 'ambos')) {
+    if (
+      sig.signer_phone &&
+      (sig.invitation_method === 'whatsapp' ||
+        sig.invitation_method === 'ambos')
+    ) {
       try {
         await this._sendWhatsAppInvitation(sig, lease);
         results.whatsapp = { sent: true, to: sig.signer_phone };
@@ -62,7 +72,12 @@ export class SignatureInvitationService {
     const provider = lease.signature_method;
     if (provider && provider !== 'proprio' && SIGNATURE_PROVIDERS[provider]) {
       try {
-        const providerResult = await this._sendToProvider(provider, sig, lease, orgId);
+        const providerResult = await this._sendToProvider(
+          provider,
+          sig,
+          lease,
+          orgId
+        );
         results.provider = providerResult;
       } catch (err) {
         results.provider = { sent: false, error: err.message };
@@ -79,15 +94,15 @@ export class SignatureInvitationService {
       updates.invitation_method = sig.invitation_method || 'email';
     }
 
-    await supabase
-      .from('signatures')
-      .update(updates)
-      .eq('id', signatureId);
+    await supabase.from('signatures').update(updates).eq('id', signatureId);
 
     // Update lease signature status
     await supabase
       .from('leases')
-      .update({ signature_status: 'sent', updated_at: new Date().toISOString() })
+      .update({
+        signature_status: 'sent',
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', sig.lease_id);
 
     return results;
@@ -111,9 +126,19 @@ export class SignatureInvitationService {
     for (const sig of signatures) {
       try {
         const result = await this.sendInvitation(sig.id, orgId);
-        results.push({ signature_id: sig.id, signer_name: sig.signer_name, success: true, result });
+        results.push({
+          signature_id: sig.id,
+          signer_name: sig.signer_name,
+          success: true,
+          result,
+        });
       } catch (err) {
-        results.push({ signature_id: sig.id, signer_name: sig.signer_name, success: false, error: err.message });
+        results.push({
+          signature_id: sig.id,
+          signer_name: sig.signer_name,
+          success: false,
+          error: err.message,
+        });
       }
     }
 
@@ -186,7 +211,9 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
       return await response.json();
     } catch (err) {
       if (err.name === 'AbortError' || err.code === 'ECONNREFUSED') {
-        console.warn('[SignatureInvitation] WhatsApp service not available, skipping');
+        console.warn(
+          '[SignatureInvitation] WhatsApp service not available, skipping'
+        );
         return null;
       }
       throw err;
@@ -208,7 +235,8 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
       .single();
 
     const documentUrl = generated?.pdf_url || lease.signed_document_url;
-    if (!documentUrl) throw new Error('No generated contract found to send for signature');
+    if (!documentUrl)
+      throw new Error('No generated contract found to send for signature');
 
     switch (provider) {
       case 'clicksign':
@@ -230,18 +258,20 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': apiKey,
+        Authorization: apiKey,
       },
       body: JSON.stringify({
         document: {
           path: documentUrl,
           deadline_days: 15,
-          signers: [{
-            name: sig.signer_name,
-            email: sig.signer_email,
-            phone: sig.signer_phone,
-            auth: 'email',
-          }],
+          signers: [
+            {
+              name: sig.signer_name,
+              email: sig.signer_email,
+              phone: sig.signer_phone,
+              auth: 'email',
+            },
+          ],
           locale: 'pt-BR',
         },
       }),
@@ -253,7 +283,11 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     }
 
     const data = await response.json();
-    return { provider: 'clicksign', signature_id: data.document?.key, status: 'sent' };
+    return {
+      provider: 'clicksign',
+      signature_id: data.document?.key,
+      status: 'sent',
+    };
   }
 
   static async _sendZapSign(sig, documentUrl) {
@@ -264,7 +298,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         name: sig.signer_name,
@@ -288,25 +322,30 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     const apiKey = process.env.DOCUSIGN_API_KEY;
     if (!apiKey) throw new Error('DOCUSIGN_API_KEY not configured');
 
-    const response = await fetch('https://demo.docusign.net/restapi/v2.1/envelopes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        emailSubject: `Contrato de Locação - ${lease.contract_number || ''}`,
-        documents: [{ documentUrl }],
-        recipients: {
-          signers: [{
-            name: sig.signer_name,
-            email: sig.signer_email,
-            roleName: sig.signer_type,
-          }],
+    const response = await fetch(
+      'https://demo.docusign.net/restapi/v2.1/envelopes',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
         },
-        status: 'sent',
-      }),
-    });
+        body: JSON.stringify({
+          emailSubject: `Contrato de Locação - ${lease.contract_number || ''}`,
+          documents: [{ documentUrl }],
+          recipients: {
+            signers: [
+              {
+                name: sig.signer_name,
+                email: sig.signer_email,
+                roleName: sig.signer_type,
+              },
+            ],
+          },
+          status: 'sent',
+        }),
+      }
+    );
 
     if (!response.ok) {
       const text = await response.text();
@@ -314,7 +353,11 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     }
 
     const data = await response.json();
-    return { provider: 'docusign', signature_id: data.envelopeId, status: 'sent' };
+    return {
+      provider: 'docusign',
+      signature_id: data.envelopeId,
+      status: 'sent',
+    };
   }
 
   static _buildSignatureLink(signatureId, leaseId) {
@@ -343,7 +386,11 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
       .eq('id', leaseId)
       .single();
 
-    if (!lease || !lease.signature_method || lease.signature_method === 'proprio') {
+    if (
+      !lease ||
+      !lease.signature_method ||
+      lease.signature_method === 'proprio'
+    ) {
       return null;
     }
 
@@ -367,7 +414,10 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
             statuses.push({ ...sig, provider_status: providerStatus });
           }
         } catch (err) {
-          console.error('[SignatureInvitation] Provider query error:', err.message);
+          console.error(
+            '[SignatureInvitation] Provider query error:',
+            err.message
+          );
         }
       }
     }
@@ -446,7 +496,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
         .select('status')
         .eq('lease_id', sig.lease_id);
 
-      if (allSigs && allSigs.every(s => s.status === 'signed')) {
+      if (allSigs && allSigs.every((s) => s.status === 'signed')) {
         await supabase
           .from('leases')
           .update({

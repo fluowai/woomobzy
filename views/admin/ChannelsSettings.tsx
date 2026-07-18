@@ -21,7 +21,9 @@ import {
 } from 'lucide-react';
 
 const ChannelsSettings: React.FC = () => {
-  const [activeChannel, setActiveChannel] = useState<'whatsapp' | 'instagram'>('whatsapp');
+  const [activeChannel, setActiveChannel] = useState<'whatsapp' | 'instagram'>(
+    'whatsapp'
+  );
   const [instances, setInstances] = useState<Instance[]>([]);
   const [instagramAccounts, setInstagramAccounts] = useState<any[]>([]);
   const [newName, setNewName] = useState('');
@@ -140,7 +142,8 @@ const ChannelsSettings: React.FC = () => {
                     Conexões WhatsApp
                   </h3>
                   <p className="text-sm text-text-secondary mt-0.5">
-                    Gerencie suas instâncias do WhatsApp para atendimento e notificações.
+                    Gerencie suas instâncias do WhatsApp para atendimento e
+                    notificações.
                   </p>
                 </div>
               </div>
@@ -152,7 +155,11 @@ const ChannelsSettings: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    placeholder={isLimitReached ? "Limite do plano atingido" : "Nome da conexão (ex: Comercial)"}
+                    placeholder={
+                      isLimitReached
+                        ? 'Limite do plano atingido'
+                        : 'Nome da conexão (ex: Comercial)'
+                    }
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     className="input-premium py-3 pl-11 pr-4 w-full bg-bg-primary/50"
@@ -169,7 +176,9 @@ const ChannelsSettings: React.FC = () => {
                   ) : (
                     <Plus size={18} strokeWidth={3} />
                   )}
-                  <span className="font-bold tracking-tight">Criar Conexão</span>
+                  <span className="font-bold tracking-tight">
+                    Criar Conexão
+                  </span>
                 </button>
               </div>
             </div>
@@ -177,7 +186,10 @@ const ChannelsSettings: React.FC = () => {
             {isLimitReached && (
               <div className="mt-4 p-3 bg-orange-500/5 border border-orange-500/20 rounded-xl flex items-center gap-2 text-xs text-orange-400">
                 <ShieldAlert size={14} />
-                <span>Limite atingido ({instances.length}/{maxInstances}). Entre em contato para aumentar seu limite.</span>
+                <span>
+                  Limite atingido ({instances.length}/{maxInstances}). Entre em
+                  contato para aumentar seu limite.
+                </span>
               </div>
             )}
 
@@ -193,15 +205,26 @@ const ChannelsSettings: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {loading && instances.length === 0 ? (
               <div className="col-span-full py-20 text-center">
-                <Loader2 size={32} className="animate-spin text-primary mx-auto mb-4" />
-                <p className="text-text-secondary">Buscando conexões ativas...</p>
+                <Loader2
+                  size={32}
+                  className="animate-spin text-primary mx-auto mb-4"
+                />
+                <p className="text-text-secondary">
+                  Buscando conexões ativas...
+                </p>
               </div>
             ) : instances.length === 0 ? (
               <div className="col-span-full py-20 text-center bg-bg-card border border-dashed border-border rounded-3xl">
-                <WifiOff size={48} className="text-text-tertiary mx-auto mb-4 opacity-20" />
-                <h4 className="text-text-primary font-semibold">Nenhuma conexão ativa</h4>
+                <WifiOff
+                  size={48}
+                  className="text-text-tertiary mx-auto mb-4 opacity-20"
+                />
+                <h4 className="text-text-primary font-semibold">
+                  Nenhuma conexão ativa
+                </h4>
                 <p className="text-sm text-text-tertiary mt-1">
-                  Crie sua primeira instância acima para começar a usar o WhatsApp.
+                  Crie sua primeira instância acima para começar a usar o
+                  WhatsApp.
                 </p>
               </div>
             ) : (
@@ -212,8 +235,12 @@ const ChannelsSettings: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${inst.status === 'connected' ? 'bg-[#25D366] shadow-[0_0_10px_rgba(37,211,102,0.5)]' : 'bg-red-500'}`} />
-                      <span className="font-semibold text-text-primary">{inst.name}</span>
+                      <div
+                        className={`w-2 h-2 rounded-full ${inst.status === 'connected' ? 'bg-[#25D366] shadow-[0_0_10px_rgba(37,211,102,0.5)]' : 'bg-red-500'}`}
+                      />
+                      <span className="font-semibold text-text-primary">
+                        {inst.name}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       {inst.status === 'connected' ? (
@@ -246,19 +273,29 @@ const ChannelsSettings: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-text-tertiary">Status</span>
-                      <span className={`font-medium ${inst.status === 'connected' ? 'text-[#25D366]' : 'text-text-secondary'}`}>
-                        {inst.status === 'connected' ? 'Conectado' : inst.status === 'qr_pending' ? 'Aguardando QR Code' : 'Desconectado'}
+                      <span
+                        className={`font-medium ${inst.status === 'connected' ? 'text-[#25D366]' : 'text-text-secondary'}`}
+                      >
+                        {inst.status === 'connected'
+                          ? 'Conectado'
+                          : inst.status === 'qr_pending'
+                            ? 'Aguardando QR Code'
+                            : 'Desconectado'}
                       </span>
                     </div>
                     {inst.phone && (
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-text-tertiary">Telefone</span>
-                        <span className="text-text-primary font-mono">+{inst.phone}</span>
+                        <span className="text-text-primary font-mono">
+                          +{inst.phone}
+                        </span>
                       </div>
                     )}
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-text-tertiary">ID Técnico</span>
-                      <span className="text-text-tertiary font-mono opacity-50">{inst.id.split('-')[0]}...</span>
+                      <span className="text-text-tertiary font-mono opacity-50">
+                        {inst.id.split('-')[0]}...
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -284,15 +321,20 @@ const ChannelsSettings: React.FC = () => {
             <div className="w-20 h-20 bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-pink-500/20 animate-pulse-slow">
               <Instagram size={40} className="text-white" />
             </div>
-            <h3 className="text-xl font-bold text-text-primary mb-2">Conectar Instagram Business</h3>
+            <h3 className="text-xl font-bold text-text-primary mb-2">
+              Conectar Instagram Business
+            </h3>
             <p className="text-text-secondary max-w-md mx-auto mb-8">
-              Responda DMs, gerencie comentários e automatize seu atendimento no Instagram diretamente pelo WooTech Imob.
+              Responda DMs, gerencie comentários e automatize seu atendimento no
+              Instagram diretamente pelo WooTech Imob.
             </p>
-            
+
             <div className="inline-flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl text-left max-w-lg mx-auto mb-8">
               <ShieldAlert size={20} className="text-primary shrink-0" />
               <p className="text-sm text-text-secondary leading-relaxed">
-                <strong className="text-text-primary">Requisito:</strong> Sua conta do Instagram deve ser uma conta <strong>Comercial</strong> vinculada a uma <strong>Página do Facebook</strong>.
+                <strong className="text-text-primary">Requisito:</strong> Sua
+                conta do Instagram deve ser uma conta <strong>Comercial</strong>{' '}
+                vinculada a uma <strong>Página do Facebook</strong>.
               </p>
             </div>
 
@@ -308,18 +350,25 @@ const ChannelsSettings: React.FC = () => {
 
           {/* Connected Instagram Accounts */}
           <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">
-            <h4 className="text-sm font-semibold text-text-tertiary uppercase tracking-widest mb-6">Contas Conectadas</h4>
-            
+            <h4 className="text-sm font-semibold text-text-tertiary uppercase tracking-widest mb-6">
+              Contas Conectadas
+            </h4>
+
             {instagramAccounts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {instagramAccounts.map(acc => (
-                  <div key={acc.id} className="flex items-center justify-between p-4 bg-bg-primary/50 border border-border-subtle rounded-xl">
+                {instagramAccounts.map((acc) => (
+                  <div
+                    key={acc.id}
+                    className="flex items-center justify-between p-4 bg-bg-primary/50 border border-border-subtle rounded-xl"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center">
                         <Instagram size={20} className="text-white" />
                       </div>
                       <div>
-                        <p className="font-semibold text-text-primary">@{acc.username}</p>
+                        <p className="font-semibold text-text-primary">
+                          @{acc.username}
+                        </p>
                         <p className="text-xs text-[#25D366]">Ativo</p>
                       </div>
                     </div>
@@ -332,7 +381,9 @@ const ChannelsSettings: React.FC = () => {
             ) : (
               <div className="flex flex-col items-center justify-center py-10 opacity-50 grayscale">
                 <Instagram size={32} className="text-text-tertiary mb-3" />
-                <p className="text-sm text-text-tertiary">Nenhuma conta conectada no momento</p>
+                <p className="text-sm text-text-tertiary">
+                  Nenhuma conta conectada no momento
+                </p>
               </div>
             )}
           </div>
@@ -340,7 +391,7 @@ const ChannelsSettings: React.FC = () => {
       )}
 
       {/* QR Code Modal Wrapper */}
-      {qrInstance && (activeChannel === 'whatsapp') && (
+      {qrInstance && activeChannel === 'whatsapp' && (
         <QRCodeModal
           instance={qrInstance}
           onClose={() => {

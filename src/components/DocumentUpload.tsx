@@ -1,5 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { Upload, File, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  Upload,
+  File,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 import { callApi } from '../lib/api';
 
 interface DocumentUploadProps {
@@ -10,7 +17,10 @@ interface DocumentUploadProps {
 const ACCEPTED_TYPES = '.pdf,.jpg,.jpeg,.png,.doc,.docx';
 const MAX_SIZE_MB = 20;
 
-const DocumentUpload: React.FC<DocumentUploadProps> = ({ propertyId, onUploadComplete }) => {
+const DocumentUpload: React.FC<DocumentUploadProps> = ({
+  propertyId,
+  onUploadComplete,
+}) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
@@ -81,7 +91,10 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ propertyId, onUploadCom
   return (
     <div className="space-y-3">
       <div
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
@@ -115,10 +128,15 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ propertyId, onUploadCom
           <div className="flex items-center gap-2 truncate">
             <File size={16} className="text-indigo-500 shrink-0" />
             <span className="text-sm text-slate-700 truncate">{file.name}</span>
-            <span className="text-xs text-slate-400">({formatSize(file.size)})</span>
+            <span className="text-xs text-slate-400">
+              ({formatSize(file.size)})
+            </span>
           </div>
           <button
-            onClick={() => { setFile(null); setError(null); }}
+            onClick={() => {
+              setFile(null);
+              setError(null);
+            }}
             className="text-slate-400 hover:text-slate-600"
           >
             <X size={16} />

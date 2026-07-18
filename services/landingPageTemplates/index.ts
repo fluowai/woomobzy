@@ -15,7 +15,7 @@ export {
   landingImage,
   buildDesignedTemplate,
   designedSections,
-  buildElementorReferenceTemplate
+  buildElementorReferenceTemplate,
 } from './shared';
 export { ELEMENTOR_REFERENCE_TEMPLATES } from './elementor';
 export { DESIGNED_SHOWCASE_TEMPLATES } from './designedShowcase';
@@ -26,9 +26,11 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
   ...ELEMENTOR_REFERENCE_TEMPLATES,
   ...DESIGNED_SHOWCASE_TEMPLATES,
   ...PREMIUM_LANDING_PAGE_TEMPLATES,
-  ...LEGACY_LANDING_PAGE_TEMPLATES
+  ...LEGACY_LANDING_PAGE_TEMPLATES,
 ];
 
-export const getTemplateById = (id: string): LandingPageTemplate | undefined => {
+export const getTemplateById = (
+  id: string
+): LandingPageTemplate | undefined => {
   return LANDING_PAGE_TEMPLATES.find((t) => t.id === id);
 };

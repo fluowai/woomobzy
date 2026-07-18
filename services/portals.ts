@@ -32,7 +32,10 @@ export const portalService = {
     });
   },
 
-  async publish(portal: string, propertyId: string): Promise<PortalPublishResult> {
+  async publish(
+    portal: string,
+    propertyId: string
+  ): Promise<PortalPublishResult> {
     return callApi(`/api/portals/${portal}/publish/${propertyId}`, {
       method: 'POST',
     });

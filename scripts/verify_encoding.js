@@ -13,28 +13,35 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function verify() {
-    console.log('🔎 Verificando encoding...');
-    
-    // Search for the problematic property
-    const { data, error } = await supabase
-        .from('properties')
-        .select('title, city, state')
-        .ilike('title', '%Merizzo%');
+  console.log('🔎 Verificando encoding...');
 
-    if (error) {
-        console.error('❌ Erro:', error.message);
+  // Search for the problematic property
+  const { data, error } = await supabase
+    .from('properties')
+    .select('title, city, state')
+    .ilike('title', '%Merizzo%');
+
+  if (error) {
+    console.error('❌ Erro:', error.message);
+  } else {
+    if (data.length > 0) {
+      console.log('✅ Encontrado:', data[0]);
+      console.log('   Cidade:', data[0].city);
     } else {
-        if (data.length > 0) {
-            console.log('✅ Encontrado:', data[0]);
-            console.log('   Cidade:', data[0].city);
-        } else {
-             console.log('⚠️ Imóvel Merizzo não encontrado (talvez esteja em outra página além das 3 primeiras?)');
-             
-             // Check any other with special chars
-             const { data: anyData } = await supabase.from('properties').select('title, city').ilike('city', '%Cap%').limit(1);
-             if(anyData && anyData.length > 0) console.log('   Exemplo com Cap:', anyData[0]);
-        }
+      console.log(
+        '⚠️ Imóvel Merizzo não encontrado (talvez esteja em outra página além das 3 primeiras?)'
+      );
+
+      // Check any other with special chars
+      const { data: anyData } = await supabase
+        .from('properties')
+        .select('title, city')
+        .ilike('city', '%Cap%')
+        .limit(1);
+      if (anyData && anyData.length > 0)
+        console.log('   Exemplo com Cap:', anyData[0]);
     }
+  }
 }
 
 verify();

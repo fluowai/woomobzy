@@ -173,7 +173,11 @@ export interface Property {
     legal?: {
       matricula: string;
       escritura: boolean;
-      statusDocumental?: 'Regularizado' | 'Pendente' | 'Em Inventario' | 'Posse';
+      statusDocumental?:
+        | 'Regularizado'
+        | 'Pendente'
+        | 'Em Inventario'
+        | 'Posse';
       ccir: boolean;
       ccirNumber?: string;
       car: boolean;

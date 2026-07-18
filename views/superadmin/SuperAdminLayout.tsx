@@ -60,9 +60,21 @@ const SuperAdminLayout: React.FC = () => {
     { icon: Globe, label: 'Domínios', path: '/superadmin/domains' },
     { icon: Calendar, label: 'Consultoria', path: '/superadmin/consulting' },
     { icon: Zap, label: 'Importador IA', path: '/superadmin/importer' },
-    { icon: CloudCog, label: 'Migração FluowAI', path: '/superadmin/fluowai-migration' },
-    { icon: HardDrive, label: 'Storage Intelligence', path: '/superadmin/storage-intelligence' },
-    { icon: Megaphone, label: 'Marketing & SEO', path: '/superadmin/marketing' },
+    {
+      icon: CloudCog,
+      label: 'Migração FluowAI',
+      path: '/superadmin/fluowai-migration',
+    },
+    {
+      icon: HardDrive,
+      label: 'Storage Intelligence',
+      path: '/superadmin/storage-intelligence',
+    },
+    {
+      icon: Megaphone,
+      label: 'Marketing & SEO',
+      path: '/superadmin/marketing',
+    },
     { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
   ];
 

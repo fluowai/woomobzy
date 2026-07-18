@@ -45,7 +45,7 @@ const SetupWizard: React.FC = () => {
         const res = await fetch(publicUrl);
         const blob = await res.blob();
         const objectUrl = URL.createObjectURL(blob);
-        
+
         const img = new Image();
         img.src = objectUrl;
 
@@ -270,7 +270,8 @@ const SetupWizard: React.FC = () => {
                             const target = e.currentTarget;
                             if (target.dataset.hasError) return;
                             target.dataset.hasError = 'true';
-                            target.src = 'https://via.placeholder.com/150?text=Erro+Load';
+                            target.src =
+                              'https://via.placeholder.com/150?text=Erro+Load';
                           }}
                         />
                       </div>

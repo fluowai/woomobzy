@@ -6,7 +6,10 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
-import { setActiveOrganizationId, clearStaleOrganizationData } from '../src/lib/api';
+import {
+  setActiveOrganizationId,
+  clearStaleOrganizationData,
+} from '../src/lib/api';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -137,7 +140,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // PostgREST/RLS paths and block the whole app bootstrap.
       const queryPromise = supabase
         .from('profiles')
-        .select('id, email, name, role, avatar_url, organization_id, created_at')
+        .select(
+          'id, email, name, role, avatar_url, organization_id, created_at'
+        )
         .eq('id', userId)
         .single();
 
@@ -160,8 +165,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       if (profileError) {
         if (profileError.code === '401' || profileError.status === 401) {
-          logger.warn('[AuthContext] 401 detected, retrying after token refresh...');
-          await new Promise(r => setTimeout(r, 1000));
+          logger.warn(
+            '[AuthContext] 401 detected, retrying after token refresh...'
+          );
+          await new Promise((r) => setTimeout(r, 1000));
           fetchInProgress.current = null;
           return loadProfile(userId);
         }
@@ -190,7 +197,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           logger.info('🚀 [AuthContext] Checking impersonated org:', impOrgId);
           const { data: orgData, error: orgError } = await supabase
             .from('organizations')
-            .select('id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status')
+            .select(
+              'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status'
+            )
             .eq('id', impOrgId)
             .single();
 
@@ -219,20 +228,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           if (finalProfile.organization_id) {
             const { data: orgData, error: orgError } = await supabase
               .from('organizations')
-              .select('id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status')
+              .select(
+                'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status'
+              )
               .eq('id', finalProfile.organization_id)
               .maybeSingle();
 
             if (!orgError && orgData) {
               finalProfile.organization = orgData;
             } else if (orgError) {
-              logger.warn('[AuthContext] Organization lookup failed:', orgError.message);
+              logger.warn(
+                '[AuthContext] Organization lookup failed:',
+                orgError.message
+              );
             }
           }
         }
 
         logger.info('✅ [AuthContext] Final profile set.');
-        syncActiveOrganization(finalProfile.organization_id || null, finalProfile.id || userId);
+        syncActiveOrganization(
+          finalProfile.organization_id || null,
+          finalProfile.id || userId
+        );
         setProfile(finalProfile);
       } else {
         logger.warn('⚠️ [AuthContext] Profile query returned no data.');
@@ -258,7 +275,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       if (profileRef.current?.id === userId) {
-        logger.warn('[AuthContext] Mantendo perfil atual apos timeout/falha temporaria.');
+        logger.warn(
+          '[AuthContext] Mantendo perfil atual apos timeout/falha temporaria.'
+        );
         return;
       }
 
@@ -361,23 +380,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
 
     logger.info('🔐 Ativando Modo de Debug Seguro...');
-    
+
     // In a real world, this would call a backend to get a signed short-lived token
     // For now, we simulate with a session flag that the logger checks
     // The logger.ts already checks for 'secure_support_debug_token'
-    
+
     // Simulate a JWT-like token for the logger to parse
     const payload = {
       role: 'superadmin',
-      exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour
-      userId: user?.id
+      exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour
+      userId: user?.id,
     };
     const token = `debug.${btoa(JSON.stringify(payload))}.signature`;
     sessionStorage.setItem('secure_support_debug_token', token);
-    
+
     // Audit log (would be sent to backend)
     logger.audit('Debug mode activated by SuperAdmin', { userId: user?.id });
-    
+
     window.location.reload(); // Reload to apply logger settings
   };
 
@@ -434,10 +453,17 @@ function clearImpersonationStorage() {
   localStorage.removeItem('isImpersonating');
 }
 
-function syncActiveOrganization(organizationId: string | null, userId?: string | null) {
+function syncActiveOrganization(
+  organizationId: string | null,
+  userId?: string | null
+) {
   setActiveOrganizationId(organizationId, userId);
   if (typeof window === 'undefined') return;
-  if (organizationId && organizationId !== 'null' && organizationId !== 'undefined') {
+  if (
+    organizationId &&
+    organizationId !== 'null' &&
+    organizationId !== 'undefined'
+  ) {
     sessionStorage.setItem('active_organization_id', organizationId);
     if (userId) sessionStorage.setItem('active_organization_user_id', userId);
   } else {

@@ -11,11 +11,14 @@ const PanelGuard: React.FC<{
   const { profile, isImpersonating, loading } = useAuth();
 
   if (loading) return <FullScreenSpinner />;
-  if (profile?.role === 'superadmin' && !isImpersonating) return <>{children}</>;
+  if (profile?.role === 'superadmin' && !isImpersonating)
+    return <>{children}</>;
   if (!profile?.organization_id) return <Navigate to="/onboarding" replace />;
 
   const org: any = profile.organization;
-  const correctPanel = isRuralOrganization(org?.niche, org?.name, org?.slug) ? 'rural' : 'urban';
+  const correctPanel = isRuralOrganization(org?.niche, org?.name, org?.slug)
+    ? 'rural'
+    : 'urban';
 
   if (panel !== correctPanel) {
     return <Navigate to={`/${correctPanel}`} replace />;

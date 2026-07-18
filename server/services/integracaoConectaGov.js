@@ -9,10 +9,13 @@ export class IntegracaoConectaGov {
     return this._fetchWithCache(
       `sncr:imovel:${codigoImovel}`,
       async () => {
-        const response = await axios.get(`${SNCR_API_BASE}/imoveis/${codigoImovel}`, {
-          timeout: 15000,
-          headers: { Accept: 'application/json' },
-        });
+        const response = await axios.get(
+          `${SNCR_API_BASE}/imoveis/${codigoImovel}`,
+          {
+            timeout: 15000,
+            headers: { Accept: 'application/json' },
+          }
+        );
         return this._normalizarSNCR(response.data);
       },
       86400
@@ -38,9 +41,12 @@ export class IntegracaoConectaGov {
     return this._fetchWithCache(
       `sicar:tema:${codigoImovel}`,
       async () => {
-        const response = await axios.get(`${SICAR_TEMA_API_BASE}/imoveis/${codigoImovel}/temas`, {
-          timeout: 15000,
-        });
+        const response = await axios.get(
+          `${SICAR_TEMA_API_BASE}/imoveis/${codigoImovel}/temas`,
+          {
+            timeout: 15000,
+          }
+        );
         return this._normalizarTemas(response.data);
       },
       86400
@@ -60,7 +66,9 @@ export class IntegracaoConectaGov {
         const sncr = await this.consultarSNCR(ccirNumber);
         if (sncr) Object.assign(results, sncr);
       } catch (e) {
-        console.warn(`[ConectaGov] SNCR falhou para CCIR ${ccirNumber}: ${e.message}`);
+        console.warn(
+          `[ConectaGov] SNCR falhou para CCIR ${ccirNumber}: ${e.message}`
+        );
       }
     }
 
@@ -69,7 +77,9 @@ export class IntegracaoConectaGov {
         const temas = await this.consultarSicarTema(carNumber);
         if (temas) results.temas = temas;
       } catch (e) {
-        console.warn(`[ConectaGov] SICAR Tema falhou para CAR ${carNumber}: ${e.message}`);
+        console.warn(
+          `[ConectaGov] SICAR Tema falhou para CAR ${carNumber}: ${e.message}`
+        );
       }
     }
 
@@ -81,10 +91,15 @@ export class IntegracaoConectaGov {
       codigo_imovel: raw.codigoImovel || raw.codigo_imovel,
       nome_imovel: raw.denominacao || raw.nomeImovel,
       area_total_ha: parseFloat(raw.areaTotal || raw.area_total || 0),
-      area_registrada_ha: parseFloat(raw.areaRegistrada || raw.area_registrada || 0),
-      modulos_fiscais: parseFloat(raw.modulosFiscais || raw.modulos_fiscais || 0),
+      area_registrada_ha: parseFloat(
+        raw.areaRegistrada || raw.area_registrada || 0
+      ),
+      modulos_fiscais: parseFloat(
+        raw.modulosFiscais || raw.modulos_fiscais || 0
+      ),
       numero_modulos: parseInt(raw.numeroModulos || raw.numero_modulos || 0),
-      classificacao_fundiaria: raw.classificacaoFundiaria || raw.classificacao_fundiaria,
+      classificacao_fundiaria:
+        raw.classificacaoFundiaria || raw.classificacao_fundiaria,
       situacao: raw.situacao || raw.status,
       condicao: raw.condicao || raw.condicao_posse,
       tipo_imovel: raw.tipoImovel || raw.tipo_imovel,
@@ -92,7 +107,7 @@ export class IntegracaoConectaGov {
       municipio: raw.municipio || raw.nome_municipio,
       uf: raw.uf || raw.sigla_uf,
       cep: raw.cep,
-      titulares: (raw.titulares || raw.proprietarios || []).map(t => ({
+      titulares: (raw.titulares || raw.proprietarios || []).map((t) => ({
         nome: t.nome || t.nome_proprietario,
         documento: t.cpf || t.cnpj || t.documento,
         tipo_pessoa: t.tipoPessoa || t.tipo_pessoa,
@@ -123,10 +138,18 @@ export class IntegracaoConectaGov {
       });
 
       const nome = (tema.tema || '').toLowerCase();
-      if (nome.includes('app') || nome.includes('permanente')) resultado.app_ha += area;
-      if (nome.includes('reserva') || nome.includes('legal')) resultado.reserva_legal_ha += area;
-      if (nome.includes('consolidado') || nome.includes('antropico')) resultado.uso_consolidado_ha += area;
-      if (nome.includes('vegetacao') || nome.includes('floresta') || nome.includes('nativa')) resultado.vegetacao_nativa_ha += area;
+      if (nome.includes('app') || nome.includes('permanente'))
+        resultado.app_ha += area;
+      if (nome.includes('reserva') || nome.includes('legal'))
+        resultado.reserva_legal_ha += area;
+      if (nome.includes('consolidado') || nome.includes('antropico'))
+        resultado.uso_consolidado_ha += area;
+      if (
+        nome.includes('vegetacao') ||
+        nome.includes('floresta') ||
+        nome.includes('nativa')
+      )
+        resultado.vegetacao_nativa_ha += area;
       if (nome.includes('recompor')) resultado.area_recompor_ha += area;
       if (tema.coberturaSolo || tema.cobertura_solo) {
         resultado.cobertura_solo.push({
@@ -160,13 +183,16 @@ export class IntegracaoConectaGov {
     }
 
     if (data) {
-      await supabase.from('external_data_cache').upsert({
-        cache_key: cacheKey,
-        source: 'conectagov',
-        data,
-        ttl_seconds: ttlSeconds,
-        expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
-      }, { onConflict: 'cache_key' });
+      await supabase.from('external_data_cache').upsert(
+        {
+          cache_key: cacheKey,
+          source: 'conectagov',
+          data,
+          ttl_seconds: ttlSeconds,
+          expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+        },
+        { onConflict: 'cache_key' }
+      );
     }
 
     return data;

@@ -23,7 +23,19 @@ import VideoBlock from '../components/LandingPageBlocks/VideoBlock';
 import TestimonialsBlock from '../components/LandingPageBlocks/TestimonialsBlock';
 import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
 import HeroWithFormBlock from '../components/LandingPageBlocks/HeroWithFormBlock';
-import { Loader2, Menu, X, Phone, Mail, MapPin, Instagram, Facebook, Youtube, Linkedin, MessageCircle } from 'lucide-react';
+import {
+  Loader2,
+  Menu,
+  X,
+  Phone,
+  Mail,
+  MapPin,
+  Instagram,
+  Facebook,
+  Youtube,
+  Linkedin,
+  MessageCircle,
+} from 'lucide-react';
 import { supabase } from '../services/supabase';
 import FazendasBrasilPublicSite from './FazendasBrasilPublicSite';
 
@@ -62,7 +74,10 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
     if (pages.length > 0) {
       const path = location.pathname;
       const pageSlug = path.split('/').filter(Boolean).pop() || 'home';
-      const found = pages.find((p) => p.slug === pageSlug) || pages.find((p) => p.isHome) || pages[0];
+      const found =
+        pages.find((p) => p.slug === pageSlug) ||
+        pages.find((p) => p.isHome) ||
+        pages[0];
       setCurrentPage(found);
     }
   }, [location.pathname, pages]);
@@ -184,9 +199,23 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
       case BlockType.HERO_WITH_FORM:
         return <HeroWithFormBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.PROPERTY_GRID:
-        return <PropertyGridBlock key={block.id} config={cfg} theme={theme} properties={properties} />;
+        return (
+          <PropertyGridBlock
+            key={block.id}
+            config={cfg}
+            theme={theme}
+            properties={properties}
+          />
+        );
       case BlockType.PROPERTY_CAROUSEL:
-        return <PropertyCarouselBlock key={block.id} config={cfg} theme={theme} properties={properties} />;
+        return (
+          <PropertyCarouselBlock
+            key={block.id}
+            config={cfg}
+            theme={theme}
+            properties={properties}
+          />
+        );
       case BlockType.TEXT:
         return <TextBlock key={block.id} config={cfg} theme={theme} />;
       case BlockType.IMAGE:
@@ -252,7 +281,11 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="animate-spin" size={32} style={{ color: primaryColor }} />
+        <Loader2
+          className="animate-spin"
+          size={32}
+          style={{ color: primaryColor }}
+        />
       </div>
     );
   }
@@ -268,7 +301,9 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
 
   return (
     <div style={{ fontFamily }}>
-      {site.customHead && <div dangerouslySetInnerHTML={{ __html: site.customHead }} />}
+      {site.customHead && (
+        <div dangerouslySetInnerHTML={{ __html: site.customHead }} />
+      )}
 
       <style>{`
         :root {
@@ -287,16 +322,26 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
           <div className="flex items-center justify-between h-16">
             <a href={`/${orgSlug}`} className="flex items-center gap-3">
               {site.logoUrl ? (
-                <img src={site.logoUrl} alt={siteName} className="h-10 w-auto" />
+                <img
+                  src={site.logoUrl}
+                  alt={siteName}
+                  className="h-10 w-auto"
+                />
               ) : (
-                <span className="text-xl font-bold" style={{ color: primaryColor }}>{siteName}</span>
+                <span
+                  className="text-xl font-bold"
+                  style={{ color: primaryColor }}
+                >
+                  {siteName}
+                </span>
               )}
             </a>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-1">
               {getMenuItems().map((item) => {
-                const isActive = item.type === 'page' && currentPage.slug === item.pageId;
+                const isActive =
+                  item.type === 'page' && currentPage.slug === item.pageId;
                 return (
                   <a
                     key={item.id}
@@ -381,21 +426,38 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
             {/* Brand */}
             <div>
               <h3 className="text-white font-bold text-lg mb-3">{siteName}</h3>
-              <p className="text-sm text-gray-400">Soluções completas em imóveis rurais e urbanos.</p>
+              <p className="text-sm text-gray-400">
+                Soluções completas em imóveis rurais e urbanos.
+              </p>
               {site.socialLinks && (
                 <div className="flex gap-3 mt-4">
                   {site.socialLinks.instagram && (
-                    <a href={site.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                    <a
+                      href={site.socialLinks.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
                       <Instagram size={20} />
                     </a>
                   )}
                   {site.socialLinks.facebook && (
-                    <a href={site.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                    <a
+                      href={site.socialLinks.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
                       <Facebook size={20} />
                     </a>
                   )}
                   {site.socialLinks.youtube && (
-                    <a href={site.socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                    <a
+                      href={site.socialLinks.youtube}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
                       <Youtube size={20} />
                     </a>
                   )}
@@ -408,7 +470,11 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
               <h4 className="text-white font-semibold mb-3">Páginas</h4>
               <div className="space-y-2">
                 {getMenuItems().map((item) => (
-                  <a key={item.id} href={getMenuUrl(item)} className="block text-sm text-gray-400 hover:text-white transition-colors">
+                  <a
+                    key={item.id}
+                    href={getMenuUrl(item)}
+                    className="block text-sm text-gray-400 hover:text-white transition-colors"
+                  >
                     {item.label}
                   </a>
                 ))}
@@ -420,17 +486,28 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
               <h4 className="text-white font-semibold mb-3">Contato</h4>
               <div className="space-y-3 text-sm">
                 {site.contactInfo?.phone && (
-                  <a href={`tel:${site.contactInfo.phone}`} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                  <a
+                    href={`tel:${site.contactInfo.phone}`}
+                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                  >
                     <Phone size={14} /> {site.contactInfo.phone}
                   </a>
                 )}
                 {site.contactInfo?.whatsapp && (
-                  <a href={`https://wa.me/${site.contactInfo.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                  <a
+                    href={`https://wa.me/${site.contactInfo.whatsapp.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                  >
                     <MessageCircle size={14} /> WhatsApp
                   </a>
                 )}
                 {site.contactInfo?.email && (
-                  <a href={`mailto:${site.contactInfo.email}`} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                  <a
+                    href={`mailto:${site.contactInfo.email}`}
+                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                  >
                     <Mail size={14} /> {site.contactInfo.email}
                   </a>
                 )}
@@ -444,13 +521,16 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
           </div>
 
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} {siteName}. Todos os direitos reservados.
+            &copy; {new Date().getFullYear()} {siteName}. Todos os direitos
+            reservados.
           </div>
         </div>
       </footer>
 
       {/* Custom JS */}
-      {site.customJs && <script dangerouslySetInnerHTML={{ __html: site.customJs }} />}
+      {site.customJs && (
+        <script dangerouslySetInnerHTML={{ __html: site.customJs }} />
+      )}
     </div>
   );
 };

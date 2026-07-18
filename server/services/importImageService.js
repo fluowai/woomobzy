@@ -149,14 +149,21 @@ export function sanitizePropertyImageUrls(urls = [], baseUrl = '', limit = 15) {
   return clean;
 }
 
-export async function migratePropertyImages(imageUrls, organizationId, options = {}) {
+export async function migratePropertyImages(
+  imageUrls,
+  organizationId,
+  options = {}
+) {
   const {
     limit = 15,
     folder = 'properties/imported',
     entityId = null,
     sourceUrl = '',
   } = options;
-  const uniqueUrls = [...new Set((imageUrls || []).filter(Boolean))].slice(0, limit);
+  const uniqueUrls = [...new Set((imageUrls || []).filter(Boolean))].slice(
+    0,
+    limit
+  );
   const uploaded = [];
 
   if (!uniqueUrls.length) return uploaded;
@@ -175,7 +182,10 @@ export async function migratePropertyImages(imageUrls, organizationId, options =
       });
       uploaded.push(publicUrl);
     } catch (error) {
-      console.warn(`[Import Images] Falha ao migrar ${imageUrl}:`, error.message);
+      console.warn(
+        `[Import Images] Falha ao migrar ${imageUrl}:`,
+        error.message
+      );
     }
   }
 
@@ -199,7 +209,9 @@ async function downloadImportImage(imageUrl, referer = '') {
   );
 
   if (!contentType) {
-    throw new Error(`Tipo de arquivo nao reconhecido: ${response.headers['content-type'] || 'sem MIME'}`);
+    throw new Error(
+      `Tipo de arquivo nao reconhecido: ${response.headers['content-type'] || 'sem MIME'}`
+    );
   }
 
   if (buffer.length < MIN_IMPORT_IMAGE_BYTES) {
@@ -229,9 +241,16 @@ async function uploadImportImage({
     const minioBucket = resolveMediaBucket(IMPORT_BUCKET);
     if (!minioBucket) throw new Error('Bucket MinIO de imagens invalido.');
 
-    const existing = await findReusableStorageObject(organizationId, minioBucket, sha256);
+    const existing = await findReusableStorageObject(
+      organizationId,
+      minioBucket,
+      sha256
+    );
     if (existing) {
-      return getMinioPublicUrl({ bucket: existing.bucket, key: existing.object_key });
+      return getMinioPublicUrl({
+        bucket: existing.bucket,
+        key: existing.object_key,
+      });
     }
 
     const result = await uploadObject({
@@ -264,10 +283,12 @@ async function uploadImportImage({
   }
 
   const supabase = getSupabaseServer();
-  const { error } = await supabase.storage.from(IMPORT_BUCKET).upload(key, buffer, {
-    contentType,
-    upsert: true,
-  });
+  const { error } = await supabase.storage
+    .from(IMPORT_BUCKET)
+    .upload(key, buffer, {
+      contentType,
+      upsert: true,
+    });
   if (error) throw error;
 
   const { data } = supabase.storage.from(IMPORT_BUCKET).getPublicUrl(key);
@@ -289,13 +310,17 @@ async function findReusableStorageObject(tenantId, bucket, sha256) {
       .maybeSingle();
 
     if (error) {
-      if (/does not exist|schema cache|PGRST/i.test(error.message || '')) return null;
+      if (/does not exist|schema cache|PGRST/i.test(error.message || ''))
+        return null;
       throw error;
     }
 
     return data || null;
   } catch (error) {
-    console.warn('[Import Images] Consulta de deduplicacao indisponivel:', error.message);
+    console.warn(
+      '[Import Images] Consulta de deduplicacao indisponivel:',
+      error.message
+    );
     return null;
   }
 }
@@ -303,9 +328,8 @@ async function findReusableStorageObject(tenantId, bucket, sha256) {
 async function persistStorageObject(payload) {
   try {
     const supabase = getSupabaseServer();
-    const { error } = await supabase
-      .from('storage_objects')
-      .upsert({
+    const { error } = await supabase.from('storage_objects').upsert(
+      {
         tenant_id: payload.tenantId,
         bucket: payload.bucket,
         object_key: payload.objectKey,
@@ -317,14 +341,20 @@ async function persistStorageObject(payload) {
         entity_type: payload.entityType || null,
         entity_id: payload.entityId || null,
         deleted_at: null,
-      }, { onConflict: 'bucket,object_key' });
+      },
+      { onConflict: 'bucket,object_key' }
+    );
 
     if (error) {
-      if (/does not exist|schema cache|PGRST/i.test(error.message || '')) return;
+      if (/does not exist|schema cache|PGRST/i.test(error.message || ''))
+        return;
       throw error;
     }
   } catch (error) {
-    console.warn('[Import Images] Registro storage_objects indisponivel:', error.message);
+    console.warn(
+      '[Import Images] Registro storage_objects indisponivel:',
+      error.message
+    );
   }
 }
 
@@ -337,11 +367,13 @@ function buildImportImageKey(organizationId, folder, sha256, ext) {
 }
 
 function sanitizePath(value) {
-  return String(value)
-    .split('/')
-    .map((part) => part.replace(/[^a-zA-Z0-9._-]/g, '-'))
-    .filter(Boolean)
-    .join('/') || 'properties/imported';
+  return (
+    String(value)
+      .split('/')
+      .map((part) => part.replace(/[^a-zA-Z0-9._-]/g, '-'))
+      .filter(Boolean)
+      .join('/') || 'properties/imported'
+  );
 }
 
 function expandImageValue(value) {
@@ -367,7 +399,10 @@ function isLikelyPropertyImageUrl(value) {
 }
 
 function normalizeImageMime(value) {
-  const mime = String(value || '').split(';')[0].trim().toLowerCase();
+  const mime = String(value || '')
+    .split(';')[0]
+    .trim()
+    .toLowerCase();
   if (EXTENSION_BY_MIME[mime]) return mime;
   return '';
 }

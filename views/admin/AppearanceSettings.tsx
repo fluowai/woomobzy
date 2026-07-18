@@ -83,7 +83,7 @@ const AppearanceSettings: React.FC = () => {
         const res = await fetch(publicUrl);
         const blob = await res.blob();
         const objectUrl = URL.createObjectURL(blob);
-        
+
         const img = new Image();
         img.src = objectUrl;
 
@@ -145,7 +145,8 @@ const AppearanceSettings: React.FC = () => {
                 : 'Seu site está em MODO MANUTENÇÃO. Apenas administradores podem visualizá-lo.'}
             </p>
             <p className="mt-2 text-xs font-semibold text-slate-400">
-              Desligado = pagina de lancamento com captura. Ligado = site completo publicado.
+              Desligado = pagina de lancamento com captura. Ligado = site
+              completo publicado.
             </p>
           </div>
           <button

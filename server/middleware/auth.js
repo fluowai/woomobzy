@@ -62,9 +62,8 @@ export const verifyAuth = async (req, res, next) => {
     // Em algumas bases antigas houve usuarios recriados no Supabase Auth,
     // mantendo o perfil pelo e-mail antigo. Nesses casos, resolvemos por e-mail.
     const profileCacheKey = `${user.id}:${String(user.email || '').toLowerCase()}`;
-    const profile = await profileCache.getOrLoad(
-      profileCacheKey,
-      () => resolveProfileForUser(supabase, user)
+    const profile = await profileCache.getOrLoad(profileCacheKey, () =>
+      resolveProfileForUser(supabase, user)
     );
 
     if (!profile) {
@@ -74,12 +73,10 @@ export const verifyAuth = async (req, res, next) => {
         issuer: decodeJwtPayload(token)?.iss || null,
         expectedProject: getProjectRef(process.env.VITE_SUPABASE_URL),
       });
-      return res
-        .status(403)
-        .json({
-          error: 'Perfil de usuário não encontrado',
-          code: 'PROFILE_NOT_FOUND',
-        });
+      return res.status(403).json({
+        error: 'Perfil de usuário não encontrado',
+        code: 'PROFILE_NOT_FOUND',
+      });
     }
 
     const effectiveProfileEmail = String(profile.email || user.email || '')
@@ -119,11 +116,12 @@ export const verifyAuth = async (req, res, next) => {
       authDebug('Token impersonation ativo', { orgId: req.orgId });
     } else if (impersonateId && profile.role === 'superadmin') {
       authDebug('Superadmin impersonando via header', { impersonateId });
-      const { data: impersonatedOrg, error: impersonatedOrgError } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('id', impersonateId)
-        .maybeSingle();
+      const { data: impersonatedOrg, error: impersonatedOrgError } =
+        await supabase
+          .from('organizations')
+          .select('id')
+          .eq('id', impersonateId)
+          .maybeSingle();
 
       if (impersonatedOrgError || !impersonatedOrg) {
         console.warn(
@@ -143,7 +141,10 @@ export const verifyAuth = async (req, res, next) => {
       req.tenantValidated = true;
     } else if (profile.role === 'superadmin' && requestedOrgId) {
       authDebug('Superadmin acessando org via header', { requestedOrgId });
-      const requestedOrg = await resolveOrganizationById(supabase, requestedOrgId);
+      const requestedOrg = await resolveOrganizationById(
+        supabase,
+        requestedOrgId
+      );
       if (!requestedOrg) {
         console.warn('[Auth] Organizacao solicitada no header nao encontrada', {
           userId: user.id,
@@ -165,7 +166,10 @@ export const verifyAuth = async (req, res, next) => {
         profileOrg: profile.organization_id,
         requestedOrgIgnored: requestedOrgId || null,
       });
-      const org = await resolveOrganizationById(supabase, profile.organization_id);
+      const org = await resolveOrganizationById(
+        supabase,
+        profile.organization_id
+      );
       if (!org) {
         console.warn('[Auth] Organizacao do perfil nao encontrada no banco', {
           userId: user.id,
@@ -197,12 +201,15 @@ export const verifyAuth = async (req, res, next) => {
       req.orgId = null;
       req.isImpersonating = false;
     } else {
-      console.warn('[Auth] Perfil sem organizacao vinculada, tentando resolver organizacao existente', {
-        userId: user.id,
-        profileId: profile.id,
-        email: maskEmail(user.email),
-        role: profile.role,
-      });
+      console.warn(
+        '[Auth] Perfil sem organizacao vinculada, tentando resolver organizacao existente',
+        {
+          userId: user.id,
+          profileId: profile.id,
+          email: maskEmail(user.email),
+          role: profile.role,
+        }
+      );
 
       const profileEmail = profile.email || user.email;
       if (profileEmail) {
@@ -246,12 +253,15 @@ export const verifyAuth = async (req, res, next) => {
           }
 
           // Profile update failed but org exists — proceed anyway to avoid blocking user
-          console.warn('[Auth] Profile update falhou mas org existe, prosseguindo', {
-            userId: user.id,
-            profileId: profile.id,
-            orgId: existingOrg.id,
-            updateError: updateError?.message || 'sem dados retornados',
-          });
+          console.warn(
+            '[Auth] Profile update falhou mas org existe, prosseguindo',
+            {
+              userId: user.id,
+              profileId: profile.id,
+              orgId: existingOrg.id,
+              updateError: updateError?.message || 'sem dados retornados',
+            }
+          );
           req.user = { ...user, id: profile.id || user.id };
           req.userRole = profile.role || 'admin';
           req.realOrgId = existingOrg.id;
@@ -259,10 +269,13 @@ export const verifyAuth = async (req, res, next) => {
           req.isImpersonating = false;
           return next();
         } else {
-          console.warn('[Auth] Nenhuma organizacao existente encontrada para vincular', {
-            userId: user.id,
-            email: maskEmail(normalizedEmail),
-          });
+          console.warn(
+            '[Auth] Nenhuma organizacao existente encontrada para vincular',
+            {
+              userId: user.id,
+              email: maskEmail(normalizedEmail),
+            }
+          );
         }
       } else {
         console.warn('[Auth] Perfil sem email para resolver organizacao', {
@@ -271,11 +284,14 @@ export const verifyAuth = async (req, res, next) => {
         });
       }
 
-      console.warn('[Auth] Perfil sem organizacao vinculada - todas tentativas falharam', {
-        userId: user.id,
-        email: maskEmail(user.email),
-        role: profile.role,
-      });
+      console.warn(
+        '[Auth] Perfil sem organizacao vinculada - todas tentativas falharam',
+        {
+          userId: user.id,
+          email: maskEmail(user.email),
+          role: profile.role,
+        }
+      );
       return res.status(403).json({
         error: 'Perfil sem organizacao vinculada.',
         code: 'PROFILE_NO_ORG',
@@ -365,16 +381,19 @@ function maskEmail(email = '') {
 async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
   const tokenKey = createHash('sha256').update(token).digest('hex');
   let authError = null;
-  const authenticated = await authenticatedUserCache.getOrLoad(tokenKey, async () => {
-    const result = await supabaseAuth.auth.getUser(token);
-    authError = result.error;
-    if (result.error || !result.data.user) return undefined;
-    return {
-      user: result.data.user,
-      impersonation: null,
-      authError: null,
-    };
-  });
+  const authenticated = await authenticatedUserCache.getOrLoad(
+    tokenKey,
+    async () => {
+      const result = await supabaseAuth.auth.getUser(token);
+      authError = result.error;
+      if (result.error || !result.data.user) return undefined;
+      return {
+        user: result.data.user,
+        impersonation: null,
+        authError: null,
+      };
+    }
+  );
 
   if (authenticated) return authenticated;
 
@@ -396,7 +415,9 @@ async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
 }
 
 async function resolveProfileForUser(supabase, user) {
-  const email = String(user.email || '').toLowerCase().trim();
+  const email = String(user.email || '')
+    .toLowerCase()
+    .trim();
 
   let metadataRole = normalizeRole(
     user.app_metadata?.role ||
@@ -420,15 +441,20 @@ async function resolveProfileForUser(supabase, user) {
     // Isso e necessario porque usuarios criados com role='superadmin' no auth
     // podem ter sido rebaixados por bugs anteriores de auto-criacao.
     if (metadataRole === 'superadmin' && profileById.role !== 'superadmin') {
-      console.warn('[Auth] Role do metadata (superadmin) difere do banco, atualizando', {
-        userId: user.id,
-        bankRole: profileById.role,
-        metadataRole,
-      });
+      console.warn(
+        '[Auth] Role do metadata (superadmin) difere do banco, atualizando',
+        {
+          userId: user.id,
+          bankRole: profileById.role,
+          metadataRole,
+        }
+      );
       profileById.role = 'superadmin';
     }
     return completeProfileOrganization(supabase, user, profileById, {
-      email: String(profileById.email || user.email || '').toLowerCase().trim(),
+      email: String(profileById.email || user.email || '')
+        .toLowerCase()
+        .trim(),
       source: 'profile.id',
     });
   }
@@ -447,12 +473,15 @@ async function resolveProfileForUser(supabase, user) {
       profileId: profileByEmail.id,
     });
     if (metadataRole === 'superadmin' && profileByEmail.role !== 'superadmin') {
-      console.warn('[Auth] Role do metadata (superadmin) difere do banco (email lookup), atualizando', {
-        userId: user.id,
-        email,
-        bankRole: profileByEmail.role,
-        metadataRole,
-      });
+      console.warn(
+        '[Auth] Role do metadata (superadmin) difere do banco (email lookup), atualizando',
+        {
+          userId: user.id,
+          email,
+          bankRole: profileByEmail.role,
+          metadataRole,
+        }
+      );
       profileByEmail.role = 'superadmin';
     }
     return completeProfileOrganization(supabase, user, profileByEmail, {
@@ -514,25 +543,35 @@ async function resolveProfileForUser(supabase, user) {
     .maybeSingle();
 
   if (organizationError || !organization) {
-    console.warn('[Auth] Nenhuma organizacao existente encontrada pelo email; criando perfil sem org', {
-      email,
-      authUserId: user.id,
-    });
+    console.warn(
+      '[Auth] Nenhuma organizacao existente encontrada pelo email; criando perfil sem org',
+      {
+        email,
+        authUserId: user.id,
+      }
+    );
 
     const createdProfile = await createProfileForUser(supabase, user, {
       email,
       organizationId: null,
-      name: user.user_metadata?.name || user.user_metadata?.full_name || email.split('@')[0] || email,
+      name:
+        user.user_metadata?.name ||
+        user.user_metadata?.full_name ||
+        email.split('@')[0] ||
+        email,
       role: 'user',
       source: 'fallback_minimo',
     });
 
     if (createdProfile) return createdProfile;
 
-    console.warn('[Auth] Criação de perfil no banco falhou; usando perfil virtual para nao bloquear usuario', {
-      email,
-      authUserId: user.id,
-    });
+    console.warn(
+      '[Auth] Criação de perfil no banco falhou; usando perfil virtual para nao bloquear usuario',
+      {
+        email,
+        authUserId: user.id,
+      }
+    );
 
     return {
       id: user.id,
@@ -552,11 +591,14 @@ async function resolveProfileForUser(supabase, user) {
 
   if (createdProfile) return createdProfile;
 
-  console.warn('[Auth] Criação de perfil no banco falhou apos encontrar organizacao; usando perfil virtual', {
-    email,
-    authUserId: user.id,
-    organizationId: organization.id,
-  });
+  console.warn(
+    '[Auth] Criação de perfil no banco falhou apos encontrar organizacao; usando perfil virtual',
+    {
+      email,
+      authUserId: user.id,
+      organizationId: organization.id,
+    }
+  );
 
   return {
     id: user.id,
@@ -566,7 +608,12 @@ async function resolveProfileForUser(supabase, user) {
   };
 }
 
-async function completeProfileOrganization(supabase, user, profile, { email, source }) {
+async function completeProfileOrganization(
+  supabase,
+  user,
+  profile,
+  { email, source }
+) {
   if (profile.organization_id || profile.role === 'superadmin') {
     return profile;
   }
@@ -591,13 +638,16 @@ async function completeProfileOrganization(supabase, user, profile, { email, sou
     if (!metadataOrgError && metadataOrg) {
       organization = metadataOrg;
     } else {
-      console.warn('[Auth] organization_id do auth metadata nao existe para perfil existente', {
-        authUserId: user.id,
-        profileId: profile.id,
-        organizationId: metadataOrgId,
-        source,
-        error: metadataOrgError?.message || null,
-      });
+      console.warn(
+        '[Auth] organization_id do auth metadata nao existe para perfil existente',
+        {
+          authUserId: user.id,
+          profileId: profile.id,
+          organizationId: metadataOrgId,
+          source,
+          error: metadataOrgError?.message || null,
+        }
+      );
     }
   }
 
@@ -629,28 +679,36 @@ async function completeProfileOrganization(supabase, user, profile, { email, sou
     .single();
 
   if (updateError) {
-    console.warn('[Auth] Falha ao completar organization_id do perfil existente', {
+    console.warn(
+      '[Auth] Falha ao completar organization_id do perfil existente',
+      {
+        authUserId: user.id,
+        profileId: profile.id,
+        organizationId: organization.id,
+        source,
+        error: updateError.message,
+      }
+    );
+    return { ...profile, organization_id: organization.id };
+  }
+
+  console.warn(
+    '[Auth] Perfil existente vinculado automaticamente a organizacao',
+    {
       authUserId: user.id,
       profileId: profile.id,
       organizationId: organization.id,
       source,
-      error: updateError.message,
-    });
-    return { ...profile, organization_id: organization.id };
-  }
-
-  console.warn('[Auth] Perfil existente vinculado automaticamente a organizacao', {
-    authUserId: user.id,
-    profileId: profile.id,
-    organizationId: organization.id,
-    source,
-  });
+    }
+  );
 
   return updatedProfile;
 }
 
 function normalizeRole(role) {
-  const normalized = String(role || '').toLowerCase().trim();
+  const normalized = String(role || '')
+    .toLowerCase()
+    .trim();
   if (normalized === 'superadmin') return 'superadmin';
   if (normalized === 'admin') return 'admin';
   if (normalized === 'gerente') return 'gerente';
@@ -660,7 +718,12 @@ function normalizeRole(role) {
   return null;
 }
 
-async function findExistingOrganizationForUser(supabase, user, email, requestedOrgId = null) {
+async function findExistingOrganizationForUser(
+  supabase,
+  user,
+  email,
+  requestedOrgId = null
+) {
   const metadataOrgId = String(
     requestedOrgId ||
       user.app_metadata?.organization_id ||
@@ -694,7 +757,11 @@ async function findExistingOrganizationForUser(supabase, user, email, requestedO
   return null;
 }
 
-async function createProfileForUser(supabase, user, { email, organizationId, name, role, source }) {
+async function createProfileForUser(
+  supabase,
+  user,
+  { email, organizationId, name, role, source }
+) {
   const { data: createdProfile, error: createProfileError } = await supabase
     .from('profiles')
     .upsert(
@@ -716,13 +783,17 @@ async function createProfileForUser(supabase, user, { email, organizationId, nam
     .single();
 
   if (createProfileError) {
-    console.error(`[Auth] Falha ao criar perfil (source: ${source}):`, createProfileError.message, {
-      email,
-      source,
-      organizationId,
-      role,
-      userId: user.id,
-    });
+    console.error(
+      `[Auth] Falha ao criar perfil (source: ${source}):`,
+      createProfileError.message,
+      {
+        email,
+        source,
+        organizationId,
+        role,
+        userId: user.id,
+      }
+    );
     return null;
   }
 

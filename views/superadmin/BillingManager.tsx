@@ -41,7 +41,7 @@ const BillingManager: React.FC = () => {
         .from('organizations')
         .select('*, plans ( name, price_monthly )')
         .order('created_at', { ascending: false });
-      setTenants(data as any || []);
+      setTenants((data as any) || []);
     };
     load();
   }, []);
@@ -123,9 +123,15 @@ const BillingManager: React.FC = () => {
               (t) => t.plans?.name?.toLowerCase() === planName.toLowerCase()
             );
             const count = planTenants.length;
-            const revenue = planTenants.reduce((sum, t) => sum + (t.plans?.price_monthly || 0), 0);
-            const price = planTenants[0]?.plans?.price_monthly || planPrices[planName.toLowerCase()] || 0;
-            
+            const revenue = planTenants.reduce(
+              (sum, t) => sum + (t.plans?.price_monthly || 0),
+              0
+            );
+            const price =
+              planTenants[0]?.plans?.price_monthly ||
+              planPrices[planName.toLowerCase()] ||
+              0;
+
             return (
               <div
                 key={planName}
@@ -142,9 +148,7 @@ const BillingManager: React.FC = () => {
                 <p className="text-xl font-bold text-emerald-600">
                   R$ {revenue.toLocaleString('pt-BR')}/mês
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  R$ {price}/tenant
-                </p>
+                <p className="text-xs text-gray-400 mt-1">R$ {price}/tenant</p>
               </div>
             );
           })}

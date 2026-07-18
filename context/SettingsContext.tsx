@@ -25,7 +25,12 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
   undefined
 );
 
-const LEGACY_ORANGE_COLORS = new Set(['#ff6b00', '#f97316', '#ea580c', '#ff6600']);
+const LEGACY_ORANGE_COLORS = new Set([
+  '#ff6b00',
+  '#f97316',
+  '#ea580c',
+  '#ff6600',
+]);
 const normalizeBrandColor = (color?: string | null) => {
   if (!color) return DEFAULT_SITE_SETTINGS.primaryColor;
   return LEGACY_ORANGE_COLORS.has(color.trim().toLowerCase())
@@ -33,7 +38,9 @@ const normalizeBrandColor = (color?: string | null) => {
     : color;
 };
 
-const sanitizeClientIntegrations = (integrations: SiteSettings['integrations']) => {
+const sanitizeClientIntegrations = (
+  integrations: SiteSettings['integrations']
+) => {
   if (!integrations) return integrations;
   const safe = { ...integrations };
   if (safe.orulo) {
@@ -88,10 +95,7 @@ export const SettingsProvider: React.FC<{
         logger.warn('⚠️ [SettingsContext] Load Error:', error.message);
       } else if (data) {
         const layoutConfig = data.layout_config || {};
-        logger.info(
-          '✅ [SettingsContext] Settings loaded:',
-          data.agency_name
-        );
+        logger.info('✅ [SettingsContext] Settings loaded:', data.agency_name);
         setSettings({
           ...DEFAULT_SITE_SETTINGS,
           id: data.id,
@@ -107,8 +111,10 @@ export const SettingsProvider: React.FC<{
           baseFontSize: layoutConfig.baseFontSize,
           headingFontSize: layoutConfig.headingFontSize,
           footerText: data.footer_text,
-          templateId: layoutConfig.templateId || DEFAULT_SITE_SETTINGS.templateId,
-          contactEmail: data.contact_email || DEFAULT_SITE_SETTINGS.contactEmail,
+          templateId:
+            layoutConfig.templateId || DEFAULT_SITE_SETTINGS.templateId,
+          contactEmail:
+            data.contact_email || DEFAULT_SITE_SETTINGS.contactEmail,
           contactPhone:
             data.contact_phone ||
             data.social_links?.whatsapp ||
@@ -151,7 +157,10 @@ export const SettingsProvider: React.FC<{
       const rgb = hexToRgb(settings.primaryColor);
       if (rgb) {
         root.style.setProperty('--color-primary-alpha-10', `rgba(${rgb}, 0.1)`);
-        root.style.setProperty('--color-primary-alpha-15', `rgba(${rgb}, 0.15)`);
+        root.style.setProperty(
+          '--color-primary-alpha-15',
+          `rgba(${rgb}, 0.15)`
+        );
         root.style.setProperty('--color-primary-alpha-20', `rgba(${rgb}, 0.2)`);
       }
     }
@@ -159,10 +168,12 @@ export const SettingsProvider: React.FC<{
       root.style.setProperty('--color-accent', settings.secondaryColor);
     }
     if (settings.fontFamily) {
-      root.style.setProperty('--font-sans', `'${settings.fontFamily}', system-ui, sans-serif`);
+      root.style.setProperty(
+        '--font-sans',
+        `'${settings.fontFamily}', system-ui, sans-serif`
+      );
     }
   }, [settings]);
-
 
   const updateSettings = async (newSettings: SiteSettings) => {
     setSettings(newSettings);
@@ -233,7 +244,12 @@ export const SettingsProvider: React.FC<{
 
   return (
     <SettingsContext.Provider
-      value={{ settings, updateSettings, refreshSettings: loadSettings, loading: settingsLoading }}
+      value={{
+        settings,
+        updateSettings,
+        refreshSettings: loadSettings,
+        loading: settingsLoading,
+      }}
     >
       {children}
     </SettingsContext.Provider>

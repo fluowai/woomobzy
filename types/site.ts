@@ -27,8 +27,17 @@ export interface SiteSettings {
   footerText: string;
   tracking_pixels?: {
     facebook?: { enabled: boolean; pixelId: string; testMode?: boolean };
-    google_analytics?: { enabled: boolean; measurementId: string; testMode?: boolean };
-    google_ads?: { enabled: boolean; conversionId: string; conversionLabel?: string; testMode?: boolean };
+    google_analytics?: {
+      enabled: boolean;
+      measurementId: string;
+      testMode?: boolean;
+    };
+    google_ads?: {
+      enabled: boolean;
+      conversionId: string;
+      conversionLabel?: string;
+      testMode?: boolean;
+    };
   };
   homeContent?: {
     heroTitle?: string;
@@ -55,7 +64,14 @@ export interface SiteSettings {
     asaas?: { apiKey: string; environment?: 'sandbox' | 'production' };
     zapsign?: { apiKey: string };
     orulo?: { enabled?: boolean };
-    evolutionApi?: { apiKey: string; url?: string; enabled?: boolean; baseUrl?: string; token?: string; instanceName?: string };
+    evolutionApi?: {
+      apiKey: string;
+      url?: string;
+      enabled?: boolean;
+      baseUrl?: string;
+      token?: string;
+      instanceName?: string;
+    };
     vivareal?: { enabled?: boolean; apiKey?: string; partnerId?: string };
     zap?: { enabled?: boolean; apiKey?: string; partnerId?: string };
     quintoandar?: { enabled?: boolean; apiKey?: string; secret?: string };

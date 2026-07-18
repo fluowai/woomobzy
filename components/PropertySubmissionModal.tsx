@@ -279,8 +279,7 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
                             } as any
                           }
                           onFocus={(e) =>
-                            (e.target.style.borderColor =
-                              settings.primaryColor)
+                            (e.target.style.borderColor = settings.primaryColor)
                           }
                           onBlur={(e) => (e.target.style.borderColor = '')}
                           placeholder={t(
@@ -371,10 +370,7 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
                         style={{ color: settings.secondaryColor }}
                       >
                         <InlineEditable textKey="submit_modal.step2_title">
-                          {t(
-                            'submit_modal.step2_title',
-                            'Detalhes do Imóvel'
-                          )}
+                          {t('submit_modal.step2_title', 'Detalhes do Imóvel')}
                         </InlineEditable>
                       </h3>
                       <p className="text-black/60 font-medium">
@@ -408,8 +404,7 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
                           }
                           className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
                           onFocus={(e) =>
-                            (e.target.style.borderColor =
-                              settings.primaryColor)
+                            (e.target.style.borderColor = settings.primaryColor)
                           }
                           onBlur={(e) => (e.target.style.borderColor = '')}
                           placeholder={t(
@@ -526,8 +521,7 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
                           }
                           className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
                           onFocus={(e) =>
-                            (e.target.style.borderColor =
-                              settings.primaryColor)
+                            (e.target.style.borderColor = settings.primaryColor)
                           }
                           onBlur={(e) => (e.target.style.borderColor = '')}
                         />
@@ -581,8 +575,7 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
                           }
                           className="w-full px-8 py-6 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 focus:ring-4 outline-none transition-all shadow-sm"
                           onFocus={(e) =>
-                            (e.target.style.borderColor =
-                              settings.primaryColor)
+                            (e.target.style.borderColor = settings.primaryColor)
                           }
                           onBlur={(e) => (e.target.style.borderColor = '')}
                           placeholder={t(
@@ -673,10 +666,7 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
                         style={{ color: settings.secondaryColor }}
                       >
                         <InlineEditable textKey="submit_modal.step4_title">
-                          {t(
-                            'submit_modal.step4_title',
-                            'Visuais & Galeria'
-                          )}
+                          {t('submit_modal.step4_title', 'Visuais & Galeria')}
                         </InlineEditable>
                       </h3>
                       <p className="text-black/60 font-medium">
@@ -776,9 +766,7 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
               <div className="mt-20 pt-10 border-t border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-sm -mx-8 md:-mx-20 px-8 md:px-20 pb-10 sticky bottom-0">
                 <button
                   type="button"
-                  onClick={() =>
-                    activeStep > 1 && onStepChange(activeStep - 1)
-                  }
+                  onClick={() => activeStep > 1 && onStepChange(activeStep - 1)}
                   disabled={activeStep === 1}
                   className="text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-black disabled:opacity-0 transition-all flex items-center gap-2"
                 >
@@ -799,10 +787,7 @@ const PropertySubmissionModal: React.FC<PropertySubmissionModalProps> = ({
                     }}
                   >
                     <InlineEditable textKey="submit_modal.nav_continue">
-                      {t(
-                        'submit_modal.nav_continue',
-                        'Continuar para Passo 0'
-                      )}
+                      {t('submit_modal.nav_continue', 'Continuar para Passo 0')}
                     </InlineEditable>{' '}
                     {activeStep + 1}
                     <ChevronRight

@@ -25,31 +25,65 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
       return res.json({
         success: true,
         data: {
-          total: 0, ativos: 0, em_andamento: 0, encerrados: 0,
-          receita_mensal: 0, receita_anual: 0,
-          inadimplentes: 0, atrasados: 0, em_dia: 0,
+          total: 0,
+          ativos: 0,
+          em_andamento: 0,
+          encerrados: 0,
+          receita_mensal: 0,
+          receita_anual: 0,
+          inadimplentes: 0,
+          atrasados: 0,
+          em_dia: 0,
           valor_inadimplencia: 0,
-          vencendo_30_dias: 0, vencendo_90_dias: 0,
+          vencendo_30_dias: 0,
+          vencendo_90_dias: 0,
         },
       });
     }
 
-    const ativos = leases.filter(l => l.status === 'active');
-    const em_andamento = leases.filter(l => ['draft', 'cadastral_analysis', 'income_analysis', 'pending_signatures'].includes(l.status));
-    const encerrados = leases.filter(l => ['terminated', 'expired', 'archived'].includes(l.status));
-    const inadimplentes = leases.filter(l => l.payment_status === 'inadimplente');
-    const atrasados = leases.filter(l => l.payment_status === 'atrasado');
-    const emDia = leases.filter(l => l.payment_status === 'em_dia');
+    const ativos = leases.filter((l) => l.status === 'active');
+    const em_andamento = leases.filter((l) =>
+      [
+        'draft',
+        'cadastral_analysis',
+        'income_analysis',
+        'pending_signatures',
+      ].includes(l.status)
+    );
+    const encerrados = leases.filter((l) =>
+      ['terminated', 'expired', 'archived'].includes(l.status)
+    );
+    const inadimplentes = leases.filter(
+      (l) => l.payment_status === 'inadimplente'
+    );
+    const atrasados = leases.filter((l) => l.payment_status === 'atrasado');
+    const emDia = leases.filter((l) => l.payment_status === 'em_dia');
 
-    const receitaMensal = ativos.reduce((sum, l) => sum + (l.monthly_rent || 0), 0);
-    const valorInadimplencia = inadimplentes.reduce((sum, l) => sum + (l.monthly_rent || 0), 0);
+    const receitaMensal = ativos.reduce(
+      (sum, l) => sum + (l.monthly_rent || 0),
+      0
+    );
+    const valorInadimplencia = inadimplentes.reduce(
+      (sum, l) => sum + (l.monthly_rent || 0),
+      0
+    );
 
     const now = new Date();
     const em30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const em90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-    const vencendo30 = ativos.filter(l => l.end_date && new Date(l.end_date) >= now && new Date(l.end_date) <= em30Days);
-    const vencendo90 = ativos.filter(l => l.end_date && new Date(l.end_date) > em30Days && new Date(l.end_date) <= em90Days);
+    const vencendo30 = ativos.filter(
+      (l) =>
+        l.end_date &&
+        new Date(l.end_date) >= now &&
+        new Date(l.end_date) <= em30Days
+    );
+    const vencendo90 = ativos.filter(
+      (l) =>
+        l.end_date &&
+        new Date(l.end_date) > em30Days &&
+        new Date(l.end_date) <= em90Days
+    );
 
     res.json({
       success: true,
@@ -84,7 +118,9 @@ router.get('/timeline', verifyAuth, requireTenant, async (req, res) => {
 
     const { data: leases } = await supabase
       .from('leases')
-      .select('id, contract_number, tenant_name, monthly_rent, due_day, end_date, next_rent_adjustment, status')
+      .select(
+        'id, contract_number, tenant_name, monthly_rent, due_day, end_date, next_rent_adjustment, status'
+      )
       .eq('organization_id', req.orgId)
       .in('status', ['active'])
       .order('end_date', { ascending: true });
@@ -97,7 +133,11 @@ router.get('/timeline', verifyAuth, requireTenant, async (req, res) => {
     for (const lease of leases) {
       // Vencimento de aluguel (próximo)
       if (lease.due_day) {
-        const nextDue = new Date(now.getFullYear(), now.getMonth(), lease.due_day);
+        const nextDue = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          lease.due_day
+        );
         if (nextDue < now) nextDue.setMonth(nextDue.getMonth() + 1);
         events.push({
           type: 'due',

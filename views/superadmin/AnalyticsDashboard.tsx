@@ -45,8 +45,12 @@ const AnalyticsDashboard: React.FC = () => {
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
   const [period, setPeriod] = useState('30d');
-  const [organizations, setOrganizations] = useState<Array<{ created_at: string; niche?: string | null }>>([]);
-  const [propertyDates, setPropertyDates] = useState<Array<{ created_at: string }>>([]);
+  const [organizations, setOrganizations] = useState<
+    Array<{ created_at: string; niche?: string | null }>
+  >([]);
+  const [propertyDates, setPropertyDates] = useState<
+    Array<{ created_at: string }>
+  >([]);
   const [leadDates, setLeadDates] = useState<Array<{ created_at: string }>>([]);
   const [loadError, setLoadError] = useState('');
 
@@ -54,19 +58,32 @@ const AnalyticsDashboard: React.FC = () => {
     const load = async () => {
       const days = Number.parseInt(period, 10);
       const since = new Date(Date.now() - days * 86_400_000).toISOString();
-      const [tenants, properties, leads, orgRows, propertyRows, leadRows] = await Promise.all([
-        supabase
-          .from('organizations')
-          .select('id', { count: 'exact', head: true }),
-        supabase
-          .from('properties')
-          .select('id', { count: 'exact', head: true }),
-        supabase.from('leads').select('id', { count: 'exact', head: true }),
-        supabase.from('organizations').select('created_at,niche').gte('created_at', since),
-        supabase.from('properties').select('created_at').gte('created_at', since),
-        supabase.from('leads').select('created_at').gte('created_at', since),
-      ]);
-      const firstError = tenants.error || properties.error || leads.error || orgRows.error || propertyRows.error || leadRows.error;
+      const [tenants, properties, leads, orgRows, propertyRows, leadRows] =
+        await Promise.all([
+          supabase
+            .from('organizations')
+            .select('id', { count: 'exact', head: true }),
+          supabase
+            .from('properties')
+            .select('id', { count: 'exact', head: true }),
+          supabase.from('leads').select('id', { count: 'exact', head: true }),
+          supabase
+            .from('organizations')
+            .select('created_at,niche')
+            .gte('created_at', since),
+          supabase
+            .from('properties')
+            .select('created_at')
+            .gte('created_at', since),
+          supabase.from('leads').select('created_at').gte('created_at', since),
+        ]);
+      const firstError =
+        tenants.error ||
+        properties.error ||
+        leads.error ||
+        orgRows.error ||
+        propertyRows.error ||
+        leadRows.error;
       if (firstError) {
         logger.error('Erro ao carregar analytics reais', firstError);
         setLoadError('Não foi possível carregar todas as métricas reais.');
@@ -84,10 +101,21 @@ const AnalyticsDashboard: React.FC = () => {
   }, [period]);
 
   const growthData = useMemo(() => {
-    const rows = new Map<string, { name: string; tenants: number; properties: number; leads: number }>();
+    const rows = new Map<
+      string,
+      { name: string; tenants: number; properties: number; leads: number }
+    >();
     const add = (date: string, key: 'tenants' | 'properties' | 'leads') => {
-      const name = new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      const row = rows.get(name) || { name, tenants: 0, properties: 0, leads: 0 };
+      const name = new Date(date).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+      });
+      const row = rows.get(name) || {
+        name,
+        tenants: 0,
+        properties: 0,
+        leads: 0,
+      };
       row[key] += 1;
       rows.set(name, row);
     };
@@ -131,7 +159,11 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {loadError && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
+      {loadError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -292,7 +324,9 @@ const AnalyticsDashboard: React.FC = () => {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
-        Uso de funcionalidades e MRR não são exibidos porque o sistema ainda não possui telemetria e faturamento consolidados para calcular esses indicadores com dados verificáveis.
+        Uso de funcionalidades e MRR não são exibidos porque o sistema ainda não
+        possui telemetria e faturamento consolidados para calcular esses
+        indicadores com dados verificáveis.
       </div>
     </div>
   );

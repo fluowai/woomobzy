@@ -6,7 +6,11 @@
 import { Router } from 'express';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
-import { getBrokerPerformance, getBrokerRanking, getPipelineSummary } from '../../services/brokerReportService.js';
+import {
+  getBrokerPerformance,
+  getBrokerRanking,
+  getPipelineSummary,
+} from '../../services/brokerReportService.js';
 
 const router = Router();
 
@@ -54,7 +58,11 @@ router.get('/broker/:brokerId', verifyAuth, requireTenant, async (req, res) => {
       endDate: req.query.end_date || undefined,
     };
 
-    const report = await getBrokerPerformance(req.orgId, req.params.brokerId, dateRange);
+    const report = await getBrokerPerformance(
+      req.orgId,
+      req.params.brokerId,
+      dateRange
+    );
     res.json({ success: true, report });
   } catch (err) {
     console.error('[Reports] Broker performance error:', err.message);

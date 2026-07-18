@@ -24,7 +24,11 @@
     <meta name="msapplication-TileColor" content="#16a34a" />
     <meta name="format-detection" content="telephone=no" />
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="512x512"
+      href="/icons/icon-512x512.png"
+    />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/logo-wootech-imob.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -33,7 +37,10 @@
       rel="preload"
       as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap"
-      onload="this.onload=null;this.rel='stylesheet'"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
     />
     <noscript>
       <link
@@ -46,13 +53,19 @@
         try {
           const params = new URLSearchParams(window.location.search);
           const utmData = {};
-          ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach(function (key) {
+          [
+            'utm_source',
+            'utm_medium',
+            'utm_campaign',
+            'utm_term',
+            'utm_content',
+          ].forEach(function (key) {
             if (params.has(key)) {
               utmData[key] = params.get(key);
             }
           });
           if (Object.keys(utmData).length > 0) {
-            sessionStorage.setItem("utm_params", JSON.stringify(utmData));
+            sessionStorage.setItem('utm_params', JSON.stringify(utmData));
           }
         } catch (e) {}
       })();

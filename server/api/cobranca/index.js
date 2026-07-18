@@ -448,7 +448,14 @@ router.get(
       if (error) throw error;
 
       if (formato === 'csv') {
-        const headers = ['Data Vencimento', 'Data Pagamento', 'Locatário', 'CPF/CNPJ', 'Valor', 'Status'];
+        const headers = [
+          'Data Vencimento',
+          'Data Pagamento',
+          'Locatário',
+          'CPF/CNPJ',
+          'Valor',
+          'Status',
+        ];
         const csvRows = (data || []).map((b) =>
           [
             b.due_date,
@@ -461,8 +468,13 @@ router.get(
         );
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="cobrancas-${ano || new Date().getFullYear()}.csv"`);
-        return res.send('\uFEFF' + headers.join(',') + '\n' + csvRows.join('\n'));
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="cobrancas-${ano || new Date().getFullYear()}.csv"`
+        );
+        return res.send(
+          '\uFEFF' + headers.join(',') + '\n' + csvRows.join('\n')
+        );
       }
 
       if (formato === 'xml') {

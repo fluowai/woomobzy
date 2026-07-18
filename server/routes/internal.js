@@ -63,7 +63,9 @@ router.get('/auth-debug', async (req, res) => {
     finalStatus: 'FAIL',
   };
 
-  diagnostics.supabase.projectConsistent = inferProjectConsistency(diagnostics.env);
+  diagnostics.supabase.projectConsistent = inferProjectConsistency(
+    diagnostics.env
+  );
 
   await checkSupabaseClients(diagnostics);
   await checkJwtAndTenantChain(diagnostics, bearerToken);
@@ -76,7 +78,9 @@ router.get('/auth-debug', async (req, res) => {
 });
 
 export function isDebugAccessAllowed(req, bearerToken) {
-  const configuredToken = String(process.env.INTERNAL_AUTH_DEBUG_TOKEN || '').trim();
+  const configuredToken = String(
+    process.env.INTERNAL_AUTH_DEBUG_TOKEN || ''
+  ).trim();
   if (configuredToken) {
     const providedToken = String(
       req.headers['x-internal-debug-token'] ||
@@ -96,8 +100,10 @@ export function isDebugAccessAllowed(req, bearerToken) {
 }
 
 function getSupabaseEnvDiagnostics() {
-  const supabaseUrl = getEnvValue('VITE_SUPABASE_URL') || getEnvValue('SUPABASE_URL');
-  const anonKey = getEnvValue('VITE_SUPABASE_ANON_KEY') || getEnvValue('SUPABASE_ANON_KEY');
+  const supabaseUrl =
+    getEnvValue('VITE_SUPABASE_URL') || getEnvValue('SUPABASE_URL');
+  const anonKey =
+    getEnvValue('VITE_SUPABASE_ANON_KEY') || getEnvValue('SUPABASE_ANON_KEY');
   const serviceKey = getEnvValue('SUPABASE_SERVICE_ROLE_KEY');
   const anonKeyInfo = describeSupabaseKey(anonKey);
   const serviceKeyInfo = describeSupabaseKey(serviceKey);
@@ -118,7 +124,9 @@ function getSupabaseEnvDiagnostics() {
     serviceKeyKind: serviceKeyInfo.kind,
     serviceKeyRole: serviceKeyInfo.role || null,
     serviceKeyProjectRef: serviceKeyInfo.jwtRef || null,
-    serviceRoleConfiguredSeparately: Boolean(serviceKey && serviceKey !== anonKey),
+    serviceRoleConfiguredSeparately: Boolean(
+      serviceKey && serviceKey !== anonKey
+    ),
     nodeEnv: process.env.NODE_ENV || 'development',
   };
 }
@@ -140,7 +148,8 @@ async function checkSupabaseClients(diagnostics) {
 
   try {
     const url = getEnvValue('VITE_SUPABASE_URL') || getEnvValue('SUPABASE_URL');
-    const anonKey = getEnvValue('VITE_SUPABASE_ANON_KEY') || getEnvValue('SUPABASE_ANON_KEY');
+    const anonKey =
+      getEnvValue('VITE_SUPABASE_ANON_KEY') || getEnvValue('SUPABASE_ANON_KEY');
     if (!url || !anonKey) {
       diagnostics.supabase.errors.push({
         source: 'anon',
@@ -235,7 +244,8 @@ async function checkJwtAndTenantChain(diagnostics, bearerToken) {
     diagnostics.organization.exists = true;
     diagnostics.organization.id = organization.id;
     diagnostics.organization.status = organization.status || null;
-    diagnostics.organization.active = !organization.status || organization.status === 'active';
+    diagnostics.organization.active =
+      !organization.status || organization.status === 'active';
   } catch (error) {
     diagnostics.profile.error = diagnostics.profile.error || error.message;
   }
@@ -250,7 +260,9 @@ async function findProfile(supabase, user) {
 
   if (!byIdError && byId) return byId;
 
-  const email = String(user.email || '').toLowerCase().trim();
+  const email = String(user.email || '')
+    .toLowerCase()
+    .trim();
   if (!email) return null;
 
   const { data: byEmail, error: byEmailError } = await supabase
@@ -266,7 +278,8 @@ async function findProfile(supabase, user) {
 function getFinalStatus(diagnostics) {
   if (!diagnostics.env.supabaseUrlValid) return 'FAIL';
   if (!diagnostics.supabase.serviceKeyValid) return 'FAIL';
-  if (diagnostics.auth.tokenProvided && !diagnostics.auth.tokenValid) return 'FAIL';
+  if (diagnostics.auth.tokenProvided && !diagnostics.auth.tokenValid)
+    return 'FAIL';
   if (diagnostics.auth.tokenValid && !diagnostics.profile.exists) return 'FAIL';
   if (
     diagnostics.profile.exists &&
@@ -275,8 +288,10 @@ function getFinalStatus(diagnostics) {
   ) {
     return 'FAIL';
   }
-  if (diagnostics.profile.organizationId && !diagnostics.organization.exists) return 'FAIL';
-  if (diagnostics.organization.exists && !diagnostics.organization.active) return 'FAIL';
+  if (diagnostics.profile.organizationId && !diagnostics.organization.exists)
+    return 'FAIL';
+  if (diagnostics.organization.exists && !diagnostics.organization.active)
+    return 'FAIL';
   if (!diagnostics.supabase.projectConsistent) return 'WARN';
   if (!diagnostics.supabase.anonKeyValid) return 'WARN';
   if (!diagnostics.supabase.anonDbReachable) return 'WARN';
@@ -287,8 +302,10 @@ function getFinalStatus(diagnostics) {
 function inferProjectConsistency(env) {
   const urlProject = env.supabaseProjectRef;
   if (!urlProject) return false;
-  if (env.anonKeyProjectRef && env.anonKeyProjectRef !== urlProject) return false;
-  if (env.serviceKeyProjectRef && env.serviceKeyProjectRef !== urlProject) return false;
+  if (env.anonKeyProjectRef && env.anonKeyProjectRef !== urlProject)
+    return false;
+  if (env.serviceKeyProjectRef && env.serviceKeyProjectRef !== urlProject)
+    return false;
   return true;
 }
 
@@ -329,7 +346,9 @@ function describeSupabaseKey(value) {
   if (parts.length !== 3) return { kind: 'unknown' };
 
   try {
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    const payload = JSON.parse(
+      Buffer.from(parts[1], 'base64url').toString('utf8')
+    );
     return {
       kind: 'jwt',
       role: payload.role || null,
@@ -343,7 +362,9 @@ function describeSupabaseKey(value) {
 
 function isInvalidApiKeyError(error) {
   const message = String(error?.message || error || '').toLowerCase();
-  return message.includes('invalid api key') || message.includes('invalid apikey');
+  return (
+    message.includes('invalid api key') || message.includes('invalid apikey')
+  );
 }
 
 function toErrorInfo(source, error) {

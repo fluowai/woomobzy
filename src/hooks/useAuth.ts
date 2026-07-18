@@ -27,7 +27,9 @@ export function useAuth(): UseAuthReturn {
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, email, name, role, avatar_url, organization_id, created_at')
+          .select(
+            'id, email, name, role, avatar_url, organization_id, created_at'
+          )
           .eq('id', session.user.id)
           .single();
 
@@ -54,7 +56,9 @@ export function useAuth(): UseAuthReturn {
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, email, name, role, avatar_url, organization_id, created_at')
+          .select(
+            'id, email, name, role, avatar_url, organization_id, created_at'
+          )
           .eq('id', session.user.id)
           .single();
 

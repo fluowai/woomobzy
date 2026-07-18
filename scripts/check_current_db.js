@@ -1,4 +1,3 @@
-
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
@@ -27,19 +26,21 @@ async function checkDB() {
   }
 
   console.log('Found properties:', data.length);
-  
+
   // Check for duplicates
   const titles = {};
   let duplicates = 0;
-  
-  data.forEach(p => {
-    console.log(`- [${p.id}] ${p.title} (${p.city}/${p.state}) - Images: ${p.images ? p.images.length : 0} - First: ${p.images?.[0]}`);
+
+  data.forEach((p) => {
+    console.log(
+      `- [${p.id}] ${p.title} (${p.city}/${p.state}) - Images: ${p.images ? p.images.length : 0} - First: ${p.images?.[0]}`
+    );
   });
-  
+
   if (duplicates > 0) {
-      console.log(`\n🚨 FOUND ${duplicates} DUPLICATES IN THIS BATCH!`);
+    console.log(`\n🚨 FOUND ${duplicates} DUPLICATES IN THIS BATCH!`);
   } else {
-      console.log(`\n✅ No duplicates found in this batch.`);
+    console.log(`\n✅ No duplicates found in this batch.`);
   }
 }
 

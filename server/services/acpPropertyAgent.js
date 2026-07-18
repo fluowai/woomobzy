@@ -2,7 +2,11 @@ import axios from 'axios';
 
 const ACP_VERSION = 'ACP-1.0';
 
-export async function enrichPropertyWithAcp({ supabase, organizationId, property }) {
+export async function enrichPropertyWithAcp({
+  supabase,
+  organizationId,
+  property,
+}) {
   const fallback = buildFallbackAcp(property);
 
   try {
@@ -17,7 +21,10 @@ export async function enrichPropertyWithAcp({ supabase, organizationId, property
       },
     };
   } catch (error) {
-    console.warn('[ACP] Analise IA indisponivel, usando fallback:', error.message);
+    console.warn(
+      '[ACP] Analise IA indisponivel, usando fallback:',
+      error.message
+    );
     return {
       ...property,
       features: {
@@ -54,7 +61,12 @@ Base do Metodo ACP:
 - Criativo de aquisicao precisa mostrar oportunidade, diferencial objetivo, filtro de perfil e CTA.
 Retorne somente JSON valido, sem markdown.`;
 
-  const apiKey = config?.openai?.apiKey || config?.gemini?.apiKey || process.env.GEMINI_API_KEY || config?.groq?.apiKey || process.env.GROQ_API_KEY;
+  const apiKey =
+    config?.openai?.apiKey ||
+    config?.gemini?.apiKey ||
+    process.env.GEMINI_API_KEY ||
+    config?.groq?.apiKey ||
+    process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error('Nenhuma chave de IA disponivel para ACP.');
 
   if (config?.openai?.apiKey) {
@@ -69,7 +81,12 @@ Retorne somente JSON valido, sem markdown.`;
         temperature: 0.35,
         response_format: { type: 'json_object' },
       },
-      { headers: { Authorization: `Bearer ${config.openai.apiKey}`, 'Content-Type': 'application/json' } }
+      {
+        headers: {
+          Authorization: `Bearer ${config.openai.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
     );
     return parseJson(response.data.choices?.[0]?.message?.content);
   }
@@ -103,7 +120,12 @@ Retorne somente JSON valido, sem markdown.`;
         temperature: 0.35,
         response_format: { type: 'json_object' },
       },
-      { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
+      {
+        headers: {
+          Authorization: `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
     );
     return parseJson(response.data.choices?.[0]?.message?.content);
   }
@@ -225,7 +247,10 @@ Retorne JSON exatamente neste formato:
 }
 
 function parseJson(text = '') {
-  const clean = String(text).replace(/```json/g, '').replace(/```/g, '').trim();
+  const clean = String(text)
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
   return JSON.parse(clean);
 }
 
@@ -241,24 +266,41 @@ function normalizeAcp(raw, property, source) {
     icp: {
       ...fallback.icp,
       ...(raw?.icp || {}),
-      fit_score: clampScore(raw?.icp?.fit_score ?? raw?.score ?? fallback.icp.fit_score),
+      fit_score: clampScore(
+        raw?.icp?.fit_score ?? raw?.score ?? fallback.icp.fit_score
+      ),
     },
     meta_ads: {
       ...fallback.meta_ads,
       ...(raw?.meta_ads || {}),
-      audiences: ensureArray(raw?.meta_ads?.audiences, fallback.meta_ads.audiences),
-      campaigns: ensureArray(raw?.meta_ads?.campaigns, fallback.meta_ads.campaigns),
+      audiences: ensureArray(
+        raw?.meta_ads?.audiences,
+        fallback.meta_ads.audiences
+      ),
+      campaigns: ensureArray(
+        raw?.meta_ads?.campaigns,
+        fallback.meta_ads.campaigns
+      ),
     },
   };
 }
 
 function buildFallbackAcp(property) {
-  const location = [property.neighborhood, property.city, property.state].filter(Boolean).join(', ');
+  const location = [property.neighborhood, property.city, property.state]
+    .filter(Boolean)
+    .join(', ');
   const features = property.features || {};
   const area = features.areaM2 || features.areaConstruida || null;
-  const rooms = features.dormitorios ? `${features.dormitorios} dormitorios` : 'perfil urbano';
+  const rooms = features.dormitorios
+    ? `${features.dormitorios} dormitorios`
+    : 'perfil urbano';
   const price = Number(property.price || 0);
-  const ticket = price >= 1500000 ? 'alto padrao' : price >= 700000 ? 'medio/alto' : 'entrada ou medio';
+  const ticket =
+    price >= 1500000
+      ? 'alto padrao'
+      : price >= 700000
+        ? 'medio/alto'
+        : 'entrada ou medio';
   const mainAngle = buildMainAngle(property);
 
   return {
@@ -269,45 +311,101 @@ function buildFallbackAcp(property) {
     diagnosis: {
       commercial_priority: price > 0 ? 'media' : 'baixa',
       best_angle: mainAngle,
-      risks: ['Validar disponibilidade, condicoes comerciais e qualidade das imagens antes de publicar.'],
-      proofs_needed: ['Fotos sem ambiguidade', 'Planta ou metragem', 'Status do empreendimento', 'Condominio/IPTU quando houver'],
+      risks: [
+        'Validar disponibilidade, condicoes comerciais e qualidade das imagens antes de publicar.',
+      ],
+      proofs_needed: [
+        'Fotos sem ambiguidade',
+        'Planta ou metragem',
+        'Status do empreendimento',
+        'Condominio/IPTU quando houver',
+      ],
     },
     icp: {
       name: `ACP | Comprador urbano ${ticket} | ${property.city || 'regiao alvo'}`,
       fit_score: price > 0 && property.city ? 74 : 58,
-      recognized_pain: 'Busca um imovel com localizacao, metragem e condicao de compra claras.',
-      buying_capacity: price > 0 ? `Deve conseguir avaliar ticket proximo de R$ ${price.toLocaleString('pt-BR')}.` : 'Capacidade depende de validacao de faixa de investimento.',
+      recognized_pain:
+        'Busca um imovel com localizacao, metragem e condicao de compra claras.',
+      buying_capacity:
+        price > 0
+          ? `Deve conseguir avaliar ticket proximo de R$ ${price.toLocaleString('pt-BR')}.`
+          : 'Capacidade depende de validacao de faixa de investimento.',
       adherence: `${property.property_type || 'Imovel'} em ${location || 'regiao urbana'} com ${rooms}.`,
-      moment: 'Lead em comparacao ativa, buscando visita, simulacao ou material completo.',
-      channels: ['Meta Ads', 'Google Busca', 'Remarketing', 'Base de leads urbana'],
-      exclude: ['Curiosos sem faixa de investimento definida', 'Leads buscando aluguel se a oferta for venda', 'Intermediarios sem comprador real'],
+      moment:
+        'Lead em comparacao ativa, buscando visita, simulacao ou material completo.',
+      channels: [
+        'Meta Ads',
+        'Google Busca',
+        'Remarketing',
+        'Base de leads urbana',
+      ],
+      exclude: [
+        'Curiosos sem faixa de investimento definida',
+        'Leads buscando aluguel se a oferta for venda',
+        'Intermediarios sem comprador real',
+      ],
     },
     persona: {
       name: 'Comprador urbano qualificado',
-      profile: 'Pessoa ou familia avaliando compra com criterios objetivos de localizacao, preco e liquidez.',
-      goals: ['Comprar com seguranca', 'Comparar opcoes equivalentes', 'Entender custo total e proximos passos'],
-      objections: ['Preco', 'Condominio/IPTU', 'Localizacao', 'Disponibilidade', 'Financiamento'],
-      decision_triggers: ['Fotos boas', 'dados objetivos', 'visita rapida', 'simulacao de pagamento', 'escassez real'],
+      profile:
+        'Pessoa ou familia avaliando compra com criterios objetivos de localizacao, preco e liquidez.',
+      goals: [
+        'Comprar com seguranca',
+        'Comparar opcoes equivalentes',
+        'Entender custo total e proximos passos',
+      ],
+      objections: [
+        'Preco',
+        'Condominio/IPTU',
+        'Localizacao',
+        'Disponibilidade',
+        'Financiamento',
+      ],
+      decision_triggers: [
+        'Fotos boas',
+        'dados objetivos',
+        'visita rapida',
+        'simulacao de pagamento',
+        'escassez real',
+      ],
     },
     offer: {
       positioning: `${property.property_type || 'Imovel'} em ${location || 'regiao urbana'} para comprador que busca ${mainAngle.toLowerCase()}.`,
       central_benefit: mainAngle,
       value_arguments: [
-        area ? `${area} m2 para comparar com opcoes da regiao.` : 'Ficha tecnica organizada para decisao.',
+        area
+          ? `${area} m2 para comparar com opcoes da regiao.`
+          : 'Ficha tecnica organizada para decisao.',
         rooms,
         location || 'Localizacao a validar e destacar na copy.',
       ],
-      filters: ['Validar faixa de investimento', 'Confirmar objetivo de compra', 'Separar comprador direto de curioso'],
-      next_step: 'Solicitar material completo, validar faixa de investimento e agendar visita.',
+      filters: [
+        'Validar faixa de investimento',
+        'Confirmar objetivo de compra',
+        'Separar comprador direto de curioso',
+      ],
+      next_step:
+        'Solicitar material completo, validar faixa de investimento e agendar visita.',
     },
     meta_ads: {
       audiences: [
         {
           name: `ACP | Urbano ${ticket} | ${property.city || 'cidade alvo'}`,
-          location: property.city && property.state ? `${property.city} - ${property.state}` : 'Cidade e raio de atendimento da imobiliaria',
+          location:
+            property.city && property.state
+              ? `${property.city} - ${property.state}`
+              : 'Cidade e raio de atendimento da imobiliaria',
           age_range: price >= 1000000 ? '30-60' : '25-55',
-          interests: ['Mercado imobiliario', 'Financiamento imobiliario', 'Apartamentos', 'Arquitetura e decoracao'],
-          copy_filter: price > 0 ? `Oferta para quem avalia imoveis na faixa de R$ ${price.toLocaleString('pt-BR')}.` : 'Oferta para quem ja esta comparando compra urbana.',
+          interests: [
+            'Mercado imobiliario',
+            'Financiamento imobiliario',
+            'Apartamentos',
+            'Arquitetura e decoracao',
+          ],
+          copy_filter:
+            price > 0
+              ? `Oferta para quem avalia imoveis na faixa de R$ ${price.toLocaleString('pt-BR')}.`
+              : 'Oferta para quem ja esta comparando compra urbana.',
         },
       ],
       campaigns: [
@@ -319,26 +417,39 @@ function buildFallbackAcp(property) {
           headline: property.title || 'Imovel urbano para avaliacao',
           description: 'Receba ficha completa e proximos passos.',
           cta: 'Enviar mensagem',
-          creative_direction: 'Usar melhor foto do imovel, texto curto com bairro, tipo, metragem e principal diferencial.',
+          creative_direction:
+            'Usar melhor foto do imovel, texto curto com bairro, tipo, metragem e principal diferencial.',
         },
         {
           name: 'ACP | Autoridade | Criterios de compra',
           funnel: 'autoridade',
           angle: 'Como comparar este tipo de imovel',
-          primary_text: 'Antes de escolher um imovel, compare localizacao, metragem, custo total, liquidez e disponibilidade real.',
+          primary_text:
+            'Antes de escolher um imovel, compare localizacao, metragem, custo total, liquidez e disponibilidade real.',
           headline: 'Checklist para comprar melhor',
           description: 'Conteudo de apoio para leads mornos.',
           cta: 'Saiba mais',
-          creative_direction: 'Carrossel com criterios de decisao e prova de atendimento consultivo.',
+          creative_direction:
+            'Carrossel com criterios de decisao e prova de atendimento consultivo.',
         },
       ],
     },
     authority: {
-      content_ideas: ['Checklist de compra no bairro', 'Comparativo de custo total', 'Como avaliar liquidez de um imovel urbano'],
-      proof_assets: ['Fotos reais', 'Planta', 'Mapa da regiao', 'Historico da incorporadora quando houver'],
+      content_ideas: [
+        'Checklist de compra no bairro',
+        'Comparativo de custo total',
+        'Como avaliar liquidez de um imovel urbano',
+      ],
+      proof_assets: [
+        'Fotos reais',
+        'Planta',
+        'Mapa da regiao',
+        'Historico da incorporadora quando houver',
+      ],
     },
     qualification: {
-      opening_message: 'Vi seu interesse neste imovel. Voce busca compra para morar, investir ou comparar opcoes na regiao?',
+      opening_message:
+        'Vi seu interesse neste imovel. Voce busca compra para morar, investir ou comparar opcoes na regiao?',
       questions: [
         'Qual objetivo da compra?',
         'Qual faixa de investimento pretende analisar?',
@@ -346,20 +457,54 @@ function buildFallbackAcp(property) {
         'Pretende visitar nos proximos dias ou esta pesquisando?',
         'Precisa de financiamento ou compra com recurso proprio?',
       ],
-      hot_lead_signals: ['Tem faixa de investimento', 'Pede visita', 'Pergunta condicao de pagamento', 'Compara unidades similares'],
-      cold_lead_signals: ['Nao informa objetivo', 'Nao tem faixa de valor', 'Pede somente fotos', 'Nao responde proximo passo'],
+      hot_lead_signals: [
+        'Tem faixa de investimento',
+        'Pede visita',
+        'Pergunta condicao de pagamento',
+        'Compara unidades similares',
+      ],
+      cold_lead_signals: [
+        'Nao informa objetivo',
+        'Nao tem faixa de valor',
+        'Pede somente fotos',
+        'Nao responde proximo passo',
+      ],
     },
     crm: {
       suggested_stage: 'Em qualificacao',
-      tags: ['orulo', 'acp', property.property_type || 'urbano', ticket].filter(Boolean),
-      follow_up: 'Se houver fit, enviar material completo e propor visita/call em ate 24h.',
-      loss_reasons_to_watch: ['Sem capacidade', 'Curioso', 'Preco', 'Timing', 'Sem retorno'],
+      tags: ['orulo', 'acp', property.property_type || 'urbano', ticket].filter(
+        Boolean
+      ),
+      follow_up:
+        'Se houver fit, enviar material completo e propor visita/call em ate 24h.',
+      loss_reasons_to_watch: [
+        'Sem capacidade',
+        'Curioso',
+        'Preco',
+        'Timing',
+        'Sem retorno',
+      ],
     },
     agents: [
-      { name: 'Agente ICP', mission: 'Validar dor, capacidade, aderencia, momento e canal encontravel.' },
-      { name: 'Agente Oferta', mission: 'Transformar caracteristicas do imovel em argumento de compra.' },
-      { name: 'Agente Midia Meta', mission: 'Criar campanhas separando aquisicao e autoridade.' },
-      { name: 'Agente SDR', mission: 'Qualificar lead antes de liberar material sensivel ou visita.' },
+      {
+        name: 'Agente ICP',
+        mission:
+          'Validar dor, capacidade, aderencia, momento e canal encontravel.',
+      },
+      {
+        name: 'Agente Oferta',
+        mission:
+          'Transformar caracteristicas do imovel em argumento de compra.',
+      },
+      {
+        name: 'Agente Midia Meta',
+        mission: 'Criar campanhas separando aquisicao e autoridade.',
+      },
+      {
+        name: 'Agente SDR',
+        mission:
+          'Qualificar lead antes de liberar material sensivel ou visita.',
+      },
     ],
   };
 }

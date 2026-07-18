@@ -1,12 +1,30 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { AlertTriangle, DownloadCloud, Pause, Play, RotateCcw } from 'lucide-react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from 'react';
+import {
+  AlertTriangle,
+  DownloadCloud,
+  Pause,
+  Play,
+  RotateCcw,
+} from 'lucide-react';
 import { mediaApi, type Message } from './hooks/api';
 
 interface AudioMessagePlayerProps {
   message: Message;
 }
 
-type PlayerStatus = 'pending' | 'downloading' | 'processing' | 'ready' | 'failed' | 'expired';
+type PlayerStatus =
+  | 'pending'
+  | 'downloading'
+  | 'processing'
+  | 'ready'
+  | 'failed'
+  | 'expired';
 
 const SPEEDS = [1, 1.5, 2];
 
@@ -16,14 +34,21 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [speedIndex, setSpeedIndex] = useState(0);
-  const [status, setStatus] = useState<PlayerStatus>(resolveInitialStatus(message));
+  const [status, setStatus] = useState<PlayerStatus>(
+    resolveInitialStatus(message)
+  );
   const [reloadKey, setReloadKey] = useState(0);
   const [sourceUrl, setSourceUrl] = useState(message.media_url || '');
-  const [sourceMimeType, setSourceMimeType] = useState(message.media_mimetype || 'audio/ogg');
+  const [sourceMimeType, setSourceMimeType] = useState(
+    message.media_mimetype || 'audio/ogg'
+  );
   const [refreshAttempts, setRefreshAttempts] = useState(0);
 
   const speed = SPEEDS[speedIndex];
-  const waveform = useMemo(() => buildWaveform(message.message_id || message.id), [message.id, message.message_id]);
+  const waveform = useMemo(
+    () => buildWaveform(message.message_id || message.id),
+    [message.id, message.message_id]
+  );
   const progress = duration > 0 ? Math.min(1, currentTime / duration) : 0;
 
   useEffect(() => {
@@ -64,8 +89,14 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
         if (!isMounted) return;
         if (response.url) {
           setSourceUrl(response.url);
-          setSourceMimeType(response.mime_type || message.media_mimetype || 'audio/ogg');
-          setStatus(response.status === 'ready' ? 'downloading' : (response.status as PlayerStatus));
+          setSourceMimeType(
+            response.mime_type || message.media_mimetype || 'audio/ogg'
+          );
+          setStatus(
+            response.status === 'ready'
+              ? 'downloading'
+              : (response.status as PlayerStatus)
+          );
           return;
         }
         const nextStatus = normalizePlayerStatus(response.status);
@@ -78,7 +109,9 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
         setSourceMimeType(message.media_mimetype || 'audio/ogg');
         if (err?.code === 'MEDIA_NOT_READY') {
           const nextStatus = normalizePlayerStatus(err?.details?.status);
-          setStatus(nextStatus === 'ready' ? 'pending' : nextStatus || 'pending');
+          setStatus(
+            nextStatus === 'ready' ? 'pending' : nextStatus || 'pending'
+          );
           return;
         }
         setStatus('failed');
@@ -98,7 +131,11 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
       return;
     }
 
-    setStatus(resolveInitialStatus(message) === 'ready' ? 'downloading' : resolveInitialStatus(message));
+    setStatus(
+      resolveInitialStatus(message) === 'ready'
+        ? 'downloading'
+        : resolveInitialStatus(message)
+    );
     setIsPlaying(false);
     setDuration(0);
     setCurrentTime(0);
@@ -111,7 +148,9 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
       .then((response) => {
         if (response.url) {
           setSourceUrl(response.url);
-          setSourceMimeType(response.mime_type || message.media_mimetype || 'audio/ogg');
+          setSourceMimeType(
+            response.mime_type || message.media_mimetype || 'audio/ogg'
+          );
           setStatus('downloading');
         }
       })
@@ -161,7 +200,8 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
     setSourceUrl('');
     setRefreshAttempts(0);
     if (message.media_id) {
-      mediaApi.retry(message.media_id)
+      mediaApi
+        .retry(message.media_id)
         .catch(() => setStatus('failed'))
         .finally(() => setReloadKey((value) => value + 1));
       return;
@@ -177,10 +217,14 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
   const seek = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation();
     const audio = audioRef.current;
-    if (!audio || !duration || status === 'failed' || status === 'expired') return;
+    if (!audio || !duration || status === 'failed' || status === 'expired')
+      return;
 
     const rect = event.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const ratio = Math.max(
+      0,
+      Math.min(1, (event.clientX - rect.left) / rect.width)
+    );
     audio.currentTime = ratio * duration;
     setCurrentTime(audio.currentTime);
   };
@@ -199,7 +243,9 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
             setStatus('ready');
             setRefreshAttempts(0);
           }}
-          onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+          onTimeUpdate={(event) =>
+            setCurrentTime(event.currentTarget.currentTime)
+          }
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
@@ -212,7 +258,11 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
                 .then((response) => {
                   if (response.url) {
                     setSourceUrl(response.url);
-                    setSourceMimeType(response.mime_type || message.media_mimetype || sourceMimeType);
+                    setSourceMimeType(
+                      response.mime_type ||
+                        message.media_mimetype ||
+                        sourceMimeType
+                    );
                     setReloadKey((value) => value + 1);
                     return;
                   }
@@ -232,15 +282,31 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
       <button
         type="button"
         className="wa-audio-main-btn"
-        onClick={status === 'failed' || status === 'expired' ? retry : togglePlayback}
-        aria-label={status === 'failed' || status === 'expired' ? 'Tentar carregar audio novamente' : isPlaying ? 'Pausar audio' : 'Reproduzir audio'}
-        title={status === 'failed' || status === 'expired' ? 'Tentar novamente' : isPlaying ? 'Pausar' : 'Reproduzir'}
+        onClick={
+          status === 'failed' || status === 'expired' ? retry : togglePlayback
+        }
+        aria-label={
+          status === 'failed' || status === 'expired'
+            ? 'Tentar carregar audio novamente'
+            : isPlaying
+              ? 'Pausar audio'
+              : 'Reproduzir audio'
+        }
+        title={
+          status === 'failed' || status === 'expired'
+            ? 'Tentar novamente'
+            : isPlaying
+              ? 'Pausar'
+              : 'Reproduzir'
+        }
       >
         {status === 'failed' || status === 'expired' ? (
           <RotateCcw size={18} />
         ) : isPlaying ? (
           <Pause size={18} />
-        ) : status === 'pending' || status === 'processing' || status === 'downloading' ? (
+        ) : status === 'pending' ||
+          status === 'processing' ||
+          status === 'downloading' ? (
           <DownloadCloud size={18} />
         ) : (
           <Play size={18} />
@@ -250,16 +316,28 @@ const AudioMessagePlayer: React.FC<AudioMessagePlayerProps> = ({ message }) => {
       <div className="wa-audio-body">
         <div className="wa-audio-status-row">
           <span className="wa-audio-status">
-            {(status === 'failed' || status === 'expired') && <AlertTriangle size={13} />}
+            {(status === 'failed' || status === 'expired') && (
+              <AlertTriangle size={13} />
+            )}
             {status === 'downloading' && <DownloadCloud size={13} />}
             {statusLabel(status)}
           </span>
-          <button type="button" className="wa-audio-speed" onClick={cycleSpeed} title="Alterar velocidade">
+          <button
+            type="button"
+            className="wa-audio-speed"
+            onClick={cycleSpeed}
+            title="Alterar velocidade"
+          >
             {speed}x
           </button>
         </div>
 
-        <div className="wa-audio-waveform" onClick={seek} role="slider" aria-label="Progresso do audio">
+        <div
+          className="wa-audio-waveform"
+          onClick={seek}
+          role="slider"
+          aria-label="Progresso do audio"
+        >
           {waveform.map((height, index) => {
             const active = index / waveform.length <= progress;
             return (
@@ -306,7 +384,13 @@ function resolveInitialStatus(message: Message): PlayerStatus {
 }
 
 function shouldRequestMediaUrl(mediaStatus?: Message['media_status']) {
-  return !mediaStatus || mediaStatus === 'none' || mediaStatus === 'ready' || mediaStatus === 'failed' || mediaStatus === 'expired';
+  return (
+    !mediaStatus ||
+    mediaStatus === 'none' ||
+    mediaStatus === 'ready' ||
+    mediaStatus === 'failed' ||
+    mediaStatus === 'expired'
+  );
 }
 
 function normalizePlayerStatus(value: unknown): PlayerStatus | undefined {
@@ -344,7 +428,9 @@ function statusLabel(status: PlayerStatus): string {
 function formatDuration(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return '00:00';
   const total = Math.floor(value);
-  const minutes = Math.floor(total / 60).toString().padStart(2, '0');
+  const minutes = Math.floor(total / 60)
+    .toString()
+    .padStart(2, '0');
   const seconds = (total % 60).toString().padStart(2, '0');
   return `${minutes}:${seconds}`;
 }

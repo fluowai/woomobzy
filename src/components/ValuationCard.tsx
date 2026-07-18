@@ -67,7 +67,10 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
   };
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 0.7) return 'text-emerald-500';
@@ -115,10 +118,14 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
       <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain size={18} className="text-indigo-500" />
-          <h3 className="font-semibold text-slate-800">Valuation Intelligence</h3>
+          <h3 className="font-semibold text-slate-800">
+            Valuation Intelligence
+          </h3>
         </div>
         {valuation && (
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${getConfidenceColor(valuation.confidence)} bg-slate-50 border`}>
+          <span
+            className={`text-xs font-medium px-2 py-1 rounded-full ${getConfidenceColor(valuation.confidence)} bg-slate-50 border`}
+          >
             Confiança: {getConfidenceLabel(valuation.confidence)}
           </span>
         )}
@@ -153,7 +160,8 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
                 {formatCurrency(valuation.estimated_value)}
               </div>
               <div className="text-sm text-slate-500 mt-1">
-                Faixa: {formatCurrency(valuation.min_value)} — {formatCurrency(valuation.max_value)}
+                Faixa: {formatCurrency(valuation.min_value)} —{' '}
+                {formatCurrency(valuation.max_value)}
               </div>
             </div>
 
@@ -162,7 +170,9 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
                 <div className="text-xs text-slate-500">Preço/ha</div>
                 <div className="text-sm font-semibold text-slate-700">
                   {valuation.breakdown?.area_ha > 0
-                    ? formatCurrency(valuation.estimated_value / valuation.breakdown.area_ha)
+                    ? formatCurrency(
+                        valuation.estimated_value / valuation.breakdown.area_ha
+                      )
                     : '—'}
                 </div>
               </div>
@@ -185,14 +195,21 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
 
             {showDetails && (
               <div className="bg-slate-50 rounded-lg p-3 mb-3 text-xs space-y-1">
-                <div className="text-slate-500 font-medium mb-2">Fatores aplicados:</div>
+                <div className="text-slate-500 font-medium mb-2">
+                  Fatores aplicados:
+                </div>
                 {valuation.factors?.map((f, i) => (
                   <div key={i} className="flex justify-between text-slate-600">
                     <span>{f.rule}</span>
-                    <span className={f.type === 'multiplier'
-                      ? (f.value >= 1 ? 'text-emerald-600' : 'text-rose-600')
-                      : 'text-indigo-600'
-                    }>
+                    <span
+                      className={
+                        f.type === 'multiplier'
+                          ? f.value >= 1
+                            ? 'text-emerald-600'
+                            : 'text-rose-600'
+                          : 'text-indigo-600'
+                      }
+                    >
                       {f.type === 'multiplier'
                         ? `${((f.value - 1) * 100).toFixed(0)}%`
                         : formatCurrency(f.value)}
@@ -200,7 +217,10 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
                   </div>
                 ))}
                 <div className="pt-2 mt-2 border-t border-slate-200 text-slate-400">
-                  Método: {valuation.method === 'rule_based' ? 'Regras de Negócio' : valuation.method}
+                  Método:{' '}
+                  {valuation.method === 'rule_based'
+                    ? 'Regras de Negócio'
+                    : valuation.method}
                 </div>
               </div>
             )}
@@ -218,13 +238,22 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
               {comparables.length > 0 && (
                 <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
                   {comparables.map((c) => (
-                    <div key={c.id} className="flex justify-between items-center bg-slate-50 rounded p-2 text-xs">
+                    <div
+                      key={c.id}
+                      className="flex justify-between items-center bg-slate-50 rounded p-2 text-xs"
+                    >
                       <div className="truncate flex-1">
-                        <div className="font-medium text-slate-700 truncate">{c.title}</div>
-                        <div className="text-slate-400">{c.price_per_ha.toLocaleString()} /ha</div>
+                        <div className="font-medium text-slate-700 truncate">
+                          {c.title}
+                        </div>
+                        <div className="text-slate-400">
+                          {c.price_per_ha.toLocaleString()} /ha
+                        </div>
                       </div>
                       <div className="text-right ml-2">
-                        <div className="font-semibold text-slate-700">{formatCurrency(c.price)}</div>
+                        <div className="font-semibold text-slate-700">
+                          {formatCurrency(c.price)}
+                        </div>
                         <div className="text-slate-400">{c.area_ha} ha</div>
                       </div>
                     </div>

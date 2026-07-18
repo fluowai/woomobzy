@@ -2,8 +2,10 @@ import type { PostgrestError } from '@supabase/supabase-js';
 
 export type LeadMatchProfile = 'urbano' | 'rural' | 'misto' | 'indefinido';
 
-export const URBAN_LEAD_OR_FILTER = 'match_profile.eq.urbano,match_profile.is.null';
-export const RURAL_LEAD_OR_FILTER = 'match_profile.eq.rural,match_profile.is.null';
+export const URBAN_LEAD_OR_FILTER =
+  'match_profile.eq.urbano,match_profile.is.null';
+export const RURAL_LEAD_OR_FILTER =
+  'match_profile.eq.rural,match_profile.is.null';
 
 type LeadNicheQueryResult = {
   data: unknown;
@@ -31,7 +33,9 @@ export function applyRuralLeadFilter<T extends LeadNicheQuery>(query: T): T {
   return query.or(RURAL_LEAD_OR_FILTER) as T;
 }
 
-export function isMissingMatchProfileColumnError(error: PostgrestError | null | undefined) {
+export function isMissingMatchProfileColumnError(
+  error: PostgrestError | null | undefined
+) {
   if (!error) return false;
 
   const message = String(error.message || '').toLowerCase();

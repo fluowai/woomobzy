@@ -108,13 +108,19 @@ const PropertyEditor: React.FC = () => {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [acpGenerating, setAcpGenerating] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  
-  logger.debug('[PropertyEditor] State Check', { loading, analyzing, isNew, id });
+
+  logger.debug('[PropertyEditor] State Check', {
+    loading,
+    analyzing,
+    isNew,
+    id,
+  });
 
   const [formData, setFormData] = useState<Partial<Property>>({
     title: '',
     price: 0,
-    type: niche === 'traditional' ? PropertyType.APARTAMENTO : PropertyType.FAZENDA,
+    type:
+      niche === 'traditional' ? PropertyType.APARTAMENTO : PropertyType.FAZENDA,
     purpose: PropertyPurpose.SALE,
     aptitude: [],
     status: PropertyStatus.AVAILABLE,
@@ -207,8 +213,10 @@ const PropertyEditor: React.FC = () => {
   });
 
   // Detecção dinâmica do tipo de imóvel para exibição de campos
-  const isRuralType = formData.type && RURAL_TYPES.includes(formData.type as PropertyType);
-  const isUrbanType = formData.type && URBAN_TYPES.includes(formData.type as PropertyType);
+  const isRuralType =
+    formData.type && RURAL_TYPES.includes(formData.type as PropertyType);
+  const isUrbanType =
+    formData.type && URBAN_TYPES.includes(formData.type as PropertyType);
   const acp = (formData.features as any)?.acp;
 
   useEffect(() => {
@@ -243,11 +251,17 @@ const PropertyEditor: React.FC = () => {
     logger.debug('[PropertyEditor] Iniciando salvamento', { isNew, id });
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const orgId = profile?.organization_id || session?.user?.user_metadata?.organization_id;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const orgId =
+        profile?.organization_id ||
+        session?.user?.user_metadata?.organization_id;
 
       if (!orgId) {
-        alert('Erro: Organização não identificada. Aguarde o carregamento do perfil ou faça login novamente.');
+        alert(
+          'Erro: Organização não identificada. Aguarde o carregamento do perfil ou faça login novamente.'
+        );
         setLoading(false);
         return;
       }
@@ -276,13 +290,17 @@ const PropertyEditor: React.FC = () => {
       navigate(`/${nichePath}/properties`);
     } catch (error: any) {
       logger.error('[PropertyEditor] Erro ao salvar', error);
-      
+
       const errorMsg = error?.message || 'Erro desconhecido';
       const errorDetails = error?.details || '';
       const errorCode = error?.code || '';
       const fullError = `Mensagem: ${errorMsg}\nCódigo: ${errorCode}\nDetalhes: ${errorDetails}`;
-      
-      logger.error('❌ Erro detalhado ao salvar:', { errorMsg, errorDetails, errorCode });
+
+      logger.error('❌ Erro detalhado ao salvar:', {
+        errorMsg,
+        errorDetails,
+        errorCode,
+      });
       alert(`Erro ao salvar imóvel:\n\n${fullError}`);
     } finally {
       setLoading(false);
@@ -442,7 +460,7 @@ const PropertyEditor: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div className="flex items-center gap-4">
           <button
-             onClick={() => navigate(`/${nichePath}/properties`)}
+            onClick={() => navigate(`/${nichePath}/properties`)}
             className="p-2 hover:bg-white rounded-full transition-colors text-slate-500"
           >
             <ArrowLeft size={24} />
@@ -1628,7 +1646,10 @@ const PropertyEditor: React.FC = () => {
                       Status Documental
                     </label>
                     <select
-                      value={formData.features?.legal?.statusDocumental || 'Regularizado'}
+                      value={
+                        formData.features?.legal?.statusDocumental ||
+                        'Regularizado'
+                      }
                       onChange={(e) =>
                         setFormData({
                           ...formData,
@@ -1643,10 +1664,18 @@ const PropertyEditor: React.FC = () => {
                       }
                       className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                     >
-                      <option value="Regularizado">Regularizado (Escritura/Matrícula OK)</option>
-                      <option value="Pendente">Pendente de Regularização</option>
-                      <option value="Em Inventário">Em Processo de Inventário</option>
-                      <option value="Posse">Apenas Posse / Contrato Gaveta</option>
+                      <option value="Regularizado">
+                        Regularizado (Escritura/Matrícula OK)
+                      </option>
+                      <option value="Pendente">
+                        Pendente de Regularização
+                      </option>
+                      <option value="Em Inventário">
+                        Em Processo de Inventário
+                      </option>
+                      <option value="Posse">
+                        Apenas Posse / Contrato Gaveta
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -1665,7 +1694,10 @@ const PropertyEditor: React.FC = () => {
                     <div className="relative">
                       <input
                         type="number"
-                        value={formData.features?.commercial?.commissionPercentage || ''}
+                        value={
+                          formData.features?.commercial?.commissionPercentage ||
+                          ''
+                        }
                         onChange={(e) =>
                           setFormData({
                             ...formData,
@@ -1705,7 +1737,10 @@ const PropertyEditor: React.FC = () => {
                       }
                       className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
                     />
-                    <label htmlFor="permuta" className="text-sm text-slate-700 font-medium">
+                    <label
+                      htmlFor="permuta"
+                      className="text-sm text-slate-700 font-medium"
+                    >
                       Aceita Permuta
                     </label>
                   </div>
@@ -1772,7 +1807,11 @@ const PropertyEditor: React.FC = () => {
                 disabled={acpGenerating}
                 className="flex items-center justify-center gap-2 text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50"
               >
-                {acpGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                {acpGenerating ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Sparkles size={14} />
+                )}
                 REGERAR ACP
               </button>
             </div>
@@ -1784,14 +1823,17 @@ const PropertyEditor: React.FC = () => {
                   Estrategia ACP ainda nao gerada
                 </h3>
                 <p className="text-sm text-slate-500 max-w-md mx-auto">
-                  Gere ICP, persona, oferta, anuncios Meta e roteiro de qualificacao para revisar este imovel com mais precisao.
+                  Gere ICP, persona, oferta, anuncios Meta e roteiro de
+                  qualificacao para revisar este imovel com mais precisao.
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-indigo-700">ICP</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-indigo-700">
+                      ICP
+                    </span>
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-indigo-700">
                       {acp.icp?.fit_score || acp.score || 0}%
                     </span>
@@ -1807,7 +1849,9 @@ const PropertyEditor: React.FC = () => {
                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5">
                   <div className="flex items-center gap-2 mb-3 text-emerald-700">
                     <UserCheck size={16} />
-                    <span className="text-xs font-bold uppercase tracking-widest">Persona & Oferta</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">
+                      Persona & Oferta
+                    </span>
                   </div>
                   <h3 className="font-bold text-slate-900 text-sm mb-2">
                     {acp.persona?.name || 'Persona urbana'}
@@ -1820,19 +1864,26 @@ const PropertyEditor: React.FC = () => {
                 <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-5">
                   <div className="flex items-center gap-2 mb-3 text-amber-700">
                     <Megaphone size={16} />
-                    <span className="text-xs font-bold uppercase tracking-widest">Meta Ads</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">
+                      Meta Ads
+                    </span>
                   </div>
                   <div className="space-y-2">
-                    {(acp.meta_ads?.campaigns || []).slice(0, 2).map((campaign: any, index: number) => (
-                      <div key={`${campaign.name || 'campaign'}-${index}`} className="rounded-xl bg-white/70 p-3">
-                        <p className="text-xs font-bold text-slate-900">
-                          {campaign.angle || campaign.name}
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                          {campaign.primary_text}
-                        </p>
-                      </div>
-                    ))}
+                    {(acp.meta_ads?.campaigns || [])
+                      .slice(0, 2)
+                      .map((campaign: any, index: number) => (
+                        <div
+                          key={`${campaign.name || 'campaign'}-${index}`}
+                          className="rounded-xl bg-white/70 p-3"
+                        >
+                          <p className="text-xs font-bold text-slate-900">
+                            {campaign.angle || campaign.name}
+                          </p>
+                          <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                            {campaign.primary_text}
+                          </p>
+                        </div>
+                      ))}
                   </div>
                 </div>
 
@@ -1843,9 +1894,11 @@ const PropertyEditor: React.FC = () => {
                         Perguntas SDR
                       </p>
                       <ul className="space-y-1 text-xs text-slate-600">
-                        {(acp.qualification?.questions || []).slice(0, 5).map((question: string, index: number) => (
-                          <li key={`${question}-${index}`}>- {question}</li>
-                        ))}
+                        {(acp.qualification?.questions || [])
+                          .slice(0, 5)
+                          .map((question: string, index: number) => (
+                            <li key={`${question}-${index}`}>- {question}</li>
+                          ))}
                       </ul>
                     </div>
                     <div>
@@ -1853,9 +1906,11 @@ const PropertyEditor: React.FC = () => {
                         Ideias de autoridade
                       </p>
                       <ul className="space-y-1 text-xs text-slate-600">
-                        {(acp.authority?.content_ideas || []).slice(0, 5).map((idea: string, index: number) => (
-                          <li key={`${idea}-${index}`}>- {idea}</li>
-                        ))}
+                        {(acp.authority?.content_ideas || [])
+                          .slice(0, 5)
+                          .map((idea: string, index: number) => (
+                            <li key={`${idea}-${index}`}>- {idea}</li>
+                          ))}
                       </ul>
                     </div>
                   </div>

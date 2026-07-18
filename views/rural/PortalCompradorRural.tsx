@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Calendar, Heart, MapPin, Search, Wheat } from 'lucide-react';
+import {
+  ArrowRight,
+  Calendar,
+  Heart,
+  MapPin,
+  Search,
+  Wheat,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -37,7 +44,9 @@ const money = (value: number) =>
 const PortalCompradorRural: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'buscar' | 'favoritos' | 'visitas'>('buscar');
+  const [activeTab, setActiveTab] = useState<
+    'buscar' | 'favoritos' | 'visitas'
+  >('buscar');
   const [properties, setProperties] = useState<RuralProperty[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [visits, setVisits] = useState<RuralVisit[]>([]);
@@ -52,7 +61,9 @@ const PortalCompradorRural: React.FC = () => {
     const [propertyResult, favoriteResult, visitResult] = await Promise.all([
       supabase
         .from('properties')
-        .select('id,title,property_type,price,city,state,images,features,total_area_ha,niche')
+        .select(
+          'id,title,property_type,price,city,state,images,features,total_area_ha,niche'
+        )
         .eq('organization_id', profile.organization_id)
         .neq('status', 'Pendente')
         .order('created_at', { ascending: false }),
@@ -69,9 +80,14 @@ const PortalCompradorRural: React.FC = () => {
         .order('scheduled_at', { ascending: true }),
     ]);
 
-    if (propertyResult.error) toast.error('Não foi possível carregar os imóveis rurais.');
-    setProperties(((propertyResult.data || []) as RuralProperty[]).filter(isRuralProperty));
-    setFavoriteIds(new Set((favoriteResult.data || []).map((item) => item.property_id)));
+    if (propertyResult.error)
+      toast.error('Não foi possível carregar os imóveis rurais.');
+    setProperties(
+      ((propertyResult.data || []) as RuralProperty[]).filter(isRuralProperty)
+    );
+    setFavoriteIds(
+      new Set((favoriteResult.data || []).map((item) => item.property_id))
+    );
     setVisits((visitResult.data || []) as unknown as RuralVisit[]);
     setLoading(false);
   };
@@ -85,8 +101,11 @@ const PortalCompradorRural: React.FC = () => {
     const min = Number(areaMin || 0);
     const max = Number(areaMax || 0);
     return properties.filter((property) => {
-      if (activeTab === 'favoritos' && !favoriteIds.has(property.id)) return false;
-      const area = Number(property.total_area_ha || property.features?.areaHectares || 0);
+      if (activeTab === 'favoritos' && !favoriteIds.has(property.id))
+        return false;
+      const area = Number(
+        property.total_area_ha || property.features?.areaHectares || 0
+      );
       if (min > 0 && area < min) return false;
       if (max > 0 && area > max) return false;
       return (
@@ -131,7 +150,7 @@ const PortalCompradorRural: React.FC = () => {
     if (!profile?.organization_id || !profile.id) return;
     const scheduledAt = window.prompt(
       'Informe a data e hora da visita (AAAA-MM-DD HH:MM):',
-      '',
+      ''
     );
     if (!scheduledAt) return;
     const parsed = new Date(scheduledAt.replace(' ', 'T'));
@@ -161,7 +180,9 @@ const PortalCompradorRural: React.FC = () => {
           <Wheat className="text-emerald-600" size={32} />
           Portal do Investidor Rural
         </h1>
-        <p className="font-medium text-black/60">Estoque rural, favoritos e visitas técnicas em um só fluxo.</p>
+        <p className="font-medium text-black/60">
+          Estoque rural, favoritos e visitas técnicas em um só fluxo.
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -174,7 +195,9 @@ const PortalCompradorRural: React.FC = () => {
             key={key}
             onClick={() => setActiveTab(key as typeof activeTab)}
             className={`rounded-xl px-6 py-3 text-sm font-bold transition-all ${
-              activeTab === key ? 'bg-emerald-600 text-white shadow-lg' : 'border border-slate-200 bg-white text-slate-500'
+              activeTab === key
+                ? 'bg-emerald-600 text-white shadow-lg'
+                : 'border border-slate-200 bg-white text-slate-500'
             }`}
           >
             {label}
@@ -186,7 +209,10 @@ const PortalCompradorRural: React.FC = () => {
         <>
           <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-6 md:grid-cols-[1fr_180px_180px]">
             <label className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                size={18}
+              />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -213,7 +239,9 @@ const PortalCompradorRural: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="py-16 text-center text-slate-400">Carregando propriedades rurais...</div>
+            <div className="py-16 text-center text-slate-400">
+              Carregando propriedades rurais...
+            </div>
           ) : filtered.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-400">
               Nenhuma propriedade rural encontrada.
@@ -221,40 +249,84 @@ const PortalCompradorRural: React.FC = () => {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {filtered.map((property) => {
-                const area = Number(property.total_area_ha || property.features?.areaHectares || 0);
-                const score = Number(property.features?.rural_due_diligence?.validation?.riskScore || 0);
+                const area = Number(
+                  property.total_area_ha || property.features?.areaHectares || 0
+                );
+                const score = Number(
+                  property.features?.rural_due_diligence?.validation
+                    ?.riskScore || 0
+                );
                 return (
-                  <article key={property.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <article
+                    key={property.id}
+                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                  >
                     <div className="relative h-44 bg-emerald-50">
                       {property.images?.[0] ? (
-                        <img src={property.images[0]} alt={property.title} className="h-full w-full object-cover" />
+                        <img
+                          src={property.images[0]}
+                          alt={property.title}
+                          className="h-full w-full object-cover"
+                        />
                       ) : (
-                        <div className="flex h-full items-center justify-center"><Wheat size={48} className="text-emerald-300" /></div>
+                        <div className="flex h-full items-center justify-center">
+                          <Wheat size={48} className="text-emerald-300" />
+                        </div>
                       )}
                       <button
                         onClick={() => toggleFavorite(property.id)}
                         aria-label="Favoritar propriedade"
                         className={`absolute right-3 top-3 rounded-full p-2 ${favoriteIds.has(property.id) ? 'bg-red-500 text-white' : 'bg-white text-slate-500'}`}
                       >
-                        <Heart size={17} fill={favoriteIds.has(property.id) ? 'currentColor' : 'none'} />
+                        <Heart
+                          size={17}
+                          fill={
+                            favoriteIds.has(property.id)
+                              ? 'currentColor'
+                              : 'none'
+                          }
+                        />
                       </button>
                     </div>
                     <div className="p-5">
-                      <p className="text-xs font-bold uppercase text-emerald-600">{property.property_type || 'Imóvel rural'}</p>
-                      <h2 className="mt-1 text-lg font-bold text-slate-900">{property.title}</h2>
+                      <p className="text-xs font-bold uppercase text-emerald-600">
+                        {property.property_type || 'Imóvel rural'}
+                      </p>
+                      <h2 className="mt-1 text-lg font-bold text-slate-900">
+                        {property.title}
+                      </h2>
                       <p className="mt-1 flex items-center gap-1 text-sm text-slate-500">
-                        <MapPin size={14} /> {[property.city, property.state].filter(Boolean).join(' / ') || 'Localização não informada'}
+                        <MapPin size={14} />{' '}
+                        {[property.city, property.state]
+                          .filter(Boolean)
+                          .join(' / ') || 'Localização não informada'}
                       </p>
                       <div className="mt-4 flex gap-2 text-xs font-bold">
-                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">{area.toLocaleString('pt-BR')} ha</span>
-                        <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700">Score {score || 'pendente'}</span>
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
+                          {area.toLocaleString('pt-BR')} ha
+                        </span>
+                        <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700">
+                          Score {score || 'pendente'}
+                        </span>
                       </div>
-                      <p className="mt-5 text-xl font-bold text-emerald-600">{money(property.price || 0)}</p>
+                      <p className="mt-5 text-xl font-bold text-emerald-600">
+                        {money(property.price || 0)}
+                      </p>
                       <div className="mt-4 flex gap-2">
-                        <button onClick={() => scheduleVisit(property)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700">
+                        <button
+                          onClick={() => scheduleVisit(property)}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700"
+                        >
                           <Calendar size={15} /> Agendar
                         </button>
-                        <button onClick={() => navigate(`/rural/territorio/dossie?property=${property.id}`)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-bold text-white">
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/rural/territorio/dossie?property=${property.id}`
+                            )
+                          }
+                          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-bold text-white"
+                        >
                           Dossiê <ArrowRight size={15} />
                         </button>
                       </div>
@@ -270,18 +342,29 @@ const PortalCompradorRural: React.FC = () => {
       {activeTab === 'visitas' && (
         <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6">
           {visits.length === 0 ? (
-            <p className="py-10 text-center text-slate-400">Nenhuma visita técnica agendada.</p>
+            <p className="py-10 text-center text-slate-400">
+              Nenhuma visita técnica agendada.
+            </p>
           ) : (
             visits.map((visit) => (
-              <div key={visit.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <div
+                key={visit.id}
+                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4"
+              >
                 <div className="flex items-center gap-3">
                   <Calendar className="text-emerald-600" size={20} />
                   <div>
-                    <p className="font-bold text-slate-900">{visit.properties?.title || 'Propriedade rural'}</p>
-                    <p className="text-xs text-slate-500">{new Date(visit.scheduled_at).toLocaleString('pt-BR')}</p>
+                    <p className="font-bold text-slate-900">
+                      {visit.properties?.title || 'Propriedade rural'}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(visit.scheduled_at).toLocaleString('pt-BR')}
+                    </p>
                   </div>
                 </div>
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold uppercase text-amber-700">{visit.status}</span>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold uppercase text-amber-700">
+                  {visit.status}
+                </span>
               </div>
             ))
           )}

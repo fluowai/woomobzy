@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -21,18 +20,27 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function listTables() {
   console.log('--- Listing Tables ---');
-  // We can't query information_schema directly with supabase-js easily usually, 
+  // We can't query information_schema directly with supabase-js easily usually,
   // but we can try to just select * from a few expected tables to see which error.
-  
-  const tablesToCheck = ['organizations', 'tenants', 'companies', 'profiles', 'properties', 'site_settings'];
-  
+
+  const tablesToCheck = [
+    'organizations',
+    'tenants',
+    'companies',
+    'profiles',
+    'properties',
+    'site_settings',
+  ];
+
   for (const table of tablesToCheck) {
-      const { data, error } = await supabase.from(table).select('count', { count: 'exact', head: true });
-      if (error) {
-          console.log(`❌ Table '${table}' check failed: ${error.message}`);
-      } else {
-          console.log(`✅ Table '${table}' exists.`);
-      }
+    const { data, error } = await supabase
+      .from(table)
+      .select('count', { count: 'exact', head: true });
+    if (error) {
+      console.log(`❌ Table '${table}' check failed: ${error.message}`);
+    } else {
+      console.log(`✅ Table '${table}' exists.`);
+    }
   }
 }
 

@@ -33,25 +33,37 @@ const patternsToMove = [
   'final_diagnostic.txt',
   'script_output.txt',
   'error.log',
-  'build.log'
+  'build.log',
 ];
 
 let movedCount = 0;
 
 console.log('🧹 Iniciando limpeza do diretório raiz...');
 
-filesInRoot.forEach(file => {
+filesInRoot.forEach((file) => {
   const filePath = path.join(rootDir, file);
-  
+
   // Só move arquivos, ignora pastas e arquivos vitais
   if (fs.lstatSync(filePath).isFile()) {
-    const shouldMove = patternsToMove.some(p => file.startsWith(p)) || 
-                       (file.endsWith('.sql') && file !== 'definitive_imobzy_schema.sql' && file !== 'DATABASE_MASTER.sql');
+    const shouldMove =
+      patternsToMove.some((p) => file.startsWith(p)) ||
+      (file.endsWith('.sql') &&
+        file !== 'definitive_imobzy_schema.sql' &&
+        file !== 'DATABASE_MASTER.sql');
 
     // NUNCA move arquivos vitais
     const isVital = [
-      'package.json', 'package-lock.json', '.env', 'App.tsx', 'index.html', 'vite.config.ts', 
-      'tsconfig.json', 'ecosystem.config.cjs', 'index.css', 'index.tsx', 'App.tsx'
+      'package.json',
+      'package-lock.json',
+      '.env',
+      'App.tsx',
+      'index.html',
+      'vite.config.ts',
+      'tsconfig.json',
+      'ecosystem.config.cjs',
+      'index.css',
+      'index.tsx',
+      'App.tsx',
     ].includes(file);
 
     if (shouldMove && !isVital) {
@@ -67,4 +79,6 @@ filesInRoot.forEach(file => {
   }
 });
 
-console.log(`\n✨ Limpeza concluída! ${movedCount} arquivos organizados em scripts/debug/`);
+console.log(
+  `\n✨ Limpeza concluída! ${movedCount} arquivos organizados em scripts/debug/`
+);

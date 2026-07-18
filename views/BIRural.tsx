@@ -49,18 +49,20 @@ const BIRural: React.FC = () => {
       setLoading(true);
       const organizationId = profile.organization_id;
 
-      const [{ data: props, error: propsError }, { data: leads, error: leadsError }] =
-        await Promise.all([
-          supabase
-            .from('properties')
-            .select('*')
-            .eq('organization_id', organizationId)
-            .neq('status', 'Pendente'),
-          supabase
-            .from('leads')
-            .select('id, source, created_at, match_profile, preferences')
-            .eq('organization_id', organizationId),
-        ]);
+      const [
+        { data: props, error: propsError },
+        { data: leads, error: leadsError },
+      ] = await Promise.all([
+        supabase
+          .from('properties')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .neq('status', 'Pendente'),
+        supabase
+          .from('leads')
+          .select('id, source, created_at, match_profile, preferences')
+          .eq('organization_id', organizationId),
+      ]);
 
       if (propsError) logger.error('Error fetching properties:', propsError);
       else setProperties((props || []).filter(isRuralProperty) as any);
@@ -71,8 +73,8 @@ const BIRural: React.FC = () => {
             (lead) =>
               lead.match_profile === 'rural' ||
               lead.preferences?.niche === 'rural' ||
-              lead.preferences?.profile === 'rural',
-          ),
+              lead.preferences?.profile === 'rural'
+          )
         );
       }
     } catch (error) {
@@ -139,23 +141,32 @@ const BIRural: React.FC = () => {
   }, [ruralLeads]);
 
   const growthData = useMemo(() => {
-      const monthCount = timeRange === 'Mensal' ? 4 : timeRange === 'Semestral' ? 6 : 12;
-      return Array.from({ length: monthCount }, (_, index) => {
-        const date = new Date();
-        date.setDate(1);
-        date.setMonth(date.getMonth() - (monthCount - 1 - index));
-        const matchesMonth = (value?: string) => {
-          if (!value) return false;
-          const createdAt = new Date(value);
-          return createdAt.getMonth() === date.getMonth() && createdAt.getFullYear() === date.getFullYear();
-        };
-        return {
-          month: new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(date).replace('.', ''),
-          listings: properties.filter((property) => matchesMonth((property as any).created_at)).length,
-          leads: ruralLeads.filter((lead) => matchesMonth(lead.created_at)).length,
-        };
-      });
-    }, [properties, ruralLeads, timeRange]);
+    const monthCount =
+      timeRange === 'Mensal' ? 4 : timeRange === 'Semestral' ? 6 : 12;
+    return Array.from({ length: monthCount }, (_, index) => {
+      const date = new Date();
+      date.setDate(1);
+      date.setMonth(date.getMonth() - (monthCount - 1 - index));
+      const matchesMonth = (value?: string) => {
+        if (!value) return false;
+        const createdAt = new Date(value);
+        return (
+          createdAt.getMonth() === date.getMonth() &&
+          createdAt.getFullYear() === date.getFullYear()
+        );
+      };
+      return {
+        month: new Intl.DateTimeFormat('pt-BR', { month: 'short' })
+          .format(date)
+          .replace('.', ''),
+        listings: properties.filter((property) =>
+          matchesMonth((property as any).created_at)
+        ).length,
+        leads: ruralLeads.filter((lead) => matchesMonth(lead.created_at))
+          .length,
+      };
+    });
+  }, [properties, ruralLeads, timeRange]);
 
   const COLORS = [
     settings.primaryColor,
@@ -185,9 +196,13 @@ const BIRural: React.FC = () => {
       ]),
     ];
     const csv = rows
-      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(';'))
+      .map((row) =>
+        row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(';')
+      )
       .join('\n');
-    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+    const url = URL.createObjectURL(
+      new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
+    );
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = `bi-rural-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -294,9 +309,7 @@ const BIRural: React.FC = () => {
                 >
                   <kpi.icon size={24} />
                 </div>
-                <span
-                  className="text-[10px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600"
-                >
+                <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600">
                   {kpi.trend}
                 </span>
               </div>

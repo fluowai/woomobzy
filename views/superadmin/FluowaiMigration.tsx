@@ -128,7 +128,8 @@ const FluowaiMigration: React.FC = () => {
   }, [activeJob?.id]);
 
   useEffect(() => {
-    if (!activeJob?.id || !['running', 'testing'].includes(activeJob.status)) return;
+    if (!activeJob?.id || !['running', 'testing'].includes(activeJob.status))
+      return;
 
     const interval = window.setInterval(() => {
       refreshJobs({ silent: true });
@@ -139,11 +140,19 @@ const FluowaiMigration: React.FC = () => {
   }, [activeJob?.id, activeJob?.status]);
 
   const canRunActions = Boolean(activeJob?.id);
-  const canMigrate = Boolean(activeJob?.id && activeJob.dry_run_approved && form.confirmation.trim() === 'MIGRAR MIDIAS');
-  const migrateBlockedReason = getMigrateBlockedReason(activeJob, form.confirmation);
+  const canMigrate = Boolean(
+    activeJob?.id &&
+    activeJob.dry_run_approved &&
+    form.confirmation.trim() === 'MIGRAR MIDIAS'
+  );
+  const migrateBlockedReason = getMigrateBlockedReason(
+    activeJob,
+    form.confirmation
+  );
   const phaseLabel = useMemo(() => {
     if (!activeJob) return 'Nenhum job criado';
-    if (activeJob.status === 'running') return `Migrando: ${activeJob.progress || 0}%`;
+    if (activeJob.status === 'running')
+      return `Migrando: ${activeJob.progress || 0}%`;
     if (activeJob.dry_run_approved) return 'Dry-run aprovado';
     return `Status: ${activeJob.status}`;
   }, [activeJob]);
@@ -174,7 +183,9 @@ const FluowaiMigration: React.FC = () => {
       });
       setLastProgressSync(new Date().toLocaleTimeString('pt-BR'));
       if (data.job) {
-        setActiveJob((current) => current?.id === data.job.id ? data.job : current);
+        setActiveJob((current) =>
+          current?.id === data.job.id ? data.job : current
+        );
       }
     } catch (err: any) {
       if (!silent) setError(err.message);
@@ -211,7 +222,16 @@ const FluowaiMigration: React.FC = () => {
     }
   }
 
-  async function runAction(action: 'test-connections' | 'diagnose' | 'analyze-media-organization' | 'dry-run' | 'migrate-storage' | 'validate' | 'report') {
+  async function runAction(
+    action:
+      | 'test-connections'
+      | 'diagnose'
+      | 'analyze-media-organization'
+      | 'dry-run'
+      | 'migrate-storage'
+      | 'validate'
+      | 'report'
+  ) {
     if (!activeJob) return;
     setLoading(true);
     setActiveAction(action);
@@ -225,9 +245,10 @@ const FluowaiMigration: React.FC = () => {
           : `/api/fluowai-migration/jobs/${activeJob.id}/${action}`;
       const data = await callApi(path, {
         method: action === 'report' ? 'GET' : 'POST',
-        body: action === 'migrate-storage'
-          ? JSON.stringify({ confirmation: form.confirmation.trim() })
-          : undefined,
+        body:
+          action === 'migrate-storage'
+            ? JSON.stringify({ confirmation: form.confirmation.trim() })
+            : undefined,
       });
       setResult(data.report || data.diagnostic || data.analysis || data);
       setMessage(actionMessage(action, data));
@@ -264,7 +285,8 @@ const FluowaiMigration: React.FC = () => {
                 Migração de Mídias para MinIO
               </h1>
               <p className="text-sm text-slate-500">
-                Copie buckets do Supabase Storage via S3 para MinIO sem mover o banco de dados.
+                Copie buckets do Supabase Storage via S3 para MinIO sem mover o
+                banco de dados.
               </p>
             </div>
           </div>
@@ -276,7 +298,8 @@ const FluowaiMigration: React.FC = () => {
             Banco permanece no Supabase atual
           </div>
           <p className="mt-1 text-xs">
-            A migração copia arquivos. Nada é apagado da origem e URLs no banco não são alteradas automaticamente.
+            A migração copia arquivos. Nada é apagado da origem e URLs no banco
+            não são alteradas automaticamente.
           </p>
         </div>
       </div>
@@ -286,7 +309,9 @@ const FluowaiMigration: React.FC = () => {
           <div
             key={step}
             className={`rounded-lg px-3 py-2 text-xs font-semibold ${
-              index < 5 ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'
+              index < 5
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-400'
             }`}
           >
             <div className="text-[10px] opacity-70">{index + 1}</div>
@@ -307,12 +332,18 @@ const FluowaiMigration: React.FC = () => {
               </span>
               <input
                 value={form.selectedBuckets}
-                onChange={(event) => setForm((current) => ({ ...current, selectedBuckets: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    selectedBuckets: event.target.value,
+                  }))
+                }
                 className={fieldClass}
               />
             </label>
             <p className="mt-2 text-xs text-slate-500">
-              Use vírgula para separar. A organização do destino é definida no bloco MinIO.
+              Use vírgula para separar. A organização do destino é definida no
+              bloco MinIO.
             </p>
           </div>
         </div>
@@ -324,7 +355,8 @@ const FluowaiMigration: React.FC = () => {
               Controle
             </div>
             <p className="mt-2 text-xs leading-relaxed text-slate-500">
-              Salve as credenciais S3. As chaves voltam mascaradas e ficam criptografadas no banco.
+              Salve as credenciais S3. As chaves voltam mascaradas e ficam
+              criptografadas no banco.
             </p>
 
             <button
@@ -332,25 +364,67 @@ const FluowaiMigration: React.FC = () => {
               disabled={loading}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              {activeAction === 'create' ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+              {activeAction === 'create' ? (
+                <RefreshCw size={16} className="animate-spin" />
+              ) : (
+                <CheckCircle2 size={16} />
+              )}
               Salvar credenciais
             </button>
 
             <div className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
               <div className="font-bold text-slate-800">{phaseLabel}</div>
-              {activeJob?.id && <div className="mt-1 truncate font-mono">{activeJob.id}</div>}
+              {activeJob?.id && (
+                <div className="mt-1 truncate font-mono">{activeJob.id}</div>
+              )}
             </div>
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-5">
             <div className="text-sm font-bold text-slate-900">Ações</div>
             <div className="mt-3 space-y-2">
-              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'test-connections'} icon={<ClipboardCheck size={16} />} label="Testar conexões" onClick={() => runAction('test-connections')} />
-              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'diagnose'} icon={<Image size={16} />} label="Diagnosticar buckets" onClick={() => runAction('diagnose')} />
-              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'analyze-media-organization'} icon={<HardDrive size={16} />} label="Analisar banco e pastas" onClick={() => runAction('analyze-media-organization')} />
-              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'dry-run'} icon={<FileJson size={16} />} label="Simular migração" onClick={() => runAction('dry-run')} />
-              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'validate'} icon={<Shield size={16} />} label="Validar integridade" onClick={() => runAction('validate')} />
-              <ActionButton disabled={!canRunActions || loading} active={activeAction === 'report'} icon={<Download size={16} />} label="Relatório JSON" onClick={() => runAction('report')} />
+              <ActionButton
+                disabled={!canRunActions || loading}
+                active={activeAction === 'test-connections'}
+                icon={<ClipboardCheck size={16} />}
+                label="Testar conexões"
+                onClick={() => runAction('test-connections')}
+              />
+              <ActionButton
+                disabled={!canRunActions || loading}
+                active={activeAction === 'diagnose'}
+                icon={<Image size={16} />}
+                label="Diagnosticar buckets"
+                onClick={() => runAction('diagnose')}
+              />
+              <ActionButton
+                disabled={!canRunActions || loading}
+                active={activeAction === 'analyze-media-organization'}
+                icon={<HardDrive size={16} />}
+                label="Analisar banco e pastas"
+                onClick={() => runAction('analyze-media-organization')}
+              />
+              <ActionButton
+                disabled={!canRunActions || loading}
+                active={activeAction === 'dry-run'}
+                icon={<FileJson size={16} />}
+                label="Simular migração"
+                onClick={() => runAction('dry-run')}
+              />
+              <ActionButton
+                disabled={!canRunActions || loading}
+                active={activeAction === 'validate'}
+                icon={<Shield size={16} />}
+                label="Validar integridade"
+                onClick={() => runAction('validate')}
+              />
+              <ActionButton
+                disabled={!canRunActions || loading}
+                active={activeAction === 'report'}
+                icon={<Download size={16} />}
+                label="Relatório JSON"
+                onClick={() => runAction('report')}
+              />
             </div>
 
             <div className="mt-4 space-y-2">
@@ -360,7 +434,12 @@ const FluowaiMigration: React.FC = () => {
                 </span>
                 <input
                   value={form.confirmation}
-                  onChange={(event) => setForm((current) => ({ ...current, confirmation: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      confirmation: event.target.value,
+                    }))
+                  }
                   placeholder="MIGRAR MIDIAS"
                   className={fieldClass}
                 />
@@ -370,7 +449,11 @@ const FluowaiMigration: React.FC = () => {
                 disabled={!canMigrate || loading}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {activeAction === 'migrate-storage' ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} />}
+                {activeAction === 'migrate-storage' ? (
+                  <RefreshCw size={16} className="animate-spin" />
+                ) : (
+                  <Play size={16} />
+                )}
                 Iniciar migração de mídias
               </button>
               {!canMigrate && (
@@ -382,9 +465,15 @@ const FluowaiMigration: React.FC = () => {
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-5">
-            <div className="text-sm font-bold text-slate-900">Jobs recentes</div>
+            <div className="text-sm font-bold text-slate-900">
+              Jobs recentes
+            </div>
             <div className="mt-3 max-h-56 space-y-2 overflow-y-auto">
-              {jobs.length === 0 && <p className="text-xs text-slate-500">Nenhum job criado ainda.</p>}
+              {jobs.length === 0 && (
+                <p className="text-xs text-slate-500">
+                  Nenhum job criado ainda.
+                </p>
+              )}
               {jobs.map((job) => (
                 <button
                   key={job.id}
@@ -408,7 +497,9 @@ const FluowaiMigration: React.FC = () => {
       </section>
 
       {(message || error) && (
-        <div className={`rounded-lg border p-4 text-sm ${error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+        <div
+          className={`rounded-lg border p-4 text-sm ${error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}
+        >
           <div className="flex items-center gap-2 font-semibold">
             {error ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
             {error || message}
@@ -431,7 +522,9 @@ const FluowaiMigration: React.FC = () => {
           Resultado técnico
         </div>
         <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-slate-200">
-          {result ? JSON.stringify(result, null, 2) : 'Aguardando execução segura.'}
+          {result
+            ? JSON.stringify(result, null, 2)
+            : 'Aguardando execução segura.'}
         </pre>
       </section>
     </div>
@@ -444,10 +537,23 @@ const MigrationProgressPanel: React.FC<{
   lastSync: string | null;
   onRefresh: () => void;
 }> = ({ job, details, lastSync, onRefresh }) => {
-  const storageStep = details?.steps?.find((step) => step.step === 'storage_migration');
-  const validationStep = details?.steps?.find((step) => step.step === 'validation');
-  const activeStep = validationStep || storageStep || [...(details?.steps || [])].reverse().find((step) => step.status === 'running') || details?.steps?.[details.steps.length - 1];
-  const progress = Math.max(0, Math.min(100, Number(job.progress || activeStep?.progress || 0)));
+  const storageStep = details?.steps?.find(
+    (step) => step.step === 'storage_migration'
+  );
+  const validationStep = details?.steps?.find(
+    (step) => step.step === 'validation'
+  );
+  const activeStep =
+    validationStep ||
+    storageStep ||
+    [...(details?.steps || [])]
+      .reverse()
+      .find((step) => step.status === 'running') ||
+    details?.steps?.[details.steps.length - 1];
+  const progress = Math.max(
+    0,
+    Math.min(100, Number(job.progress || activeStep?.progress || 0))
+  );
   const metadata = activeStep?.metadata || {};
   const totalFiles = Number(metadata.totalFiles || 0);
   const processed = Number(metadata.processed || 0);
@@ -455,7 +561,7 @@ const MigrationProgressPanel: React.FC<{
   const skipped = Number(metadata.skipped || 0);
   const failed = Number(metadata.failed || 0);
   const bytesCopied = Number(metadata.bytesCopied || 0);
-  
+
   const matched = Number(metadata.matched || 0);
   const missing = Number(metadata.missing || 0);
   const sizeMismatch = Number(metadata.sizeMismatch || 0);
@@ -468,7 +574,11 @@ const MigrationProgressPanel: React.FC<{
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-            {job.status === 'running' ? <RefreshCw size={16} className="animate-spin text-red-600" /> : <CheckCircle2 size={16} className="text-emerald-600" />}
+            {job.status === 'running' ? (
+              <RefreshCw size={16} className="animate-spin text-red-600" />
+            ) : (
+              <CheckCircle2 size={16} className="text-emerald-600" />
+            )}
             Progresso da migração
           </div>
           <p className="mt-1 text-xs text-slate-500">
@@ -487,7 +597,9 @@ const MigrationProgressPanel: React.FC<{
 
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600">
-          <span>{activeStep ? stepLabel(activeStep.step) : `Status: ${job.status}`}</span>
+          <span>
+            {activeStep ? stepLabel(activeStep.step) : `Status: ${job.status}`}
+          </span>
           <span>{progress}%</span>
         </div>
         <div className="h-3 overflow-hidden rounded-full bg-slate-100">
@@ -499,35 +611,66 @@ const MigrationProgressPanel: React.FC<{
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-5">
-        <ProgressStat label="Processados" value={totalFiles ? `${processed}/${totalFiles}` : '-'} />
+        <ProgressStat
+          label="Processados"
+          value={totalFiles ? `${processed}/${totalFiles}` : '-'}
+        />
         {activeStep?.step === 'validation' ? (
           <>
             <ProgressStat label="Validados (OK)" value={String(matched || 0)} />
-            <ProgressStat label="Ausentes" value={String(missing || 0)} tone={missing ? 'danger' : 'neutral'} />
-            <ProgressStat label="Div. Tamanho" value={String(sizeMismatch || 0)} tone={sizeMismatch ? 'danger' : 'neutral'} />
+            <ProgressStat
+              label="Ausentes"
+              value={String(missing || 0)}
+              tone={missing ? 'danger' : 'neutral'}
+            />
+            <ProgressStat
+              label="Div. Tamanho"
+              value={String(sizeMismatch || 0)}
+              tone={sizeMismatch ? 'danger' : 'neutral'}
+            />
           </>
         ) : (
           <>
             <ProgressStat label="Copiados" value={String(copied || 0)} />
             <ProgressStat label="Ignorados" value={String(skipped || 0)} />
-            <ProgressStat label="Falhas" value={String(failed || 0)} tone={failed ? 'danger' : 'neutral'} />
-            <ProgressStat label="Dados copiados" value={formatBytes(bytesCopied)} />
+            <ProgressStat
+              label="Falhas"
+              value={String(failed || 0)}
+              tone={failed ? 'danger' : 'neutral'}
+            />
+            <ProgressStat
+              label="Dados copiados"
+              value={formatBytes(bytesCopied)}
+            />
           </>
         )}
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Logs recentes</div>
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Logs recentes
+          </div>
           <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
-            {recentLogs.length === 0 && <p className="text-xs text-slate-500">Ainda sem logs para este job.</p>}
+            {recentLogs.length === 0 && (
+              <p className="text-xs text-slate-500">
+                Ainda sem logs para este job.
+              </p>
+            )}
             {recentLogs.map((log) => (
-              <div key={log.id} className="rounded-lg bg-white px-3 py-2 text-xs text-slate-700 ring-1 ring-slate-200">
+              <div
+                key={log.id}
+                className="rounded-lg bg-white px-3 py-2 text-xs text-slate-700 ring-1 ring-slate-200"
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`font-bold ${log.level === 'error' ? 'text-red-700' : log.level === 'warn' ? 'text-amber-700' : 'text-slate-800'}`}>
+                  <span
+                    className={`font-bold ${log.level === 'error' ? 'text-red-700' : log.level === 'warn' ? 'text-amber-700' : 'text-slate-800'}`}
+                  >
                     {log.level} / {stepLabel(log.step || '')}
                   </span>
-                  <span className="shrink-0 text-slate-400">{formatTime(log.created_at)}</span>
+                  <span className="shrink-0 text-slate-400">
+                    {formatTime(log.created_at)}
+                  </span>
                 </div>
                 <div className="mt-1">{log.message}</div>
               </div>
@@ -536,16 +679,33 @@ const MigrationProgressPanel: React.FC<{
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Erros recentes</div>
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Erros recentes
+          </div>
           <div className="mt-3 max-h-52 space-y-2 overflow-y-auto">
-            {recentErrors.length === 0 && <p className="text-xs text-slate-500">Nenhum erro registrado até agora.</p>}
+            {recentErrors.length === 0 && (
+              <p className="text-xs text-slate-500">
+                Nenhum erro registrado até agora.
+              </p>
+            )}
             {recentErrors.map((item) => (
-              <div key={item.id} className="rounded-lg bg-white px-3 py-2 text-xs text-red-800 ring-1 ring-red-100">
+              <div
+                key={item.id}
+                className="rounded-lg bg-white px-3 py-2 text-xs text-red-800 ring-1 ring-red-100"
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold">{stepLabel(item.step || '')}</span>
-                  <span className="shrink-0 text-red-300">{formatTime(item.created_at)}</span>
+                  <span className="font-bold">
+                    {stepLabel(item.step || '')}
+                  </span>
+                  <span className="shrink-0 text-red-300">
+                    {formatTime(item.created_at)}
+                  </span>
                 </div>
-                {item.entity_name && <div className="mt-1 truncate font-mono text-[11px]">{item.entity_name}</div>}
+                {item.entity_name && (
+                  <div className="mt-1 truncate font-mono text-[11px]">
+                    {item.entity_name}
+                  </div>
+                )}
                 <div className="mt-1">{item.error_message}</div>
               </div>
             ))}
@@ -561,9 +721,17 @@ const ProgressStat: React.FC<{
   value: string;
   tone?: 'neutral' | 'danger';
 }> = ({ label, value, tone = 'neutral' }) => (
-  <div className={`rounded-lg border px-3 py-3 ${tone === 'danger' ? 'border-red-100 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
-    <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div>
-    <div className={`mt-1 text-sm font-bold ${tone === 'danger' ? 'text-red-700' : 'text-slate-900'}`}>{value}</div>
+  <div
+    className={`rounded-lg border px-3 py-3 ${tone === 'danger' ? 'border-red-100 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
+  >
+    <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+      {label}
+    </div>
+    <div
+      className={`mt-1 text-sm font-bold ${tone === 'danger' ? 'text-red-700' : 'text-slate-900'}`}
+    >
+      {value}
+    </div>
   </div>
 );
 
@@ -583,11 +751,33 @@ const SourceS3Panel: React.FC<{
         value={values.endpoint}
         onChange={(value) => onChange('source', 'endpoint', value)}
       />
-      <Field label="Região" value={values.region} onChange={(value) => onChange('source', 'region', value)} />
-      <Field label="Access key" secret value={values.accessKey} onChange={(value) => onChange('source', 'accessKey', value)} />
-      <Field label="Secret key" secret value={values.secretKey} onChange={(value) => onChange('source', 'secretKey', value)} />
-      <Field label="Public base URL origem" value={values.publicBaseUrl} onChange={(value) => onChange('source', 'publicBaseUrl', value)} />
-      <Field label="Supabase URL origem" value={values.supabaseUrl} onChange={(value) => onChange('source', 'supabaseUrl', value)} />
+      <Field
+        label="Região"
+        value={values.region}
+        onChange={(value) => onChange('source', 'region', value)}
+      />
+      <Field
+        label="Access key"
+        secret
+        value={values.accessKey}
+        onChange={(value) => onChange('source', 'accessKey', value)}
+      />
+      <Field
+        label="Secret key"
+        secret
+        value={values.secretKey}
+        onChange={(value) => onChange('source', 'secretKey', value)}
+      />
+      <Field
+        label="Public base URL origem"
+        value={values.publicBaseUrl}
+        onChange={(value) => onChange('source', 'publicBaseUrl', value)}
+      />
+      <Field
+        label="Supabase URL origem"
+        value={values.supabaseUrl}
+        onChange={(value) => onChange('source', 'supabaseUrl', value)}
+      />
     </div>
   </div>
 );
@@ -602,12 +792,39 @@ const MinioPanel: React.FC<{
       Destino MinIO via S3
     </div>
     <div className="grid gap-4 md:grid-cols-2">
-      <Field label="MinIO endpoint" placeholder="https://files.fluowai.com.br" value={values.endpoint} onChange={(value) => onChange('minio', 'endpoint', value)} />
-      <Field label="MinIO port" value={values.port} onChange={(value) => onChange('minio', 'port', Number(value))} />
-      <Field label="Região" value={values.region} onChange={(value) => onChange('minio', 'region', value)} />
-      <Field label="Access key" secret value={values.accessKey} onChange={(value) => onChange('minio', 'accessKey', value)} />
-      <Field label="Secret key" secret value={values.secretKey} onChange={(value) => onChange('minio', 'secretKey', value)} />
-      <Field label="Bucket único MinIO" value={values.bucket} onChange={(value) => onChange('minio', 'bucket', value)} />
+      <Field
+        label="MinIO endpoint"
+        placeholder="https://files.fluowai.com.br"
+        value={values.endpoint}
+        onChange={(value) => onChange('minio', 'endpoint', value)}
+      />
+      <Field
+        label="MinIO port"
+        value={values.port}
+        onChange={(value) => onChange('minio', 'port', Number(value))}
+      />
+      <Field
+        label="Região"
+        value={values.region}
+        onChange={(value) => onChange('minio', 'region', value)}
+      />
+      <Field
+        label="Access key"
+        secret
+        value={values.accessKey}
+        onChange={(value) => onChange('minio', 'accessKey', value)}
+      />
+      <Field
+        label="Secret key"
+        secret
+        value={values.secretKey}
+        onChange={(value) => onChange('minio', 'secretKey', value)}
+      />
+      <Field
+        label="Bucket único MinIO"
+        value={values.bucket}
+        onChange={(value) => onChange('minio', 'bucket', value)}
+      />
       <SelectField
         label="Organização no MinIO"
         value={values.layoutMode}
@@ -628,12 +845,18 @@ const MinioPanel: React.FC<{
           ['none', 'Sem prefixo'],
         ]}
       />
-      <Field label="Public base URL destino" value={values.publicBaseUrl} onChange={(value) => onChange('minio', 'publicBaseUrl', value)} />
+      <Field
+        label="Public base URL destino"
+        value={values.publicBaseUrl}
+        onChange={(value) => onChange('minio', 'publicBaseUrl', value)}
+      />
       <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
         <input
           type="checkbox"
           checked={values.useSsl}
-          onChange={(event) => onChange('minio', 'useSsl', event.target.checked)}
+          onChange={(event) =>
+            onChange('minio', 'useSsl', event.target.checked)
+          }
         />
         Usar SSL
       </label>
@@ -746,22 +969,30 @@ function formatBytes(value: number) {
 
 function actionMessage(action: string, data: any) {
   if (action === 'test-connections') {
-    return data.ok ? 'Conexões S3 verificadas.' : 'Há conexões com falha. Veja o resultado técnico.';
+    return data.ok
+      ? 'Conexões S3 verificadas.'
+      : 'Há conexões com falha. Veja o resultado técnico.';
   }
   if (action === 'diagnose') return 'Diagnóstico de buckets concluído.';
-  if (action === 'analyze-media-organization') return 'Analise de banco e pastas concluida.';
+  if (action === 'analyze-media-organization')
+    return 'Analise de banco e pastas concluida.';
   if (action === 'dry-run') {
-    return data.report?.ready ? 'Pronto para migrar mídias.' : 'Correções necessárias antes da migração.';
+    return data.report?.ready
+      ? 'Pronto para migrar mídias.'
+      : 'Correções necessárias antes da migração.';
   }
-  if (action === 'migrate-storage') return data.message || 'Migração de mídias iniciada.';
+  if (action === 'migrate-storage')
+    return data.message || 'Migração de mídias iniciada.';
   if (action === 'validate') return data.message || 'Validação iniciada.';
   return 'Relatório carregado.';
 }
 
 function getMigrateBlockedReason(job: Job | null, confirmation: string) {
   if (!job) return 'Salve as credenciais para criar um job.';
-  if (!job.dry_run_approved) return 'Execute a simulação e aguarde o status Dry-run aprovado.';
-  if (confirmation.trim() !== 'MIGRAR MIDIAS') return 'Digite MIGRAR MIDIAS para liberar a migração.';
+  if (!job.dry_run_approved)
+    return 'Execute a simulação e aguarde o status Dry-run aprovado.';
+  if (confirmation.trim() !== 'MIGRAR MIDIAS')
+    return 'Digite MIGRAR MIDIAS para liberar a migração.';
   return 'Migração liberada.';
 }
 

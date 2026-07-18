@@ -16,7 +16,7 @@ const envPath = join(ROOT, '.env');
 let envVars = {};
 if (existsSync(envPath)) {
   const content = readFileSync(envPath, 'utf8');
-  content.split('\n').forEach(line => {
+  content.split('\n').forEach((line) => {
     const [key, ...vals] = line.split('=');
     if (key && !key.startsWith('#')) {
       envVars[key.trim()] = vals.join('=').trim();
@@ -50,7 +50,12 @@ let hasErrors = false;
 console.log('🔴 OBRIGATÓRIAS:');
 required.forEach(({ key, desc }) => {
   const val = envVars[key] || process.env[key];
-  if (!val || val.trim() === '' || val.includes('sua-') || val.includes('placeholder')) {
+  if (
+    !val ||
+    val.trim() === '' ||
+    val.includes('sua-') ||
+    val.includes('placeholder')
+  ) {
     console.log(`   ❌  ${key}`);
     console.log(`        → ${desc}`);
     hasErrors = true;
@@ -73,11 +78,17 @@ console.log('\n━━━━━━━━━━━━━━━━━━━━━�
 if (hasErrors) {
   console.log('❌  RESULTADO: Variáveis obrigatórias faltando!');
   console.log('');
-  console.log('   👉 Configure as variáveis marcadas com ❌ no ambiente do servidor.');
-  console.log('   👉 Para desenvolvimento local, edite o arquivo .env na raiz.');
+  console.log(
+    '   👉 Configure as variáveis marcadas com ❌ no ambiente do servidor.'
+  );
+  console.log(
+    '   👉 Para desenvolvimento local, edite o arquivo .env na raiz.'
+  );
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   process.exit(1);
 } else {
-  console.log('✅  RESULTADO: Todas as variáveis obrigatórias estão configuradas!');
+  console.log(
+    '✅  RESULTADO: Todas as variáveis obrigatórias estão configuradas!'
+  );
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 }

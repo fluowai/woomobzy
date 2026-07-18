@@ -5,7 +5,13 @@ import { createClient } from '@supabase/supabase-js';
 const { Client } = pg;
 
 const DEFAULT_SCHEMAS = ['public', 'auth'];
-const DEFAULT_BUCKETS = ['whatsapp-media', 'imobzyimg', 'imobzymsg', 'documents', 'exports'];
+const DEFAULT_BUCKETS = [
+  'whatsapp-media',
+  'imobzyimg',
+  'imobzymsg',
+  'documents',
+  'exports',
+];
 const TEXT_URL_COLUMNS = [
   'media_url',
   'file_url',
@@ -46,7 +52,9 @@ export function encryptCredentials(payload) {
 
 export function decryptCredentials(value) {
   const secret = getCredentialSecret();
-  const [version, ivValue, tagValue, encryptedValue] = String(value || '').split(':');
+  const [version, ivValue, tagValue, encryptedValue] = String(
+    value || ''
+  ).split(':');
   if (version !== 'v1' || !ivValue || !tagValue || !encryptedValue) {
     throw new Error('Formato de credencial criptografada inválido.');
   }
@@ -151,7 +159,8 @@ export async function testPostgresConnection(config, label = 'Banco') {
 
 export async function testMinioConnection(config) {
   validateMinioConfig(config);
-  const bucket = config.bucket || config.bucketDestino || config.minioBucketDestino;
+  const bucket =
+    config.bucket || config.bucketDestino || config.minioBucketDestino;
   const probeKey = `imobzy-migration-probe/${Date.now()}-${crypto.randomUUID()}.txt`;
   const body = Buffer.from('imobzy migration probe', 'utf8');
 
@@ -175,7 +184,9 @@ export async function testMinioConnection(config) {
       });
       bucketCreated = create.status === 200;
     } else if (head.status >= 400) {
-      throw new Error(`MinIO: bucket "${bucket}" não está acessível (HTTP ${head.status}).`);
+      throw new Error(
+        `MinIO: bucket "${bucket}" não está acessível (HTTP ${head.status}).`
+      );
     }
 
     await signedMinioRequest(config, {
@@ -196,7 +207,9 @@ export async function testMinioConnection(config) {
 
     const readBody = Buffer.from(await read.arrayBuffer()).toString('utf8');
     if (readBody !== body.toString('utf8')) {
-      throw new Error('MinIO: arquivo de teste foi lido com conteúdo divergente.');
+      throw new Error(
+        'MinIO: arquivo de teste foi lido com conteúdo divergente.'
+      );
     }
 
     await signedMinioRequest(config, {
@@ -225,8 +238,11 @@ export async function testS3StorageConnection(config, label = 'Storage S3') {
     allowStatuses: [200],
   });
   const xml = await listBuckets.text();
-  const buckets = [...xml.matchAll(/<Bucket>[\s\S]*?<Name>([\s\S]*?)<\/Name>[\s\S]*?<\/Bucket>/g)]
-    .map((match) => decodeXml(match[1]));
+  const buckets = [
+    ...xml.matchAll(
+      /<Bucket>[\s\S]*?<Name>([\s\S]*?)<\/Name>[\s\S]*?<\/Bucket>/g
+    ),
+  ].map((match) => decodeXml(match[1]));
 
   return {
     ok: true,
@@ -237,7 +253,10 @@ export async function testS3StorageConnection(config, label = 'Storage S3') {
   };
 }
 
-export async function collectS3StorageDiagnostics(config, buckets = DEFAULT_BUCKETS) {
+export async function collectS3StorageDiagnostics(
+  config,
+  buckets = DEFAULT_BUCKETS
+) {
   validateS3Config(config, 'Storage origem S3');
   const selected = [];
 
@@ -281,7 +300,9 @@ export async function collectS3StorageDiagnostics(config, buckets = DEFAULT_BUCK
         .slice(0, 10);
       bucket.samples = objects.slice(0, 20);
       for (const object of objects) {
-        const extension = object.key.includes('.') ? object.key.split('.').pop()?.toLowerCase() : 'sem-extensao';
+        const extension = object.key.includes('.')
+          ? object.key.split('.').pop()?.toLowerCase()
+          : 'sem-extensao';
         const group = extension || 'sem-extensao';
         bucket.contentTypes[group] = (bucket.contentTypes[group] || 0) + 1;
       }
@@ -307,13 +328,20 @@ export async function collectS3StorageDiagnostics(config, buckets = DEFAULT_BUCK
 export async function buildStorageOnlyDryRunReport({ source, minio, buckets }) {
   const [sourceStorage, minioCheck] = await Promise.all([
     collectS3StorageDiagnostics(source, buckets),
-    testMinioConnection(minio).catch((error) => ({ ok: false, error: error.message })),
+    testMinioConnection(minio).catch((error) => ({
+      ok: false,
+      error: error.message,
+    })),
   ]);
 
   const warnings = [];
   const blockers = [];
-  const missingBuckets = sourceStorage.buckets.filter((bucket) => !bucket.exists && !bucket.inaccessible);
-  const inaccessibleBuckets = sourceStorage.buckets.filter((bucket) => bucket.inaccessible);
+  const missingBuckets = sourceStorage.buckets.filter(
+    (bucket) => !bucket.exists && !bucket.inaccessible
+  );
+  const inaccessibleBuckets = sourceStorage.buckets.filter(
+    (bucket) => bucket.inaccessible
+  );
 
   if (missingBuckets.length) {
     warnings.push({
@@ -341,7 +369,11 @@ export async function buildStorageOnlyDryRunReport({ source, minio, buckets }) {
     });
   }
 
-  const destinationPlan = buildDestinationPlan({ minio, buckets, sourceStorage });
+  const destinationPlan = buildDestinationPlan({
+    minio,
+    buckets,
+    sourceStorage,
+  });
   if (destinationPlan.warnings.length) {
     warnings.push(...destinationPlan.warnings);
   }
@@ -369,20 +401,30 @@ export async function buildStorageOnlyDryRunReport({ source, minio, buckets }) {
 export async function analyzeMediaOrganization({ source, minio, buckets }) {
   validateS3Config(source, 'Storage origem S3');
   const sourceStorage = await collectS3StorageDiagnostics(source, buckets);
-  const destinationPlan = buildDestinationPlan({ minio, buckets, sourceStorage });
+  const destinationPlan = buildDestinationPlan({
+    minio,
+    buckets,
+    sourceStorage,
+  });
   const database = await analyzeDatabaseMediaReferences({ buckets, source });
   const bucketReferences = new Map(
-    (database.bucketReferences || []).map((item) => [item.bucket, item.references])
+    (database.bucketReferences || []).map((item) => [
+      item.bucket,
+      item.references,
+    ])
   );
 
   const recommendations = sourceStorage.buckets
     .filter((bucket) => bucket.exists)
     .map((bucket) => {
-      const mediaGroups = Object.entries(bucket.contentTypes || {}).reduce((groups, [extension, count]) => {
-        const group = inferMediaGroup(`file.${extension}`);
-        groups[group] = (groups[group] || 0) + count;
-        return groups;
-      }, {});
+      const mediaGroups = Object.entries(bucket.contentTypes || {}).reduce(
+        (groups, [extension, count]) => {
+          const group = inferMediaGroup(`file.${extension}`);
+          groups[group] = (groups[group] || 0) + count;
+          return groups;
+        },
+        {}
+      );
       const target = resolveDestinationObject({
         minio,
         sourceBucket: bucket.name,
@@ -401,9 +443,10 @@ export async function analyzeMediaOrganization({ source, minio, buckets }) {
           .map(([group, count]) => ({ group, count })),
         suggestedDestinationBucket: target.bucket,
         suggestedFolderPattern: describeDestinationPattern(minio, bucket.name),
-        reason: referenceCount > 0
-          ? 'Bucket aparece em URLs do banco; preservar o nome como bucket ou pasta reduz risco na troca futura de URLs.'
-          : 'Bucket nao apareceu nas colunas analisadas; manter separado ainda facilita auditoria e rollback.',
+        reason:
+          referenceCount > 0
+            ? 'Bucket aparece em URLs do banco; preservar o nome como bucket ou pasta reduz risco na troca futura de URLs.'
+            : 'Bucket nao apareceu nas colunas analisadas; manter separado ainda facilita auditoria e rollback.',
       };
     });
 
@@ -418,7 +461,14 @@ export async function analyzeMediaOrganization({ source, minio, buckets }) {
   };
 }
 
-export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, onFile, onProgress }) {
+export async function migrateStorageS3ToMinio({
+  source,
+  minio,
+  buckets,
+  onLog,
+  onFile,
+  onProgress,
+}) {
   validateS3Config(source, 'Storage origem S3');
   validateMinioConfig(minio);
 
@@ -428,14 +478,20 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
     bucketObjects.push({ bucket, objects });
   }
 
-  const totalFiles = bucketObjects.reduce((sum, item) => sum + item.objects.length, 0);
+  const totalFiles = bucketObjects.reduce(
+    (sum, item) => sum + item.objects.length,
+    0
+  );
   let processed = 0;
   let copied = 0;
   let skipped = 0;
   let failed = 0;
   let bytesCopied = 0;
 
-  await onLog?.('info', `Migração storage-only iniciada para ${totalFiles} arquivos.`);
+  await onLog?.(
+    'info',
+    `Migração storage-only iniciada para ${totalFiles} arquivos.`
+  );
 
   for (const { bucket, objects } of bucketObjects) {
     const destinationProbe = resolveDestinationObject({
@@ -446,7 +502,10 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
     const destinationBucket = destinationProbe.bucket;
 
     await ensureDestinationBucket(minio, destinationBucket);
-    await onLog?.('info', `Bucket ${bucket}: ${objects.length} arquivos para processar.`);
+    await onLog?.(
+      'info',
+      `Bucket ${bucket}: ${objects.length} arquivos para processar.`
+    );
 
     for (const object of objects) {
       processed++;
@@ -457,7 +516,11 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
       });
       const destinationKey = destination.key;
       const oldUrl = buildPublicObjectUrl(source, bucket, object.key);
-      const newUrl = buildPublicObjectUrl(minio, destination.bucket, destinationKey);
+      const newUrl = buildPublicObjectUrl(
+        minio,
+        destination.bucket,
+        destinationKey
+      );
       const basePayload = {
         old_url: oldUrl,
         new_url: newUrl,
@@ -475,10 +538,20 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
           allowStatuses: [200, 404],
         });
 
-        if (existing.status === 200 && Number(existing.headers.get('content-length') || 0) === object.size) {
+        if (
+          existing.status === 200 &&
+          Number(existing.headers.get('content-length') || 0) === object.size
+        ) {
           skipped++;
           await onFile?.({ ...basePayload, status: 'skipped' });
-          await onProgress?.({ processed, totalFiles, copied, skipped, failed, bytesCopied });
+          await onProgress?.({
+            processed,
+            totalFiles,
+            copied,
+            skipped,
+            failed,
+            bytesCopied,
+          });
           continue;
         }
 
@@ -489,7 +562,9 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
           allowStatuses: [200],
         });
         const buffer = Buffer.from(await sourceResponse.arrayBuffer());
-        const contentType = sourceResponse.headers.get('content-type') || inferContentType(object.key);
+        const contentType =
+          sourceResponse.headers.get('content-type') ||
+          inferContentType(object.key);
 
         await signedMinioRequest(minio, {
           method: 'PUT',
@@ -508,30 +583,69 @@ export async function migrateStorageS3ToMinio({ source, minio, buckets, onLog, o
           key: destinationKey,
           allowStatuses: [200],
         });
-        const destinationSize = Number(validation.headers.get('content-length') || 0);
+        const destinationSize = Number(
+          validation.headers.get('content-length') || 0
+        );
         if (destinationSize !== object.size) {
-          throw new Error(`Tamanho divergente após upload: origem=${object.size}, destino=${destinationSize}.`);
+          throw new Error(
+            `Tamanho divergente após upload: origem=${object.size}, destino=${destinationSize}.`
+          );
         }
 
         copied++;
         bytesCopied += object.size;
-        await onFile?.({ ...basePayload, content_type: contentType, status: 'copied' });
+        await onFile?.({
+          ...basePayload,
+          content_type: contentType,
+          status: 'copied',
+        });
       } catch (error) {
         failed++;
-        await onFile?.({ ...basePayload, status: 'failed', error_message: error.message });
-        await onLog?.('error', `Falha ao migrar ${bucket}/${object.key}: ${error.message}`);
+        await onFile?.({
+          ...basePayload,
+          status: 'failed',
+          error_message: error.message,
+        });
+        await onLog?.(
+          'error',
+          `Falha ao migrar ${bucket}/${object.key}: ${error.message}`
+        );
       }
 
-      await onProgress?.({ processed, totalFiles, copied, skipped, failed, bytesCopied });
+      await onProgress?.({
+        processed,
+        totalFiles,
+        copied,
+        skipped,
+        failed,
+        bytesCopied,
+      });
     }
   }
 
-  const summary = { totalFiles, processed, copied, skipped, failed, bytesCopied };
-  await onLog?.(failed ? 'warn' : 'info', 'Migração storage-only finalizada.', summary);
+  const summary = {
+    totalFiles,
+    processed,
+    copied,
+    skipped,
+    failed,
+    bytesCopied,
+  };
+  await onLog?.(
+    failed ? 'warn' : 'info',
+    'Migração storage-only finalizada.',
+    summary
+  );
   return summary;
 }
 
-export async function validateStorageMigration({ source, minio, buckets, onLog, onProgress }) {
+export async function validateStorageMigration({
+  source,
+  minio,
+  buckets,
+  onLog,
+  onProgress,
+}) {
   validateS3Config(source, 'Storage origem S3');
   validateMinioConfig(minio);
 
@@ -541,17 +655,26 @@ export async function validateStorageMigration({ source, minio, buckets, onLog, 
       const objects = await listAllS3Objects(source, bucket);
       bucketObjects.push({ bucket, objects });
     } catch (error) {
-      await onLog?.('warn', `Bucket origem [${bucket}] ignorado (inacess\u00edvel ou n\u00e3o encontrado): ${error.message}`);
+      await onLog?.(
+        'warn',
+        `Bucket origem [${bucket}] ignorado (inacess\u00edvel ou n\u00e3o encontrado): ${error.message}`
+      );
     }
   }
 
-  const totalFiles = bucketObjects.reduce((sum, item) => sum + item.objects.length, 0);
+  const totalFiles = bucketObjects.reduce(
+    (sum, item) => sum + item.objects.length,
+    0
+  );
   let processed = 0;
   let matched = 0;
   let missing = 0;
   let sizeMismatch = 0;
 
-  await onLog?.('info', `Validação storage-only iniciada para ${totalFiles} arquivos.`);
+  await onLog?.(
+    'info',
+    `Validação storage-only iniciada para ${totalFiles} arquivos.`
+  );
 
   for (const { bucket, objects } of bucketObjects) {
     for (const object of objects) {
@@ -572,31 +695,55 @@ export async function validateStorageMigration({ source, minio, buckets, onLog, 
 
         if (existing.status === 404) {
           missing++;
-          await onLog?.('error', `Arquivo ausente no destino: [${bucket}] ${object.key}`);
+          await onLog?.(
+            'error',
+            `Arquivo ausente no destino: [${bucket}] ${object.key}`
+          );
         } else {
-          const destinationSize = Number(existing.headers.get('content-length') || 0);
+          const destinationSize = Number(
+            existing.headers.get('content-length') || 0
+          );
           if (destinationSize !== object.size) {
             sizeMismatch++;
-            await onLog?.('error', `Tamanho divergente para [${bucket}] ${object.key} (Origem: ${object.size}, Destino: ${destinationSize})`);
+            await onLog?.(
+              'error',
+              `Tamanho divergente para [${bucket}] ${object.key} (Origem: ${object.size}, Destino: ${destinationSize})`
+            );
           } else {
             matched++;
           }
         }
       } catch (error) {
         missing++; // Considere como falha/ausente
-        await onLog?.('error', `Erro ao verificar [${bucket}] ${object.key}: ${error.message}`);
+        await onLog?.(
+          'error',
+          `Erro ao verificar [${bucket}] ${object.key}: ${error.message}`
+        );
       }
 
-      await onProgress?.({ processed, totalFiles, matched, missing, sizeMismatch });
+      await onProgress?.({
+        processed,
+        totalFiles,
+        matched,
+        missing,
+        sizeMismatch,
+      });
     }
   }
 
   const summary = { totalFiles, processed, matched, missing, sizeMismatch };
-  await onLog?.(missing || sizeMismatch ? 'warn' : 'info', 'Validação storage-only finalizada.', summary);
+  await onLog?.(
+    missing || sizeMismatch ? 'warn' : 'info',
+    'Validação storage-only finalizada.',
+    summary
+  );
   return summary;
 }
 
-export async function collectDatabaseDiagnostics(config, schemas = DEFAULT_SCHEMAS) {
+export async function collectDatabaseDiagnostics(
+  config,
+  schemas = DEFAULT_SCHEMAS
+) {
   const client = new Client(buildPgConfig(config));
   try {
     await client.connect();
@@ -684,7 +831,10 @@ export async function collectDatabaseDiagnostics(config, schemas = DEFAULT_SCHEM
     return {
       schemas: schemaRows.rows.map((row) => row.schema_name),
       tables,
-      estimatedRows: tables.reduce((sum, table) => sum + table.estimatedRows, 0),
+      estimatedRows: tables.reduce(
+        (sum, table) => sum + table.estimatedRows,
+        0
+      ),
       totalBytes: tables.reduce((sum, table) => sum + table.totalBytes, 0),
       functions: routineRows.rows.length,
       triggers: triggerRows.rows.length,
@@ -705,7 +855,10 @@ export async function collectDatabaseDiagnostics(config, schemas = DEFAULT_SCHEM
   }
 }
 
-export async function collectSupabaseStorageDiagnostics(config, buckets = DEFAULT_BUCKETS) {
+export async function collectSupabaseStorageDiagnostics(
+  config,
+  buckets = DEFAULT_BUCKETS
+) {
   validateSupabaseConfig(config, 'Supabase origem');
   const supabase = createClient(config.supabaseUrl, config.serviceRoleKey, {
     auth: { persistSession: false },
@@ -728,7 +881,10 @@ export async function collectSupabaseStorageDiagnostics(config, buckets = DEFAUL
     try {
       const scanned = await listSupabaseObjectsSample(supabase, bucket.name);
       bucket.filesSampled = scanned.files.length;
-      bucket.sampleBytes = scanned.files.reduce((sum, file) => sum + Number(file.size || 0), 0);
+      bucket.sampleBytes = scanned.files.reduce(
+        (sum, file) => sum + Number(file.size || 0),
+        0
+      );
       bucket.samples = scanned.files.slice(0, 20);
     } catch (scanError) {
       bucket.inaccessible = true;
@@ -745,7 +901,13 @@ export async function collectSupabaseStorageDiagnostics(config, buckets = DEFAUL
   };
 }
 
-export async function buildDryRunReport({ source, target, minio, schemas, buckets }) {
+export async function buildDryRunReport({
+  source,
+  target,
+  minio,
+  schemas,
+  buckets,
+}) {
   const [sourceDb, targetDb, sourceStorage] = await Promise.all([
     collectDatabaseDiagnostics(source, schemas),
     collectDatabaseDiagnostics(target, schemas),
@@ -754,20 +916,29 @@ export async function buildDryRunReport({ source, target, minio, schemas, bucket
 
   const warnings = [];
   const blockers = [];
-  const sourceTables = new Set(sourceDb.tables.map((table) => `${table.schema}.${table.table}`));
-  const targetTables = new Set(targetDb.tables.map((table) => `${table.schema}.${table.table}`));
-  const conflictingTables = [...sourceTables].filter((table) => targetTables.has(table));
+  const sourceTables = new Set(
+    sourceDb.tables.map((table) => `${table.schema}.${table.table}`)
+  );
+  const targetTables = new Set(
+    targetDb.tables.map((table) => `${table.schema}.${table.table}`)
+  );
+  const conflictingTables = [...sourceTables].filter((table) =>
+    targetTables.has(table)
+  );
 
   if (conflictingTables.length) {
     warnings.push({
       code: 'TARGET_TABLES_EXIST',
-      message: 'O destino já possui tabelas com os mesmos nomes. A migração real precisa de estratégia explícita.',
+      message:
+        'O destino já possui tabelas com os mesmos nomes. A migração real precisa de estratégia explícita.',
       count: conflictingTables.length,
       sample: conflictingTables.slice(0, 20),
     });
   }
 
-  const missingBuckets = sourceStorage.buckets.filter((bucket) => !bucket.exists);
+  const missingBuckets = sourceStorage.buckets.filter(
+    (bucket) => !bucket.exists
+  );
   if (missingBuckets.length) {
     warnings.push({
       code: 'SOURCE_BUCKETS_MISSING',
@@ -799,8 +970,14 @@ export async function buildDryRunReport({ source, target, minio, schemas, bucket
       estimatedRows: sourceDb.estimatedRows,
       databaseBytes: sourceDb.totalBytes,
       buckets: sourceStorage.buckets.filter((bucket) => bucket.exists).length,
-      sampledFiles: sourceStorage.buckets.reduce((sum, bucket) => sum + bucket.filesSampled, 0),
-      sampledStorageBytes: sourceStorage.buckets.reduce((sum, bucket) => sum + bucket.sampleBytes, 0),
+      sampledFiles: sourceStorage.buckets.reduce(
+        (sum, bucket) => sum + bucket.filesSampled,
+        0
+      ),
+      sampledStorageBytes: sourceStorage.buckets.reduce(
+        (sum, bucket) => sum + bucket.sampleBytes,
+        0
+      ),
     },
     warnings,
     blockers,
@@ -816,18 +993,26 @@ function buildDestinationPlan({ minio, buckets, sourceStorage }) {
   if (layoutMode === 'single_bucket' && !String(minio?.bucket || '').trim()) {
     blockers.push({
       code: 'MINIO_BUCKET_REQUIRED_FOR_SINGLE_BUCKET',
-      message: 'Informe o bucket unico do MinIO para organizar os arquivos em pastas.',
+      message:
+        'Informe o bucket unico do MinIO para organizar os arquivos em pastas.',
     });
   }
 
-  if (layoutMode === 'single_bucket' && prefixStrategy === 'none' && (buckets || []).length > 1) {
+  if (
+    layoutMode === 'single_bucket' &&
+    prefixStrategy === 'none' &&
+    (buckets || []).length > 1
+  ) {
     warnings.push({
       code: 'DESTINATION_COLLISION_RISK',
-      message: 'Usar bucket unico sem prefixo pode causar colisao de caminhos entre buckets diferentes.',
+      message:
+        'Usar bucket unico sem prefixo pode causar colisao de caminhos entre buckets diferentes.',
     });
   }
 
-  const bucketStats = new Map((sourceStorage?.buckets || []).map((bucket) => [bucket.name, bucket]));
+  const bucketStats = new Map(
+    (sourceStorage?.buckets || []).map((bucket) => [bucket.name, bucket])
+  );
   const mappings = (buckets || []).map((bucket) => {
     const stats = bucketStats.get(bucket);
     const target = resolveDestinationObject({
@@ -860,16 +1045,25 @@ async function analyzeDatabaseMediaReferences({ buckets, source }) {
   if (!connectionString) {
     return {
       available: false,
-      reason: 'DATABASE_URL nao esta configurado no backend; analise limitada aos buckets S3.',
+      reason:
+        'DATABASE_URL nao esta configurado no backend; analise limitada aos buckets S3.',
       scannedColumns: [],
-      bucketReferences: (buckets || []).map((bucket) => ({ bucket, references: 0 })),
-      warnings: ['Configure DATABASE_URL para cruzar URLs de midia com o banco em modo somente leitura.'],
+      bucketReferences: (buckets || []).map((bucket) => ({
+        bucket,
+        references: 0,
+      })),
+      warnings: [
+        'Configure DATABASE_URL para cruzar URLs de midia com o banco em modo somente leitura.',
+      ],
     };
   }
 
   const client = new Client({
     connectionString,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl:
+      process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: false }
+        : false,
     connectionTimeoutMillis: 10000,
     statement_timeout: 12000,
   });
@@ -912,10 +1106,12 @@ async function analyzeDatabaseMediaReferences({ buckets, source }) {
       const values = [];
       const bucketExpressions = (buckets || []).map((bucket, index) => {
         const patterns = buildDatabaseUrlPatterns(bucket, source);
-        const patternSql = patterns.map((pattern) => {
-          values.push(pattern);
-          return `${columnSql} ILIKE $${values.length}`;
-        }).join(' OR ');
+        const patternSql = patterns
+          .map((pattern) => {
+            values.push(pattern);
+            return `${columnSql} ILIKE $${values.length}`;
+          })
+          .join(' OR ');
         return `COUNT(*) FILTER (WHERE ${patternSql})::bigint AS bucket_${index}`;
       });
 
@@ -929,11 +1125,16 @@ async function analyzeDatabaseMediaReferences({ buckets, source }) {
       try {
         const result = await client.query(sql, values);
         const row = result.rows[0] || {};
-        const hits = (buckets || []).map((bucket, index) => {
-          const references = Number(row[`bucket_${index}`] || 0);
-          bucketTotals.set(bucket, (bucketTotals.get(bucket) || 0) + references);
-          return { bucket, references };
-        }).filter((item) => item.references > 0);
+        const hits = (buckets || [])
+          .map((bucket, index) => {
+            const references = Number(row[`bucket_${index}`] || 0);
+            bucketTotals.set(
+              bucket,
+              (bucketTotals.get(bucket) || 0) + references
+            );
+            return { bucket, references };
+          })
+          .filter((item) => item.references > 0);
 
         if (hits.length) {
           scannedColumns.push({
@@ -957,23 +1158,33 @@ async function analyzeDatabaseMediaReferences({ buckets, source }) {
       available: true,
       readonly: true,
       candidateColumns: candidates.rows.length,
-      matchedColumns: scannedColumns.filter((column) => !column.skipped && column.bucketHits?.length).length,
+      matchedColumns: scannedColumns.filter(
+        (column) => !column.skipped && column.bucketHits?.length
+      ).length,
       scannedColumns,
       bucketReferences: (buckets || []).map((bucket) => ({
         bucket,
         references: bucketTotals.get(bucket) || 0,
       })),
-      warnings: candidates.rows.length >= 80
-        ? ['A analise foi limitada a 80 colunas candidatas para evitar carga excessiva no banco.']
-        : [],
+      warnings:
+        candidates.rows.length >= 80
+          ? [
+              'A analise foi limitada a 80 colunas candidatas para evitar carga excessiva no banco.',
+            ]
+          : [],
     };
   } catch (error) {
     return {
       available: false,
       reason: error.message,
       scannedColumns: [],
-      bucketReferences: (buckets || []).map((bucket) => ({ bucket, references: 0 })),
-      warnings: ['Nao foi possivel analisar o banco; a migracao de arquivos continua podendo usar o diagnostico S3.'],
+      bucketReferences: (buckets || []).map((bucket) => ({
+        bucket,
+        references: 0,
+      })),
+      warnings: [
+        'Nao foi possivel analisar o banco; a migracao de arquivos continua podendo usar o diagnostico S3.',
+      ],
     };
   } finally {
     await closePg(client);
@@ -988,10 +1199,14 @@ function buildDatabaseUrlPatterns(bucket, source) {
   ];
 
   for (const base of [source?.publicBaseUrl, source?.supabaseUrl]) {
-    const cleanBase = String(base || '').trim().replace(/\/+$/, '');
+    const cleanBase = String(base || '')
+      .trim()
+      .replace(/\/+$/, '');
     if (!cleanBase) continue;
     patterns.push(`${escapeLike(cleanBase)}/${safeBucket}/%`);
-    patterns.push(`${escapeLike(cleanBase)}/storage/v1/object/public/${safeBucket}/%`);
+    patterns.push(
+      `${escapeLike(cleanBase)}/storage/v1/object/public/${safeBucket}/%`
+    );
   }
 
   return [...new Set(patterns)];
@@ -1000,21 +1215,23 @@ function buildDatabaseUrlPatterns(bucket, source) {
 function resolveDestinationObject({ minio, sourceBucket, sourceKey }) {
   const layoutMode = normalizeLayoutMode(minio);
   const prefixStrategy = normalizePrefixStrategy(minio);
-  const destinationBucket = layoutMode === 'single_bucket' && minio?.bucket
-    ? minio.bucket
-    : sourceBucket;
+  const destinationBucket =
+    layoutMode === 'single_bucket' && minio?.bucket
+      ? minio.bucket
+      : sourceBucket;
 
   if (layoutMode !== 'single_bucket') {
     return { bucket: destinationBucket, key: sourceKey };
   }
 
   const mediaGroup = inferMediaGroup(sourceKey);
-  const prefix = {
-    none: '',
-    bucket: sourceBucket,
-    type: `${mediaGroup}/${sourceBucket}`,
-    bucket_and_type: `${sourceBucket}/${mediaGroup}`,
-  }[prefixStrategy] || sourceBucket;
+  const prefix =
+    {
+      none: '',
+      bucket: sourceBucket,
+      type: `${mediaGroup}/${sourceBucket}`,
+      bucket_and_type: `${sourceBucket}/${mediaGroup}`,
+    }[prefixStrategy] || sourceBucket;
 
   return {
     bucket: destinationBucket,
@@ -1029,8 +1246,10 @@ function describeDestinationPattern(minio, bucket) {
     return `${bucket}/{path-original}`;
   }
   if (prefixStrategy === 'none') return `{bucket-unico}/{path-original}`;
-  if (prefixStrategy === 'type') return `{bucket-unico}/{tipo}/${bucket}/{path-original}`;
-  if (prefixStrategy === 'bucket_and_type') return `{bucket-unico}/${bucket}/{tipo}/{path-original}`;
+  if (prefixStrategy === 'type')
+    return `{bucket-unico}/{tipo}/${bucket}/{path-original}`;
+  if (prefixStrategy === 'bucket_and_type')
+    return `{bucket-unico}/${bucket}/{tipo}/{path-original}`;
   return `{bucket-unico}/${bucket}/{path-original}`;
 }
 
@@ -1042,7 +1261,8 @@ function normalizeLayoutMode(minio) {
 
 function normalizePrefixStrategy(minio) {
   const value = String(minio?.prefixStrategy || '').trim();
-  if (['none', 'bucket', 'type', 'bucket_and_type'].includes(value)) return value;
+  if (['none', 'bucket', 'type', 'bucket_and_type'].includes(value))
+    return value;
   return 'bucket';
 }
 
@@ -1053,7 +1273,8 @@ function inferMediaGroup(key) {
   if (contentType.startsWith('video/')) return 'videos';
   if (contentType === 'application/pdf') return 'documentos';
   const ext = String(key).split('.').pop()?.toLowerCase();
-  if (['doc', 'docx', 'txt', 'csv', 'json', 'html', 'kml'].includes(ext)) return 'documentos';
+  if (['doc', 'docx', 'txt', 'csv', 'json', 'html', 'kml'].includes(ext))
+    return 'documentos';
   if (['xls', 'xlsx'].includes(ext)) return 'planilhas';
   if (['zip', 'rar', '7z'].includes(ext)) return 'compactados';
   return 'outros';
@@ -1075,13 +1296,21 @@ function escapeLike(value) {
   return String(value || '').replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
-async function listSupabaseObjectsSample(supabase, bucket, prefix = '', depth = 0, limit = 250) {
+async function listSupabaseObjectsSample(
+  supabase,
+  bucket,
+  prefix = '',
+  depth = 0,
+  limit = 250
+) {
   if (depth > 4 || limit <= 0) return { files: [] };
 
-  const { data, error } = await supabase.storage.from(bucket).list(prefix || undefined, {
-    limit: Math.min(limit, 1000),
-    sortBy: { column: 'name', order: 'asc' },
-  });
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .list(prefix || undefined, {
+      limit: Math.min(limit, 1000),
+      sortBy: { column: 'name', order: 'asc' },
+    });
   if (error) throw error;
 
   const files = [];
@@ -1092,7 +1321,8 @@ async function listSupabaseObjectsSample(supabase, bucket, prefix = '', depth = 
       files.push({
         path: itemPath,
         size: Number(item.metadata?.size || 0),
-        contentType: item.metadata?.mimetype || item.metadata?.contentType || null,
+        contentType:
+          item.metadata?.mimetype || item.metadata?.contentType || null,
         updatedAt: item.updated_at || item.created_at || null,
       });
     } else {
@@ -1116,7 +1346,11 @@ function getCredentialSecret() {
     process.env.SUPABASE_JWT_SECRET,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
   ]
-    .map((value) => String(value || '').trim().replace(/^["']|["']$/g, ''))
+    .map((value) =>
+      String(value || '')
+        .trim()
+        .replace(/^["']|["']$/g, '')
+    )
     .find((value) => value.length >= 24);
 
   if (!secret || secret.length < 24) {
@@ -1143,13 +1377,17 @@ function validateSupabaseConfig(config, label) {
 
 function validateMinioConfig(config) {
   if (!config?.endpoint || !config?.accessKey || !config?.secretKey) {
-    throw new Error('MinIO: endpoint, access key e secret key são obrigatórios.');
+    throw new Error(
+      'MinIO: endpoint, access key e secret key são obrigatórios.'
+    );
   }
 }
 
 function validateS3Config(config, label) {
   if (!config?.endpoint || !config?.accessKey || !config?.secretKey) {
-    throw new Error(`${label}: endpoint, access key e secret key são obrigatórios.`);
+    throw new Error(
+      `${label}: endpoint, access key e secret key são obrigatórios.`
+    );
   }
 }
 
@@ -1161,9 +1399,10 @@ function buildPgConfig(config) {
     database: config?.dbName || 'postgres',
     user: config?.dbUser,
     password: config?.dbPassword,
-    ssl: sslMode === 'disable' || sslMode === 'false'
-      ? false
-      : { rejectUnauthorized: false },
+    ssl:
+      sslMode === 'disable' || sslMode === 'false'
+        ? false
+        : { rejectUnauthorized: false },
     connectionTimeoutMillis: 15000,
     statement_timeout: 60000,
   };
@@ -1178,9 +1417,12 @@ async function closePg(client) {
 }
 
 function buildMinioBaseUrl(config) {
-  const endpoint = String(config.endpoint || '').trim().replace(/\/+$/, '');
+  const endpoint = String(config.endpoint || '')
+    .trim()
+    .replace(/\/+$/, '');
   const hasProtocol = /^https?:\/\//i.test(endpoint);
-  const protocol = config.useSsl === false || config.useSSL === false ? 'http' : 'https';
+  const protocol =
+    config.useSsl === false || config.useSSL === false ? 'http' : 'https';
   const base = hasProtocol ? endpoint : `${protocol}://${endpoint}`;
   const url = new URL(base);
   const port = config.port || config.minioPort;
@@ -1206,10 +1448,11 @@ async function signedMinioRequest(config, options) {
     .filter(Boolean)
     .map((part) => String(part).split('/').map(encodeURIComponent).join('/'))
     .join('/');
-  url.pathname = [basePath, encodedPath]
-    .filter(Boolean)
-    .join('/')
-    .replace(/\/{2,}/g, '/') || '/';
+  url.pathname =
+    [basePath, encodedPath]
+      .filter(Boolean)
+      .join('/')
+      .replace(/\/{2,}/g, '/') || '/';
   for (const [queryKey, queryValue] of Object.entries(query)) {
     if (queryValue !== undefined && queryValue !== null && queryValue !== '') {
       url.searchParams.set(queryKey, String(queryValue));
@@ -1234,18 +1477,31 @@ async function signedMinioRequest(config, options) {
 
   if (!allowStatuses.includes(response.status)) {
     const text = await response.text().catch(() => '');
-    throw new Error(`MinIO ${method} ${url.pathname}: HTTP ${response.status} ${text.slice(0, 240)}`);
+    throw new Error(
+      `MinIO ${method} ${url.pathname}: HTTP ${response.status} ${text.slice(0, 240)}`
+    );
   }
 
   return response;
 }
 
-function signS3Request({ method, url, accessKey, secretKey, region = 'us-east-1', body, headers }) {
+function signS3Request({
+  method,
+  url,
+  accessKey,
+  secretKey,
+  region = 'us-east-1',
+  body,
+  headers,
+}) {
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
   const dateStamp = amzDate.slice(0, 8);
   const service = 's3';
-  const payloadHash = crypto.createHash('sha256').update(body || '').digest('hex');
+  const payloadHash = crypto
+    .createHash('sha256')
+    .update(body || '')
+    .digest('hex');
   const host = url.host;
 
   const normalizedHeaders = {
@@ -1253,7 +1509,10 @@ function signS3Request({ method, url, accessKey, secretKey, region = 'us-east-1'
     'x-amz-content-sha256': payloadHash,
     'x-amz-date': amzDate,
     ...Object.fromEntries(
-      Object.entries(headers || {}).map(([key, value]) => [key.toLowerCase(), String(value)])
+      Object.entries(headers || {}).map(([key, value]) => [
+        key.toLowerCase(),
+        String(value),
+      ])
     ),
   };
 
@@ -1264,7 +1523,10 @@ function signS3Request({ method, url, accessKey, secretKey, region = 'us-east-1'
   const signedHeaders = sortedHeaderKeys.join(';');
   const canonicalQuery = [...url.searchParams.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .map(
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+    )
     .join('&');
   const canonicalUri = url.pathname
     .split('/')
@@ -1286,7 +1548,10 @@ function signS3Request({ method, url, accessKey, secretKey, region = 'us-east-1'
     crypto.createHash('sha256').update(canonicalRequest).digest('hex'),
   ].join('\n');
   const signingKey = getSignatureKey(secretKey, dateStamp, region, service);
-  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+  const signature = crypto
+    .createHmac('sha256', signingKey)
+    .update(stringToSign)
+    .digest('hex');
 
   return {
     ...headers,
@@ -1298,9 +1563,18 @@ function signS3Request({ method, url, accessKey, secretKey, region = 'us-east-1'
 }
 
 function getSignatureKey(secretKey, dateStamp, regionName, serviceName) {
-  const kDate = crypto.createHmac('sha256', `AWS4${secretKey}`).update(dateStamp).digest();
-  const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
-  const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
+  const kDate = crypto
+    .createHmac('sha256', `AWS4${secretKey}`)
+    .update(dateStamp)
+    .digest();
+  const kRegion = crypto
+    .createHmac('sha256', kDate)
+    .update(regionName)
+    .digest();
+  const kService = crypto
+    .createHmac('sha256', kRegion)
+    .update(serviceName)
+    .digest();
   return crypto.createHmac('sha256', kService).update('aws4_request').digest();
 }
 
@@ -1324,32 +1598,43 @@ async function listAllS3Objects(config, bucket) {
     const xml = await response.text();
     const parsed = parseListBucketResult(xml);
     objects.push(...parsed.objects);
-    continuationToken = parsed.isTruncated ? parsed.nextContinuationToken : null;
+    continuationToken = parsed.isTruncated
+      ? parsed.nextContinuationToken
+      : null;
   } while (continuationToken);
 
   return objects;
 }
 
 function parseListBucketResult(xml) {
-  const objects = [...xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)].map((match) => {
-    const content = match[1];
-    return {
-      key: decodeXml(readXmlTag(content, 'Key') || ''),
-      lastModified: decodeXml(readXmlTag(content, 'LastModified') || ''),
-      etag: decodeXml(readXmlTag(content, 'ETag') || '').replace(/^"|"$/g, ''),
-      size: Number(readXmlTag(content, 'Size') || 0),
-    };
-  }).filter((object) => object.key);
+  const objects = [...xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)]
+    .map((match) => {
+      const content = match[1];
+      return {
+        key: decodeXml(readXmlTag(content, 'Key') || ''),
+        lastModified: decodeXml(readXmlTag(content, 'LastModified') || ''),
+        etag: decodeXml(readXmlTag(content, 'ETag') || '').replace(
+          /^"|"$/g,
+          ''
+        ),
+        size: Number(readXmlTag(content, 'Size') || 0),
+      };
+    })
+    .filter((object) => object.key);
 
   return {
     objects,
     isTruncated: /<IsTruncated>true<\/IsTruncated>/i.test(xml),
-    nextContinuationToken: decodeXml(readXmlTag(xml, 'NextContinuationToken') || ''),
+    nextContinuationToken: decodeXml(
+      readXmlTag(xml, 'NextContinuationToken') || ''
+    ),
   };
 }
 
 function readXmlTag(xml, tagName) {
-  const match = xml.match(new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`));
+  const match = xml.match(
+    new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`)
+  );
   return match?.[1] || '';
 }
 
@@ -1379,13 +1664,18 @@ async function ensureDestinationBucket(config, bucket) {
   }
 
   if (head.status >= 400) {
-    throw new Error(`Bucket destino "${bucket}" não está acessível (HTTP ${head.status}).`);
+    throw new Error(
+      `Bucket destino "${bucket}" não está acessível (HTTP ${head.status}).`
+    );
   }
 }
 
 function buildPublicObjectUrl(config, bucket, key) {
-  const base = String(config.publicBaseUrl || '').trim().replace(/\/+$/, '');
-  if (base) return `${base}/${encodePublicPath(bucket)}/${encodePublicPath(key)}`;
+  const base = String(config.publicBaseUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (base)
+    return `${base}/${encodePublicPath(bucket)}/${encodePublicPath(key)}`;
 
   if (config.supabaseUrl) {
     return `${String(config.supabaseUrl).replace(/\/+$/, '')}/storage/v1/object/public/${encodePublicPath(bucket)}/${encodePublicPath(key)}`;

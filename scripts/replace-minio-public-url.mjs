@@ -6,9 +6,17 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config();
 
 const apply = process.argv.includes('--apply');
-const quiet = process.argv.includes('--quiet') || process.argv.includes('--summary-only');
-const oldBase = cleanArg('--old') || process.env.OLD_MINIO_PUBLIC_URL || 'https://n.woopanel.com.br';
-const newBase = cleanArg('--new') || process.env.NEW_MINIO_PUBLIC_URL || process.env.MINIO_PUBLIC_URL || 'https://nb.consultio.com.br';
+const quiet =
+  process.argv.includes('--quiet') || process.argv.includes('--summary-only');
+const oldBase =
+  cleanArg('--old') ||
+  process.env.OLD_MINIO_PUBLIC_URL ||
+  'https://n.woopanel.com.br';
+const newBase =
+  cleanArg('--new') ||
+  process.env.NEW_MINIO_PUBLIC_URL ||
+  process.env.MINIO_PUBLIC_URL ||
+  'https://nb.consultio.com.br';
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -23,12 +31,16 @@ const TABLES = [
 ];
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Configure VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY antes de rodar.');
+  console.error(
+    'Configure VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY antes de rodar.'
+  );
   process.exit(1);
 }
 
 if (!oldBase || !newBase || oldBase === newBase) {
-  console.error('Informe OLD_MINIO_PUBLIC_URL e NEW_MINIO_PUBLIC_URL diferentes.');
+  console.error(
+    'Informe OLD_MINIO_PUBLIC_URL e NEW_MINIO_PUBLIC_URL diferentes.'
+  );
   process.exit(1);
 }
 
@@ -60,7 +72,8 @@ for (const entry of TABLES) {
 
       for (const column of entry.columns) {
         const nextValue = replaceUrl(row[column]);
-        if (JSON.stringify(nextValue) !== JSON.stringify(row[column])) patch[column] = nextValue;
+        if (JSON.stringify(nextValue) !== JSON.stringify(row[column]))
+          patch[column] = nextValue;
       }
 
       if (!Object.keys(patch).length) continue;
@@ -68,7 +81,9 @@ for (const entry of TABLES) {
 
       if (!apply) {
         if (quiet) continue;
-        console.log(`${entry.table}.${entry.id}=${row[entry.id]} seria atualizado: ${Object.keys(patch).join(', ')}`);
+        console.log(
+          `${entry.table}.${entry.id}=${row[entry.id]} seria atualizado: ${Object.keys(patch).join(', ')}`
+        );
         continue;
       }
 
@@ -78,7 +93,9 @@ for (const entry of TABLES) {
         .eq(entry.id, row[entry.id]);
 
       if (updateError) {
-        console.warn(`${entry.table}.${entry.id}=${row[entry.id]} falhou: ${updateError.message}`);
+        console.warn(
+          `${entry.table}.${entry.id}=${row[entry.id]} falhou: ${updateError.message}`
+        );
       } else {
         updated++;
       }
@@ -97,7 +114,9 @@ console.log(apply ? 'Mode: apply' : 'Mode: dry-run. Use --apply para gravar.');
 function replaceUrl(value) {
   if (Array.isArray(value)) return value.map(replaceUrl);
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, replaceUrl(entry)]));
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, replaceUrl(entry)])
+    );
   }
   if (typeof value !== 'string' || !value.includes(oldBase)) return value;
   return value.split(oldBase).join(newBase.replace(/\/$/, ''));

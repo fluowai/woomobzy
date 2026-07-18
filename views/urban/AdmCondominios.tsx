@@ -66,7 +66,9 @@ export default function AdmCondominios() {
         .order('created_at', { ascending: false }),
       supabase
         .from('condominium_tickets')
-        .select('id,unit_label,category,description,status,priority,opened_at,condominium:condominium_id(name)')
+        .select(
+          'id,unit_label,category,description,status,priority,opened_at,condominium:condominium_id(name)'
+        )
         .eq('organization_id', organizationId)
         .order('opened_at', { ascending: false })
         .limit(25),
@@ -87,10 +89,12 @@ export default function AdmCondominios() {
       window.alert('Cadastre um condominio antes de abrir um chamado.');
       return;
     }
-    const selectedName = window.prompt(
-      `Condominio (${condominiums.map((item) => item.name).join(', ')}):`,
-      condominiums[0].name
-    )?.trim();
+    const selectedName = window
+      .prompt(
+        `Condominio (${condominiums.map((item) => item.name).join(', ')}):`,
+        condominiums[0].name
+      )
+      ?.trim();
     const condominium = condominiums.find(
       (item) => item.name.toLowerCase() === selectedName?.toLowerCase()
     );
@@ -116,15 +120,47 @@ export default function AdmCondominios() {
   };
 
   const stats = useMemo(() => {
-    const openTickets = tickets.filter((ticket) => ticket.status === 'open' || ticket.status === 'in_progress').length;
-    const residents = condominiums.reduce((sum, condo) => sum + Number(condo.residents_count || 0), 0);
-    const delinquent = condominiums.reduce((sum, condo) => sum + Number(condo.delinquent_units || 0), 0);
+    const openTickets = tickets.filter(
+      (ticket) => ticket.status === 'open' || ticket.status === 'in_progress'
+    ).length;
+    const residents = condominiums.reduce(
+      (sum, condo) => sum + Number(condo.residents_count || 0),
+      0
+    );
+    const delinquent = condominiums.reduce(
+      (sum, condo) => sum + Number(condo.delinquent_units || 0),
+      0
+    );
 
     return [
-      { label: 'Condominios gerenciados', value: String(condominiums.length), icon: Building, color: 'text-blue-600', bg: 'bg-blue-50' },
-      { label: 'Chamados abertos', value: String(openTickets), icon: Wrench, color: 'text-orange-600', bg: 'bg-orange-50' },
-      { label: 'Moradores cadastrados', value: String(residents), icon: Users, color: 'text-green-600', bg: 'bg-green-50' },
-      { label: 'Unidades inadimplentes', value: String(delinquent), icon: TrendingDown, color: 'text-red-600', bg: 'bg-red-50' },
+      {
+        label: 'Condominios gerenciados',
+        value: String(condominiums.length),
+        icon: Building,
+        color: 'text-blue-600',
+        bg: 'bg-blue-50',
+      },
+      {
+        label: 'Chamados abertos',
+        value: String(openTickets),
+        icon: Wrench,
+        color: 'text-orange-600',
+        bg: 'bg-orange-50',
+      },
+      {
+        label: 'Moradores cadastrados',
+        value: String(residents),
+        icon: Users,
+        color: 'text-green-600',
+        bg: 'bg-green-50',
+      },
+      {
+        label: 'Unidades inadimplentes',
+        value: String(delinquent),
+        icon: TrendingDown,
+        color: 'text-red-600',
+        bg: 'bg-red-50',
+      },
     ];
   }, [condominiums, tickets]);
 
@@ -142,13 +178,20 @@ export default function AdmCondominios() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="card-premium flex items-center gap-4 p-5">
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${stat.bg}`}>
+          <div
+            key={stat.label}
+            className="card-premium flex items-center gap-4 p-5"
+          >
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${stat.bg}`}
+            >
               <stat.icon size={24} className={stat.color} />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-              <p className="mt-0.5 text-xs font-semibold text-slate-500">{stat.label}</p>
+              <p className="mt-0.5 text-xs font-semibold text-slate-500">
+                {stat.label}
+              </p>
             </div>
           </div>
         ))}
@@ -159,29 +202,47 @@ export default function AdmCondominios() {
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <Wrench size={20} className="text-primary" /> Chamados de Manutencao
           </h2>
-          <button onClick={createTicket} className="btn btn-primary">+ Novo Chamado</button>
+          <button onClick={createTicket} className="btn btn-primary">
+            + Novo Chamado
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">Prioridade</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">Condominio / Unidade</th>
-                <th className="hidden p-4 text-xs font-bold uppercase tracking-widest text-slate-500 md:table-cell">Descricao</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">Status</th>
-                <th className="hidden p-4 text-xs font-bold uppercase tracking-widest text-slate-500 lg:table-cell">Data</th>
+                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+                  Prioridade
+                </th>
+                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+                  Condominio / Unidade
+                </th>
+                <th className="hidden p-4 text-xs font-bold uppercase tracking-widest text-slate-500 md:table-cell">
+                  Descricao
+                </th>
+                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+                  Status
+                </th>
+                <th className="hidden p-4 text-xs font-bold uppercase tracking-widest text-slate-500 lg:table-cell">
+                  Data
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-sm text-slate-400">
+                  <td
+                    colSpan={5}
+                    className="p-10 text-center text-sm text-slate-400"
+                  >
                     Carregando chamados...
                   </td>
                 </tr>
               ) : tickets.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-sm text-slate-400">
+                  <td
+                    colSpan={5}
+                    className="p-10 text-center text-sm text-slate-400"
+                  >
                     Nenhum chamado cadastrado.
                   </td>
                 </tr>
@@ -190,27 +251,45 @@ export default function AdmCondominios() {
                   const status = statusLabels[ticket.status];
                   const priority = priorityLabels[ticket.priority];
                   return (
-                    <tr key={ticket.id} className="transition-colors hover:bg-slate-50/50">
+                    <tr
+                      key={ticket.id}
+                      className="transition-colors hover:bg-slate-50/50"
+                    >
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <div className={`h-2.5 w-2.5 rounded-full ${priorityColors[priority]}`} />
-                          <span className="text-xs font-bold text-slate-600">{priority}</span>
+                          <div
+                            className={`h-2.5 w-2.5 rounded-full ${priorityColors[priority]}`}
+                          />
+                          <span className="text-xs font-bold text-slate-600">
+                            {priority}
+                          </span>
                         </div>
                       </td>
                       <td className="p-4">
-                        <p className="text-sm font-bold text-slate-900">{ticket.condominium?.name || 'Condominio'}</p>
+                        <p className="text-sm font-bold text-slate-900">
+                          {ticket.condominium?.name || 'Condominio'}
+                        </p>
                         <p className="text-xs text-slate-500">
-                          {ticket.unit_label || 'Unidade'} - {ticket.category || 'Geral'}
+                          {ticket.unit_label || 'Unidade'} -{' '}
+                          {ticket.category || 'Geral'}
                         </p>
                       </td>
-                      <td className="hidden p-4 text-sm text-slate-600 md:table-cell">{ticket.description}</td>
+                      <td className="hidden p-4 text-sm text-slate-600 md:table-cell">
+                        {ticket.description}
+                      </td>
                       <td className="p-4">
-                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusColors[status]}`}>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusColors[status]}`}
+                        >
                           {status}
                         </span>
                       </td>
                       <td className="hidden p-4 text-sm text-slate-500 lg:table-cell">
-                        {ticket.opened_at ? new Date(ticket.opened_at).toLocaleDateString('pt-BR') : '-'}
+                        {ticket.opened_at
+                          ? new Date(ticket.opened_at).toLocaleDateString(
+                              'pt-BR'
+                            )
+                          : '-'}
                       </td>
                     </tr>
                   );

@@ -91,5 +91,5 @@ Gerado via WooTech Imob em {{current_date}}.
 
 Gerado via WooTech Imob em {{current_date}}.
     `,
-  }
+  },
 ];

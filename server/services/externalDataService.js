@@ -1,7 +1,8 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const IBGE_API_BASE = 'https://servicodados.ibge.gov.br/api/v3';
-const CEPEA_AGRO_URL = process.env.AGRO_INTEL_URL || 'http://agro-intelligence:8000';
+const CEPEA_AGRO_URL =
+  process.env.AGRO_INTEL_URL || 'http://agro-intelligence:8000';
 
 export class ExternalDataService {
   static async getMunicipioData(city, state) {
@@ -71,14 +72,16 @@ export class ExternalDataService {
         municipio_populacao: municipio?.populacao,
         municipio_pib_per_capita: municipio?.pib_per_capita,
         municipio_idh: municipio?.idh,
-        producao_agricola_principal: municipio?.producao_agricola?.top_products?.[0],
+        producao_agricola_principal:
+          municipio?.producao_agricola?.top_products?.[0],
         precos_commodities: cepea?.data || {},
       },
     };
   }
 
   static async forceRefresh(source) {
-    const prefix = source === 'ibge' ? 'ibge:' : source === 'cepea' ? 'cepea:' : '';
+    const prefix =
+      source === 'ibge' ? 'ibge:' : source === 'cepea' ? 'cepea:' : '';
     if (!prefix) throw new Error('Fonte invalida. Use ibge ou cepea.');
 
     const supabase = getSupabaseServer();
@@ -116,18 +119,24 @@ export class ExternalDataService {
     try {
       data = await fetcher();
     } catch (error) {
-      console.error(`[ExternalData] Fetch error for ${cacheKey}:`, error.message);
+      console.error(
+        `[ExternalData] Fetch error for ${cacheKey}:`,
+        error.message
+      );
       return null;
     }
 
     if (data) {
-      await supabase.from('external_data_cache').upsert({
-        cache_key: cacheKey,
-        source: cacheKey.split(':')[0],
-        data: typeof data === 'object' ? data : { value: data },
-        ttl_seconds: ttlSeconds,
-        expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
-      }, { onConflict: 'cache_key' });
+      await supabase.from('external_data_cache').upsert(
+        {
+          cache_key: cacheKey,
+          source: cacheKey.split(':')[0],
+          data: typeof data === 'object' ? data : { value: data },
+          ttl_seconds: ttlSeconds,
+          expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+        },
+        { onConflict: 'cache_key' }
+      );
     }
 
     return data;
@@ -135,16 +144,23 @@ export class ExternalDataService {
 
   static async _resolveIbgeCode(city, state) {
     const key = `ibge:code:${state}:${city}`;
-    const cached = await this._fetchWithCache(key, async () => {
-      const url = `${IBGE_API_BASE}/localidades/municipios?orderBy=nome`;
-      const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      const all = await response.json();
-      const match = all.find(m =>
-        m.nome.toLowerCase() === city.toLowerCase() &&
-        m.microrregiao?.mesorregiao?.UF?.sigla === state
-      );
-      return match ? { codigo: match.id } : null;
-    }, 30 * 86400);
+    const cached = await this._fetchWithCache(
+      key,
+      async () => {
+        const url = `${IBGE_API_BASE}/localidades/municipios?orderBy=nome`;
+        const response = await fetch(url, {
+          signal: AbortSignal.timeout(10000),
+        });
+        const all = await response.json();
+        const match = all.find(
+          (m) =>
+            m.nome.toLowerCase() === city.toLowerCase() &&
+            m.microrregiao?.mesorregiao?.UF?.sigla === state
+        );
+        return match ? { codigo: match.id } : null;
+      },
+      30 * 86400
+    );
 
     return cached?.codigo || null;
   }
@@ -154,7 +170,9 @@ export class ExternalDataService {
       const url = `${IBGE_API_BASE}/agregados/6579/periodos/2022/variaveis/9324?localidades=N6[${ibgeCode}]`;
       const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
       const data = await response.json();
-      return parseInt(data?.[0]?.resultados?.[0]?.series?.[0]?.serie?.[2022] || 0);
+      return parseInt(
+        data?.[0]?.resultados?.[0]?.series?.[0]?.serie?.[2022] || 0
+      );
     } catch {
       return null;
     }
@@ -165,16 +183,22 @@ export class ExternalDataService {
       const url = `${IBGE_API_BASE}/agregados/6786/periodos/2021/variaveis/9812?localidades=N6[${ibgeCode}]`;
       const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
       const data = await response.json();
-      const total = parseFloat(data?.[0]?.resultados?.[0]?.series?.[0]?.serie?.[2021] || 0);
+      const total = parseFloat(
+        data?.[0]?.resultados?.[0]?.series?.[0]?.serie?.[2021] || 0
+      );
 
       const popUrl = `${IBGE_API_BASE}/agregados/6579/periodos/2021/variaveis/9324?localidades=N6[${ibgeCode}]`;
-      const popRes = await fetch(popUrl, { signal: AbortSignal.timeout(10000) });
+      const popRes = await fetch(popUrl, {
+        signal: AbortSignal.timeout(10000),
+      });
       const popData = await popRes.json();
-      const pop = parseInt(popData?.[0]?.resultados?.[0]?.series?.[0]?.serie?.[2021] || 0);
+      const pop = parseInt(
+        popData?.[0]?.resultados?.[0]?.series?.[0]?.serie?.[2021] || 0
+      );
 
       return {
         total,
-        per_capita: pop > 0 ? Math.round(total / pop * 100) / 100 : null,
+        per_capita: pop > 0 ? Math.round((total / pop) * 100) / 100 : null,
       };
     } catch {
       return null;

@@ -5,12 +5,14 @@ export const oruloService = {
     return callApi('/api/orulo/status');
   },
 
-  async sync(options: {
-    updated_after?: string;
-    max_buildings?: number;
-    sync_removed?: boolean;
-    filters?: Record<string, any>;
-  } = {}) {
+  async sync(
+    options: {
+      updated_after?: string;
+      max_buildings?: number;
+      sync_removed?: boolean;
+      filters?: Record<string, any>;
+    } = {}
+  ) {
     return callApi('/api/orulo/sync', {
       method: 'POST',
       body: JSON.stringify(options),
@@ -27,7 +29,9 @@ export const oruloService = {
       }
     });
 
-    return callApi(`/api/orulo/metadata/${type}${search.toString() ? `?${search.toString()}` : ''}`);
+    return callApi(
+      `/api/orulo/metadata/${type}${search.toString() ? `?${search.toString()}` : ''}`
+    );
   },
 
   async endUserStatus() {
@@ -72,7 +76,10 @@ export const oruloService = {
     });
   },
 
-  async updatePublicationLinks(buildingId: string, publicationLinks: Array<{ url?: string; active: boolean }>) {
+  async updatePublicationLinks(
+    buildingId: string,
+    publicationLinks: Array<{ url?: string; active: boolean }>
+  ) {
     return callApi(`/api/orulo/publication-links/${buildingId}`, {
       method: 'POST',
       body: JSON.stringify({ publication_links: publicationLinks }),

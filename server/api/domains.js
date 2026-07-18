@@ -9,19 +9,24 @@ import {
 } from '../domainService.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 export const addDomain = async (req, res) => {
   const { domain, organizationId } = req.body;
 
   if (!domain || !organizationId) {
-    return res.status(400).json({ error: 'Domain and Organization ID are required' });
+    return res
+      .status(400)
+      .json({ error: 'Domain and Organization ID are required' });
   }
 
   try {
@@ -82,7 +87,8 @@ export const addDomain = async (req, res) => {
       },
     });
   } catch (error) {
-    const status = error instanceof DomainProvisioningError ? error.statusCode : 400;
+    const status =
+      error instanceof DomainProvisioningError ? error.statusCode : 400;
     res.status(status).json({
       error: error.message,
       code: error.code || 'DOMAIN_PROVISIONING_FAILED',
@@ -95,7 +101,8 @@ export const verifyDomain = async (req, res) => {
   try {
     res.json(await checkDockerDomainStatus(req.params.domain));
   } catch (error) {
-    const status = error instanceof DomainProvisioningError ? error.statusCode : 400;
+    const status =
+      error instanceof DomainProvisioningError ? error.statusCode : 400;
     res.status(status).json({
       success: false,
       error: error.message,
@@ -120,7 +127,8 @@ export const removeDomain = async (req, res) => {
 
     res.json({ success: true, message: 'Dominio removido com sucesso' });
   } catch (error) {
-    const status = error instanceof DomainProvisioningError ? error.statusCode : 400;
+    const status =
+      error instanceof DomainProvisioningError ? error.statusCode : 400;
     res.status(status).json({
       error: error.message,
       code: error.code || 'DOMAIN_REMOVE_FAILED',

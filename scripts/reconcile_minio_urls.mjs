@@ -2,16 +2,22 @@
 
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-import { isLegacySupabaseStorageUrl, uploadStorageObject } from './lib/storage-client.mjs';
+import {
+  isLegacySupabaseStorageUrl,
+  uploadStorageObject,
+} from './lib/storage-client.mjs';
 
 dotenv.config();
 
 const apply = process.argv.includes('--apply');
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Configure VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY antes de rodar.');
+  console.error(
+    'Configure VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY antes de rodar.'
+  );
   process.exit(1);
 }
 
@@ -39,7 +45,9 @@ for (const property of properties || []) {
   if (legacyImages.length === 0) continue;
   legacy += legacyImages.length;
 
-  console.log(`\n${property.title || property.id}: ${legacyImages.length} URL(s) legada(s)`);
+  console.log(
+    `\n${property.title || property.id}: ${legacyImages.length} URL(s) legada(s)`
+  );
 
   if (!apply) {
     legacyImages.forEach((url) => console.log(`  dry-run: ${url}`));

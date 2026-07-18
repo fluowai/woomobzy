@@ -13,13 +13,23 @@ export const buildMatchWhatsappMessage = (lead: Lead, matches: any[]) => {
   return [
     `Olá ${firstName}, encontrei alguns imóveis que combinam com o seu perfil.`,
     '',
-    ...matches.slice(0, 3).flatMap((match, index) => [
-      `${index + 1}. ${match.title}`,
-      match.city || match.state ? `- ${[match.city, match.state].filter(Boolean).join(' / ')}` : null,
-      match.price ? `- ${match.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : null,
-      ...(match.reasons || []).slice(0, 2).map((reason: string) => `- ${reason}`),
-      '',
-    ].filter(Boolean)),
+    ...matches
+      .slice(0, 3)
+      .flatMap((match, index) =>
+        [
+          `${index + 1}. ${match.title}`,
+          match.city || match.state
+            ? `- ${[match.city, match.state].filter(Boolean).join(' / ')}`
+            : null,
+          match.price
+            ? `- ${match.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+            : null,
+          ...(match.reasons || [])
+            .slice(0, 2)
+            .map((reason: string) => `- ${reason}`),
+          '',
+        ].filter(Boolean)
+      ),
     'Posso te enviar mais detalhes?',
   ].join('\n');
 };
@@ -42,25 +52,35 @@ export const parseMoneyValue = (rawNumber?: string, rawUnit?: string) => {
   if (!rawNumber) return null;
   const value = Number(rawNumber.replace(/\./g, '').replace(',', '.'));
   if (!Number.isFinite(value)) return null;
-  const unit = (rawUnit || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const unit = (rawUnit || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
   if (['milhao', 'milhoes', 'mi', 'm'].includes(unit)) return value * 1_000_000;
   if (unit === 'mil') return value * 1_000;
   return value;
 };
 
 export const extractLeadBudgetRange = (lead: Lead) => {
-  const text = `${lead.notes || ''} ${lead.campaign || ''} ${lead.ad_reference || ''}`
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-  const between = text.match(/entre\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?\s+(?:e|a|ate)\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i);
+  const text =
+    `${lead.notes || ''} ${lead.campaign || ''} ${lead.ad_reference || ''}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  const between = text.match(
+    /entre\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?\s+(?:e|a|ate)\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i
+  );
   if (between) {
     const min = parseMoneyValue(between[1], between[2] || between[4]);
     const max = parseMoneyValue(between[3], between[4] || between[2]);
     if (min && max) return { min: Math.min(min, max), max: Math.max(min, max) };
   }
-  const upTo = text.match(/(?:ate|maximo|max|orcamento)\s+(?:de\s+)?(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i);
-  const max = upTo ? parseMoneyValue(upTo[1], upTo[2]) : Number(lead.budget || 0);
+  const upTo = text.match(
+    /(?:ate|maximo|max|orcamento)\s+(?:de\s+)?(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i
+  );
+  const max = upTo
+    ? parseMoneyValue(upTo[1], upTo[2])
+    : Number(lead.budget || 0);
   return max ? { min: null, max } : { min: null, max: null };
 };
 
@@ -73,20 +93,25 @@ export const isWithinLeadBudget = (lead: Lead, price?: number) => {
   return true;
 };
 
-export const getSlaInfo = (lead: Lead): { borderClass: string; label: string; labelClass: string } => {
+export const getSlaInfo = (
+  lead: Lead
+): { borderClass: string; label: string; labelClass: string } => {
   const ref = (lead as any).last_interaction_at || lead.createdAt;
-  if (!ref) return { borderClass: 'border-slate-200', label: '', labelClass: '' };
+  if (!ref)
+    return { borderClass: 'border-slate-200', label: '', labelClass: '' };
   const hours = (Date.now() - new Date(ref).getTime()) / 3_600_000;
-  if (hours > 48) return {
-    borderClass: 'border-l-[3px] border-l-red-500',
-    label: `${Math.floor(hours)}h`,
-    labelClass: 'text-red-500',
-  };
-  if (hours > 24) return {
-    borderClass: 'border-l-[3px] border-l-amber-400',
-    label: `${Math.floor(hours)}h`,
-    labelClass: 'text-amber-500',
-  };
+  if (hours > 48)
+    return {
+      borderClass: 'border-l-[3px] border-l-red-500',
+      label: `${Math.floor(hours)}h`,
+      labelClass: 'text-red-500',
+    };
+  if (hours > 24)
+    return {
+      borderClass: 'border-l-[3px] border-l-amber-400',
+      label: `${Math.floor(hours)}h`,
+      labelClass: 'text-amber-500',
+    };
   return {
     borderClass: 'border-l-[3px] border-l-emerald-400',
     label: `${Math.floor(hours)}h`,
@@ -97,17 +122,26 @@ export const getSlaInfo = (lead: Lead): { borderClass: string; label: string; la
 export const getLeadWhatsAppFallbackUrl = (lead: Lead) =>
   `https://wa.me/${(lead.phone || '').replace(/\D/g, '')}`;
 
-export const openLeadWhatsAppConversation = async (lead: Lead, navigate: (path: string) => void) => {
+export const openLeadWhatsAppConversation = async (
+  lead: Lead,
+  navigate: (path: string) => void
+) => {
   if (lead.phone) {
     try {
       const instances = await instanceApi.list();
-      const instance = instances.find((item: any) => item.status === 'connected') || instances[0];
+      const instance =
+        instances.find((item: any) => item.status === 'connected') ||
+        instances[0];
       if (instance?.id) {
         const chat = await chatApi.ensureDirect(instance.id, {
           phone: lead.phone,
           name: getLeadDisplayName(lead),
         });
-        const params = new URLSearchParams({ instanceId: instance.id, chatId: chat.id, chatJid: chat.chat_jid });
+        const params = new URLSearchParams({
+          instanceId: instance.id,
+          chatId: chat.id,
+          chatJid: chat.chat_jid,
+        });
         navigate(`/whatsapp?${params.toString()}`);
         return;
       }
@@ -128,9 +162,18 @@ export const openLeadWhatsAppConversation = async (lead: Lead, navigate: (path: 
 
 export const getScoreBadge = (score?: number | null) => {
   if (!score) return null;
-  if (score >= 80) return { label: 'Alto', bg: 'bg-orange-50 text-orange-600 ring-orange-100' };
-  if (score >= 60) return { label: 'Bom', bg: 'bg-emerald-50 text-emerald-700 ring-emerald-100' };
-  if (score >= 40) return { label: 'Medio', bg: 'bg-amber-50 text-amber-700 ring-amber-100' };
+  if (score >= 80)
+    return {
+      label: 'Alto',
+      bg: 'bg-orange-50 text-orange-600 ring-orange-100',
+    };
+  if (score >= 60)
+    return {
+      label: 'Bom',
+      bg: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    };
+  if (score >= 40)
+    return { label: 'Medio', bg: 'bg-amber-50 text-amber-700 ring-amber-100' };
   return { label: 'Baixo', bg: 'bg-slate-100 text-slate-500 ring-slate-200' };
 };
 
@@ -140,10 +183,14 @@ export const getCustomStageStorageKey = (profile: 'urbano' | 'rural') =>
 export const normalizeStageId = (label: string) =>
   label.trim().replace(/\s+/g, ' ').slice(0, 32);
 
-export const loadCustomStages = (profile: 'urbano' | 'rural'): PipelineStage[] => {
+export const loadCustomStages = (
+  profile: 'urbano' | 'rural'
+): PipelineStage[] => {
   if (typeof window === 'undefined') return [];
   try {
-    const saved = window.localStorage.getItem(getCustomStageStorageKey(profile));
+    const saved = window.localStorage.getItem(
+      getCustomStageStorageKey(profile)
+    );
     const parsed = saved ? JSON.parse(saved) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed
@@ -160,7 +207,10 @@ export const loadCustomStages = (profile: 'urbano' | 'rural'): PipelineStage[] =
   }
 };
 
-export const saveCustomStages = (profile: 'urbano' | 'rural', stages: PipelineStage[]) => {
+export const saveCustomStages = (
+  profile: 'urbano' | 'rural',
+  stages: PipelineStage[]
+) => {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(
     getCustomStageStorageKey(profile),

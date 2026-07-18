@@ -24,7 +24,8 @@ const log = {
   info: (msg) => console.log(`${colors.blue}\u2139${colors.reset} ${msg}`),
   success: (msg) => console.log(`${colors.green}\u2705 ${msg}${colors.reset}`),
   error: (msg) => console.log(`${colors.red}\u274C ${msg}${colors.reset}`),
-  warn: (msg) => console.log(`${colors.yellow}\u26A0\uFE0F  ${msg}${colors.reset}`),
+  warn: (msg) =>
+    console.log(`${colors.yellow}\u26A0\uFE0F  ${msg}${colors.reset}`),
 };
 
 console.log(
@@ -69,7 +70,12 @@ async function executeMigrations() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  console.log('\n' + colors.blue + '\uD83D\uDCCB Migra\u00E7\u00F5es a executar:' + colors.reset);
+  console.log(
+    '\n' +
+      colors.blue +
+      '\uD83D\uDCCB Migra\u00E7\u00F5es a executar:' +
+      colors.reset
+  );
   MIGRATIONS.forEach((file, i) => {
     const exists = fs.existsSync(file);
     const status = exists
@@ -78,7 +84,13 @@ async function executeMigrations() {
     console.log('  ' + status + ' ' + (i + 1) + '. ' + file);
   });
 
-  console.log('\n' + colors.cyan + '\u25B6\uFE0F  Iniciando execu\u00E7\u00E3o...' + colors.reset + '\n');
+  console.log(
+    '\n' +
+      colors.cyan +
+      '\u25B6\uFE0F  Iniciando execu\u00E7\u00E3o...' +
+      colors.reset +
+      '\n'
+  );
 
   let successCount = 0;
   let failCount = 0;
@@ -88,7 +100,15 @@ async function executeMigrations() {
     const fileNum = i + 1;
 
     if (!fs.existsSync(migrationFile)) {
-      log.warn('[' + fileNum + '/' + MIGRATIONS.length + '] ' + migrationFile + ' - Arquivo n\u00E3o encontrado');
+      log.warn(
+        '[' +
+          fileNum +
+          '/' +
+          MIGRATIONS.length +
+          '] ' +
+          migrationFile +
+          ' - Arquivo n\u00E3o encontrado'
+      );
       failCount++;
       continue;
     }
@@ -120,7 +140,11 @@ async function executeMigrations() {
         (stmt) => stmt.length > 0 && !stmt.startsWith('--')
       );
 
-      console.log('    \u2514\u2500 ' + filteredStatements.length + ' statements para executar');
+      console.log(
+        '    \u2514\u2500 ' +
+          filteredStatements.length +
+          ' statements para executar'
+      );
 
       // Tentar executar cada statement
       let executed = 0;
@@ -162,7 +186,14 @@ async function executeMigrations() {
       }
 
       if (executed > 0) {
-        log.success(migrationFile + ' (' + executed + '/' + statements.length + ' statements)');
+        log.success(
+          migrationFile +
+            ' (' +
+            executed +
+            '/' +
+            statements.length +
+            ' statements)'
+        );
         successCount++;
       } else {
         log.warn(migrationFile + ' - Nenhum statement foi executado');
@@ -175,10 +206,19 @@ async function executeMigrations() {
   }
 
   // Resumo
-  console.log('\n' + colors.cyan + '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550' + colors.reset);
+  console.log(
+    '\n' +
+      colors.cyan +
+      '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550' +
+      colors.reset
+  );
 
   if (successCount === MIGRATIONS.length) {
-    log.success('Todas as ' + MIGRATIONS.length + ' migra\u00E7\u00F5es foram processadas!');
+    log.success(
+      'Todas as ' +
+        MIGRATIONS.length +
+        ' migra\u00E7\u00F5es foram processadas!'
+    );
     console.log(
       '\n' +
         colors.green +
@@ -223,7 +263,9 @@ async function executeMigrations() {
 
 executeMigrations().catch((error) => {
   log.error('Erro fatal: ' + error.message);
-  console.log('\n' + colors.yellow + 'Tente o m\u00E9todo manual:' + colors.reset);
+  console.log(
+    '\n' + colors.yellow + 'Tente o m\u00E9todo manual:' + colors.reset
+  );
   console.log('https://app.supabase.com/ \u2192 SQL Editor\n');
   process.exit(1);
 });

@@ -4,13 +4,16 @@ import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 
 const router = Router();
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 const SITE_SETTING_FIELDS = new Set([
   'agency_name',

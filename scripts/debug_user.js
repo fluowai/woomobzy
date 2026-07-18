@@ -31,8 +31,8 @@ async function debugUser(email) {
   console.log(JSON.stringify(profiles, null, 2));
 
   const { data: auth, error: aError } = await supabase.auth.admin.listUsers();
-  const user = auth?.users?.find(u => u.email === email);
-  
+  const user = auth?.users?.find((u) => u.email === email);
+
   console.log('--- AUTH DATA ---');
   console.log(JSON.stringify(user, null, 2));
 }

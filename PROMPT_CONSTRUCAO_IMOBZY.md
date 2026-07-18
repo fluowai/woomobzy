@@ -14,21 +14,21 @@ A plataforma opera em modelo **multi-tenant white-label**, onde cada organizacao
 
 ### Stack Tecnologica
 
-| Camada | Tecnologia | Versao |
-|---|---|---|
-| Frontend | React + TypeScript | 19.x |
-| Estilo | Tailwind CSS | v4 |
-| Roteamento | React Router | v7 |
-| Backend | Node.js + Express | 5.x |
-| Banco de Dados | PostgreSQL (Supabase) | 15+ |
-| Auth | Supabase Auth (JWT) | - |
-| Storage | MinIO (S3-compatible) | - |
-| Cache | TTL Cache (in-memory) | - |
-| Bundler | Vite | 6.x |
-| Testes | Vitest + Testing Library | 4.x |
-| Linting | ESLint + Prettier | 9.x |
-| Containerizacao | Docker + Docker Compose | - |
-| Reverse Proxy | Traefik | v3 |
+| Camada          | Tecnologia               | Versao |
+| --------------- | ------------------------ | ------ |
+| Frontend        | React + TypeScript       | 19.x   |
+| Estilo          | Tailwind CSS             | v4     |
+| Roteamento      | React Router             | v7     |
+| Backend         | Node.js + Express        | 5.x    |
+| Banco de Dados  | PostgreSQL (Supabase)    | 15+    |
+| Auth            | Supabase Auth (JWT)      | -      |
+| Storage         | MinIO (S3-compatible)    | -      |
+| Cache           | TTL Cache (in-memory)    | -      |
+| Bundler         | Vite                     | 6.x    |
+| Testes          | Vitest + Testing Library | 4.x    |
+| Linting         | ESLint + Prettier        | 9.x    |
+| Containerizacao | Docker + Docker Compose  | -      |
+| Reverse Proxy   | Traefik                  | v3     |
 
 ### Princips Arquiteturais
 
@@ -525,20 +525,20 @@ Handler da rota
 
 ### 3.5 Regras de Negocio por Role
 
-| Acao | superadmin | admin | gerente | broker | assistente |
-|---|---|---|---|---|---|
-| Acessar superadmin panel | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Gerenciar tenants | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Gerenciar planos | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Impersonar organizacao | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Gerenciar usuarios da org | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Configurar integracoes | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Editar todos os imoveis | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Criar/editar proprios imoveis | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Visualizar leads | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Editar leads | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Acessar BI/Reports | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Visualizar financeiro | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Acao                          | superadmin | admin | gerente | broker | assistente |
+| ----------------------------- | ---------- | ----- | ------- | ------ | ---------- |
+| Acessar superadmin panel      | ✅         | ❌    | ❌      | ❌     | ❌         |
+| Gerenciar tenants             | ✅         | ❌    | ❌      | ❌     | ❌         |
+| Gerenciar planos              | ✅         | ❌    | ❌      | ❌     | ❌         |
+| Impersonar organizacao        | ✅         | ❌    | ❌      | ❌     | ❌         |
+| Gerenciar usuarios da org     | ✅         | ✅    | ❌      | ❌     | ❌         |
+| Configurar integracoes        | ✅         | ✅    | ❌      | ❌     | ❌         |
+| Editar todos os imoveis       | ✅         | ✅    | ✅      | ❌     | ❌         |
+| Criar/editar proprios imoveis | ✅         | ✅    | ✅      | ✅     | ❌         |
+| Visualizar leads              | ✅         | ✅    | ✅      | ✅     | ✅         |
+| Editar leads                  | ✅         | ✅    | ✅      | ✅     | ❌         |
+| Acessar BI/Reports            | ✅         | ✅    | ✅      | ❌     | ❌         |
+| Visualizar financeiro         | ✅         | ✅    | ✅      | ❌     | ❌         |
 
 ### 3.6 Impersonation (Suporte)
 
@@ -757,70 +757,70 @@ CREATE POLICY "superadmin_bypass" ON leads
 
 ### 5.1 Publicas (sem auth)
 
-| Metodo | Rota | Descricao |
-|---|---|---|
-| GET | `/` | Status da API |
-| GET | `/health` | Health check |
-| GET | `/api/system-status` | Status detalhado |
-| GET | `/api/public/properties` | Listagem publica de imoveis |
-| POST | `/api/public/leads` | Captura de lead publico |
-| GET | `/api/public/sites/:slug` | Site publico |
-| GET | `/api/public/lp/:slug` | Landing page publica |
-| GET | `/api/quiz/:slug` | Quiz publico |
-| POST | `/api/quiz/:slug/submit` | Responder quiz |
+| Metodo | Rota                      | Descricao                   |
+| ------ | ------------------------- | --------------------------- |
+| GET    | `/`                       | Status da API               |
+| GET    | `/health`                 | Health check                |
+| GET    | `/api/system-status`      | Status detalhado            |
+| GET    | `/api/public/properties`  | Listagem publica de imoveis |
+| POST   | `/api/public/leads`       | Captura de lead publico     |
+| GET    | `/api/public/sites/:slug` | Site publico                |
+| GET    | `/api/public/lp/:slug`    | Landing page publica        |
+| GET    | `/api/quiz/:slug`         | Quiz publico                |
+| POST   | `/api/quiz/:slug/submit`  | Responder quiz              |
 
 ### 5.2 Autenticadas (verifyAuth)
 
-| Metodo | Rota | Descricao |
-|---|---|---|
-| GET/POST/PATCH/DELETE | `/api/crm/leads/*` | CRUD de leads |
-| POST | `/api/crm/leads/bulk-delete` | Exclusao em massa |
-| POST | `/api/crm/leads/:id/match-properties` | Matching IA |
-| POST | `/api/crm/distribution/*` | Distribuicao de leads |
-| POST | `/api/crm/drip/*` | Campanhas drip |
-| GET | `/api/crm/reports/*` | Relatorios CRM |
-| GET/POST/PATCH/DELETE | `/api/properties/*` | CRUD de imoveis |
-| GET | `/api/rural/maps/*` | Mapas rurais |
-| GET | `/api/rural/analysis/*` | Analises rurais |
-| POST | `/api/rural/pdf/*` | Gerar PDFs rurais |
-| GET | `/api/rural/enrichment/*` | Enriquecimento de dados |
-| GET | `/api/rural/integrations/*` | Integracoes gov |
-| POST | `/api/email/send` | Enviar email |
-| GET/POST/PATCH | `/api/sites/*` | CRUD de sites |
-| GET/POST/PATCH | `/api/portals/*` | Portais |
-| POST | `/api/documents/*` | Documentos |
-| POST | `/api/valuation/*` | Valuation |
-| GET/POST | `/api/settings/*` | Configuracoes |
-| POST | `/api/quiz/*` | Quiz campaigns |
+| Metodo                | Rota                                  | Descricao               |
+| --------------------- | ------------------------------------- | ----------------------- |
+| GET/POST/PATCH/DELETE | `/api/crm/leads/*`                    | CRUD de leads           |
+| POST                  | `/api/crm/leads/bulk-delete`          | Exclusao em massa       |
+| POST                  | `/api/crm/leads/:id/match-properties` | Matching IA             |
+| POST                  | `/api/crm/distribution/*`             | Distribuicao de leads   |
+| POST                  | `/api/crm/drip/*`                     | Campanhas drip          |
+| GET                   | `/api/crm/reports/*`                  | Relatorios CRM          |
+| GET/POST/PATCH/DELETE | `/api/properties/*`                   | CRUD de imoveis         |
+| GET                   | `/api/rural/maps/*`                   | Mapas rurais            |
+| GET                   | `/api/rural/analysis/*`               | Analises rurais         |
+| POST                  | `/api/rural/pdf/*`                    | Gerar PDFs rurais       |
+| GET                   | `/api/rural/enrichment/*`             | Enriquecimento de dados |
+| GET                   | `/api/rural/integrations/*`           | Integracoes gov         |
+| POST                  | `/api/email/send`                     | Enviar email            |
+| GET/POST/PATCH        | `/api/sites/*`                        | CRUD de sites           |
+| GET/POST/PATCH        | `/api/portals/*`                      | Portais                 |
+| POST                  | `/api/documents/*`                    | Documentos              |
+| POST                  | `/api/valuation/*`                    | Valuation               |
+| GET/POST              | `/api/settings/*`                     | Configuracoes           |
+| POST                  | `/api/quiz/*`                         | Quiz campaigns          |
 
 ### 5.3 Admin (verifyAdmin)
 
-| Metodo | Rota | Descricao |
-|---|---|---|
-| GET/POST/PATCH/DELETE | `/api/admin/*` | Gerenciamento admin |
-| GET | `/api/admin/templates/*` | Templates |
-| POST | `/api/import/*` | Importacao de dados |
+| Metodo                | Rota                     | Descricao           |
+| --------------------- | ------------------------ | ------------------- |
+| GET/POST/PATCH/DELETE | `/api/admin/*`           | Gerenciamento admin |
+| GET                   | `/api/admin/templates/*` | Templates           |
+| POST                  | `/api/import/*`          | Importacao de dados |
 
 ### 5.4 SuperAdmin (verifySuperAdmin)
 
-| Metodo | Rota | Descricao |
-|---|---|---|
-| GET/POST/PATCH/DELETE | `/superadmin/api/*` | Gerenciamento plataforma |
-| GET | `/superadmin/api/analytics` | Analytics |
-| GET | `/superadmin/api/monitoring` | Monitoring |
-| POST | `/superadmin/api/impersonate` | Impersonation |
+| Metodo                | Rota                          | Descricao                |
+| --------------------- | ----------------------------- | ------------------------ |
+| GET/POST/PATCH/DELETE | `/superadmin/api/*`           | Gerenciamento plataforma |
+| GET                   | `/superadmin/api/analytics`   | Analytics                |
+| GET                   | `/superadmin/api/monitoring`  | Monitoring               |
+| POST                  | `/superadmin/api/impersonate` | Impersonation            |
 
 ### 5.5 WhatsApp Proxy
 
-| Metodo | Rota | Descricao |
-|---|---|---|
-| WS | `/api/whatsapp/ws` | WebSocket (com JWT) |
-| POST | `/api/whatsapp/socket-token` | Gerar token WS |
-| GET | `/api/whatsapp/instances` | Listar instancias |
-| GET | `/api/whatsapp/status` | Status WhatsApp |
-| GET | `/api/whatsapp/media/:id/url` | URL de midia |
-| POST | `/api/whatsapp/waha/*` | Proxy WAHA |
-| * | `/api/whatsapp/*` | Proxy para WhatsMeow |
+| Metodo | Rota                          | Descricao            |
+| ------ | ----------------------------- | -------------------- |
+| WS     | `/api/whatsapp/ws`            | WebSocket (com JWT)  |
+| POST   | `/api/whatsapp/socket-token`  | Gerar token WS       |
+| GET    | `/api/whatsapp/instances`     | Listar instancias    |
+| GET    | `/api/whatsapp/status`        | Status WhatsApp      |
+| GET    | `/api/whatsapp/media/:id/url` | URL de midia         |
+| POST   | `/api/whatsapp/waha/*`        | Proxy WAHA           |
+| \*     | `/api/whatsapp/*`             | Proxy para WhatsMeow |
 
 ---
 
@@ -854,21 +854,23 @@ DIRECT_ADMIN_API_KEY=
 
 ```js
 // Helmet com CSP
-app.use(helmet({
-  contentSecurityPolicy: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'"],  // SEM 'unsafe-inline' em producao
-    styleSrc: ["'self'", "'unsafe-inline'"],
-    imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co"],
-    frameAncestors: ["'self'"],
-  }
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"], // SEM 'unsafe-inline' em producao
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
+      frameAncestors: ["'self'"],
+    },
+  })
+);
 
 // Rate limiting por rotas criticas
-const loginLimiter = rateLimit({ windowMs: 15*60*1000, max: 10 });
-const apiLimiter = rateLimit({ windowMs: 15*60*1000, max: 500 });
-const whatsappLimiter = rateLimit({ windowMs: 1*60*1000, max: 30 });
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
+const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
+const whatsappLimiter = rateLimit({ windowMs: 1 * 60 * 1000, max: 30 });
 ```
 
 ### 6.3 Validacao de Input
@@ -910,6 +912,7 @@ TODA tabela com dados tem:
 ### 6.6 Anti-Break-Glass
 
 NENHUM email hardcoded deve ganhar privilegios extras. Remover:
+
 ```js
 // NUNCA fazer isso:
 if (email === 'fluowai@gmail.com') {
@@ -926,6 +929,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.1 Modulo CRM
 
 **Kanban Board**
+
 - Board drag-and-drop com colunas por status
 - Virtualizacao para listas grandes (>500 leads)
 - Filtros por intent (Comprador/Vendedor/Parceria)
@@ -936,6 +940,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 - Campanhas drip por email
 
 **Leads Manager**
+
 - Lista paginada com busca
 - Metricas: total, em atendimento, fechados
 - Distribuicao de leads entre corretores
@@ -945,6 +950,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.2 Modulo Imoveis
 
 **Property Management**
+
 - Grid e List view
 - Filtros: tipo, status, preco, localizacao
 - Sincronizacao com Orulo (empreendimentos)
@@ -953,6 +959,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 - Campos especificos para urbano (condominio, andar, vagas)
 
 **Property Editor**
+
 - Wizard multi-step
 - Upload de imagens com drag-and-drop
 - Geolocalizacao com mapa
@@ -962,6 +969,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.3 Modulo Territorial Rural
 
 **Geointeligencia**
+
 - Mapa interativo (Leaflet/React-Leaflet)
 - Camadas: CAR, MapBiomas, IBAMA, Solo, Hidrografia
 - Desenho de poligonos (Leaflet Draw)
@@ -969,23 +977,27 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 - KMZ/KML import/export
 
 **Analise CAR**
+
 - Busca por numero CAR
 - Busca por coordenadas
 - Busca por municipio
 - Dados do proprietario, area, modulos fiscais
 
 **Due Diligence**
+
 - Checklist documental
 - Status de cada documento
 - Alertas de pendencias
 - PDF de relatorio consolidado
 
 **Valuation Rural**
+
 - Metodos: comparativo, produtividade, custo de reposicao
 - Dados de mercado (IBGE SIDRA)
 - Mapa de valorizacao
 
 **Dossie Inteligente**
+
 - Relatorio consolidado de todos os dados
 - PDF gerado automaticamente
 - Inclui: CAR, analise ambiental, valuation, documentos
@@ -993,6 +1005,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.4 Modulo Locacao (Urbano)
 
 **Lease Wizard**
+
 - Multi-step: inquilino -> imovel -> contrato -> revisao
 - Templates de contrato editaveis
 - Geracao de PDF com pdfkit
@@ -1000,6 +1013,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 - Notificacoes de vencimento
 
 **Dashboard Locacao**
+
 - Contratos ativos, pendentes, vencidos
 - Fluxo de caixa projetado
 - Alertas de renovacao
@@ -1007,6 +1021,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.5 Modulo WhatsApp
 
 **Dashboard**
+
 - Lista de instancias por tenant
 - Status: conectado/desconectado
 - QR Code para pareamento
@@ -1017,6 +1032,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 - Importacao de historico
 
 **Backend**
+
 - Proxy WebSocket autenticado
 - Suporte a dois providers: WhatsMeow e WAHA
 - Upload de midia via MinIO
@@ -1026,17 +1042,20 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.6 Modulo IA
 
 **AI Assistant**
+
 - Chat com IA para consultoria imobiliaria
 - Contexto: imoveis, leads, mercado
 - Integracao Gemini + Groq
 
 **AI Agents**
+
 - Matching automatico lead x imovel
 - Geracao de descrices
 - Resumo de atividades
 - Sugestoes de acao
 
 **Consulting Agent**
+
 - Qualificacao de leads via questionario
 - Score de compatibilidade
 - Recomendacoes personalizadas
@@ -1044,12 +1063,14 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.7 Modulo Site Builder
 
 **Editor Visual**
+
 - Drag-and-drop de blocos
 - Blocos disponiveis: Hero, Texto, Imagem, Galeria, Mapa, Form, CTA, Footer, Testimonials, Stats, Property Grid, Custom HTML
 - Preview em tempo real
 - Publicacao com dominio customizado
 
 **Templates**
+
 - Templates pre-definidos por nicho
 - Customizacao de cores, fontes, espacamento
 - SEO settings (title, description, og:image)
@@ -1057,6 +1078,7 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.8 Modulo Landing Pages
 
 **Editor**
+
 - Simples ao site builder, focado em conversao
 - Templates: premium, legacy, designed, elementor
 - Integracao com forms de captura
@@ -1065,27 +1087,32 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 ### 7.9 Modulo Super Admin
 
 **Tenant Manager**
+
 - Lista de todas as organizacoes
 - Criar/editar/suspender tenants
 - Impersonation para suporte
 - Metricas por tenant
 
 **Plan Manager**
+
 - Planos com features JSONB
 - Limites por plano (imoveis, usuarios)
 - Trial management
 
 **Billing Manager**
+
 - Historico de pagamentos
 - Status de assinatura
 - Geracao de boletos
 
 **Feature Flags**
+
 - Flags globais
 - Flags por tenant
 - Flags por plano
 
 **Audit Log**
+
 - Todas as acoes de admin
 - Filtros por data, usuario, acao
 - Exportacao
@@ -1094,21 +1121,21 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 
 ## 8. INTEGRACOES EXTERNAS
 
-| Servico | Uso | Credenciais |
-|---|---|---|
-| Supabase | Database + Auth | URL + Keys |
-| MinIO | Storage de imagens/midias | Access Key + Secret |
-| Gemini (Google) | IA generativa | API Key |
-| Groq | IA rapida (matching) | API Key |
-| Orulo | Dados de empreendimentos | Client ID + Secret |
-| MapBiomas | Dados ambientais | Email + Password |
-| IBGE SIDRA | Dados economicos rurais | Public API |
-| IBAMA | Embargos ambientais | Public API |
-| Terra Brasilis | Desmatamento | Public API |
-| ConectaGov | Dados governamentais | Public API |
-| SICAR | CAR rural | Public API |
-| DirectAdmin | Gestao de dominios | API Key |
-| Traefik | Reverse proxy / SSL | Config files |
+| Servico         | Uso                       | Credenciais         |
+| --------------- | ------------------------- | ------------------- |
+| Supabase        | Database + Auth           | URL + Keys          |
+| MinIO           | Storage de imagens/midias | Access Key + Secret |
+| Gemini (Google) | IA generativa             | API Key             |
+| Groq            | IA rapida (matching)      | API Key             |
+| Orulo           | Dados de empreendimentos  | Client ID + Secret  |
+| MapBiomas       | Dados ambientais          | Email + Password    |
+| IBGE SIDRA      | Dados economicos rurais   | Public API          |
+| IBAMA           | Embargos ambientais       | Public API          |
+| Terra Brasilis  | Desmatamento              | Public API          |
+| ConectaGov      | Dados governamentais      | Public API          |
+| SICAR           | CAR rural                 | Public API          |
+| DirectAdmin     | Gestao de dominios        | API Key             |
+| Traefik         | Reverse proxy / SSL       | Config files        |
 
 ---
 
@@ -1120,27 +1147,27 @@ Em vez disso, garantir que o role vem exclusivamente do banco de dados, com audi
 services:
   frontend:
     build: Dockerfile.frontend
-    ports: ["3006:3006"]
+    ports: ['3006:3006']
     environment:
       - VITE_SUPABASE_URL
       - VITE_SUPABASE_ANON_KEY
 
   api:
     build: Dockerfile.api
-    ports: ["3002:3002"]
+    ports: ['3002:3002']
     env_file: .env
     depends_on: [whatsapp-service]
 
   whatsapp:
     build: Dockerfile.whatsapp
-    ports: ["3100:3100"]
+    ports: ['3100:3100']
 
   document-worker:
     build: Dockerfile.document-worker
 
   traefik:
     image: traefik:v3
-    ports: ["80:80", "443:443"]
+    ports: ['80:80', '443:443']
     volumes:
       - traefik-certs:/acme
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -1201,21 +1228,22 @@ api.imob.wootech.com.br  → api:3002
 
 ## 11. METRICAS DE SUCESSO
 
-| Metrica | Meta |
-|---|---|
-| Time to First Load | < 3s |
-| Lighthouse Score | > 85 |
-| Test Coverage | > 30% |
-| Bundle Size (gzipped) | < 500KB |
-| API Response Time (p95) | < 500ms |
-| Zero Critical Vulnerabilities | 0 |
-| Error Rate (5xx) | < 0.1% |
+| Metrica                       | Meta    |
+| ----------------------------- | ------- |
+| Time to First Load            | < 3s    |
+| Lighthouse Score              | > 85    |
+| Test Coverage                 | > 30%   |
+| Bundle Size (gzipped)         | < 500KB |
+| API Response Time (p95)       | < 500ms |
+| Zero Critical Vulnerabilities | 0       |
+| Error Rate (5xx)              | < 0.1%  |
 
 ---
 
 ## 12. ORDEM DE CONSTRUCAO (ROADMAP)
 
 ### Fase 1 — Fundacao (Semanas 1-2)
+
 1. Setup do projeto (Vite + React + TS + Tailwind)
 2. Supabase client + auth context
 3. Login / Register
@@ -1224,6 +1252,7 @@ api.imob.wootech.com.br  → api:3002
 6. Database schema (organizations, profiles, properties)
 
 ### Fase 2 — Core CRM (Semanas 3-4)
+
 7. CRUD de leads (backend + frontend)
 8. Kanban Board (drag-and-drop)
 9. Lead matching basico
@@ -1231,6 +1260,7 @@ api.imob.wootech.com.br  → api:3002
 11. Metricas CRM
 
 ### Fase 3 — Imoveis (Semanas 5-6)
+
 12. CRUD de imoveis (urbano)
 13. CRUD de imoveis (rural)
 14. Upload de imagens (MinIO)
@@ -1238,6 +1268,7 @@ api.imob.wootech.com.br  → api:3002
 16. Detalhe de imovel
 
 ### Fase 4 — WhatsApp (Semanas 7-8)
+
 17. Proxy WhatsApp
 18. WebSocket autenticado
 19. Dashboard WhatsApp
@@ -1245,6 +1276,7 @@ api.imob.wootech.com.br  → api:3002
 21. QR Code + instancias
 
 ### Fase 5 — Rural Intelligence (Semanas 9-10)
+
 22. Mapas (Leaflet)
 23. Integracao CAR
 24. Due Diligence
@@ -1252,12 +1284,14 @@ api.imob.wootech.com.br  → api:3002
 26. Dossie Inteligente
 
 ### Fase 6 — Locacao (Semanas 11-12)
+
 27. Lease Wizard
 28. Templates de contrato
 29. Geracao de PDF
 30. Dashboard de locacao
 
 ### Fase 7 — Super Admin (Semanas 13-14)
+
 31. Tenant Manager
 32. Plan Manager
 33. Feature Flags
@@ -1265,17 +1299,20 @@ api.imob.wootech.com.br  → api:3002
 35. Impersonation
 
 ### Fase 8 — Marketing (Semanas 15-16)
+
 36. Landing Page Editor
 37. Site Builder
 38. Quiz / Campanhas
 39. Email center
 
 ### Fase 9 — IA (Semanas 17-18)
+
 40. AI Assistant
 41. AI Agents (matching)
 42. Matching automatico lead x imovel
 
 ### Fase 10 — Polimento (Semanas 19-20)
+
 43. Testes (30%+ coverage)
 44. Performance optimization
 45. Seguranca audit

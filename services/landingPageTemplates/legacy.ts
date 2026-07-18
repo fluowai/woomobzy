@@ -14,8 +14,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -24,17 +35,18 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Invista em Terra: Seguran├ºa e Alta Rentabilidade',
-          subtitle: 'Oportunidades exclusivas em ├íreas de expans├úo agr├¡cola com alto potencial de valoriza├º├úo.',
+          subtitle:
+            'Oportunidades exclusivas em ├íreas de expans├úo agr├¡cola com alto potencial de valoriza├º├úo.',
           backgroundImage: '/templates/template_investment.png',
           overlayOpacity: 0.5,
           ctaText: 'Falar com Especialista',
           ctaLink: '#contato',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
+        responsive: {},
       },
       {
         type: BlockType.STATS,
@@ -43,23 +55,34 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         config: {
           stats: [
             { label: 'Hectares Dispon├¡veis', value: '50.000+', icon: 'Map' },
-            { label: 'Valoriza├º├úo M├®dia aa', value: '15%', icon: 'TrendingUp' },
-            { label: 'Anos de Mercado', value: '25', icon: 'Shield' }
+            {
+              label: 'Valoriza├º├úo M├®dia aa',
+              value: '15%',
+              icon: 'TrendingUp',
+            },
+            { label: 'Anos de Mercado', value: '25', icon: 'Shield' },
           ],
-          columns: 3
+          columns: 3,
         } as any,
         styles: { padding: '80px 20px', backgroundColor: '#f9fafb' },
-        responsive: {}
+        responsive: {},
       },
       {
         type: BlockType.PROPERTY_GRID,
         order: 2,
         visible: true,
-        config: { columns: 3, gap: 24, showFilters: true, maxItems: 6, sortBy: 'price', cardStyle: 'modern' },
+        config: {
+          columns: 3,
+          gap: 24,
+          showFilters: true,
+          maxItems: 6,
+          sortBy: 'price',
+          cardStyle: 'modern',
+        },
         styles: { padding: '60px 20px' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'production-ready',
@@ -74,8 +97,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -84,17 +118,18 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Fazenda Pronta para Produzir',
-          subtitle: 'Infraestrutura completa para soja, milho e algod├úo. Sede moderna e silos de alta capacidade.',
+          subtitle:
+            'Infraestrutura completa para soja, milho e algod├úo. Sede moderna e silos de alta capacidade.',
           backgroundImage: '/templates/template_production.png',
           overlayOpacity: 0.4,
           ctaText: 'Ver Instala├º├Áes',
           ctaLink: '#detalhes',
           height: 600,
           alignment: 'left',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
+        responsive: {},
       },
       {
         type: BlockType.FEATURES,
@@ -102,16 +137,28 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           features: [
-            { title: 'Solo F├®rtil', description: 'Alta safra garantida', icon: '­ƒî▒' },
-            { title: 'Silos Modernos', description: 'Armazenamento seguro', icon: '­ƒÅù´©Å' },
-            { title: 'Acesso F├ícil', description: 'Log├¡stica otimizada', icon: '­ƒÜÜ' }
+            {
+              title: 'Solo F├®rtil',
+              description: 'Alta safra garantida',
+              icon: '­ƒî▒',
+            },
+            {
+              title: 'Silos Modernos',
+              description: 'Armazenamento seguro',
+              icon: '­ƒÅù´©Å',
+            },
+            {
+              title: 'Acesso F├ícil',
+              description: 'Log├¡stica otimizada',
+              icon: '­ƒÜÜ',
+            },
           ],
-          columns: 3
+          columns: 3,
         },
         styles: { padding: '80px 20px' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'livestock-focus',
@@ -126,8 +173,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1e293b',
       fontFamily: 'Inter',
       borderRadius: '0.25rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -136,19 +194,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Ideal para Pecu├íria Lucrativa',
-          subtitle: 'Capacidade para 1.000+ cabe├ºas, pastagens rotacionadas e currais de ponta.',
+          subtitle:
+            'Capacidade para 1.000+ cabe├ºas, pastagens rotacionadas e currais de ponta.',
           backgroundImage: '/templates/template_livestock.png',
           overlayOpacity: 0.3,
           ctaText: 'Receber Proposta',
           ctaLink: '#contato',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'opportunity-sale',
@@ -163,8 +222,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -173,19 +243,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Oportunidade ├Ünica ├á Vista',
-          subtitle: 'Desconto exclusivo para pagamento imediato. Oferta imperd├¡vel!',
+          subtitle:
+            'Desconto exclusivo para pagamento imediato. Oferta imperd├¡vel!',
           backgroundImage: '/templates/template_opportunity.png',
           overlayOpacity: 0.5,
           ctaText: 'Ver Detalhes Agora',
           ctaLink: '#info',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'lifestyle-rural',
@@ -200,8 +271,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -210,19 +292,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Pronta para Morar e Produzir',
-          subtitle: 'Casa sede completa, curral, energia e ├ígua em abund├óncia.',
+          subtitle:
+            'Casa sede completa, curral, energia e ├ígua em abund├óncia.',
           backgroundImage: '/templates/template_lifestyle.png',
           overlayOpacity: 0.3,
           ctaText: 'Agendar Visita',
           ctaLink: '#visita',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'location-strategic',
@@ -237,8 +320,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -247,19 +341,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Localiza├º├úo que Valoriza seu Investimento',
-          subtitle: 'A apenas 30 min da cidade e 2h do aeroporto internacional.',
+          subtitle:
+            'A apenas 30 min da cidade e 2h do aeroporto internacional.',
           backgroundImage: '/templates/template_location_val.png',
           overlayOpacity: 0.4,
           ctaText: 'Saiba Mais',
           ctaLink: '#mapa',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'high-productivity',
@@ -274,8 +369,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -291,12 +397,12 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           ctaLink: '#form',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'last-units-scarcity',
@@ -311,8 +417,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -321,19 +438,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: '├Ültimas Unidades Dispon├¡veis!',
-          subtitle: 'Compra ├á vista com condi├º├Áes exclusivas por tempo limitado.',
+          subtitle:
+            'Compra ├á vista com condi├º├Áes exclusivas por tempo limitado.',
           backgroundImage: '/templates/template_last_units.png',
           overlayOpacity: 0.6,
           ctaText: 'Garantir Agora',
           ctaLink: '#urgente',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'inflation-protection',
@@ -348,8 +466,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -365,12 +494,12 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           ctaLink: '#areas',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'heritage-legacy',
@@ -385,8 +514,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Montserrat',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -402,17 +542,18 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           ctaLink: '#contato',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-luxury-living',
     name: 'Luxo no Cora├º├úo da Cidade',
-    description: 'Hero impactante com skyline e foco em apartamentos de alto padr├úo.',
+    description:
+      'Hero impactante com skyline e foco em apartamentos de alto padr├úo.',
     thumbnail: '/templates/urban/urban_apartment_center.png',
     category: 'Urban',
     themeConfig: {
@@ -422,8 +563,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1e293b',
       fontFamily: 'Inter',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3.5rem', heading2: '2.5rem', heading3: '1.75rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3.5rem',
+        heading2: '2.5rem',
+        heading3: '1.75rem',
+      },
     },
     blocks: [
       {
@@ -432,19 +584,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Seu Novo Apartamento no Cora├º├úo da Cidade',
-          subtitle: 'Viva onde tudo acontece. Conforto, sofistica├º├úo e a melhor vista urbana.',
+          subtitle:
+            'Viva onde tudo acontece. Conforto, sofistica├º├úo e a melhor vista urbana.',
           backgroundImage: '/templates/urban/urban_apartment_center.png',
           overlayOpacity: 0.4,
           ctaText: 'Ver Unidades Dispon├¡veis',
           ctaLink: '#imoveis',
           height: 700,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-exclusive-launch',
@@ -459,8 +612,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Inter',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -469,19 +633,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Lan├ºamento Exclusivo na Regi├úo!',
-          subtitle: 'Pre├ºos e condi├º├Áes especiais para investidores. Antecipe-se ao lan├ºamento.',
+          subtitle:
+            'Pre├ºos e condi├º├Áes especiais para investidores. Antecipe-se ao lan├ºamento.',
           backgroundImage: '/templates/urban/urban_exclusive_launch.png',
           overlayOpacity: 0.5,
           ctaText: 'Quero Saber Mais',
           ctaLink: '#contato',
           height: 600,
           alignment: 'left',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-land-allotment',
@@ -496,8 +661,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Inter',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -506,19 +682,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Aten├º├úo, Terrenos ├á Venda!',
-          subtitle: 'Financiamento direto com a incorporadora. Construa seu sonho hoje.',
+          subtitle:
+            'Financiamento direto com a incorporadora. Construa seu sonho hoje.',
           backgroundImage: '/templates/urban/urban_land_sale.png',
           overlayOpacity: 0.3,
           ctaText: 'Consultar Disponibilidade',
           ctaLink: '#mapa',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-luxury-pool-lifestyle',
@@ -533,8 +710,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#0f172a',
       fontFamily: 'Inter',
       borderRadius: '0px',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '4rem', heading2: '3rem', heading3: '2rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '4rem',
+        heading2: '3rem',
+        heading3: '2rem',
+      },
     },
     blocks: [
       {
@@ -543,19 +731,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Lan├ºamento de Luxo em Localiza├º├úo Privilegiada',
-          subtitle: 'Aprovamos seu cadastro na hora. Conhe├ºa o novo ├¡cone do skyline.',
+          subtitle:
+            'Aprovamos seu cadastro na hora. Conhe├ºa o novo ├¡cone do skyline.',
           backgroundImage: '/templates/urban/urban_luxury_pool.png',
           overlayOpacity: 0.2,
           ctaText: 'Agendar Visita',
           ctaLink: '#visita',
           height: 800,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-sea-view-apartments',
@@ -570,8 +759,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1e293b',
       fontFamily: 'Inter',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -580,19 +780,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Apartamento com Vista para o Mar',
-          subtitle: 'Sinta a brisa e a exclusividade de morar de frente para o azul.',
+          subtitle:
+            'Sinta a brisa e a exclusividade de morar de frente para o azul.',
           backgroundImage: '/templates/urban/urban_sea_view.png',
           overlayOpacity: 0.1,
           ctaText: 'Ver Pre├ºo e Planta',
           ctaLink: '#plantas',
           height: 600,
           alignment: 'left',
-          textColor: '#1e3a8a'
+          textColor: '#1e3a8a',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-ready-to-move-in',
@@ -607,8 +808,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#111827',
       fontFamily: 'Inter',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -617,19 +829,20 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Apartamentos Prontos para Morar',
-          subtitle: 'Mude-se hoje mesmo. Pre├ºos especiais para pagamento ├á vista.',
+          subtitle:
+            'Mude-se hoje mesmo. Pre├ºos especiais para pagamento ├á vista.',
           backgroundImage: '/templates/urban/urban_ready_move.png',
           overlayOpacity: 0.3,
           ctaText: 'Ver Apartamentos',
           ctaLink: '#lista',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-gated-complex',
@@ -644,8 +857,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#111827',
       fontFamily: 'Inter',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -661,18 +885,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           ctaLink: '#lotes',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-rental-lifestyle',
     name: 'Aluguel Sem Complica├º├úo',
     description: 'Foco no mercado de loca├º├úo e agilidade no processo.',
-    thumbnail: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1920&auto=format&fit=crop',
+    thumbnail:
+      'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1920&auto=format&fit=crop',
     category: 'Urban',
     themeConfig: {
       primaryColor: '#4338ca',
@@ -681,8 +906,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1e293b',
       fontFamily: 'Inter',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -691,25 +927,28 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Aluguel de Casas e Apartamentos',
-          subtitle: 'Alugue r├ípido e sem complica├º├úo. Seu novo lar est├í aqui.',
-          backgroundImage: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1920&auto=format&fit=crop',
+          subtitle:
+            'Alugue r├ípido e sem complica├º├úo. Seu novo lar est├í aqui.',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1920&auto=format&fit=crop',
           overlayOpacity: 0.5,
           ctaText: 'Conhecer Empreendimentos',
           ctaLink: '#alugue',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-smart-invest',
     name: 'Investimento em Terrenos',
     description: 'Focado em quem busca valoriza├º├úo em terrenos urbanos.',
-    thumbnail: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop',
+    thumbnail:
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop',
     category: 'Urban',
     themeConfig: {
       primaryColor: '#1e293b',
@@ -718,8 +957,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#0f172a',
       fontFamily: 'Inter',
       borderRadius: '0px',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.5rem', heading3: '1.75rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.5rem',
+        heading3: '1.75rem',
+      },
     },
     blocks: [
       {
@@ -728,25 +978,29 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'Seu Terreno Privativo na Cidade',
-          subtitle: '├üreas estrat├®gicas com alto potencial de valoriza├º├úo futura.',
-          backgroundImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop',
+          subtitle:
+            '├üreas estrat├®gicas com alto potencial de valoriza├º├úo futura.',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop',
           overlayOpacity: 0.6,
           ctaText: 'Falar com Consultor',
           ctaLink: '#contato',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'urban-incorporatora-credibility',
     name: 'Incorporadora de Credibilidade',
-    description: 'Institucional para empresas que buscam transmitir confian├ºa.',
-    thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1920&auto=format&fit=crop',
+    description:
+      'Institucional para empresas que buscam transmitir confian├ºa.',
+    thumbnail:
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1920&auto=format&fit=crop',
     category: 'Urban',
     themeConfig: {
       primaryColor: '#0f172a',
@@ -755,8 +1009,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1e293b',
       fontFamily: 'Inter',
       borderRadius: '0.5rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '3rem' },
-      fontSize: { base: '1rem', heading1: '3rem', heading2: '2.25rem', heading3: '1.875rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '3rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '3rem',
+        heading2: '2.25rem',
+        heading3: '1.875rem',
+      },
     },
     blocks: [
       {
@@ -766,24 +1031,27 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         config: {
           title: 'Incorporadora de Credibilidade',
           subtitle: 'Construindo o futuro com solidez e transpar├¬ncia.',
-          backgroundImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1920&auto=format&fit=crop',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1920&auto=format&fit=crop',
           overlayOpacity: 0.4,
           ctaText: 'Nossos Empreendimentos',
           ctaLink: '#portfolio',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
-      }
-    ]
+        responsive: {},
+      },
+    ],
   },
   {
     id: 'loteadora-360-premium',
     name: 'Loteadora 360┬░ Premium',
-    description: 'Template de alta convers├úo para lan├ºamentos de loteamentos com foco em infraestrutura e progresso de obra.',
-    thumbnail: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
+    description:
+      'Template de alta convers├úo para lan├ºamentos de loteamentos com foco em infraestrutura e progresso de obra.',
+    thumbnail:
+      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
     category: 'Urban',
     themeConfig: {
       primaryColor: '#064e3b',
@@ -792,8 +1060,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
       textColor: '#1f2937',
       fontFamily: 'Inter',
       borderRadius: '1rem',
-      spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '4rem' },
-      fontSize: { base: '1rem', heading1: '4rem', heading2: '3rem', heading3: '2rem' }
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '4rem',
+      },
+      fontSize: {
+        base: '1rem',
+        heading1: '4rem',
+        heading2: '3rem',
+        heading3: '2rem',
+      },
     },
     blocks: [
       {
@@ -802,17 +1081,19 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           title: 'O Estilo de Vida que Voc├¬ Sempre Sonhou',
-          subtitle: 'Lotes a partir de 360m┬▓ com infraestrutura completa e financiamento direto. Oportunidade ├║nica de investimento.',
-          backgroundImage: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
+          subtitle:
+            'Lotes a partir de 360m┬▓ com infraestrutura completa e financiamento direto. Oportunidade ├║nica de investimento.',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
           overlayOpacity: 0.4,
           ctaText: 'Falar com Consultor',
           ctaLink: '#contato',
           height: 700,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
         styles: { padding: '0' },
-        responsive: {}
+        responsive: {},
       },
       {
         type: BlockType.STATS,
@@ -822,12 +1103,16 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
           stats: [
             { label: 'Lotes Dispon├¡veis', value: '85%', icon: 'Map' },
             { label: 'Obras Conclu├¡das', value: '70%', icon: 'TrendingUp' },
-            { label: 'Valoriza├º├úo Estimada', value: '25% aa', icon: 'Shield' }
+            {
+              label: 'Valoriza├º├úo Estimada',
+              value: '25% aa',
+              icon: 'Shield',
+            },
           ],
-          columns: 3
+          columns: 3,
         } as any,
         styles: { padding: '100px 20px', backgroundColor: '#f0fdf4' },
-        responsive: {}
+        responsive: {},
       },
       {
         type: BlockType.FEATURES,
@@ -835,16 +1120,34 @@ export const LEGACY_LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
         visible: true,
         config: {
           features: [
-            { title: 'Asfalto CBUQ', description: 'Pavimenta├º├úo de alta qualidade em todo o loteamento.', icon: '­ƒøú´©Å' },
-            { title: 'Energia LED', description: 'Ilumina├º├úo p├║blica moderna e econ├┤mica.', icon: '­ƒÆí' },
-            { title: '├ürea Verde', description: 'Mais de 10.000m┬▓ de preserva├º├úo e lazer.', icon: '­ƒî│' },
-            { title: 'Rede de ├ügua', description: 'Abastecimento garantido com reservat├│rio pr├│prio.', icon: '­ƒÜ░' }
+            {
+              title: 'Asfalto CBUQ',
+              description:
+                'Pavimenta├º├úo de alta qualidade em todo o loteamento.',
+              icon: '­ƒøú´©Å',
+            },
+            {
+              title: 'Energia LED',
+              description: 'Ilumina├º├úo p├║blica moderna e econ├┤mica.',
+              icon: '­ƒÆí',
+            },
+            {
+              title: '├ürea Verde',
+              description: 'Mais de 10.000m┬▓ de preserva├º├úo e lazer.',
+              icon: '­ƒî│',
+            },
+            {
+              title: 'Rede de ├ügua',
+              description:
+                'Abastecimento garantido com reservat├│rio pr├│prio.',
+              icon: '­ƒÜ░',
+            },
           ],
-          columns: 4
+          columns: 4,
         },
         styles: { padding: '80px 20px' },
-        responsive: {}
-      }
-    ]
-  }
+        responsive: {},
+      },
+    ],
+  },
 ];

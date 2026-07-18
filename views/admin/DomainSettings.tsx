@@ -115,7 +115,9 @@ const DomainSettings: React.FC = () => {
   const checkVerification = async (domainName: string, retries = 0) => {
     setVerifyingDomain(true);
     try {
-      const data = await callApi(`/api/domains/verify/${domainName}?retries=${retries}`);
+      const data = await callApi(
+        `/api/domains/verify/${domainName}?retries=${retries}`
+      );
 
       if (!data.success && data.status === 'not_found') {
         setCurrentDomain(null);
@@ -501,17 +503,22 @@ const DomainSettings: React.FC = () => {
                     </p>
                   )}
 
-                  {currentDomain.ssl && currentDomain.status === 'pending_ssl' && (
-                    <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                      <div className="font-bold uppercase">Certificado recebido</div>
-                      <div className="mt-1 font-mono">
-                        CN: {currentDomain.ssl.commonName || 'indisponivel'}
+                  {currentDomain.ssl &&
+                    currentDomain.status === 'pending_ssl' && (
+                      <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                        <div className="font-bold uppercase">
+                          Certificado recebido
+                        </div>
+                        <div className="mt-1 font-mono">
+                          CN: {currentDomain.ssl.commonName || 'indisponivel'}
+                        </div>
+                        <div className="mt-1 font-mono">
+                          Erro:{' '}
+                          {currentDomain.ssl.error ||
+                            'certificado ainda invalido'}
+                        </div>
                       </div>
-                      <div className="mt-1 font-mono">
-                        Erro: {currentDomain.ssl.error || 'certificado ainda invalido'}
-                      </div>
-                    </div>
-                  )}
+                    )}
 
                   {currentDomain.dnsRecords && (
                     <div className="bg-white p-4 rounded border border-blue-200">
@@ -609,7 +616,8 @@ const DomainSettings: React.FC = () => {
                       Domínio Verificado!
                     </h4>
                     <p className="text-green-700 text-xs">
-                      Seu dominio esta ativo com DNS e SSL validos pelo Docker/Traefik.
+                      Seu dominio esta ativo com DNS e SSL validos pelo
+                      Docker/Traefik.
                     </p>
                   </div>
                 </div>

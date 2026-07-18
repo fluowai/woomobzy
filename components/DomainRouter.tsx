@@ -1,10 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
-import {
-  getAllPlatformHosts,
-  PANEL_HOST,
-} from '@/utils/branding';
+import { getAllPlatformHosts, PANEL_HOST } from '@/utils/branding';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 
@@ -88,7 +85,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const debugMode = searchParams.get('debug') === 'true';
   const initialSystemPath =
     !isTenantSitePath(window.location.pathname) &&
-    (SYSTEM_ROUTES.some((route) => window.location.pathname.startsWith(route)) ||
+    (SYSTEM_ROUTES.some((route) =>
+      window.location.pathname.startsWith(route)
+    ) ||
       window.location.pathname === '/');
 
   const [isPublicSite, setIsPublicSite] = useState(false);
@@ -105,7 +104,10 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
     const checkRoute = async () => {
       try {
         const hostname = window.location.hostname;
-        const panelUrl = getRuntimeEnv('VITE_PANEL_URL', 'https://imob.wootech.com.br');
+        const panelUrl = getRuntimeEnv(
+          'VITE_PANEL_URL',
+          'https://imob.wootech.com.br'
+        );
         const panelHost = cleanDomain(panelUrl);
         const currentHost = cleanHost(hostname);
         const platformHosts = new Set(getAllPlatformHosts().map(cleanHost));
@@ -141,7 +143,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           }
 
           const normalizedHostname = hostname.toLowerCase();
-          const mappedSlug = PUBLIC_DOMAIN_SLUGS[normalizedHostname] || PUBLIC_DOMAIN_SLUGS[currentHost];
+          const mappedSlug =
+            PUBLIC_DOMAIN_SLUGS[normalizedHostname] ||
+            PUBLIC_DOMAIN_SLUGS[currentHost];
           if (mappedSlug) {
             log(`[Router] Public domain resolved: ${mappedSlug}`);
             setResolvedSlug(mappedSlug);
@@ -157,7 +161,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
             if (data && !error) {
               const tenant = data as any;
-              log(`[Router] Tenant found via domain: ${tenant.name} (${tenant.slug})`);
+              log(
+                `[Router] Tenant found via domain: ${tenant.name} (${tenant.slug})`
+              );
               setResolvedSlug(tenant.slug);
               setIsPublicSite(true);
               setLoading(false);
@@ -209,7 +215,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
               if (data && !error) {
                 const tenant = data as any;
-                log(`[Router] Tenant found via slug: ${tenant.name} (${tenant.slug})`);
+                log(
+                  `[Router] Tenant found via slug: ${tenant.name} (${tenant.slug})`
+                );
                 setResolvedSlug(tenant.slug);
                 setIsPublicSite(true);
                 setLoading(false);
@@ -254,7 +262,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
                 currentHost === cleanHost(PANEL_HOST)
               ) {
                 const targetUrl = `https://${cleanDomain(customDomain)}${window.location.search || ''}`;
-                log(`[Router] Redirecting tenant site to custom domain: ${targetUrl}`);
+                log(
+                  `[Router] Redirecting tenant site to custom domain: ${targetUrl}`
+                );
                 window.location.replace(targetUrl);
                 return;
               }
@@ -266,7 +276,8 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
               return;
             }
 
-            if (error) log(`[Router] RPC error: ${error.message} (${error.code})`);
+            if (error)
+              log(`[Router] RPC error: ${error.message} (${error.code})`);
           } catch (error) {
             log(`[Router] Exception resolving tenant slug: ${error}`);
           }
@@ -323,7 +334,13 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   if (isPublicSite && resolvedSlug) {
     return (
       <>
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+        <Suspense
+          fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+            </div>
+          }
+        >
           <PublicLandingPage forceSlug={resolvedSlug} />
         </Suspense>
         {renderDebug()}

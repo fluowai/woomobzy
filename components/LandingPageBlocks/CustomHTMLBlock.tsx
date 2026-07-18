@@ -13,7 +13,10 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
-const renderEditableTemplate = (html: string, fields?: CustomHTMLBlockConfig['editableFields']) => {
+const renderEditableTemplate = (
+  html: string,
+  fields?: CustomHTMLBlockConfig['editableFields']
+) => {
   if (!fields?.length) return html;
 
   return fields.reduce((output, field) => {
@@ -28,11 +31,10 @@ const CustomHTMLBlock: React.FC<CustomHTMLBlockProps> = ({ config }) => {
   return (
     <div className="custom-html-block-container w-full">
       {config.css && <style>{config.css}</style>}
-      <div 
-        dangerouslySetInnerHTML={{ __html: html }}
-        className="w-full"
-      />
-      {import.meta.env.DEV && config.js && <script dangerouslySetInnerHTML={{ __html: config.js }} />}
+      <div dangerouslySetInnerHTML={{ __html: html }} className="w-full" />
+      {import.meta.env.DEV && config.js && (
+        <script dangerouslySetInnerHTML={{ __html: config.js }} />
+      )}
     </div>
   );
 };

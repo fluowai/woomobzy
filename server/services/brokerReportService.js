@@ -8,7 +8,11 @@ import { getSupabaseServer } from '../lib/supabase-server.js';
 /**
  * Get comprehensive performance metrics for a broker.
  */
-export async function getBrokerPerformance(organizationId, brokerId, dateRange = {}) {
+export async function getBrokerPerformance(
+  organizationId,
+  brokerId,
+  dateRange = {}
+) {
   const supabase = getSupabaseServer();
   const { startDate, endDate } = dateRange;
 
@@ -25,12 +29,18 @@ export async function getBrokerPerformance(organizationId, brokerId, dateRange =
   if (leadsError) throw leadsError;
 
   const totalLeads = (leads || []).length;
-  const convertedLeads = (leads || []).filter((l) => l.status === 'Fechado').length;
+  const convertedLeads = (leads || []).filter(
+    (l) => l.status === 'Fechado'
+  ).length;
   const lostLeads = (leads || []).filter((l) => l.status === 'Perdido').length;
   const activeLeads = totalLeads - convertedLeads - lostLeads;
-  const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100).toFixed(1) : 0;
+  const conversionRate =
+    totalLeads > 0 ? ((convertedLeads / totalLeads) * 100).toFixed(1) : 0;
 
-  const totalBudget = (leads || []).reduce((sum, l) => sum + (l.budget || 0), 0);
+  const totalBudget = (leads || []).reduce(
+    (sum, l) => sum + (l.budget || 0),
+    0
+  );
   const avgBudget = totalLeads > 0 ? Math.round(totalBudget / totalLeads) : 0;
 
   const sourceBreakdown = {};
@@ -101,7 +111,11 @@ export async function getBrokerRanking(organizationId, dateRange = {}) {
 
   const rankings = await Promise.all(
     brokers.map(async (broker) => {
-      const perf = await getBrokerPerformance(organizationId, broker.id, dateRange);
+      const perf = await getBrokerPerformance(
+        organizationId,
+        broker.id,
+        dateRange
+      );
       return {
         ...broker,
         ...perf.summary,
@@ -109,7 +123,11 @@ export async function getBrokerRanking(organizationId, dateRange = {}) {
     })
   );
 
-  return rankings.sort((a, b) => b.conversion_rate - a.conversion_rate || b.converted_leads - a.converted_leads);
+  return rankings.sort(
+    (a, b) =>
+      b.conversion_rate - a.conversion_rate ||
+      b.converted_leads - a.converted_leads
+  );
 }
 
 /**
@@ -126,8 +144,20 @@ export async function getPipelineSummary(organizationId) {
   if (error) throw error;
 
   const pipeline = {};
-  const statuses = ['Novo', 'Qualificação', 'Visita', 'Simulação', 'Documentação', 'Em Atendimento', 'Proposta', 'Fechado', 'Perdido'];
-  statuses.forEach((s) => { pipeline[s] = { count: 0, totalBudget: 0 }; });
+  const statuses = [
+    'Novo',
+    'Qualificação',
+    'Visita',
+    'Simulação',
+    'Documentação',
+    'Em Atendimento',
+    'Proposta',
+    'Fechado',
+    'Perdido',
+  ];
+  statuses.forEach((s) => {
+    pipeline[s] = { count: 0, totalBudget: 0 };
+  });
 
   (leads || []).forEach((lead) => {
     if (pipeline[lead.status]) {
@@ -142,7 +172,8 @@ export async function getPipelineSummary(organizationId) {
       status,
       count: data.count,
       total_budget: data.totalBudget,
-      avg_budget: data.count > 0 ? Math.round(data.totalBudget / data.count) : 0,
+      avg_budget:
+        data.count > 0 ? Math.round(data.totalBudget / data.count) : 0,
     })),
   };
 }

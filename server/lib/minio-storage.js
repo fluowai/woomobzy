@@ -41,8 +41,14 @@ export function isMinioConfigured() {
 }
 
 export function allowSupabaseStorageFallback() {
-  const provider = firstEnv(['MEDIA_STORAGE_PROVIDER', 'STORAGE_PROVIDER']).toLowerCase();
-  return provider === 'supabase' || firstEnv(['ALLOW_SUPABASE_STORAGE_FALLBACK']).toLowerCase() === 'true';
+  const provider = firstEnv([
+    'MEDIA_STORAGE_PROVIDER',
+    'STORAGE_PROVIDER',
+  ]).toLowerCase();
+  return (
+    provider === 'supabase' ||
+    firstEnv(['ALLOW_SUPABASE_STORAGE_FALLBACK']).toLowerCase() === 'true'
+  );
 }
 
 export function resolveMediaBucket(requestedBucket = 'imobzyimg') {
@@ -83,11 +89,17 @@ export function resolveMediaBucket(requestedBucket = 'imobzyimg') {
 
 export function resolveMinioObjectKey(logicalBucket, key) {
   const normalizedKey = String(key || '').replace(/^\/+/, '');
-  if (minioRuntimeConfig.bucketMode !== 'single' || !minioRuntimeConfig.singleBucket) {
+  if (
+    minioRuntimeConfig.bucketMode !== 'single' ||
+    !minioRuntimeConfig.singleBucket
+  ) {
     return normalizedKey;
   }
 
-  if (minioRuntimeConfig.folderMode === 'flat' || minioRuntimeConfig.folderMode === 'tenant-prefix') {
+  if (
+    minioRuntimeConfig.folderMode === 'flat' ||
+    minioRuntimeConfig.folderMode === 'tenant-prefix'
+  ) {
     return normalizedKey;
   }
 
@@ -96,10 +108,18 @@ export function resolveMinioObjectKey(logicalBucket, key) {
   return `${prefix}/${normalizedKey}`;
 }
 
-export async function uploadObject({ bucket, key, body, contentType, logicalBucket }) {
+export async function uploadObject({
+  bucket,
+  key,
+  body,
+  contentType,
+  logicalBucket,
+}) {
   const cfg = getMinioConfig();
   if (!cfg.endpoint || !cfg.accessKey || !cfg.secretKey) {
-    throw new Error('MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.');
+    throw new Error(
+      'MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.'
+    );
   }
 
   const targetKey = logicalBucket
@@ -109,7 +129,9 @@ export async function uploadObject({ bucket, key, body, contentType, logicalBuck
   const endpoint = trimSlash(cfg.endpoint);
   const region = cfg.region || DEFAULT_REGION;
   const encodedKey = encodePath(targetKey);
-  const url = new URL(`${endpoint}/${encodeURIComponent(bucket)}/${encodedKey}`);
+  const url = new URL(
+    `${endpoint}/${encodeURIComponent(bucket)}/${encodedKey}`
+  );
   const host = url.host;
   const payloadHash = sha256Hex(payload);
   const now = new Date();
@@ -140,7 +162,10 @@ export async function uploadObject({ bucket, key, body, contentType, logicalBuck
     sha256Hex(canonicalRequest),
   ].join('\n');
 
-  const signature = hmacHex(getSigningKey(cfg.secretKey, dateStamp, region), stringToSign);
+  const signature = hmacHex(
+    getSigningKey(cfg.secretKey, dateStamp, region),
+    stringToSign
+  );
   const authorization =
     `AWS4-HMAC-SHA256 Credential=${cfg.accessKey}/${credentialScope}, ` +
     `SignedHeaders=${signedHeaders}, Signature=${signature}`;
@@ -158,7 +183,9 @@ export async function uploadObject({ bucket, key, body, contentType, logicalBuck
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
-    throw new Error(`MinIO upload failed (${response.status}): ${text || response.statusText}`);
+    throw new Error(
+      `MinIO upload failed (${response.status}): ${text || response.statusText}`
+    );
   }
 
   return {
@@ -221,7 +248,8 @@ export async function getBucketVersioning(bucket) {
 }
 
 export async function suspendBucketVersioning(bucket) {
-  const body = '<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Status>Suspended</Status></VersioningConfiguration>';
+  const body =
+    '<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Status>Suspended</Status></VersioningConfiguration>';
   await signedMinioRequest({
     method: 'PUT',
     bucket,
@@ -245,14 +273,20 @@ export async function getBucketLifecycle(bucket) {
       raw: xml,
     };
   } catch (error) {
-    if (error.statusCode === 404 || /NoSuchLifecycle/i.test(error.body || error.message || '')) {
+    if (
+      error.statusCode === 404 ||
+      /NoSuchLifecycle/i.test(error.body || error.message || '')
+    ) {
       return { enabled: false, rules: [], raw: '' };
     }
     throw error;
   }
 }
 
-export async function applyBucketLifecycle(bucket, rulesXml = defaultLifecycleXml()) {
+export async function applyBucketLifecycle(
+  bucket,
+  rulesXml = defaultLifecycleXml()
+) {
   await signedMinioRequest({
     method: 'PUT',
     bucket,
@@ -272,7 +306,10 @@ export async function getBucketPolicy(bucket) {
     });
     return JSON.parse(policy);
   } catch (error) {
-    if (error.statusCode === 404 || /NoSuchBucketPolicy/i.test(error.body || error.message || '')) {
+    if (
+      error.statusCode === 404 ||
+      /NoSuchBucketPolicy/i.test(error.body || error.message || '')
+    ) {
       return null;
     }
     throw error;
@@ -291,7 +328,9 @@ export async function applyBucketPolicy(bucket, policy) {
 }
 
 export async function deleteMinioObjects({ bucket, keys = [] }) {
-  const uniqueKeys = [...new Set(keys.map((key) => String(key || '').trim()).filter(Boolean))];
+  const uniqueKeys = [
+    ...new Set(keys.map((key) => String(key || '').trim()).filter(Boolean)),
+  ];
   const results = [];
 
   for (const key of uniqueKeys) {
@@ -309,7 +348,9 @@ export async function deleteMinioObjects({ bucket, keys = [] }) {
 export function createPresignedGetUrl({ bucket, key, expiresInSeconds = 300 }) {
   const cfg = getMinioConfig();
   if (!cfg.endpoint || !cfg.accessKey || !cfg.secretKey) {
-    throw new Error('MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.');
+    throw new Error(
+      'MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.'
+    );
   }
 
   const endpoint = trimSlash(cfg.publicUrl || cfg.endpoint);
@@ -318,11 +359,16 @@ export function createPresignedGetUrl({ bucket, key, expiresInSeconds = 300 }) {
   const amzDate = toAmzDate(now);
   const dateStamp = amzDate.slice(0, 8);
   const credentialScope = `${dateStamp}/${region}/s3/aws4_request`;
-  const url = new URL(`${endpoint}/${encodeURIComponent(bucket)}/${encodePath(key)}`);
+  const url = new URL(
+    `${endpoint}/${encodeURIComponent(bucket)}/${encodePath(key)}`
+  );
   const expires = Math.max(60, Math.min(Number(expiresInSeconds) || 300, 3600));
 
   url.searchParams.set('X-Amz-Algorithm', 'AWS4-HMAC-SHA256');
-  url.searchParams.set('X-Amz-Credential', `${cfg.accessKey}/${credentialScope}`);
+  url.searchParams.set(
+    'X-Amz-Credential',
+    `${cfg.accessKey}/${credentialScope}`
+  );
   url.searchParams.set('X-Amz-Date', amzDate);
   url.searchParams.set('X-Amz-Expires', String(expires));
   url.searchParams.set('X-Amz-SignedHeaders', 'host');
@@ -342,22 +388,36 @@ export function createPresignedGetUrl({ bucket, key, expiresInSeconds = 300 }) {
     credentialScope,
     sha256Hex(canonicalRequest),
   ].join('\n');
-  const signature = hmacHex(getSigningKey(cfg.secretKey, dateStamp, region), stringToSign);
+  const signature = hmacHex(
+    getSigningKey(cfg.secretKey, dateStamp, region),
+    stringToSign
+  );
   url.searchParams.set('X-Amz-Signature', signature);
 
   return url.toString();
 }
 
 export function getMinioConfig() {
-  const useSSLRaw = typeof minioRuntimeConfig.useSsl === 'boolean'
-    ? String(minioRuntimeConfig.useSsl)
-    : firstEnv(['MINIO_USE_SSL', 'S3_USE_SSL']);
+  const useSSLRaw =
+    typeof minioRuntimeConfig.useSsl === 'boolean'
+      ? String(minioRuntimeConfig.useSsl)
+      : firstEnv(['MINIO_USE_SSL', 'S3_USE_SSL']);
   const endpoint = normalizeEndpoint(
-    withPort(minioRuntimeConfig.endpoint || firstEnv(['MINIO_ENDPOINT', 'S3_ENDPOINT', 'AWS_ENDPOINT_URL']), minioRuntimeConfig.port),
+    withPort(
+      minioRuntimeConfig.endpoint ||
+        firstEnv(['MINIO_ENDPOINT', 'S3_ENDPOINT', 'AWS_ENDPOINT_URL']),
+      minioRuntimeConfig.port
+    ),
     useSSLRaw
   );
   const publicUrl = normalizeEndpoint(
-    minioRuntimeConfig.publicUrl || firstEnv(['MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) || endpoint,
+    minioRuntimeConfig.publicUrl ||
+      firstEnv([
+        'MINIO_PUBLIC_URL',
+        'MINIO_PUBLIC_ENDPOINT',
+        'S3_PUBLIC_URL',
+      ]) ||
+      endpoint,
     typeof minioRuntimeConfig.useSsl === 'boolean'
       ? String(minioRuntimeConfig.useSsl)
       : firstEnv(['MINIO_PUBLIC_USE_SSL', 'MINIO_USE_SSL', 'S3_USE_SSL'])
@@ -366,17 +426,41 @@ export function getMinioConfig() {
   return {
     endpoint,
     publicUrl: safePublicStorageUrl(publicUrl),
-    accessKey: minioRuntimeConfig.accessKey || firstEnv(['MINIO_ACCESS_KEY', 'MINIO_ROOT_USER', 'AWS_ACCESS_KEY_ID', 'S3_ACCESS_KEY_ID']),
-    secretKey: minioRuntimeConfig.secretKey || firstEnv(['MINIO_SECRET_KEY', 'MINIO_ROOT_PASSWORD', 'AWS_SECRET_ACCESS_KEY', 'S3_SECRET_ACCESS_KEY']),
-    region: minioRuntimeConfig.region || firstEnv(['MINIO_REGION', 'AWS_REGION', 'S3_REGION']) || DEFAULT_REGION,
+    accessKey:
+      minioRuntimeConfig.accessKey ||
+      firstEnv([
+        'MINIO_ACCESS_KEY',
+        'MINIO_ROOT_USER',
+        'AWS_ACCESS_KEY_ID',
+        'S3_ACCESS_KEY_ID',
+      ]),
+    secretKey:
+      minioRuntimeConfig.secretKey ||
+      firstEnv([
+        'MINIO_SECRET_KEY',
+        'MINIO_ROOT_PASSWORD',
+        'AWS_SECRET_ACCESS_KEY',
+        'S3_SECRET_ACCESS_KEY',
+      ]),
+    region:
+      minioRuntimeConfig.region ||
+      firstEnv(['MINIO_REGION', 'AWS_REGION', 'S3_REGION']) ||
+      DEFAULT_REGION,
   };
 }
 
 function getBucketName(kind) {
-  if (minioRuntimeConfig.bucketMode === 'single' && minioRuntimeConfig.singleBucket) {
+  if (
+    minioRuntimeConfig.bucketMode === 'single' &&
+    minioRuntimeConfig.singleBucket
+  ) {
     return minioRuntimeConfig.singleBucket;
   }
-  return firstEnv(BUCKET_ENV[kind] || []) || firstEnv(['MINIO_BUCKET', 'S3_BUCKET']) || BUCKET_FALLBACKS[kind];
+  return (
+    firstEnv(BUCKET_ENV[kind] || []) ||
+    firstEnv(['MINIO_BUCKET', 'S3_BUCKET']) ||
+    BUCKET_FALLBACKS[kind]
+  );
 }
 
 async function signedMinioRequest({
@@ -389,7 +473,9 @@ async function signedMinioRequest({
 } = {}) {
   const cfg = getMinioConfig();
   if (!cfg.endpoint || !cfg.accessKey || !cfg.secretKey) {
-    throw new Error('MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.');
+    throw new Error(
+      'MinIO nao configurado. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.'
+    );
   }
 
   const endpoint = trimSlash(cfg.endpoint);
@@ -403,7 +489,9 @@ async function signedMinioRequest({
   }
 
   const payload = body == null ? '' : body;
-  const payloadBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(String(payload));
+  const payloadBuffer = Buffer.isBuffer(payload)
+    ? payload
+    : Buffer.from(String(payload));
   const payloadHash = sha256Hex(payloadBuffer);
   const now = new Date();
   const amzDate = toAmzDate(now);
@@ -435,7 +523,10 @@ async function signedMinioRequest({
     credentialScope,
     sha256Hex(canonicalRequest),
   ].join('\n');
-  const signature = hmacHex(getSigningKey(cfg.secretKey, dateStamp, region), stringToSign);
+  const signature = hmacHex(
+    getSigningKey(cfg.secretKey, dateStamp, region),
+    stringToSign
+  );
   const authorization =
     `AWS4-HMAC-SHA256 Credential=${cfg.accessKey}/${credentialScope}, ` +
     `SignedHeaders=${signedHeaders}, Signature=${signature}`;
@@ -448,12 +539,16 @@ async function signedMinioRequest({
       'x-amz-content-sha256': payloadHash,
       'x-amz-date': amzDate,
     },
-    body: ['GET', 'HEAD'].includes(method.toUpperCase()) ? undefined : payloadBuffer,
+    body: ['GET', 'HEAD'].includes(method.toUpperCase())
+      ? undefined
+      : payloadBuffer,
   });
 
   const text = await response.text().catch(() => '');
   if (!response.ok) {
-    const error = new Error(`MinIO request failed (${response.status}): ${text || response.statusText}`);
+    const error = new Error(
+      `MinIO request failed (${response.status}): ${text || response.statusText}`
+    );
     error.statusCode = response.status;
     error.body = text;
     throw error;
@@ -471,7 +566,10 @@ function firstEnv(keys) {
 }
 
 function cleanEnv(value) {
-  return String(value || '').trim().replace(/^['"]|['"]$/g, '').trim();
+  return String(value || '')
+    .trim()
+    .replace(/^['"]|['"]$/g, '')
+    .trim();
 }
 
 function normalizeSignedHeaders(headers) {
@@ -493,8 +591,18 @@ function normalizeEndpoint(raw, useSSLRaw) {
 function safePublicStorageUrl(value) {
   if (!isLegacyStorageHost(value)) return value;
 
-  for (const key of ['NEW_MINIO_PUBLIC_URL', 'MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) {
-    const candidate = normalizeEndpoint(process.env[key], process.env.MINIO_PUBLIC_USE_SSL || process.env.MINIO_USE_SSL || process.env.S3_USE_SSL);
+  for (const key of [
+    'NEW_MINIO_PUBLIC_URL',
+    'MINIO_PUBLIC_URL',
+    'MINIO_PUBLIC_ENDPOINT',
+    'S3_PUBLIC_URL',
+  ]) {
+    const candidate = normalizeEndpoint(
+      process.env[key],
+      process.env.MINIO_PUBLIC_USE_SSL ||
+        process.env.MINIO_USE_SSL ||
+        process.env.S3_USE_SSL
+    );
     if (candidate && !isLegacyStorageHost(candidate)) return candidate;
   }
 
@@ -521,9 +629,13 @@ function withPort(raw, port) {
   const normalizedPort = cleanEnv(port);
   if (!value || !normalizedPort) return value;
   try {
-    const url = new URL(/^https?:\/\//i.test(value) ? value : `http://${value}`);
+    const url = new URL(
+      /^https?:\/\//i.test(value) ? value : `http://${value}`
+    );
     if (!url.port) url.port = normalizedPort;
-    const output = /^https?:\/\//i.test(value) ? url.toString() : `${url.host}${url.pathname}`;
+    const output = /^https?:\/\//i.test(value)
+      ? url.toString()
+      : `${url.host}${url.pathname}`;
     return trimSlash(output);
   } catch {
     return /:\d+$/.test(value) ? value : `${value}:${normalizedPort}`;
@@ -549,8 +661,10 @@ function canonicalizeSearchParams(params) {
 }
 
 function awsEncode(value) {
-  return encodeURIComponent(value)
-    .replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+  return encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
 }
 
 function toAmzDate(date) {
@@ -575,29 +689,39 @@ function decodeXml(value) {
 }
 
 function firstXmlValue(xml, tag) {
-  const match = String(xml || '').match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i'));
+  const match = String(xml || '').match(
+    new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i')
+  );
   return match ? decodeXml(match[1]) : '';
 }
 
 function xmlBlocks(xml, tag) {
-  return [...String(xml || '').matchAll(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'gi'))].map((match) => match[1]);
+  return [
+    ...String(xml || '').matchAll(
+      new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'gi')
+    ),
+  ].map((match) => match[1]);
 }
 
 function parseBucketList(xml) {
-  return xmlBlocks(xml, 'Bucket').map((block) => ({
-    name: firstXmlValue(block, 'Name'),
-    creationDate: firstXmlValue(block, 'CreationDate'),
-  })).filter((bucket) => bucket.name);
+  return xmlBlocks(xml, 'Bucket')
+    .map((block) => ({
+      name: firstXmlValue(block, 'Name'),
+      creationDate: firstXmlValue(block, 'CreationDate'),
+    }))
+    .filter((bucket) => bucket.name);
 }
 
 function parseObjectList(xml) {
-  const objects = xmlBlocks(xml, 'Contents').map((block) => ({
-    key: firstXmlValue(block, 'Key'),
-    lastModified: firstXmlValue(block, 'LastModified'),
-    etag: cleanEtag(firstXmlValue(block, 'ETag')),
-    size: Number(firstXmlValue(block, 'Size') || 0),
-    storageClass: firstXmlValue(block, 'StorageClass'),
-  })).filter((object) => object.key);
+  const objects = xmlBlocks(xml, 'Contents')
+    .map((block) => ({
+      key: firstXmlValue(block, 'Key'),
+      lastModified: firstXmlValue(block, 'LastModified'),
+      etag: cleanEtag(firstXmlValue(block, 'ETag')),
+      size: Number(firstXmlValue(block, 'Size') || 0),
+      storageClass: firstXmlValue(block, 'StorageClass'),
+    }))
+    .filter((object) => object.key);
 
   return {
     objects,
@@ -611,7 +735,10 @@ function parseLifecycleRules(xml) {
     id: firstXmlValue(block, 'ID'),
     status: firstXmlValue(block, 'Status'),
     prefix: firstXmlValue(block, 'Prefix'),
-    expirationDays: Number(firstXmlValue(firstXmlValue(block, 'Expiration') ? block : '', 'Days') || 0),
+    expirationDays: Number(
+      firstXmlValue(firstXmlValue(block, 'Expiration') ? block : '', 'Days') ||
+        0
+    ),
   }));
 }
 

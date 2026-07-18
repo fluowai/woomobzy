@@ -8,7 +8,12 @@ const defaultTheme = {
   textColor: '#1e293b',
   fontFamily: 'Inter, sans-serif',
   headingFontFamily: 'Inter, sans-serif',
-  fontSize: { base: '1rem', heading1: '3rem', heading2: '2rem', heading3: '1.5rem' },
+  fontSize: {
+    base: '1rem',
+    heading1: '3rem',
+    heading2: '2rem',
+    heading3: '1.5rem',
+  },
   borderRadius: '0.75rem',
   spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '4rem' },
 };
@@ -17,7 +22,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'site-moderno-imobiliario',
     name: 'Imobiliária Moderna',
-    description: 'Template clean e moderno para imobiliárias com destaque para propriedades',
+    description:
+      'Template clean e moderno para imobiliárias com destaque para propriedades',
     thumbnail: '/templates/site-moderno.png',
     category: 'universal',
     globalTheme: {
@@ -29,7 +35,13 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       { id: 'm1', label: 'Início', type: 'page', pageId: 'home', order: 0 },
       { id: 'm2', label: 'Imóveis', type: 'page', pageId: 'imoveis', order: 1 },
       { id: 'm3', label: 'Sobre', type: 'page', pageId: 'sobre', order: 2 },
-      { id: 'm4', label: 'Serviços', type: 'page', pageId: 'servicos', order: 3 },
+      {
+        id: 'm4',
+        label: 'Serviços',
+        type: 'page',
+        pageId: 'servicos',
+        order: 3,
+      },
       { id: 'm5', label: 'Contato', type: 'page', pageId: 'contato', order: 4 },
     ],
     pages: [
@@ -45,7 +57,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               title: 'Encontre o Imóvel dos Seus Sonhos',
-              subtitle: 'Soluções completas em compra, venda e aluguel de imóveis rurais e urbanos',
+              subtitle:
+                'Soluções completas em compra, venda e aluguel de imóveis rurais e urbanos',
               backgroundImage: '',
               overlayOpacity: 0.4,
               ctaText: 'Ver Imóveis Disponíveis',
@@ -95,7 +108,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               title: 'Pronto para Encontrar seu Imóvel Ideal?',
-              description: 'Nossa equipe está preparada para te ajudar em cada etapa do processo',
+              description:
+                'Nossa equipe está preparada para te ajudar em cada etapa do processo',
               buttonText: 'Fale Conosco',
               buttonLink: '#contato',
               backgroundColor: '#2563eb',
@@ -150,7 +164,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               title: 'Nossa História',
-              subtitle: 'Há mais de 15 anos transformando sonhos em realidade no mercado imobiliário',
+              subtitle:
+                'Há mais de 15 anos transformando sonhos em realidade no mercado imobiliário',
               backgroundImage: '',
               overlayOpacity: 0.4,
               ctaText: 'Conheça Nossa Equipe',
@@ -166,7 +181,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             order: 1,
             visible: true,
             config: {
-              content: '<h2>Quem Somos</h2><p>Somos uma imobiliária com vasta experiência no mercado, especializada em imóveis rurais e urbanos. Nosso compromisso é oferecer o melhor atendimento, transparência e segurança em cada negociação.</p><p>Contamos com uma equipe altamente capacitada e utilizamos tecnologia de ponta para proporcionar a melhor experiência aos nossos clientes.</p>',
+              content:
+                '<h2>Quem Somos</h2><p>Somos uma imobiliária com vasta experiência no mercado, especializada em imóveis rurais e urbanos. Nosso compromisso é oferecer o melhor atendimento, transparência e segurança em cada negociação.</p><p>Contamos com uma equipe altamente capacitada e utilizamos tecnologia de ponta para proporcionar a melhor experiência aos nossos clientes.</p>',
               fontSize: 16,
               fontWeight: 400,
               color: '#1e293b',
@@ -181,9 +197,24 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               testimonials: [
-                { name: 'João Silva', photo: '', rating: 5, text: 'Excelente atendimento! Encontrei a fazenda perfeita para minha família.' },
-                { name: 'Maria Santos', photo: '', rating: 5, text: 'Profissionais sérios e comprometidos. Recomendo de olhos fechados.' },
-                { name: 'Pedro Oliveira', photo: '', rating: 5, text: 'Agilidade e transparência em todo o processo. Muito satisfeito!' },
+                {
+                  name: 'João Silva',
+                  photo: '',
+                  rating: 5,
+                  text: 'Excelente atendimento! Encontrei a fazenda perfeita para minha família.',
+                },
+                {
+                  name: 'Maria Santos',
+                  photo: '',
+                  rating: 5,
+                  text: 'Profissionais sérios e comprometidos. Recomendo de olhos fechados.',
+                },
+                {
+                  name: 'Pedro Oliveira',
+                  photo: '',
+                  rating: 5,
+                  text: 'Agilidade e transparência em todo o processo. Muito satisfeito!',
+                },
               ],
               layout: 'carousel',
               showRating: true,
@@ -204,7 +235,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               title: 'Nossos Serviços',
-              subtitle: 'Soluções completas para quem busca o melhor em negócios imobiliários',
+              subtitle:
+                'Soluções completas para quem busca o melhor em negócios imobiliários',
               backgroundImage: '',
               overlayOpacity: 0.4,
               height: 400,
@@ -220,12 +252,42 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               features: [
-                { title: 'Compra e Venda', description: 'Assessoria completa na compra e venda de imóveis rurais e urbanos', icon: '🤝' },
-                { title: 'Avaliação Técnica', description: 'Avaliação detalhada com análise de mercado e potencial do imóvel', icon: '📋' },
-                { title: 'Due Diligence', description: 'Análise jurídica e documental completa para sua segurança', icon: '🔍' },
-                { title: 'Financiamento', description: 'Suporte na obtenção de crédito e financiamento imobiliário', icon: '💰' },
-                { title: 'Regularização', description: 'Assessoria na regularização ambiental e documental de imóveis', icon: '📄' },
-                { title: 'Consultoria', description: 'Consultoria especializada para investimentos imobiliários', icon: '📊' },
+                {
+                  title: 'Compra e Venda',
+                  description:
+                    'Assessoria completa na compra e venda de imóveis rurais e urbanos',
+                  icon: '🤝',
+                },
+                {
+                  title: 'Avaliação Técnica',
+                  description:
+                    'Avaliação detalhada com análise de mercado e potencial do imóvel',
+                  icon: '📋',
+                },
+                {
+                  title: 'Due Diligence',
+                  description:
+                    'Análise jurídica e documental completa para sua segurança',
+                  icon: '🔍',
+                },
+                {
+                  title: 'Financiamento',
+                  description:
+                    'Suporte na obtenção de crédito e financiamento imobiliário',
+                  icon: '💰',
+                },
+                {
+                  title: 'Regularização',
+                  description:
+                    'Assessoria na regularização ambiental e documental de imóveis',
+                  icon: '📄',
+                },
+                {
+                  title: 'Consultoria',
+                  description:
+                    'Consultoria especializada para investimentos imobiliários',
+                  icon: '📊',
+                },
               ],
               columns: 3,
             },
@@ -262,13 +324,38 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             config: {
               title: 'Envie sua Mensagem',
               fields: [
-                { name: 'name', type: 'text', label: 'Nome', required: true, placeholder: 'Seu nome' },
-                { name: 'email', type: 'email', label: 'E-mail', required: true, placeholder: 'seu@email.com' },
-                { name: 'phone', type: 'tel', label: 'Telefone', required: true, placeholder: '(00) 00000-0000' },
-                { name: 'message', type: 'textarea', label: 'Mensagem', required: false, placeholder: 'Sua mensagem' },
+                {
+                  name: 'name',
+                  type: 'text',
+                  label: 'Nome',
+                  required: true,
+                  placeholder: 'Seu nome',
+                },
+                {
+                  name: 'email',
+                  type: 'email',
+                  label: 'E-mail',
+                  required: true,
+                  placeholder: 'seu@email.com',
+                },
+                {
+                  name: 'phone',
+                  type: 'tel',
+                  label: 'Telefone',
+                  required: true,
+                  placeholder: '(00) 00000-0000',
+                },
+                {
+                  name: 'message',
+                  type: 'textarea',
+                  label: 'Mensagem',
+                  required: false,
+                  placeholder: 'Sua mensagem',
+                },
               ],
               submitText: 'Enviar Mensagem',
-              successMessage: 'Mensagem enviada com sucesso! Entraremos em contato.',
+              successMessage:
+                'Mensagem enviada com sucesso! Entraremos em contato.',
             },
             styles: { padding: '60px 20px' },
           },
@@ -292,7 +379,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'site-rural-negocios',
     name: 'Agronegócio & Fazendas',
-    description: 'Template especializado para imobiliárias rurais com foco em fazendas e investimento',
+    description:
+      'Template especializado para imobiliárias rurais com foco em fazendas e investimento',
     thumbnail: '/templates/site-rural.png',
     category: 'rural',
     globalTheme: {
@@ -302,7 +390,13 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     },
     menuConfig: [
       { id: 'r1', label: 'Início', type: 'page', pageId: 'home', order: 0 },
-      { id: 'r2', label: 'Fazendas', type: 'page', pageId: 'fazendas', order: 1 },
+      {
+        id: 'r2',
+        label: 'Fazendas',
+        type: 'page',
+        pageId: 'fazendas',
+        order: 1,
+      },
       { id: 'r3', label: 'Sobre', type: 'page', pageId: 'sobre', order: 2 },
       { id: 'r4', label: 'Contato', type: 'page', pageId: 'contato', order: 3 },
     ],
@@ -319,19 +413,33 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               title: 'Oportunidades em Imóveis Rurais',
-              subtitle: 'Fazendas, sítios e áreas de investimento com alto potencial de valorização',
+              subtitle:
+                'Fazendas, sítios e áreas de investimento com alto potencial de valorização',
               backgroundImage: '',
               overlayOpacity: 0.3,
               formTitle: 'Receba Ofertas Exclusivas',
-              formSubtitle: 'Cadastre-se para receber as melhores oportunidades',
+              formSubtitle:
+                'Cadastre-se para receber as melhores oportunidades',
               submitText: 'Quero Receber',
               height: 650,
               textColor: '#ffffff',
               showBadges: true,
               badges: [
-                { icon: 'shield', title: 'Documentação 100%', description: 'Imóveis com documentação regularizada' },
-                { icon: 'star', title: 'Ofertas Exclusivas', description: 'Propriedades selecionadas' },
-                { icon: 'clock', title: 'Primeiro a Saber', description: 'Novidades antes de todos' },
+                {
+                  icon: 'shield',
+                  title: 'Documentação 100%',
+                  description: 'Imóveis com documentação regularizada',
+                },
+                {
+                  icon: 'star',
+                  title: 'Ofertas Exclusivas',
+                  description: 'Propriedades selecionadas',
+                },
+                {
+                  icon: 'clock',
+                  title: 'Primeiro a Saber',
+                  description: 'Novidades antes de todos',
+                },
               ],
             },
             styles: { padding: '0px' },
@@ -397,7 +505,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               title: 'Quer Anunciar sua Propriedade?',
-              description: 'Temos a melhor plataforma para divulgar seu imóvel rural',
+              description:
+                'Temos a melhor plataforma para divulgar seu imóvel rural',
               buttonText: 'Anunciar Agora',
               buttonLink: '#contato',
               backgroundColor: '#05542C',
@@ -434,7 +543,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             order: 1,
             visible: true,
             config: {
-              content: '<h2>Por que escolher a gente?</h2><p>Somos referência no mercado de imóveis rurais, com profundo conhecimento das regiões agrícolas do Brasil. Nossa equipe é formada por especialistas em agronegócio, direito ambiental e avaliação de propriedades rurais.</p><p>Utilizamos tecnologia de ponta, incluindo imagens de satélite e análises geoespaciais, para oferecer as melhores oportunidades do mercado.</p>',
+              content:
+                '<h2>Por que escolher a gente?</h2><p>Somos referência no mercado de imóveis rurais, com profundo conhecimento das regiões agrícolas do Brasil. Nossa equipe é formada por especialistas em agronegócio, direito ambiental e avaliação de propriedades rurais.</p><p>Utilizamos tecnologia de ponta, incluindo imagens de satélite e análises geoespaciais, para oferecer as melhores oportunidades do mercado.</p>',
               fontSize: 16,
               fontWeight: 400,
               color: '#1e293b',
@@ -450,7 +560,11 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             config: {
               stats: [
                 { value: '200+', label: 'Fazendas Vendidas', icon: '🏡' },
-                { value: '50k+', label: 'Hectares Comercializados', icon: '🌳' },
+                {
+                  value: '50k+',
+                  label: 'Hectares Comercializados',
+                  icon: '🌳',
+                },
                 { value: '12', label: 'Anos de Mercado', icon: '⭐' },
                 { value: '20', label: 'Estados Atendidos', icon: '🗺️' },
               ],
@@ -474,14 +588,52 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             config: {
               title: 'Fale com um Especialista',
               fields: [
-                { name: 'name', type: 'text', label: 'Nome', required: true, placeholder: 'Seu nome' },
-                { name: 'email', type: 'email', label: 'E-mail', required: true, placeholder: 'seu@email.com' },
-                { name: 'phone', type: 'tel', label: 'WhatsApp', required: true, placeholder: '(00) 00000-0000' },
-                { name: 'interest', type: 'select', label: 'Tipo de Imóvel', required: true, placeholder: '', options: ['Fazenda', 'Sítio', 'Chácara', 'Área Rural', 'Investimento'] },
-                { name: 'message', type: 'textarea', label: 'Mensagem', required: false, placeholder: 'Conte-nos sobre o que procura...' },
+                {
+                  name: 'name',
+                  type: 'text',
+                  label: 'Nome',
+                  required: true,
+                  placeholder: 'Seu nome',
+                },
+                {
+                  name: 'email',
+                  type: 'email',
+                  label: 'E-mail',
+                  required: true,
+                  placeholder: 'seu@email.com',
+                },
+                {
+                  name: 'phone',
+                  type: 'tel',
+                  label: 'WhatsApp',
+                  required: true,
+                  placeholder: '(00) 00000-0000',
+                },
+                {
+                  name: 'interest',
+                  type: 'select',
+                  label: 'Tipo de Imóvel',
+                  required: true,
+                  placeholder: '',
+                  options: [
+                    'Fazenda',
+                    'Sítio',
+                    'Chácara',
+                    'Área Rural',
+                    'Investimento',
+                  ],
+                },
+                {
+                  name: 'message',
+                  type: 'textarea',
+                  label: 'Mensagem',
+                  required: false,
+                  placeholder: 'Conte-nos sobre o que procura...',
+                },
               ],
               submitText: 'Enviar Mensagem',
-              successMessage: 'Recebemos sua mensagem! Entraremos em contato em breve.',
+              successMessage:
+                'Recebemos sua mensagem! Entraremos em contato em breve.',
             },
             styles: { padding: '80px 20px' },
           },
@@ -492,7 +644,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   {
     id: 'site-minimal-urbano',
     name: 'Urbano Minimalista',
-    description: 'Design limpo e minimalista focado em imóveis urbanos e apartamentos',
+    description:
+      'Design limpo e minimalista focado em imóveis urbanos e apartamentos',
     thumbnail: '/templates/site-urbano.png',
     category: 'urban',
     globalTheme: {
@@ -502,7 +655,13 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     },
     menuConfig: [
       { id: 'u1', label: 'Início', type: 'page', pageId: 'home', order: 0 },
-      { id: 'u2', label: 'Lançamentos', type: 'page', pageId: 'lancamentos', order: 1 },
+      {
+        id: 'u2',
+        label: 'Lançamentos',
+        type: 'page',
+        pageId: 'lancamentos',
+        order: 1,
+      },
       { id: 'u3', label: 'Contato', type: 'page', pageId: 'contato', order: 2 },
     ],
     pages: [
@@ -518,7 +677,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               title: 'Seu Novo Lar Começa Aqui',
-              subtitle: 'Apartamentos, casas e imóveis comerciais nas melhores regiões da cidade',
+              subtitle:
+                'Apartamentos, casas e imóveis comerciais nas melhores regiões da cidade',
               backgroundImage: '',
               overlayOpacity: 0.35,
               ctaText: 'Explorar Imóveis',
@@ -553,9 +713,22 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             visible: true,
             config: {
               features: [
-                { title: 'Imóveis Verificados', description: 'Todos os imóveis passam por rigorosa verificação', icon: '✅' },
-                { title: 'Melhores Preços', description: 'Garantimos as melhores condições do mercado', icon: '💰' },
-                { title: 'Assessoria Completa', description: 'Acompanhamento em todas as etapas', icon: '🤝' },
+                {
+                  title: 'Imóveis Verificados',
+                  description:
+                    'Todos os imóveis passam por rigorosa verificação',
+                  icon: '✅',
+                },
+                {
+                  title: 'Melhores Preços',
+                  description: 'Garantimos as melhores condições do mercado',
+                  icon: '💰',
+                },
+                {
+                  title: 'Assessoria Completa',
+                  description: 'Acompanhamento em todas as etapas',
+                  icon: '🤝',
+                },
               ],
               columns: 3,
             },
@@ -614,13 +787,38 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
             config: {
               title: 'Agende uma Visita',
               fields: [
-                { name: 'name', type: 'text', label: 'Nome', required: true, placeholder: 'Seu nome' },
-                { name: 'email', type: 'email', label: 'E-mail', required: true, placeholder: 'seu@email.com' },
-                { name: 'phone', type: 'tel', label: 'Telefone', required: true, placeholder: '(00) 00000-0000' },
-                { name: 'message', type: 'textarea', label: 'Mensagem', required: false, placeholder: 'Qual imóvel te interessou?' },
+                {
+                  name: 'name',
+                  type: 'text',
+                  label: 'Nome',
+                  required: true,
+                  placeholder: 'Seu nome',
+                },
+                {
+                  name: 'email',
+                  type: 'email',
+                  label: 'E-mail',
+                  required: true,
+                  placeholder: 'seu@email.com',
+                },
+                {
+                  name: 'phone',
+                  type: 'tel',
+                  label: 'Telefone',
+                  required: true,
+                  placeholder: '(00) 00000-0000',
+                },
+                {
+                  name: 'message',
+                  type: 'textarea',
+                  label: 'Mensagem',
+                  required: false,
+                  placeholder: 'Qual imóvel te interessou?',
+                },
               ],
               submitText: 'Agendar Visita',
-              successMessage: 'Recebemos seu pedido! Entraremos em contato para agendar.',
+              successMessage:
+                'Recebemos seu pedido! Entraremos em contato para agendar.',
             },
             styles: { padding: '80px 20px' },
           },

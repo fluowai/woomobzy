@@ -23,8 +23,18 @@ const leaseCreateSchema = z.object({
   end_date: z.string().optional(),
   monthly_rent: z.number().positive().optional(),
   due_day: z.number().int().min(1).max(31).optional(),
-  adjustment_index: z.enum(['IGPM', 'IPCA', 'INCC', 'ICV', 'POUPANCA']).optional(),
-  guarantee_type: z.enum(['fiador', 'seguro_fianca', 'deposito_caucao', 'titulo_capitalizacao', 'sem']).optional(),
+  adjustment_index: z
+    .enum(['IGPM', 'IPCA', 'INCC', 'ICV', 'POUPANCA'])
+    .optional(),
+  guarantee_type: z
+    .enum([
+      'fiador',
+      'seguro_fianca',
+      'deposito_caucao',
+      'titulo_capitalizacao',
+      'sem',
+    ])
+    .optional(),
   observation: z.string().optional(),
 });
 
@@ -35,7 +45,14 @@ const leaseUpdateSchema = leaseCreateSchema.partial();
  */
 router.get('/', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { status, payment_status, property_id, search, page = 1, limit = 20 } = req.query;
+    const {
+      status,
+      payment_status,
+      property_id,
+      search,
+      page = 1,
+      limit = 20,
+    } = req.query;
     const supabase = getSupabaseServer();
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -50,7 +67,9 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     if (payment_status) query = query.eq('payment_status', payment_status);
     if (property_id) query = query.eq('property_id', property_id);
     if (search) {
-      query = query.or(`tenant_name.ilike.%${search}%,contract_number.ilike.%${search}%`);
+      query = query.or(
+        `tenant_name.ilike.%${search}%,contract_number.ilike.%${search}%`
+      );
     }
 
     const { data, error, count } = await query;
@@ -76,7 +95,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
     const validation = leaseCreateSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();
@@ -124,7 +145,8 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (error || !data) return res.status(404).json({ error: 'Contrato não encontrado' });
+    if (error || !data)
+      return res.status(404).json({ error: 'Contrato não encontrado' });
 
     res.json({ success: true, data });
   } catch (error) {
@@ -143,7 +165,9 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     const validation = leaseUpdateSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();
@@ -156,7 +180,8 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
       .single();
 
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Contrato não encontrado' });
+    if (!data)
+      return res.status(404).json({ error: 'Contrato não encontrado' });
 
     res.json({ success: true, data });
   } catch (error) {
@@ -199,7 +224,16 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
 
     if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
 
-    const validStatuses = ['draft', 'cadastral_analysis', 'income_analysis', 'pending_signatures', 'active', 'suspended', 'terminated', 'expired'];
+    const validStatuses = [
+      'draft',
+      'cadastral_analysis',
+      'income_analysis',
+      'pending_signatures',
+      'active',
+      'suspended',
+      'terminated',
+      'expired',
+    ];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Status inválido' });
     }
@@ -208,7 +242,8 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
     const updates = { status, updated_by: req.userId };
 
     if (status === 'active') updates.activated_at = new Date().toISOString();
-    if (status === 'terminated') updates.terminated_at = new Date().toISOString();
+    if (status === 'terminated')
+      updates.terminated_at = new Date().toISOString();
 
     const { data, error } = await supabase
       .from('leases')
@@ -219,7 +254,8 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
       .single();
 
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Contrato não encontrado' });
+    if (!data)
+      return res.status(404).json({ error: 'Contrato não encontrado' });
 
     res.json({ success: true, data });
   } catch (error) {

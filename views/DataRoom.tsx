@@ -70,7 +70,9 @@ const DataRoom: React.FC = () => {
 
     const loadDocuments = async () => {
       try {
-        const res = await fetch(`/api/documents/${id}`, { credentials: 'include' });
+        const res = await fetch(`/api/documents/${id}`, {
+          credentials: 'include',
+        });
         const data = await res.json();
         if (data.success) {
           setDocuments(data.documents || []);
@@ -87,45 +89,88 @@ const DataRoom: React.FC = () => {
 
   const getStatusConfig = (doc: ApiDocument) => {
     if (doc.validation_status === 'valid' && doc.validation_score >= 70) {
-      return { status: 'valid' as const, label: 'Documento Válido', color: 'text-emerald-500 bg-emerald-50 border-emerald-100' };
+      return {
+        status: 'valid' as const,
+        label: 'Documento Válido',
+        color: 'text-emerald-500 bg-emerald-50 border-emerald-100',
+      };
     }
-    if (doc.validation_status === 'inconsistent' || (doc.validation_score > 0 && doc.validation_score < 70)) {
-      return { status: 'warning' as const, label: 'Atenção Necessária', color: 'text-amber-500 bg-amber-50 border-amber-100' };
+    if (
+      doc.validation_status === 'inconsistent' ||
+      (doc.validation_score > 0 && doc.validation_score < 70)
+    ) {
+      return {
+        status: 'warning' as const,
+        label: 'Atenção Necessária',
+        color: 'text-amber-500 bg-amber-50 border-amber-100',
+      };
     }
     if (doc.status === 'failed') {
-      return { status: 'expired' as const, label: 'Falha na Análise', color: 'text-rose-500 bg-rose-50 border-rose-100' };
+      return {
+        status: 'expired' as const,
+        label: 'Falha na Análise',
+        color: 'text-rose-500 bg-rose-50 border-rose-100',
+      };
     }
     if (doc.status === 'processing') {
-      return { status: 'pending' as const, label: 'Em Análise...', color: 'text-blue-500 bg-blue-50 border-blue-100' };
+      return {
+        status: 'pending' as const,
+        label: 'Em Análise...',
+        color: 'text-blue-500 bg-blue-50 border-blue-100',
+      };
     }
     if (doc.status === 'analyzed' && !doc.validation_status) {
-      return { status: 'pending' as const, label: 'Aguardando Validação', color: 'text-slate-400 bg-slate-50 border-slate-100' };
+      return {
+        status: 'pending' as const,
+        label: 'Aguardando Validação',
+        color: 'text-slate-400 bg-slate-50 border-slate-100',
+      };
     }
-    return { status: 'pending' as const, label: 'Pendente', color: 'text-slate-400 bg-slate-50 border-slate-100' };
+    return {
+      status: 'pending' as const,
+      label: 'Pendente',
+      color: 'text-slate-400 bg-slate-50 border-slate-100',
+    };
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'valid': return <CheckCircle size={18} />;
-      case 'warning': return <AlertTriangle size={18} />;
-      case 'expired': return <AlertTriangle size={18} />;
-      default: return <Clock size={18} />;
+      case 'valid':
+        return <CheckCircle size={18} />;
+      case 'warning':
+        return <AlertTriangle size={18} />;
+      case 'expired':
+        return <AlertTriangle size={18} />;
+      default:
+        return <Clock size={18} />;
     }
   };
 
-  const overallScore = documents.length > 0
-    ? Math.round(documents.reduce((sum, d) => sum + (d.validation_score || 0), 0) / documents.length)
-    : 0;
+  const overallScore =
+    documents.length > 0
+      ? Math.round(
+          documents.reduce((sum, d) => sum + (d.validation_score || 0), 0) /
+            documents.length
+        )
+      : 0;
 
   const getOverallStatus = () => {
-    if (overallScore >= 80) return { label: 'APROVADO', color: 'text-emerald-400' };
-    if (overallScore >= 50) return { label: 'EM ANÁLISE', color: 'text-amber-400' };
+    if (overallScore >= 80)
+      return { label: 'APROVADO', color: 'text-emerald-400' };
+    if (overallScore >= 50)
+      return { label: 'EM ANÁLISE', color: 'text-amber-400' };
     return { label: 'PENDENTE', color: 'text-rose-400' };
   };
 
-  const validatedCount = documents.filter(d => d.validation_status === 'valid').length;
-  const pendingCount = documents.filter(d => d.status === 'pending' || d.status === 'processing').length;
-  const warningCount = documents.filter(d => d.validation_status === 'inconsistent').length;
+  const validatedCount = documents.filter(
+    (d) => d.validation_status === 'valid'
+  ).length;
+  const pendingCount = documents.filter(
+    (d) => d.status === 'pending' || d.status === 'processing'
+  ).length;
+  const warningCount = documents.filter(
+    (d) => d.validation_status === 'inconsistent'
+  ).length;
 
   return (
     <div className="space-y-8 pb-20">
@@ -147,7 +192,7 @@ const DataRoom: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setRefreshKey(k => k + 1)}
+            onClick={() => setRefreshKey((k) => k + 1)}
             className="p-3 bg-white rounded-xl border border-slate-200 text-slate-500 hover:text-indigo-600 transition-all"
           >
             <RefreshCw size={18} />
@@ -168,7 +213,7 @@ const DataRoom: React.FC = () => {
             propertyId={id}
             onUploadComplete={() => {
               setShowUpload(false);
-              setRefreshKey(k => k + 1);
+              setRefreshKey((k) => k + 1);
             }}
           />
         </div>
@@ -181,7 +226,9 @@ const DataRoom: React.FC = () => {
               <h3 className="text-lg font-bold uppercase italic tracking-tighter text-slate-900">
                 Documentação {documents.length > 0 && `(${documents.length})`}
               </h3>
-              {loading && <Loader2 size={18} className="animate-spin text-slate-400" />}
+              {loading && (
+                <Loader2 size={18} className="animate-spin text-slate-400" />
+              )}
             </div>
 
             {loading ? (
@@ -193,17 +240,27 @@ const DataRoom: React.FC = () => {
               <div className="text-center py-12 text-slate-400">
                 <FileText size={40} className="mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Nenhum documento enviado</p>
-                <p className="text-sm mt-1">Clique em "Upload Documento" para adicionar</p>
+                <p className="text-sm mt-1">
+                  Clique em "Upload Documento" para adicionar
+                </p>
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
                 {documents.map((doc) => {
                   const cfg = getStatusConfig(doc);
-                  const label = DOC_TYPE_LABELS[doc.document_type] || { name: doc.document_type || 'Não classificado', icon: '📎' };
+                  const label = DOC_TYPE_LABELS[doc.document_type] || {
+                    name: doc.document_type || 'Não classificado',
+                    icon: '📎',
+                  };
                   return (
-                    <div key={doc.id} className="py-6 flex items-center justify-between group">
+                    <div
+                      key={doc.id}
+                      className="py-6 flex items-center justify-between group"
+                    >
                       <div className="flex items-center gap-4">
-                        <div className={`p-4 rounded-2xl border transition-all ${cfg.color}`}>
+                        <div
+                          className={`p-4 rounded-2xl border transition-all ${cfg.color}`}
+                        >
                           <FileText size={24} />
                         </div>
                         <div>
@@ -216,7 +273,9 @@ const DataRoom: React.FC = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-3 mt-1">
-                            <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${cfg.color.split(' ')[0]}`}>
+                            <div
+                              className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${cfg.color.split(' ')[0]}`}
+                            >
                               {getStatusIcon(cfg.status)}
                               {cfg.label}
                             </div>
@@ -226,21 +285,32 @@ const DataRoom: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          {doc.extracted_data && Object.keys(doc.extracted_data).length > 0 && (
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                              {Object.entries(doc.extracted_data).slice(0, 3).map(([key, value]) => (
-                                <span key={key} className="text-[9px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-medium">
-                                  {key}: {String(value).slice(0, 30)}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          {doc.extracted_data &&
+                            Object.keys(doc.extracted_data).length > 0 && (
+                              <div className="flex gap-2 mt-2 flex-wrap">
+                                {Object.entries(doc.extracted_data)
+                                  .slice(0, 3)
+                                  .map(([key, value]) => (
+                                    <span
+                                      key={key}
+                                      className="text-[9px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-medium"
+                                    >
+                                      {key}: {String(value).slice(0, 30)}
+                                    </span>
+                                  ))}
+                              </div>
+                            )}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
                         <button
-                          onClick={() => window.open(`/api/documents/${doc.id}/analysis`, '_blank')}
+                          onClick={() =>
+                            window.open(
+                              `/api/documents/${doc.id}/analysis`,
+                              '_blank'
+                            )
+                          }
                           className="p-3 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
                         >
                           <Brain size={18} />
@@ -272,12 +342,18 @@ const DataRoom: React.FC = () => {
                     <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">
                       Conformidade Geral
                     </span>
-                    <span className="text-xl font-bold italic">{overallScore}%</span>
+                    <span className="text-xl font-bold italic">
+                      {overallScore}%
+                    </span>
                   </div>
                   <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-1000 ${
-                        overallScore >= 80 ? 'bg-emerald-400' : overallScore >= 50 ? 'bg-amber-400' : 'bg-rose-400'
+                        overallScore >= 80
+                          ? 'bg-emerald-400'
+                          : overallScore >= 50
+                            ? 'bg-amber-400'
+                            : 'bg-rose-400'
                       }`}
                       style={{ width: `${Math.max(overallScore, 5)}%` }}
                     ></div>
@@ -289,25 +365,33 @@ const DataRoom: React.FC = () => {
                     <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-1">
                       Documentos OK
                     </p>
-                    <p className="text-sm font-bold text-emerald-400">{validatedCount}</p>
+                    <p className="text-sm font-bold text-emerald-400">
+                      {validatedCount}
+                    </p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                     <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-1">
                       Pendentes
                     </p>
-                    <p className="text-sm font-bold text-amber-400">{pendingCount}</p>
+                    <p className="text-sm font-bold text-amber-400">
+                      {pendingCount}
+                    </p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                     <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-1">
                       Inconsistentes
                     </p>
-                    <p className="text-sm font-bold text-rose-400">{warningCount}</p>
+                    <p className="text-sm font-bold text-rose-400">
+                      {warningCount}
+                    </p>
                   </div>
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                     <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 mb-1">
                       Status Geral
                     </p>
-                    <p className={`text-sm font-bold ${getOverallStatus().color}`}>
+                    <p
+                      className={`text-sm font-bold ${getOverallStatus().color}`}
+                    >
                       {getOverallStatus().label}
                     </p>
                   </div>
@@ -322,7 +406,8 @@ const DataRoom: React.FC = () => {
 
           <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
             <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
-              <ExternalLink size={14} className="text-indigo-600" /> Canais Oficiais
+              <ExternalLink size={14} className="text-indigo-600" /> Canais
+              Oficiais
             </h4>
             <div className="space-y-4">
               {[

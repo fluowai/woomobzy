@@ -21,7 +21,9 @@ export const KanbanBoard = lazy(() => import('../../views/CRM/KanbanBoard'));
 export const WhatsAppInstances = lazy(
   () => import('../../views/WhatsApp/WhatsAppDashboard')
 );
-export const Chat = lazy(() => import('../../views/WhatsApp/WhatsAppDashboard'));
+export const Chat = lazy(
+  () => import('../../views/WhatsApp/WhatsAppDashboard')
+);
 export const TestMessages = lazy(
   () => import('../../views/WhatsApp/WhatsAppDashboard')
 );

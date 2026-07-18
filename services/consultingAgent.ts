@@ -27,10 +27,17 @@ export const consultingAgent = {
       ${JSON.stringify(leadData)}
     `;
 
-    const prompt = messages.map((message) => `${message.role === 'user' ? 'Lead' : 'Clara'}: ${message.content}`).join('\n');
+    const prompt = messages
+      .map(
+        (message) =>
+          `${message.role === 'user' ? 'Lead' : 'Clara'}: ${message.content}`
+      )
+      .join('\n');
 
     try {
-      const response = await geminiService.generateText(`${systemPrompt}\n\n${prompt}\nClara:`);
+      const response = await geminiService.generateText(
+        `${systemPrompt}\n\n${prompt}\nClara:`
+      );
 
       if (response === '{}' || !response) {
         return 'Olá! No momento estou passando por uma manutenção rápida na minha inteligência. Mas não se preocupe! Você pode me chamar no WhatsApp agora mesmo para agendarmos sua consultoria. Posso te passar o link?';
@@ -42,7 +49,11 @@ export const consultingAgent = {
     }
   },
 
-  async finalizeQualification(leadId: string, qualificationNotes: string, scheduledTime?: string) {
+  async finalizeQualification(
+    leadId: string,
+    qualificationNotes: string,
+    scheduledTime?: string
+  ) {
     try {
       await leadService.update(leadId, {
         notes: `[QUALIFICADO AI] | ${qualificationNotes} ${scheduledTime ? `| REUNIÃO: ${scheduledTime}` : ''}`,

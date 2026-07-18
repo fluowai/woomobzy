@@ -4,7 +4,9 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import FullScreenSpinner from './FullScreenSpinner';
 
-const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { profile, loading } = useAuth();
   const [plans, setPlans] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
@@ -23,13 +25,20 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ children }
   }, []);
 
   if (loading) return <FullScreenSpinner />;
-  if (!profile?.organization || profile.role === 'superadmin') return <>{children}</>;
+  if (!profile?.organization || profile.role === 'superadmin')
+    return <>{children}</>;
 
   const org: any = profile.organization;
   const trialEndsAt = org.trial_ends_at ? new Date(org.trial_ends_at) : null;
-  const expiredTrial = org.subscription_status === 'trial' && trialEndsAt && trialEndsAt.getTime() < Date.now();
+  const expiredTrial =
+    org.subscription_status === 'trial' &&
+    trialEndsAt &&
+    trialEndsAt.getTime() < Date.now();
   const missingPlan = !org.plan_id && org.subscription_status !== 'active';
-  const mustChoosePlan = expiredTrial || missingPlan || org.subscription_status === 'payment_required';
+  const mustChoosePlan =
+    expiredTrial ||
+    missingPlan ||
+    org.subscription_status === 'payment_required';
 
   if (!mustChoosePlan) return <>{children}</>;
 
@@ -58,7 +67,8 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ children }
               Seu teste gratuito terminou
             </h1>
             <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
-              Para acessar o painel novamente, escolha um plano. O acesso fica bloqueado ate a selecao do plano.
+              Para acessar o painel novamente, escolha um plano. O acesso fica
+              bloqueado ate a selecao do plano.
             </p>
           </div>
         </div>

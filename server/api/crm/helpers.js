@@ -1,12 +1,15 @@
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 const KANBAN_CARD_SELECT = `
   id,
@@ -69,9 +72,16 @@ function isGroupChatJid(value = '') {
 
 function isPlaceholderLeadName(value = '') {
   const clean = String(value).trim().toLowerCase();
-  if (!clean || clean === '~' || clean === 'me' || clean === 'contato sem telefone') return true;
+  if (
+    !clean ||
+    clean === '~' ||
+    clean === 'me' ||
+    clean === 'contato sem telefone'
+  )
+    return true;
   const raw = String(value).trim();
-  if (/^([A-Z]\.?\s*){1,4}$/.test(raw) || /^([A-Za-z]\.\s*){1,4}$/.test(raw)) return true;
+  if (/^([A-Z]\.?\s*){1,4}$/.test(raw) || /^([A-Za-z]\.\s*){1,4}$/.test(raw))
+    return true;
   return /^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''));
 }
 
@@ -102,10 +112,20 @@ async function findLeadByNormalizedPhone(organizationId, phone) {
 
   if (error) throw error;
 
-  return (data || []).find((lead) => normalizePhone(lead.phone) === normalizedPhone) || null;
+  return (
+    (data || []).find(
+      (lead) => normalizePhone(lead.phone) === normalizedPhone
+    ) || null
+  );
 }
 
-async function findOrCreateWhatsAppLead({ organizationId, phone, name, chatJid, source = 'WhatsApp' }) {
+async function findOrCreateWhatsAppLead({
+  organizationId,
+  phone,
+  name,
+  chatJid,
+  source = 'WhatsApp',
+}) {
   const normalizedPhone = normalizePhone(phone);
   if (isGroupChatJid(chatJid)) {
     const error = new Error('Conversas de grupo nao criam lead no Kanban');
@@ -119,9 +139,16 @@ async function findOrCreateWhatsAppLead({ organizationId, phone, name, chatJid, 
     throw error;
   }
 
-  const existingLead = await findLeadByNormalizedPhone(organizationId, normalizedPhone);
+  const existingLead = await findLeadByNormalizedPhone(
+    organizationId,
+    normalizedPhone
+  );
 
-  const displayName = resolveLeadName(name, existingLead?.name, normalizedPhone);
+  const displayName = resolveLeadName(
+    name,
+    existingLead?.name,
+    normalizedPhone
+  );
   if (existingLead) {
     const updates = {
       phone: normalizedPhone,

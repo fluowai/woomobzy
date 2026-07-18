@@ -21,7 +21,9 @@ import { cobrancaService, Billing } from '../../services/cobrancaService';
 import { paymentService } from '../../services/paymentService';
 
 const Cobranca: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'all' | 'rent' | 'sale' | 'lot' | 'late'>('all');
+  const [activeTab, setActiveTab] = useState<
+    'all' | 'rent' | 'sale' | 'lot' | 'late'
+  >('all');
   const [billings, setBillings] = useState<Billing[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState('');
@@ -126,13 +128,23 @@ const Cobranca: React.FC = () => {
       client: {
         name: billing.contract?.tenant_name || 'Cliente',
         email: 'cliente@email.com',
-        cpfCnpj: '000.000.000-00'
-      }
+        cpfCnpj: '000.000.000-00',
+      },
     });
 
     if (invoice) {
-       // Aqui atualizaríamos o banco via cobrancaService
-       setBillings(prev => prev.map(b => b.id === billing.id ? { ...b, invoice_url: invoice.invoiceUrl, payment_gateway_id: invoice.id } : b));
+      // Aqui atualizaríamos o banco via cobrancaService
+      setBillings((prev) =>
+        prev.map((b) =>
+          b.id === billing.id
+            ? {
+                ...b,
+                invoice_url: invoice.invoiceUrl,
+                payment_gateway_id: invoice.id,
+              }
+            : b
+        )
+      );
     }
     setIsLoading(false);
   };
@@ -148,12 +160,16 @@ const Cobranca: React.FC = () => {
     .reduce((s, b) => s + (b.amount || 0), 0);
 
   const filteredBillings = React.useMemo(() => {
-    return billings.filter(b => {
+    return billings.filter((b) => {
       if (activeTab === 'all') return true;
       if (activeTab === 'late') return b.status === 'vencido';
       if (activeTab === 'rent') return b.description?.includes('Aluguel');
       if (activeTab === 'lot') return b.description?.includes('Parcela');
-      if (activeTab === 'sale') return !b.description?.includes('Aluguel') && !b.description?.includes('Parcela');
+      if (activeTab === 'sale')
+        return (
+          !b.description?.includes('Aluguel') &&
+          !b.description?.includes('Parcela')
+        );
       return true;
     });
   }, [billings, activeTab]);
@@ -176,23 +192,23 @@ const Cobranca: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-           <div className="flex bg-slate-100 p-1 rounded-xl mr-4">
-             {[
-               { id: 'all', label: 'Todos' },
-               { id: 'rent', label: 'Locação' },
-               { id: 'sale', label: 'Vendas' },
-               { id: 'lot', label: 'Lotes' },
-               { id: 'late', label: 'Inadimplência' },
-             ].map(tab => (
-               <button
-                 key={tab.id}
-                 onClick={() => setActiveTab(tab.id as any)}
-                 className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
-               >
-                 {tab.label}
-               </button>
-             ))}
-           </div>
+          <div className="flex bg-slate-100 p-1 rounded-xl mr-4">
+            {[
+              { id: 'all', label: 'Todos' },
+              { id: 'rent', label: 'Locação' },
+              { id: 'sale', label: 'Vendas' },
+              { id: 'lot', label: 'Lotes' },
+              { id: 'late', label: 'Inadimplência' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           <button
             onClick={handleGerarMensal}
@@ -352,13 +368,18 @@ const Cobranca: React.FC = () => {
                           {b.contract?.tenant_name || 'Venda Direta'}
                         </p>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">
-                          {b.contract?.property?.title || 'Contrato não especificado'}
+                          {b.contract?.property?.title ||
+                            'Contrato não especificado'}
                         </p>
                       </td>
                       <td className="px-6 py-4">
-                         <span className="text-[10px] font-bold uppercase px-2 py-1 bg-slate-100 rounded text-slate-500">
-                           {b.description?.includes('Aluguel') ? 'Aluguel' : b.description?.includes('Parcela') ? 'Lote' : 'Venda'}
-                         </span>
+                        <span className="text-[10px] font-bold uppercase px-2 py-1 bg-slate-100 rounded text-slate-500">
+                          {b.description?.includes('Aluguel')
+                            ? 'Aluguel'
+                            : b.description?.includes('Parcela')
+                              ? 'Lote'
+                              : 'Venda'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
                         {b.due_date
@@ -376,36 +397,42 @@ const Cobranca: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                         {b.status === 'vencido' ? (
-                           <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded">
-                             {cobrancaService.calculateDiasVencido(b.due_date!)} DIAS
-                           </span>
-                         ) : '-'}
+                        {b.status === 'vencido' ? (
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded">
+                            {cobrancaService.calculateDiasVencido(b.due_date!)}{' '}
+                            DIAS
+                          </span>
+                        ) : (
+                          '-'
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           {b.invoice_url ? (
-                             <a 
-                               href={b.invoice_url} 
-                               target="_blank" 
-                               className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
-                               title="Ver Boleto/PIX"
-                             >
-                               <QrCode size={16} />
-                             </a>
+                            <a
+                              href={b.invoice_url}
+                              target="_blank"
+                              className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+                              title="Ver Boleto/PIX"
+                            >
+                              <QrCode size={16} />
+                            </a>
                           ) : (
-                             <button 
-                               onClick={() => handleGenerateInvoice(b)}
-                               className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600" 
-                               title="Gerar Boleto/PIX"
-                             >
-                               <CreditCard size={16} />
-                             </button>
+                            <button
+                              onClick={() => handleGenerateInvoice(b)}
+                              className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600"
+                              title="Gerar Boleto/PIX"
+                            >
+                              <CreditCard size={16} />
+                            </button>
                           )}
                           {b.status === 'vencido' && (
-                             <button className="p-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100" title="Renegociar">
-                               <RefreshCw size={16} />
-                             </button>
+                            <button
+                              className="p-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100"
+                              title="Renegociar"
+                            >
+                              <RefreshCw size={16} />
+                            </button>
                           )}
                           {b.status !== 'pago' && b.status !== 'cancelado' && (
                             <button

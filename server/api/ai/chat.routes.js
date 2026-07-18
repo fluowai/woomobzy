@@ -21,10 +21,10 @@ async function generateLayoutWithAI(provider, apiKey, prompt, niche) {
         base: '16px',
         heading1: '48px',
         heading2: '36px',
-        heading3: '24px'
+        heading3: '24px',
       },
       borderRadius: '8px',
-      spacing: { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '32px' }
+      spacing: { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '32px' },
     },
     blocks: [
       {
@@ -34,16 +34,18 @@ async function generateLayoutWithAI(provider, apiKey, prompt, niche) {
         visible: true,
         config: {
           title: `Oportunidade Unica em Imovel ${niche === 'rural' ? 'Rural' : 'Urbano'}`,
-          subtitle: prompt || 'Descricao gerada por IA baseada na sua necessidade.',
-          backgroundImage: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2000',
+          subtitle:
+            prompt || 'Descricao gerada por IA baseada na sua necessidade.',
+          backgroundImage:
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2000',
           overlayOpacity: 0.4,
           ctaText: 'Ver Detalhes',
           ctaLink: '#properties',
           height: 600,
           alignment: 'center',
-          textColor: '#ffffff'
+          textColor: '#ffffff',
         },
-        styles: { padding: '0px' }
+        styles: { padding: '0px' },
       },
       {
         id: 'text-1',
@@ -51,15 +53,16 @@ async function generateLayoutWithAI(provider, apiKey, prompt, niche) {
         order: 1,
         visible: true,
         config: {
-          content: '## Por que escolher este imovel?\n\nInfraestrutura completa e localizacao estrategica para o seu investimento.',
+          content:
+            '## Por que escolher este imovel?\n\nInfraestrutura completa e localizacao estrategica para o seu investimento.',
           fontSize: 18,
           fontWeight: 400,
           color: '#374151',
-          alignment: 'center'
+          alignment: 'center',
         },
-        styles: { padding: '60px 20px' }
-      }
-    ]
+        styles: { padding: '60px 20px' },
+      },
+    ],
   };
 }
 
@@ -82,10 +85,12 @@ FERRAMENTAS DISPONIVEIS: ${(agent.tools || []).join(', ') || 'WhatsApp, Kanban, 
 
 NIVEL DE AUTONOMIA: ${agent.autonomy_level || 2} (1=Assistido, 2=Semiautonomo, 3=Autonomo)
 
-REGRAS DE TRANSFERENCIA: ${Object.entries(agent.handoff_rules || {})
-  .filter(([, v]) => v)
-  .map(([k]) => k)
-  .join(', ') || 'Nenhuma'}
+REGRAS DE TRANSFERENCIA: ${
+    Object.entries(agent.handoff_rules || {})
+      .filter(([, v]) => v)
+      .map(([k]) => k)
+      .join(', ') || 'Nenhuma'
+  }
 
 ${historyBlock}
 
@@ -102,12 +107,23 @@ router.post('/generate-page', verifyAuth, requireTenant, async (req, res) => {
 
   try {
     const config = await getOrgAIConfig(organizationId);
-    
-    const provider = config?.namoBana?.apiKey ? 'namobana' : (config?.openai?.apiKey ? 'openai' : 'gemini');
-    const apiKey = config?.namoBana?.apiKey || config?.openai?.apiKey || process.env.GEMINI_API_KEY;
+
+    const provider = config?.namoBana?.apiKey
+      ? 'namobana'
+      : config?.openai?.apiKey
+        ? 'openai'
+        : 'gemini';
+    const apiKey =
+      config?.namoBana?.apiKey ||
+      config?.openai?.apiKey ||
+      process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return res.status(400).json({ error: 'Nenhuma chave de IA configurada para esta organizacao.' });
+      return res
+        .status(400)
+        .json({
+          error: 'Nenhuma chave de IA configurada para esta organizacao.',
+        });
     }
 
     const layout = await generateLayoutWithAI(provider, apiKey, prompt, niche);
@@ -120,13 +136,20 @@ router.post('/generate-page', verifyAuth, requireTenant, async (req, res) => {
 });
 
 router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
-  const { prompt, systemInstruction, temperature = 0.7, jsonMode = false } = req.body;
+  const {
+    prompt,
+    systemInstruction,
+    temperature = 0.7,
+    jsonMode = false,
+  } = req.body;
   const organizationId = req.orgId;
-  
+
   try {
     const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
     if (!geminiKey || geminiKey.includes('YOUR_') || geminiKey.length < 20) {
-      throw new Error('Gemini API key invalida. Configure GEMINI_API_KEY no .env');
+      throw new Error(
+        'Gemini API key invalida. Configure GEMINI_API_KEY no .env'
+      );
     }
 
     const response = await axios.post(
@@ -135,9 +158,11 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature,
-          responseMimeType: jsonMode ? "application/json" : "text/plain"
+          responseMimeType: jsonMode ? 'application/json' : 'text/plain',
         },
-        systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
+        systemInstruction: systemInstruction
+          ? { parts: [{ text: systemInstruction }] }
+          : undefined,
       }
     );
 
@@ -145,10 +170,10 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
     return res.json({ text });
   } catch (geminiError) {
     console.warn('Gemini failed, trying Groq fallback...', geminiError.message);
-    
+
     try {
       let groqKey = process.env.GROQ_API_KEY;
-      
+
       if (organizationId) {
         const config = await getOrgAIConfig(organizationId);
         if (config?.groq?.apiKey) {
@@ -157,7 +182,12 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
       }
 
       if (!groqKey) {
-        return res.status(500).json({ error: 'Nenhuma chave de IA disponivel (Gemini falhou e Groq nao configurado).' });
+        return res
+          .status(500)
+          .json({
+            error:
+              'Nenhuma chave de IA disponivel (Gemini falhou e Groq nao configurado).',
+          });
       }
 
       const groqResponse = await axios.post(
@@ -165,25 +195,33 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
         {
           model: 'llama-3.3-70b-versatile',
           messages: [
-            { role: 'system', content: systemInstruction || 'Voce e um util assistente.' },
-            { role: 'user', content: prompt }
+            {
+              role: 'system',
+              content: systemInstruction || 'Voce e um util assistente.',
+            },
+            { role: 'user', content: prompt },
           ],
           temperature,
-          response_format: jsonMode ? { type: 'json_object' } : undefined
+          response_format: jsonMode ? { type: 'json_object' } : undefined,
         },
         {
           headers: {
-            'Authorization': `Bearer ${groqKey}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${groqKey}`,
+            'Content-Type': 'application/json',
+          },
         }
       );
 
       const text = groqResponse.data.choices?.[0]?.message?.content || '';
       return res.json({ text });
     } catch (groqError) {
-      console.error('Groq Fallback Error:', groqError.response?.data || groqError.message);
-      return res.status(500).json({ error: 'Falha em todos os provedores de IA.' });
+      console.error(
+        'Groq Fallback Error:',
+        groqError.response?.data || groqError.message
+      );
+      return res
+        .status(500)
+        .json({ error: 'Falha em todos os provedores de IA.' });
     }
   }
 });
@@ -195,7 +233,9 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
     const { message, session_id } = req.body;
 
     if (!message || !session_id) {
-      return res.status(400).json({ error: 'Mensagem e session_id sao obrigatorios.' });
+      return res
+        .status(400)
+        .json({ error: 'Mensagem e session_id sao obrigatorios.' });
     }
 
     const { data: agent, error: agentError } = await supabase
@@ -209,14 +249,20 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
       return res.status(404).json({ error: 'Agente nao encontrado.' });
     }
 
-    const { error: memError } = await supabase.from('conversation_memory').insert({
-      organization_id: req.orgId,
-      agent_id: id,
-      session_id,
-      role: 'user',
-      content: message,
-    });
-    if (memError) console.warn('[Memory] Erro ao salvar mensagem do usuario:', memError.message);
+    const { error: memError } = await supabase
+      .from('conversation_memory')
+      .insert({
+        organization_id: req.orgId,
+        agent_id: id,
+        session_id,
+        role: 'user',
+        content: message,
+      });
+    if (memError)
+      console.warn(
+        '[Memory] Erro ao salvar mensagem do usuario:',
+        memError.message
+      );
 
     const { data: recentHistory } = await supabase
       .from('conversation_memory')
@@ -229,11 +275,20 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
     const systemInstruction = buildMemorySystemPrompt(agent, recentHistory);
 
     const config = await getOrgAIConfig(req.orgId);
-    const provider = config?.namoBana?.apiKey ? 'namobana' : (config?.openai?.apiKey ? 'openai' : 'gemini');
-    const apiKey = config?.namoBana?.apiKey || config?.openai?.apiKey || process.env.GEMINI_API_KEY;
+    const provider = config?.namoBana?.apiKey
+      ? 'namobana'
+      : config?.openai?.apiKey
+        ? 'openai'
+        : 'gemini';
+    const apiKey =
+      config?.namoBana?.apiKey ||
+      config?.openai?.apiKey ||
+      process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return res.status(400).json({ error: 'Nenhuma chave de IA configurada.' });
+      return res
+        .status(400)
+        .json({ error: 'Nenhuma chave de IA configurada.' });
     }
 
     let reply = '';
@@ -245,10 +300,13 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
           {
             contents: [{ parts: [{ text: message }] }],
             generationConfig: { temperature: 0.7 },
-            systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+            systemInstruction: systemInstruction
+              ? { parts: [{ text: systemInstruction }] }
+              : undefined,
           }
         );
-        reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        reply =
+          geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       } else if (provider === 'openai') {
         const openaiResponse = await axios.post(
           'https://api.openai.com/v1/chat/completions',
@@ -264,12 +322,20 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
             ],
             temperature: 0.7,
           },
-          { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+          }
         );
         reply = openaiResponse.data.choices?.[0]?.message?.content || '';
       }
     } catch (aiError) {
-      console.warn('[AgentChat] Primary AI failed, trying Groq:', aiError.message);
+      console.warn(
+        '[AgentChat] Primary AI failed, trying Groq:',
+        aiError.message
+      );
       let groqKey = config?.groq?.apiKey || process.env.GROQ_API_KEY;
       if (groqKey) {
         const groqResponse = await axios.post(
@@ -286,82 +352,108 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
             ],
             temperature: 0.7,
           },
-          { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
+          {
+            headers: {
+              Authorization: `Bearer ${groqKey}`,
+              'Content-Type': 'application/json',
+            },
+          }
         );
         reply = groqResponse.data.choices?.[0]?.message?.content || '';
       }
     }
 
     if (!reply) {
-      reply = 'Desculpe, nao consegui processar sua mensagem agora. Pode repetir?';
+      reply =
+        'Desculpe, nao consegui processar sua mensagem agora. Pode repetir?';
     }
 
-    const { error: memError2 } = await supabase.from('conversation_memory').insert({
-      organization_id: req.orgId,
-      agent_id: id,
-      session_id,
-      role: 'assistant',
-      content: reply,
-    });
-    if (memError2) console.warn('[Memory] Erro ao salvar resposta:', memError2.message);
+    const { error: memError2 } = await supabase
+      .from('conversation_memory')
+      .insert({
+        organization_id: req.orgId,
+        agent_id: id,
+        session_id,
+        role: 'assistant',
+        content: reply,
+      });
+    if (memError2)
+      console.warn('[Memory] Erro ao salvar resposta:', memError2.message);
 
-    res.json({ success: true, reply, agent: { name: agent.name, role: agent.role } });
+    res.json({
+      success: true,
+      reply,
+      agent: { name: agent.name, role: agent.role },
+    });
   } catch (error) {
     console.error('[AgentChat] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/agents/:id/memory', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const supabase = getSupabaseServer();
-    const { id } = req.params;
-    const { session_id, limit = 50 } = req.query;
+router.get(
+  '/agents/:id/memory',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const supabase = getSupabaseServer();
+      const { id } = req.params;
+      const { session_id, limit = 50 } = req.query;
 
-    let query = supabase
-      .from('conversation_memory')
-      .select('*')
-      .eq('organization_id', req.orgId)
-      .eq('agent_id', id)
-      .order('created_at', { ascending: false })
-      .limit(Math.min(Number(limit) || 50, 200));
+      let query = supabase
+        .from('conversation_memory')
+        .select('*')
+        .eq('organization_id', req.orgId)
+        .eq('agent_id', id)
+        .order('created_at', { ascending: false })
+        .limit(Math.min(Number(limit) || 50, 200));
 
-    if (session_id) {
-      query = query.eq('session_id', session_id);
+      if (session_id) {
+        query = query.eq('session_id', session_id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      res.json({ success: true, messages: (data || []).reverse() });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    res.json({ success: true, messages: (data || []).reverse() });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
-router.delete('/agents/:id/memory', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const supabase = getSupabaseServer();
-    const { id } = req.params;
-    const { session_id } = req.body;
+router.delete(
+  '/agents/:id/memory',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const supabase = getSupabaseServer();
+      const { id } = req.params;
+      const { session_id } = req.body;
 
-    let query = supabase
-      .from('conversation_memory')
-      .delete()
-      .eq('organization_id', req.orgId)
-      .eq('agent_id', id);
+      let query = supabase
+        .from('conversation_memory')
+        .delete()
+        .eq('organization_id', req.orgId)
+        .eq('agent_id', id);
 
-    if (session_id) {
-      query = query.eq('session_id', session_id);
+      if (session_id) {
+        query = query.eq('session_id', session_id);
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        message: session_id ? 'Sessao limpa.' : 'Memoria do agente limpa.',
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
-
-    const { error } = await query;
-    if (error) throw error;
-
-    res.json({ success: true, message: session_id ? 'Sessao limpa.' : 'Memoria do agente limpa.' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 export default router;

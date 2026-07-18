@@ -49,7 +49,9 @@ const VisualSiteEditor = lazy(() => import('./views/VisualSiteEditor'));
 const SiteSetupWizard = lazy(() => import('./views/SiteSetupWizard'));
 const AIAssistant = lazy(() => import('./views/AIAssistant'));
 const AIAgents = lazy(() => import('./views/AIAgents'));
-const ConsultingQualificacao = lazy(() => import('./views/ConsultingQualificacao'));
+const ConsultingQualificacao = lazy(
+  () => import('./views/ConsultingQualificacao')
+);
 const SystemSettings = lazy(() => import('./views/SystemSettings'));
 const DataRoom = lazy(() => import('./views/DataRoom'));
 const LegalContracts = lazy(() => import('./views/LegalContracts'));
@@ -70,8 +72,12 @@ const Geointeligencia = lazy(() => import('./views/rural/Geointeligencia'));
 const DossieInteligente = lazy(() => import('./views/rural/DossieInteligente'));
 const DueDiligence = lazy(() => import('./views/rural/DueDiligence'));
 const ValuationRural = lazy(() => import('./views/rural/ValuationRural'));
-const PortalProprietarioRural = lazy(() => import('./views/rural/PortalProprietarioRural'));
-const PortalCompradorRural = lazy(() => import('./views/rural/PortalCompradorRural'));
+const PortalProprietarioRural = lazy(
+  () => import('./views/rural/PortalProprietarioRural')
+);
+const PortalCompradorRural = lazy(
+  () => import('./views/rural/PortalCompradorRural')
+);
 const FinanceiroRural = lazy(() => import('./views/rural/FinanceiroRural'));
 const ConexoesRural = lazy(() => import('./views/rural/ConexoesRural'));
 const CARLocationSearch = lazy(() => import('./views/rural/CARLocationSearch'));
@@ -86,8 +92,12 @@ const Cobranca = lazy(() => import('./views/urban/Cobranca'));
 const Simulator360 = lazy(() => import('./views/urban/Simulator360'));
 const PortalLocatario = lazy(() => import('./views/urban/PortalLocatario'));
 const ExportadorPortais = lazy(() => import('./views/urban/ExportadorPortais'));
-const PortalProprietarioUrbano = lazy(() => import('./views/urban/PortalProprietarioUrbano'));
-const PortalCompradorUrbano = lazy(() => import('./views/urban/PortalCompradorUrbano'));
+const PortalProprietarioUrbano = lazy(
+  () => import('./views/urban/PortalProprietarioUrbano')
+);
+const PortalCompradorUrbano = lazy(
+  () => import('./views/urban/PortalCompradorUrbano')
+);
 const AdmCondominios = lazy(() => import('./views/urban/AdmCondominios'));
 const ControleChaves = lazy(() => import('./views/urban/ControleChaves'));
 const FinanceiroUrbano = lazy(() => import('./views/urban/FinanceiroUrbano'));
@@ -95,9 +105,13 @@ const GestaoDocumentos = lazy(() => import('./views/urban/GestaoDocumentos'));
 const ConexoesUrbano = lazy(() => import('./views/urban/ConexoesUrbano'));
 
 // Super Admin
-const SuperAdminLayout = lazy(() => import('./views/superadmin/SuperAdminLayout'));
+const SuperAdminLayout = lazy(
+  () => import('./views/superadmin/SuperAdminLayout')
+);
 const SuperAdminDashboard = lazy(() => import('./views/superadmin/Dashboard'));
-const ConsultingLeads = lazy(() => import('./views/superadmin/ConsultingLeads'));
+const ConsultingLeads = lazy(
+  () => import('./views/superadmin/ConsultingLeads')
+);
 const TenantManager = lazy(() => import('./views/superadmin/TenantManager'));
 const GlobalSettings = lazy(() => import('./views/superadmin/GlobalSettings'));
 const DomainManager = lazy(() => import('./views/superadmin/DomainManager'));
@@ -105,15 +119,27 @@ const PlanManager = lazy(() => import('./views/superadmin/PlanManager'));
 const BillingManager = lazy(() => import('./views/superadmin/BillingManager'));
 const FeatureFlags = lazy(() => import('./views/superadmin/FeatureFlags'));
 const AuditLog = lazy(() => import('./views/superadmin/AuditLog'));
-const TemplateManager = lazy(() => import('./views/superadmin/TemplateManager'));
-const PlatformMonitoring = lazy(() => import('./views/superadmin/PlatformMonitoring'));
-const AnalyticsDashboard = lazy(() => import('./views/superadmin/AnalyticsDashboard'));
+const TemplateManager = lazy(
+  () => import('./views/superadmin/TemplateManager')
+);
+const PlatformMonitoring = lazy(
+  () => import('./views/superadmin/PlatformMonitoring')
+);
+const AnalyticsDashboard = lazy(
+  () => import('./views/superadmin/AnalyticsDashboard')
+);
 const SupportManager = lazy(() => import('./views/superadmin/SupportManager'));
 const TeamManager = lazy(() => import('./views/superadmin/TeamManager'));
 const SmartImporter = lazy(() => import('./views/superadmin/SmartImporter'));
-const FluowaiMigration = lazy(() => import('./views/superadmin/FluowaiMigration'));
-const StorageIntelligence = lazy(() => import('./views/superadmin/StorageIntelligence'));
-const MarketingManager = lazy(() => import('./views/superadmin/MarketingManager'));
+const FluowaiMigration = lazy(
+  () => import('./views/superadmin/FluowaiMigration')
+);
+const StorageIntelligence = lazy(
+  () => import('./views/superadmin/StorageIntelligence')
+);
+const MarketingManager = lazy(
+  () => import('./views/superadmin/MarketingManager')
+);
 
 // Site Builder
 const SiteManager = lazy(() => import('./views/SiteManager'));
@@ -121,7 +147,9 @@ const SitePageEditor = lazy(() => import('./views/SitePageEditor'));
 const PublicSite = lazy(() => import('./views/PublicSite'));
 
 // WhatsApp
-const WhatsAppDashboard = lazy(() => import('./views/WhatsApp/WhatsAppDashboard'));
+const WhatsAppDashboard = lazy(
+  () => import('./views/WhatsApp/WhatsAppDashboard')
+);
 const EmailCenter = lazy(() => import('./views/EmailCenter'));
 
 // ==========================================
@@ -142,7 +170,10 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<SystemSalesPage />} />
           <Route path="/vendas" element={<SystemSalesPage />} />
           <Route path="/consultoria" element={<SystemSalesPage />} />
-          <Route path="/consultoria/qualificacao" element={<ConsultingQualificacao />} />
+          <Route
+            path="/consultoria/qualificacao"
+            element={<ConsultingQualificacao />}
+          />
           <Route path="/ajuda/dns" element={<DnsHelp />} />
           <Route path="/impersonate" element={<ImpersonateCallback />} />
           <Route path="/lp/:slug" element={<PublicLandingPage />} />
@@ -204,17 +235,39 @@ const AppContent: React.FC = () => {
               <Route path="due-diligence" element={<DueDiligence />} />
               <Route path="dossie" element={<DossieInteligente />} />
             </Route>
-            <Route path="maps" element={<Navigate to="/rural/territorio/maps" replace />} />
-            <Route path="localizar-car" element={<Navigate to="/rural/territorio/localizar-car" replace />} />
-            <Route path="valuation" element={<Navigate to="/rural/territorio/valuation" replace />} />
-            <Route path="due-diligence" element={<Navigate to="/rural/territorio/due-diligence" replace />} />
-            <Route path="dossie" element={<Navigate to="/rural/territorio/dossie" replace />} />
+            <Route
+              path="maps"
+              element={<Navigate to="/rural/territorio/maps" replace />}
+            />
+            <Route
+              path="localizar-car"
+              element={
+                <Navigate to="/rural/territorio/localizar-car" replace />
+              }
+            />
+            <Route
+              path="valuation"
+              element={<Navigate to="/rural/territorio/valuation" replace />}
+            />
+            <Route
+              path="due-diligence"
+              element={
+                <Navigate to="/rural/territorio/due-diligence" replace />
+              }
+            />
+            <Route
+              path="dossie"
+              element={<Navigate to="/rural/territorio/dossie" replace />}
+            />
             <Route path="dataroom" element={<DataRoom />} />
             <Route path="crm" element={<CRMLeads />} />
             <Route path="kanban" element={<KanbanBoard />} />
             <Route path="matchmaking" element={<Matchmaking360 />} />
             <Route path="reports" element={<BIRural />} />
-            <Route path="portal-proprietario" element={<PortalProprietarioRural />} />
+            <Route
+              path="portal-proprietario"
+              element={<PortalProprietarioRural />}
+            />
             <Route path="portal-comprador" element={<PortalCompradorRural />} />
             <Route path="landing-pages" element={<LandingPageManager />} />
             <Route path="quiz" element={<QuizCampaigns />} />
@@ -270,8 +323,14 @@ const AppContent: React.FC = () => {
             <Route path="chaves" element={<ControleChaves />} />
             <Route path="financeiro" element={<FinanceiroUrbano />} />
             <Route path="documentos" element={<GestaoDocumentos />} />
-            <Route path="portal-proprietario" element={<PortalProprietarioUrbano />} />
-            <Route path="portal-comprador" element={<PortalCompradorUrbano />} />
+            <Route
+              path="portal-proprietario"
+              element={<PortalProprietarioUrbano />}
+            />
+            <Route
+              path="portal-comprador"
+              element={<PortalCompradorUrbano />}
+            />
             <Route path="portal-locatario" element={<PortalLocatario />} />
             <Route path="landing-pages" element={<LandingPageManager />} />
             <Route path="quiz" element={<QuizCampaigns />} />
@@ -315,7 +374,10 @@ const AppContent: React.FC = () => {
             <Route path="templates" element={<TemplateManager />} />
             <Route path="importer" element={<SmartImporter />} />
             <Route path="fluowai-migration" element={<FluowaiMigration />} />
-            <Route path="storage-intelligence" element={<StorageIntelligence />} />
+            <Route
+              path="storage-intelligence"
+              element={<StorageIntelligence />}
+            />
             <Route path="marketing" element={<MarketingManager />} />
             <Route path="settings" element={<GlobalSettings />} />
           </Route>

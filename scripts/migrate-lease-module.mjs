@@ -25,15 +25,23 @@ const log = {
   info: (msg) => console.log(`${colors.blue}\u2139${colors.reset} ${msg}`),
   success: (msg) => console.log(`${colors.green}\u2705 ${msg}${colors.reset}`),
   error: (msg) => console.log(`${colors.red}\u274C ${msg}${colors.reset}`),
-  warn: (msg) => console.log(`${colors.yellow}\u26A0\uFE0F  ${msg}${colors.reset}`),
+  warn: (msg) =>
+    console.log(`${colors.yellow}\u26A0\uFE0F  ${msg}${colors.reset}`),
 };
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  log.error('VITE_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY n\u00E3o configuradas no .env');
+  log.error(
+    'VITE_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY n\u00E3o configuradas no .env'
+  );
   process.exit(1);
 }
 
-const MIGRATION_FILE = path.join(__dirname, '..', 'migrations', '20260619_lease_management_complete.sql');
+const MIGRATION_FILE = path.join(
+  __dirname,
+  '..',
+  'migrations',
+  '20260619_lease_management_complete.sql'
+);
 if (!fs.existsSync(MIGRATION_FILE)) {
   log.error(`Migration file not found: ${MIGRATION_FILE}`);
   process.exit(1);
@@ -42,7 +50,7 @@ if (!fs.existsSync(MIGRATION_FILE)) {
 function stripLeadingComments(sql) {
   return sql
     .split('\n')
-    .filter(line => !line.trim().startsWith('--') && !line.match(/^--/))
+    .filter((line) => !line.trim().startsWith('--') && !line.match(/^--/))
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -132,7 +140,9 @@ ${colors.reset}`);
       }
       failed++;
       const preview = stmt.substring(0, 120).replace(/\n/g, ' ');
-      console.log(`\n${colors.red}[${i + 1}/${statements.length}]${colors.reset}`);
+      console.log(
+        `\n${colors.red}[${i + 1}/${statements.length}]${colors.reset}`
+      );
       console.log(`  Error: ${err.message}`);
       console.log(`  SQL: ${preview}`);
     }
@@ -145,7 +155,9 @@ ${colors.reset}`);
     log.warn(`${success} succeeded, ${failed} failed`);
   }
 
-  console.log(`\n${colors.green}\uD83C\uDFB2 Migration complete!${colors.reset}`);
+  console.log(
+    `\n${colors.green}\uD83C\uDFB2 Migration complete!${colors.reset}`
+  );
   process.exit(failed > 0 ? 1 : 0);
 }
 

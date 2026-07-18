@@ -2,11 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-  
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
   if (!supabaseUrl || !supabaseKey) {
     console.error('❌ Supabase credentials missing in tenant handler');
-    return res.status(500).json({ error: 'Internal Server Error: Missing credentials' });
+    return res
+      .status(500)
+      .json({ error: 'Internal Server Error: Missing credentials' });
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -14,7 +17,7 @@ export default async function handler(req, res) {
     const host = req.headers.host || '';
     const cleanHost = host.replace(/^www\./, '').split(':')[0]; // Remove port and www
     const slugParams = req.query.slug;
-    
+
     let organization = null;
     let orgError = null;
 
@@ -27,7 +30,7 @@ export default async function handler(req, res) {
         .single();
       organization = data;
       orgError = error;
-    } 
+    }
     // 2. Try to resolve by Custom Domain
     else {
       const { data: domainData, error: domainError } = await supabase
@@ -38,7 +41,7 @@ export default async function handler(req, res) {
 
       if (domainData) {
         organization = domainData;
-      } 
+      }
       // 3. Try to resolve by Subdomain (e.g. slug.imobzy.com.br)
       else if (cleanHost.includes('.')) {
         const potentialSlug = cleanHost.split('.')[0];
@@ -47,7 +50,7 @@ export default async function handler(req, res) {
           .select('*')
           .eq('slug', potentialSlug)
           .maybeSingle();
-          
+
         if (subData) {
           organization = subData;
         }
@@ -70,7 +73,11 @@ export default async function handler(req, res) {
     }
 
     if (!organization) {
-      return res.status(404).json({ error: 'Organização não encontrada para o domínio ' + cleanHost });
+      return res
+        .status(404)
+        .json({
+          error: 'Organização não encontrada para o domínio ' + cleanHost,
+        });
     }
 
     // Fetch site settings
@@ -88,7 +95,6 @@ export default async function handler(req, res) {
       settings: settings || {},
       plan: 'enterprise', // Or fetch from plans table if necessary
     });
-
   } catch (error) {
     console.error('Error fetching/resolving tenant:', error);
     return res.status(500).json({ error: 'Internal Server Error' });

@@ -27,10 +27,14 @@ async function run() {
   if (error) {
     console.error('❌ Erro ao executar SQL:', error.message);
     if (error.message.includes('exec_sql')) {
-        console.log('💡 Dica: A função RPC "exec_sql" não parece estar definida no Supabase.');
+      console.log(
+        '💡 Dica: A função RPC "exec_sql" não parece estar definida no Supabase.'
+      );
     }
   } else {
-    console.log('✅ SQL executado com sucesso (Colunas status_version e last_connected_at garantidas).');
+    console.log(
+      '✅ SQL executado com sucesso (Colunas status_version e last_connected_at garantidas).'
+    );
   }
 }
 

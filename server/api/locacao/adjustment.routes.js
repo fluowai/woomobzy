@@ -26,7 +26,8 @@ const INDICES = {
 router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { lease_id } = req.params;
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!isValidUUID(lease_id))
+      return res.status(400).json({ error: 'ID inválido' });
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
@@ -52,7 +53,8 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
 router.post('/calculate', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { lease_id, index: overrideIndex } = req.body;
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!isValidUUID(lease_id))
+      return res.status(400).json({ error: 'ID inválido' });
 
     const supabase = getSupabaseServer();
     const { data: lease } = await supabase
@@ -62,7 +64,8 @@ router.post('/calculate', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (!lease) return res.status(404).json({ error: 'Locação não encontrada' });
+    if (!lease)
+      return res.status(404).json({ error: 'Locação não encontrada' });
 
     const indexKey = overrideIndex || lease.adjustment_index;
     const indexData = INDICES[indexKey];
@@ -96,7 +99,8 @@ router.post('/calculate', verifyAuth, requireTenant, async (req, res) => {
 router.post('/apply', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { lease_id, new_rent, index: overrideIndex } = req.body;
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!isValidUUID(lease_id))
+      return res.status(400).json({ error: 'ID inválido' });
 
     const supabase = getSupabaseServer();
     const { data: lease } = await supabase
@@ -106,13 +110,16 @@ router.post('/apply', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (!lease) return res.status(404).json({ error: 'Locação não encontrada' });
+    if (!lease)
+      return res.status(404).json({ error: 'Locação não encontrada' });
 
     const indexKey = overrideIndex || lease.adjustment_index;
     const indexData = INDICES[indexKey];
     const indexRate = indexData?.rate || 0;
 
-    const finalRent = new_rent || Math.round((lease.monthly_rent || 0) * (1 + indexRate) * 100) / 100;
+    const finalRent =
+      new_rent ||
+      Math.round((lease.monthly_rent || 0) * (1 + indexRate) * 100) / 100;
 
     const { data: adjustment } = await supabase
       .from('rent_adjustments')

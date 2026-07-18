@@ -21,23 +21,32 @@ async function createBuckets() {
   const buckets = [
     { name: 'imobzyimg', public: true },
     { name: 'imobzymsg', public: true },
-    { name: 'whatsapp-media', public: true }
+    { name: 'whatsapp-media', public: true },
   ];
 
   for (const bucket of buckets) {
     console.log(`📦 Criando bucket "${bucket.name}"...`);
-    
+
     const { data, error } = await supabase.storage.createBucket(bucket.name, {
       public: bucket.public,
       fileSizeLimit: 5242880, // 5MB
-      allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']
+      allowedMimeTypes: [
+        'image/png',
+        'image/jpeg',
+        'image/jpg',
+        'image/webp',
+        'image/gif',
+      ],
     });
 
     if (error) {
       if (error.message.includes('already exists')) {
         console.log(`  ⚠️  Bucket "${bucket.name}" já existe`);
       } else {
-        console.error(`  ❌ Erro ao criar bucket "${bucket.name}":`, error.message);
+        console.error(
+          `  ❌ Erro ao criar bucket "${bucket.name}":`,
+          error.message
+        );
       }
     } else {
       console.log(`  ✅ Bucket "${bucket.name}" criado com sucesso!`);

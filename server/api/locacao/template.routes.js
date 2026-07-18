@@ -23,10 +23,23 @@ const templateSchema = z.object({
 
 // Variáveis obrigatórias para contrato de locação
 const REQUIRED_VARIABLES = [
-  'nome_locador', 'cpf_locador', 'nome_locatario', 'cpf_locatario',
-  'endereco_imovel', 'valor_aluguel', 'valor_caucao', 'data_inicio',
-  'data_fim', 'prazo_meses', 'dia_vencimento', 'indice_reajuste',
-  'tipo_garantia', 'multa_atraso', 'juros_atraso', 'cidade', 'data_geracao',
+  'nome_locador',
+  'cpf_locador',
+  'nome_locatario',
+  'cpf_locatario',
+  'endereco_imovel',
+  'valor_aluguel',
+  'valor_caucao',
+  'data_inicio',
+  'data_fim',
+  'prazo_meses',
+  'dia_vencimento',
+  'indice_reajuste',
+  'tipo_garantia',
+  'multa_atraso',
+  'juros_atraso',
+  'cidade',
+  'data_geracao',
 ];
 
 /**
@@ -58,7 +71,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
     const validation = templateSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();
@@ -100,7 +115,8 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (error || !data) return res.status(404).json({ error: 'Template não encontrado' });
+    if (error || !data)
+      return res.status(404).json({ error: 'Template não encontrado' });
 
     // Busca versões anteriores
     const { data: versions } = await supabase
@@ -126,7 +142,9 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     const validation = templateSchema.partial().safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();
@@ -139,7 +157,8 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (!current) return res.status(404).json({ error: 'Template não encontrado' });
+    if (!current)
+      return res.status(404).json({ error: 'Template não encontrado' });
 
     // Save current version to history
     await supabase.from('contract_versions').insert({
@@ -205,11 +224,14 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
 router.post('/validate', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { content } = req.body;
-    if (!content) return res.status(400).json({ error: 'Conteúdo é obrigatório' });
+    if (!content)
+      return res.status(400).json({ error: 'Conteúdo é obrigatório' });
 
-    const foundVars = [...content.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]);
+    const foundVars = [...content.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
     const uniqueVars = [...new Set(foundVars)];
-    const missingVars = REQUIRED_VARIABLES.filter(v => !uniqueVars.includes(v));
+    const missingVars = REQUIRED_VARIABLES.filter(
+      (v) => !uniqueVars.includes(v)
+    );
 
     res.json({
       success: true,

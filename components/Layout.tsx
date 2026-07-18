@@ -124,9 +124,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             onClick={() => setIsMobileMenuOpen(false)}
             className={({ isActive }) =>
               `workspace-nav-item flex items-center gap-3 ${
-                isActive
-                  ? 'workspace-nav-item-active'
-                  : ''
+                isActive ? 'workspace-nav-item-active' : ''
               }`
             }
           >
@@ -260,7 +258,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Right Section */}
           <div className="flex items-center gap-4">
             {/* Novo Imóvel Button */}
-            <Link to="/admin/properties/new" className="workspace-primary-action">
+            <Link
+              to="/admin/properties/new"
+              className="workspace-primary-action"
+            >
               <PlusCircle size={16} />
               Novo Imóvel
             </Link>
@@ -268,9 +269,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* View Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
       </main>
     </div>
   );

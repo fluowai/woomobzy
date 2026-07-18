@@ -5,11 +5,16 @@ import { callApi } from '../../../src/lib/api';
 const DEFAULT_WHATSAPP_API_URL = '/api/whatsapp';
 const DEFAULT_WHATSAPP_WS_PATH = '/api/whatsapp/ws';
 
-const RAW_WHATSAPP_API_URL = getRuntimeEnv('VITE_WHATSAPP_API_URL', DEFAULT_WHATSAPP_API_URL);
+const RAW_WHATSAPP_API_URL = getRuntimeEnv(
+  'VITE_WHATSAPP_API_URL',
+  DEFAULT_WHATSAPP_API_URL
+);
 const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
 const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
 const LEGACY_STORAGE_HOSTS = ['n.woopanel.com.br'];
-const STORAGE_PUBLIC_URL = normalizeStoragePublicBase(getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://nb.consultio.com.br'));
+const STORAGE_PUBLIC_URL = normalizeStoragePublicBase(
+  getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://nb.consultio.com.br')
+);
 export const WS_URL = normalizeWhatsAppWsUrl(
   getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
 );
@@ -77,21 +82,28 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const impersonatedOrgId = USE_DIRECT_WHATSAPP_API
     ? await getValidImpersonatedOrgId(session?.user?.id)
     : getImpersonatedOrgId();
-  const activeOrgId = !impersonatedOrgId ? getActiveOrganizationId(session?.user?.id) : null;
-  const tenantId = USE_DIRECT_WHATSAPP_API
-    ? impersonatedOrgId || activeOrgId || await getTenantId(session?.user?.id)
+  const activeOrgId = !impersonatedOrgId
+    ? getActiveOrganizationId(session?.user?.id)
     : null;
-  
+  const tenantId = USE_DIRECT_WHATSAPP_API
+    ? impersonatedOrgId || activeOrgId || (await getTenantId(session?.user?.id))
+    : null;
+
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const url = buildApiUrl(cleanPath, tenantId);
 
   const body = withTenantBody(options?.body, tenantId);
-  
+
   let res: Response;
   try {
     res = await fetch(url, {
       ...options,
-      headers: buildApiHeaders(options?.headers, session?.access_token, impersonatedOrgId, activeOrgId),
+      headers: buildApiHeaders(
+        options?.headers,
+        session?.access_token,
+        impersonatedOrgId,
+        activeOrgId
+      ),
       body,
     });
 
@@ -100,27 +112,41 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
       if (session) {
         res = await fetch(url, {
           ...options,
-          headers: buildApiHeaders(options?.headers, session.access_token, impersonatedOrgId, activeOrgId),
+          headers: buildApiHeaders(
+            options?.headers,
+            session.access_token,
+            impersonatedOrgId,
+            activeOrgId
+          ),
           body,
         });
       }
     }
   } catch (networkErr: any) {
-    throw new Error(`WHATSAPP_UNAVAILABLE: Serviço não acessível em ${url} - ${networkErr.message}`);
+    throw new Error(
+      `WHATSAPP_UNAVAILABLE: Serviço não acessível em ${url} - ${networkErr.message}`
+    );
   }
 
   // Detect proxy failure: server returned HTML instead of JSON
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('text/html')) {
-    throw new Error(`WHATSAPP_UNAVAILABLE: ${url} retornou HTML. O proxy /api nao esta chegando no backend Node.js.`);
+    throw new Error(
+      `WHATSAPP_UNAVAILABLE: ${url} retornou HTML. O proxy /api nao esta chegando no backend Node.js.`
+    );
   }
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: res.statusText, code: undefined }));
+    const error = await res
+      .json()
+      .catch(() => ({ error: res.statusText, code: undefined }));
     if (res.status === 401) {
       logger.warn('[WhatsApp API] Falha 401 apos renovar a sessao.');
     }
-    if (error.code === 'INVALID_TENANT' || error.code === 'INVALID_IMPERSONATED_ORG') {
+    if (
+      error.code === 'INVALID_TENANT' ||
+      error.code === 'INVALID_IMPERSONATED_ORG'
+    ) {
       clearImpersonationStorage();
       tenantIdCache = undefined;
     }
@@ -159,7 +185,8 @@ function buildApiHeaders(
   activeOrgId: string | null
 ) {
   const headers = new Headers(customHeaders);
-  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  if (!headers.has('Content-Type'))
+    headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
   if (impersonatedOrgId) headers.set('x-impersonate-org-id', impersonatedOrgId);
   else if (activeOrgId) headers.set('x-organization-id', activeOrgId);
@@ -185,7 +212,9 @@ async function getApiSession(forceRefresh = false) {
 }
 
 export async function getAuthorizedWhatsAppWsUrl(): Promise<string> {
-  const response = await apiRequest<{ token: string }>('/socket-token', { method: 'POST' });
+  const response = await apiRequest<{ token: string }>('/socket-token', {
+    method: 'POST',
+  });
   const url = new URL(WS_URL);
   url.searchParams.set('ws_token', response.token);
   const payload = decodeJwtPayload(response.token);
@@ -226,13 +255,16 @@ function getActiveOrganizationId(userId?: string): string | null {
   const storedUserId = sessionStorage.getItem('active_organization_user_id');
   const storedOrgId = sessionStorage.getItem('active_organization_id');
 
-  if (!storedOrgId || storedOrgId === 'null' || storedOrgId === 'undefined') return null;
+  if (!storedOrgId || storedOrgId === 'null' || storedOrgId === 'undefined')
+    return null;
   if (userId && storedUserId && storedUserId !== userId) return null;
 
   return storedOrgId;
 }
 
-async function getValidImpersonatedOrgId(userId?: string): Promise<string | null> {
+async function getValidImpersonatedOrgId(
+  userId?: string
+): Promise<string | null> {
   const impersonatedOrgId = getImpersonatedOrgId();
   if (!impersonatedOrgId) return null;
 
@@ -291,18 +323,31 @@ async function getUserTenantContext(userId?: string) {
 
 function buildApiUrl(path: string, tenantId?: string | null): string {
   const url = new URL(`${API_BASE}${path}`, window.location.origin);
-  if (USE_DIRECT_WHATSAPP_API && tenantId && !url.searchParams.has('tenant_id')) {
+  if (
+    USE_DIRECT_WHATSAPP_API &&
+    tenantId &&
+    !url.searchParams.has('tenant_id')
+  ) {
     url.searchParams.set('tenant_id', tenantId);
   }
   return url.toString();
 }
 
-function withTenantBody(body: BodyInit | null | undefined, tenantId?: string | null): BodyInit | null | undefined {
-  if (!USE_DIRECT_WHATSAPP_API || !tenantId || typeof body !== 'string') return body;
+function withTenantBody(
+  body: BodyInit | null | undefined,
+  tenantId?: string | null
+): BodyInit | null | undefined {
+  if (!USE_DIRECT_WHATSAPP_API || !tenantId || typeof body !== 'string')
+    return body;
 
   try {
     const parsed = JSON.parse(body);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && !parsed.tenant_id) {
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed) &&
+      !parsed.tenant_id
+    ) {
       return JSON.stringify({ ...parsed, tenant_id: tenantId });
     }
   } catch {
@@ -317,7 +362,10 @@ export function normalizeStorageUrls(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalizeStorageUrls);
   if (value && typeof value === 'object') {
     return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, normalizeStorageUrls(entry)])
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        normalizeStorageUrls(entry),
+      ])
     );
   }
   return value;
@@ -406,14 +454,30 @@ export interface Message {
   sender_avatar_url?: string;
   is_from_me: boolean;
   is_group: boolean;
-  type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'sticker' | 'location' | 'contact' | 'unknown';
+  type:
+    | 'text'
+    | 'image'
+    | 'audio'
+    | 'video'
+    | 'document'
+    | 'sticker'
+    | 'location'
+    | 'contact'
+    | 'unknown';
   content?: string;
   delivery_status?: 'sent' | 'delivered' | 'read' | 'played' | 'failed';
   media_url?: string;
   media_id?: string;
   media_mimetype?: string;
   media_filename?: string;
-  media_status?: 'none' | 'pending' | 'downloading' | 'processing' | 'ready' | 'failed' | 'expired';
+  media_status?:
+    | 'none'
+    | 'pending'
+    | 'downloading'
+    | 'processing'
+    | 'ready'
+    | 'failed'
+    | 'expired';
   media_error?: string;
   media_retry_count?: number;
   quoted_message_id?: string;
@@ -491,7 +555,9 @@ export function isTechnicalMediaPlaceholder(value?: string): boolean {
   return Boolean(clean && LEGACY_MEDIA_PREVIEWS[clean]);
 }
 
-export function isSupportedChat(chat: Pick<Chat, 'chat_jid' | 'is_group'>): boolean {
+export function isSupportedChat(
+  chat: Pick<Chat, 'chat_jid' | 'is_group'>
+): boolean {
   const jid = (chat.chat_jid || '').toLowerCase();
   if (chat.is_group) return jid.includes('@g.us');
   return jid.includes('@s.whatsapp.net') && Boolean(formatPhoneDisplay(jid));
@@ -500,7 +566,13 @@ export function isSupportedChat(chat: Pick<Chat, 'chat_jid' | 'is_group'>): bool
 export interface WhatsAppMediaStatusEvent {
   message_id: string;
   media_id?: string;
-  status: 'pending' | 'downloading' | 'processing' | 'ready' | 'failed' | 'expired';
+  status:
+    | 'pending'
+    | 'downloading'
+    | 'processing'
+    | 'ready'
+    | 'failed'
+    | 'expired';
   url?: string;
   error?: string;
 }
@@ -525,11 +597,12 @@ export const instanceApi = {
 
   get: (id: string) => apiRequest<Instance>(`/instances/${id}`),
 
-  delete: (id: string) =>
-    apiRequest(`/instances/${id}`, { method: 'DELETE' }),
+  delete: (id: string) => apiRequest(`/instances/${id}`, { method: 'DELETE' }),
 
   getQRCode: (id: string) =>
-    apiRequest<{ qr_code?: string; status: string; expires_at?: string }>(`/instances/${id}/qrcode`),
+    apiRequest<{ qr_code?: string; status: string; expires_at?: string }>(
+      `/instances/${id}/qrcode`
+    ),
 
   requestPairingCode: (id: string, phone: string) =>
     apiRequest<PairCodeResponse>(`/instances/${id}/pair-code`, {
@@ -543,7 +616,14 @@ export const instanceApi = {
   logout: (id: string) =>
     apiRequest(`/instances/${id}/logout`, { method: 'POST' }),
 
-  importHistory: (id: string, options: { chat_limit?: number; per_chat?: number; since_days?: number } = {}) =>
+  importHistory: (
+    id: string,
+    options: {
+      chat_limit?: number;
+      per_chat?: number;
+      since_days?: number;
+    } = {}
+  ) =>
     apiRequest<HistoryImportResponse>(`/instances/${id}/import-history`, {
       method: 'POST',
       body: JSON.stringify(options),
@@ -555,19 +635,30 @@ export const chatApi = {
   list: (instanceId: string) =>
     apiRequest<Chat[]>(`/chats?instance_id=${instanceId}`),
 
-  ensureDirect: (instanceId: string, payload: { phone: string; name?: string }) =>
+  ensureDirect: (
+    instanceId: string,
+    payload: { phone: string; name?: string }
+  ) =>
     apiRequest<Chat>(`/chats/ensure?instance_id=${instanceId}`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
   deleteAll: (instanceId: string) =>
-    apiRequest<DeleteChatsResponse>(`/chats?instance_id=${instanceId}`, { method: 'DELETE' }),
+    apiRequest<DeleteChatsResponse>(`/chats?instance_id=${instanceId}`, {
+      method: 'DELETE',
+    }),
 
   markRead: (chatId: string, instanceId: string) =>
-    apiRequest(`/chats/${chatId}/read?instance_id=${instanceId}`, { method: 'POST' }),
+    apiRequest(`/chats/${chatId}/read?instance_id=${instanceId}`, {
+      method: 'POST',
+    }),
 
-  updateContactName: (chatId: string, instanceId: string, displayName: string) =>
+  updateContactName: (
+    chatId: string,
+    instanceId: string,
+    displayName: string
+  ) =>
     apiRequest<Chat>(`/chats/${chatId}/contact?instance_id=${instanceId}`, {
       method: 'PATCH',
       body: JSON.stringify({ display_name: displayName }),
@@ -576,42 +667,79 @@ export const chatApi = {
 
 export const crmContactApi = {
   get: (phone: string) =>
-    callApi(`/api/crm/whatsapp/contact?phone=${encodeURIComponent(phone)}`) as Promise<CrmContactResponse>,
+    callApi(
+      `/api/crm/whatsapp/contact?phone=${encodeURIComponent(phone)}`
+    ) as Promise<CrmContactResponse>,
 
   assignees: () =>
     callApi('/api/crm/whatsapp/assignees') as Promise<CrmAssigneesResponse>,
 
-  link: (payload: { phone: string; name?: string; chat_jid?: string; source?: string }) =>
+  link: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    source?: string;
+  }) =>
     callApi('/api/crm/whatsapp/link-contact', {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<CrmContactResponse>,
 
-  update: (payload: { phone: string; name?: string; email?: string; chat_jid?: string; source?: string }) =>
+  update: (payload: {
+    phone: string;
+    name?: string;
+    email?: string;
+    chat_jid?: string;
+    source?: string;
+  }) =>
     callApi('/api/crm/whatsapp/contact-profile', {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }) as Promise<CrmContactResponse>,
 
-  addTags: (payload: { phone: string; name?: string; chat_jid?: string; tags: string[]; source?: string }) =>
+  addTags: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    tags: string[];
+    source?: string;
+  }) =>
     callApi('/api/crm/whatsapp/contact-tags', {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<CrmContactResponse>,
 
-  markPriority: (payload: { phone: string; name?: string; chat_jid?: string; source?: string }) =>
+  markPriority: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    source?: string;
+  }) =>
     callApi('/api/crm/whatsapp/priority', {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<CrmContactResponse>,
 
-  transfer: (payload: { phone: string; name?: string; chat_jid?: string; source?: string; assigned_to: string }) =>
+  transfer: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    source?: string;
+    assigned_to: string;
+  }) =>
     callApi('/api/crm/whatsapp/transfer', {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<CrmContactResponse & { assignee?: CrmAssignee }>,
 
-  createTask: (payload: { phone: string; name?: string; chat_jid?: string; title?: string; due_at?: string; source?: string }) =>
+  createTask: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    title?: string;
+    due_at?: string;
+    source?: string;
+  }) =>
     callApi('/api/crm/whatsapp/task', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -621,40 +749,70 @@ export const crmContactApi = {
 // ---- Message API ----
 export const messageApi = {
   list: (chatId: string, instanceId: string, limit = 50, offset = 0) =>
-    apiRequest<MessageListResponse>(`/messages/${chatId}?instance_id=${instanceId}&limit=${limit}&offset=${offset}`),
+    apiRequest<MessageListResponse>(
+      `/messages/${chatId}?instance_id=${instanceId}&limit=${limit}&offset=${offset}`
+    ),
 
-  send: (chatId: string, instanceId: string, content: string, type: string = 'text') =>
+  send: (
+    chatId: string,
+    instanceId: string,
+    content: string,
+    type: string = 'text'
+  ) =>
     apiRequest(`/messages/${chatId}/send?instance_id=${instanceId}`, {
       method: 'POST',
       body: JSON.stringify({ content, type }),
     }),
 
-  sendMedia: async (chatId: string, instanceId: string, file: File, content = '') => {
-    const { data: { session } } = await supabase.auth.getSession();
+  sendMedia: async (
+    chatId: string,
+    instanceId: string,
+    file: File,
+    content = ''
+  ) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const impersonatedOrgId = getImpersonatedOrgId();
-    const activeOrgId = !impersonatedOrgId ? getActiveOrganizationId(session?.user?.id) : null;
+    const activeOrgId = !impersonatedOrgId
+      ? getActiveOrganizationId(session?.user?.id)
+      : null;
     const tenantId = USE_DIRECT_WHATSAPP_API
-      ? impersonatedOrgId || activeOrgId || await getTenantId(session?.user?.id)
+      ? impersonatedOrgId ||
+        activeOrgId ||
+        (await getTenantId(session?.user?.id))
       : null;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('content', content);
     formData.append('type', mediaTypeFromFile(file));
 
-    const res = await fetch(buildApiUrl(`/messages/${chatId}/send-media?instance_id=${instanceId}`, tenantId), {
-      method: 'POST',
-      headers: {
-        Authorization: session ? `Bearer ${session.access_token}` : '',
-        ...(impersonatedOrgId ? { 'x-impersonate-org-id': impersonatedOrgId } : {}),
-        ...(!impersonatedOrgId && activeOrgId ? { 'x-organization-id': activeOrgId } : {}),
-      },
-      body: formData,
-    });
+    const res = await fetch(
+      buildApiUrl(
+        `/messages/${chatId}/send-media?instance_id=${instanceId}`,
+        tenantId
+      ),
+      {
+        method: 'POST',
+        headers: {
+          Authorization: session ? `Bearer ${session.access_token}` : '',
+          ...(impersonatedOrgId
+            ? { 'x-impersonate-org-id': impersonatedOrgId }
+            : {}),
+          ...(!impersonatedOrgId && activeOrgId
+            ? { 'x-organization-id': activeOrgId }
+            : {}),
+        },
+        body: formData,
+      }
+    );
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: res.statusText }));
       if (res.status === 401) {
-        logger.warn('[WhatsApp API] Falha 401 na midia. Servidor Node.js pode estar com a Service Role Key incorreta.');
+        logger.warn(
+          '[WhatsApp API] Falha 401 na midia. Servidor Node.js pode estar com a Service Role Key incorreta.'
+        );
       }
       throw new Error(error.error || `API Error: ${res.status}`);
     }
@@ -665,25 +823,43 @@ export const messageApi = {
 
 export const mediaApi = {
   getUrl: (mediaId: string, expiresInSeconds = 300) =>
-    apiRequest<WhatsAppMediaUrlResponse>(`/media/${mediaId}/url?expiresInSeconds=${expiresInSeconds}`),
+    apiRequest<WhatsAppMediaUrlResponse>(
+      `/media/${mediaId}/url?expiresInSeconds=${expiresInSeconds}`
+    ),
 
   retry: (mediaId: string) =>
-    apiRequest<WhatsAppMediaRetryResponse>(`/media/${mediaId}/retry`, { method: 'POST' }),
+    apiRequest<WhatsAppMediaRetryResponse>(`/media/${mediaId}/retry`, {
+      method: 'POST',
+    }),
 };
 
 export const accountApi = {
   recoverOrg: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const res = await fetch('/api/account/recover-org', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
       },
     });
     const body = await res.json();
-    if (!res.ok) throw new WhatsAppApiError(body.error || 'Falha na recuperacao', res.status, body.code);
-    return body as { success: boolean; message: string; organization?: { id: string; name: string }; organization_id?: string };
+    if (!res.ok)
+      throw new WhatsAppApiError(
+        body.error || 'Falha na recuperacao',
+        res.status,
+        body.code
+      );
+    return body as {
+      success: boolean;
+      message: string;
+      organization?: { id: string; name: string };
+      organization_id?: string;
+    };
   },
 };
 
@@ -696,7 +872,10 @@ export function formatPhone(number: string): string {
 
 export function isValidBrazilianPhone(number: string): boolean {
   const normalized = formatPhone(number);
-  return normalized.startsWith('55') && (normalized.length === 12 || normalized.length === 13);
+  return (
+    normalized.startsWith('55') &&
+    (normalized.length === 12 || normalized.length === 13)
+  );
 }
 
 export function formatPhoneDisplay(phone: string): string {
@@ -714,7 +893,10 @@ export function formatPhoneFriendly(phone: string): string {
   return `+55 (${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
 }
 
-export function getDisplayName(pushName: string | null, number: string): string {
+export function getDisplayName(
+  pushName: string | null,
+  number: string
+): string {
   if (pushName && !isPlaceholderName(pushName)) return pushName.trim();
   if (number) {
     const cleaned = formatPhone(number);
@@ -723,10 +905,13 @@ export function getDisplayName(pushName: string | null, number: string): string 
   return 'Contato sem telefone';
 }
 
-export function getChatDisplayName(chat: Pick<Chat, 'name' | 'chat_jid' | 'is_group'>): string {
+export function getChatDisplayName(
+  chat: Pick<Chat, 'name' | 'chat_jid' | 'is_group'>
+): string {
   const richChat = chat as Partial<Chat>;
   if (chat.is_group) return chat.name || 'Grupo';
-  if (richChat.display_name && !isPlaceholderName(richChat.display_name)) return richChat.display_name;
+  if (richChat.display_name && !isPlaceholderName(richChat.display_name))
+    return richChat.display_name;
   if (chat.name && !isPlaceholderName(chat.name)) return chat.name;
   if (richChat.phone_display) return richChat.phone_display;
   const phoneFromJid = getPhoneFromJid(chat.chat_jid);
@@ -734,7 +919,13 @@ export function getChatDisplayName(chat: Pick<Chat, 'name' | 'chat_jid' | 'is_gr
 }
 
 export function getPhoneFromJid(jid: string): string {
-  if (!jid || jid.includes('@g.us') || jid.includes('@lid') || jid.includes('@broadcast')) return '';
+  if (
+    !jid ||
+    jid.includes('@g.us') ||
+    jid.includes('@lid') ||
+    jid.includes('@broadcast')
+  )
+    return '';
   const raw = jid.split('@')[0]?.replace(/\D/g, '') || '';
   return isValidBrazilianPhone(raw) ? formatPhoneFriendly(raw) : '';
 }
@@ -750,12 +941,26 @@ export function isPlaceholderName(value?: string | null): boolean {
   const clean = String(value || '').trim();
   if (!clean) return true;
   const lower = clean.toLowerCase();
-  if (['~', 'me', 'contato sem telefone', 'telefone nao identificado', 'telefone não identificado', 'lead whatsapp'].includes(lower)) {
+  if (
+    [
+      '~',
+      'me',
+      'contato sem telefone',
+      'telefone nao identificado',
+      'telefone não identificado',
+      'lead whatsapp',
+    ].includes(lower)
+  ) {
     return true;
   }
-  if (/@(s\.whatsapp\.net|c\.us|g\.us|lid|broadcast)$/i.test(clean) || clean.includes('@lid')) return true;
+  if (
+    /@(s\.whatsapp\.net|c\.us|g\.us|lid|broadcast)$/i.test(clean) ||
+    clean.includes('@lid')
+  )
+    return true;
   const digits = clean.replace(/\D/g, '');
-  if (digits.length >= 2 && (/[-*•…]{2,}/.test(clean) || clean.includes('...'))) return true;
+  if (digits.length >= 2 && (/[-*•…]{2,}/.test(clean) || clean.includes('...')))
+    return true;
   if (digits.length >= 8 && digits.length === clean.length) return true;
   if (/^[A-Za-zÀ-ÿ]{1,3}$/.test(clean)) return true;
   return false;

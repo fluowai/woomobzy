@@ -74,18 +74,27 @@ const Dashboard360: React.FC = () => {
             está em alta performance.
           </h1>
           <p className="text-white/40 font-medium italic mt-4 max-w-xl">
-            Bem-vindo de volta, {profile?.full_name?.split(' ')[0]}. Identificamos 12 novas oportunidades de match para sua carteira rural hoje.
+            Bem-vindo de volta, {profile?.full_name?.split(' ')[0]}.
+            Identificamos 12 novas oportunidades de match para sua carteira
+            rural hoje.
           </p>
         </div>
         <div className="relative z-10 flex items-center gap-4">
-          <Link to="/admin/matchmaking" className="p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-brand/10 hover:border-brand/20 transition-all group">
+          <Link
+            to="/admin/matchmaking"
+            className="p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-brand/10 hover:border-brand/20 transition-all group"
+          >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-brand/10 text-brand rounded-xl">
                 <Target size={24} />
               </div>
               <div className="text-left">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Inteligência Match</p>
-                <p className="text-lg font-bold text-white">Ver Oportunidades →</p>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">
+                  Inteligência Match
+                </p>
+                <p className="text-lg font-bold text-white">
+                  Ver Oportunidades →
+                </p>
               </div>
             </div>
           </Link>
@@ -152,9 +161,24 @@ const Dashboard360: React.FC = () => {
 
             <div className="space-y-4">
               {[
-                { name: 'Ricardo Santos', time: 'Há 5 min', status: 'Novo Lead', location: 'Fazenda Sol Nascente (MT)' },
-                { name: 'Ana Carolina', time: 'Há 15 min', status: 'Em Qualificação', location: 'Haras Tatuí' },
-                { name: 'Carlos Eduardo', time: 'Há 1 hora', status: 'Proposta Enviada', location: 'Gleba A' },
+                {
+                  name: 'Ricardo Santos',
+                  time: 'Há 5 min',
+                  status: 'Novo Lead',
+                  location: 'Fazenda Sol Nascente (MT)',
+                },
+                {
+                  name: 'Ana Carolina',
+                  time: 'Há 15 min',
+                  status: 'Em Qualificação',
+                  location: 'Haras Tatuí',
+                },
+                {
+                  name: 'Carlos Eduardo',
+                  time: 'Há 1 hora',
+                  status: 'Proposta Enviada',
+                  location: 'Gleba A',
+                },
               ].map((lead, i) => (
                 <div
                   key={i}
@@ -174,7 +198,10 @@ const Dashboard360: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-xs text-secondary font-medium truncate max-w-[250px]">
-                        Interesse: {lead.location} • <span className="text-brand font-bold">{lead.status}</span>
+                        Interesse: {lead.location} •{' '}
+                        <span className="text-brand font-bold">
+                          {lead.status}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -266,7 +293,9 @@ const StatCard = ({ icon: Icon, label, value, change, variant }: any) => {
   return (
     <div className="card card-hover group">
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-xl ${iconColors[variant] || iconColors.primary}`}>
+        <div
+          className={`p-3 rounded-xl ${iconColors[variant] || iconColors.primary}`}
+        >
           <Icon size={22} />
         </div>
         <span className="badge badge-primary text-[10px]">{change}</span>

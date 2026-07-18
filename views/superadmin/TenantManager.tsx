@@ -15,7 +15,11 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getTenantBaseUrl, getTenantSiteUrl, PLATFORM_IP } from '../../utils/platform';
+import {
+  getTenantBaseUrl,
+  getTenantSiteUrl,
+  PLATFORM_IP,
+} from '../../utils/platform';
 
 interface Organization {
   id: string;
@@ -153,10 +157,7 @@ const TenantManager: React.FC = () => {
         });
       }
 
-      if (
-        formData.plan_id &&
-        data.organization?.plan_id !== formData.plan_id
-      ) {
+      if (formData.plan_id && data.organization?.plan_id !== formData.plan_id) {
         throw new Error(
           'O servidor não confirmou a atribuição do plano selecionado'
         );
@@ -417,7 +418,10 @@ const TenantManager: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     <div className="flex flex-col">
                       <span className="font-bold text-slate-800">
-                        {tenant.owner_name || (tenant.owner_email ? tenant.owner_email.split('@')[0] : '—')}
+                        {tenant.owner_name ||
+                          (tenant.owner_email
+                            ? tenant.owner_email.split('@')[0]
+                            : '—')}
                       </span>
                       {tenant.owner_name && (
                         <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">
@@ -427,11 +431,15 @@ const TenantManager: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                      tenant.niche === 'rural' ? 'bg-green-100 text-green-700' :
-                      tenant.niche === 'traditional' ? 'bg-blue-100 text-blue-700' :
-                      'bg-purple-100 text-purple-700'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                        tenant.niche === 'rural'
+                          ? 'bg-green-100 text-green-700'
+                          : tenant.niche === 'traditional'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-purple-100 text-purple-700'
+                      }`}
+                    >
                       {tenant.niche === 'rural' ? 'rural' : 'traditional'}
                     </span>
                   </td>
@@ -564,8 +572,8 @@ const TenantManager: React.FC = () => {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Endereco de acesso: {getTenantBaseUrl(formData.slug || '...')}
-                  {' '}| Site: {getTenantSiteUrl(formData.slug || '...')}
+                  Endereco de acesso: {getTenantBaseUrl(formData.slug || '...')}{' '}
+                  | Site: {getTenantSiteUrl(formData.slug || '...')}
                 </p>
               </div>
 
@@ -586,7 +594,8 @@ const TenantManager: React.FC = () => {
                   }
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Aponte o registro A do dominio para o IP da plataforma: {PLATFORM_IP}.
+                  Aponte o registro A do dominio para o IP da plataforma:{' '}
+                  {PLATFORM_IP}.
                 </p>
               </div>
 
@@ -594,7 +603,7 @@ const TenantManager: React.FC = () => {
                 <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2">
                   <Plus size={16} /> Dados do Responsável
                 </h4>
-                
+
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Nome do Dono / Responsável

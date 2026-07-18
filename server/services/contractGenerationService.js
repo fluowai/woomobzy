@@ -49,7 +49,10 @@ function buildVariableValues(lease) {
       continue;
     }
     if (field === 'monthly_rent' || field === 'caution_amount') {
-      vars[placeholder] = Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      vars[placeholder] = Number(value).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      });
     } else if (field === 'start_date' || field === 'end_date') {
       vars[placeholder] = new Date(value).toLocaleDateString('pt-BR');
     } else if (field === 'guarantee_type') {
@@ -72,7 +75,7 @@ function replaceVariables(content, vars) {
 function getUnfilledVariables(content) {
   const matches = content.match(/\{\{(\w+)\}\}/g);
   if (!matches) return [];
-  return matches.map(m => m.replace(/\{|\}/g, ''));
+  return matches.map((m) => m.replace(/\{|\}/g, ''));
 }
 
 function generatePDF(title, contentText) {
@@ -84,11 +87,12 @@ function generatePDF(title, contentText) {
     });
 
     const chunks = [];
-    doc.on('data', c => chunks.push(c));
+    doc.on('data', (c) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const pageWidth =
+      doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
     doc.fontSize(16).font('Helvetica-Bold').text(title, { align: 'center' });
     doc.moveDown(1.5);
@@ -104,7 +108,9 @@ function generatePDF(title, contentText) {
 
       if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
         doc.moveDown(0.8);
-        doc.fontSize(11).font('Helvetica-Bold')
+        doc
+          .fontSize(11)
+          .font('Helvetica-Bold')
           .text(trimmed.replace(/\*\*/g, ''), { continued: false });
         doc.moveDown(0.3);
         continue;
@@ -115,7 +121,10 @@ function generatePDF(title, contentText) {
         if (endBold !== -1) {
           const boldPart = trimmed.substring(2, endBold);
           const rest = trimmed.substring(endBold + 2);
-          doc.fontSize(10).font('Helvetica-Bold').text(boldPart, { continued: true });
+          doc
+            .fontSize(10)
+            .font('Helvetica-Bold')
+            .text(boldPart, { continued: true });
           doc.font('Helvetica').text(rest);
           continue;
         }
@@ -123,7 +132,10 @@ function generatePDF(title, contentText) {
 
       if (trimmed.startsWith('# ')) {
         doc.moveDown(0.5);
-        doc.fontSize(14).font('Helvetica-Bold').text(trimmed.substring(2), { align: 'center' });
+        doc
+          .fontSize(14)
+          .font('Helvetica-Bold')
+          .text(trimmed.substring(2), { align: 'center' });
         doc.moveDown(0.5);
         continue;
       }
@@ -143,7 +155,6 @@ function computeHash(buffer) {
 }
 
 export class ContractGenerationService {
-
   static async generateFromTemplate(leaseId, templateContent, orgId, userId) {
     const supabase = getSupabaseServer();
 
@@ -275,7 +286,13 @@ export class ContractGenerationService {
     };
   }
 
-  static async saveGeneratedContract(leaseId, templateId, contractData, orgId, userId) {
+  static async saveGeneratedContract(
+    leaseId,
+    templateId,
+    contractData,
+    orgId,
+    userId
+  ) {
     const supabase = getSupabaseServer();
 
     const bucket = 'contracts';

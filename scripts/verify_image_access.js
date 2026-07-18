@@ -1,4 +1,3 @@
-
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
@@ -48,9 +47,11 @@ async function checkImageAccessibility() {
     const response = await fetch(imageUrl, { method: 'HEAD' });
     console.log(`HTTP Status: ${response.status}`);
     if (response.ok) {
-        console.log('Image is accessible!');
+      console.log('Image is accessible!');
     } else {
-        console.log('Image is NOT accessible (403/404). This implies the bucket might not be public.');
+      console.log(
+        'Image is NOT accessible (403/404). This implies the bucket might not be public.'
+      );
     }
   } catch (err) {
     console.error('Error fetching image URL:', err);

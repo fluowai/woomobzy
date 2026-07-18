@@ -79,11 +79,15 @@ async function executeMigrations() {
   MIGRATIONS.forEach((file, i) => {
     const filePath = path.join(projectRoot, file);
     const exists = fs.existsSync(filePath);
-    const status = exists ? `${colors.green}✅${colors.reset}` : `${colors.red}❌${colors.reset}`;
+    const status = exists
+      ? `${colors.green}✅${colors.reset}`
+      : `${colors.red}❌${colors.reset}`;
     console.log(`  ${status} ${i + 1}. ${file}`);
   });
 
-  console.log(`\n${colors.cyan}▶️  Iniciando execução das migrações...${colors.reset}\n`);
+  console.log(
+    `\n${colors.cyan}▶️  Iniciando execução das migrações...${colors.reset}\n`
+  );
 
   let successCount = 0;
   let failCount = 0;
@@ -96,7 +100,9 @@ async function executeMigrations() {
     const fileNum = i + 1;
 
     if (!fs.existsSync(filePath)) {
-      log.warn(`[${fileNum}/${MIGRATIONS.length}] ${migrationFile} - Arquivo não encontrado`);
+      log.warn(
+        `[${fileNum}/${MIGRATIONS.length}] ${migrationFile} - Arquivo não encontrado`
+      );
       failCount++;
       continue;
     }
@@ -131,7 +137,10 @@ async function executeMigrations() {
 
           if (error) {
             // If RPC doesn't exist, try direct query approach
-            if (error.code === 'PGRST205' || error.message.includes('exec_sql')) {
+            if (
+              error.code === 'PGRST205' ||
+              error.message.includes('exec_sql')
+            ) {
               // RPC não existe, vamos usar uma abordagem alternativa
               // Continua mesmo assim
               executedCount++;
@@ -156,7 +165,9 @@ async function executeMigrations() {
       }
 
       if (executedCount > 0) {
-        log.success(`${migrationFile} (${executedCount}/${statements.length} statements)`);
+        log.success(
+          `${migrationFile} (${executedCount}/${statements.length} statements)`
+        );
         successCount++;
       } else {
         log.warn(`${migrationFile} - Nenhum statement foi executado`);
@@ -169,7 +180,9 @@ async function executeMigrations() {
   }
 
   // Final summary
-  console.log(`\n${colors.cyan}════════════════════════════════════${colors.reset}`);
+  console.log(
+    `\n${colors.cyan}════════════════════════════════════${colors.reset}`
+  );
   console.log(`${colors.blue}📊 Resumo da Execução:${colors.reset}`);
   console.log(`  Total de statements: ${totalStatements}`);
   console.log(`  Migrações com sucesso: ${successCount}/${MIGRATIONS.length}`);
@@ -177,7 +190,9 @@ async function executeMigrations() {
 
   if (successCount === MIGRATIONS.length) {
     log.success(`Todas as ${MIGRATIONS.length} migrações foram executadas!`);
-    console.log(`\n${colors.green}🎉 Banco de dados atualizado com sucesso!${colors.reset}`);
+    console.log(
+      `\n${colors.green}🎉 Banco de dados atualizado com sucesso!${colors.reset}`
+    );
     console.log(`
 ${colors.cyan}Próximos passos:${colors.reset}
 1. Recarregue seu app: F5 em http://localhost:3005
@@ -187,7 +202,9 @@ ${colors.cyan}Próximos passos:${colors.reset}
 5. Crie sua primeira organização
 `);
   } else if (successCount > 0) {
-    log.warn(`${successCount}/${MIGRATIONS.length} migrações processadas com sucesso`);
+    log.warn(
+      `${successCount}/${MIGRATIONS.length} migrações processadas com sucesso`
+    );
     console.log(`
 ${colors.yellow}Nota:${colors.reset}
 Algumas tabelas podem já ter existido (é normal).

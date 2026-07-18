@@ -104,7 +104,8 @@ const ConnectionSettings: React.FC = () => {
                 Conexões WhatsApp
               </h3>
               <p className="text-sm text-text-secondary mt-0.5">
-                Gerencie suas instâncias do WhatsApp para atendimento e notificações.
+                Gerencie suas instâncias do WhatsApp para atendimento e
+                notificações.
               </p>
             </div>
           </div>
@@ -116,7 +117,11 @@ const ConnectionSettings: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder={isLimitReached ? "Limite do plano atingido" : "Nome da conexão (ex: Comercial)"}
+                placeholder={
+                  isLimitReached
+                    ? 'Limite do plano atingido'
+                    : 'Nome da conexão (ex: Comercial)'
+                }
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 className="input-premium py-3 pl-11 pr-4 w-full bg-bg-primary/50"
@@ -141,7 +146,10 @@ const ConnectionSettings: React.FC = () => {
         {isLimitReached && (
           <div className="mt-4 p-3 bg-orange-500/5 border border-orange-500/20 rounded-xl flex items-center gap-2 text-xs text-orange-400">
             <ShieldAlert size={14} />
-            <span>Limite atingido ({instances.length}/{maxInstances}). Entre em contato para aumentar seu limite.</span>
+            <span>
+              Limite atingido ({instances.length}/{maxInstances}). Entre em
+              contato para aumentar seu limite.
+            </span>
           </div>
         )}
 
@@ -157,13 +165,21 @@ const ConnectionSettings: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {loading && instances.length === 0 ? (
           <div className="col-span-full py-20 text-center">
-            <Loader2 size={32} className="animate-spin text-primary mx-auto mb-4" />
+            <Loader2
+              size={32}
+              className="animate-spin text-primary mx-auto mb-4"
+            />
             <p className="text-text-secondary">Buscando conexões ativas...</p>
           </div>
         ) : instances.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-bg-card border border-dashed border-border rounded-3xl">
-            <WifiOff size={48} className="text-text-tertiary mx-auto mb-4 opacity-20" />
-            <h4 className="text-text-primary font-semibold">Nenhuma conexão ativa</h4>
+            <WifiOff
+              size={48}
+              className="text-text-tertiary mx-auto mb-4 opacity-20"
+            />
+            <h4 className="text-text-primary font-semibold">
+              Nenhuma conexão ativa
+            </h4>
             <p className="text-sm text-text-tertiary mt-1">
               Crie sua primeira instância acima para começar a usar o WhatsApp.
             </p>
@@ -176,8 +192,12 @@ const ConnectionSettings: React.FC = () => {
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${inst.status === 'connected' ? 'bg-[#25D366] shadow-[0_0_10px_rgba(37,211,102,0.5)]' : 'bg-red-500'}`} />
-                  <span className="font-semibold text-text-primary">{inst.name}</span>
+                  <div
+                    className={`w-2 h-2 rounded-full ${inst.status === 'connected' ? 'bg-[#25D366] shadow-[0_0_10px_rgba(37,211,102,0.5)]' : 'bg-red-500'}`}
+                  />
+                  <span className="font-semibold text-text-primary">
+                    {inst.name}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {inst.status === 'connected' ? (
@@ -210,19 +230,29 @@ const ConnectionSettings: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-text-tertiary">Status</span>
-                  <span className={`font-medium ${inst.status === 'connected' ? 'text-[#25D366]' : 'text-text-secondary'}`}>
-                    {inst.status === 'connected' ? 'Conectado' : inst.status === 'qr_pending' ? 'Aguardando QR Code' : 'Desconectado'}
+                  <span
+                    className={`font-medium ${inst.status === 'connected' ? 'text-[#25D366]' : 'text-text-secondary'}`}
+                  >
+                    {inst.status === 'connected'
+                      ? 'Conectado'
+                      : inst.status === 'qr_pending'
+                        ? 'Aguardando QR Code'
+                        : 'Desconectado'}
                   </span>
                 </div>
                 {inst.phone && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-text-tertiary">Telefone</span>
-                    <span className="text-text-primary font-mono">+{inst.phone}</span>
+                    <span className="text-text-primary font-mono">
+                      +{inst.phone}
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-text-tertiary">ID Técnico</span>
-                  <span className="text-text-tertiary font-mono opacity-50">{inst.id.split('-')[0]}...</span>
+                  <span className="text-text-tertiary font-mono opacity-50">
+                    {inst.id.split('-')[0]}...
+                  </span>
                 </div>
               </div>
             </div>

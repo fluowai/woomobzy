@@ -137,17 +137,25 @@ const ConexoesRural: React.FC = () => {
     <div className="space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
         <h1 className="text-4xl font-bold text-black uppercase italic tracking-tighter leading-none mb-3">
-          Conexões <br /> <span style={{ color: settings.primaryColor }}>WhatsApp & API</span>
+          Conexões <br />{' '}
+          <span style={{ color: settings.primaryColor }}>WhatsApp & API</span>
         </h1>
       </div>
       <div className="bg-white rounded-[3rem] p-16 shadow-sm border border-slate-100 text-center">
         <WifiOff size={64} className="text-amber-400 mx-auto mb-6" />
-        <h2 className="text-2xl font-bold text-black uppercase italic tracking-tighter mb-3">Serviço Indisponível</h2>
+        <h2 className="text-2xl font-bold text-black uppercase italic tracking-tighter mb-3">
+          Serviço Indisponível
+        </h2>
         <p className="text-black/50 font-medium italic mb-8 max-w-md mx-auto">
-          O módulo WhatsApp precisa consultar /api/whatsapp pelo mesmo domínio e que o WhatsMeow esteja rodando internamente na porta 3100.
+          O módulo WhatsApp precisa consultar /api/whatsapp pelo mesmo domínio e
+          que o WhatsMeow esteja rodando internamente na porta 3100.
         </p>
         <button
-          onClick={() => { setLoading(true); setServiceUnavailable(false); refreshInstances(); }}
+          onClick={() => {
+            setLoading(true);
+            setServiceUnavailable(false);
+            refreshInstances();
+          }}
           className="px-8 py-4 rounded-2xl text-white font-bold uppercase tracking-widest text-xs hover:brightness-110 transition-all"
           style={{ backgroundColor: settings.primaryColor }}
         >
@@ -172,7 +180,9 @@ const ConexoesRural: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="flex bg-white rounded-2xl p-4 shadow-sm border border-slate-100 items-center gap-4">
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">Status do Plano</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">
+                Status do Plano
+              </span>
               <span className="text-sm font-bold text-black">
                 {instances.length} / {maxInstances} Conexões
               </span>
@@ -199,7 +209,11 @@ const ConexoesRural: React.FC = () => {
                   className="transition-all duration-1000"
                 />
               </svg>
-              <Zap size={14} className="absolute text-black" style={{ color: settings.primaryColor }} />
+              <Zap
+                size={14}
+                className="absolute text-black"
+                style={{ color: settings.primaryColor }}
+              />
             </div>
           </div>
         </div>
@@ -224,7 +238,11 @@ const ConexoesRural: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder={isLimitReached ? "Limite do plano atingido" : "Nome da conexão (ex: Vendas Sul)"}
+                placeholder={
+                  isLimitReached
+                    ? 'Limite do plano atingido'
+                    : 'Nome da conexão (ex: Vendas Sul)'
+                }
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
@@ -235,7 +253,11 @@ const ConexoesRural: React.FC = () => {
             <button
               onClick={handleCreate}
               disabled={creating || !newName.trim() || isLimitReached}
-              style={{ backgroundColor: isLimitReached ? '#cbd5e1' : settings.primaryColor }}
+              style={{
+                backgroundColor: isLimitReached
+                  ? '#cbd5e1'
+                  : settings.primaryColor,
+              }}
               className="h-16 px-10 rounded-2xl text-white font-bold uppercase tracking-widest text-xs shadow-lg shadow-black/5 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 min-w-[200px]"
             >
               {creating ? (
@@ -251,7 +273,9 @@ const ConexoesRural: React.FC = () => {
         {error && (
           <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-in fade-in zoom-in-95 duration-300">
             <AlertCircle size={18} />
-            <span className="text-xs font-bold uppercase tracking-widest">{error}</span>
+            <span className="text-xs font-bold uppercase tracking-widest">
+              {error}
+            </span>
           </div>
         )}
       </div>
@@ -261,13 +285,19 @@ const ConexoesRural: React.FC = () => {
         {loading && instances.length === 0 ? (
           <div className="col-span-full py-32 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-6"></div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-black/40">Sincronizando conexões...</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-black/40">
+              Sincronizando conexões...
+            </p>
           </div>
         ) : instances.length === 0 ? (
           <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
             <WifiOff size={64} className="text-black/10 mx-auto mb-6" />
-            <h3 className="text-2xl font-bold text-black uppercase italic tracking-tighter">Nenhuma Conexão Ativa</h3>
-            <p className="text-black/40 font-medium italic mt-2">Crie sua primeira instância acima para começar.</p>
+            <h3 className="text-2xl font-bold text-black uppercase italic tracking-tighter">
+              Nenhuma Conexão Ativa
+            </h3>
+            <p className="text-black/40 font-medium italic mt-2">
+              Crie sua primeira instância acima para começar.
+            </p>
           </div>
         ) : (
           instances.map((inst) => (
@@ -284,11 +314,16 @@ const ConexoesRural: React.FC = () => {
                   <div className="flex items-center gap-4">
                     <div
                       className="w-3 h-3 rounded-full animate-pulse"
-                      style={{ backgroundColor: inst.status === 'connected' ? '#10b981' : '#ef4444' }}
+                      style={{
+                        backgroundColor:
+                          inst.status === 'connected' ? '#10b981' : '#ef4444',
+                      }}
                     />
-                    <span className="text-sm font-bold text-black uppercase tracking-tight">{inst.name}</span>
+                    <span className="text-sm font-bold text-black uppercase tracking-tight">
+                      {inst.name}
+                    </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {inst.status === 'connected' ? (
                       <button
@@ -319,22 +354,34 @@ const ConexoesRural: React.FC = () => {
 
                 <div className="space-y-4 pt-6 border-t border-slate-50">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">Status</span>
-                    <span className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full ${inst.status === 'connected' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">
+                      Status
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full ${inst.status === 'connected' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}
+                    >
                       {inst.status === 'connected' ? 'Ativo' : 'Desconectado'}
                     </span>
                   </div>
-                  
+
                   {inst.phone && (
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">Telefone</span>
-                      <span className="text-xs font-bold text-black font-mono">+{inst.phone}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">
+                        Telefone
+                      </span>
+                      <span className="text-xs font-bold text-black font-mono">
+                        +{inst.phone}
+                      </span>
                     </div>
                   )}
 
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">Integração</span>
-                    <span className="text-[10px] font-bold text-black/60 italic">WOOMOBZY API v1</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">
+                      Integração
+                    </span>
+                    <span className="text-[10px] font-bold text-black/60 italic">
+                      WOOMOBZY API v1
+                    </span>
                   </div>
                 </div>
 
@@ -359,8 +406,13 @@ const ConexoesRural: React.FC = () => {
           onClick={refreshInstances}
           className="flex items-center gap-3 px-8 py-4 bg-white rounded-2xl border border-slate-100 shadow-sm text-black/40 hover:text-black transition-all group"
         >
-          <RefreshCw size={16} className={`group-hover:rotate-180 transition-transform duration-500 ${loading ? 'animate-spin' : ''}`} />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Sincronizar Instâncias</span>
+          <RefreshCw
+            size={16}
+            className={`group-hover:rotate-180 transition-transform duration-500 ${loading ? 'animate-spin' : ''}`}
+          />
+          <span className="text-[10px] font-bold uppercase tracking-widest">
+            Sincronizar Instâncias
+          </span>
         </button>
       </div>
 

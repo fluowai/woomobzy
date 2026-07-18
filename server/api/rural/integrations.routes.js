@@ -29,7 +29,10 @@ router.get('/consultarEmbargos/:lat/:lng', verifyAuth, async (req, res) => {
     if (!isFinite(lat) || !isFinite(lng)) {
       return res.status(400).json({ error: 'Coordenadas invalidas' });
     }
-    const data = await IntegracaoIbamaEmbargos.consultarEmbargosPorCoordenada(lat, lng);
+    const data = await IntegracaoIbamaEmbargos.consultarEmbargosPorCoordenada(
+      lat,
+      lng
+    );
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -3,14 +3,33 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { siteService } from '../services/sites';
 import { Site, SitePage, SiteMenuItem, SiteTemplate } from '../types/site';
-import { SITE_TEMPLATES, applySiteTemplate, getSiteTemplateById } from '../constants/siteTemplates';
+import {
+  SITE_TEMPLATES,
+  applySiteTemplate,
+  getSiteTemplateById,
+} from '../constants/siteTemplates';
 import GlobalSettings from '../components/SiteEditor/GlobalSettings';
 import MenuEditor from '../components/SiteEditor/MenuEditor';
 import { LandingPageTheme } from '../types/landingPage';
 import {
-  Plus, Settings, Eye, Globe, FileText, Trash2, Copy, ChevronRight,
-  Layout, Palette, Check, X, Loader2, ExternalLink, ArrowLeft,
-  Sparkles, PanelRightOpen, PanelRightClose,
+  Plus,
+  Settings,
+  Eye,
+  Globe,
+  FileText,
+  Trash2,
+  Copy,
+  ChevronRight,
+  Layout,
+  Palette,
+  Check,
+  X,
+  Loader2,
+  ExternalLink,
+  ArrowLeft,
+  Sparkles,
+  PanelRightOpen,
+  PanelRightClose,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -19,12 +38,16 @@ const SiteManager: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const basePanelPath = location.pathname.startsWith('/urban') ? '/urban' : '/rural';
+  const basePanelPath = location.pathname.startsWith('/urban')
+    ? '/urban'
+    : '/rural';
   const [site, setSite] = useState<Site | null>(null);
   const [pages, setPages] = useState<SitePage[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pages' | 'settings' | 'templates'>('pages');
+  const [activeTab, setActiveTab] = useState<
+    'pages' | 'settings' | 'templates'
+  >('pages');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState('');
@@ -46,19 +69,31 @@ const SiteManager: React.FC = () => {
         .single();
       setOrgSlug(orgData?.slug || '');
 
-      let siteData = await siteService.getByOrganization(profile.organization_id);
+      let siteData = await siteService.getByOrganization(
+        profile.organization_id
+      );
 
       if (!siteData) {
         const { data: newSite, error } = await supabase
           .from('sites')
-          .insert({ organization_id: profile.organization_id, name: 'Meu Site' })
+          .insert({
+            organization_id: profile.organization_id,
+            name: 'Meu Site',
+          })
           .select()
           .single();
 
         if (newSite) {
           await supabase
             .from('site_pages')
-            .insert({ site_id: newSite.id, title: 'Início', slug: 'home', sort_order: 0, status: 'published', is_home: true });
+            .insert({
+              site_id: newSite.id,
+              title: 'Início',
+              slug: 'home',
+              sort_order: 0,
+              status: 'published',
+              is_home: true,
+            });
         }
 
         siteData = await siteService.getByOrganization(profile.organization_id);
@@ -182,7 +217,9 @@ const SiteManager: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Meu Site</h1>
-          <p className="text-gray-400 text-sm mt-1">Gerencie o site da sua imobiliária</p>
+          <p className="text-gray-400 text-sm mt-1">
+            Gerencie o site da sua imobiliária
+          </p>
         </div>
         <div className="flex items-center gap-3">
           {site && (
@@ -229,7 +266,9 @@ const SiteManager: React.FC = () => {
       {activeTab === 'pages' && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Páginas do Site</h2>
+            <h2 className="text-lg font-semibold text-white">
+              Páginas do Site
+            </h2>
             <button
               onClick={() => setShowCreatePage(!showCreatePage)}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
@@ -249,10 +288,16 @@ const SiteManager: React.FC = () => {
                 onKeyDown={(e) => e.key === 'Enter' && handleCreatePage()}
                 autoFocus
               />
-              <button onClick={handleCreatePage} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium">
+              <button
+                onClick={handleCreatePage}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium"
+              >
                 <Check size={16} />
               </button>
-              <button onClick={() => setShowCreatePage(false)} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded text-sm font-medium">
+              <button
+                onClick={() => setShowCreatePage(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded text-sm font-medium"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -269,21 +314,37 @@ const SiteManager: React.FC = () => {
                   <div>
                     <span className="text-white font-medium">
                       {page.title}
-                      {page.isHome && <span className="ml-2 text-xs bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded">Home</span>}
+                      {page.isHome && (
+                        <span className="ml-2 text-xs bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded">
+                          Home
+                        </span>
+                      )}
                     </span>
-                    <div className="text-xs text-gray-500 mt-0.5">/{page.slug}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      /{page.slug}
+                    </div>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${page.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-gray-700 text-gray-400'}`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${page.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-gray-700 text-gray-400'}`}
+                  >
                     {page.status === 'published' ? 'Publicado' : 'Rascunho'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handlePublishPage(page.id, page.status !== 'published')}
+                    onClick={() =>
+                      handlePublishPage(page.id, page.status !== 'published')
+                    }
                     className={`p-2 rounded ${page.status === 'published' ? 'text-yellow-400 hover:bg-gray-700' : 'text-green-400 hover:bg-gray-700'}`}
-                    title={page.status === 'published' ? 'Despublicar' : 'Publicar'}
+                    title={
+                      page.status === 'published' ? 'Despublicar' : 'Publicar'
+                    }
                   >
-                    {page.status === 'published' ? <Eye size={16} /> : <Eye size={16} />}
+                    {page.status === 'published' ? (
+                      <Eye size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
                   </button>
                   <button
                     onClick={() => handleDuplicatePage(page.id)}
@@ -302,7 +363,9 @@ const SiteManager: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => navigate(`${basePanelPath}/site/pages/${page.id}`)}
+                    onClick={() =>
+                      navigate(`${basePanelPath}/site/pages/${page.id}`)
+                    }
                     className="flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium transition-colors"
                   >
                     Editar <ChevronRight size={14} />
@@ -315,7 +378,9 @@ const SiteManager: React.FC = () => {
               <div className="text-center py-12 text-gray-500">
                 <FileText size={48} className="mx-auto mb-3 opacity-30" />
                 <p>Nenhuma página criada ainda</p>
-                <p className="text-sm mt-1">Clique em "Nova Página" para começar</p>
+                <p className="text-sm mt-1">
+                  Clique em "Nova Página" para começar
+                </p>
               </div>
             )}
           </div>
@@ -335,8 +400,12 @@ const SiteManager: React.FC = () => {
       {activeTab === 'templates' && (
         <div>
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-white">Modelos de Site</h2>
-            <p className="text-gray-400 text-sm mt-1">Escolha um modelo pré-pronto para começar rapidamente</p>
+            <h2 className="text-lg font-semibold text-white">
+              Modelos de Site
+            </h2>
+            <p className="text-gray-400 text-sm mt-1">
+              Escolha um modelo pré-pronto para começar rapidamente
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -350,7 +419,9 @@ const SiteManager: React.FC = () => {
                 </div>
                 <div className="p-4">
                   <h3 className="text-white font-semibold">{template.name}</h3>
-                  <p className="text-gray-400 text-sm mt-1">{template.description}</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    {template.description}
+                  </p>
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
                       {template.pages.length} páginas

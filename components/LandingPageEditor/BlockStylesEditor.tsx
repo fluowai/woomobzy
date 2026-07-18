@@ -117,10 +117,14 @@ const BlockStylesEditor: React.FC<BlockStylesEditorProps> = ({
 
       {/* Border */}
       <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Borda</p>
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+          Borda
+        </p>
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="block text-[10px] text-gray-500 mb-1">Espessura</label>
+            <label className="block text-[10px] text-gray-500 mb-1">
+              Espessura
+            </label>
             <input
               type="text"
               value={styles.borderWidth || ''}
@@ -130,7 +134,9 @@ const BlockStylesEditor: React.FC<BlockStylesEditorProps> = ({
             />
           </div>
           <div className="flex-1">
-            <label className="block text-[10px] text-gray-500 mb-1">Estilo</label>
+            <label className="block text-[10px] text-gray-500 mb-1">
+              Estilo
+            </label>
             <select
               value={styles.borderStyle || 'none'}
               onChange={(e) => updateStyle('borderStyle', e.target.value)}
@@ -144,7 +150,9 @@ const BlockStylesEditor: React.FC<BlockStylesEditorProps> = ({
           </div>
         </div>
         <div>
-          <label className="block text-[10px] text-gray-500 mb-1">Cor da Borda</label>
+          <label className="block text-[10px] text-gray-500 mb-1">
+            Cor da Borda
+          </label>
           <div className="flex gap-2">
             <input
               type="color"

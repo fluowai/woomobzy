@@ -13,13 +13,16 @@ import {
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
 const router = express.Router();
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 // ==========================================
 // POST /add — Link custom domain to Docker/Traefik & DB
@@ -28,11 +31,17 @@ router.post('/add', verifyAdmin, async (req, res) => {
   const { domain, organizationId } = req.body;
 
   if (!domain || !organizationId) {
-    return res.status(400).json({ error: 'Domínio e Organização são obrigatórios' });
+    return res
+      .status(400)
+      .json({ error: 'Domínio e Organização são obrigatórios' });
   }
 
   if (req.userRole !== 'superadmin' && organizationId !== req.orgId) {
-    return res.status(403).json({ error: 'Voce so pode alterar o dominio da sua propria organizacao.' });
+    return res
+      .status(403)
+      .json({
+        error: 'Voce so pode alterar o dominio da sua propria organizacao.',
+      });
   }
 
   try {
@@ -82,17 +91,20 @@ router.post('/add', verifyAdmin, async (req, res) => {
     if (orgError) throw orgError;
 
     // 3. Add to Domains table for history/tracking
-    await supabase.from('domains').upsert({
-      organization_id: organizationId,
-      domain: cleanDomain,
-      is_custom: true,
-      is_primary: true,
-      status: 'pending_ssl',
-      ssl_status: 'pending',
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'domain',
-    });
+    await supabase.from('domains').upsert(
+      {
+        organization_id: organizationId,
+        domain: cleanDomain,
+        is_custom: true,
+        is_primary: true,
+        status: 'pending_ssl',
+        ssl_status: 'pending',
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: 'domain',
+      }
+    );
 
     let provisioning;
     try {
@@ -131,7 +143,8 @@ router.post('/add', verifyAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Domain Add Route Error:', error);
-    const status = error instanceof DomainProvisioningError ? error.statusCode : 500;
+    const status =
+      error instanceof DomainProvisioningError ? error.statusCode : 500;
     res.status(status).json({
       error: error.message,
       code: error.code || 'DOMAIN_PROVISIONING_FAILED',
@@ -151,7 +164,11 @@ router.delete('/remove', verifyAdmin, async (req, res) => {
   }
 
   if (req.userRole !== 'superadmin' && organizationId !== req.orgId) {
-    return res.status(403).json({ error: 'Voce so pode alterar o dominio da sua propria organizacao.' });
+    return res
+      .status(403)
+      .json({
+        error: 'Voce so pode alterar o dominio da sua propria organizacao.',
+      });
   }
 
   try {
@@ -169,7 +186,8 @@ router.delete('/remove', verifyAdmin, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    const status = error instanceof DomainProvisioningError ? error.statusCode : 500;
+    const status =
+      error instanceof DomainProvisioningError ? error.statusCode : 500;
     res.status(status).json({
       error: error.message,
       code: error.code || 'DOMAIN_REMOVE_FAILED',
@@ -187,7 +205,8 @@ router.get('/verify/:domain', verifyAdmin, async (req, res) => {
     const status = await checkDockerDomainStatus(domain);
     res.json(status);
   } catch (error) {
-    const status = error instanceof DomainProvisioningError ? error.statusCode : 500;
+    const status =
+      error instanceof DomainProvisioningError ? error.statusCode : 500;
     res.status(status).json({
       success: false,
       error: error.message,
@@ -201,16 +220,22 @@ router.get('/verify/:domain', verifyAdmin, async (req, res) => {
 // ==========================================
 router.post('/sync-all', verifyAdmin, async (req, res) => {
   if (req.userRole !== 'superadmin') {
-    return res.status(403).json({ error: 'Apenas Super Admins podem sincronizar todos os dominios.' });
+    return res
+      .status(403)
+      .json({
+        error: 'Apenas Super Admins podem sincronizar todos os dominios.',
+      });
   }
 
   try {
-    const sync = await syncRegisteredDockerDomains(getSupabaseServer(), { validateDns: false });
+    const sync = await syncRegisteredDockerDomains(getSupabaseServer(), {
+      validateDns: false,
+    });
 
     res.json({
       success: true,
       message: `Sincronizacao concluida. Processados ${sync.processed} dominios.`,
-      results: sync.results
+      results: sync.results,
     });
   } catch (error) {
     console.error('Domain Sync Route Error:', error);

@@ -31,7 +31,10 @@ router.post('/run', verifyAuth, requireTenant, async (req, res) => {
 router.post('/due-soon', verifyAuth, requireTenant, async (req, res) => {
   try {
     const days = parseInt(req.body.days) || 5;
-    const results = await LeaseNotificationWorker.checkInvoicesDueSoon(req.orgId, days);
+    const results = await LeaseNotificationWorker.checkInvoicesDueSoon(
+      req.orgId,
+      days
+    );
     res.json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -45,7 +48,10 @@ router.post('/due-soon', verifyAuth, requireTenant, async (req, res) => {
 router.post('/overdue', verifyAuth, requireTenant, async (req, res) => {
   try {
     const days = parseInt(req.body.days) || 1;
-    const results = await LeaseNotificationWorker.checkOverdueInvoices(req.orgId, days);
+    const results = await LeaseNotificationWorker.checkOverdueInvoices(
+      req.orgId,
+      days
+    );
     res.json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -59,7 +65,10 @@ router.post('/overdue', verifyAuth, requireTenant, async (req, res) => {
 router.post('/adjustments', verifyAuth, requireTenant, async (req, res) => {
   try {
     const days = parseInt(req.body.days) || 30;
-    const results = await LeaseNotificationWorker.checkUpcomingAdjustments(req.orgId, days);
+    const results = await LeaseNotificationWorker.checkUpcomingAdjustments(
+      req.orgId,
+      days
+    );
     res.json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -73,7 +82,10 @@ router.post('/adjustments', verifyAuth, requireTenant, async (req, res) => {
 router.post('/expiring', verifyAuth, requireTenant, async (req, res) => {
   try {
     const days = parseInt(req.body.days) || 30;
-    const results = await LeaseNotificationWorker.checkContractsExpiringSoon(req.orgId, days);
+    const results = await LeaseNotificationWorker.checkContractsExpiringSoon(
+      req.orgId,
+      days
+    );
     res.json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -93,9 +105,7 @@ router.get('/cron', async (req, res) => {
     }
 
     const supabase = getSupabaseServer();
-    const { data: orgs } = await supabase
-      .from('organizations')
-      .select('id');
+    const { data: orgs } = await supabase.from('organizations').select('id');
 
     if (!orgs) return res.json({ success: true, data: [] });
 

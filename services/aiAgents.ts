@@ -34,7 +34,9 @@ export interface AIAgent {
   created_at: string;
 }
 
-export type AIAgentPayload = Partial<Omit<AIAgent, 'id' | 'organization_id' | 'created_at'>>;
+export type AIAgentPayload = Partial<
+  Omit<AIAgent, 'id' | 'organization_id' | 'created_at'>
+>;
 
 export interface ChatMemory {
   id: string;
@@ -107,7 +109,15 @@ export const aiAgentService = {
     });
   },
 
-  async qualify(id: string, params: { rating: number; feedback?: string; lead_id?: string; session_id?: string }) {
+  async qualify(
+    id: string,
+    params: {
+      rating: number;
+      feedback?: string;
+      lead_id?: string;
+      session_id?: string;
+    }
+  ) {
     const data = await callApi(`/api/ai/agents/${id}/qualify`, {
       method: 'POST',
       body: JSON.stringify(params),
@@ -120,7 +130,16 @@ export const aiAgentService = {
     return data.metrics as AgentMetrics;
   },
 
-  async learn(id: string, params: { input_text: string; output_text: string; was_helpful?: boolean; corrected_output?: string; tags?: string[] }) {
+  async learn(
+    id: string,
+    params: {
+      input_text: string;
+      output_text: string;
+      was_helpful?: boolean;
+      corrected_output?: string;
+      tags?: string[];
+    }
+  ) {
     const data = await callApi(`/api/ai/agents/${id}/learn`, {
       method: 'POST',
       body: JSON.stringify(params),

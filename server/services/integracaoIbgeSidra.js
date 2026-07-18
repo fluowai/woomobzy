@@ -6,49 +6,69 @@ export class IntegracaoIbgeSidra {
   static async consultarProducaoAgricola(codigoIbge, ano) {
     const anoRef = ano || new Date().getFullYear() - 1;
     const cacheKey = `ibge:pam:${codigoIbge}:${anoRef}`;
-    return this._fetchWithCache(cacheKey, async () => {
-      try {
-        const url = `${IBGE_API}/agregados/5457/periodos/${anoRef}/variaveis/109?localidades=N6[${codigoIbge}]`;
-        const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
-        const data = await response.json();
-        return this._extrairProducao(data);
-      } catch {
-        return this._fallbackProducao(codigoIbge, anoRef);
-      }
-    }, 86400 * 7);
+    return this._fetchWithCache(
+      cacheKey,
+      async () => {
+        try {
+          const url = `${IBGE_API}/agregados/5457/periodos/${anoRef}/variaveis/109?localidades=N6[${codigoIbge}]`;
+          const response = await fetch(url, {
+            signal: AbortSignal.timeout(15000),
+          });
+          const data = await response.json();
+          return this._extrairProducao(data);
+        } catch {
+          return this._fallbackProducao(codigoIbge, anoRef);
+        }
+      },
+      86400 * 7
+    );
   }
 
   static async consultarPecuaria(codigoIbge, ano) {
     const anoRef = ano || new Date().getFullYear() - 1;
     const cacheKey = `ibge:pecuaria:${codigoIbge}:${anoRef}`;
-    return this._fetchWithCache(cacheKey, async () => {
-      try {
-        const url = `${IBGE_API}/agregados/3939/periodos/${anoRef}/variaveis/109?localidades=N6[${codigoIbge}]`;
-        const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
-        const data = await response.json();
-        return this._extrairPecuaria(data);
-      } catch {
-        return { erro: 'PAM pecuaria indisponivel', fonte: 'IBGE SIDRA' };
-      }
-    }, 86400 * 7);
+    return this._fetchWithCache(
+      cacheKey,
+      async () => {
+        try {
+          const url = `${IBGE_API}/agregados/3939/periodos/${anoRef}/variaveis/109?localidades=N6[${codigoIbge}]`;
+          const response = await fetch(url, {
+            signal: AbortSignal.timeout(15000),
+          });
+          const data = await response.json();
+          return this._extrairPecuaria(data);
+        } catch {
+          return { erro: 'PAM pecuaria indisponivel', fonte: 'IBGE SIDRA' };
+        }
+      },
+      86400 * 7
+    );
   }
 
   static async consultarPrecoTerras(codigoIbge) {
     const cacheKey = `ibge:preco_terras:${codigoIbge}`;
-    return this._fetchWithCache(cacheKey, async () => {
-      try {
-        const url = `${IBGE_API}/agregados/6786/periodos/2021/variaveis/9812?localidades=N6[${codigoIbge}]`;
-        const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
-        const data = await response.json();
-        return {
-          pib_total: parseFloat(data?.[0]?.resultados?.[0]?.series?.[0]?.serie?.[2021] || 0),
-          ano_referencia: 2021,
-          fonte: 'IBGE PIB Municipal',
-        };
-      } catch {
-        return { erro: 'IBGE PIB indisponivel', fonte: 'IBGE' };
-      }
-    }, 86400 * 30);
+    return this._fetchWithCache(
+      cacheKey,
+      async () => {
+        try {
+          const url = `${IBGE_API}/agregados/6786/periodos/2021/variaveis/9812?localidades=N6[${codigoIbge}]`;
+          const response = await fetch(url, {
+            signal: AbortSignal.timeout(15000),
+          });
+          const data = await response.json();
+          return {
+            pib_total: parseFloat(
+              data?.[0]?.resultados?.[0]?.series?.[0]?.serie?.[2021] || 0
+            ),
+            ano_referencia: 2021,
+            fonte: 'IBGE PIB Municipal',
+          };
+        } catch {
+          return { erro: 'IBGE PIB indisponivel', fonte: 'IBGE' };
+        }
+      },
+      86400 * 30
+    );
   }
 
   static async enrichPropertyWithIbge(codigoIbge) {
@@ -90,7 +110,9 @@ export class IntegracaoIbgeSidra {
       produto_principal: produto,
       valor_total: valor,
       ano: parseInt(ano || 0),
-      produtos_principais: produtos.sort((a, b) => b.quantidade - a.quantidade).slice(0, 10),
+      produtos_principais: produtos
+        .sort((a, b) => b.quantidade - a.quantidade)
+        .slice(0, 10),
       total_produtos: produtos.length,
       fonte: 'IBGE PAM',
     };
@@ -142,13 +164,16 @@ export class IntegracaoIbgeSidra {
     }
 
     if (data) {
-      await supabase.from('external_data_cache').upsert({
-        cache_key: cacheKey,
-        source: 'ibge_sidra',
-        data,
-        ttl_seconds: ttlSeconds,
-        expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
-      }, { onConflict: 'cache_key' });
+      await supabase.from('external_data_cache').upsert(
+        {
+          cache_key: cacheKey,
+          source: 'ibge_sidra',
+          data,
+          ttl_seconds: ttlSeconds,
+          expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
+        },
+        { onConflict: 'cache_key' }
+      );
     }
 
     return data;

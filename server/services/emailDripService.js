@@ -10,32 +10,72 @@ const DRIP_TEMPLATES = {
     name: 'Novo Lead - Boas-vindas',
     steps: [
       { delayHours: 0, subject: 'Bem-vindo(a)!', template: 'welcome' },
-      { delayHours: 24, subject: 'Vimos que você tem interesse...', template: 'followup_day1' },
+      {
+        delayHours: 24,
+        subject: 'Vimos que você tem interesse...',
+        template: 'followup_day1',
+      },
       { delayHours: 72, subject: 'Ainda pensando?', template: 'followup_day3' },
-      { delayHours: 168, subject: 'Opções imperdíveis para você', template: 'followup_week1' },
+      {
+        delayHours: 168,
+        subject: 'Opções imperdíveis para você',
+        template: 'followup_week1',
+      },
     ],
   },
   PROPERTY_VIEWED: {
     name: 'Imóvel Visualizado',
     steps: [
-      { delayHours: 2, subject: 'Obrigado por conferir nosso imóvel!', template: 'property_thanks' },
-      { delayHours: 48, subject: 'Agende uma visita', template: 'property_schedule' },
-      { delayHours: 168, subject: 'Outras opções semelhantes', template: 'property_alternatives' },
+      {
+        delayHours: 2,
+        subject: 'Obrigado por conferir nosso imóvel!',
+        template: 'property_thanks',
+      },
+      {
+        delayHours: 48,
+        subject: 'Agende uma visita',
+        template: 'property_schedule',
+      },
+      {
+        delayHours: 168,
+        subject: 'Outras opções semelhantes',
+        template: 'property_alternatives',
+      },
     ],
   },
   POST_VISIT: {
     name: 'Pós-Visita',
     steps: [
-      { delayHours: 4, subject: 'Como foi sua visita?', template: 'post_visit_feedback' },
-      { delayHours: 72, subject: 'Podemos ajudar com algo?', template: 'post_visit_followup' },
-      { delayHours: 336, subject: 'Não perca esta oportunidade', template: 'post_visit_urgency' },
+      {
+        delayHours: 4,
+        subject: 'Como foi sua visita?',
+        template: 'post_visit_feedback',
+      },
+      {
+        delayHours: 72,
+        subject: 'Podemos ajudar com algo?',
+        template: 'post_visit_followup',
+      },
+      {
+        delayHours: 336,
+        subject: 'Não perca esta oportunidade',
+        template: 'post_visit_urgency',
+      },
     ],
   },
   REENGAGEMENT: {
     name: 'Reengajamento',
     steps: [
-      { delayHours: 0, subject: 'Sentimos sua falta!', template: 'reengagement_1' },
-      { delayHours: 168, subject: 'Novidades que você vai adorar', template: 'reengagement_2' },
+      {
+        delayHours: 0,
+        subject: 'Sentimos sua falta!',
+        template: 'reengagement_1',
+      },
+      {
+        delayHours: 168,
+        subject: 'Novidades que você vai adorar',
+        template: 'reengagement_2',
+      },
     ],
   },
 };
@@ -43,7 +83,12 @@ const DRIP_TEMPLATES = {
 /**
  * Start a drip campaign for a lead.
  */
-export async function startDripCampaign(organizationId, leadId, templateKey, leadData = {}) {
+export async function startDripCampaign(
+  organizationId,
+  leadId,
+  templateKey,
+  leadData = {}
+) {
   const supabase = getSupabaseServer();
   const template = DRIP_TEMPLATES[templateKey];
   if (!template) throw new Error(`Unknown drip template: ${templateKey}`);
@@ -57,18 +102,23 @@ export async function startDripCampaign(organizationId, leadId, templateKey, lea
     subject: step.subject,
     template: step.template,
     status: 'scheduled',
-    scheduled_at: new Date(now.getTime() + step.delayHours * 60 * 60 * 1000).toISOString(),
+    scheduled_at: new Date(
+      now.getTime() + step.delayHours * 60 * 60 * 1000
+    ).toISOString(),
     metadata: { leadData },
   }));
 
-  const { error } = await supabase
-    .from('email_drip_campaigns')
-    .insert(steps);
+  const { error } = await supabase.from('email_drip_campaigns').insert(steps);
 
   if (error) {
     // If table doesn't exist, log and continue gracefully
-    if (error.code === '42P01' || String(error.message).includes('does not exist')) {
-      console.warn('[EmailDrip] Table email_drip_campaigns not created yet. Campaign skipped.');
+    if (
+      error.code === '42P01' ||
+      String(error.message).includes('does not exist')
+    ) {
+      console.warn(
+        '[EmailDrip] Table email_drip_campaigns not created yet. Campaign skipped.'
+      );
       return { queued: false, reason: 'table_not_created' };
     }
     throw error;

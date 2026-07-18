@@ -11,10 +11,7 @@ import {
   Youtube,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  Property,
-  PropertyType,
-} from '../types';
+import { Property, PropertyType } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { useTexts } from '../context/TextsContext';
 import { propertyService } from '../services/properties';
@@ -684,7 +681,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
                         if (target.dataset.hasError) return;
                         target.dataset.hasError = 'true';
 
-                        if (settings.logoUrl && target.src !== settings.logoUrl) {
+                        if (
+                          settings.logoUrl &&
+                          target.src !== settings.logoUrl
+                        ) {
                           target.src = settings.logoUrl;
                           target.classList.add(
                             'object-contain',

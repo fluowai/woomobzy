@@ -1,6 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Users, MessageSquare, LayoutGrid, Phone, Mail, Plus } from 'lucide-react';
+import {
+  Search,
+  Users,
+  MessageSquare,
+  LayoutGrid,
+  Phone,
+  Mail,
+  Plus,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { leadService } from '../../services/leads';
 import { Lead } from '../../types';
@@ -36,17 +44,32 @@ const CRMLeads: React.FC = () => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return leads;
     return leads.filter((lead) =>
-      [lead.name, lead.email, lead.phone, lead.source, lead.status, lead.classification]
+      [
+        lead.name,
+        lead.email,
+        lead.phone,
+        lead.source,
+        lead.status,
+        lead.classification,
+      ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term))
     );
   }, [leads, searchTerm]);
 
-  const kanbanPath = window.location.pathname.startsWith('/rural') ? '/rural/kanban' : '/urban/kanban';
-  const messagesPath = window.location.pathname.startsWith('/rural') ? '/rural/whatsapp' : '/urban/whatsapp';
+  const kanbanPath = window.location.pathname.startsWith('/rural')
+    ? '/rural/kanban'
+    : '/urban/kanban';
+  const messagesPath = window.location.pathname.startsWith('/rural')
+    ? '/rural/whatsapp'
+    : '/urban/whatsapp';
 
   if (loading) {
-    return <div className="p-10 text-center text-slate-500 font-semibold">Carregando CRM...</div>;
+    return (
+      <div className="p-10 text-center text-slate-500 font-semibold">
+        Carregando CRM...
+      </div>
+    );
   }
 
   return (
@@ -68,10 +91,7 @@ const CRMLeads: React.FC = () => {
             <LayoutGrid size={18} />
             Abrir Kanban
           </Link>
-          <Link
-            to={messagesPath}
-            className="workspace-primary-action"
-          >
+          <Link to={messagesPath} className="workspace-primary-action">
             <MessageSquare size={18} />
             Mensagens
           </Link>
@@ -87,18 +107,41 @@ const CRMLeads: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard label="Leads totais" value={leads.length} icon={Users} />
-        <MetricCard label="Em atendimento" value={leads.filter((lead) => ['Em Atendimento', 'Qualificacao', 'Qualificação'].includes(String(lead.status))).length} icon={Phone} />
-        <MetricCard label="Fechados" value={leads.filter((lead) => String(lead.status).toLowerCase().includes('fechado')).length} icon={Plus} />
+        <MetricCard
+          label="Em atendimento"
+          value={
+            leads.filter((lead) =>
+              ['Em Atendimento', 'Qualificacao', 'Qualificação'].includes(
+                String(lead.status)
+              )
+            ).length
+          }
+          icon={Phone}
+        />
+        <MetricCard
+          label="Fechados"
+          value={
+            leads.filter((lead) =>
+              String(lead.status).toLowerCase().includes('fechado')
+            ).length
+          }
+          icon={Plus}
+        />
       </div>
 
       <section className="workspace-card overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-slate-900">Leads</h2>
-            <p className="text-xs text-slate-500">Lista operacional separada do quadro Kanban.</p>
+            <p className="text-xs text-slate-500">
+              Lista operacional separada do quadro Kanban.
+            </p>
           </div>
           <div className="relative w-full md:w-80">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
@@ -113,8 +156,12 @@ const CRMLeads: React.FC = () => {
             <article key={lead.id} className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-950 truncate">{lead.name}</p>
-                  <p className="text-xs font-semibold text-slate-400">{lead.classification || 'Sem classificacao'}</p>
+                  <p className="font-bold text-slate-950 truncate">
+                    {lead.name}
+                  </p>
+                  <p className="text-xs font-semibold text-slate-400">
+                    {lead.classification || 'Sem classificacao'}
+                  </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
                   {lead.status || 'Novo'}
@@ -122,14 +169,28 @@ const CRMLeads: React.FC = () => {
               </div>
 
               <div className="mt-4 space-y-2 text-sm font-semibold text-slate-600">
-                <span className="flex items-center gap-2"><Phone size={14} /> {lead.phone || '-'}</span>
-                {lead.email ? <span className="flex items-center gap-2 break-all"><Mail size={14} /> {lead.email}</span> : null}
-                <span className="block text-xs text-slate-400">Origem: {lead.source || '-'}</span>
+                <span className="flex items-center gap-2">
+                  <Phone size={14} /> {lead.phone || '-'}
+                </span>
+                {lead.email ? (
+                  <span className="flex items-center gap-2 break-all">
+                    <Mail size={14} /> {lead.email}
+                  </span>
+                ) : null}
+                <span className="block text-xs text-slate-400">
+                  Origem: {lead.source || '-'}
+                </span>
               </div>
 
               <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-slate-400">
-                <span>{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : 'Sem data'}</span>
-                <Link to={kanbanPath} className="text-primary">Abrir no Kanban</Link>
+                <span>
+                  {lead.createdAt
+                    ? new Date(lead.createdAt).toLocaleDateString('pt-BR')
+                    : 'Sem data'}
+                </span>
+                <Link to={kanbanPath} className="text-primary">
+                  Abrir no Kanban
+                </Link>
               </div>
             </article>
           ))}
@@ -153,18 +214,31 @@ const CRMLeads: React.FC = () => {
             </thead>
             <tbody>
               {filteredLeads.map((lead) => (
-                <tr key={lead.id} className="border-b border-slate-100 hover:bg-slate-50/70">
+                <tr
+                  key={lead.id}
+                  className="border-b border-slate-100 hover:bg-slate-50/70"
+                >
                   <td className="px-5 py-4">
                     <p className="font-bold text-slate-900">{lead.name}</p>
-                    <p className="text-xs text-slate-400">{lead.classification || 'Sem classificacao'}</p>
+                    <p className="text-xs text-slate-400">
+                      {lead.classification || 'Sem classificacao'}
+                    </p>
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-col gap-1 text-slate-600">
-                      <span className="flex items-center gap-2"><Phone size={13} /> {lead.phone}</span>
-                      {lead.email ? <span className="flex items-center gap-2"><Mail size={13} /> {lead.email}</span> : null}
+                      <span className="flex items-center gap-2">
+                        <Phone size={13} /> {lead.phone}
+                      </span>
+                      {lead.email ? (
+                        <span className="flex items-center gap-2">
+                          <Mail size={13} /> {lead.email}
+                        </span>
+                      ) : null}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-slate-600">{lead.source || '-'}</td>
+                  <td className="px-5 py-4 text-slate-600">
+                    {lead.source || '-'}
+                  </td>
                   <td className="px-5 py-4">
                     <span className="inline-flex px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                       {lead.status || 'Novo'}
@@ -177,13 +251,18 @@ const CRMLeads: React.FC = () => {
                     </button>
                   </td>
                   <td className="px-5 py-4 text-slate-500">
-                    {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '-'}
+                    {lead.createdAt
+                      ? new Date(lead.createdAt).toLocaleDateString('pt-BR')
+                      : '-'}
                   </td>
                 </tr>
               ))}
               {filteredLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-slate-400 font-semibold">
+                  <td
+                    colSpan={5}
+                    className="px-5 py-12 text-center text-slate-400 font-semibold"
+                  >
                     Nenhum lead encontrado.
                   </td>
                 </tr>
@@ -196,7 +275,9 @@ const CRMLeads: React.FC = () => {
       <LeadDistributionModal
         isOpen={isDistributionModalOpen}
         onClose={() => setIsDistributionModalOpen(false)}
-        selectedLeadIds={leads.filter(l => !l.status || l.status === 'Novo').map(l => l.id)}
+        selectedLeadIds={leads
+          .filter((l) => !l.status || l.status === 'Novo')
+          .map((l) => l.id)}
         onSuccess={() => loadLeads()}
       />
 
@@ -211,7 +292,11 @@ const CRMLeads: React.FC = () => {
   );
 };
 
-const MetricCard: React.FC<{ label: string; value: number; icon: React.ElementType }> = ({ label, value, icon: Icon }) => (
+const MetricCard: React.FC<{
+  label: string;
+  value: number;
+  icon: React.ElementType;
+}> = ({ label, value, icon: Icon }) => (
   <div className="workspace-card workspace-card-hover p-5 flex items-center justify-between">
     <div>
       <p className="workspace-muted-label">{label}</p>

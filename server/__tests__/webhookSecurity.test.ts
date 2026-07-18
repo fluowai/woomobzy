@@ -55,10 +55,13 @@ describe('webhook security helpers', () => {
     ).toBe('click-secret');
 
     expect(
-      assertSignatureWebhookAuthorized({
-        headers: { 'x-signature-webhook-secret': 'click-secret' },
-        query: {},
-      } as never, 'clicksign')
+      assertSignatureWebhookAuthorized(
+        {
+          headers: { 'x-signature-webhook-secret': 'click-secret' },
+          query: {},
+        } as never,
+        'clicksign'
+      )
     ).toBeUndefined();
   });
 

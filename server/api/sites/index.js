@@ -4,13 +4,16 @@ import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 
 const router = Router();
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 function mapSite(dbItem) {
   return {
@@ -57,13 +60,14 @@ function mapPage(dbItem) {
 }
 
 function generateSlug(name) {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || 'pagina';
+  return (
+    name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'pagina'
+  );
 }
 
 // ==========================================
@@ -96,7 +100,9 @@ router.put('/', verifyAuth, requireTenant, async (req, res) => {
       .maybeSingle();
 
     if (!existing) {
-      return res.status(404).json({ error: 'Site não encontrado. Crie-o primeiro.' });
+      return res
+        .status(404)
+        .json({ error: 'Site não encontrado. Crie-o primeiro.' });
     }
 
     const payload = {};
@@ -147,7 +153,11 @@ router.post('/create', verifyAuth, requireTenant, async (req, res) => {
       .maybeSingle();
 
     if (existing) {
-      return res.json({ success: true, siteId: existing.id, alreadyExisted: true });
+      return res.json({
+        success: true,
+        siteId: existing.id,
+        alreadyExisted: true,
+      });
     }
 
     const { data: org } = await supabase
@@ -419,61 +429,71 @@ router.post('/pages/reorder', verifyAuth, requireTenant, async (req, res) => {
 // ==========================================
 // POST /api/sites/pages/:id/publish — Publicar/Despublicar
 // ==========================================
-router.post('/pages/:id/publish', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { publish } = req.body;
-    const newStatus = publish ? 'published' : 'draft';
+router.post(
+  '/pages/:id/publish',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { publish } = req.body;
+      const newStatus = publish ? 'published' : 'draft';
 
-    const { data, error } = await supabase
-      .from('site_pages')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq('id', req.params.id)
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from('site_pages')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', req.params.id)
+        .select()
+        .single();
 
-    if (error) throw error;
-    res.json({ success: true, page: mapPage(data) });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+      if (error) throw error;
+      res.json({ success: true, page: mapPage(data) });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 // ==========================================
 // POST /api/sites/pages/:id/duplicate — Duplicar página
 // ==========================================
-router.post('/pages/:id/duplicate', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { data: original } = await supabase
-      .from('site_pages')
-      .select('*')
-      .eq('id', req.params.id)
-      .single();
+router.post(
+  '/pages/:id/duplicate',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { data: original } = await supabase
+        .from('site_pages')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
 
-    if (!original) {
-      return res.status(404).json({ error: 'Página não encontrada' });
+      if (!original) {
+        return res.status(404).json({ error: 'Página não encontrada' });
+      }
+
+      const slug = `${original.slug}-copy-${Date.now()}`;
+      const { data, error } = await supabase
+        .from('site_pages')
+        .insert({
+          site_id: original.site_id,
+          title: `${original.title} (Cópia)`,
+          slug,
+          blocks: original.blocks,
+          theme_overrides: original.theme_overrides,
+          status: 'draft',
+          sort_order: original.sort_order + 1,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.json({ success: true, page: mapPage(data) });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
-
-    const slug = `${original.slug}-copy-${Date.now()}`;
-    const { data, error } = await supabase
-      .from('site_pages')
-      .insert({
-        site_id: original.site_id,
-        title: `${original.title} (Cópia)`,
-        slug,
-        blocks: original.blocks,
-        theme_overrides: original.theme_overrides,
-        status: 'draft',
-        sort_order: original.sort_order + 1,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    res.json({ success: true, page: mapPage(data) });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 // ==========================================
 // GET /api/sites/public/:orgSlug — Site público (para renderização)

@@ -58,7 +58,11 @@ const UserManagement: React.FC = () => {
           query = query.eq('organization_id', profile.organization_id);
           // Ocultar membros que são superadmins ou donos do sistema
           query = query.neq('role', 'superadmin');
-          query = query.not('email', 'in', '("admin@imobzy.com","fluowai@gmail.com")');
+          query = query.not(
+            'email',
+            'in',
+            '("admin@imobzy.com","fluowai@gmail.com")'
+          );
         } else {
           // Segurança máxima: se não tem org_id, só vê a si mesmo
           query = query.eq('id', profile?.id);

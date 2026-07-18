@@ -59,11 +59,15 @@ const SupportManager: React.FC = () => {
     }
   }, [selectedTicket]);
 
-  const hydrateTicketRelations = async (ticketRows: Ticket[]): Promise<Ticket[]> => {
+  const hydrateTicketRelations = async (
+    ticketRows: Ticket[]
+  ): Promise<Ticket[]> => {
     if (ticketRows.length === 0) return ticketRows;
 
     const organizationIds = [
-      ...new Set(ticketRows.map((ticket) => ticket.organization_id).filter(Boolean)),
+      ...new Set(
+        ticketRows.map((ticket) => ticket.organization_id).filter(Boolean)
+      ),
     ] as string[];
     const userIds = [
       ...new Set(ticketRows.map((ticket) => ticket.user_id).filter(Boolean)),
@@ -71,7 +75,10 @@ const SupportManager: React.FC = () => {
 
     const [organizationsResult, profilesResult] = await Promise.all([
       organizationIds.length
-        ? supabase.from('organizations').select('id, name').in('id', organizationIds)
+        ? supabase
+            .from('organizations')
+            .select('id, name')
+            .in('id', organizationIds)
         : Promise.resolve({ data: [], error: null }),
       userIds.length
         ? supabase.from('profiles').select('id, name').in('id', userIds)
@@ -79,7 +86,10 @@ const SupportManager: React.FC = () => {
     ]);
 
     if (organizationsResult.error) {
-      logger.warn('Error fetching ticket organizations:', organizationsResult.error);
+      logger.warn(
+        'Error fetching ticket organizations:',
+        organizationsResult.error
+      );
     }
     if (profilesResult.error) {
       logger.warn('Error fetching ticket users:', profilesResult.error);
@@ -103,7 +113,9 @@ const SupportManager: React.FC = () => {
       organization: ticket.organization_id
         ? organizationsById.get(ticket.organization_id)
         : undefined,
-      user_profile: ticket.user_id ? profilesById.get(ticket.user_id) : undefined,
+      user_profile: ticket.user_id
+        ? profilesById.get(ticket.user_id)
+        : undefined,
     }));
   };
 
@@ -120,7 +132,9 @@ const SupportManager: React.FC = () => {
         ascending: false,
       });
       if (error) throw error;
-      const ticketsWithRelations = await hydrateTicketRelations((data as Ticket[]) || []);
+      const ticketsWithRelations = await hydrateTicketRelations(
+        (data as Ticket[]) || []
+      );
       setTickets(ticketsWithRelations);
     } catch (err) {
       logger.error('Error fetching tickets:', err);
@@ -302,7 +316,9 @@ const SupportManager: React.FC = () => {
                 </span>{' '}
                 em{' '}
                 <span className="font-medium text-gray-700">
-                  {new Date(selectedTicket.created_at).toLocaleDateString('pt-BR')}
+                  {new Date(selectedTicket.created_at).toLocaleDateString(
+                    'pt-BR'
+                  )}
                 </span>
               </p>
             </div>
@@ -358,10 +374,7 @@ const SupportManager: React.FC = () => {
                   <div
                     className={`text-[10px] font-bold mb-1 opacity-70 ${msg.is_admin_reply ? 'text-white' : 'text-gray-400'}`}
                   >
-                    {msg.is_admin_reply
-                      ? 'Você (Suporte)'
-                      : 'Cliente'}{' '}
-                    •{' '}
+                    {msg.is_admin_reply ? 'Você (Suporte)' : 'Cliente'} •{' '}
                     {new Date(msg.created_at).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',

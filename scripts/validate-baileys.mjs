@@ -1,6 +1,6 @@
 /**
  * scripts/validate-baileys.mjs
- * 
+ *
  * Script de validação pós-refatoração para garantir que o sistema
  * de gerenciamento de sessões está operando conforme as novas especificações.
  */
@@ -18,7 +18,9 @@ const url = process.env.VITE_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!url || !key) {
-  console.error('❌ ERRO: Variáveis de ambiente SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não encontradas.');
+  console.error(
+    '❌ ERRO: Variáveis de ambiente SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não encontradas.'
+  );
   process.exit(1);
 }
 
@@ -32,7 +34,9 @@ async function validate() {
   if (fs.existsSync(sessionsDir)) {
     console.log('✅ [FileSystem] Diretório .sessions existe.');
   } else {
-    console.log('⚠️ [FileSystem] Diretório .sessions não existe (será criado no boot).');
+    console.log(
+      '⚠️ [FileSystem] Diretório .sessions não existe (será criado no boot).'
+    );
   }
 
   // 2. Verificar arquivos essenciais do backend
@@ -40,7 +44,7 @@ async function validate() {
     'server/baileys/StateMachine.js',
     'server/baileys/PersistenceManager.js',
     'server/baileys/SessionManager.js',
-    'server/baileys/index.js'
+    'server/baileys/index.js',
   ];
 
   for (const file of essentialFiles) {
@@ -54,36 +58,52 @@ async function validate() {
   // 3. Verificar integridade do Banco de Dados
   console.log('\n📊 Verificando integridade do banco de dados...');
   try {
-    const { data: instances, error: instError } = await supabase.from('whatsapp_instances').select('id, status');
+    const { data: instances, error: instError } = await supabase
+      .from('whatsapp_instances')
+      .select('id, status');
     if (instError) throw instError;
-    
-    console.log(`✅ [DB] Conexão com Supabase OK. Encontradas ${instances.length} instâncias.`);
-    
-    const stuckInstances = instances.filter(i => ['connecting', 'reconnecting', 'qr_pending'].includes(i.status));
+
+    console.log(
+      `✅ [DB] Conexão com Supabase OK. Encontradas ${instances.length} instâncias.`
+    );
+
+    const stuckInstances = instances.filter((i) =>
+      ['connecting', 'reconnecting', 'qr_pending'].includes(i.status)
+    );
     if (stuckInstances.length > 0) {
-      console.log(`ℹ️ [DB] ${stuckInstances.length} instâncias em estado transitório. O próximo 'boot' irá resetá-las para 'disconnected'.`);
+      console.log(
+        `ℹ️ [DB] ${stuckInstances.length} instâncias em estado transitório. O próximo 'boot' irá resetá-las para 'disconnected'.`
+      );
     }
   } catch (err) {
     console.error('❌ [DB] Erro ao conectar com Supabase:', err.message);
   }
 
   // 4. Verificar API Health
-  console.log('\n🧪 Testando endpoint de saúde (certifique-se que o servidor está rodando na porta 3002 ou definida no .env)...');
+  console.log(
+    '\n🧪 Testando endpoint de saúde (certifique-se que o servidor está rodando na porta 3002 ou definida no .env)...'
+  );
   const port = process.env.PORT || 3002;
   try {
-    const response = await fetch(`http://localhost:${port}/health`).catch(() => null);
+    const response = await fetch(`http://localhost:${port}/health`).catch(
+      () => null
+    );
     if (response) {
       const data = await response.json();
       console.log('✅ [API] Endpoint /health respondeu:', data.status);
     } else {
-      console.log('⚠️ [API] Servidor local não parece estar rodando (normal se você ainda não deu restart).');
+      console.log(
+        '⚠️ [API] Servidor local não parece estar rodando (normal se você ainda não deu restart).'
+      );
     }
   } catch (err) {
     // Silencioso
   }
 
   console.log('\n✨ Validação completa.');
-  console.log('🚀 Próximo passo: Execute "npm run dev" ou "pm2 restart imobisaas-backend" para aplicar as mudanças.');
+  console.log(
+    '🚀 Próximo passo: Execute "npm run dev" ou "pm2 restart imobisaas-backend" para aplicar as mudanças.'
+  );
 }
 
 validate();

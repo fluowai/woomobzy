@@ -23,9 +23,19 @@ const DEFAULT_RETENTION_RULES = [
   { type: 'audio', label: 'Audios WhatsApp', days: 15, match: ['audio/'] },
   { type: 'video', label: 'Videos WhatsApp', days: 15, match: ['video/'] },
   { type: 'image', label: 'Imagens WhatsApp', days: 30, match: ['image/'] },
-  { type: 'document', label: 'Documentos', days: 45, match: ['application/pdf', 'document'] },
+  {
+    type: 'document',
+    label: 'Documentos',
+    days: 45,
+    match: ['application/pdf', 'document'],
+  },
   { type: 'avatar', label: 'Avatares', days: 30, match: ['avatar', 'avatars'] },
-  { type: 'temporary', label: 'Temporarios', days: 3, match: ['temp', 'temporary'] },
+  {
+    type: 'temporary',
+    label: 'Temporarios',
+    days: 3,
+    match: ['temp', 'temporary'],
+  },
   { type: 'log', label: 'Logs', days: 7, match: ['log'] },
 ];
 
@@ -33,7 +43,9 @@ export async function getStorageConfig() {
   const config = await loadAndApplyStoredMinioConfig();
 
   return {
-    configured: Boolean(config.endpoint && config.accessKey && config.secretKey),
+    configured: Boolean(
+      config.endpoint && config.accessKey && config.secretKey
+    ),
     config: publicMinioConfig(config),
   };
 }
@@ -48,14 +60,15 @@ export async function saveStorageConfig(adminId, payload = {}) {
   const config = mergeMinioConfig(payload, current?.config || {});
   const now = new Date().toISOString();
   const supabase = getSupabaseServer();
-  const { error } = await supabase
-    .from('storage_integrations')
-    .upsert({
+  const { error } = await supabase.from('storage_integrations').upsert(
+    {
       provider: MINIO_INTEGRATION_PROVIDER,
       config,
       updated_by: adminId || null,
       updated_at: now,
-    }, { onConflict: 'provider' });
+    },
+    { onConflict: 'provider' }
+  );
 
   if (error) throw error;
 
@@ -74,7 +87,9 @@ export async function saveStorageConfig(adminId, payload = {}) {
   });
 
   return {
-    configured: Boolean(config.endpoint && config.accessKey && config.secretKey),
+    configured: Boolean(
+      config.endpoint && config.accessKey && config.secretKey
+    ),
     config: publicMinioConfig(config),
   };
 }
@@ -90,8 +105,12 @@ export async function getStorageSummary() {
   const totalBytes = sum(objects, 'size_bytes');
   const bucketStats = rankBy(objects, (item) => item.bucket || DEFAULT_BUCKET);
   const tenantStats = rankBy(objects, (item) => item.tenant_id || 'sem tenant');
-  const extensionStats = rankBy(objects, (item) => normalizeExtension(item.object_key, item.mime_type));
-  const whatsappBucket = buckets.find((bucket) => bucket.name === getWhatsappBucketName()) || buckets[0];
+  const extensionStats = rankBy(objects, (item) =>
+    normalizeExtension(item.object_key, item.mime_type)
+  );
+  const whatsappBucket =
+    buckets.find((bucket) => bucket.name === getWhatsappBucketName()) ||
+    buckets[0];
 
   return {
     configured: isMinioConfigured(),
@@ -103,8 +122,12 @@ export async function getStorageSummary() {
     top_file_type: extensionStats[0] || null,
     duplicate_groups_estimated: duplicates.groups.length,
     duplicate_files_estimated: duplicates.duplicate_files,
-    orphan_files_estimated: orphans.minio_without_database.length + orphans.database_without_minio.length,
-    reclaimable_bytes_estimated: duplicates.wasted_bytes + sum(orphans.minio_without_database, 'size_bytes'),
+    orphan_files_estimated:
+      orphans.minio_without_database.length +
+      orphans.database_without_minio.length,
+    reclaimable_bytes_estimated:
+      duplicates.wasted_bytes +
+      sum(orphans.minio_without_database, 'size_bytes'),
     versioning_status: whatsappBucket?.versioning || 'desconhecido',
     lifecycle_status: whatsappBucket?.lifecycle || 'desconhecido',
     alerts: buildSummaryAlerts({ buckets, objects }),
@@ -113,7 +136,10 @@ export async function getStorageSummary() {
 
 export async function getStorageBuckets() {
   const snapshotObjects = await loadSnapshotObjects();
-  const snapshotByBucket = rankBy(snapshotObjects, (item) => item.bucket || DEFAULT_BUCKET);
+  const snapshotByBucket = rankBy(
+    snapshotObjects,
+    (item) => item.bucket || DEFAULT_BUCKET
+  );
 
   if (!isMinioConfigured()) {
     return snapshotByBucket.map((item) => ({
@@ -127,32 +153,46 @@ export async function getStorageBuckets() {
   }
 
   const liveBuckets = await listMinioBuckets();
-  const names = liveBuckets.length ? liveBuckets.map((bucket) => bucket.name) : [getWhatsappBucketName()];
+  const names = liveBuckets.length
+    ? liveBuckets.map((bucket) => bucket.name)
+    : [getWhatsappBucketName()];
 
-  return Promise.all(names.map(async (name) => {
-    const stats = snapshotByBucket.find((item) => item.key === name);
-    const [versioning, lifecycle] = await Promise.all([
-      safeMinio(() => getBucketVersioning(name), { status: 'erro', enabled: false }),
-      safeMinio(() => getBucketLifecycle(name), { enabled: false, rules: [] }),
-    ]);
+  return Promise.all(
+    names.map(async (name) => {
+      const stats = snapshotByBucket.find((item) => item.key === name);
+      const [versioning, lifecycle] = await Promise.all([
+        safeMinio(() => getBucketVersioning(name), {
+          status: 'erro',
+          enabled: false,
+        }),
+        safeMinio(() => getBucketLifecycle(name), {
+          enabled: false,
+          rules: [],
+        }),
+      ]);
 
-    return {
-      name,
-      objects: stats?.count || 0,
-      size_bytes: stats?.bytes || 0,
-      versioning: versioning.status || (versioning.enabled ? 'Enabled' : 'Off'),
-      lifecycle: lifecycle.enabled ? 'Configured' : 'Missing',
-      lifecycle_rules: lifecycle.rules || [],
-      policy: 'S3 assinada no backend',
-    };
-  }));
+      return {
+        name,
+        objects: stats?.count || 0,
+        size_bytes: stats?.bytes || 0,
+        versioning:
+          versioning.status || (versioning.enabled ? 'Enabled' : 'Off'),
+        lifecycle: lifecycle.enabled ? 'Configured' : 'Missing',
+        lifecycle_rules: lifecycle.rules || [],
+        policy: 'S3 assinada no backend',
+      };
+    })
+  );
 }
 
 export async function getStorageFiles(filters = {}) {
   const objects = await loadStorageObjects();
   const filtered = objects.filter((item) => matchesFileFilters(item, filters));
   return {
-    files: filtered.slice(0, Math.max(1, Math.min(Number(filters.limit) || 100, 500))),
+    files: filtered.slice(
+      0,
+      Math.max(1, Math.min(Number(filters.limit) || 100, 500))
+    ),
     total: filtered.length,
   };
 }
@@ -166,18 +206,29 @@ export async function getLargestFiles(limit = 50) {
 
 export async function getByExtension() {
   const objects = await loadStorageObjects();
-  return rankBy(objects, (item) => normalizeExtension(item.object_key, item.mime_type));
+  return rankBy(objects, (item) =>
+    normalizeExtension(item.object_key, item.mime_type)
+  );
 }
 
 export async function getByPrefix() {
   const objects = await loadStorageObjects();
-  return rankBy(objects, (item) => String(item.object_key || '').split('/').slice(0, 3).join('/') || 'raiz');
+  return rankBy(
+    objects,
+    (item) =>
+      String(item.object_key || '')
+        .split('/')
+        .slice(0, 3)
+        .join('/') || 'raiz'
+  );
 }
 
 export async function getByTenant() {
   const objects = await loadStorageObjects();
   const stats = rankBy(objects, (item) => item.tenant_id || 'sem tenant');
-  const orgNames = await loadOrganizationNames(stats.map((item) => item.key).filter(isUuid));
+  const orgNames = await loadOrganizationNames(
+    stats.map((item) => item.key).filter(isUuid)
+  );
   return stats.map((item) => ({
     ...item,
     tenant_id: item.key,
@@ -185,8 +236,15 @@ export async function getByTenant() {
     images: countByMime(objects, item.key, 'image/'),
     audios: countByMime(objects, item.key, 'audio/'),
     videos: countByMime(objects, item.key, 'video/'),
-    pdfs: objects.filter((object) => object.tenant_id === item.key && /pdf/i.test(object.mime_type || object.object_key || '')).length,
-    avatars: objects.filter((object) => object.tenant_id === item.key && /avatar/i.test(object.object_key || '')).length,
+    pdfs: objects.filter(
+      (object) =>
+        object.tenant_id === item.key &&
+        /pdf/i.test(object.mime_type || object.object_key || '')
+    ).length,
+    avatars: objects.filter(
+      (object) =>
+        object.tenant_id === item.key && /avatar/i.test(object.object_key || '')
+    ).length,
     daily_growth_bytes: estimateGrowth(objects, item.key, 1),
     weekly_growth_bytes: estimateGrowth(objects, item.key, 7),
     monthly_projection_bytes: estimateGrowth(objects, item.key, 7) * 4,
@@ -200,9 +258,16 @@ export async function getStorageDuplicates() {
   for (const strategy of [
     ['sha256', (item) => item.sha256],
     ['etag', (item) => item.etag],
-    ['same_size', (item) => Number(item.size_bytes || 0) > 0 ? String(item.size_bytes) : ''],
+    [
+      'same_size',
+      (item) =>
+        Number(item.size_bytes || 0) > 0 ? String(item.size_bytes) : '',
+    ],
     ['same_name', (item) => fileName(item.object_key)],
-    ['message_id', (item) => item.entity_type === 'whatsapp_message' ? item.entity_id : ''],
+    [
+      'message_id',
+      (item) => (item.entity_type === 'whatsapp_message' ? item.entity_id : ''),
+    ],
   ]) {
     const [strategyName, selector] = strategy;
     const byKey = new Map();
@@ -214,7 +279,9 @@ export async function getStorageDuplicates() {
     }
     for (const [key, items] of byKey.entries()) {
       if (items.length < 2) continue;
-      const sorted = [...items].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+      const sorted = [...items].sort(
+        (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)
+      );
       groups.push({
         strategy: strategyName,
         key,
@@ -230,7 +297,10 @@ export async function getStorageDuplicates() {
   const uniqueGroups = dedupeDuplicateGroups(groups);
   return {
     total_groups: uniqueGroups.length,
-    duplicate_files: uniqueGroups.reduce((acc, group) => acc + Math.max(0, group.count - 1), 0),
+    duplicate_files: uniqueGroups.reduce(
+      (acc, group) => acc + Math.max(0, group.count - 1),
+      0
+    ),
     wasted_bytes: sum(uniqueGroups, 'wasted_bytes'),
     groups: uniqueGroups
       .sort((a, b) => Number(b.wasted_bytes || 0) - Number(a.wasted_bytes || 0))
@@ -239,22 +309,36 @@ export async function getStorageDuplicates() {
 }
 
 export async function getStorageOrphans() {
-  const [snapshotObjects, storageObjects, whatsappMedia, whatsappMessages] = await Promise.all([
-    loadSnapshotObjects(),
-    loadStorageObjects(),
-    safeTableRows('whatsapp_media', 'bucket, object_key, tenant_id, status, created_at', 10000),
-    safeTableRows('whatsapp_messages', 'media_url, media_mimetype, media_filename, created_at', 10000),
-  ]);
+  const [snapshotObjects, storageObjects, whatsappMedia, whatsappMessages] =
+    await Promise.all([
+      loadSnapshotObjects(),
+      loadStorageObjects(),
+      safeTableRows(
+        'whatsapp_media',
+        'bucket, object_key, tenant_id, status, created_at',
+        10000
+      ),
+      safeTableRows(
+        'whatsapp_messages',
+        'media_url, media_mimetype, media_filename, created_at',
+        10000
+      ),
+    ]);
 
   const dbKeys = new Set();
-  for (const item of storageObjects) addDbKey(dbKeys, item.bucket, item.object_key);
-  for (const item of whatsappMedia) addDbKey(dbKeys, item.bucket || DEFAULT_BUCKET, item.object_key);
+  for (const item of storageObjects)
+    addDbKey(dbKeys, item.bucket, item.object_key);
+  for (const item of whatsappMedia)
+    addDbKey(dbKeys, item.bucket || DEFAULT_BUCKET, item.object_key);
   for (const item of whatsappMessages) {
     const parsed = parseStorageUrl(item.media_url);
-    if (parsed.key) addDbKey(dbKeys, parsed.bucket || DEFAULT_BUCKET, parsed.key);
+    if (parsed.key)
+      addDbKey(dbKeys, parsed.bucket || DEFAULT_BUCKET, parsed.key);
   }
 
-  const minioKeys = new Set(snapshotObjects.map((item) => storageKey(item.bucket, item.object_key)));
+  const minioKeys = new Set(
+    snapshotObjects.map((item) => storageKey(item.bucket, item.object_key))
+  );
   const minioWithoutDatabase = snapshotObjects
     .filter((item) => !dbKeys.has(storageKey(item.bucket, item.object_key)))
     .slice(0, 500);
@@ -263,7 +347,11 @@ export async function getStorageOrphans() {
     .slice(0, 500)
     .map((key) => {
       const [bucket, ...rest] = key.split('/');
-      return { bucket, object_key: rest.join('/'), classification: 'Existe no banco, mas nao existe no MinIO' };
+      return {
+        bucket,
+        object_key: rest.join('/'),
+        classification: 'Existe no banco, mas nao existe no MinIO',
+      };
     });
 
   return {
@@ -282,7 +370,10 @@ export async function getStorageOrphans() {
 export async function getLifecycle() {
   const bucket = getWhatsappBucketName();
   const lifecycle = isMinioConfigured()
-    ? await safeMinio(() => getBucketLifecycle(bucket), { enabled: false, rules: [] })
+    ? await safeMinio(() => getBucketLifecycle(bucket), {
+        enabled: false,
+        rules: [],
+      })
     : { enabled: false, rules: [] };
 
   return {
@@ -299,7 +390,9 @@ export async function runStorageScan(adminId) {
   }
 
   const buckets = await listMinioBuckets();
-  const bucketNames = buckets.length ? buckets.map((bucket) => bucket.name) : [getWhatsappBucketName()];
+  const bucketNames = buckets.length
+    ? buckets.map((bucket) => bucket.name)
+    : [getWhatsappBucketName()];
   const scannedAt = new Date().toISOString();
   const rows = [];
 
@@ -307,7 +400,11 @@ export async function runStorageScan(adminId) {
     let continuationToken = '';
     let safety = 0;
     do {
-      const page = await listMinioObjects({ bucket, continuationToken, maxKeys: 1000 });
+      const page = await listMinioObjects({
+        bucket,
+        continuationToken,
+        maxKeys: 1000,
+      });
       for (const object of page.objects) {
         rows.push(snapshotRow(bucket, object, scannedAt));
       }
@@ -329,7 +426,10 @@ export async function runStorageScan(adminId) {
     buckets: bucketNames.length,
     objects: rows.length,
     size_bytes: sum(rows, 'size_bytes'),
-    by_extension: rankBy(rows, (item) => item.extension || normalizeExtension(item.object_key)),
+    by_extension: rankBy(
+      rows,
+      (item) => item.extension || normalizeExtension(item.object_key)
+    ),
     by_prefix: rankBy(rows, (item) => item.prefix || 'raiz'),
     by_tenant: rankBy(rows, (item) => item.tenant_id || 'sem tenant'),
   };
@@ -344,7 +444,11 @@ export async function signStorageObject(bucket, key, expiresInSeconds = 300) {
   };
 }
 
-export async function suspendVersioning(adminId, confirmation, bucket = getWhatsappBucketName()) {
+export async function suspendVersioning(
+  adminId,
+  confirmation,
+  bucket = getWhatsappBucketName()
+) {
   if (String(confirmation || '').trim() !== 'SUSPENDER VERSIONAMENTO') {
     throw new Error('Confirmacao obrigatoria: SUSPENDER VERSIONAMENTO');
   }
@@ -353,7 +457,10 @@ export async function suspendVersioning(adminId, confirmation, bucket = getWhats
   return result;
 }
 
-export async function applyLifecycle(adminId, bucket = getWhatsappBucketName()) {
+export async function applyLifecycle(
+  adminId,
+  bucket = getWhatsappBucketName()
+) {
   const result = await applyBucketLifecycle(bucket);
   await logStorageAction(adminId, 'apply_lifecycle', bucket, result);
   return result;
@@ -363,9 +470,14 @@ export async function simulateCleanup(payload = {}) {
   const objects = await loadStorageObjects();
   const now = Date.now();
   const candidates = objects.filter((item) => {
-    const rule = retentionRuleFor(item, payload.rules || DEFAULT_RETENTION_RULES);
+    const rule = retentionRuleFor(
+      item,
+      payload.rules || DEFAULT_RETENTION_RULES
+    );
     if (!rule) return false;
-    const created = new Date(item.created_at || item.last_modified || 0).getTime();
+    const created = new Date(
+      item.created_at || item.last_modified || 0
+    ).getTime();
     return created > 0 && now - created > Number(rule.days || 0) * 86400000;
   });
 
@@ -373,48 +485,81 @@ export async function simulateCleanup(payload = {}) {
     files: candidates.slice(0, 500),
     total_files: candidates.length,
     reclaimable_bytes: sum(candidates, 'size_bytes'),
-    affected_tenants: [...new Set(candidates.map((item) => item.tenant_id).filter(Boolean))],
-    affected_types: rankBy(candidates, (item) => normalizeExtension(item.object_key, item.mime_type)),
+    affected_tenants: [
+      ...new Set(candidates.map((item) => item.tenant_id).filter(Boolean)),
+    ],
+    affected_types: rankBy(candidates, (item) =>
+      normalizeExtension(item.object_key, item.mime_type)
+    ),
   };
 }
 
 export async function deleteExpired(adminId, payload = {}) {
-  if (String(payload.confirmation || '').trim() !== 'CONFIRMAR LIMPEZA DE EXPIRADOS') {
+  if (
+    String(payload.confirmation || '').trim() !==
+    'CONFIRMAR LIMPEZA DE EXPIRADOS'
+  ) {
     throw new Error('Confirmacao obrigatoria: CONFIRMAR LIMPEZA DE EXPIRADOS');
   }
   const simulation = await simulateCleanup(payload);
-  const deleted = await deleteExplicitObjects(simulation.files.slice(0, Number(payload.limit) || 100));
-  await logStorageAction(adminId, 'delete_expired', null, { deleted: deleted.length });
+  const deleted = await deleteExplicitObjects(
+    simulation.files.slice(0, Number(payload.limit) || 100)
+  );
+  await logStorageAction(adminId, 'delete_expired', null, {
+    deleted: deleted.length,
+  });
   return { deleted };
 }
 
 export async function deleteOrphans(adminId, payload = {}) {
   const confirmation = String(payload.confirmation || '').trim();
-  if (!['CONFIRMAR LIMPEZA DE ORFAOS', 'CONFIRMAR LIMPEZA DE ÓRFÃOS', 'CONFIRMAR LIMPEZA DE ÓRFÃOS'].includes(confirmation)) {
+  if (
+    ![
+      'CONFIRMAR LIMPEZA DE ORFAOS',
+      'CONFIRMAR LIMPEZA DE ÓRFÃOS',
+      'CONFIRMAR LIMPEZA DE ÓRFÃOS',
+    ].includes(confirmation)
+  ) {
     throw new Error('Confirmacao obrigatoria: CONFIRMAR LIMPEZA DE ORFAOS');
   }
   const orphans = await getStorageOrphans();
-  const selected = Array.isArray(payload.objectKeys) && payload.objectKeys.length
-    ? orphans.minio_without_database.filter((item) => payload.objectKeys.includes(item.object_key))
-    : orphans.minio_without_database.slice(0, Number(payload.limit) || 100);
+  const selected =
+    Array.isArray(payload.objectKeys) && payload.objectKeys.length
+      ? orphans.minio_without_database.filter((item) =>
+          payload.objectKeys.includes(item.object_key)
+        )
+      : orphans.minio_without_database.slice(0, Number(payload.limit) || 100);
   const deleted = await deleteExplicitObjects(selected);
-  await logStorageAction(adminId, 'delete_orphans', null, { deleted: deleted.length });
+  await logStorageAction(adminId, 'delete_orphans', null, {
+    deleted: deleted.length,
+  });
   return { deleted };
 }
 
 export async function deleteDuplicates(adminId, payload = {}) {
-  if (String(payload.confirmation || '').trim() !== 'CONFIRMAR LIMPEZA DE DUPLICADOS') {
+  if (
+    String(payload.confirmation || '').trim() !==
+    'CONFIRMAR LIMPEZA DE DUPLICADOS'
+  ) {
     throw new Error('Confirmacao obrigatoria: CONFIRMAR LIMPEZA DE DUPLICADOS');
   }
   const duplicates = await getStorageDuplicates();
-  const selected = duplicates.groups.flatMap((group) => group.duplicates).slice(0, Number(payload.limit) || 100);
+  const selected = duplicates.groups
+    .flatMap((group) => group.duplicates)
+    .slice(0, Number(payload.limit) || 100);
   const deleted = await deleteExplicitObjects(selected);
-  await logStorageAction(adminId, 'delete_duplicates', null, { deleted: deleted.length });
+  await logStorageAction(adminId, 'delete_duplicates', null, {
+    deleted: deleted.length,
+  });
   return { deleted };
 }
 
 export async function getStorageLogs(limit = 100) {
-  return safeTableRows('storage_admin_actions', 'id, admin_id, action, bucket, details, created_at', Math.min(Number(limit) || 100, 500));
+  return safeTableRows(
+    'storage_admin_actions',
+    'id, admin_id, action, bucket, details, created_at',
+    Math.min(Number(limit) || 100, 500)
+  );
 }
 
 export async function logStorageAction(adminId, action, bucket, details = {}) {
@@ -425,7 +570,8 @@ export async function logStorageAction(adminId, action, bucket, details = {}) {
     bucket,
     details,
   });
-  if (error) console.warn('[Storage Intelligence] Failed to log action:', error.message);
+  if (error)
+    console.warn('[Storage Intelligence] Failed to log action:', error.message);
 }
 
 async function readStoredMinioIntegration() {
@@ -437,7 +583,10 @@ async function readStoredMinioIntegration() {
     .maybeSingle();
 
   if (error) {
-    console.warn('[Storage Intelligence] Failed to load MinIO integration:', error.message);
+    console.warn(
+      '[Storage Intelligence] Failed to load MinIO integration:',
+      error.message
+    );
     return null;
   }
 
@@ -456,18 +605,33 @@ function mergeMinioConfig(input = {}, previous = {}) {
   const env = getMinioConfig();
   const config = { ...previous, ...input };
   const endpoint = cleanEndpoint(config.endpoint || env.endpoint);
-  const useSsl = typeof config.useSsl === 'boolean' ? config.useSsl : inferUseSsl(endpoint || env.endpoint);
+  const useSsl =
+    typeof config.useSsl === 'boolean'
+      ? config.useSsl
+      : inferUseSsl(endpoint || env.endpoint);
 
   return {
     endpoint,
     port: cleanPort(config.port) || inferPort(endpoint || env.endpoint, useSsl),
     region: cleanValue(config.region || env.region || 'us-east-1'),
     accessKey: cleanValue(config.accessKey || env.accessKey),
-    secretKey: cleanValue(config.secretKey || previous.secretKey || env.secretKey),
-    singleBucket: cleanValue(config.singleBucket || process.env.MINIO_BUCKET || process.env.S3_BUCKET),
-    bucketMode: ['single', 'separate'].includes(config.bucketMode) ? config.bucketMode : 'separate',
-    folderMode: ['bucket-prefix', 'tenant-prefix', 'flat'].includes(config.folderMode) ? config.folderMode : 'bucket-prefix',
-    publicBaseUrl: cleanEndpoint(config.publicBaseUrl || config.publicUrl || env.publicUrl),
+    secretKey: cleanValue(
+      config.secretKey || previous.secretKey || env.secretKey
+    ),
+    singleBucket: cleanValue(
+      config.singleBucket || process.env.MINIO_BUCKET || process.env.S3_BUCKET
+    ),
+    bucketMode: ['single', 'separate'].includes(config.bucketMode)
+      ? config.bucketMode
+      : 'separate',
+    folderMode: ['bucket-prefix', 'tenant-prefix', 'flat'].includes(
+      config.folderMode
+    )
+      ? config.folderMode
+      : 'bucket-prefix',
+    publicBaseUrl: cleanEndpoint(
+      config.publicBaseUrl || config.publicUrl || env.publicUrl
+    ),
     useSsl,
   };
 }
@@ -509,7 +673,11 @@ function inferUseSsl(endpoint = '') {
 
 function inferPort(endpoint = '', useSsl = true) {
   try {
-    const url = new URL(/^https?:\/\//i.test(endpoint) ? endpoint : `${useSsl ? 'https' : 'http'}://${endpoint}`);
+    const url = new URL(
+      /^https?:\/\//i.test(endpoint)
+        ? endpoint
+        : `${useSsl ? 'https' : 'http'}://${endpoint}`
+    );
     if (url.port) return url.port;
   } catch {
     // Defaults abaixo cobrem endpoints ainda incompletos digitados no painel.
@@ -518,7 +686,11 @@ function inferPort(endpoint = '', useSsl = true) {
 }
 
 function getWhatsappBucketName() {
-  return getConfiguredBucketName('whatsapp') || process.env.MINIO_BUCKET || DEFAULT_BUCKET;
+  return (
+    getConfiguredBucketName('whatsapp') ||
+    process.env.MINIO_BUCKET ||
+    DEFAULT_BUCKET
+  );
 }
 
 async function loadStorageObjects() {
@@ -541,15 +713,19 @@ async function loadSnapshotObjects() {
     return value > latest ? value : latest;
   }, 0);
   const latestRows = latestScan
-    ? rows.filter((row) => new Date(row.scanned_at || 0).getTime() === latestScan)
+    ? rows.filter(
+        (row) => new Date(row.scanned_at || 0).getTime() === latestScan
+      )
     : rows;
 
-  return latestRows.map((item) => normalizeObjectRow({
-    ...item,
-    created_at: item.last_modified || item.scanned_at,
-    sha256: '',
-    mime_type: mimeFromExtension(item.extension),
-  }));
+  return latestRows.map((item) =>
+    normalizeObjectRow({
+      ...item,
+      created_at: item.last_modified || item.scanned_at,
+      sha256: '',
+      mime_type: mimeFromExtension(item.extension),
+    })
+  );
 }
 
 async function safeTableRows(table, columns, limit) {
@@ -560,12 +736,14 @@ async function safeTableRows(table, columns, limit) {
       .select(columns)
       .limit(limit);
     if (error) {
-      if (/does not exist|schema cache|PGRST/i.test(error.message || '')) return [];
+      if (/does not exist|schema cache|PGRST/i.test(error.message || ''))
+        return [];
       throw error;
     }
     return data || [];
   } catch (error) {
-    if (/does not exist|schema cache|relation/i.test(error.message || '')) return [];
+    if (/does not exist|schema cache|relation/i.test(error.message || ''))
+      return [];
     console.warn(`[Storage Intelligence] ${table} unavailable:`, error.message);
     return [];
   }
@@ -593,7 +771,9 @@ async function saveSnapshotRows(rows) {
   if (!rows.length) return;
   const supabase = getSupabaseServer();
   for (const chunk of chunks(rows, 500)) {
-    const { error } = await supabase.from('storage_inventory_snapshots').insert(chunk);
+    const { error } = await supabase
+      .from('storage_inventory_snapshots')
+      .insert(chunk);
     if (error) throw error;
   }
 }
@@ -622,7 +802,8 @@ async function upsertStorageObjectRows(rows) {
 }
 
 async function deleteExplicitObjects(objects) {
-  if (!isMinioConfigured()) throw new Error('MinIO nao configurado para excluir objetos.');
+  if (!isMinioConfigured())
+    throw new Error('MinIO nao configurado para excluir objetos.');
   const byBucket = objects.reduce((acc, item) => {
     const bucket = item.bucket || DEFAULT_BUCKET;
     if (!acc[bucket]) acc[bucket] = [];
@@ -631,7 +812,7 @@ async function deleteExplicitObjects(objects) {
   }, {});
   const deleted = [];
   for (const [bucket, keys] of Object.entries(byBucket)) {
-    deleted.push(...await deleteMinioObjects({ bucket, keys }));
+    deleted.push(...(await deleteMinioObjects({ bucket, keys })));
   }
   return deleted;
 }
@@ -645,7 +826,10 @@ function snapshotRow(bucket, object, scannedAt) {
     size_bytes: Number(object.size || 0),
     etag: object.etag || null,
     extension,
-    prefix: String(object.key || '').split('/').slice(0, 3).join('/'),
+    prefix: String(object.key || '')
+      .split('/')
+      .slice(0, 3)
+      .join('/'),
     tenant_id: tenant || null,
     is_version: false,
     version_id: null,
@@ -670,35 +854,88 @@ function normalizeObjectRow(row) {
 function matchesFileFilters(item, filters = {}) {
   if (filters.bucket && item.bucket !== filters.bucket) return false;
   if (filters.tenant && item.tenant_id !== filters.tenant) return false;
-  if (filters.extension && normalizeExtension(item.object_key, item.mime_type) !== filters.extension) return false;
-  if (filters.type && !String(item.mime_type || item.object_key || '').toLowerCase().includes(String(filters.type).toLowerCase())) return false;
-  if (filters.origin && !String(item.source || '').toLowerCase().includes(String(filters.origin).toLowerCase())) return false;
-  if (filters.prefix && !String(item.object_key || '').startsWith(String(filters.prefix))) return false;
-  if (filters.minMb && Number(item.size_bytes || 0) < Number(filters.minMb) * 1024 * 1024) return false;
-  if (filters.startDate && new Date(item.created_at || 0) < new Date(filters.startDate)) return false;
-  if (filters.endDate && new Date(item.created_at || 0) > new Date(filters.endDate)) return false;
+  if (
+    filters.extension &&
+    normalizeExtension(item.object_key, item.mime_type) !== filters.extension
+  )
+    return false;
+  if (
+    filters.type &&
+    !String(item.mime_type || item.object_key || '')
+      .toLowerCase()
+      .includes(String(filters.type).toLowerCase())
+  )
+    return false;
+  if (
+    filters.origin &&
+    !String(item.source || '')
+      .toLowerCase()
+      .includes(String(filters.origin).toLowerCase())
+  )
+    return false;
+  if (
+    filters.prefix &&
+    !String(item.object_key || '').startsWith(String(filters.prefix))
+  )
+    return false;
+  if (
+    filters.minMb &&
+    Number(item.size_bytes || 0) < Number(filters.minMb) * 1024 * 1024
+  )
+    return false;
+  if (
+    filters.startDate &&
+    new Date(item.created_at || 0) < new Date(filters.startDate)
+  )
+    return false;
+  if (
+    filters.endDate &&
+    new Date(item.created_at || 0) > new Date(filters.endDate)
+  )
+    return false;
   return true;
 }
 
 function buildSummaryAlerts({ buckets, objects }) {
   const alerts = [];
-  const whatsapp = buckets.find((bucket) => bucket.name === getWhatsappBucketName());
+  const whatsapp = buckets.find(
+    (bucket) => bucket.name === getWhatsappBucketName()
+  );
   if (String(whatsapp?.versioning || '').toLowerCase() === 'enabled') {
-    alerts.push({ severity: 'critical', message: 'CRITICO: Versionamento ativo no bucket whatsapp-media.' });
+    alerts.push({
+      severity: 'critical',
+      message: 'CRITICO: Versionamento ativo no bucket whatsapp-media.',
+    });
   }
-  if (!whatsapp || String(whatsapp.lifecycle || '').toLowerCase() === 'missing') {
-    alerts.push({ severity: 'critical', message: 'CRITICO: Nenhuma politica de retencao encontrada.' });
+  if (
+    !whatsapp ||
+    String(whatsapp.lifecycle || '').toLowerCase() === 'missing'
+  ) {
+    alerts.push({
+      severity: 'critical',
+      message: 'CRITICO: Nenhuma politica de retencao encontrada.',
+    });
   }
-  const tenantCount = new Set(objects.map((item) => item.tenant_id).filter(Boolean)).size;
+  const tenantCount = new Set(
+    objects.map((item) => item.tenant_id).filter(Boolean)
+  ).size;
   if (tenantCount <= 2 && sum(objects, 'size_bytes') > 2 * 1024 * 1024 * 1024) {
-    alerts.push({ severity: 'high', message: 'ALTO: Crescimento incompativel com apenas 2 clientes ativos.' });
+    alerts.push({
+      severity: 'high',
+      message: 'ALTO: Crescimento incompativel com apenas 2 clientes ativos.',
+    });
   }
   return alerts;
 }
 
 function retentionRuleFor(item, rules) {
-  const haystack = `${item.object_key || ''} ${item.mime_type || ''} ${item.source || ''}`.toLowerCase();
-  return rules.find((rule) => (rule.match || []).some((needle) => haystack.includes(String(needle).toLowerCase())));
+  const haystack =
+    `${item.object_key || ''} ${item.mime_type || ''} ${item.source || ''}`.toLowerCase();
+  return rules.find((rule) =>
+    (rule.match || []).some((needle) =>
+      haystack.includes(String(needle).toLowerCase())
+    )
+  );
 }
 
 function rankBy(items, selector) {
@@ -710,16 +947,29 @@ function rankBy(items, selector) {
     current.bytes += Number(item.size_bytes || 0);
     map.set(key, current);
   }
-  return [...map.values()].sort((a, b) => b.bytes - a.bytes || b.count - a.count);
+  return [...map.values()].sort(
+    (a, b) => b.bytes - a.bytes || b.count - a.count
+  );
 }
 
 function countByMime(objects, tenantId, mimePrefix) {
-  return objects.filter((item) => item.tenant_id === tenantId && String(item.mime_type || '').startsWith(mimePrefix)).length;
+  return objects.filter(
+    (item) =>
+      item.tenant_id === tenantId &&
+      String(item.mime_type || '').startsWith(mimePrefix)
+  ).length;
 }
 
 function estimateGrowth(objects, tenantId, days) {
   const cutoff = Date.now() - days * 86400000;
-  return sum(objects.filter((item) => item.tenant_id === tenantId && new Date(item.created_at || 0).getTime() >= cutoff), 'size_bytes');
+  return sum(
+    objects.filter(
+      (item) =>
+        item.tenant_id === tenantId &&
+        new Date(item.created_at || 0).getTime() >= cutoff
+    ),
+    'size_bytes'
+  );
 }
 
 function sum(items, field) {
@@ -729,12 +979,15 @@ function sum(items, field) {
 function normalizeExtension(key = '', mimeType = '') {
   const match = String(key || '').match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
   if (match) return match[1].toLowerCase();
-  if (mimeType) return String(mimeType).split('/').pop()?.toLowerCase() || 'bin';
+  if (mimeType)
+    return String(mimeType).split('/').pop()?.toLowerCase() || 'bin';
   return 'sem-extensao';
 }
 
 function mimeFromExtension(extension = '') {
-  const ext = String(extension || '').replace('.', '').toLowerCase();
+  const ext = String(extension || '')
+    .replace('.', '')
+    .toLowerCase();
   const map = {
     jpg: 'image/jpeg',
     jpeg: 'image/jpeg',
@@ -764,17 +1017,26 @@ function inferSource(key = '') {
 }
 
 function isUuid(value = '') {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value)
+  );
 }
 
 function fileName(key = '') {
-  return String(key || '').split('/').pop() || '';
+  return (
+    String(key || '')
+      .split('/')
+      .pop() || ''
+  );
 }
 
 function dedupeDuplicateGroups(groups) {
   const seen = new Set();
   return groups.filter((group) => {
-    const ids = group.duplicates.map((item) => item.id || storageKey(item.bucket, item.object_key)).sort().join('|');
+    const ids = group.duplicates
+      .map((item) => item.id || storageKey(item.bucket, item.object_key))
+      .sort()
+      .join('|');
     const key = `${group.strategy}:${ids}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -814,7 +1076,8 @@ function parseStorageUrl(value = '') {
 function classifyOrphan(item) {
   if (!item.tenant_id) return 'Arquivo sem tenant';
   if (!item.source || item.source === 'unknown') return 'Arquivo sem origem';
-  if (item.expires_at && new Date(item.expires_at).getTime() < Date.now()) return 'Arquivo expirado';
+  if (item.expires_at && new Date(item.expires_at).getTime() < Date.now())
+    return 'Arquivo expirado';
   return 'Existe no MinIO, mas nao existe no banco';
 }
 

@@ -246,9 +246,7 @@ function renderBlock(
       return <GalleryBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.PROPERTY_CAROUSEL:
-      return (
-        <PropertyCarouselBlock config={cfg} theme={themeConfig} />
-      );
+      return <PropertyCarouselBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.STATS:
       return <StatsBlock config={cfg} theme={themeConfig} />;
@@ -273,11 +271,7 @@ function renderBlock(
 
     case BlockType.BROKER_CARD:
       return (
-        <BrokerCardBlock
-          config={cfg}
-          theme={themeConfig}
-          settings={settings}
-        />
+        <BrokerCardBlock config={cfg} theme={themeConfig} settings={settings} />
       );
 
     case BlockType.DIVIDER:

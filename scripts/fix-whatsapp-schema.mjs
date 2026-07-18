@@ -29,12 +29,12 @@ async function run() {
   const { default: pg } = await import('pg');
   const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL || process.env.SUPABASE_DB_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
   });
 
   try {
     const client = await pool.connect();
-    
+
     console.log('📦 Conectado ao banco. Executando comandos SQL...');
 
     await client.query(`
@@ -43,8 +43,10 @@ async function run() {
       ADD COLUMN IF NOT EXISTS last_connected_at TIMESTAMPTZ;
     `);
 
-    console.log('✅ Colunas status_version e last_connected_at adicionadas com sucesso.');
-    
+    console.log(
+      '✅ Colunas status_version e last_connected_at adicionadas com sucesso.'
+    );
+
     client.release();
   } catch (err) {
     console.error('❌ Erro ao atualizar esquema:', err.message);

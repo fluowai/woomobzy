@@ -2,10 +2,7 @@
   "name": "imobisaas-monorepo",
   "version": "2.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "turbo run dev",
     "dev:admin": "turbo run dev --filter=admin",

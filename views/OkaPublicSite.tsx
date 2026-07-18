@@ -118,7 +118,13 @@ const properties: OkaProperty[] = [
   },
 ];
 
-const cities = ['Itapema', 'Balneário Camboriú', 'Florianópolis', 'Curitiba', 'Maringá'];
+const cities = [
+  'Itapema',
+  'Balneário Camboriú',
+  'Florianópolis',
+  'Curitiba',
+  'Maringá',
+];
 const propertyTypes = ['Apartamento', 'Casa', 'Comercial', 'Terreno'];
 const priceOptions = [
   { label: 'Todos', value: 0 },
@@ -135,7 +141,9 @@ function formatCurrency(value: number) {
   });
 }
 
-function whatsappUrl(message = 'Olá! Quero falar com um especialista da OKA Imóveis.') {
+function whatsappUrl(
+  message = 'Olá! Quero falar com um especialista da OKA Imóveis.'
+) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
@@ -1149,22 +1157,47 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
             <img src="/clients/oka/logo.jpeg" alt="OKA Imóveis" />
           </a>
 
-          <div className={`oka-menu${menuOpen ? ' open' : ''}`} aria-label="Menu principal">
-            <button className="oka-menu-close" type="button" onClick={() => setMenuOpen(false)} aria-label="Fechar menu">
+          <div
+            className={`oka-menu${menuOpen ? ' open' : ''}`}
+            aria-label="Menu principal"
+          >
+            <button
+              className="oka-menu-close"
+              type="button"
+              onClick={() => setMenuOpen(false)}
+              aria-label="Fechar menu"
+            >
               <X size={22} />
             </button>
-            <a href="#inicio" onClick={() => setMenuOpen(false)}>Início</a>
-            <a href="#imoveis" onClick={() => setMenuOpen(false)}>Imóveis</a>
-            <a href="#investimento" onClick={() => setMenuOpen(false)}>Investimento</a>
-            <a href="#regioes" onClick={() => setMenuOpen(false)}>Regiões</a>
-            <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre</a>
-            <a href="#contato" onClick={() => setMenuOpen(false)}>Contato</a>
+            <a href="#inicio" onClick={() => setMenuOpen(false)}>
+              Início
+            </a>
+            <a href="#imoveis" onClick={() => setMenuOpen(false)}>
+              Imóveis
+            </a>
+            <a href="#investimento" onClick={() => setMenuOpen(false)}>
+              Investimento
+            </a>
+            <a href="#regioes" onClick={() => setMenuOpen(false)}>
+              Regiões
+            </a>
+            <a href="#sobre" onClick={() => setMenuOpen(false)}>
+              Sobre
+            </a>
+            <a href="#contato" onClick={() => setMenuOpen(false)}>
+              Contato
+            </a>
             <div className="oka-mobile-actions">
               <a className="oka-btn" href={`tel:${PHONE_TEL}`}>
                 <Phone size={16} />
                 {PHONE_LABEL}
               </a>
-              <a className="oka-btn oka-btn-primary" href={whatsappUrl()} target="_blank" rel="noreferrer">
+              <a
+                className="oka-btn oka-btn-primary"
+                href={whatsappUrl()}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Falar com especialista
               </a>
             </div>
@@ -1175,10 +1208,20 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
               <Phone size={16} />
               {PHONE_LABEL}
             </a>
-            <a className="oka-btn oka-btn-primary" href={whatsappUrl()} target="_blank" rel="noreferrer">
+            <a
+              className="oka-btn oka-btn-primary"
+              href={whatsappUrl()}
+              target="_blank"
+              rel="noreferrer"
+            >
               Falar com especialista
             </a>
-            <button className="oka-menu-toggle" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu">
+            <button
+              className="oka-menu-toggle"
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Abrir menu"
+            >
               <Menu size={23} />
             </button>
           </div>
@@ -1188,19 +1231,35 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
       <header id="inicio" className="oka-hero">
         <div className="oka-shell">
           <div className="oka-hero-content">
-            <p className="oka-kicker">Alto padrão • Investimentos • Consultoria</p>
+            <p className="oka-kicker">
+              Alto padrão • Investimentos • Consultoria
+            </p>
             <h1 className="oka-title">
-              Imóveis que fazem sentido para sua <span>vida</span> e para seu <span>patrimônio</span>.
+              Imóveis que fazem sentido para sua <span>vida</span> e para seu{' '}
+              <span>patrimônio</span>.
             </h1>
             <p className="oka-subtitle">
-              Curadoria especializada com foco em liquidez, localização e aderência ao seu momento.
+              Curadoria especializada com foco em liquidez, localização e
+              aderência ao seu momento.
             </p>
             <div className="oka-hero-actions">
-              <a className="oka-btn oka-btn-primary" href={whatsappUrl('Olá! Quero encontrar meu imóvel ideal com a OKA Imóveis.')} target="_blank" rel="noreferrer">
+              <a
+                className="oka-btn oka-btn-primary"
+                href={whatsappUrl(
+                  'Olá! Quero encontrar meu imóvel ideal com a OKA Imóveis.'
+                )}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Fale com especialista
                 <UserRoundCheck size={17} />
               </a>
-              <a className="oka-btn" href={whatsappUrl()} target="_blank" rel="noreferrer">
+              <a
+                className="oka-btn"
+                href={whatsappUrl()}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Fale pelo WhatsApp
                 <MessageCircle size={17} />
               </a>
@@ -1211,19 +1270,31 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
 
       <section className="oka-search-section" aria-label="Busca de imóveis">
         <div className="oka-shell">
-          <h2 className="oka-heading">Encontre seu imóvel <span>ideal</span></h2>
-          <p className="oka-section-copy">Use os filtros abaixo para encontrar o imóvel ideal para você.</p>
+          <h2 className="oka-heading">
+            Encontre seu imóvel <span>ideal</span>
+          </h2>
+          <p className="oka-section-copy">
+            Use os filtros abaixo para encontrar o imóvel ideal para você.
+          </p>
 
           <div className="oka-filter-card">
             <div className="oka-filter-grid">
               <div className="oka-filter-group">
                 <span className="oka-filter-label">Finalidade</span>
                 <div className="oka-segment-row">
-                  <button className={`oka-choice${purpose === 'comprar' ? ' active' : ''}`} type="button" onClick={() => setPurpose('comprar')}>
+                  <button
+                    className={`oka-choice${purpose === 'comprar' ? ' active' : ''}`}
+                    type="button"
+                    onClick={() => setPurpose('comprar')}
+                  >
                     <Home size={16} />
                     Comprar
                   </button>
-                  <button className={`oka-choice${purpose === 'investir' ? ' active' : ''}`} type="button" onClick={() => setPurpose('investir')}>
+                  <button
+                    className={`oka-choice${purpose === 'investir' ? ' active' : ''}`}
+                    type="button"
+                    onClick={() => setPurpose('investir')}
+                  >
                     <BarChart3 size={16} />
                     Investir
                   </button>
@@ -1234,7 +1305,12 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
                 <span className="oka-filter-label">Tipo de imóvel</span>
                 <div className="oka-type-row">
                   {propertyTypes.map((item) => (
-                    <button key={item} className={`oka-choice${type === item ? ' active' : ''}`} type="button" onClick={() => setType(type === item ? '' : item)}>
+                    <button
+                      key={item}
+                      className={`oka-choice${type === item ? ' active' : ''}`}
+                      type="button"
+                      onClick={() => setType(type === item ? '' : item)}
+                    >
                       {item === 'Comercial' && <Building2 size={15} />}
                       {item}
                     </button>
@@ -1245,10 +1321,16 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
               <div className="oka-filter-group">
                 <span className="oka-filter-label">Cidade</span>
                 <div className="oka-select-wrap">
-                  <select value={city} onChange={(event) => setCity(event.target.value)} aria-label="Cidade">
+                  <select
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
+                    aria-label="Cidade"
+                  >
                     <option value="">Selecione a cidade</option>
                     {cities.map((item) => (
-                      <option key={item} value={item}>{item}</option>
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown size={16} />
@@ -1258,9 +1340,17 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
               <div className="oka-filter-group">
                 <span className="oka-filter-label">Valor máximo</span>
                 <div className="oka-select-wrap">
-                  <select value={priceMax} onChange={(event) => setPriceMax(Number(event.target.value))} aria-label="Valor máximo">
+                  <select
+                    value={priceMax}
+                    onChange={(event) =>
+                      setPriceMax(Number(event.target.value))
+                    }
+                    aria-label="Valor máximo"
+                  >
                     {priceOptions.map((item) => (
-                      <option key={item.value} value={item.value}>{item.label}</option>
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown size={16} />
@@ -1276,7 +1366,11 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
             </div>
 
             <div className="oka-clear-row">
-              <button className="oka-clear" type="button" onClick={clearFilters}>
+              <button
+                className="oka-clear"
+                type="button"
+                onClick={clearFilters}
+              >
                 Limpar filtros
                 <RotateCcw size={14} />
               </button>
@@ -1289,9 +1383,19 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
         <section id="imoveis" className="oka-featured">
           <div className="oka-section-head">
             <h2 className="oka-heading">
-              Imóveis em destaque <span className="oka-count">({filteredProperties.length} imóveis)</span>
+              Imóveis em destaque{' '}
+              <span className="oka-count">
+                ({filteredProperties.length} imóveis)
+              </span>
             </h2>
-            <a className="oka-outline" href={whatsappUrl('Olá! Quero ver todos os imóveis da OKA Imóveis.')} target="_blank" rel="noreferrer">
+            <a
+              className="oka-outline"
+              href={whatsappUrl(
+                'Olá! Quero ver todos os imóveis da OKA Imóveis.'
+              )}
+              target="_blank"
+              rel="noreferrer"
+            >
               Ver todos
               <LayoutGrid size={17} />
             </a>
@@ -1299,13 +1403,28 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
 
           <div className="oka-property-grid">
             {filteredProperties.length === 0 ? (
-              <div className="oka-empty">Nenhum imóvel encontrado com os filtros selecionados.</div>
+              <div className="oka-empty">
+                Nenhum imóvel encontrado com os filtros selecionados.
+              </div>
             ) : (
               filteredProperties.map((property) => (
                 <article className="oka-card" key={property.id}>
-                  <a href={whatsappUrl(`Olá! Tenho interesse no imóvel: ${property.title} - ${formatCurrency(property.price)}`)} target="_blank" rel="noreferrer">
+                  <a
+                    href={whatsappUrl(
+                      `Olá! Tenho interesse no imóvel: ${property.title} - ${formatCurrency(property.price)}`
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     <div className="oka-card-image">
-                      <img src={property.image} alt={property.title} style={{ objectPosition: property.imagePosition || 'center' }} loading="lazy" />
+                      <img
+                        src={property.image}
+                        alt={property.title}
+                        style={{
+                          objectPosition: property.imagePosition || 'center',
+                        }}
+                        loading="lazy"
+                      />
                       <span className="oka-tag">{property.tag}</span>
                       <Heart className="oka-heart" size={24} />
                     </div>
@@ -1316,12 +1435,23 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
                         {property.city} - {property.state}
                       </div>
                       <div className="oka-features">
-                        <span><BedDouble size={15} />{property.suites} suítes</span>
-                        <span><Maximize2 size={14} />{property.area}m²</span>
-                        <span><Car size={15} />{property.vagas} vagas</span>
+                        <span>
+                          <BedDouble size={15} />
+                          {property.suites} suítes
+                        </span>
+                        <span>
+                          <Maximize2 size={14} />
+                          {property.area}m²
+                        </span>
+                        <span>
+                          <Car size={15} />
+                          {property.vagas} vagas
+                        </span>
                       </div>
                       <div className="oka-price-row">
-                        <strong className="oka-price">{formatCurrency(property.price)}</strong>
+                        <strong className="oka-price">
+                          {formatCurrency(property.price)}
+                        </strong>
                         <span className="oka-yield">
                           Rentabilidade
                           <strong>{property.yield}</strong>
@@ -1340,31 +1470,63 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
         <div className="oka-shell oka-regions-layout">
           <div className="oka-region-copy">
             <p className="oka-kicker">Regiões selecionadas</p>
-            <h2 className="oka-region-title">Onde morar bem também precisa fazer sentido como <span>patrimônio</span>.</h2>
+            <h2 className="oka-region-title">
+              Onde morar bem também precisa fazer sentido como{' '}
+              <span>patrimônio</span>.
+            </h2>
             <p>
-              A vitrine da OKA fica mais objetiva quando a busca parte de praças com demanda real,
-              padrão construtivo consistente e potencial de revenda. Por isso, cada região entra na conversa com critério.
+              A vitrine da OKA fica mais objetiva quando a busca parte de praças
+              com demanda real, padrão construtivo consistente e potencial de
+              revenda. Por isso, cada região entra na conversa com critério.
             </p>
-            <a className="oka-link" href={whatsappUrl('Olá! Quero conversar sobre a melhor região para comprar ou investir.')} target="_blank" rel="noreferrer">
+            <a
+              className="oka-link"
+              href={whatsappUrl(
+                'Olá! Quero conversar sobre a melhor região para comprar ou investir.'
+              )}
+              target="_blank"
+              rel="noreferrer"
+            >
               Conversar sobre melhor região
               <ArrowRight size={16} />
             </a>
           </div>
 
           <div className="oka-region-grid">
-            <a className="oka-region-card" href="#imoveis" style={{ backgroundImage: `url(${SEA_VIEW_IMAGE})`, backgroundPosition: 'center 52%' }}>
+            <a
+              className="oka-region-card"
+              href="#imoveis"
+              style={{
+                backgroundImage: `url(${SEA_VIEW_IMAGE})`,
+                backgroundPosition: 'center 52%',
+              }}
+            >
               <span>
                 <strong>Litoral SC</strong>
                 Frente mar, liquidez e alto padrão
               </span>
             </a>
-            <a className="oka-region-card" href="#imoveis" style={{ backgroundImage: `url(${GATED_IMAGE})`, backgroundPosition: 'center 62%' }}>
+            <a
+              className="oka-region-card"
+              href="#imoveis"
+              style={{
+                backgroundImage: `url(${GATED_IMAGE})`,
+                backgroundPosition: 'center 62%',
+              }}
+            >
               <span>
                 <strong>Condomínios</strong>
                 Privacidade, segurança e área verde
               </span>
             </a>
-            <a className="oka-region-card" href="#investimento" style={{ backgroundImage: `url(${HERO_IMAGE})`, backgroundPosition: 'center 45%' }}>
+            <a
+              className="oka-region-card"
+              href="#investimento"
+              style={{
+                backgroundImage: `url(${HERO_IMAGE})`,
+                backgroundPosition: 'center 45%',
+              }}
+            >
               <span>
                 <strong>Investimento</strong>
                 Imóveis com leitura de valorização
@@ -1409,8 +1571,17 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
 
       <section className="oka-testimonials" aria-label="Depoimentos">
         <div className="oka-testimonial-head">
-          <h2 className="oka-testimonial-title">O que nossos <span>clientes</span> dizem</h2>
-          <a className="oka-link" href={whatsappUrl('Olá! Quero conhecer mais depoimentos de clientes da OKA.')} target="_blank" rel="noreferrer">
+          <h2 className="oka-testimonial-title">
+            O que nossos <span>clientes</span> dizem
+          </h2>
+          <a
+            className="oka-link"
+            href={whatsappUrl(
+              'Olá! Quero conhecer mais depoimentos de clientes da OKA.'
+            )}
+            target="_blank"
+            rel="noreferrer"
+          >
             Ver mais depoimentos
             <ArrowRight size={15} />
           </a>
@@ -1418,7 +1589,10 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
         <div className="oka-testimonial-grid">
           <article className="oka-testimonial">
             <Quote size={22} />
-            <p>A OKA entendeu exatamente o que procurávamos e apresentou opções que fizeram total sentido para nossa família e nosso futuro.</p>
+            <p>
+              A OKA entendeu exatamente o que procurávamos e apresentou opções
+              que fizeram total sentido para nossa família e nosso futuro.
+            </p>
             <div className="oka-author">
               <span className="oka-avatar">MJ</span>
               <span>
@@ -1429,7 +1603,10 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
           </article>
           <article className="oka-testimonial">
             <Quote size={22} />
-            <p>Investimos com segurança e transparência. O retorno superou nossas expectativas desde os primeiros meses.</p>
+            <p>
+              Investimos com segurança e transparência. O retorno superou nossas
+              expectativas desde os primeiros meses.
+            </p>
             <div className="oka-author">
               <span className="oka-avatar">CM</span>
               <span>
@@ -1440,7 +1617,10 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
           </article>
           <article className="oka-testimonial">
             <Quote size={22} />
-            <p>Atendimento impecável do início ao fim. Sentimos confiança em cada detalhe do processo.</p>
+            <p>
+              Atendimento impecável do início ao fim. Sentimos confiança em cada
+              detalhe do processo.
+            </p>
             <div className="oka-author">
               <span className="oka-avatar">FL</span>
               <span>
@@ -1462,14 +1642,27 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
         <div className="oka-shell oka-cta-inner">
           <div>
             <h2>Pronto para encontrar seu próximo imóvel?</h2>
-            <p>Fale com um especialista e receba uma curadoria personalizada para o seu objetivo.</p>
+            <p>
+              Fale com um especialista e receba uma curadoria personalizada para
+              o seu objetivo.
+            </p>
           </div>
           <div className="oka-cta-actions">
-            <a className="oka-btn oka-btn-primary" href={whatsappUrl()} target="_blank" rel="noreferrer">
+            <a
+              className="oka-btn oka-btn-primary"
+              href={whatsappUrl()}
+              target="_blank"
+              rel="noreferrer"
+            >
               Falar com especialista
               <UserRoundCheck size={17} />
             </a>
-            <a className="oka-btn" href={whatsappUrl()} target="_blank" rel="noreferrer">
+            <a
+              className="oka-btn"
+              href={whatsappUrl()}
+              target="_blank"
+              rel="noreferrer"
+            >
               Fale pelo WhatsApp
               <MessageCircle size={17} />
             </a>
@@ -1480,40 +1673,94 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
       <footer id="contato" className="oka-footer">
         <div className="oka-shell oka-footer-main">
           <div className="oka-footer-brand">
-            <a className="oka-footer-logo" href="#inicio" aria-label="OKA Imóveis">
-              <span>OK</span><span>A</span>
+            <a
+              className="oka-footer-logo"
+              href="#inicio"
+              aria-label="OKA Imóveis"
+            >
+              <span>OK</span>
+              <span>A</span>
             </a>
             <p>
-              A OKA Imóveis seleciona, analisa e apresenta apenas oportunidades reais de valorização.
-              Curadoria especializada em imóveis de alto padrão e investimentos inteligentes.
+              A OKA Imóveis seleciona, analisa e apresenta apenas oportunidades
+              reais de valorização. Curadoria especializada em imóveis de alto
+              padrão e investimentos inteligentes.
             </p>
             <div className="oka-social">
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram size={16} /></a>
-              <a href={whatsappUrl()} target="_blank" rel="noreferrer" aria-label="WhatsApp"><MessageCircle size={16} /></a>
-              <a href="https://youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube"><Youtube size={16} /></a>
-              <a href="https://linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn"><Linkedin size={16} /></a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+              >
+                <Instagram size={16} />
+              </a>
+              <a
+                href={whatsappUrl()}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="WhatsApp"
+              >
+                <MessageCircle size={16} />
+              </a>
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="YouTube"
+              >
+                <Youtube size={16} />
+              </a>
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="LinkedIn"
+              >
+                <Linkedin size={16} />
+              </a>
             </div>
           </div>
 
           <div>
             <h3>Imóveis</h3>
             <ul>
-              <li><a href="#imoveis">Apartamentos</a></li>
-              <li><a href="#imoveis">Casas</a></li>
-              <li><a href="#imoveis">Coberturas</a></li>
-              <li><a href="#imoveis">Terrenos</a></li>
-              <li><a href="#imoveis">Comerciais</a></li>
-              <li><a href="#imoveis">Lançamentos</a></li>
+              <li>
+                <a href="#imoveis">Apartamentos</a>
+              </li>
+              <li>
+                <a href="#imoveis">Casas</a>
+              </li>
+              <li>
+                <a href="#imoveis">Coberturas</a>
+              </li>
+              <li>
+                <a href="#imoveis">Terrenos</a>
+              </li>
+              <li>
+                <a href="#imoveis">Comerciais</a>
+              </li>
+              <li>
+                <a href="#imoveis">Lançamentos</a>
+              </li>
             </ul>
           </div>
 
           <div>
             <h3>Institucional</h3>
             <ul>
-              <li><a href="#sobre">Sobre Nós</a></li>
-              <li><a href="#investimento">Investimento</a></li>
-              <li><a href="#regioes">Regiões</a></li>
-              <li><a href="#contato">Contato</a></li>
+              <li>
+                <a href="#sobre">Sobre Nós</a>
+              </li>
+              <li>
+                <a href="#investimento">Investimento</a>
+              </li>
+              <li>
+                <a href="#regioes">Regiões</a>
+              </li>
+              <li>
+                <a href="#contato">Contato</a>
+              </li>
             </ul>
           </div>
 
@@ -1523,17 +1770,26 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
               <li>
                 <Phone size={15} />
                 <span>
-                  <a href={`tel:${PHONE_TEL}`}>{PHONE_LABEL}</a><br />
-                  <a href={whatsappUrl()} target="_blank" rel="noreferrer">Fale pelo WhatsApp</a>
+                  <a href={`tel:${PHONE_TEL}`}>{PHONE_LABEL}</a>
+                  <br />
+                  <a href={whatsappUrl()} target="_blank" rel="noreferrer">
+                    Fale pelo WhatsApp
+                  </a>
                 </span>
               </li>
               <li>
                 <Mail size={15} />
-                <a href="mailto:contato@okaimoveis.com.br">contato@okaimoveis.com.br</a>
+                <a href="mailto:contato@okaimoveis.com.br">
+                  contato@okaimoveis.com.br
+                </a>
               </li>
               <li>
                 <MapPin size={15} />
-                <span>Rua Deputado Branco Mendes, 390<br />Centro - Colorado/PR</span>
+                <span>
+                  Rua Deputado Branco Mendes, 390
+                  <br />
+                  Centro - Colorado/PR
+                </span>
               </li>
             </ul>
           </div>
@@ -1549,7 +1805,13 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
         </div>
       </footer>
 
-      <a className="oka-float" href={whatsappUrl()} target="_blank" rel="noreferrer" aria-label="Falar pelo WhatsApp">
+      <a
+        className="oka-float"
+        href={whatsappUrl()}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Falar pelo WhatsApp"
+      >
         <MessageCircle size={31} />
       </a>
     </div>

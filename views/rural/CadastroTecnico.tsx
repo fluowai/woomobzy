@@ -85,7 +85,7 @@ const CadastroTecnico: React.FC = () => {
         if (lowerName.endsWith('.kmz')) {
           const zip = await JSZip.loadAsync(file);
           const kmlFile = Object.values(zip.files).find((item) =>
-            item.name.toLowerCase().endsWith('.kml'),
+            item.name.toLowerCase().endsWith('.kml')
           );
           if (!kmlFile) throw new Error('O arquivo KMZ não contém um KML.');
           kmlText = await kmlFile.async('string');
@@ -97,7 +97,8 @@ const CadastroTecnico: React.FC = () => {
 
         const kml = new DOMParser().parseFromString(kmlText, 'text/xml');
         const converted = toGeoJSON.kml(kml);
-        if (!converted.features.length) throw new Error('Nenhuma geometria encontrada no arquivo.');
+        if (!converted.features.length)
+          throw new Error('Nenhuma geometria encontrada no arquivo.');
         setGeoData(converted);
       } catch (err: any) {
         logger.error('Erro ao processar arquivo:', err);
@@ -112,7 +113,10 @@ const CadastroTecnico: React.FC = () => {
     {
       icon: Map,
       label: 'Propriedades Georreferenciadas',
-      value: String(properties.filter((property) => property.features?.legal?.geometry).length),
+      value: String(
+        properties.filter((property) => property.features?.legal?.geometry)
+          .length
+      ),
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
     },
@@ -133,19 +137,27 @@ const CadastroTecnico: React.FC = () => {
     {
       icon: AlertTriangle,
       label: 'Cadastros Pendentes',
-      value: String(properties.filter((property) => !property.features?.rural_technical).length),
+      value: String(
+        properties.filter((property) => !property.features?.rural_technical)
+          .length
+      ),
       color: 'text-red-600',
       bg: 'bg-red-50',
     },
   ];
 
-  const updateTechnicalForm = (key: keyof typeof technicalForm, value: string) => {
+  const updateTechnicalForm = (
+    key: keyof typeof technicalForm,
+    value: string
+  ) => {
     setTechnicalForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const saveTechnicalRegistration = async () => {
     if (!selectedPropertyId || !profile?.organization_id) {
-      toast.error('Selecione uma propriedade rural para salvar o cadastro técnico.');
+      toast.error(
+        'Selecione uma propriedade rural para salvar o cadastro técnico.'
+      );
       return;
     }
 
@@ -183,7 +195,9 @@ const CadastroTecnico: React.FC = () => {
 
     setProperties((prev) =>
       prev.map((item) =>
-        item.id === selectedPropertyId ? { ...item, features: nextFeatures } : item
+        item.id === selectedPropertyId
+          ? { ...item, features: nextFeatures }
+          : item
       )
     );
     toast.success('Cadastro técnico rural salvo com sucesso.');
@@ -272,7 +286,9 @@ const CadastroTecnico: React.FC = () => {
                 </label>
                 <select
                   value={selectedPropertyId}
-                  onChange={(event) => setSelectedPropertyId(event.target.value)}
+                  onChange={(event) =>
+                    setSelectedPropertyId(event.target.value)
+                  }
                   className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
                 >
                   <option value="">Selecione uma propriedade</option>
@@ -291,7 +307,12 @@ const CadastroTecnico: React.FC = () => {
                   <input
                     type="number"
                     value={technicalForm.area_agricultavel}
-                    onChange={(event) => updateTechnicalForm('area_agricultavel', event.target.value)}
+                    onChange={(event) =>
+                      updateTechnicalForm(
+                        'area_agricultavel',
+                        event.target.value
+                      )
+                    }
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
                     placeholder="0"
                   />
@@ -303,7 +324,9 @@ const CadastroTecnico: React.FC = () => {
                   <input
                     type="number"
                     value={technicalForm.area_reserva}
-                    onChange={(event) => updateTechnicalForm('area_reserva', event.target.value)}
+                    onChange={(event) =>
+                      updateTechnicalForm('area_reserva', event.target.value)
+                    }
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
                     placeholder="0"
                   />
@@ -314,7 +337,9 @@ const CadastroTecnico: React.FC = () => {
                   </label>
                   <select
                     value={technicalForm.bioma}
-                    onChange={(event) => updateTechnicalForm('bioma', event.target.value)}
+                    onChange={(event) =>
+                      updateTechnicalForm('bioma', event.target.value)
+                    }
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
                   >
                     <option>Cerrado</option>
@@ -331,7 +356,9 @@ const CadastroTecnico: React.FC = () => {
                   </label>
                   <select
                     value={technicalForm.tipo_solo}
-                    onChange={(event) => updateTechnicalForm('tipo_solo', event.target.value)}
+                    onChange={(event) =>
+                      updateTechnicalForm('tipo_solo', event.target.value)
+                    }
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
                   >
                     <option>Latossolo</option>
@@ -347,7 +374,9 @@ const CadastroTecnico: React.FC = () => {
                   </label>
                   <select
                     value={technicalForm.regime_hidrico}
-                    onChange={(event) => updateTechnicalForm('regime_hidrico', event.target.value)}
+                    onChange={(event) =>
+                      updateTechnicalForm('regime_hidrico', event.target.value)
+                    }
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
                   >
                     <option>Irrigado</option>
@@ -361,7 +390,9 @@ const CadastroTecnico: React.FC = () => {
                   </label>
                   <select
                     value={technicalForm.topografia}
-                    onChange={(event) => updateTechnicalForm('topografia', event.target.value)}
+                    onChange={(event) =>
+                      updateTechnicalForm('topografia', event.target.value)
+                    }
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
                   >
                     <option>Plana</option>
@@ -377,7 +408,9 @@ const CadastroTecnico: React.FC = () => {
                   </label>
                   <select
                     value={technicalForm.aptidao}
-                    onChange={(event) => updateTechnicalForm('aptidao', event.target.value)}
+                    onChange={(event) =>
+                      updateTechnicalForm('aptidao', event.target.value)
+                    }
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none"
                   >
                     <option>Pecuária</option>
@@ -396,7 +429,9 @@ const CadastroTecnico: React.FC = () => {
                     min="0"
                     max="100"
                     value={technicalForm.score_liquidez}
-                    onChange={(event) => updateTechnicalForm('score_liquidez', event.target.value)}
+                    onChange={(event) =>
+                      updateTechnicalForm('score_liquidez', event.target.value)
+                    }
                     className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"
                     placeholder="0"
                   />
@@ -488,10 +523,13 @@ const CadastroTecnico: React.FC = () => {
                         {prop.title}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {[prop.city, prop.state].filter(Boolean).join(' / ') || '—'}
+                        {[prop.city, prop.state].filter(Boolean).join(' / ') ||
+                          '—'}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {prop.total_area_ha || prop.features?.areaHectares || '—'}
+                        {prop.total_area_ha ||
+                          prop.features?.areaHectares ||
+                          '—'}
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-700">

@@ -79,7 +79,9 @@ async function checkDatabaseTables() {
 
 async function main() {
   // 1. Tentar verificar tabelas
-  console.log(`${colors.blue}📋 Verificando banco de dados...${colors.reset}\n`);
+  console.log(
+    `${colors.blue}📋 Verificando banco de dados...${colors.reset}\n`
+  );
 
   const dbStatus = await checkDatabaseTables();
 
@@ -89,13 +91,17 @@ async function main() {
 
     console.log(`${colors.blue}Tabelas encontradas:${colors.reset}`);
     Object.entries(dbStatus).forEach(([table, exists]) => {
-      const status = exists ? `${colors.green}✅${colors.reset}` : `${colors.red}❌${colors.reset}`;
+      const status = exists
+        ? `${colors.green}✅${colors.reset}`
+        : `${colors.red}❌${colors.reset}`;
       console.log(`  ${status} ${table}`);
     });
 
     if (existingTables === totalTables) {
       log.success('Todas as tabelas existem! Banco pronto para usar.');
-      console.log(`\n${colors.green}🎉 Sua aplicação está completamente pronta!${colors.reset}`);
+      console.log(
+        `\n${colors.green}🎉 Sua aplicação está completamente pronta!${colors.reset}`
+      );
       console.log(`
 ${colors.cyan}Próximos passos:${colors.reset}
 1. Recarregue seu app: F5 em http://localhost:3005
@@ -107,7 +113,9 @@ ${colors.cyan}Próximos passos:${colors.reset}
   }
 
   // 2. Migrações não estão disponíveis via API
-  console.log(`\n${colors.yellow}⚠️  Migrações SQL precisam ser executadas manualmente${colors.reset}`);
+  console.log(
+    `\n${colors.yellow}⚠️  Migrações SQL precisam ser executadas manualmente${colors.reset}`
+  );
 
   // 3. Verificar sistema operacional para abrir URL
   const platform = process.platform;
@@ -152,7 +160,9 @@ ${colors.blue}Abrindo no navegador...${colors.reset}
     log.success('Dashboard aberto no navegador!');
   } catch (error) {
     log.warn('Não foi possível abrir o navegador automaticamente');
-    console.log(`\nAcesse manualmente: ${colors.cyan}${sqlEditorUrl}${colors.reset}`);
+    console.log(
+      `\nAcesse manualmente: ${colors.cyan}${sqlEditorUrl}${colors.reset}`
+    );
   }
 
   // 4. Sugerir alternativa CLI
@@ -168,7 +178,9 @@ ${colors.blue}Abrindo no navegador...${colors.reset}
 `);
   }
 
-  console.log(`\n${colors.cyan}📊 Quando terminar, verifique o status:${colors.reset}`);
+  console.log(
+    `\n${colors.cyan}📊 Quando terminar, verifique o status:${colors.reset}`
+  );
   console.log(`npm run check-db\n`);
 }
 

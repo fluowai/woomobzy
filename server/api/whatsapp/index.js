@@ -2,7 +2,10 @@ import { Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AIAutomationEngine } from '../../lib/AIAutomation.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
-import { createPresignedGetUrl, isMinioConfigured } from '../../lib/minio-storage.js';
+import {
+  createPresignedGetUrl,
+  isMinioConfigured,
+} from '../../lib/minio-storage.js';
 import { getPlatformOriginList } from '../../lib/platform-config.js';
 import jwt from 'jsonwebtoken';
 import { createWahaRouter } from './providers/waha-router.js';
@@ -71,49 +74,66 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     }
 
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+    );
     res.setHeader(
       'Access-Control-Allow-Headers',
       'Origin,Accept,Content-Type,Authorization,X-Requested-With,x-tenant-id,x-impersonate-org-id,x-organization-id'
     );
   };
 
-  app.post('/api/whatsapp/internal/messages', whatsappInternalLimiter, async (req, res) => {
-    const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
-    const receivedToken = req.headers['x-whatsapp-internal-token'];
+  app.post(
+    '/api/whatsapp/internal/messages',
+    whatsappInternalLimiter,
+    async (req, res) => {
+      const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
+      const receivedToken = req.headers['x-whatsapp-internal-token'];
 
-    if (!expectedToken || receivedToken !== expectedToken) {
-      return res.status(401).json({ error: 'Token interno invalido' });
+      if (!expectedToken || receivedToken !== expectedToken) {
+        return res.status(401).json({ error: 'Token interno invalido' });
+      }
+
+      try {
+        const result = await aiEngine.handleWhatsAppMessage(req.body);
+        res.json({ success: true, result });
+      } catch (err) {
+        console.error('[WhatsApp AI Automation Error]', err.message);
+        res.status(500).json({ error: 'Erro ao processar mensagem WhatsApp' });
+      }
     }
+  );
 
-    try {
-      const result = await aiEngine.handleWhatsAppMessage(req.body);
-      res.json({ success: true, result });
-    } catch (err) {
-      console.error('[WhatsApp AI Automation Error]', err.message);
-      res.status(500).json({ error: 'Erro ao processar mensagem WhatsApp' });
+  app.post(
+    '/api/whatsapp/internal/imports/analyze',
+    whatsappInternalLimiter,
+    async (req, res) => {
+      const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
+      const receivedToken = req.headers['x-whatsapp-internal-token'];
+
+      if (!expectedToken || receivedToken !== expectedToken) {
+        return res.status(401).json({ error: 'Token interno invalido' });
+      }
+
+      try {
+        const result = await aiEngine.handleImportedWhatsAppConversations(
+          req.body
+        );
+        res.json({ success: true, result });
+      } catch (err) {
+        console.error('[WhatsApp AI Import Error]', err.message);
+        res
+          .status(500)
+          .json({ error: 'Erro ao analisar conversas importadas' });
+      }
     }
-  });
-
-  app.post('/api/whatsapp/internal/imports/analyze', whatsappInternalLimiter, async (req, res) => {
-    const expectedToken = process.env.WHATSAPP_INTERNAL_TOKEN;
-    const receivedToken = req.headers['x-whatsapp-internal-token'];
-
-    if (!expectedToken || receivedToken !== expectedToken) {
-      return res.status(401).json({ error: 'Token interno invalido' });
-    }
-
-    try {
-      const result = await aiEngine.handleImportedWhatsAppConversations(req.body);
-      res.json({ success: true, result });
-    } catch (err) {
-      console.error('[WhatsApp AI Import Error]', err.message);
-      res.status(500).json({ error: 'Erro ao analisar conversas importadas' });
-    }
-  });
+  );
 
   // WooAPI 2: WAHA provider montado em /api/whatsapp/waha
-  console.log('[WhatsApp] Montando WAHA provider (WooAPI 2) em /api/whatsapp/waha');
+  console.log(
+    '[WhatsApp] Montando WAHA provider (WooAPI 2) em /api/whatsapp/waha'
+  );
   app.use(
     '/api/whatsapp/waha',
     createWahaRouter({
@@ -124,7 +144,9 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   );
 
   // WooAPI 1: whatsmeow provider padrao em /api/whatsapp
-  console.log('[WhatsApp] Montando WhatsMeow provider (WooAPI 1) em /api/whatsapp');
+  console.log(
+    '[WhatsApp] Montando WhatsMeow provider (WooAPI 1) em /api/whatsapp'
+  );
 
   const proxy = createProxyMiddleware({
     target,
@@ -139,8 +161,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         // The browser Origin is already validated by the Node API. Do not pass it
         // to the internal WooAPI service, otherwise Gin CORS can reject localhost
         // ports that are only meant to hit the public proxy.
-        const serviceToken = process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_INTERNAL_TOKEN;
-        if (serviceToken) proxyReq.setHeader('x-whatsapp-service-token', serviceToken);
+        const serviceToken =
+          process.env.WHATSAPP_SERVICE_TOKEN ||
+          process.env.WHATSAPP_INTERNAL_TOKEN;
+        if (serviceToken)
+          proxyReq.setHeader('x-whatsapp-service-token', serviceToken);
 
         const whatsappUserId = req.user?.id;
         const whatsappTenantId = req.orgId;
@@ -159,7 +184,10 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
             proxyReq.write(bodyString);
           }
 
-          if (req.method === 'POST' && (req.originalUrl || req.url) === '/api/whatsapp/instances') {
+          if (
+            req.method === 'POST' &&
+            (req.originalUrl || req.url) === '/api/whatsapp/instances'
+          ) {
             console.log('[WHATSAPP] Auth user:', whatsappUserId);
             console.log('[WHATSAPP] Creating instance for user');
           }
@@ -170,8 +198,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         );
       },
       proxyReqWs: (proxyReq, req) => {
-        const serviceToken = process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_INTERNAL_TOKEN;
-        if (serviceToken) proxyReq.setHeader('x-whatsapp-service-token', serviceToken);
+        const serviceToken =
+          process.env.WHATSAPP_SERVICE_TOKEN ||
+          process.env.WHATSAPP_INTERNAL_TOKEN;
+        if (serviceToken)
+          proxyReq.setHeader('x-whatsapp-service-token', serviceToken);
         console.log(
           `[WhatsApp WS Proxy] ${req.url} -> ${target} (Org: ${req.orgId || 'none'})`
         );
@@ -214,47 +245,74 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     });
   });
 
-  app.get('/api/whatsapp/status', verifyAuth, requireTenant, async (req, res) => {
-    applyCorsHeaders(req, res);
+  app.get(
+    '/api/whatsapp/status',
+    verifyAuth,
+    requireTenant,
+    async (req, res) => {
+      applyCorsHeaders(req, res);
 
-    const service = await checkWhatsAppService(target);
-    res.status(service.ok ? 200 : 503).json({
-      ok: service.ok,
-      service: { ok: service.ok, status: service.status },
-      hint: service.ok
-        ? 'WhatsMeow esta respondendo.'
-        : 'O servico WhatsApp esta temporariamente indisponivel.',
-    });
-  });
-
-  app.post(['/api/whatsapp/socket-token', '/api/whatsapp/ws-token'], verifyAuth, requireTenant, issueWsToken);
-  app.get('/api/whatsapp/media/:id/url', verifyAuth, requireTenant, getWhatsAppMediaUrl);
-  app.post('/api/whatsapp/media/:id/retry', verifyAuth, requireTenant, retryWhatsAppMedia);
-
-  app.get('/api/whatsapp/instances', verifyAuth, requireTenant, async (req, res) => {
-    applyCorsHeaders(req, res);
-
-    try {
-      const supabase = getSupabaseServer();
-      const { data, error } = await supabase
-        .from('whatsapp_instances')
-        .select('id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at')
-        .eq('tenant_id', req.orgId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      res.json((data || []).map(normalizeInstanceRow));
-    } catch (err) {
-      console.error('[WhatsApp Instances Fallback Error]', err.message);
-      res.status(500).json({
-        error: 'Falha ao listar instancias do WhatsApp',
-        message: err.message,
+      const service = await checkWhatsAppService(target);
+      res.status(service.ok ? 200 : 503).json({
+        ok: service.ok,
+        service: { ok: service.ok, status: service.status },
+        hint: service.ok
+          ? 'WhatsMeow esta respondendo.'
+          : 'O servico WhatsApp esta temporariamente indisponivel.',
       });
     }
-  });
+  );
+
+  app.post(
+    ['/api/whatsapp/socket-token', '/api/whatsapp/ws-token'],
+    verifyAuth,
+    requireTenant,
+    issueWsToken
+  );
+  app.get(
+    '/api/whatsapp/media/:id/url',
+    verifyAuth,
+    requireTenant,
+    getWhatsAppMediaUrl
+  );
+  app.post(
+    '/api/whatsapp/media/:id/retry',
+    verifyAuth,
+    requireTenant,
+    retryWhatsAppMedia
+  );
+
+  app.get(
+    '/api/whatsapp/instances',
+    verifyAuth,
+    requireTenant,
+    async (req, res) => {
+      applyCorsHeaders(req, res);
+
+      try {
+        const supabase = getSupabaseServer();
+        const { data, error } = await supabase
+          .from('whatsapp_instances')
+          .select(
+            'id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at'
+          )
+          .eq('tenant_id', req.orgId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        res.json((data || []).map(normalizeInstanceRow));
+      } catch (err) {
+        console.error('[WhatsApp Instances Fallback Error]', err.message);
+        res.status(500).json({
+          error: 'Falha ao listar instancias do WhatsApp',
+          message: err.message,
+        });
+      }
+    }
+  );
 
   app.use('/api/whatsapp/ws', validateWsTokenMiddleware, proxy);
   app.use('/api/whatsapp', verifyAuth, requireTenant, proxy);
@@ -296,7 +354,8 @@ function verifyWsToken(token) {
       issuer: 'imobzy-api',
       audience: 'imobzy-whatsapp-ws',
     });
-    if (payload?.purpose !== 'whatsapp_ws' || !payload.sub || !payload.org_id) return null;
+    if (payload?.purpose !== 'whatsapp_ws' || !payload.sub || !payload.org_id)
+      return null;
     return payload;
   } catch (err) {
     console.warn('[WhatsApp WS Auth] invalid token:', err.message);
@@ -334,7 +393,9 @@ async function getWhatsAppMediaUrl(req, res) {
     const supabase = getSupabaseServer();
     const { data: media, error } = await supabase
       .from('whatsapp_media')
-      .select('id, tenant_id, provider, bucket, object_key, public_url, status, mime_type, filename')
+      .select(
+        'id, tenant_id, provider, bucket, object_key, public_url, status, mime_type, filename'
+      )
       .eq('id', req.params.id)
       .eq('tenant_id', req.orgId)
       .maybeSingle();
@@ -355,7 +416,10 @@ async function getWhatsAppMediaUrl(req, res) {
       });
     }
 
-    if (String(media.provider || '').toLowerCase() !== 'minio' && media.public_url) {
+    if (
+      String(media.provider || '').toLowerCase() !== 'minio' &&
+      media.public_url
+    ) {
       return res.json({
         id: media.id,
         url: normalizeStoragePublicUrl(media.public_url),
@@ -401,10 +465,15 @@ async function getWhatsAppMediaUrl(req, res) {
           expires_in: null,
         });
       }
-      return res.status(503).json({ error: 'Storage MinIO nao configurado para assinar URL.' });
+      return res
+        .status(503)
+        .json({ error: 'Storage MinIO nao configurado para assinar URL.' });
     }
 
-    const expiresInSeconds = Math.max(60, Math.min(Number(req.query.expiresInSeconds) || 300, 3600));
+    const expiresInSeconds = Math.max(
+      60,
+      Math.min(Number(req.query.expiresInSeconds) || 300, 3600)
+    );
     const url = createPresignedGetUrl({
       bucket: media.bucket,
       key: media.object_key,
@@ -421,7 +490,9 @@ async function getWhatsAppMediaUrl(req, res) {
     });
   } catch (error) {
     console.error('[WhatsApp Media URL Error]', error.message);
-    return res.status(500).json({ error: error.message || 'Erro ao gerar URL da midia.' });
+    return res
+      .status(500)
+      .json({ error: error.message || 'Erro ao gerar URL da midia.' });
   }
 }
 
@@ -469,11 +540,14 @@ async function retryWhatsAppMedia(req, res) {
       id: media.id,
       status: 'pending',
       retry_count: retryCount,
-      message: 'Midia marcada para recuperacao. O worker de media processara o retry.',
+      message:
+        'Midia marcada para recuperacao. O worker de media processara o retry.',
     });
   } catch (error) {
     console.error('[WhatsApp Media Retry Error]', error.message);
-    return res.status(500).json({ error: error.message || 'Erro ao solicitar retry da midia.' });
+    return res
+      .status(500)
+      .json({ error: error.message || 'Erro ao solicitar retry da midia.' });
   }
 }
 
@@ -520,7 +594,8 @@ function prepareWsProxyRequest(req, payload) {
   url.searchParams.set('tenant_id', payload.org_id);
   req.url = url.pathname + url.search;
   req.headers['x-tenant-id'] = payload.org_id;
-  const serviceToken = process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_INTERNAL_TOKEN;
+  const serviceToken =
+    process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_INTERNAL_TOKEN;
   if (serviceToken) req.headers['x-whatsapp-service-token'] = serviceToken;
 }
 
@@ -597,12 +672,22 @@ function normalizeStoragePublicUrl(value) {
 }
 
 function storagePublicBaseURL() {
-  for (const key of ['NEW_MINIO_PUBLIC_URL', 'MINIO_PUBLIC_URL', 'MINIO_PUBLIC_ENDPOINT', 'S3_PUBLIC_URL']) {
-    const value = String(process.env[key] || '').trim().replace(/\/$/, '');
+  for (const key of [
+    'NEW_MINIO_PUBLIC_URL',
+    'MINIO_PUBLIC_URL',
+    'MINIO_PUBLIC_ENDPOINT',
+    'S3_PUBLIC_URL',
+  ]) {
+    const value = String(process.env[key] || '')
+      .trim()
+      .replace(/\/$/, '');
     if (!value) continue;
     try {
-      const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
-      if (url.hostname !== 'n.woopanel.com.br') return url.toString().replace(/\/$/, '');
+      const url = new URL(
+        /^https?:\/\//i.test(value) ? value : `https://${value}`
+      );
+      if (url.hostname !== 'n.woopanel.com.br')
+        return url.toString().replace(/\/$/, '');
     } catch {
       if (!value.includes('n.woopanel.com.br')) return value;
     }

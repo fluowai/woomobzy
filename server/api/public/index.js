@@ -3,13 +3,16 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 
 const router = Router();
 
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 router.get('/', async (req, res) => {
   const tenantId = req.headers['x-tenant-id'];
@@ -30,7 +33,8 @@ router.get('/', async (req, res) => {
         .eq('published', true)
         .single();
       if (error) throw error;
-      if (!data) return res.status(404).json({ error: 'Landing page não encontrada' });
+      if (!data)
+        return res.status(404).json({ error: 'Landing page não encontrada' });
       await supabase.rpc('increment_landing_page_views', { page_id: data.id });
       return res.status(200).json(data);
     } catch (error) {

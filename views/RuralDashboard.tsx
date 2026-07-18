@@ -38,7 +38,9 @@ const RuralDashboard: React.FC = () => {
       try {
         const { data: propertyRows } = await supabase
           .from('properties')
-          .select('id, property_type, niche, price, status, total_area_ha, features, created_at')
+          .select(
+            'id, property_type, niche, price, status, total_area_ha, features, created_at'
+          )
           .eq('organization_id', profile.organization_id);
 
         const { count: lCount } = await supabase
@@ -67,7 +69,9 @@ const RuralDashboard: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const monthlyPortfolioValue = ruralProperties
     .filter((property) => {
-      const createdAt = property.created_at ? new Date(property.created_at) : null;
+      const createdAt = property.created_at
+        ? new Date(property.created_at)
+        : null;
       return (
         createdAt &&
         createdAt.getMonth() === currentMonth &&
@@ -125,7 +129,9 @@ const RuralDashboard: React.FC = () => {
     date.setMonth(date.getMonth() - (5 - offset));
     const value = ruralProperties
       .filter((property) => {
-        const createdAt = property.created_at ? new Date(property.created_at) : null;
+        const createdAt = property.created_at
+          ? new Date(property.created_at)
+          : null;
         return (
           createdAt &&
           createdAt.getMonth() === date.getMonth() &&
@@ -187,9 +193,7 @@ const RuralDashboard: React.FC = () => {
             <MapPin className="text-primary" size={24} />
           </span>
           <div>
-            <p className="workspace-eyebrow">
-              Dashboard Rural
-            </p>
+            <p className="workspace-eyebrow">Dashboard Rural</p>
             <h1 className="workspace-title">Seja bem-vindo, {displayName}</h1>
           </div>
         </div>
@@ -229,12 +233,13 @@ const RuralDashboard: React.FC = () => {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Chart */}
-        <div className="lg:col-span-2 workspace-card p-5 animate-slide-up" style={{ animationDelay: '400ms' }}>
+        <div
+          className="lg:col-span-2 workspace-card p-5 animate-slide-up"
+          style={{ animationDelay: '400ms' }}
+        >
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="h3 mb-1">
-                Volume de Negociações
-              </h3>
+              <h3 className="h3 mb-1">Volume de Negociações</h3>
               <p className="text-small text-text-tertiary">
                 Variação mensal de captação em milhões (R$)
               </p>
@@ -248,12 +253,30 @@ const RuralDashboard: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorValRural" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
+                  <linearGradient
+                    id="colorValRural"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-primary)"
+                      stopOpacity={0.2}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-primary)"
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-subtle)" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--color-border-subtle)"
+                />
                 <XAxis
                   dataKey="name"
                   axisLine={false}
@@ -294,7 +317,9 @@ const RuralDashboard: React.FC = () => {
                   key={idx}
                   className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-bg-hover transition-all group text-left border border-transparent hover:border-border-subtle"
                 >
-                  <div className={`p-2 rounded-lg border ${action.iconBg} transition-all`}>
+                  <div
+                    className={`p-2 rounded-lg border ${action.iconBg} transition-all`}
+                  >
                     <action.icon size={16} className={action.iconColor} />
                   </div>
                   <div>
@@ -328,7 +353,9 @@ const RuralDashboard: React.FC = () => {
               />
             </div>
             <p className="mt-4 text-[11px] text-text-secondary leading-relaxed">
-              Você está a apenas <strong className="text-primary">R$ 2.5M</strong> da meta trimestral. Mantenha o foco em grandes ativos.
+              Você está a apenas{' '}
+              <strong className="text-primary">R$ 2.5M</strong> da meta
+              trimestral. Mantenha o foco em grandes ativos.
             </p>
           </div>
         </div>

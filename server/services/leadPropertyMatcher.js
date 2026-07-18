@@ -82,7 +82,11 @@ function normalizeText(value = '') {
 
 function textIncludesAny(text, keywords) {
   const normalized = ` ${normalizeText(text)} `;
-  return keywords.some((keyword) => normalized.includes(` ${normalizeText(keyword)} `) || normalized.includes(normalizeText(keyword)));
+  return keywords.some(
+    (keyword) =>
+      normalized.includes(` ${normalizeText(keyword)} `) ||
+      normalized.includes(normalizeText(keyword))
+  );
 }
 
 function parseCurrencyToken(rawNumber, rawUnit = '') {
@@ -94,7 +98,11 @@ function parseCurrencyToken(rawNumber, rawUnit = '') {
 }
 
 function parseNumber(rawNumber) {
-  const value = Number(String(rawNumber || '').replace(/\./g, '').replace(',', '.'));
+  const value = Number(
+    String(rawNumber || '')
+      .replace(/\./g, '')
+      .replace(',', '.')
+  );
   return Number.isFinite(value) ? value : null;
 }
 
@@ -108,7 +116,9 @@ function leadText(lead) {
     lead?.source,
     lead?.preferences ? JSON.stringify(lead.preferences) : '',
     ...(lead?.aptitude_interest || []),
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function propertyText(property) {
@@ -122,13 +132,19 @@ function propertyText(property) {
     property?.state,
     ...(property?.aptitude || []),
     property?.features ? JSON.stringify(property.features) : '',
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function classifyLeadProfile(lead) {
   const text = leadText(lead);
-  const urbanHits = URBAN_KEYWORDS.filter((keyword) => normalizeText(text).includes(normalizeText(keyword))).length;
-  const ruralHits = RURAL_KEYWORDS.filter((keyword) => normalizeText(text).includes(normalizeText(keyword))).length;
+  const urbanHits = URBAN_KEYWORDS.filter((keyword) =>
+    normalizeText(text).includes(normalizeText(keyword))
+  ).length;
+  const ruralHits = RURAL_KEYWORDS.filter((keyword) =>
+    normalizeText(text).includes(normalizeText(keyword))
+  ).length;
 
   if (urbanHits > 0 && ruralHits > 0) return 'misto';
   if (ruralHits > 0) return 'rural';
@@ -140,20 +156,26 @@ function extractBudgetRange(lead) {
   const explicitBudget = Number(lead?.budget || lead?.max_budget || 0);
   const text = normalizeText(leadText(lead));
 
-  const between = text.match(/entre\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?\s+(?:e|a|ate)\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i);
+  const between = text.match(
+    /entre\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?\s+(?:e|a|ate)\s+(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i
+  );
   if (between) {
     const min = parseCurrencyToken(between[1], between[2] || between[4]);
     const max = parseCurrencyToken(between[3], between[4] || between[2]);
     if (min && max) return { min: Math.min(min, max), max: Math.max(min, max) };
   }
 
-  const upTo = text.match(/(?:ate|maximo|max|orcamento|budget)\s+(?:de\s+)?(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i);
+  const upTo = text.match(
+    /(?:ate|maximo|max|orcamento|budget)\s+(?:de\s+)?(?:r\$\s*)?([\d.,]+)\s*(milhoes|milhao|mi|m|mil)?/i
+  );
   if (upTo) {
     const max = parseCurrencyToken(upTo[1], upTo[2]);
     if (max) return { min: null, max };
   }
 
-  return explicitBudget > 0 ? { min: null, max: explicitBudget } : { min: null, max: null };
+  return explicitBudget > 0
+    ? { min: null, max: explicitBudget }
+    : { min: null, max: null };
 }
 
 function extractUrbanPreferences(lead) {
@@ -161,63 +183,112 @@ function extractUrbanPreferences(lead) {
   const text = normalizeText(leadText(lead));
   const rooms = text.match(/(\d+)\s*(quartos|dormitorios|dorms|suites?)/);
   const parking = text.match(/(\d+)\s*(vagas?|garagens?)/);
-  const area = text.match(/(?:minimo|min|acima de|com)?\s*([\d.,]+)\s*(m2|m\²|metros|metro quadrado|m quadrados)/);
+  const area = text.match(
+    /(?:minimo|min|acima de|com)?\s*([\d.,]+)\s*(m2|m\²|metros|metro quadrado|m quadrados)/
+  );
 
   return {
     city: normalizeText(preferences.city || preferences.cidade || ''),
-    neighborhood: normalizeText(preferences.neighborhood || preferences.bairro || ''),
+    neighborhood: normalizeText(
+      preferences.neighborhood || preferences.bairro || ''
+    ),
     type: normalizeText(preferences.type || preferences.tipo || ''),
     budget: extractBudgetRange(lead),
-    rooms: Number(preferences.quartos || preferences.rooms || parseNumber(rooms?.[1]) || 0),
-    parking: Number(preferences.vagas || preferences.parking || parseNumber(parking?.[1]) || 0),
-    minAreaM2: Number(preferences.metragemMin || preferences.minAreaM2 || parseNumber(area?.[1]) || 0),
+    rooms: Number(
+      preferences.quartos || preferences.rooms || parseNumber(rooms?.[1]) || 0
+    ),
+    parking: Number(
+      preferences.vagas || preferences.parking || parseNumber(parking?.[1]) || 0
+    ),
+    minAreaM2: Number(
+      preferences.metragemMin ||
+        preferences.minAreaM2 ||
+        parseNumber(area?.[1]) ||
+        0
+    ),
     wantsFinancing: /financiamento|financiar|financiavel/.test(text),
-    secondaryTerms: ['condominio', 'escola', 'hospital', 'comercio', 'transporte', 'seguranca', 'lazer']
-      .filter((term) => text.includes(term)),
+    secondaryTerms: [
+      'condominio',
+      'escola',
+      'hospital',
+      'comercio',
+      'transporte',
+      'seguranca',
+      'lazer',
+    ].filter((term) => text.includes(term)),
   };
 }
 
 function extractRuralPreferences(lead) {
   const preferences = lead?.preferences || {};
   const text = normalizeText(leadText(lead));
-  const area = text.match(/(?:entre\s+)?([\d.,]+)\s*(?:e|a|ate)?\s*([\d.,]+)?\s*(ha|hectares|hectare|alq|alqueires)/);
+  const area = text.match(
+    /(?:entre\s+)?([\d.,]+)\s*(?:e|a|ate)?\s*([\d.,]+)?\s*(ha|hectares|hectare|alq|alqueires)/
+  );
   const firstArea = parseNumber(area?.[1]);
   const secondArea = parseNumber(area?.[2]);
   const multiplier = normalizeText(area?.[3]).startsWith('alq') ? 2.42 : 1;
-  const areaMin = Number(preferences.hectaresMin || preferences.minArea || (firstArea ? firstArea * multiplier : 0));
-  const areaMax = Number(preferences.hectaresMax || (secondArea ? secondArea * multiplier : 0));
+  const areaMin = Number(
+    preferences.hectaresMin ||
+      preferences.minArea ||
+      (firstArea ? firstArea * multiplier : 0)
+  );
+  const areaMax = Number(
+    preferences.hectaresMax || (secondArea ? secondArea * multiplier : 0)
+  );
 
   return {
     region: normalizeText(preferences.region || preferences.regiao || ''),
     city: normalizeText(preferences.city || preferences.cidade || ''),
-    type: normalizeText(preferences.type || preferences.tipoPropriedade || preferences.tipo || ''),
+    type: normalizeText(
+      preferences.type || preferences.tipoPropriedade || preferences.tipo || ''
+    ),
     budget: extractBudgetRange(lead),
     hectaresMin: areaMax ? Math.min(areaMin, areaMax) : areaMin,
     hectaresMax: areaMax ? Math.max(areaMin, areaMax) : 0,
-    purpose: [
-      'pecuaria',
-      'agricultura',
-      'lavoura',
-      'soja',
-      'cafe',
-      'graos',
-      'gado',
-      'leite',
-      'lazer',
-      'moradia',
-      'investimento',
-    ].find((term) => text.includes(term)) || normalizeText(preferences.finalidade || ''),
-    needsWater: /agua|rio|nascente|represa|poco|corrego/.test(text) || Boolean(preferences.precisaAgua),
-    needsEnergy: /energia|luz|eletrica/.test(text) || Boolean(preferences.precisaEnergia),
-    needsDocumentation: /documentacao|escritura|car|ccir|geo|itr/.test(text) || Boolean(preferences.precisaDocumentacao),
-    secondaryTerms: ['topografia', 'solo', 'curral', 'barracao', 'casa sede', 'pastagem', 'rio', 'nascente', 'aptao', 'aptidao']
-      .filter((term) => text.includes(term)),
+    purpose:
+      [
+        'pecuaria',
+        'agricultura',
+        'lavoura',
+        'soja',
+        'cafe',
+        'graos',
+        'gado',
+        'leite',
+        'lazer',
+        'moradia',
+        'investimento',
+      ].find((term) => text.includes(term)) ||
+      normalizeText(preferences.finalidade || ''),
+    needsWater:
+      /agua|rio|nascente|represa|poco|corrego/.test(text) ||
+      Boolean(preferences.precisaAgua),
+    needsEnergy:
+      /energia|luz|eletrica/.test(text) || Boolean(preferences.precisaEnergia),
+    needsDocumentation:
+      /documentacao|escritura|car|ccir|geo|itr/.test(text) ||
+      Boolean(preferences.precisaDocumentacao),
+    secondaryTerms: [
+      'topografia',
+      'solo',
+      'curral',
+      'barracao',
+      'casa sede',
+      'pastagem',
+      'rio',
+      'nascente',
+      'aptao',
+      'aptidao',
+    ].filter((term) => text.includes(term)),
   };
 }
 
 function getFeature(property, paths, fallback = null) {
   for (const path of paths) {
-    const value = path.split('.').reduce((current, key) => current?.[key], property);
+    const value = path
+      .split('.')
+      .reduce((current, key) => current?.[key], property);
     if (value !== undefined && value !== null && value !== '') return value;
   }
   return fallback;
@@ -225,15 +296,22 @@ function getFeature(property, paths, fallback = null) {
 
 function propertyKind(property) {
   const text = normalizeText(propertyText(property));
-  if (textIncludesAny(text, RURAL_TYPES) || text.includes('rural') || property?.niche === 'rural') return 'rural';
-  if (textIncludesAny(text, URBAN_TYPES) || property?.niche === 'urbano') return 'urbano';
+  if (
+    textIncludesAny(text, RURAL_TYPES) ||
+    text.includes('rural') ||
+    property?.niche === 'rural'
+  )
+    return 'rural';
+  if (textIncludesAny(text, URBAN_TYPES) || property?.niche === 'urbano')
+    return 'urbano';
   return 'indefinido';
 }
 
 function isActiveProperty(property) {
   const status = normalizeText(property?.status || '');
   if (!status) return true;
-  if (/vendido|reservado|alugado|inativo|indisponivel|pendente/.test(status)) return false;
+  if (/vendido|reservado|alugado|inativo|indisponivel|pendente/.test(status))
+    return false;
   return /ativo|disponivel|available|publicado/.test(status);
 }
 
@@ -275,16 +353,63 @@ function scoreUrbanProperty(lead, property) {
   const reasons = [];
   let score = 0;
 
-  const propertyCity = normalizeText(property.city || getFeature(property, ['location.city', 'features.location.city'], ''));
-  const propertyNeighborhood = normalizeText(property.neighborhood || getFeature(property, ['location.neighborhood', 'features.location.neighborhood'], ''));
-  const propertyType = normalizeText(property.property_type || property.type || '');
+  const propertyCity = normalizeText(
+    property.city ||
+      getFeature(property, ['location.city', 'features.location.city'], '')
+  );
+  const propertyNeighborhood = normalizeText(
+    property.neighborhood ||
+      getFeature(
+        property,
+        ['location.neighborhood', 'features.location.neighborhood'],
+        ''
+      )
+  );
+  const propertyType = normalizeText(
+    property.property_type || property.type || ''
+  );
   const price = Number(property.price || 0);
-  const bedrooms = Number(getFeature(property, ['bedrooms', 'features.dormitorios', 'features.rooms', 'features.urban.bedrooms'], 0));
-  const parking = Number(getFeature(property, ['parking_spaces', 'features.vagas', 'features.parking', 'features.urban.parking'], 0));
-  const areaM2 = Number(getFeature(property, ['building_area', 'features.areaM2', 'features.areaConstruida', 'features.urban.areaConstruida'], 0));
+  const bedrooms = Number(
+    getFeature(
+      property,
+      [
+        'bedrooms',
+        'features.dormitorios',
+        'features.rooms',
+        'features.urban.bedrooms',
+      ],
+      0
+    )
+  );
+  const parking = Number(
+    getFeature(
+      property,
+      [
+        'parking_spaces',
+        'features.vagas',
+        'features.parking',
+        'features.urban.parking',
+      ],
+      0
+    )
+  );
+  const areaM2 = Number(
+    getFeature(
+      property,
+      [
+        'building_area',
+        'features.areaM2',
+        'features.areaConstruida',
+        'features.urban.areaConstruida',
+      ],
+      0
+    )
+  );
 
   if (isOutsideBudget(price, prefs.budget)) {
-    return buildMatch('urbano', property, 0, ['Fora da faixa de preço informada']);
+    return buildMatch('urbano', property, 0, [
+      'Fora da faixa de preço informada',
+    ]);
   }
 
   if (prefs.city && propertyCity === prefs.city) {
@@ -316,7 +441,9 @@ function scoreUrbanProperty(lead, property) {
     reasons.push('Possui metragem desejada');
   }
 
-  const secondaryHits = prefs.secondaryTerms.filter((term) => text.includes(term));
+  const secondaryHits = prefs.secondaryTerms.filter((term) =>
+    text.includes(term)
+  );
   if (secondaryHits.length) {
     score += Math.min(5, secondaryHits.length * 2);
     reasons.push(`Diferenciais: ${secondaryHits.slice(0, 3).join(', ')}`);
@@ -335,28 +462,75 @@ function scoreRuralProperty(lead, property) {
   const reasons = [];
   let score = 0;
 
-  const propertyCity = normalizeText(property.city || getFeature(property, ['location.city', 'features.location.city'], ''));
-  const propertyRegion = normalizeText(getFeature(property, ['region', 'regiao', 'features.location.region', 'features.location.regiao'], ''));
-  const propertyType = normalizeText(property.property_type || property.type || '');
+  const propertyCity = normalizeText(
+    property.city ||
+      getFeature(property, ['location.city', 'features.location.city'], '')
+  );
+  const propertyRegion = normalizeText(
+    getFeature(
+      property,
+      [
+        'region',
+        'regiao',
+        'features.location.region',
+        'features.location.regiao',
+      ],
+      ''
+    )
+  );
+  const propertyType = normalizeText(
+    property.property_type || property.type || ''
+  );
   const price = Number(property.price || 0);
-  const hectares = Number(property.total_area_ha || getFeature(property, ['features.areaHectares', 'features.physical.area'], 0));
-  const hasWater = Boolean(getFeature(property, ['agua', 'water_resources'], false))
-    || /rio|nascente|represa|poco|corrego|agua/.test(text)
-    || Object.values(property?.features?.water || {}).some(Boolean);
-  const hasEnergy = Boolean(getFeature(property, ['energia', 'features.infra.energiaEletrica'], false)) || /energia eletrica|energia|luz/.test(text);
-  const hasDocs = Boolean(getFeature(property, ['documentacao', 'features.legal.escritura', 'features.legal.car', 'features.legal.ccir'], false))
-    || /escritura|documentacao|car|ccir|geo|itr/.test(text);
+  const hectares = Number(
+    property.total_area_ha ||
+      getFeature(
+        property,
+        ['features.areaHectares', 'features.physical.area'],
+        0
+      )
+  );
+  const hasWater =
+    Boolean(getFeature(property, ['agua', 'water_resources'], false)) ||
+    /rio|nascente|represa|poco|corrego|agua/.test(text) ||
+    Object.values(property?.features?.water || {}).some(Boolean);
+  const hasEnergy =
+    Boolean(
+      getFeature(property, ['energia', 'features.infra.energiaEletrica'], false)
+    ) || /energia eletrica|energia|luz/.test(text);
+  const hasDocs =
+    Boolean(
+      getFeature(
+        property,
+        [
+          'documentacao',
+          'features.legal.escritura',
+          'features.legal.car',
+          'features.legal.ccir',
+        ],
+        false
+      )
+    ) || /escritura|documentacao|car|ccir|geo|itr/.test(text);
   const hasAccess = /acesso|estrada|asfalto|rodovia/.test(text);
 
   if (isOutsideBudget(price, prefs.budget)) {
-    return buildMatch('rural', property, 0, ['Fora da faixa de preço informada']);
+    return buildMatch('rural', property, 0, [
+      'Fora da faixa de preço informada',
+    ]);
   }
 
-  if ((prefs.city && propertyCity === prefs.city) || (prefs.region && propertyRegion.includes(prefs.region))) {
+  if (
+    (prefs.city && propertyCity === prefs.city) ||
+    (prefs.region && propertyRegion.includes(prefs.region))
+  ) {
     score += 15;
     reasons.push('Região/Cidade compatível');
   }
-  if (prefs.hectaresMin && hectares >= prefs.hectaresMin && (!prefs.hectaresMax || hectares <= prefs.hectaresMax)) {
+  if (
+    prefs.hectaresMin &&
+    hectares >= prefs.hectaresMin &&
+    (!prefs.hectaresMax || hectares <= prefs.hectaresMax)
+  ) {
     score += 20;
     reasons.push('Área produtiva compatível');
   }
@@ -388,10 +562,14 @@ function scoreRuralProperty(lead, property) {
     reasons.push('Documentação indicada no cadastro');
   }
 
-  const secondaryHits = prefs.secondaryTerms.filter((term) => text.includes(term));
+  const secondaryHits = prefs.secondaryTerms.filter((term) =>
+    text.includes(term)
+  );
   if (secondaryHits.length) {
     score += Math.min(5, secondaryHits.length * 2);
-    reasons.push(`Diferenciais rurais: ${secondaryHits.slice(0, 3).join(', ')}`);
+    reasons.push(
+      `Diferenciais rurais: ${secondaryHits.slice(0, 3).join(', ')}`
+    );
   }
 
   return buildMatch('rural', property, score, reasons);
@@ -404,7 +582,9 @@ function buildMatch(engine, property, score, reasons) {
     property,
     score: normalizedScore,
     classification: classifyScore(normalizedScore),
-    reasons: reasons.length ? reasons.slice(0, 5) : ['Compatível com dados disponíveis'],
+    reasons: reasons.length
+      ? reasons.slice(0, 5)
+      : ['Compatível com dados disponíveis'],
   };
 }
 
@@ -415,7 +595,8 @@ function toMatchPayload(match) {
     title: property.title,
     price: Number(property.price || 0),
     city: property.city || property.location?.city || '',
-    neighborhood: property.neighborhood || property.location?.neighborhood || '',
+    neighborhood:
+      property.neighborhood || property.location?.neighborhood || '',
     state: property.state || property.location?.state || '',
     image: Array.isArray(property.images) ? property.images[0] : undefined,
     link: property.link || property.public_url || '',
@@ -435,13 +616,21 @@ function buildWhatsappMessage(lead, matches) {
   const lines = [
     `Olá ${firstName}, encontrei alguns imóveis que combinam com o seu perfil.`,
     '',
-    ...matches.slice(0, 3).flatMap((match, index) => [
-      `${index + 1}. ${match.title}`,
-      match.city || match.state ? `- ${[match.city, match.state].filter(Boolean).join(' / ')}` : null,
-      match.price ? `- ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(match.price)}` : null,
-      ...match.reasons.slice(0, 2).map((reason) => `- ${reason}`),
-      '',
-    ].filter(Boolean)),
+    ...matches
+      .slice(0, 3)
+      .flatMap((match, index) =>
+        [
+          `${index + 1}. ${match.title}`,
+          match.city || match.state
+            ? `- ${[match.city, match.state].filter(Boolean).join(' / ')}`
+            : null,
+          match.price
+            ? `- ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(match.price)}`
+            : null,
+          ...match.reasons.slice(0, 2).map((reason) => `- ${reason}`),
+          '',
+        ].filter(Boolean)
+      ),
     'Posso te enviar mais detalhes?',
   ];
 
@@ -449,24 +638,34 @@ function buildWhatsappMessage(lead, matches) {
 }
 
 function buildSummary(profile, matches) {
-  if (!matches.length) return `Perfil ${profile}: nenhum imovel compativel encontrado automaticamente.`;
+  if (!matches.length)
+    return `Perfil ${profile}: nenhum imovel compativel encontrado automaticamente.`;
   const best = matches[0];
   return `Perfil ${profile}: ${matches.length} match(es). Melhor opcao: ${best.title} (${best.score}% - ${best.classification}).`;
 }
 
 function isMissingMatchColumnsError(error) {
   const message = String(error?.message || error?.details || '');
-  return message.includes(MISSING_MATCH_COLUMNS_HINT)
-    || message.includes('matched_properties')
-    || message.includes('matched_at')
-    || message.includes('schema cache');
+  return (
+    message.includes(MISSING_MATCH_COLUMNS_HINT) ||
+    message.includes('matched_properties') ||
+    message.includes('matched_at') ||
+    message.includes('schema cache')
+  );
 }
 
 async function rerankWithGroq(lead, candidates, profile) {
   const apiKey = (process.env.GROQ_API_KEY || '').trim();
-  if (!apiKey || apiKey.includes('YOUR_GROQ') || apiKey.length < 20 || candidates.length === 0) {
+  if (
+    !apiKey ||
+    apiKey.includes('YOUR_GROQ') ||
+    apiKey.length < 20 ||
+    candidates.length === 0
+  ) {
     if (candidates.length > 0) {
-      console.warn('[LeadMatcher] GROQ_API_KEY inválida ou não configurada. Usando ranking local.');
+      console.warn(
+        '[LeadMatcher] GROQ_API_KEY inválida ou não configurada. Usando ranking local.'
+      );
     }
     return candidates;
   }
@@ -481,7 +680,8 @@ async function rerankWithGroq(lead, candidates, profile) {
       messages: [
         {
           role: 'system',
-          content: 'Voce e um especialista em CRM imobiliario. Reordene matches urbanos e rurais para um lead e responda somente JSON valido.',
+          content:
+            'Voce e um especialista em CRM imobiliario. Reordene matches urbanos e rurais para um lead e responda somente JSON valido.',
         },
         {
           role: 'user',
@@ -506,7 +706,13 @@ async function rerankWithGroq(lead, candidates, profile) {
               current_reasons: candidate.reasons,
             })),
             expected_format: {
-              matches: [{ property_id: 'uuid', score: 0, reasons: ['motivo curto em portugues'] }],
+              matches: [
+                {
+                  property_id: 'uuid',
+                  score: 0,
+                  reasons: ['motivo curto em portugues'],
+                },
+              ],
             },
           }),
         },
@@ -517,33 +723,56 @@ async function rerankWithGroq(lead, candidates, profile) {
     const parsed = JSON.parse(content);
     if (!Array.isArray(parsed.matches)) return candidates;
 
-    const byId = new Map(candidates.map((candidate) => [candidate.property.id, candidate]));
-    const reranked = parsed.matches.map((item) => {
-      const candidate = byId.get(item.property_id);
-      if (!candidate) return null;
-      const score = Math.max(0, Math.min(100, Number(item.score || candidate.score)));
-      return {
-        ...candidate,
-        score,
-        classification: classifyScore(score),
-        reasons: Array.isArray(item.reasons) && item.reasons.length > 0 ? item.reasons.slice(0, 5) : candidate.reasons,
-      };
-    }).filter(Boolean);
+    const byId = new Map(
+      candidates.map((candidate) => [candidate.property.id, candidate])
+    );
+    const reranked = parsed.matches
+      .map((item) => {
+        const candidate = byId.get(item.property_id);
+        if (!candidate) return null;
+        const score = Math.max(
+          0,
+          Math.min(100, Number(item.score || candidate.score))
+        );
+        return {
+          ...candidate,
+          score,
+          classification: classifyScore(score),
+          reasons:
+            Array.isArray(item.reasons) && item.reasons.length > 0
+              ? item.reasons.slice(0, 5)
+              : candidate.reasons,
+        };
+      })
+      .filter(Boolean);
 
     return reranked.length ? reranked : candidates;
   } catch (error) {
-    console.warn('[LeadMatcher] Groq indisponivel, usando ranking local:', error.message);
+    console.warn(
+      '[LeadMatcher] Groq indisponivel, usando ranking local:',
+      error.message
+    );
     return candidates;
   }
 }
 
 function runEngines(lead, properties, profile) {
   const active = properties.filter(isActiveProperty);
-  const urbanProperties = active.filter((property) => propertyKind(property) !== 'rural');
-  const ruralProperties = active.filter((property) => propertyKind(property) !== 'urbano');
+  const urbanProperties = active.filter(
+    (property) => propertyKind(property) !== 'rural'
+  );
+  const ruralProperties = active.filter(
+    (property) => propertyKind(property) !== 'urbano'
+  );
 
-  if (profile === 'urbano') return urbanProperties.map((property) => scoreUrbanProperty(lead, property));
-  if (profile === 'rural') return ruralProperties.map((property) => scoreRuralProperty(lead, property));
+  if (profile === 'urbano')
+    return urbanProperties.map((property) =>
+      scoreUrbanProperty(lead, property)
+    );
+  if (profile === 'rural')
+    return ruralProperties.map((property) =>
+      scoreRuralProperty(lead, property)
+    );
   if (profile === 'misto') {
     return [
       ...urbanProperties.map((property) => scoreUrbanProperty(lead, property)),
@@ -557,7 +786,13 @@ function runEngines(lead, properties, profile) {
   ];
 }
 
-export async function matchLeadProperties({ supabase, lead, organizationId, createdBy = null, profileOverride = null }) {
+export async function matchLeadProperties({
+  supabase,
+  lead,
+  organizationId,
+  createdBy = null,
+  profileOverride = null,
+}) {
   if (!lead?.id || !organizationId) return lead;
 
   const { data: properties, error } = await supabase
@@ -569,7 +804,9 @@ export async function matchLeadProperties({ supabase, lead, organizationId, crea
   if (error) throw error;
 
   const naturalProfile = classifyLeadProfile(lead);
-  const profile = ['urbano', 'rural', 'misto', 'indefinido'].includes(profileOverride)
+  const profile = ['urbano', 'rural', 'misto', 'indefinido'].includes(
+    profileOverride
+  )
     ? profileOverride
     : naturalProfile;
   const ranked = runEngines(lead, properties || [], profile)
@@ -604,34 +841,50 @@ export async function matchLeadProperties({ supabase, lead, organizationId, crea
 
   if (updateError) {
     if (!isMissingMatchColumnsError(updateError)) throw updateError;
-    console.warn('[LeadMatcher] Colunas de match ausentes no banco. Rodar migrations/20260516_lead_property_matches.sql:', updateError.message);
+    console.warn(
+      '[LeadMatcher] Colunas de match ausentes no banco. Rodar migrations/20260516_lead_property_matches.sql:',
+      updateError.message
+    );
   } else {
     updatedLead = persistedLead;
   }
 
-  const { error: activityError } = await supabase.from('lead_activities').insert({
-    lead_id: lead.id,
-    organization_id: organizationId,
-    created_by: createdBy,
-    type: 'Matchmaking IA',
-    description: matchSummary,
-    metadata: {
-      version: MATCH_VERSION,
-      profile,
-      natural_profile: naturalProfile,
-      matches,
-      whatsapp_message: whatsappMessage,
-      learning_signals: ['clicks', 'respostas', 'visitas', 'propostas', 'recusas', 'vendas'],
-    },
-  });
+  const { error: activityError } = await supabase
+    .from('lead_activities')
+    .insert({
+      lead_id: lead.id,
+      organization_id: organizationId,
+      created_by: createdBy,
+      type: 'Matchmaking IA',
+      description: matchSummary,
+      metadata: {
+        version: MATCH_VERSION,
+        profile,
+        natural_profile: naturalProfile,
+        matches,
+        whatsapp_message: whatsappMessage,
+        learning_signals: [
+          'clicks',
+          'respostas',
+          'visitas',
+          'propostas',
+          'recusas',
+          'vendas',
+        ],
+      },
+    });
 
   if (activityError) {
-    console.warn('[LeadMatcher] Nao foi possivel registrar atividade:', activityError.message);
+    console.warn(
+      '[LeadMatcher] Nao foi possivel registrar atividade:',
+      activityError.message
+    );
   }
 
   return {
     ...updatedLead,
-    classification: updatedLead.classification || `Perfil ${profile} - ${bestClassification}`,
+    classification:
+      updatedLead.classification || `Perfil ${profile} - ${bestClassification}`,
     matched_properties: matches,
     match_summary: matchSummary,
     matched_at: matchedAt,

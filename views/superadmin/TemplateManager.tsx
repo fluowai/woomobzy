@@ -113,7 +113,10 @@ const TemplateManager: React.FC = () => {
             onClick={async () => {
               const name = prompt('Nome do novo template:');
               if (!name) return;
-              const type = prompt('Tipo (landing_page, email, contract, report):') as Template['type'] || 'landing_page';
+              const type =
+                (prompt(
+                  'Tipo (landing_page, email, contract, report):'
+                ) as Template['type']) || 'landing_page';
               try {
                 await callApi('/api/admin/templates', {
                   method: 'POST',
@@ -150,9 +153,13 @@ const TemplateManager: React.FC = () => {
                 <div
                   key={key}
                   className={`rounded-xl p-5 ${config.bg} cursor-pointer transition-all hover:shadow-lg ${activeType === key ? 'ring-2 ring-offset-2 ring-purple-500' : ''}`}
-                  onClick={() => setActiveType(activeType === key ? 'all' : key)}
+                  onClick={() =>
+                    setActiveType(activeType === key ? 'all' : key)
+                  }
                 >
-                  <p className={`text-2xl font-bold ${config.color}`}>{count}</p>
+                  <p className={`text-2xl font-bold ${config.color}`}>
+                    {count}
+                  </p>
                   <p
                     className={`text-xs font-bold uppercase tracking-wider ${config.color}`}
                   >

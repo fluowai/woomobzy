@@ -19,14 +19,14 @@ export class PaymentService {
   }): Promise<PaymentDetails | null> {
     try {
       logger.info('Iniciando geração de cobrança no gateway...', data);
-      
+
       // Simulação de chamada de API externa
       return {
         id: 'pay_' + Math.random().toString(36).substr(2, 9),
         invoiceUrl: 'https://payment-gateway.com/invoice/sample',
         bankSlipUrl: 'https://payment-gateway.com/pdf/sample',
         pixCode: '00020126360014br.gov.bcb.pix0114+5511999999999',
-        status: 'PENDING'
+        status: 'PENDING',
       };
     } catch (error) {
       logger.error('Erro ao integrar com gateway de pagamento:', error);

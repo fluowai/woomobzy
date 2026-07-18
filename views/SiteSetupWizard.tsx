@@ -260,7 +260,8 @@ const SiteSetupWizard: React.FC = () => {
       alert('🎉 Site gerado com sucesso!');
 
       // Envia pra edição visual nativa
-      const baseRoute = (profile.role as string) === 'rural_broker' ? 'rural' : 'urban';
+      const baseRoute =
+        (profile.role as string) === 'rural_broker' ? 'rural' : 'urban';
       navigate(`/${baseRoute}/visual-editor`);
     } catch (error) {
       logger.error('Erro ao gerar site', error);

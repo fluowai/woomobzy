@@ -14,9 +14,9 @@ async function executeSQL(sql) {
       { sql },
       {
         headers: {
-          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json',
-          'apikey': SERVICE_ROLE_KEY,
+          apikey: SERVICE_ROLE_KEY,
         },
       }
     );

@@ -1,5 +1,8 @@
 import express from 'express';
-import { getSupabaseAuthServer, getSupabaseServer } from '../lib/supabase-server.js';
+import {
+  getSupabaseAuthServer,
+  getSupabaseServer,
+} from '../lib/supabase-server.js';
 import { clearProfileCache } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -53,14 +56,23 @@ router.post('/recover-org', async (req, res) => {
     const supabaseAuth = getSupabaseAuthServer();
     const supabase = getSupabaseServer();
 
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser(token);
     if (authError || !user) {
-      return res.status(401).json({ error: 'Token invalido', code: 'INVALID_TOKEN' });
+      return res
+        .status(401)
+        .json({ error: 'Token invalido', code: 'INVALID_TOKEN' });
     }
 
-    const email = String(user.email || '').toLowerCase().trim();
+    const email = String(user.email || '')
+      .toLowerCase()
+      .trim();
     if (!email) {
-      return res.status(400).json({ error: 'Email nao disponivel', code: 'NO_EMAIL' });
+      return res
+        .status(400)
+        .json({ error: 'Email nao disponivel', code: 'NO_EMAIL' });
     }
 
     const { data: profile } = await supabase
@@ -70,7 +82,9 @@ router.post('/recover-org', async (req, res) => {
       .maybeSingle();
 
     if (!profile) {
-      return res.status(404).json({ error: 'Perfil nao encontrado', code: 'PROFILE_NOT_FOUND' });
+      return res
+        .status(404)
+        .json({ error: 'Perfil nao encontrado', code: 'PROFILE_NOT_FOUND' });
     }
 
     if (profile.organization_id) {
@@ -114,7 +128,10 @@ router.post('/recover-org', async (req, res) => {
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('[AccountRecovery] Profile update failed:', updateError.message);
+      console.error(
+        '[AccountRecovery] Profile update failed:',
+        updateError.message
+      );
       return res.status(500).json({
         error: 'Erro ao vincular perfil a organizacao.',
         code: 'PROFILE_UPDATE_FAILED',

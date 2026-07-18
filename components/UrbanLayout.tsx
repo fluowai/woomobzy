@@ -48,10 +48,14 @@ const UrbanLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
-  const isWorkspaceRoute = pathname.startsWith('/urban/whatsapp') || pathname.startsWith('/urban/email');
+  const isWorkspaceRoute =
+    pathname.startsWith('/urban/whatsapp') ||
+    pathname.startsWith('/urban/email');
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
-    logger.info('[UrbanLayout] Guard triggered. Redirecting Super Admin to /superadmin');
+    logger.info(
+      '[UrbanLayout] Guard triggered. Redirecting Super Admin to /superadmin'
+    );
     return <Navigate to="/superadmin" replace />;
   }
 
@@ -83,7 +87,11 @@ const UrbanLayout: React.FC = () => {
 
   const managementItems: MenuItem[] = [
     { icon: DollarSign, label: 'Financeiro & ERP', path: '/urban/financeiro' },
-    { icon: Calculator, label: 'Simulador Financeiro', path: '/urban/simulador' },
+    {
+      icon: Calculator,
+      label: 'Simulador Financeiro',
+      path: '/urban/simulador',
+    },
     { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
     { icon: FileText, label: 'Documentos (GED)', path: '/urban/documentos' },
   ];
@@ -93,7 +101,11 @@ const UrbanLayout: React.FC = () => {
     { icon: Sparkles, label: 'Editor Visual', path: '/urban/visual-editor' },
     { icon: Settings, label: 'Configurar Site', path: '/urban/site-setup' },
     { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
-    { icon: LayoutTemplate, label: 'Landing Pages', path: '/urban/landing-pages' },
+    {
+      icon: LayoutTemplate,
+      label: 'Landing Pages',
+      path: '/urban/landing-pages',
+    },
     { icon: FileQuestion, label: 'Quiz', path: '/urban/quiz' },
     { icon: PieChart, label: 'Relatórios Gerenciais', path: '/urban/reports' },
   ];
@@ -132,9 +144,7 @@ const UrbanLayout: React.FC = () => {
       className={({ isActive }) => {
         const active = isMenuItemActive(item.path, isActive);
         return `workspace-nav-item flex items-center justify-between group ${
-          active
-            ? 'workspace-nav-item-active'
-            : ''
+          active ? 'workspace-nav-item-active' : ''
         }`;
       }}
     >
@@ -146,14 +156,22 @@ const UrbanLayout: React.FC = () => {
             <div className="flex items-center gap-3.5 min-w-0">
               <item.icon
                 size={20}
-                className={active ? 'text-primary shrink-0' : 'text-slate-400 group-hover:text-primary shrink-0'}
+                className={
+                  active
+                    ? 'text-primary shrink-0'
+                    : 'text-slate-400 group-hover:text-primary shrink-0'
+                }
               />
               <span className="truncate">{item.label}</span>
             </div>
             {item.path !== '/urban' && (
               <ChevronRight
                 size={14}
-                className={active ? 'text-primary/70 shrink-0' : 'text-slate-300 group-hover:text-primary shrink-0'}
+                className={
+                  active
+                    ? 'text-primary/70 shrink-0'
+                    : 'text-slate-300 group-hover:text-primary shrink-0'
+                }
               />
             )}
           </>
@@ -171,8 +189,8 @@ const UrbanLayout: React.FC = () => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <img
-                  src="/logo-wootech-imob.svg"
-                  alt="WooTech Imob"
+            src="/logo-wootech-imob.svg"
+            alt="WooTech Imob"
             className="workspace-logo transition-transform group-hover:scale-[1.02]"
           />
         </Link>
@@ -181,9 +199,7 @@ const UrbanLayout: React.FC = () => {
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 custom-scrollbar">
         {menuSections.map((section) => (
           <div key={section.title} className="space-y-2">
-            <p className="workspace-section-title">
-              {section.title}
-            </p>
+            <p className="workspace-section-title">{section.title}</p>
             <div className="space-y-1">{section.items.map(renderMenuItem)}</div>
           </div>
         ))}
@@ -193,7 +209,10 @@ const UrbanLayout: React.FC = () => {
           className="workspace-nav-item flex items-center justify-between w-full group"
         >
           <div className="flex items-center gap-3.5">
-            <Headset size={20} className="text-slate-400 group-hover:text-primary" />
+            <Headset
+              size={20}
+              className="text-slate-400 group-hover:text-primary"
+            />
             <span>Suporte</span>
           </div>
         </button>
@@ -214,7 +233,11 @@ const UrbanLayout: React.FC = () => {
               </span>
             ) : (
               <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide truncate">
-                {profile?.role === 'admin' ? 'Admin Imobiliária' : loading ? '...' : profile?.role || 'Corretor'}
+                {profile?.role === 'admin'
+                  ? 'Admin Imobiliária'
+                  : loading
+                    ? '...'
+                    : profile?.role || 'Corretor'}
               </p>
             )}
           </div>
@@ -227,7 +250,10 @@ const UrbanLayout: React.FC = () => {
           <LogOut size={14} /> Sair
         </button>
       </div>
-      <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
+      <SupportModal
+        isOpen={isSupportOpen}
+        onClose={() => setIsSupportOpen(false)}
+      />
     </>
   );
 

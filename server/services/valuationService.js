@@ -23,7 +23,12 @@ export class ValuationService {
     const areaHa = parseFloat(features.areaHectares) || 0;
     const areaM2 = parseFloat(features.areaM2) || 0;
 
-    const basePrice = await this._getBasePrice(location.city, location.state, property.type, orgId);
+    const basePrice = await this._getBasePrice(
+      location.city,
+      location.state,
+      property.type,
+      orgId
+    );
 
     const rules = await this._loadActiveRules(orgId, property.type);
 
@@ -35,24 +40,40 @@ export class ValuationService {
       if (this._matchesCondition(features, rule.conditions)) {
         if (rule.rule_type === 'multiplier') {
           multiplier *= Number(rule.value);
-          factors.push({ rule: rule.name, type: 'multiplier', value: Number(rule.value) });
+          factors.push({
+            rule: rule.name,
+            type: 'multiplier',
+            value: Number(rule.value),
+          });
         } else if (rule.rule_type === 'premium') {
           premiums += Number(rule.value);
-          factors.push({ rule: rule.name, type: 'premium', value: Number(rule.value) });
+          factors.push({
+            rule: rule.name,
+            type: 'premium',
+            value: Number(rule.value),
+          });
         } else if (rule.rule_type === 'deduction') {
           multiplier -= Number(rule.value);
-          factors.push({ rule: rule.name, type: 'deduction', value: Number(rule.value) });
+          factors.push({
+            rule: rule.name,
+            type: 'deduction',
+            value: Number(rule.value),
+          });
         }
       }
     }
 
     let estimatedValue = 0;
     if (isRural) {
-      estimatedValue = (basePrice * areaHa * multiplier) + premiums;
+      estimatedValue = basePrice * areaHa * multiplier + premiums;
     } else {
-      const pricePerM2 = await this._getUrbanPricePerM2(location.city, location.neighborhood, orgId);
+      const pricePerM2 = await this._getUrbanPricePerM2(
+        location.city,
+        location.neighborhood,
+        orgId
+      );
       const effectiveAreaM2 = areaM2 || areaHa * 10000;
-      estimatedValue = (pricePerM2 * effectiveAreaM2 * multiplier) + premiums;
+      estimatedValue = pricePerM2 * effectiveAreaM2 * multiplier + premiums;
     }
 
     estimatedValue = Math.round(Math.max(estimatedValue, 1000));
@@ -75,7 +96,7 @@ export class ValuationService {
         is_rural: isRural,
         rules_count: rules.length,
       }),
-      rules_applied: rules.map(r => r.id),
+      rules_applied: rules.map((r) => r.id),
       triggered_by: userId,
     };
 
@@ -130,19 +151,22 @@ export class ValuationService {
 
     if (!comparables) return [];
 
-    return comparables.map(c => {
-      const cArea = parseFloat(c.features?.areaHectares) || 1;
-      return {
-        id: c.id,
-        title: c.title,
-        price: c.price,
-        price_per_ha: Math.round(c.price / cArea * 100) / 100,
-        area_ha: cArea,
-        image: c.images?.[0] || null,
-        created_at: c.created_at,
-        similarity_score: this._calculateSimilarity(property, c),
-      };
-    }).sort((a, b) => b.similarity_score - a.similarity_score).slice(0, 5);
+    return comparables
+      .map((c) => {
+        const cArea = parseFloat(c.features?.areaHectares) || 1;
+        return {
+          id: c.id,
+          title: c.title,
+          price: c.price,
+          price_per_ha: Math.round((c.price / cArea) * 100) / 100,
+          area_ha: cArea,
+          image: c.images?.[0] || null,
+          created_at: c.created_at,
+          similarity_score: this._calculateSimilarity(property, c),
+        };
+      })
+      .sort((a, b) => b.similarity_score - a.similarity_score)
+      .slice(0, 5);
   }
 
   static _calculateSimilarity(source, target) {
@@ -154,8 +178,10 @@ export class ValuationService {
       score += ratio * 30;
     }
     if (source.features?.topography === target.features?.topography) score += 5;
-    if (source.features?.soilTexture === target.features?.soilTexture) score += 5;
-    if (source.features?.infra?.casaSede === target.features?.infra?.casaSede) score += 5;
+    if (source.features?.soilTexture === target.features?.soilTexture)
+      score += 5;
+    if (source.features?.infra?.casaSede === target.features?.infra?.casaSede)
+      score += 5;
     const sPrice = source.price || 0;
     const tPrice = target.price || 0;
     if (sPrice > 0 && tPrice > 0) {
@@ -180,28 +206,38 @@ export class ValuationService {
     const { data: avg } = await supabase
       .from('price_history')
       .select('price_per_ha')
-      .in('property_id', supabase
-        .from('properties')
-        .select('id')
-        .eq('features->location->>state', state)
-        .eq('features->location->>city', city)
-        .eq('type', propertyType)
+      .in(
+        'property_id',
+        supabase
+          .from('properties')
+          .select('id')
+          .eq('features->location->>state', state)
+          .eq('features->location->>city', city)
+          .eq('type', propertyType)
       )
       .not('price_per_ha', 'is', null)
       .limit(50);
 
-    const prices = (avg || []).map(p => Number(p.price_per_ha)).filter(p => p > 0);
-    const meanPrice = prices.length > 0
-      ? prices.reduce((a, b) => a + b, 0) / prices.length
-      : propertyType === 'RURAL' ? 15000 : 200;
+    const prices = (avg || [])
+      .map((p) => Number(p.price_per_ha))
+      .filter((p) => p > 0);
+    const meanPrice =
+      prices.length > 0
+        ? prices.reduce((a, b) => a + b, 0) / prices.length
+        : propertyType === 'RURAL'
+          ? 15000
+          : 200;
 
-    await supabase.from('external_data_cache').upsert({
-      cache_key: `base_price:${state}:${city}:${propertyType}`,
-      source: 'internal_avg',
-      data: { price: meanPrice, city, state, property_type: propertyType },
-      ttl_seconds: 86400,
-      expires_at: new Date(Date.now() + 86400000).toISOString(),
-    }, { onConflict: 'cache_key' });
+    await supabase.from('external_data_cache').upsert(
+      {
+        cache_key: `base_price:${state}:${city}:${propertyType}`,
+        source: 'internal_avg',
+        data: { price: meanPrice, city, state, property_type: propertyType },
+        ttl_seconds: 86400,
+        expires_at: new Date(Date.now() + 86400000).toISOString(),
+      },
+      { onConflict: 'cache_key' }
+    );
 
     return meanPrice;
   }
@@ -225,18 +261,24 @@ export class ValuationService {
       .not('price_per_m2', 'is', null)
       .limit(30);
 
-    const prices = (avg || []).map(p => Number(p.price_per_m2)).filter(p => p > 0);
-    const meanPrice = prices.length > 0
-      ? prices.reduce((a, b) => a + b, 0) / prices.length
-      : 3000;
+    const prices = (avg || [])
+      .map((p) => Number(p.price_per_m2))
+      .filter((p) => p > 0);
+    const meanPrice =
+      prices.length > 0
+        ? prices.reduce((a, b) => a + b, 0) / prices.length
+        : 3000;
 
-    await supabase.from('external_data_cache').upsert({
-      cache_key: cacheKey,
-      source: 'internal_avg',
-      data: { price: meanPrice, city, neighborhood },
-      ttl_seconds: 86400,
-      expires_at: new Date(Date.now() + 86400000).toISOString(),
-    }, { onConflict: 'cache_key' });
+    await supabase.from('external_data_cache').upsert(
+      {
+        cache_key: cacheKey,
+        source: 'internal_avg',
+        data: { price: meanPrice, city, neighborhood },
+        ttl_seconds: 86400,
+        expires_at: new Date(Date.now() + 86400000).toISOString(),
+      },
+      { onConflict: 'cache_key' }
+    );
 
     return meanPrice;
   }
@@ -262,9 +304,15 @@ export class ValuationService {
       const value = this._getNestedValue(features, path);
       if (value === undefined || value === null) return false;
 
-      if (typeof expected === 'object' && expected !== null && !Array.isArray(expected)) {
-        if (expected.min !== undefined && Number(value) < Number(expected.min)) return false;
-        if (expected.max !== undefined && Number(value) > Number(expected.max)) return false;
+      if (
+        typeof expected === 'object' &&
+        expected !== null &&
+        !Array.isArray(expected)
+      ) {
+        if (expected.min !== undefined && Number(value) < Number(expected.min))
+          return false;
+        if (expected.max !== undefined && Number(value) > Number(expected.max))
+          return false;
       } else if (typeof expected === 'boolean') {
         if (Boolean(value) !== expected) return false;
       } else if (Array.isArray(expected)) {
@@ -283,8 +331,19 @@ export class ValuationService {
   }
 
   static _isRural(property) {
-    const ruralTypes = ['Fazenda', 'Sítio', 'Chácara', 'Estância', 'Haras',
-      'Granja', 'Agropecuária', 'Terreno Rural', 'Gleba', 'Lote Rural', 'Área Produtiva'];
+    const ruralTypes = [
+      'Fazenda',
+      'Sítio',
+      'Chácara',
+      'Estância',
+      'Haras',
+      'Granja',
+      'Agropecuária',
+      'Terreno Rural',
+      'Gleba',
+      'Lote Rural',
+      'Área Produtiva',
+    ];
     return ruralTypes.includes(property.type) || property.type === 'RURAL';
   }
 }

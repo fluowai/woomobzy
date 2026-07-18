@@ -104,7 +104,9 @@ const DomainManager: React.FC = () => {
         }),
       });
 
-      alert(`Dominio ${newDomain} salvo. Oriente o cliente a apontar o registro A para ${PLATFORM_IP}.`);
+      alert(
+        `Dominio ${newDomain} salvo. Oriente o cliente a apontar o registro A para ${PLATFORM_IP}.`
+      );
       setNewDomain('');
       setSelectedOrgId('');
 
@@ -173,10 +175,17 @@ const DomainManager: React.FC = () => {
   const [syncing, setSyncing] = useState(false);
 
   const handleSyncAll = async () => {
-    if (!confirm('Deseja sincronizar todos os domínios com o Traefik? Isso irá recriar os arquivos de configuração para todos os domínios cadastrados.')) return;
+    if (
+      !confirm(
+        'Deseja sincronizar todos os domínios com o Traefik? Isso irá recriar os arquivos de configuração para todos os domínios cadastrados.'
+      )
+    )
+      return;
     setSyncing(true);
     try {
-      const response = await callApi('/api/domains/sync-all', { method: 'POST' });
+      const response = await callApi('/api/domains/sync-all', {
+        method: 'POST',
+      });
       alert(response.message);
       fetchData();
     } catch (e: any) {
@@ -354,10 +363,25 @@ const DomainManager: React.FC = () => {
                     </button>
                     {domain.expectedIp && (
                       <div className="mt-2 text-[11px] leading-relaxed text-gray-500">
-                        <div>Esperado: <span className="font-mono">{domain.expectedIp}</span></div>
-                        <div>Encontrado: <span className="font-mono">{domain.addresses?.length ? domain.addresses.join(', ') : 'nenhum A'}</span></div>
+                        <div>
+                          Esperado:{' '}
+                          <span className="font-mono">{domain.expectedIp}</span>
+                        </div>
+                        <div>
+                          Encontrado:{' '}
+                          <span className="font-mono">
+                            {domain.addresses?.length
+                              ? domain.addresses.join(', ')
+                              : 'nenhum A'}
+                          </span>
+                        </div>
                         {!domain.verified && domain.wikiUrl && (
-                          <a href={domain.wikiUrl} target="_blank" rel="noreferrer" className="font-bold text-blue-700 underline">
+                          <a
+                            href={domain.wikiUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-bold text-blue-700 underline"
+                          >
                             Ver wiki DNS
                           </a>
                         )}
@@ -386,4 +410,3 @@ const DomainManager: React.FC = () => {
 };
 
 export default DomainManager;
-

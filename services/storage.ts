@@ -2,7 +2,12 @@ import { logger } from '@/utils/logger';
 import { getApiUrl } from '../src/lib/api';
 import { supabase } from './supabase';
 
-type StorageBucket = 'agency-assets' | 'property-images' | 'imobzyimg' | 'imobzymsg' | 'whatsapp-media';
+type StorageBucket =
+  | 'agency-assets'
+  | 'property-images'
+  | 'imobzyimg'
+  | 'imobzymsg'
+  | 'whatsapp-media';
 type ResolvedStorageBucket = 'imobzyimg' | 'imobzymsg' | 'whatsapp-media';
 
 export const uploadFile = async (

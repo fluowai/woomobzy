@@ -35,12 +35,16 @@ ALTER TABLE organizations ALTER COLUMN niche SET NOT NULL;
 
   try {
     // Execute via SQL function (exec_sql RPC)
-    const { data, error } = await supabase.rpc('exec_sql', {
-      sql: migrationSQL
-    }).catch(err => {
-      console.log('⚠️  exec_sql RPC not available, trying direct approach...');
-      return { error: err };
-    });
+    const { data, error } = await supabase
+      .rpc('exec_sql', {
+        sql: migrationSQL,
+      })
+      .catch((err) => {
+        console.log(
+          '⚠️  exec_sql RPC not available, trying direct approach...'
+        );
+        return { error: err };
+      });
 
     if (error) {
       throw error;
@@ -48,7 +52,6 @@ ALTER TABLE organizations ALTER COLUMN niche SET NOT NULL;
 
     console.log('✅ Migration executed successfully!');
     console.log(data);
-
   } catch (err) {
     console.error('❌ Migration failed:', err.message);
 
@@ -59,7 +62,7 @@ ALTER TABLE organizations ALTER COLUMN niche SET NOT NULL;
       `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS niche TEXT DEFAULT 'rural' CHECK (niche IN ('rural', 'traditional', 'hybrid'))`,
       `CREATE INDEX IF NOT EXISTS idx_organizations_niche ON organizations(niche)`,
       `UPDATE organizations SET niche = 'rural' WHERE niche IS NULL`,
-      `ALTER TABLE organizations ALTER COLUMN niche SET NOT NULL`
+      `ALTER TABLE organizations ALTER COLUMN niche SET NOT NULL`,
     ];
 
     for (const stmt of statements) {
@@ -68,7 +71,9 @@ ALTER TABLE organizations ALTER COLUMN niche SET NOT NULL;
         if (error) throw error;
         console.log(`✅ Statement executed`);
       } catch (e) {
-        console.log(`⚠️  Statement skipped (may already exist): ${stmt.substring(0, 50)}...`);
+        console.log(
+          `⚠️  Statement skipped (may already exist): ${stmt.substring(0, 50)}...`
+        );
       }
     }
   }

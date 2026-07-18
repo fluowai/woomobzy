@@ -54,10 +54,13 @@ export function useLeaseWizard(existingLease?: Lease) {
     }
   }, []);
 
-  const updateField = useCallback(<K extends keyof Lease>(key: K, value: Lease[K]) => {
-    setLease((prev) => ({ ...prev, [key]: value }));
-    setWizard((prev) => ({ ...prev, isDirty: true }));
-  }, []);
+  const updateField = useCallback(
+    <K extends keyof Lease>(key: K, value: Lease[K]) => {
+      setLease((prev) => ({ ...prev, [key]: value }));
+      setWizard((prev) => ({ ...prev, isDirty: true }));
+    },
+    []
+  );
 
   const updateFields = useCallback((fields: Partial<Lease>) => {
     setLease((prev) => ({ ...prev, ...fields }));

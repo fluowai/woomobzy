@@ -1,6 +1,12 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { FileCheck, FileSearch, Map as MapIcon, Navigation, ShieldCheck } from 'lucide-react';
+import {
+  FileCheck,
+  FileSearch,
+  Map as MapIcon,
+  Navigation,
+  ShieldCheck,
+} from 'lucide-react';
 
 const tabs = [
   {
@@ -44,7 +50,8 @@ const RuralTerritoryHub: React.FC = () => {
         </p>
         <h1 className="h1">Território Rural</h1>
         <p className="body text-text-secondary max-w-3xl">
-          Mapas, CAR, valuation, dossiê e documentação trabalham juntos para qualificar o imóvel rural em um único fluxo.
+          Mapas, CAR, valuation, dossiê e documentação trabalham juntos para
+          qualificar o imóvel rural em um único fluxo.
         </p>
       </div>
 
@@ -73,10 +80,14 @@ const RuralTerritoryHub: React.FC = () => {
                   <tab.icon size={20} />
                 </div>
                 <div>
-                  <p className={`text-sm font-bold ${isActive ? 'text-white' : 'text-text-primary'}`}>
+                  <p
+                    className={`text-sm font-bold ${isActive ? 'text-white' : 'text-text-primary'}`}
+                  >
                     {tab.label}
                   </p>
-                  <p className={`text-[11px] leading-relaxed mt-1 ${isActive ? 'text-white/75' : 'text-text-tertiary'}`}>
+                  <p
+                    className={`text-[11px] leading-relaxed mt-1 ${isActive ? 'text-white/75' : 'text-text-tertiary'}`}
+                  >
                     {tab.description}
                   </p>
                 </div>

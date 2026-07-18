@@ -13,7 +13,9 @@ export function useWebSocket(enabled = true) {
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const handlersRef = useRef<Map<string, Set<EventHandler>>>(new Map());
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const reconnectAttempts = useRef(0);
   const maxReconnectDelay = 30000;
   const intentionalClose = useRef(false);
@@ -59,9 +61,14 @@ export function useWebSocket(enabled = true) {
           return;
         }
 
-        const delay = getReconnectDelay(reconnectAttempts.current, maxReconnectDelay);
+        const delay = getReconnectDelay(
+          reconnectAttempts.current,
+          maxReconnectDelay
+        );
         reconnectAttempts.current += 1;
-        logger.warn(`WhatsApp WebSocket disconnected. Reconnecting in ${delay}ms.`);
+        logger.warn(
+          `WhatsApp WebSocket disconnected. Reconnecting in ${delay}ms.`
+        );
         reconnectTimeoutRef.current = setTimeout(connect, delay);
       };
 
@@ -71,9 +78,15 @@ export function useWebSocket(enabled = true) {
 
       wsRef.current = ws;
     } catch (err) {
-      const delay = getReconnectDelay(reconnectAttempts.current, maxReconnectDelay);
+      const delay = getReconnectDelay(
+        reconnectAttempts.current,
+        maxReconnectDelay
+      );
       reconnectAttempts.current += 1;
-      logger.warn(`Failed to create WhatsApp WebSocket. Reconnecting in ${delay}ms.`, err);
+      logger.warn(
+        `Failed to create WhatsApp WebSocket. Reconnecting in ${delay}ms.`,
+        err
+      );
       reconnectTimeoutRef.current = setTimeout(connect, delay);
     }
   }, [enabled]);

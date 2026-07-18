@@ -15,9 +15,11 @@ async function getOrgAIConfig(orgId) {
 
 function isMissingRelationError(error) {
   const message = String(error?.message || '').toLowerCase();
-  return ['42p01', 'pgrst205'].includes(error?.code) ||
+  return (
+    ['42p01', 'pgrst205'].includes(error?.code) ||
     message.includes('does not exist') ||
-    message.includes('schema cache');
+    message.includes('schema cache')
+  );
 }
 
 function normalizeAgentPayload(body, partial = false) {
@@ -45,7 +47,10 @@ function normalizeAgentPayload(body, partial = false) {
   };
 
   Object.keys(extendedConfig).forEach((key) => {
-    if (extendedConfig[key] === undefined || (partial && extendedConfig[key] === null)) {
+    if (
+      extendedConfig[key] === undefined ||
+      (partial && extendedConfig[key] === null)
+    ) {
       delete extendedConfig[key];
     }
   });
@@ -54,7 +59,9 @@ function normalizeAgentPayload(body, partial = false) {
     name: body.name,
     role: body.role,
     channel: body.channel || 'whatsapp',
-    is_active: body.status ? body.status === 'Ativo' || body.status === 'Em teste' : (body.is_active ?? true),
+    is_active: body.status
+      ? body.status === 'Ativo' || body.status === 'Em teste'
+      : (body.is_active ?? true),
     personality: body.personality || '',
     instructions: body.instructions || body.operational_instructions || '',
     handoff_rules: {
@@ -71,7 +78,8 @@ function normalizeAgentPayload(body, partial = false) {
   };
 
   Object.keys(payload).forEach((key) => {
-    if (payload[key] === undefined || (partial && payload[key] === null)) delete payload[key];
+    if (payload[key] === undefined || (partial && payload[key] === null))
+      delete payload[key];
   });
 
   if (!partial && (!payload.name || !payload.role)) {
@@ -133,10 +141,13 @@ async function saveFallbackAgents(supabase, organizationId, agents) {
 
 async function listFallbackAgents(supabase, organizationId) {
   const settings = await getFallbackSettings(supabase, organizationId);
-  const integrations = typeof settings?.integrations === 'object' && settings?.integrations
-    ? settings.integrations
-    : {};
-  return Array.isArray(integrations.operationalAgents) ? integrations.operationalAgents : [];
+  const integrations =
+    typeof settings?.integrations === 'object' && settings?.integrations
+      ? settings.integrations
+      : {};
+  return Array.isArray(integrations.operationalAgents)
+    ? integrations.operationalAgents
+    : [];
 }
 
 async function listFallbackAgentsSafe(supabase, organizationId) {

@@ -15,7 +15,9 @@ export function sanitizeInput(input, maxLength = 50) {
  * Validate a UUID v4 string (case-insensitive).
  */
 export function isValidUUID(id) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    id
+  );
 }
 
 /**
@@ -54,7 +56,15 @@ export function validateCPF_CNPJ(cpfCnpj) {
 /**
  * Collect bounding box from nested GeoJSON coordinate arrays.
  */
-export function collectCoordinateBounds(coordinates, bounds = { minLat: Infinity, minLng: Infinity, maxLat: -Infinity, maxLng: -Infinity }) {
+export function collectCoordinateBounds(
+  coordinates,
+  bounds = {
+    minLat: Infinity,
+    minLng: Infinity,
+    maxLat: -Infinity,
+    maxLng: -Infinity,
+  }
+) {
   if (!Array.isArray(coordinates)) return bounds;
 
   if (
@@ -85,7 +95,12 @@ export function featureCollectionToMapTarget(featureCollection) {
   const features = featureCollection?.features || [];
   if (!features.length) return null;
 
-  let bounds = { minLat: Infinity, minLng: Infinity, maxLat: -Infinity, maxLng: -Infinity };
+  let bounds = {
+    minLat: Infinity,
+    minLng: Infinity,
+    maxLat: -Infinity,
+    maxLng: -Infinity,
+  };
   let totalAreaHa = 0;
 
   for (const feature of features) {
@@ -115,7 +130,9 @@ export function featureCollectionToMapTarget(featureCollection) {
  * Extract UF (state) from a rural property code like "MT-XXX".
  */
 export function extractUfFromRuralCode(code) {
-  const match = String(code || '').trim().match(/^([A-Z]{2})[-_]/i);
+  const match = String(code || '')
+    .trim()
+    .match(/^([A-Z]{2})[-_]/i);
   return match ? match[1].toUpperCase() : null;
 }
 
@@ -124,12 +141,20 @@ export function extractUfFromRuralCode(code) {
  */
 export function extractGeoServerException(rawText) {
   const text = String(rawText || '');
-  const exceptionText = text.match(/<ows:ExceptionText[^>]*>([\s\S]*?)<\/ows:ExceptionText>/i)
-    || text.match(/<ExceptionText[^>]*>([\s\S]*?)<\/ExceptionText>/i);
+  const exceptionText =
+    text.match(/<ows:ExceptionText[^>]*>([\s\S]*?)<\/ows:ExceptionText>/i) ||
+    text.match(/<ExceptionText[^>]*>([\s\S]*?)<\/ExceptionText>/i);
   if (exceptionText?.[1]) {
-    return exceptionText[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return exceptionText[1]
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
-  return text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+  return text
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 240);
 }
 
 /**
@@ -137,9 +162,16 @@ export function extractGeoServerException(rawText) {
  */
 export function isPlaceholderLeadName(value = '') {
   const clean = String(value).trim().toLowerCase();
-  if (!clean || clean === '~' || clean === 'me' || clean === 'contato sem telefone') return true;
+  if (
+    !clean ||
+    clean === '~' ||
+    clean === 'me' ||
+    clean === 'contato sem telefone'
+  )
+    return true;
   const raw = String(value).trim();
-  if (/^([A-Z]\.?\s*){1,4}$/.test(raw) || /^([A-Za-z]\.\s*){1,4}$/.test(raw)) return true;
+  if (/^([A-Z]\.?\s*){1,4}$/.test(raw) || /^([A-Za-z]\.\s*){1,4}$/.test(raw))
+    return true;
   return /^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''));
 }
 

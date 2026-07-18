@@ -80,7 +80,12 @@ describe('shared-utils - collectCoordinateBounds', () => {
   });
 
   it('should initialize bounds from Infinity using [lng, lat] order', () => {
-    const bounds = { minLat: Infinity, minLng: Infinity, maxLat: -Infinity, maxLng: -Infinity };
+    const bounds = {
+      minLat: Infinity,
+      minLng: Infinity,
+      maxLat: -Infinity,
+      maxLng: -Infinity,
+    };
     const result = collectCoordinateBounds([25, 15], bounds);
     expect(result.minLat).toBe(15);
     expect(result.minLng).toBe(25);
@@ -89,8 +94,18 @@ describe('shared-utils - collectCoordinateBounds', () => {
   });
 
   it('should handle nested coordinate arrays', () => {
-    const bounds = { minLat: Infinity, minLng: Infinity, maxLat: -Infinity, maxLng: -Infinity };
-    const coords = [[[10, 20], [30, 40]]];
+    const bounds = {
+      minLat: Infinity,
+      minLng: Infinity,
+      maxLat: -Infinity,
+      maxLng: -Infinity,
+    };
+    const coords = [
+      [
+        [10, 20],
+        [30, 40],
+      ],
+    ];
     const result = collectCoordinateBounds(coords, bounds);
     expect(result.minLat).toBe(20);
     expect(result.minLng).toBe(10);
@@ -108,13 +123,23 @@ describe('shared-utils - featureCollectionToMapTarget', () => {
   it('should compute center and bounds for valid FeatureCollection', () => {
     const fc = {
       type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [[[10, 20], [30, 40], [30, 20], [10, 40], [10, 20]]],
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [10, 20],
+                [30, 40],
+                [30, 20],
+                [10, 40],
+                [10, 20],
+              ],
+            ],
+          },
         },
-      }],
+      ],
     };
     const result = featureCollectionToMapTarget(fc);
     expect(result).not.toBeNull();

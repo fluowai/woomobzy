@@ -86,7 +86,9 @@ async function executeMigrations() {
     MIGRATIONS.forEach((file, i) => {
       const filePath = path.join(projectRoot, file);
       const exists = fs.existsSync(filePath);
-      const status = exists ? `${colors.green}✅${colors.reset}` : `${colors.red}❌${colors.reset}`;
+      const status = exists
+        ? `${colors.green}✅${colors.reset}`
+        : `${colors.red}❌${colors.reset}`;
       console.log(`  ${status} ${i + 1}. ${file}`);
     });
 
@@ -104,7 +106,9 @@ async function executeMigrations() {
       const fileNum = i + 1;
 
       if (!fs.existsSync(filePath)) {
-        log.warn(`[${fileNum}/${MIGRATIONS.length}] ${migrationFile} - Arquivo não encontrado`);
+        log.warn(
+          `[${fileNum}/${MIGRATIONS.length}] ${migrationFile} - Arquivo não encontrado`
+        );
         failCount++;
         continue;
       }
@@ -141,20 +145,24 @@ async function executeMigrations() {
               err.message.includes('already present') ||
               err.message.includes('duplicate key') ||
               err.code === '42P07' || // relation already exists
-              err.code === '23505'    // unique violation
+              err.code === '23505' // unique violation
             ) {
               // Expected error - consider as success
               executedCount++;
             } else {
               errorCount++;
               totalErrors++;
-              console.log(`    ⚠️  Error no statement ${j + 1}: ${err.message.split('\n')[0]}`);
+              console.log(
+                `    ⚠️  Error no statement ${j + 1}: ${err.message.split('\n')[0]}`
+              );
             }
           }
         }
 
         if (executedCount > 0) {
-          log.success(`${migrationFile} (${executedCount}/${statements.length} statements)`);
+          log.success(
+            `${migrationFile} (${executedCount}/${statements.length} statements)`
+          );
           successCount++;
         } else {
           log.warn(`${migrationFile} - Nenhum statement foi executado`);
@@ -167,18 +175,26 @@ async function executeMigrations() {
     }
 
     // Final summary
-    console.log(`\n${colors.cyan}════════════════════════════════════════${colors.reset}`);
+    console.log(
+      `\n${colors.cyan}════════════════════════════════════════${colors.reset}`
+    );
     console.log(`${colors.blue}📊 Resumo da Execução:${colors.reset}`);
     console.log(`  Total de statements: ${totalStatements}`);
-    console.log(`  Migrações com sucesso: ${successCount}/${MIGRATIONS.length}`);
+    console.log(
+      `  Migrações com sucesso: ${successCount}/${MIGRATIONS.length}`
+    );
     console.log(`  Migrações com erro: ${failCount}/${MIGRATIONS.length}`);
     if (totalErrors > 0) {
       console.log(`  Statements com erro: ${totalErrors}`);
     }
 
     if (successCount > 0) {
-      log.success(`${successCount}/${MIGRATIONS.length} migrações executadas com sucesso!`);
-      console.log(`\n${colors.green}🎉 Banco de dados atualizado!${colors.reset}`);
+      log.success(
+        `${successCount}/${MIGRATIONS.length} migrações executadas com sucesso!`
+      );
+      console.log(
+        `\n${colors.green}🎉 Banco de dados atualizado!${colors.reset}`
+      );
       console.log(`
 ${colors.cyan}Próximos passos:${colors.reset}
 1. Recarregue seu app: F5 em http://localhost:3005
@@ -200,7 +216,9 @@ npm run check-db
     console.log(`\n${colors.yellow}Dicas:${colors.reset}`);
     console.log('1. Verifique se as credenciais no .env estão corretas');
     console.log('2. Verifique se seu projeto Supabase está ativo');
-    console.log('3. Tente executar manualmente em https://app.supabase.com/ → SQL Editor');
+    console.log(
+      '3. Tente executar manualmente em https://app.supabase.com/ → SQL Editor'
+    );
     return false;
   } finally {
     // Close connection

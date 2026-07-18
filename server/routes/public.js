@@ -8,18 +8,23 @@ import { verifyAdmin } from '../middleware/auth.js';
 import { requireTenant } from '../middleware/tenant.js';
 
 const router = express.Router();
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 const contactLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
-  message: { error: 'Muitas requisições de contato. Tente novamente em 1 minuto.' },
+  message: {
+    error: 'Muitas requisições de contato. Tente novamente em 1 minuto.',
+  },
 });
 
 const contactSchema = z.object({
@@ -53,7 +58,10 @@ const leadSchema = z.object({
   organic_channel: z.string().max(120).optional(),
   campaign: z.string().max(120).optional(),
   notes: z.string().max(2000).optional(),
-  budget: z.union([z.string().max(120), z.number()]).optional().nullable(),
+  budget: z
+    .union([z.string().max(120), z.number()])
+    .optional()
+    .nullable(),
   aptitude_interest: z
     .union([z.string().max(120), z.array(z.string().max(120)).max(12)])
     .optional()
@@ -79,7 +87,9 @@ router.post('/leads', contactLimiter, async (req, res) => {
   try {
     const validation = leadSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados invalidos', details: validation.error.errors });
+      return res
+        .status(400)
+        .json({ error: 'Dados invalidos', details: validation.error.errors });
     }
 
     const {
@@ -119,7 +129,9 @@ router.post('/leads', contactLimiter, async (req, res) => {
     });
 
     if (!organization) {
-      return res.status(404).json({ error: 'Organizacao nao encontrada ou indisponivel.' });
+      return res
+        .status(404)
+        .json({ error: 'Organizacao nao encontrada ou indisponivel.' });
     }
 
     const leadPayload = {
@@ -179,7 +191,10 @@ router.post('/leads', contactLimiter, async (req, res) => {
       lead: leadData,
       organizationId: organization.id,
     }).catch((matchError) => {
-      console.warn('[Public API] Erro ao gerar matches do lead:', matchError.message);
+      console.warn(
+        '[Public API] Erro ao gerar matches do lead:',
+        matchError.message
+      );
     });
 
     res.json({ success: true, leadId: leadData.id });
@@ -206,14 +221,20 @@ async function resolvePublicLeadOrganization({
     const organization = await findOrganizationById(supabase, organizationId);
     if (organization) return organization;
 
-    console.warn('[Public API] organization_id publico invalido; tentando resolver por sinais', {
-      organizationId,
-      source,
-      campaign,
-    });
+    console.warn(
+      '[Public API] organization_id publico invalido; tentando resolver por sinais',
+      {
+        organizationId,
+        source,
+        campaign,
+      }
+    );
   }
 
-  const hostname = extractHostname(referrerUrl) || extractHostname(origin) || extractHostname(host);
+  const hostname =
+    extractHostname(referrerUrl) ||
+    extractHostname(origin) ||
+    extractHostname(host);
   const domainSignals = uniqueNonEmpty([
     domain,
     hostname,
@@ -247,7 +268,13 @@ async function resolvePublicLeadOrganization({
 
   const emailSignals = uniqueNonEmpty([
     ownerEmail,
-    ...inferPublicOrgOwnerEmails({ source, campaign, referrerUrl, origin, host }),
+    ...inferPublicOrgOwnerEmails({
+      source,
+      campaign,
+      referrerUrl,
+      origin,
+      host,
+    }),
   ]);
 
   for (const value of emailSignals) {
@@ -255,7 +282,18 @@ async function resolvePublicLeadOrganization({
     if (organization) return organization;
   }
 
-  if (isFazendasBrasilSignal({ source, campaign, referrerUrl, origin, host, slug, siteKey, domain })) {
+  if (
+    isFazendasBrasilSignal({
+      source,
+      campaign,
+      referrerUrl,
+      origin,
+      host,
+      slug,
+      siteKey,
+      domain,
+    })
+  ) {
     return ensureFazendasBrasilOrganization(supabase);
   }
 
@@ -270,7 +308,10 @@ async function findOrganizationById(supabase, id) {
     .maybeSingle();
 
   if (error) {
-    console.warn('[Public API] Erro ao resolver organizacao por id:', error.message);
+    console.warn(
+      '[Public API] Erro ao resolver organizacao por id:',
+      error.message
+    );
     return null;
   }
   return data || null;
@@ -288,7 +329,10 @@ async function findOrganizationBySlug(supabase, slug) {
     .maybeSingle();
 
   if (error) {
-    console.warn('[Public API] Erro ao resolver organizacao por slug:', error.message);
+    console.warn(
+      '[Public API] Erro ao resolver organizacao por slug:',
+      error.message
+    );
     return null;
   }
   return data || null;
@@ -306,7 +350,11 @@ async function findOrganizationByDomain(supabase, domain) {
     .maybeSingle();
 
   if (!orgError && organization) return organization;
-  if (orgError) console.warn('[Public API] Erro ao resolver organizacao por dominio:', orgError.message);
+  if (orgError)
+    console.warn(
+      '[Public API] Erro ao resolver organizacao por dominio:',
+      orgError.message
+    );
 
   const { data: domainEntry, error: domainError } = await supabase
     .from('domains')
@@ -316,10 +364,15 @@ async function findOrganizationByDomain(supabase, domain) {
     .maybeSingle();
 
   if (domainError) {
-    console.warn('[Public API] Erro ao resolver dominio publico:', domainError.message);
+    console.warn(
+      '[Public API] Erro ao resolver dominio publico:',
+      domainError.message
+    );
     return null;
   }
-  return domainEntry?.organization_id ? { id: domainEntry.organization_id } : null;
+  return domainEntry?.organization_id
+    ? { id: domainEntry.organization_id }
+    : null;
 }
 
 async function findOrganizationByName(supabase, name) {
@@ -334,14 +387,19 @@ async function findOrganizationByName(supabase, name) {
     .maybeSingle();
 
   if (error) {
-    console.warn('[Public API] Erro ao resolver organizacao por nome:', error.message);
+    console.warn(
+      '[Public API] Erro ao resolver organizacao por nome:',
+      error.message
+    );
     return null;
   }
   return data || null;
 }
 
 async function findOrganizationByOwnerEmail(supabase, email) {
-  const normalized = String(email || '').toLowerCase().trim();
+  const normalized = String(email || '')
+    .toLowerCase()
+    .trim();
   if (!normalized) return null;
 
   const { data, error } = await supabase
@@ -352,7 +410,10 @@ async function findOrganizationByOwnerEmail(supabase, email) {
     .maybeSingle();
 
   if (error) {
-    console.warn('[Public API] Erro ao resolver organizacao por owner_email:', error.message);
+    console.warn(
+      '[Public API] Erro ao resolver organizacao por owner_email:',
+      error.message
+    );
     return null;
   }
   return data || null;
@@ -361,7 +422,12 @@ async function findOrganizationByOwnerEmail(supabase, email) {
 function inferPublicOrgSlugs(signals) {
   const text = stringifySignals(signals);
   if (isFazendasBrasilText(text)) {
-    return ['fazendasbrasil', 'fazendas-brasil', 'fazendasbrasil1', 'imobiliariafazendasbrasil'];
+    return [
+      'fazendasbrasil',
+      'fazendas-brasil',
+      'fazendasbrasil1',
+      'imobiliariafazendasbrasil',
+    ];
   }
   return [];
 }
@@ -402,19 +468,28 @@ async function ensureFazendasBrasilOrganization(supabase) {
     .single();
 
   if (!error && data) {
-    console.warn('[Public API] Organizacao Fazendas Brasil criada automaticamente para lead publico', {
-      organizationId: data.id,
-    });
+    console.warn(
+      '[Public API] Organizacao Fazendas Brasil criada automaticamente para lead publico',
+      {
+        organizationId: data.id,
+      }
+    );
     return data;
   }
 
   if (error?.code !== '23505') {
-    console.warn('[Public API] Falha ao criar organizacao Fazendas Brasil:', error?.message || error);
+    console.warn(
+      '[Public API] Falha ao criar organizacao Fazendas Brasil:',
+      error?.message || error
+    );
   }
 
   return (
     (await findOrganizationBySlug(supabase, 'fazendasbrasil')) ||
-    (await findOrganizationByOwnerEmail(supabase, 'contato@fazendasbrasil.com.br')) ||
+    (await findOrganizationByOwnerEmail(
+      supabase,
+      'contato@fazendasbrasil.com.br'
+    )) ||
     (await findOrganizationByName(supabase, 'Fazendas Brasil'))
   );
 }
@@ -424,7 +499,10 @@ function isFazendasBrasilSignal(signals) {
 }
 
 function isFazendasBrasilText(text) {
-  return String(text || '').includes('fazendasbrasil') || String(text || '').includes('fazendas brasil');
+  return (
+    String(text || '').includes('fazendasbrasil') ||
+    String(text || '').includes('fazendas brasil')
+  );
 }
 
 function stringifySignals(signals) {
@@ -438,7 +516,9 @@ function extractHostname(value) {
   const raw = String(value || '').trim();
   if (!raw) return null;
   try {
-    return new URL(raw.includes('://') ? raw : `https://${raw}`).hostname.toLowerCase();
+    return new URL(
+      raw.includes('://') ? raw : `https://${raw}`
+    ).hostname.toLowerCase();
   } catch {
     return raw.split('/')[0]?.split(':')[0]?.toLowerCase() || null;
   }
@@ -479,10 +559,13 @@ function normalizeLeadBudget(value) {
     return null;
   }
 
-  const matches = [...text.matchAll(/(\d[\d.,]*)\s*(milhoes|milhao|mi|m|mil)?/g)];
+  const matches = [
+    ...text.matchAll(/(\d[\d.,]*)\s*(milhoes|milhao|mi|m|mil)?/g),
+  ];
   if (!matches.length) return null;
 
-  const fallbackUnit = [...matches].reverse().find((match) => match[2])?.[2] || '';
+  const fallbackUnit =
+    [...matches].reverse().find((match) => match[2])?.[2] || '';
   const amounts = matches
     .map((match) => parseMoneyAmount(match[1], match[2] || fallbackUnit))
     .filter((amount) => Number.isFinite(amount) && amount > 0);
@@ -503,7 +586,9 @@ function parseMoneyAmount(rawNumber, rawUnit = '') {
 function normalizeTextArray(value) {
   if (value === undefined || value === null || value === '') return [];
   const values = Array.isArray(value) ? value : [value];
-  const normalized = values.flatMap((item) => String(item || '').split(/[;,|]/));
+  const normalized = values.flatMap((item) =>
+    String(item || '').split(/[;,|]/)
+  );
   return uniqueNonEmpty(normalized).slice(0, 12);
 }
 
@@ -515,7 +600,11 @@ function normalizeTextForParsing(value) {
     .trim();
 }
 
-async function insertPublicLeadWithFallback({ supabase, payload, fallbackPayload }) {
+async function insertPublicLeadWithFallback({
+  supabase,
+  payload,
+  fallbackPayload,
+}) {
   const { data, error } = await supabase
     .from('leads')
     .insert([payload])
@@ -525,10 +614,13 @@ async function insertPublicLeadWithFallback({ supabase, payload, fallbackPayload
   if (!error) return data;
   if (!isRecoverablePublicLeadInsertError(error)) throw error;
 
-  console.warn('[Public API] Insert completo do lead falhou; tentando payload minimo:', {
-    code: error.code,
-    message: error.message,
-  });
+  console.warn(
+    '[Public API] Insert completo do lead falhou; tentando payload minimo:',
+    {
+      code: error.code,
+      message: error.message,
+    }
+  );
 
   const { data: fallbackData, error: fallbackError } = await supabase
     .from('leads')
@@ -562,13 +654,20 @@ function buildPublicLeadFallbackPayload({
 
 function appendPublicLeadMetadata(notes, metadata = {}) {
   const lines = Object.entries(metadata)
-    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .filter(
+      ([, value]) => value !== undefined && value !== null && value !== ''
+    )
     .map(([key, value]) => {
-      const serialized = Array.isArray(value) ? value.join(', ') : String(value);
+      const serialized = Array.isArray(value)
+        ? value.join(', ')
+        : String(value);
       return `${key}: ${serialized}`;
     });
 
-  return [notes, lines.length ? `Dados da captura publica:\n${lines.join('\n')}` : '']
+  return [
+    notes,
+    lines.length ? `Dados da captura publica:\n${lines.join('\n')}` : '',
+  ]
     .filter(Boolean)
     .join('\n\n');
 }
@@ -593,7 +692,11 @@ function isRecoverablePublicLeadInsertError(error) {
 }
 
 function uniqueNonEmpty(values) {
-  return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      values.map((value) => String(value || '').trim()).filter(Boolean)
+    ),
+  ];
 }
 
 // Texts management
@@ -606,19 +709,27 @@ router.get('/texts', async (req, res) => {
     const { data, error } = await query.order('section', { ascending: true });
     if (error) {
       if (isOptionalTextsTableError(error)) {
-        console.warn('[Public API] site_texts indisponivel; usando textos padrao do frontend:', {
-          code: error.code,
-          message: error.message,
-        });
+        console.warn(
+          '[Public API] site_texts indisponivel; usando textos padrao do frontend:',
+          {
+            code: error.code,
+            message: error.message,
+          }
+        );
         return res.json({ success: true, texts: {}, raw: [] });
       }
       throw error;
     }
     const textsMap = {};
-    data?.forEach(text => { textsMap[text.key] = text.value; });
+    data?.forEach((text) => {
+      textsMap[text.key] = text.value;
+    });
     res.json({ success: true, texts: textsMap, raw: data || [] });
   } catch (error) {
-    console.warn('[Public API] Erro nao critico ao buscar textos; retornando vazio:', error?.message || error);
+    console.warn(
+      '[Public API] Erro nao critico ao buscar textos; retornando vazio:',
+      error?.message || error
+    );
     res.json({ success: true, texts: {}, raw: [] });
   }
 });
@@ -634,8 +745,8 @@ function isOptionalTextsTableError(error) {
     error?.status === 404 ||
     message.includes('site_texts') ||
     message.includes('relation') ||
-    message.includes("could not find the table") ||
-    message.includes("could not find the column") ||
+    message.includes('could not find the table') ||
+    message.includes('could not find the column') ||
     message.includes('does not exist') ||
     message.includes('not found') ||
     message.includes('network error') ||
@@ -655,7 +766,8 @@ router.put('/texts/:key', verifyAdmin, requireTenant, async (req, res) => {
       .update({ value, updated_at: new Date().toISOString() })
       .eq('key', key)
       .eq('organization_id', req.orgId)
-      .select().single();
+      .select()
+      .single();
     if (error) throw error;
     res.json({ success: true, text: data });
   } catch (error) {

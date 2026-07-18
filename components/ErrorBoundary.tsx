@@ -2,10 +2,16 @@ import { logger } from '@/utils/logger';
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
 
-interface EBProps { }
-interface EBState { hasError: boolean; error: Error | null; }
+interface EBProps {}
+interface EBState {
+  hasError: boolean;
+  error: Error | null;
+}
 
-class ErrorBoundary extends React.Component<React.PropsWithChildren<EBProps>, EBState> {
+class ErrorBoundary extends React.Component<
+  React.PropsWithChildren<EBProps>,
+  EBState
+> {
   state: EBState = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error) {
@@ -35,13 +41,17 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren<EBProps>, EB
                 {this.state.error?.toString()}
               </code>
             </div>
-            {this.state.error?.name === 'TypeError' && this.state.error?.message?.includes('module') ? (
+            {this.state.error?.name === 'TypeError' &&
+            this.state.error?.message?.includes('module') ? (
               <p className="text-amber-500 text-sm mb-4">
-                Detectamos uma atualização no sistema. Por favor, clique abaixo para atualizar sua versão.
+                Detectamos uma atualização no sistema. Por favor, clique abaixo
+                para atualizar sua versão.
               </p>
             ) : null}
             <button
-              onClick={() => { window.location.reload(); }}
+              onClick={() => {
+                window.location.reload();
+              }}
               className="btn btn-primary btn-lg px-8"
             >
               Atualizar e Recarregar

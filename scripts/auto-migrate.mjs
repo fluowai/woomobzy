@@ -64,7 +64,9 @@ async function waitForServer(port = 3002) {
         });
 
         req.on('error', () => {
-          log.info(`Aguardando servidor iniciar... (${attempts}/${maxAttempts})`);
+          log.info(
+            `Aguardando servidor iniciar... (${attempts}/${maxAttempts})`
+          );
           if (attempts >= maxAttempts) {
             clearInterval(interval);
             resolve(false);
@@ -73,7 +75,9 @@ async function waitForServer(port = 3002) {
 
         req.setTimeout(500, () => {
           req.destroy();
-          log.info(`Aguardando servidor iniciar... (${attempts}/${maxAttempts})`);
+          log.info(
+            `Aguardando servidor iniciar... (${attempts}/${maxAttempts})`
+          );
           if (attempts >= maxAttempts) {
             clearInterval(interval);
             resolve(false);
@@ -135,7 +139,9 @@ async function runMigrations() {
     const { success, message, results } = response.data;
 
     // Display results
-    console.log(`\n${colors.cyan}════════════════════════════════════${colors.reset}`);
+    console.log(
+      `\n${colors.cyan}════════════════════════════════════${colors.reset}`
+    );
     console.log(`${colors.blue}📊 Resultado das Migrações:${colors.reset}`);
     console.log(`  ✅ Com sucesso: ${results.success.length}/5`);
     console.log(`  ❌ Falhadas: ${results.failed.length}/5`);
@@ -161,7 +167,9 @@ npm run check-db
       log.warn(message);
       console.log('\nDetalhes:');
       results.success.forEach((r) => {
-        console.log(`  ✅ ${r.file} (${r.executed}/${r.statements} statements)`);
+        console.log(
+          `  ✅ ${r.file} (${r.executed}/${r.statements} statements)`
+        );
       });
       results.failed.forEach((r) => {
         console.log(`  ❌ ${r.file}: ${r.error}`);

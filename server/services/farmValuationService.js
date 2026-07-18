@@ -16,7 +16,9 @@ export class FarmValuationService {
     const [conectaGov, ambiental, ibge] = await Promise.all([
       this._enrichConectaGov(carResult),
       this._enrichAmbiental(centroid, uf, municipio, areaHa),
-      centroid ? this._enrichIbge(centroid.lat, centroid.lng, uf, municipio) : Promise.resolve({}),
+      centroid
+        ? this._enrichIbge(centroid.lat, centroid.lng, uf, municipio)
+        : Promise.resolve({}),
     ]);
 
     const regional = await this._enrichRegionalWithGroq({
@@ -27,11 +29,30 @@ export class FarmValuationService {
       ibge,
       areaHa,
     });
-    const terrain = this._buildTerrainLogistics({ carResult, conectaGov, ambiental, ibge, regional });
-    const valuationData = this._calcularValuation({
-      carResult, conectaGov, ambiental, ibge, areaHa, terrain, regional,
+    const terrain = this._buildTerrainLogistics({
+      carResult,
+      conectaGov,
+      ambiental,
+      ibge,
+      regional,
     });
-    const sources = this._buildSources({ carResult, conectaGov, ambiental, ibge, terrain, regional });
+    const valuationData = this._calcularValuation({
+      carResult,
+      conectaGov,
+      ambiental,
+      ibge,
+      areaHa,
+      terrain,
+      regional,
+    });
+    const sources = this._buildSources({
+      carResult,
+      conectaGov,
+      ambiental,
+      ibge,
+      terrain,
+      regional,
+    });
 
     const enrichment = {
       source_car: 'SICAR/CAR',
@@ -96,14 +117,17 @@ export class FarmValuationService {
     if (!uf) throw new Error('Codigo CAR deve iniciar com a UF. Ex: PA-...');
 
     const data = await SicarService.findByCode(codigoCar);
-    if (!data?.features?.length) throw new Error('Imovel nao encontrado no CAR');
+    if (!data?.features?.length)
+      throw new Error('Imovel nao encontrado no CAR');
 
     const feature = data.features[0];
     const props = feature.properties || {};
     const geometry = feature.geometry;
 
     const centroid = this._calcularCentroide(geometry);
-    const areaHa = parseFloat(props.num_area || props.area || props.area_ha || 0);
+    const areaHa = parseFloat(
+      props.num_area || props.area || props.area_ha || 0
+    );
 
     return {
       codigo: codigoCar,
@@ -139,7 +163,9 @@ export class FarmValuationService {
         IntegracaoTerraBrasilis.consultarProdes(lat, lng).catch(() => null),
         IntegracaoTerraBrasilis.consultarDeter(lat, lng).catch(() => null),
         IntegracaoMapBiomas.consultarUsoSolo(lat, lng).catch(() => null),
-        IntegracaoIbamaEmbargos.consultarEmbargosPorCoordenada(lat, lng).catch(() => null),
+        IntegracaoIbamaEmbargos.consultarEmbargosPorCoordenada(lat, lng).catch(
+          () => null
+        ),
       ]);
       return { prodes, deter, mapbiomas, embargos };
     } catch {
@@ -169,14 +195,18 @@ export class FarmValuationService {
     if (data?.codigo_ibge) return data.codigo_ibge;
 
     try {
-      const response = await axios.get('https://servicodados.ibge.gov.br/api/v1/localidades/municipios', {
-        timeout: 15000,
-      });
+      const response = await axios.get(
+        'https://servicodados.ibge.gov.br/api/v1/localidades/municipios',
+        {
+          timeout: 15000,
+        }
+      );
       const normalizedCity = this._normalizeText(cidade);
-      const match = (response.data || []).find((item) => (
-        this._normalizeText(item.nome) === normalizedCity &&
-        item.microrregiao?.mesorregiao?.UF?.sigla === uf
-      ));
+      const match = (response.data || []).find(
+        (item) =>
+          this._normalizeText(item.nome) === normalizedCity &&
+          item.microrregiao?.mesorregiao?.UF?.sigla === uf
+      );
       return match?.id || null;
     } catch {
       return null;
@@ -184,7 +214,15 @@ export class FarmValuationService {
   }
 
   static _calcularValuation(dados) {
-    const { carResult, conectaGov, ambiental, ibge, areaHa, terrain, regional } = dados;
+    const {
+      carResult,
+      conectaGov,
+      ambiental,
+      ibge,
+      areaHa,
+      terrain,
+      regional,
+    } = dados;
     const drivers = [];
     const risks = [];
     let scoreConfianca = 0;
@@ -202,9 +240,13 @@ export class FarmValuationService {
     }
 
     if (conectaGov.incra) {
-      drivers.push(`Dados do SNCR/INCRA disponiveis (${conectaGov.incra.classificacao_fundiaria || 'classificacao informada'}).`);
+      drivers.push(
+        `Dados do SNCR/INCRA disponiveis (${conectaGov.incra.classificacao_fundiaria || 'classificacao informada'}).`
+      );
       if (conectaGov.incra.modulos_fiscais) {
-        drivers.push(`${conectaGov.incra.modulos_fiscais} modulos fiscais registrados.`);
+        drivers.push(
+          `${conectaGov.incra.modulos_fiscais} modulos fiscais registrados.`
+        );
       }
       scoreConfianca += 15;
     } else {
@@ -216,43 +258,60 @@ export class FarmValuationService {
       const reservaLegalHa = Number(t.reserva_legal_ha || 0);
       const appHa = Number(t.app_ha || 0);
       const vegetacaoNativaHa = Number(t.vegetacao_nativa_ha || 0);
-      drivers.push(`Uso do solo via SICAR Tema: ${reservaLegalHa.toFixed(1)}ha de reserva legal, ${appHa.toFixed(1)}ha de APP.`);
+      drivers.push(
+        `Uso do solo via SICAR Tema: ${reservaLegalHa.toFixed(1)}ha de reserva legal, ${appHa.toFixed(1)}ha de APP.`
+      );
       if (vegetacaoNativaHa > 0) {
-        drivers.push(`${vegetacaoNativaHa.toFixed(1)}ha de vegetacao nativa preservada.`);
+        drivers.push(
+          `${vegetacaoNativaHa.toFixed(1)}ha de vegetacao nativa preservada.`
+        );
       }
       scoreConfianca += 15;
     }
 
     if (ambiental?.prodes?.possui_desmatamento) {
       const areaDesmatadaHa = Number(ambiental.prodes.area_desmatada_ha || 0);
-      risks.push(`Desmatamento detectado pelo PRODES: ${areaDesmatadaHa.toFixed(2)}ha em ${ambiental.prodes.ano_referencia || 'ano nao informado'}.`);
-    } else if (ambiental?.prodes && ambiental.prodes.possui_desmatamento === false) {
+      risks.push(
+        `Desmatamento detectado pelo PRODES: ${areaDesmatadaHa.toFixed(2)}ha em ${ambiental.prodes.ano_referencia || 'ano nao informado'}.`
+      );
+    } else if (
+      ambiental?.prodes &&
+      ambiental.prodes.possui_desmatamento === false
+    ) {
       drivers.push('Nenhum desmatamento detectado pelo PRODES na regiao.');
       scoreConfianca += 10;
     }
 
     if (ambiental?.deter?.total_alertas > 0) {
-      risks.push(`${ambiental.deter.total_alertas} alerta(s) DETER nos ultimos 30 dias na regiao.`);
+      risks.push(
+        `${ambiental.deter.total_alertas} alerta(s) DETER nos ultimos 30 dias na regiao.`
+      );
     } else if (ambiental?.deter?.total_alertas === 0) {
       drivers.push('Sem alertas DETER recentes na regiao.');
       scoreConfianca += 5;
     }
 
     if (ambiental?.embargos?.total_embargos > 0) {
-      risks.push(`${ambiental.embargos.total_embargos} embargo(s) ambiental(is) IBAMA na regiao.`);
+      risks.push(
+        `${ambiental.embargos.total_embargos} embargo(s) ambiental(is) IBAMA na regiao.`
+      );
     } else if (ambiental?.embargos?.total_embargos === 0) {
       drivers.push('Sem embargos ambientais IBAMA na regiao.');
       scoreConfianca += 10;
     }
 
     if (ambiental?.mapbiomas?.token_configurado === false) {
-      risks.push('API MapBiomas nao configurada (configure MAPBIOMAS_API_TOKEN).');
+      risks.push(
+        'API MapBiomas nao configurada (configure MAPBIOMAS_API_TOKEN).'
+      );
     }
 
     if (ibge?.producao_agricola?.produtos_principais?.length > 0) {
       const top = ibge.producao_agricola.produtos_principais[0];
       const quantidade = Number(top.quantidade || 0).toLocaleString('pt-BR');
-      drivers.push(`Producao agricola municipal: ${top.produto} (${quantidade} ${top.unidade || ''}).`);
+      drivers.push(
+        `Producao agricola municipal: ${top.produto} (${quantidade} ${top.unidade || ''}).`
+      );
       scoreConfianca += 5;
     } else {
       risks.push('Dados de producao agricola municipal nao disponiveis.');
@@ -285,7 +344,12 @@ export class FarmValuationService {
 
     return {
       score_confianca: scoreConfianca,
-      nivel_risco: scoreConfianca >= 70 ? 'BAIXO' : scoreConfianca >= 45 ? 'MEDIO' : 'ALTO',
+      nivel_risco:
+        scoreConfianca >= 70
+          ? 'BAIXO'
+          : scoreConfianca >= 45
+            ? 'MEDIO'
+            : 'ALTO',
       drivers,
       risks,
       score_alerta_ambiental: scoreAlerta,
@@ -293,25 +357,40 @@ export class FarmValuationService {
     };
   }
 
-  static async _enrichRegionalWithGroq({ organizationId, carResult, conectaGov, ambiental, ibge, areaHa }) {
+  static async _enrichRegionalWithGroq({
+    organizationId,
+    carResult,
+    conectaGov,
+    ambiental,
+    ibge,
+    areaHa,
+  }) {
     const config = await this._getOrgAIConfig(organizationId);
-    const groqKey = (config?.groq?.apiKey || process.env.GROQ_API_KEY || '').trim();
+    const groqKey = (
+      config?.groq?.apiKey ||
+      process.env.GROQ_API_KEY ||
+      ''
+    ).trim();
     if (!groqKey) return this._fallbackRegionalAnalysis(carResult, ibge);
 
     const prompt = `Analise a regiao rural para valuation de fazenda a partir destes dados publicos e cadastrais.
 Responda somente JSON valido, sem markdown.
 CAR/Regiao:
-${JSON.stringify({
-  uf: carResult.uf,
-  municipio: carResult.municipio,
-  areaHa,
-  statusCar: carResult.status,
-  centroid: carResult.centroid,
-  incra: conectaGov.incra,
-  sicarTemas: conectaGov.temas,
-  ambiental,
-  ibge,
-}, null, 2)}
+${JSON.stringify(
+  {
+    uf: carResult.uf,
+    municipio: carResult.municipio,
+    areaHa,
+    statusCar: carResult.status,
+    centroid: carResult.centroid,
+    incra: conectaGov.incra,
+    sicarTemas: conectaGov.temas,
+    ambiental,
+    ibge,
+  },
+  null,
+  2
+)}
 
 Formato:
 {
@@ -328,76 +407,193 @@ Formato:
       const response = await axios.post(
         'https://api.groq.com/openai/v1/chat/completions',
         {
-          model: config?.groq?.model || process.env.GROQ_RURAL_MODEL || 'llama-3.3-70b-versatile',
+          model:
+            config?.groq?.model ||
+            process.env.GROQ_RURAL_MODEL ||
+            'llama-3.3-70b-versatile',
           messages: [
-            { role: 'system', content: 'Voce e analista de valuation rural no Brasil. Seja objetivo, tecnico e conservador. Nao invente valores de mercado sem fonte.' },
+            {
+              role: 'system',
+              content:
+                'Voce e analista de valuation rural no Brasil. Seja objetivo, tecnico e conservador. Nao invente valores de mercado sem fonte.',
+            },
             { role: 'user', content: prompt },
           ],
           temperature: 0.25,
           response_format: { type: 'json_object' },
         },
-        { headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' }, timeout: 30000 }
+        {
+          headers: {
+            Authorization: `Bearer ${groqKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        }
       );
-      const parsed = this._parseJson(response.data.choices?.[0]?.message?.content);
-      return parsed ? { ...parsed, provider: 'groq' } : this._fallbackRegionalAnalysis(carResult, ibge);
+      const parsed = this._parseJson(
+        response.data.choices?.[0]?.message?.content
+      );
+      return parsed
+        ? { ...parsed, provider: 'groq' }
+        : this._fallbackRegionalAnalysis(carResult, ibge);
     } catch (error) {
-      console.warn('[FarmValuation] Groq regional indisponivel:', error.message);
+      console.warn(
+        '[FarmValuation] Groq regional indisponivel:',
+        error.message
+      );
       return this._fallbackRegionalAnalysis(carResult, ibge);
     }
   }
 
-  static _buildTerrainLogistics({ carResult, conectaGov, ambiental, ibge, regional }) {
+  static _buildTerrainLogistics({
+    carResult,
+    conectaGov,
+    ambiental,
+    ibge,
+    regional,
+  }) {
     const temas = conectaGov.temas || {};
     const topCrop = ibge?.producao_agricola?.produtos_principais?.[0];
-    const municipality = [carResult.municipio, carResult.uf].filter(Boolean).join(' / ');
+    const municipality = [carResult.municipio, carResult.uf]
+      .filter(Boolean)
+      .join(' / ');
 
     return {
       soil: {
         status: 'available',
-        source: regional?.provider === 'groq' ? 'Groq + IBGE/SICAR' : 'IBGE/SICAR',
-        summary: regional?.soil?.summary || (topCrop ? `Aptidao regional inferida por producao municipal de ${topCrop.produto}.` : 'Aptidao de solo inferida por CAR, municipio e uso regional.'),
+        source:
+          regional?.provider === 'groq' ? 'Groq + IBGE/SICAR' : 'IBGE/SICAR',
+        summary:
+          regional?.soil?.summary ||
+          (topCrop
+            ? `Aptidao regional inferida por producao municipal de ${topCrop.produto}.`
+            : 'Aptidao de solo inferida por CAR, municipio e uso regional.'),
         confidence: regional?.soil?.confidence || (topCrop ? 'media' : 'baixa'),
-        evidence: regional?.soil?.evidence || [topCrop ? `IBGE aponta ${topCrop.produto} como cultura relevante.` : 'Sem cultura municipal dominante disponivel.'],
+        evidence: regional?.soil?.evidence || [
+          topCrop
+            ? `IBGE aponta ${topCrop.produto} como cultura relevante.`
+            : 'Sem cultura municipal dominante disponivel.',
+        ],
       },
       slope: {
         status: 'available',
         source: 'Geometria CAR + Groq',
-        summary: regional?.slope?.summary || 'Declividade estimada a partir da regiao e geometria CAR; confirmar com MDE em laudo tecnico.',
+        summary:
+          regional?.slope?.summary ||
+          'Declividade estimada a partir da regiao e geometria CAR; confirmar com MDE em laudo tecnico.',
         confidence: regional?.slope?.confidence || 'baixa',
-        evidence: regional?.slope?.evidence || ['Geometria CAR disponivel para cruzamento com modelo digital de elevacao.'],
+        evidence: regional?.slope?.evidence || [
+          'Geometria CAR disponivel para cruzamento com modelo digital de elevacao.',
+        ],
       },
       hydrography: {
         status: 'available',
         source: 'SICAR Tema + Groq',
-        summary: regional?.hydrography?.summary || (temas.app_ha ? `APP informada no SICAR Tema: ${Number(temas.app_ha).toFixed(2)} ha.` : 'Hidrografia/APP marcada para validacao por SICAR Tema e camadas ambientais.'),
-        confidence: regional?.hydrography?.confidence || (temas.app_ha ? 'media' : 'baixa'),
-        evidence: regional?.hydrography?.evidence || [temas.app_ha ? 'SICAR Tema retornou area de APP.' : 'Sem APP detalhada retornada pelo SICAR Tema.'],
+        summary:
+          regional?.hydrography?.summary ||
+          (temas.app_ha
+            ? `APP informada no SICAR Tema: ${Number(temas.app_ha).toFixed(2)} ha.`
+            : 'Hidrografia/APP marcada para validacao por SICAR Tema e camadas ambientais.'),
+        confidence:
+          regional?.hydrography?.confidence ||
+          (temas.app_ha ? 'media' : 'baixa'),
+        evidence: regional?.hydrography?.evidence || [
+          temas.app_ha
+            ? 'SICAR Tema retornou area de APP.'
+            : 'Sem APP detalhada retornada pelo SICAR Tema.',
+        ],
       },
       logistics: {
         status: 'available',
-        source: regional?.provider === 'groq' ? 'Groq regional' : 'Analise local',
-        summary: regional?.logistics?.summary || `Analise logistica regional gerada para ${municipality || 'municipio informado no CAR'}.`,
+        source:
+          regional?.provider === 'groq' ? 'Groq regional' : 'Analise local',
+        summary:
+          regional?.logistics?.summary ||
+          `Analise logistica regional gerada para ${municipality || 'municipio informado no CAR'}.`,
         confidence: regional?.logistics?.confidence || 'media',
-        evidence: regional?.logistics?.evidence || ['Municipio/UF do CAR usado como base regional.'],
+        evidence: regional?.logistics?.evidence || [
+          'Municipio/UF do CAR usado como base regional.',
+        ],
       },
       market_summary: regional?.market_summary || null,
     };
   }
 
-  static _buildSources({ carResult, conectaGov, ambiental, ibge, terrain, regional }) {
-    const statusFor = (value, fallback = 'unavailable') => value ? 'available' : fallback;
+  static _buildSources({
+    carResult,
+    conectaGov,
+    ambiental,
+    ibge,
+    terrain,
+    regional,
+  }) {
+    const statusFor = (value, fallback = 'unavailable') =>
+      value ? 'available' : fallback;
     return {
-      car: { status: 'available', label: 'CAR/SICAR', detail: `CAR ${carResult.codigo} consultado no SICAR.` },
-      sigef: { status: statusFor(conectaGov.incra), label: 'SIGEF/INCRA', detail: conectaGov.incra ? 'Dados fundiarios/SNCR encontrados.' : 'Fonte consultada, sem retorno estruturado.' },
-      documents: { status: 'checked', label: 'Documentos internos', detail: 'Documentos internos do imovel verificados no cadastro.' },
-      mapbiomas: { status: statusFor(ambiental.mapbiomas, 'checked'), label: 'MapBiomas', detail: ambiental.mapbiomas?.fonte || 'Consulta MapBiomas executada com fallback quando token ausente.' },
-      prodes: { status: statusFor(ambiental.prodes || ambiental.deter, 'checked'), label: 'PRODES/DETER', detail: 'Camadas TerraBrasilis/INPE consultadas por coordenada.' },
-      soil: { status: terrain.soil?.status || 'checked', label: 'Solo', detail: terrain.soil?.summary || 'Analise regional de solo gerada.' },
-      slope: { status: terrain.slope?.status || 'checked', label: 'Declividade', detail: terrain.slope?.summary || 'Analise regional de relevo gerada.' },
-      hydrography: { status: terrain.hydrography?.status || 'checked', label: 'Hidrografia/APP', detail: terrain.hydrography?.summary || 'Hidrografia e APP analisadas.' },
-      logistics: { status: terrain.logistics?.status || 'checked', label: 'Logistica e acesso', detail: terrain.logistics?.summary || 'Pesquisa regional de logistica gerada.' },
-      ibge: { status: statusFor(ibge.producao_agricola || ibge.producao_pecuaria), label: 'IBGE/SIDRA', detail: 'Dados agropecuarios municipais.' },
-      groq: { status: regional?.provider === 'groq' ? 'available' : 'checked', label: 'Groq Pesquisa Regional', detail: regional?.provider === 'groq' ? regional.market_summary : 'Groq nao configurado; usado fallback local.' },
+      car: {
+        status: 'available',
+        label: 'CAR/SICAR',
+        detail: `CAR ${carResult.codigo} consultado no SICAR.`,
+      },
+      sigef: {
+        status: statusFor(conectaGov.incra),
+        label: 'SIGEF/INCRA',
+        detail: conectaGov.incra
+          ? 'Dados fundiarios/SNCR encontrados.'
+          : 'Fonte consultada, sem retorno estruturado.',
+      },
+      documents: {
+        status: 'checked',
+        label: 'Documentos internos',
+        detail: 'Documentos internos do imovel verificados no cadastro.',
+      },
+      mapbiomas: {
+        status: statusFor(ambiental.mapbiomas, 'checked'),
+        label: 'MapBiomas',
+        detail:
+          ambiental.mapbiomas?.fonte ||
+          'Consulta MapBiomas executada com fallback quando token ausente.',
+      },
+      prodes: {
+        status: statusFor(ambiental.prodes || ambiental.deter, 'checked'),
+        label: 'PRODES/DETER',
+        detail: 'Camadas TerraBrasilis/INPE consultadas por coordenada.',
+      },
+      soil: {
+        status: terrain.soil?.status || 'checked',
+        label: 'Solo',
+        detail: terrain.soil?.summary || 'Analise regional de solo gerada.',
+      },
+      slope: {
+        status: terrain.slope?.status || 'checked',
+        label: 'Declividade',
+        detail: terrain.slope?.summary || 'Analise regional de relevo gerada.',
+      },
+      hydrography: {
+        status: terrain.hydrography?.status || 'checked',
+        label: 'Hidrografia/APP',
+        detail: terrain.hydrography?.summary || 'Hidrografia e APP analisadas.',
+      },
+      logistics: {
+        status: terrain.logistics?.status || 'checked',
+        label: 'Logistica e acesso',
+        detail:
+          terrain.logistics?.summary ||
+          'Pesquisa regional de logistica gerada.',
+      },
+      ibge: {
+        status: statusFor(ibge.producao_agricola || ibge.producao_pecuaria),
+        label: 'IBGE/SIDRA',
+        detail: 'Dados agropecuarios municipais.',
+      },
+      groq: {
+        status: regional?.provider === 'groq' ? 'available' : 'checked',
+        label: 'Groq Pesquisa Regional',
+        detail:
+          regional?.provider === 'groq'
+            ? regional.market_summary
+            : 'Groq nao configurado; usado fallback local.',
+      },
     };
   }
 
@@ -414,17 +610,41 @@ Formato:
 
   static _fallbackRegionalAnalysis(carResult, ibge) {
     const topCrop = ibge?.producao_agricola?.produtos_principais?.[0];
-    const region = [carResult.municipio, carResult.uf].filter(Boolean).join(' / ');
+    const region = [carResult.municipio, carResult.uf]
+      .filter(Boolean)
+      .join(' / ');
     return {
       market_summary: topCrop
         ? `${region}: analise regional baseada no CAR e em producao municipal com destaque para ${topCrop.produto}.`
         : `${region || 'Regiao do CAR'}: analise regional baseada no CAR, camadas ambientais e cadastro interno.`,
-      soil: { summary: topCrop ? `Aptidao inferida para culturas regionais como ${topCrop.produto}.` : 'Solo a validar com camada tecnica local.', confidence: topCrop ? 'media' : 'baixa', evidence: ['Fallback tecnico sem Groq configurado.'] },
-      slope: { summary: 'Relevo a confirmar por MDE; geometria CAR disponivel para cruzamento.', confidence: 'baixa', evidence: ['Fallback tecnico sem Groq configurado.'] },
-      hydrography: { summary: 'APP/hidrografia dependem de validacao por SICAR Tema e camadas ambientais.', confidence: 'baixa', evidence: ['Fallback tecnico sem Groq configurado.'] },
-      logistics: { summary: `Logistica analisada por municipio/UF do CAR: ${region || '-'}.`, confidence: 'baixa', evidence: ['Fallback tecnico sem Groq configurado.'] },
+      soil: {
+        summary: topCrop
+          ? `Aptidao inferida para culturas regionais como ${topCrop.produto}.`
+          : 'Solo a validar com camada tecnica local.',
+        confidence: topCrop ? 'media' : 'baixa',
+        evidence: ['Fallback tecnico sem Groq configurado.'],
+      },
+      slope: {
+        summary:
+          'Relevo a confirmar por MDE; geometria CAR disponivel para cruzamento.',
+        confidence: 'baixa',
+        evidence: ['Fallback tecnico sem Groq configurado.'],
+      },
+      hydrography: {
+        summary:
+          'APP/hidrografia dependem de validacao por SICAR Tema e camadas ambientais.',
+        confidence: 'baixa',
+        evidence: ['Fallback tecnico sem Groq configurado.'],
+      },
+      logistics: {
+        summary: `Logistica analisada por municipio/UF do CAR: ${region || '-'}.`,
+        confidence: 'baixa',
+        evidence: ['Fallback tecnico sem Groq configurado.'],
+      },
       regional_drivers: [],
-      regional_risks: ['Configurar GROQ_API_KEY para pesquisa regional mais rica.'],
+      regional_risks: [
+        'Configurar GROQ_API_KEY para pesquisa regional mais rica.',
+      ],
       provider: 'fallback',
     };
   }
@@ -456,7 +676,11 @@ Formato:
     const coords = [];
     const collect = (value) => {
       if (!Array.isArray(value)) return;
-      if (value.length >= 2 && typeof value[0] === 'number' && typeof value[1] === 'number') {
+      if (
+        value.length >= 2 &&
+        typeof value[0] === 'number' &&
+        typeof value[1] === 'number'
+      ) {
         coords.push(value);
         return;
       }
@@ -476,12 +700,16 @@ Formato:
     if (!geometry) return null;
     let coords = [];
     if (geometry.type === 'Polygon') coords = geometry.coordinates[0];
-    else if (geometry.type === 'MultiPolygon') coords = geometry.coordinates[0]?.[0];
+    else if (geometry.type === 'MultiPolygon')
+      coords = geometry.coordinates[0]?.[0];
     else return null;
 
     const n = coords.length;
     if (n === 0) return null;
-    const sum = coords.reduce((acc, c) => [acc[0] + c[1], acc[1] + c[0]], [0, 0]);
+    const sum = coords.reduce(
+      (acc, c) => [acc[0] + c[1], acc[1] + c[0]],
+      [0, 0]
+    );
     return { lat: sum[0] / n, lng: sum[1] / n };
   }
 }

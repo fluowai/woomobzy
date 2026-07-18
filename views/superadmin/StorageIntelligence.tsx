@@ -101,9 +101,12 @@ const StorageIntelligence: React.FC = () => {
   const [lifecycle, setLifecycle] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [simulation, setSimulation] = useState<any>(null);
-  const [minioConfig, setMinioConfig] = useState<MinioConfig>(defaultMinioConfig);
+  const [minioConfig, setMinioConfig] =
+    useState<MinioConfig>(defaultMinioConfig);
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const [confirmations, setConfirmations] = useState<Record<string, string>>({});
+  const [confirmations, setConfirmations] = useState<Record<string, string>>(
+    {}
+  );
   const [loading, setLoading] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -119,7 +122,11 @@ const StorageIntelligence: React.FC = () => {
     try {
       const configData = await callApi('/api/admin/storage/config');
       if (configData.config) {
-        setMinioConfig({ ...defaultMinioConfig, ...configData.config, secretKey: '' });
+        setMinioConfig({
+          ...defaultMinioConfig,
+          ...configData.config,
+          secretKey: '',
+        });
       }
 
       const [
@@ -195,11 +202,18 @@ const StorageIntelligence: React.FC = () => {
     }
   }
 
-  function updateMinioConfig<K extends keyof MinioConfig>(key: K, value: MinioConfig[K]) {
+  function updateMinioConfig<K extends keyof MinioConfig>(
+    key: K,
+    value: MinioConfig[K]
+  ) {
     setMinioConfig((current) => ({ ...current, [key]: value }));
   }
 
-  async function runAdminAction(action: string, path: string, body: Record<string, any> = {}) {
+  async function runAdminAction(
+    action: string,
+    path: string,
+    body: Record<string, any> = {}
+  ) {
     setActiveAction(action);
     setError(null);
     setMessage(null);
@@ -238,19 +252,50 @@ const StorageIntelligence: React.FC = () => {
     }
   }
 
-  const cards = useMemo(() => [
-    ['Uso total do MinIO', formatBytes(summary?.total_usage_bytes), HardDrive],
-    ['Quantidade total de objetos', formatNumber(summary?.total_objects), Database],
-    ['Quantidade de buckets', formatNumber(summary?.total_buckets), Layers],
-    ['Bucket mais pesado', summary?.heaviest_bucket?.key || '- ', BarChart3],
-    ['Cliente que mais consome', summary?.top_tenant?.key || '- ', Users],
-    ['Tipo de arquivo que mais consome', summary?.top_file_type?.key || '- ', FileSearch],
-    ['Arquivos duplicados estimados', formatNumber(summary?.duplicate_files_estimated), Clipboard],
-    ['Arquivos órfãos estimados', formatNumber(summary?.orphan_files_estimated), AlertTriangle],
-    ['Storage economizável', formatBytes(summary?.reclaimable_bytes_estimated), Trash2],
-    ['Status do versionamento', summary?.versioning_status || '- ', ShieldAlert],
-    ['Status do lifecycle', summary?.lifecycle_status || '- ', CheckCircle2],
-  ], [summary]);
+  const cards = useMemo(
+    () => [
+      [
+        'Uso total do MinIO',
+        formatBytes(summary?.total_usage_bytes),
+        HardDrive,
+      ],
+      [
+        'Quantidade total de objetos',
+        formatNumber(summary?.total_objects),
+        Database,
+      ],
+      ['Quantidade de buckets', formatNumber(summary?.total_buckets), Layers],
+      ['Bucket mais pesado', summary?.heaviest_bucket?.key || '- ', BarChart3],
+      ['Cliente que mais consome', summary?.top_tenant?.key || '- ', Users],
+      [
+        'Tipo de arquivo que mais consome',
+        summary?.top_file_type?.key || '- ',
+        FileSearch,
+      ],
+      [
+        'Arquivos duplicados estimados',
+        formatNumber(summary?.duplicate_files_estimated),
+        Clipboard,
+      ],
+      [
+        'Arquivos órfãos estimados',
+        formatNumber(summary?.orphan_files_estimated),
+        AlertTriangle,
+      ],
+      [
+        'Storage economizável',
+        formatBytes(summary?.reclaimable_bytes_estimated),
+        Trash2,
+      ],
+      [
+        'Status do versionamento',
+        summary?.versioning_status || '- ',
+        ShieldAlert,
+      ],
+      ['Status do lifecycle', summary?.lifecycle_status || '- ', CheckCircle2],
+    ],
+    [summary]
+  );
 
   return (
     <div className="mx-auto max-w-7xl space-y-5">
@@ -261,8 +306,12 @@ const StorageIntelligence: React.FC = () => {
               <HardDrive size={24} />
             </span>
             <div>
-              <h1 className="text-2xl font-bold text-slate-950">Storage Intelligence</h1>
-              <p className="text-sm text-slate-500">Auditoria MinIO, duplicidades, órfãos e retenção.</p>
+              <h1 className="text-2xl font-bold text-slate-950">
+                Storage Intelligence
+              </h1>
+              <p className="text-sm text-slate-500">
+                Auditoria MinIO, duplicidades, órfãos e retenção.
+              </p>
             </div>
           </div>
         </div>
@@ -277,7 +326,9 @@ const StorageIntelligence: React.FC = () => {
       </div>
 
       {(error || message) && (
-        <div className={`rounded-lg border p-4 text-sm font-semibold ${error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+        <div
+          className={`rounded-lg border p-4 text-sm font-semibold ${error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}
+        >
           <div className="flex items-center gap-2">
             {error ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
             {error || message}
@@ -314,12 +365,20 @@ const StorageIntelligence: React.FC = () => {
         <section className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {cards.map(([label, value, Icon]: any) => (
-              <MetricCard key={label} label={label} value={value} icon={<Icon size={18} />} />
+              <MetricCard
+                key={label}
+                label={label}
+                value={value}
+                icon={<Icon size={18} />}
+              />
             ))}
           </div>
           <div className="grid gap-3">
             {(summary?.alerts || []).map((alert: any, index: number) => (
-              <div key={index} className={`rounded-lg border p-4 text-sm font-bold ${alert.severity === 'critical' ? 'border-red-200 bg-red-50 text-red-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+              <div
+                key={index}
+                className={`rounded-lg border p-4 text-sm font-bold ${alert.severity === 'critical' ? 'border-red-200 bg-red-50 text-red-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}
+              >
                 <div className="flex items-center gap-2">
                   <AlertTriangle size={16} />
                   {alert.message}
@@ -332,7 +391,15 @@ const StorageIntelligence: React.FC = () => {
 
       {activeTab === 'Buckets' && (
         <Table
-          columns={['Bucket', 'Objetos', 'Tamanho', 'Versioning', 'Lifecycle', 'Policy', 'Ações']}
+          columns={[
+            'Bucket',
+            'Objetos',
+            'Tamanho',
+            'Versioning',
+            'Lifecycle',
+            'Policy',
+            'Ações',
+          ]}
           rows={buckets.map((bucket) => [
             bucket.name,
             formatNumber(bucket.objects),
@@ -341,10 +408,36 @@ const StorageIntelligence: React.FC = () => {
             bucket.lifecycle,
             bucket.policy,
             <div className="flex flex-wrap gap-2" key={bucket.name}>
-              <SmallButton icon={<Eye size={14} />} label="Detalhes" onClick={() => setActiveTab('Arquivos')} />
-              <SmallButton icon={<RefreshCw size={14} />} label="Inventário" onClick={() => runAdminAction('scan', '/api/admin/storage/scan')} active={activeAction === 'scan'} />
-              <SmallButton icon={<ShieldAlert size={14} />} label="Suspender" onClick={() => setActiveTab('Ações Críticas')} />
-              <SmallButton icon={<CheckCircle2 size={14} />} label="Lifecycle" onClick={() => runAdminAction('lifecycle', '/api/admin/storage/apply-lifecycle', { bucket: bucket.name })} active={activeAction === 'lifecycle'} />
+              <SmallButton
+                icon={<Eye size={14} />}
+                label="Detalhes"
+                onClick={() => setActiveTab('Arquivos')}
+              />
+              <SmallButton
+                icon={<RefreshCw size={14} />}
+                label="Inventário"
+                onClick={() =>
+                  runAdminAction('scan', '/api/admin/storage/scan')
+                }
+                active={activeAction === 'scan'}
+              />
+              <SmallButton
+                icon={<ShieldAlert size={14} />}
+                label="Suspender"
+                onClick={() => setActiveTab('Ações Críticas')}
+              />
+              <SmallButton
+                icon={<CheckCircle2 size={14} />}
+                label="Lifecycle"
+                onClick={() =>
+                  runAdminAction(
+                    'lifecycle',
+                    '/api/admin/storage/apply-lifecycle',
+                    { bucket: bucket.name }
+                  )
+                }
+                active={activeAction === 'lifecycle'}
+              />
             </div>,
           ])}
         />
@@ -365,10 +458,17 @@ const StorageIntelligence: React.FC = () => {
               ['prefix', 'Prefixo'],
             ].map(([key, label]) => (
               <label key={key} className="space-y-1">
-                <span className="text-xs font-bold uppercase text-slate-500">{label}</span>
+                <span className="text-xs font-bold uppercase text-slate-500">
+                  {label}
+                </span>
                 <input
                   value={filters[key] || ''}
-                  onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      [key]: event.target.value,
+                    }))
+                  }
                   className={fieldClass}
                 />
               </label>
@@ -382,19 +482,42 @@ const StorageIntelligence: React.FC = () => {
               Filtrar
             </button>
           </div>
-          <FileTable files={files} onSignedUrl={openSignedUrl} activeAction={activeAction} />
+          <FileTable
+            files={files}
+            onSignedUrl={openSignedUrl}
+            activeAction={activeAction}
+          />
         </section>
       )}
 
       {activeTab === 'Duplicados' && (
         <section className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
-            <MetricCard label="Total de grupos duplicados" value={formatNumber(duplicates?.total_groups)} icon={<Layers size={18} />} />
-            <MetricCard label="Arquivos duplicados" value={formatNumber(duplicates?.duplicate_files)} icon={<FileSearch size={18} />} />
-            <MetricCard label="Espaço desperdiçado estimado" value={formatBytes(duplicates?.wasted_bytes)} icon={<HardDrive size={18} />} />
+            <MetricCard
+              label="Total de grupos duplicados"
+              value={formatNumber(duplicates?.total_groups)}
+              icon={<Layers size={18} />}
+            />
+            <MetricCard
+              label="Arquivos duplicados"
+              value={formatNumber(duplicates?.duplicate_files)}
+              icon={<FileSearch size={18} />}
+            />
+            <MetricCard
+              label="Espaço desperdiçado estimado"
+              value={formatBytes(duplicates?.wasted_bytes)}
+              icon={<HardDrive size={18} />}
+            />
           </div>
           <Table
-            columns={['Estratégia', 'Chave', 'Arquivos', 'Desperdício', 'Manter', 'Ações']}
+            columns={[
+              'Estratégia',
+              'Chave',
+              'Arquivos',
+              'Desperdício',
+              'Manter',
+              'Ações',
+            ]}
             rows={(duplicates?.groups || []).map((group) => [
               group.strategy,
               <CodeText key="key" value={group.key} />,
@@ -402,8 +525,18 @@ const StorageIntelligence: React.FC = () => {
               formatBytes(group.wasted_bytes),
               <CodeText key="keep" value={group.keep?.object_key} />,
               <div className="flex flex-wrap gap-2" key={group.key}>
-                <SmallButton icon={<Download size={14} />} label="Relatório" onClick={() => downloadJson('duplicados.json', duplicates)} />
-                <SmallButton icon={<Clipboard size={14} />} label="Marcar" onClick={() => setMessage('Duplicados marcados para revisão.')} />
+                <SmallButton
+                  icon={<Download size={14} />}
+                  label="Relatório"
+                  onClick={() => downloadJson('duplicados.json', duplicates)}
+                />
+                <SmallButton
+                  icon={<Clipboard size={14} />}
+                  label="Marcar"
+                  onClick={() =>
+                    setMessage('Duplicados marcados para revisão.')
+                  }
+                />
               </div>,
             ])}
           />
@@ -411,8 +544,16 @@ const StorageIntelligence: React.FC = () => {
             title="Limpar duplicados confirmados"
             confirmation="CONFIRMAR LIMPEZA DE DUPLICADOS"
             value={confirmations.duplicates || ''}
-            onChange={(value) => setConfirmations((current) => ({ ...current, duplicates: value }))}
-            onRun={() => runAdminAction('delete-duplicates', '/api/admin/storage/delete-duplicates', { confirmation: confirmations.duplicates })}
+            onChange={(value) =>
+              setConfirmations((current) => ({ ...current, duplicates: value }))
+            }
+            onRun={() =>
+              runAdminAction(
+                'delete-duplicates',
+                '/api/admin/storage/delete-duplicates',
+                { confirmation: confirmations.duplicates }
+              )
+            }
             active={activeAction === 'delete-duplicates'}
           />
         </section>
@@ -421,28 +562,54 @@ const StorageIntelligence: React.FC = () => {
       {activeTab === 'Órfãos' && (
         <section className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <MetricCard label="No MinIO, ausente no banco" value={formatNumber(orphans?.counts?.minio_without_database)} icon={<HardDrive size={18} />} />
-            <MetricCard label="No banco, ausente no MinIO" value={formatNumber(orphans?.counts?.database_without_minio)} icon={<Database size={18} />} />
+            <MetricCard
+              label="No MinIO, ausente no banco"
+              value={formatNumber(orphans?.counts?.minio_without_database)}
+              icon={<HardDrive size={18} />}
+            />
+            <MetricCard
+              label="No banco, ausente no MinIO"
+              value={formatNumber(orphans?.counts?.database_without_minio)}
+              icon={<Database size={18} />}
+            />
           </div>
           <Table
             columns={['Classificação', 'Bucket', 'Object key', 'Tamanho']}
-            rows={(orphans?.minio_without_database || []).slice(0, 80).map((item) => [
-              item.classification,
-              item.bucket,
-              <CodeText key={item.object_key} value={item.object_key} />,
-              formatBytes(item.size_bytes),
-            ])}
+            rows={(orphans?.minio_without_database || [])
+              .slice(0, 80)
+              .map((item) => [
+                item.classification,
+                item.bucket,
+                <CodeText key={item.object_key} value={item.object_key} />,
+                formatBytes(item.size_bytes),
+              ])}
           />
           <div className="flex flex-wrap gap-2">
-            <SmallButton icon={<Download size={14} />} label="Exportar relatório" onClick={() => downloadJson('orfaos.json', orphans)} />
-            <SmallButton icon={<Clipboard size={14} />} label="Marcar como órfão" onClick={() => setMessage('Órfãos marcados para revisão.')} />
+            <SmallButton
+              icon={<Download size={14} />}
+              label="Exportar relatório"
+              onClick={() => downloadJson('orfaos.json', orphans)}
+            />
+            <SmallButton
+              icon={<Clipboard size={14} />}
+              label="Marcar como órfão"
+              onClick={() => setMessage('Órfãos marcados para revisão.')}
+            />
           </div>
           <ProtectedAction
             title="Excluir órfãos confirmados"
             confirmation="CONFIRMAR LIMPEZA DE ORFAOS"
             value={confirmations.orphans || ''}
-            onChange={(value) => setConfirmations((current) => ({ ...current, orphans: value }))}
-            onRun={() => runAdminAction('delete-orphans', '/api/admin/storage/delete-orphans', { confirmation: confirmations.orphans })}
+            onChange={(value) =>
+              setConfirmations((current) => ({ ...current, orphans: value }))
+            }
+            onRun={() =>
+              runAdminAction(
+                'delete-orphans',
+                '/api/admin/storage/delete-orphans',
+                { confirmation: confirmations.orphans }
+              )
+            }
             active={activeAction === 'delete-orphans'}
           />
         </section>
@@ -450,7 +617,20 @@ const StorageIntelligence: React.FC = () => {
 
       {activeTab === 'Clientes' && (
         <Table
-          columns={['Cliente', 'Objetos', 'Tamanho', 'Imagens', 'Áudios', 'Vídeos', 'PDFs', 'Avatares', 'Cresc. diário', 'Cresc. semanal', 'Proj. mensal', '10/100/1000 clientes']}
+          columns={[
+            'Cliente',
+            'Objetos',
+            'Tamanho',
+            'Imagens',
+            'Áudios',
+            'Vídeos',
+            'PDFs',
+            'Avatares',
+            'Cresc. diário',
+            'Cresc. semanal',
+            'Proj. mensal',
+            '10/100/1000 clientes',
+          ]}
           rows={tenants.map((tenant) => [
             tenant.tenant_name || tenant.tenant_id,
             formatNumber(tenant.count),
@@ -472,21 +652,71 @@ const StorageIntelligence: React.FC = () => {
         <section className="space-y-4">
           <Table columns={['Tipo', 'Retenção']} rows={retentionRules} />
           <div className="flex flex-wrap gap-2">
-            <SmallButton icon={<CheckCircle2 size={14} />} label="Salvar política" onClick={() => setMessage('Política de retenção salva localmente para simulação.')} />
-            <SmallButton icon={<LinkIcon size={14} />} label="Aplicar lifecycle no MinIO" onClick={() => runAdminAction('lifecycle', '/api/admin/storage/apply-lifecycle')} active={activeAction === 'lifecycle'} />
-            <SmallButton icon={<Play size={14} />} label="Simular limpeza" onClick={() => runAdminAction('simulate', '/api/admin/storage/simulate-cleanup')} active={activeAction === 'simulate'} />
-            <SmallButton icon={<Trash2 size={14} />} label="Executar limpeza agora" onClick={() => setActiveTab('Ações Críticas')} />
+            <SmallButton
+              icon={<CheckCircle2 size={14} />}
+              label="Salvar política"
+              onClick={() =>
+                setMessage(
+                  'Política de retenção salva localmente para simulação.'
+                )
+              }
+            />
+            <SmallButton
+              icon={<LinkIcon size={14} />}
+              label="Aplicar lifecycle no MinIO"
+              onClick={() =>
+                runAdminAction(
+                  'lifecycle',
+                  '/api/admin/storage/apply-lifecycle'
+                )
+              }
+              active={activeAction === 'lifecycle'}
+            />
+            <SmallButton
+              icon={<Play size={14} />}
+              label="Simular limpeza"
+              onClick={() =>
+                runAdminAction(
+                  'simulate',
+                  '/api/admin/storage/simulate-cleanup'
+                )
+              }
+              active={activeAction === 'simulate'}
+            />
+            <SmallButton
+              icon={<Trash2 size={14} />}
+              label="Executar limpeza agora"
+              onClick={() => setActiveTab('Ações Críticas')}
+            />
           </div>
           {simulation && (
             <div className="grid gap-4 md:grid-cols-4">
-              <MetricCard label="Arquivos que seriam apagados" value={formatNumber(simulation.total_files)} icon={<FileSearch size={18} />} />
-              <MetricCard label="Espaço liberado" value={formatBytes(simulation.reclaimable_bytes)} icon={<HardDrive size={18} />} />
-              <MetricCard label="Clientes afetados" value={formatNumber(simulation.affected_tenants?.length)} icon={<Users size={18} />} />
-              <MetricCard label="Tipos afetados" value={formatNumber(simulation.affected_types?.length)} icon={<Layers size={18} />} />
+              <MetricCard
+                label="Arquivos que seriam apagados"
+                value={formatNumber(simulation.total_files)}
+                icon={<FileSearch size={18} />}
+              />
+              <MetricCard
+                label="Espaço liberado"
+                value={formatBytes(simulation.reclaimable_bytes)}
+                icon={<HardDrive size={18} />}
+              />
+              <MetricCard
+                label="Clientes afetados"
+                value={formatNumber(simulation.affected_tenants?.length)}
+                icon={<Users size={18} />}
+              />
+              <MetricCard
+                label="Tipos afetados"
+                value={formatNumber(simulation.affected_types?.length)}
+                icon={<Layers size={18} />}
+              />
             </div>
           )}
           <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="mb-2 text-sm font-bold text-slate-900">Lifecycle atual</div>
+            <div className="mb-2 text-sm font-bold text-slate-900">
+              Lifecycle atual
+            </div>
             <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-950 p-4 text-xs text-slate-100">
               {JSON.stringify(lifecycle, null, 2)}
             </pre>
@@ -501,8 +731,16 @@ const StorageIntelligence: React.FC = () => {
             body="O versionamento mantém versões antigas dos arquivos e pode aumentar muito o consumo."
             confirmation="SUSPENDER VERSIONAMENTO"
             value={confirmations.versioning || ''}
-            onChange={(value) => setConfirmations((current) => ({ ...current, versioning: value }))}
-            onRun={() => runAdminAction('suspend-versioning', '/api/admin/storage/suspend-versioning', { confirmation: confirmations.versioning })}
+            onChange={(value) =>
+              setConfirmations((current) => ({ ...current, versioning: value }))
+            }
+            onRun={() =>
+              runAdminAction(
+                'suspend-versioning',
+                '/api/admin/storage/suspend-versioning',
+                { confirmation: confirmations.versioning }
+              )
+            }
             active={activeAction === 'suspend-versioning'}
           />
           <CriticalPanel
@@ -510,8 +748,12 @@ const StorageIntelligence: React.FC = () => {
             body="Regras mínimas: versões antigas após 1 dia, delete markers, temporários após 3 dias e mídias expiradas."
             confirmation="APLICAR LIFECYCLE"
             value={confirmations.lifecycle || ''}
-            onChange={(value) => setConfirmations((current) => ({ ...current, lifecycle: value }))}
-            onRun={() => runAdminAction('lifecycle', '/api/admin/storage/apply-lifecycle')}
+            onChange={(value) =>
+              setConfirmations((current) => ({ ...current, lifecycle: value }))
+            }
+            onRun={() =>
+              runAdminAction('lifecycle', '/api/admin/storage/apply-lifecycle')
+            }
             active={activeAction === 'lifecycle'}
           />
           <CriticalPanel
@@ -519,7 +761,9 @@ const StorageIntelligence: React.FC = () => {
             body="Lista buckets e objetos, calcula tamanhos, agrupa por extensão, prefixo e cliente, detecta duplicados e órfãos, e salva snapshot."
             confirmation="EXECUTAR AUDITORIA"
             value={confirmations.scan || ''}
-            onChange={(value) => setConfirmations((current) => ({ ...current, scan: value }))}
+            onChange={(value) =>
+              setConfirmations((current) => ({ ...current, scan: value }))
+            }
             onRun={() => runAdminAction('scan', '/api/admin/storage/scan')}
             active={activeAction === 'scan'}
           />
@@ -527,8 +771,16 @@ const StorageIntelligence: React.FC = () => {
             title="Limpar expirados confirmados"
             confirmation="CONFIRMAR LIMPEZA DE EXPIRADOS"
             value={confirmations.expired || ''}
-            onChange={(value) => setConfirmations((current) => ({ ...current, expired: value }))}
-            onRun={() => runAdminAction('delete-expired', '/api/admin/storage/delete-expired', { confirmation: confirmations.expired })}
+            onChange={(value) =>
+              setConfirmations((current) => ({ ...current, expired: value }))
+            }
+            onRun={() =>
+              runAdminAction(
+                'delete-expired',
+                '/api/admin/storage/delete-expired',
+                { confirmation: confirmations.expired }
+              )
+            }
             active={activeAction === 'delete-expired'}
           />
         </section>
@@ -550,20 +802,29 @@ const StorageIntelligence: React.FC = () => {
   );
 };
 
-const MetricCard: React.FC<{ label: string; value: string; icon: React.ReactNode }> = ({ label, value, icon }) => (
+const MetricCard: React.FC<{
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}> = ({ label, value, icon }) => (
   <div className="rounded-lg border border-slate-200 bg-white p-4">
     <div className="mb-3 flex items-center justify-between gap-3">
       <span className="rounded-lg bg-slate-100 p-2 text-slate-700">{icon}</span>
     </div>
     <div className="text-xl font-bold text-slate-950">{value}</div>
-    <div className="mt-1 text-xs font-bold uppercase text-slate-500">{label}</div>
+    <div className="mt-1 text-xs font-bold uppercase text-slate-500">
+      {label}
+    </div>
   </div>
 );
 
 const MinioIntegrationPanel: React.FC<{
   config: MinioConfig;
   saving: boolean;
-  onChange: <K extends keyof MinioConfig>(key: K, value: MinioConfig[K]) => void;
+  onChange: <K extends keyof MinioConfig>(
+    key: K,
+    value: MinioConfig[K]
+  ) => void;
   onSave: () => void;
 }> = ({ config, saving, onChange, onSave }) => (
   <section className="space-y-4">
@@ -574,8 +835,13 @@ const MinioIntegrationPanel: React.FC<{
             <Server size={18} />
           </span>
           <div>
-            <h2 className="text-base font-bold text-slate-950">Destino MinIO via S3</h2>
-            <p className="text-sm text-slate-500">Credenciais usadas pelo backend para uploads, auditoria e URLs assinadas.</p>
+            <h2 className="text-base font-bold text-slate-950">
+              Destino MinIO via S3
+            </h2>
+            <p className="text-sm text-slate-500">
+              Credenciais usadas pelo backend para uploads, auditoria e URLs
+              assinadas.
+            </p>
           </div>
         </div>
         <button
@@ -584,7 +850,11 @@ const MinioIntegrationPanel: React.FC<{
           disabled={saving}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
         >
-          {saving ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+          {saving ? (
+            <RefreshCw size={16} className="animate-spin" />
+          ) : (
+            <CheckCircle2 size={16} />
+          )}
           Salvar integração
         </button>
       </div>
@@ -617,7 +887,10 @@ const MinioIntegrationPanel: React.FC<{
         </Field>
         <Field label="ACCESS KEY">
           <div className="relative">
-            <KeyRound size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <KeyRound
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
             <input
               value={config.accessKey}
               onChange={(event) => onChange('accessKey', event.target.value)}
@@ -627,11 +900,18 @@ const MinioIntegrationPanel: React.FC<{
         </Field>
         <Field label="SECRET KEY">
           <div className="relative">
-            <KeyRound size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <KeyRound
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
             <input
               value={config.secretKey}
               onChange={(event) => onChange('secretKey', event.target.value)}
-              placeholder={config.hasSecretKey ? 'Secret Key salva. Deixe vazio para manter.' : ''}
+              placeholder={
+                config.hasSecretKey
+                  ? 'Secret Key salva. Deixe vazio para manter.'
+                  : ''
+              }
               type="password"
               className={`${fieldClass} pl-9`}
             />
@@ -648,7 +928,12 @@ const MinioIntegrationPanel: React.FC<{
         <Field label="ORGANIZAÇÃO NO MINIO">
           <select
             value={config.bucketMode}
-            onChange={(event) => onChange('bucketMode', event.target.value as MinioConfig['bucketMode'])}
+            onChange={(event) =>
+              onChange(
+                'bucketMode',
+                event.target.value as MinioConfig['bucketMode']
+              )
+            }
             className={fieldClass}
           >
             <option value="separate">Manter buckets separados</option>
@@ -658,7 +943,12 @@ const MinioIntegrationPanel: React.FC<{
         <Field label="PASTAS NO BUCKET ÚNICO">
           <select
             value={config.folderMode}
-            onChange={(event) => onChange('folderMode', event.target.value as MinioConfig['folderMode'])}
+            onChange={(event) =>
+              onChange(
+                'folderMode',
+                event.target.value as MinioConfig['folderMode']
+              )
+            }
             className={fieldClass}
           >
             <option value="bucket-prefix">Pasta por bucket</option>
@@ -687,34 +977,62 @@ const MinioIntegrationPanel: React.FC<{
     </div>
 
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-      Aponte o domínio público do MinIO para o IP do servidor Docker e use esse domínio em MINIO ENDPOINT/PUBLIC BASE URL.
-      A Secret Key não é exibida depois de salva.
+      Aponte o domínio público do MinIO para o IP do servidor Docker e use esse
+      domínio em MINIO ENDPOINT/PUBLIC BASE URL. A Secret Key não é exibida
+      depois de salva.
     </div>
   </section>
 );
 
-const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => (
   <label className="block">
-    <span className="mb-1.5 block text-xs font-bold uppercase text-slate-500">{label}</span>
+    <span className="mb-1.5 block text-xs font-bold uppercase text-slate-500">
+      {label}
+    </span>
     {children}
   </label>
 );
 
-const Table: React.FC<{ columns: string[]; rows: React.ReactNode[][] }> = ({ columns, rows }) => (
+const Table: React.FC<{ columns: string[]; rows: React.ReactNode[][] }> = ({
+  columns,
+  rows,
+}) => (
   <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
         <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500">
-          <tr>{columns.map((column) => <th key={column} className="px-4 py-3">{column}</th>)}</tr>
+          <tr>
+            {columns.map((column) => (
+              <th key={column} className="px-4 py-3">
+                {column}
+              </th>
+            ))}
+          </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 text-slate-700">
           {rows.length === 0 ? (
-            <tr><td className="px-4 py-8 text-center text-slate-400" colSpan={columns.length}>Sem dados para exibir.</td></tr>
-          ) : rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="hover:bg-slate-50">
-              {row.map((cell, cellIndex) => <td key={cellIndex} className="max-w-sm px-4 py-3 align-top">{cell}</td>)}
+            <tr>
+              <td
+                className="px-4 py-8 text-center text-slate-400"
+                colSpan={columns.length}
+              >
+                Sem dados para exibir.
+              </td>
             </tr>
-          ))}
+          ) : (
+            rows.map((row, rowIndex) => (
+              <tr key={rowIndex} className="hover:bg-slate-50">
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex} className="max-w-sm px-4 py-3 align-top">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
@@ -727,7 +1045,20 @@ const FileTable: React.FC<{
   onSignedUrl: (item: StorageObject) => void;
 }> = ({ files, activeAction, onSignedUrl }) => (
   <Table
-    columns={['Bucket', 'Object key', 'Tamanho', 'Extensão', 'MIME', 'Cliente/Tenant', 'Origem', 'Data criação', 'ETag', 'SHA256', 'Status', 'Botões']}
+    columns={[
+      'Bucket',
+      'Object key',
+      'Tamanho',
+      'Extensão',
+      'MIME',
+      'Cliente/Tenant',
+      'Origem',
+      'Data criação',
+      'ETag',
+      'SHA256',
+      'Status',
+      'Botões',
+    ]}
     rows={files.map((file) => [
       file.bucket,
       <CodeText key={file.object_key} value={file.object_key} />,
@@ -741,10 +1072,27 @@ const FileTable: React.FC<{
       <CodeText key="sha" value={file.sha256 || '-'} />,
       file.deleted_at ? 'deleted' : 'active',
       <div className="flex flex-wrap gap-2" key="actions">
-        <SmallButton icon={<Eye size={14} />} label="URL" onClick={() => onSignedUrl(file)} active={activeAction === `signed-${file.object_key}`} />
-        <SmallButton icon={<Clipboard size={14} />} label="Copiar" onClick={() => copyText(file.object_key)} />
-        <SmallButton icon={<Trash2 size={14} />} label="Marcar" onClick={() => undefined} />
-        <SmallButton icon={<Database size={14} />} label="Vínculo" onClick={() => copyText(JSON.stringify(file, null, 2))} />
+        <SmallButton
+          icon={<Eye size={14} />}
+          label="URL"
+          onClick={() => onSignedUrl(file)}
+          active={activeAction === `signed-${file.object_key}`}
+        />
+        <SmallButton
+          icon={<Clipboard size={14} />}
+          label="Copiar"
+          onClick={() => copyText(file.object_key)}
+        />
+        <SmallButton
+          icon={<Trash2 size={14} />}
+          label="Marcar"
+          onClick={() => undefined}
+        />
+        <SmallButton
+          icon={<Database size={14} />}
+          label="Vínculo"
+          onClick={() => copyText(JSON.stringify(file, null, 2))}
+        />
       </div>,
     ])}
   />
@@ -767,7 +1115,10 @@ const SmallButton: React.FC<{
 );
 
 const CodeText: React.FC<{ value?: string }> = ({ value }) => (
-  <span className="block max-w-xs truncate rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700" title={value}>
+  <span
+    className="block max-w-xs truncate rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700"
+    title={value}
+  >
     {value || '-'}
   </span>
 );
@@ -793,7 +1144,11 @@ const ProtectedAction: React.FC<{
       disabled={value.trim() !== confirmation || active}
       className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:bg-slate-300"
     >
-      {active ? <RefreshCw size={16} className="animate-spin" /> : <Trash2 size={16} />}
+      {active ? (
+        <RefreshCw size={16} className="animate-spin" />
+      ) : (
+        <Trash2 size={16} />
+      )}
       Executar
     </button>
   </div>
@@ -825,7 +1180,11 @@ const CriticalPanel: React.FC<{
       disabled={value.trim() !== confirmation || active}
       className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
     >
-      {active ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} />}
+      {active ? (
+        <RefreshCw size={16} className="animate-spin" />
+      ) : (
+        <Play size={16} />
+      )}
       Executar
     </button>
   </div>
@@ -859,16 +1218,22 @@ function extensionFromKey(key?: string) {
 }
 
 function actionMessage(action: string, data: any) {
-  if (action === 'scan') return `Auditoria concluída: ${formatNumber(data.scan?.objects)} objeto(s).`;
-  if (action === 'simulate') return `Simulação concluída: ${formatNumber(data.simulation?.total_files)} arquivo(s).`;
+  if (action === 'scan')
+    return `Auditoria concluída: ${formatNumber(data.scan?.objects)} objeto(s).`;
+  if (action === 'simulate')
+    return `Simulação concluída: ${formatNumber(data.simulation?.total_files)} arquivo(s).`;
   if (action === 'lifecycle') return 'Lifecycle aplicado no MinIO.';
-  if (action === 'suspend-versioning') return 'Versionamento suspenso no bucket.';
-  if (action.startsWith('delete')) return `Exclusão concluída: ${formatNumber(data.deleted?.length)} objeto(s).`;
+  if (action === 'suspend-versioning')
+    return 'Versionamento suspenso no bucket.';
+  if (action.startsWith('delete'))
+    return `Exclusão concluída: ${formatNumber(data.deleted?.length)} objeto(s).`;
   return 'Ação executada.';
 }
 
 function downloadJson(fileName: string, payload: any) {
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: 'application/json',
+  });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;

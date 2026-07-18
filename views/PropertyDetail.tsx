@@ -43,7 +43,10 @@ const PropertyDetail: React.FC = () => {
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [leadSuccess, setLeadSuccess] = useState(false);
   const [leadForm, setLeadForm] = useState({
-    name: '', phone: '', email: '', subject: 'Interesse no imóvel',
+    name: '',
+    phone: '',
+    email: '',
+    subject: 'Interesse no imóvel',
   });
   const { profile } = useAuth();
 
@@ -62,7 +65,12 @@ const PropertyDetail: React.FC = () => {
       setTimeout(() => {
         setIsLeadModalOpen(false);
         setLeadSuccess(false);
-        setLeadForm({ name: '', phone: '', email: '', subject: 'Interesse no imóvel' });
+        setLeadForm({
+          name: '',
+          phone: '',
+          email: '',
+          subject: 'Interesse no imóvel',
+        });
       }, 3000);
     } catch (error) {
       logger.error('Erro ao enviar lead', error);
@@ -663,7 +671,9 @@ const PropertyDetail: React.FC = () => {
         leadForm={leadForm}
         onClose={() => setIsLeadModalOpen(false)}
         onSubmit={handleLeadSubmit}
-        onFormChange={(field, value) => setLeadForm({ ...leadForm, [field]: value })}
+        onFormChange={(field, value) =>
+          setLeadForm({ ...leadForm, [field]: value })
+        }
       />
     </div>
   );

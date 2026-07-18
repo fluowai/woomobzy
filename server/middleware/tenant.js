@@ -49,13 +49,18 @@ export const requireTenant = async (req, res, next) => {
     });
   }
 
-  if (req.body && req.body.organization_id && req.body.organization_id !== req.orgId) {
+  if (
+    req.body &&
+    req.body.organization_id &&
+    req.body.organization_id !== req.orgId
+  ) {
     if (!req.isImpersonating) {
       console.warn(
         `[Security] Tentativa de spoofing de OrgID detectada do usuario ${req.user.email}`
       );
       return res.status(400).json({
-        error: 'Operacao invalida: Tentativa de manipulacao de Tenant detectada.',
+        error:
+          'Operacao invalida: Tentativa de manipulacao de Tenant detectada.',
       });
     }
   }
@@ -102,7 +107,9 @@ async function recoverTenantFromAuthenticatedUser(req) {
   try {
     const supabase = getSupabaseServer();
     const userId = req.user?.id;
-    const email = String(req.user?.email || '').toLowerCase().trim();
+    const email = String(req.user?.email || '')
+      .toLowerCase()
+      .trim();
 
     if (userId) {
       const { data: profileById, error: profileByIdError } = await supabase
@@ -117,13 +124,14 @@ async function recoverTenantFromAuthenticatedUser(req) {
     }
 
     if (email) {
-      const { data: profileByEmail, error: profileByEmailError } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .ilike('email', email)
-        .not('organization_id', 'is', null)
-        .limit(1)
-        .maybeSingle();
+      const { data: profileByEmail, error: profileByEmailError } =
+        await supabase
+          .from('profiles')
+          .select('organization_id')
+          .ilike('email', email)
+          .not('organization_id', 'is', null)
+          .limit(1)
+          .maybeSingle();
 
       if (!profileByEmailError && profileByEmail?.organization_id) {
         return profileByEmail.organization_id;

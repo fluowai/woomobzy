@@ -40,16 +40,16 @@ async function executeSQL(sql) {
       path: new URL(url).pathname + new URL(url).search,
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(data),
-        'apikey': SERVICE_ROLE_KEY,
+        apikey: SERVICE_ROLE_KEY,
       },
     };
 
     const req = https.request(options, (res) => {
       let body = '';
-      res.on('data', (chunk) => body += chunk);
+      res.on('data', (chunk) => (body += chunk));
       res.on('end', () => {
         if (res.statusCode === 200) {
           resolve(JSON.parse(body));
@@ -79,10 +79,14 @@ async function runMigrations() {
 
   for (let i = 0; i < migrations.length; i++) {
     const file = migrations[i];
-    console.log(`${colors.blue}ℹ [${i + 1}/${migrations.length}] ${file}${colors.reset}`);
+    console.log(
+      `${colors.blue}ℹ [${i + 1}/${migrations.length}] ${file}${colors.reset}`
+    );
 
     if (!fs.existsSync(file)) {
-      console.log(`${colors.red}❌ Arquivo não encontrado: ${file}${colors.reset}`);
+      console.log(
+        `${colors.red}❌ Arquivo não encontrado: ${file}${colors.reset}`
+      );
       continue;
     }
 

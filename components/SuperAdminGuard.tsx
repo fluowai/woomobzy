@@ -18,7 +18,9 @@ const PUBLIC_PATHS = [
   '/impersonate',
 ];
 
-const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { profile, isImpersonating, loading } = useAuth();
   const location = useLocation();
 
@@ -30,7 +32,12 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) 
       publicPath === '/' ? path === '/' : path.startsWith(publicPath)
     );
 
-    if (!isPublicPath && !path.startsWith('/superadmin') && path !== '/login' && path !== '/impersonate') {
+    if (
+      !isPublicPath &&
+      !path.startsWith('/superadmin') &&
+      path !== '/login' &&
+      path !== '/impersonate'
+    ) {
       return <Navigate to="/superadmin" replace />;
     }
   }

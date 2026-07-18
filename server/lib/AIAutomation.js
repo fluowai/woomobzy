@@ -14,7 +14,15 @@ const ENHANCED_LEAD_COLUMNS = [
   'aptitude_interest',
 ];
 
-const PERSONAL_LEAD_TYPES = ['familia', 'amigo', 'fornecedor', 'interno', 'spam', 'pessoal', 'outro'];
+const PERSONAL_LEAD_TYPES = [
+  'familia',
+  'amigo',
+  'fornecedor',
+  'interno',
+  'spam',
+  'pessoal',
+  'outro',
+];
 const PERSONAL_STAGE = 'Pessoal';
 
 export class AIAutomationEngine {
@@ -22,9 +30,13 @@ export class AIAutomationEngine {
     const validKey = apiKey && !apiKey.includes('YOUR_') && apiKey.length > 20;
     this.defaultApiKey = validKey ? apiKey : null;
     this.genAI = validKey ? new GoogleGenerativeAI(apiKey) : null;
-    this.model = this.genAI ? this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) : null;
+    this.model = this.genAI
+      ? this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+      : null;
     if (!validKey) {
-      console.warn('[AIAutomation] GEMINI_API_KEY inválida ou não configurada. Automação de IA desativada.');
+      console.warn(
+        '[AIAutomation] GEMINI_API_KEY inválida ou não configurada. Automação de IA desativada.'
+      );
     }
   }
 
@@ -38,10 +50,13 @@ export class AIAutomationEngine {
           .maybeSingle()
       : { data: null };
 
-    const dbKey = settings?.integrations?.gemini?.apiKey || settings?.integrations?.groq?.apiKey;
+    const dbKey =
+      settings?.integrations?.gemini?.apiKey ||
+      settings?.integrations?.groq?.apiKey;
     const finalKey = dbKey || this.defaultApiKey;
 
-    if (!finalKey) throw new Error('Nenhuma chave de IA configurada para esta organizacao.');
+    if (!finalKey)
+      throw new Error('Nenhuma chave de IA configurada para esta organizacao.');
 
     const genAI = new GoogleGenerativeAI(finalKey);
     return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -84,7 +99,14 @@ export class AIAutomationEngine {
     }
   }
 
-  async processIntent({ content, audioData, mimeType, organizationId, agent, phone }) {
+  async processIntent({
+    content,
+    audioData,
+    mimeType,
+    organizationId,
+    agent,
+    phone,
+  }) {
     try {
       const model = await this._ensureModel(organizationId);
       const parts = [];
@@ -218,7 +240,9 @@ Formato:
 
   async handleWhatsAppMessage(payload) {
     const supabase = getSupabaseServer();
-    const organizationId = payload.tenant_id || (await this._resolveOrganizationId(payload.instance_id));
+    const organizationId =
+      payload.tenant_id ||
+      (await this._resolveOrganizationId(payload.instance_id));
     const message = payload.message || {};
     const chat = payload.chat || {};
 
@@ -237,11 +261,17 @@ Formato:
 
     const mediaHint = this._buildMediaHint(message);
     const content = [message.content, mediaHint].filter(Boolean).join('\n');
-    const agent = await this._loadActiveAgent(supabase, organizationId, message.type, {
-      instanceId: payload.instance_id,
-      instanceName: payload.instance_name,
-    });
-    const audioData = message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
+    const agent = await this._loadActiveAgent(
+      supabase,
+      organizationId,
+      message.type,
+      {
+        instanceId: payload.instance_id,
+        instanceName: payload.instance_name,
+      }
+    );
+    const audioData =
+      message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
     const aiResult = await this.processIntent({
       content,
       audioData,
@@ -250,14 +280,31 @@ Formato:
       agent,
       phone: normalizedPhone,
     });
-    const actionPlan = this._buildActionPlan({ aiResult, text: content, messageType: message.type });
+    const actionPlan = this._buildActionPlan({
+      aiResult,
+      text: content,
+      messageType: message.type,
+    });
 
-    await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'user', content);
+    await this._saveConversationMemory(
+      organizationId,
+      agent?.id,
+      normalizedPhone,
+      'user',
+      content
+    );
 
-    const existingLead = await this._findLeadByNormalizedPhone(supabase, organizationId, normalizedPhone);
+    const existingLead = await this._findLeadByNormalizedPhone(
+      supabase,
+      organizationId,
+      normalizedPhone
+    );
 
     const isCommercialLead = this._shouldCreateLeadFromAI(actionPlan, content);
-    const isPersonalConversation = this._isPersonalConversation(actionPlan, content);
+    const isPersonalConversation = this._isPersonalConversation(
+      actionPlan,
+      content
+    );
 
     if (!isCommercialLead) {
       if (isPersonalConversation) {
@@ -284,13 +331,27 @@ Formato:
         };
       }
 
-      return { skipped: true, reason: 'existing lead not updated by non-commercial message', aiResult: actionPlan };
+      return {
+        skipped: true,
+        reason: 'existing lead not updated by non-commercial message',
+        aiResult: actionPlan,
+      };
     }
 
     const stage = actionPlan.stage;
-    const name = this._resolveLeadName(actionPlan.leadName, message.sender_name, chat.name, normalizedPhone);
+    const name = this._resolveLeadName(
+      actionPlan.leadName,
+      message.sender_name,
+      chat.name,
+      normalizedPhone
+    );
     const tags = this._normalizeTags(actionPlan.tags, message);
-    const noteLine = this._buildNoteLine({ aiResult: actionPlan, message, chat, tags });
+    const noteLine = this._buildNoteLine({
+      aiResult: actionPlan,
+      message,
+      chat,
+      tags,
+    });
     const leadPatch = this._buildLeadAIPatch({
       actionPlan,
       stage,
@@ -304,15 +365,19 @@ Formato:
       const updates = {
         name: existingLead.name || name,
         phone: normalizedPhone,
-        status: this._shouldAdvance(existingLead.status, stage) ? stage : existingLead.status,
-        classification: actionPlan.classification || existingLead.classification,
+        status: this._shouldAdvance(existingLead.status, stage)
+          ? stage
+          : existingLead.status,
+        classification:
+          actionPlan.classification || existingLead.classification,
         notes: [existingLead.notes, noteLine].filter(Boolean).join('\n\n'),
         chat_jid: chat.chat_jid || existingLead.chat_jid,
         last_contacted_at: new Date().toISOString(),
         ...leadPatch,
       };
 
-      if (actionPlan.budget && !existingLead.budget) updates.budget = actionPlan.budget;
+      if (actionPlan.budget && !existingLead.budget)
+        updates.budget = actionPlan.budget;
 
       lead = await this._persistLeadUpdate(supabase, existingLead.id, updates);
     } else {
@@ -335,7 +400,11 @@ Formato:
       leadId: lead.id,
       organizationId,
       type: 'WhatsApp IA',
-      description: actionPlan.intent || message.content || mediaHint || 'Mensagem recebida no WhatsApp',
+      description:
+        actionPlan.intent ||
+        message.content ||
+        mediaHint ||
+        'Mensagem recebida no WhatsApp',
       metadata: {
         tags,
         aiResult,
@@ -350,7 +419,11 @@ Formato:
     });
 
     await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags });
-    await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult: actionPlan });
+    await this._upsertFollowUp(supabase, {
+      leadId: lead.id,
+      organizationId,
+      aiResult: actionPlan,
+    });
 
     let matchAvailable = false;
     try {
@@ -362,7 +435,13 @@ Formato:
 
     const reply = this._buildWhatsAppReply({ lead, actionPlan, content });
     if (reply) {
-      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', reply);
+      await this._saveConversationMemory(
+        organizationId,
+        agent?.id,
+        normalizedPhone,
+        'assistant',
+        reply
+      );
     }
 
     return {
@@ -376,16 +455,24 @@ Formato:
       reply,
       opportunities: lead.matched_properties || [],
       match_summary: lead.match_summary || '',
-      should_reply: this._canAutoReply(agent, { ...actionPlan, reply }, {
-        allowHandoff: matchAvailable && this._hasPropertyMatches(lead) && this._shouldRecommendProperties({ actionPlan, text: content }),
-      }),
+      should_reply: this._canAutoReply(
+        agent,
+        { ...actionPlan, reply },
+        {
+          allowHandoff:
+            matchAvailable &&
+            this._hasPropertyMatches(lead) &&
+            this._shouldRecommendProperties({ actionPlan, text: content }),
+        }
+      ),
     };
   }
 
   async handleImportedWhatsAppConversations(payload = {}) {
     const supabase = getSupabaseServer();
     const instanceId = payload.instance_id;
-    const organizationId = payload.tenant_id || (await this._resolveOrganizationId(instanceId));
+    const organizationId =
+      payload.tenant_id || (await this._resolveOrganizationId(instanceId));
     const limit = Math.min(Math.max(Number(payload.limit) || 100, 1), 200);
     const chatIds = Array.isArray(payload.chat_ids)
       ? payload.chat_ids.filter(Boolean).slice(0, limit)
@@ -402,7 +489,10 @@ Formato:
       .maybeSingle();
 
     if (!instance || instance.tenant_id !== organizationId) {
-      return { skipped: true, reason: 'instance does not belong to organization' };
+      return {
+        skipped: true,
+        reason: 'instance does not belong to organization',
+      };
     }
 
     let query = supabase
@@ -431,7 +521,11 @@ Formato:
         });
         if (result) results.push(result);
       } catch (err) {
-        console.warn('[AIAutomation] Falha ao analisar conversa importada:', chat.id, err.message);
+        console.warn(
+          '[AIAutomation] Falha ao analisar conversa importada:',
+          chat.id,
+          err.message
+        );
         results.push({ chat_id: chat.id, error: err.message });
       }
     }
@@ -455,7 +549,9 @@ Formato:
     if (error) throw error;
 
     const messages = (recentMessages || []).reverse();
-    const inboundMessages = messages.filter((msg) => !msg.is_from_me && msg.sender_phone);
+    const inboundMessages = messages.filter(
+      (msg) => !msg.is_from_me && msg.sender_phone
+    );
     if (!inboundMessages.length) {
       return { chat_id: chat.id, skipped: true, reason: 'no client messages' };
     }
@@ -465,7 +561,8 @@ Formato:
     }
 
     const normalizedPhone = this._normalizeBRPhone(
-      inboundMessages[inboundMessages.length - 1]?.sender_phone || this._phoneFromChatJid(chat.chat_jid)
+      inboundMessages[inboundMessages.length - 1]?.sender_phone ||
+        this._phoneFromChatJid(chat.chat_jid)
     );
 
     if (!normalizedPhone) {
@@ -475,8 +572,13 @@ Formato:
     const transcript = messages
       .map((msg) => {
         const author = msg.is_from_me ? 'Atendente' : 'Cliente';
-        const content = msg.content || this._buildMediaHint(msg) || `[${msg.type || 'mensagem'}]`;
-        const when = msg.timestamp ? new Date(msg.timestamp).toLocaleString('pt-BR') : '';
+        const content =
+          msg.content ||
+          this._buildMediaHint(msg) ||
+          `[${msg.type || 'mensagem'}]`;
+        const when = msg.timestamp
+          ? new Date(msg.timestamp).toLocaleString('pt-BR')
+          : '';
         return `${when} - ${author}: ${content}`;
       })
       .join('\n')
@@ -487,12 +589,26 @@ Formato:
       chat,
       organizationId,
     });
-    const actionPlan = this._buildActionPlan({ aiResult, text: transcript, messageType: 'text' });
+    const actionPlan = this._buildActionPlan({
+      aiResult,
+      text: transcript,
+      messageType: 'text',
+    });
 
-    const existingLead = await this._findLeadByNormalizedPhone(supabase, organizationId, normalizedPhone);
+    const existingLead = await this._findLeadByNormalizedPhone(
+      supabase,
+      organizationId,
+      normalizedPhone
+    );
 
-    const isCommercialLead = this._shouldCreateLeadFromAI(actionPlan, transcript);
-    const isPersonalConversation = this._isPersonalConversation(actionPlan, transcript);
+    const isCommercialLead = this._shouldCreateLeadFromAI(
+      actionPlan,
+      transcript
+    );
+    const isPersonalConversation = this._isPersonalConversation(
+      actionPlan,
+      transcript
+    );
 
     if (!isCommercialLead) {
       if (isPersonalConversation) {
@@ -520,7 +636,11 @@ Formato:
         };
       }
 
-      return { chat_id: chat.id, skipped: true, reason: 'existing lead not updated by non-commercial import' };
+      return {
+        chat_id: chat.id,
+        skipped: true,
+        reason: 'existing lead not updated by non-commercial import',
+      };
     }
 
     const stage = actionPlan.stage;
@@ -531,7 +651,12 @@ Formato:
       normalizedPhone
     );
     const tags = this._normalizeTags(actionPlan.tags, {});
-    const noteLine = this._buildImportNoteLine({ aiResult: actionPlan, chat, tags, transcript });
+    const noteLine = this._buildImportNoteLine({
+      aiResult: actionPlan,
+      chat,
+      tags,
+      transcript,
+    });
     const leadPatch = this._buildLeadAIPatch({
       actionPlan,
       stage,
@@ -545,14 +670,18 @@ Formato:
       const updates = {
         name: existingLead.name || name,
         phone: normalizedPhone,
-        status: this._shouldAdvance(existingLead.status, stage) ? stage : existingLead.status,
-        classification: actionPlan.classification || existingLead.classification,
+        status: this._shouldAdvance(existingLead.status, stage)
+          ? stage
+          : existingLead.status,
+        classification:
+          actionPlan.classification || existingLead.classification,
         notes: [existingLead.notes, noteLine].filter(Boolean).join('\n\n'),
         chat_jid: chat.chat_jid || existingLead.chat_jid,
         last_contacted_at: new Date().toISOString(),
         ...leadPatch,
       };
-      if (actionPlan.budget && !existingLead.budget) updates.budget = actionPlan.budget;
+      if (actionPlan.budget && !existingLead.budget)
+        updates.budget = actionPlan.budget;
 
       lead = await this._persistLeadUpdate(supabase, existingLead.id, updates);
     } else {
@@ -575,7 +704,8 @@ Formato:
       leadId: lead.id,
       organizationId,
       type: 'WhatsApp Importado IA',
-      description: actionPlan.intent || 'Conversa importada e analisada pela IA',
+      description:
+        actionPlan.intent || 'Conversa importada e analisada pela IA',
       metadata: {
         tags,
         aiResult,
@@ -588,15 +718,28 @@ Formato:
     });
 
     await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags });
-    await this._upsertFollowUp(supabase, { leadId: lead.id, organizationId, aiResult: actionPlan });
+    await this._upsertFollowUp(supabase, {
+      leadId: lead.id,
+      organizationId,
+      aiResult: actionPlan,
+    });
 
     try {
       lead = await matchLeadProperties({ supabase, lead, organizationId });
     } catch (error) {
-      console.warn('[AIAutomation] Matchmaking da importacao indisponivel:', error.message);
+      console.warn(
+        '[AIAutomation] Matchmaking da importacao indisponivel:',
+        error.message
+      );
     }
 
-    return { chat_id: chat.id, lead_id: lead.id, status: lead.status, tags, score: actionPlan.leadScore };
+    return {
+      chat_id: chat.id,
+      lead_id: lead.id,
+      status: lead.status,
+      tags,
+      score: actionPlan.leadScore,
+    };
   }
 
   async processConversationImport({ transcript, chat, organizationId }) {
@@ -675,7 +818,10 @@ Formato:
       const text = result.response.text();
       return JSON.parse(text.replace(/```json|```/g, '').trim());
     } catch (err) {
-      console.error('[AIAutomation] Erro ao analisar conversa importada:', err.message);
+      console.error(
+        '[AIAutomation] Erro ao analisar conversa importada:',
+        err.message
+      );
       return {
         shouldCreateLead: false,
         leadType: 'outro',
@@ -693,9 +839,16 @@ Formato:
   }
 
   _buildActionPlan({ aiResult, text = '', messageType = 'text' }) {
-    const stage = this._normalizeStage(aiResult?.suggestedStage || aiResult?.stage, messageType);
+    const stage = this._normalizeStage(
+      aiResult?.suggestedStage || aiResult?.stage,
+      messageType
+    );
     const score = this._normalizeLeadScore(aiResult, text, stage);
-    const visit = this._normalizeVisit(aiResult?.visit, aiResult?.followUpAt || aiResult?.nextAction?.dueAt, stage);
+    const visit = this._normalizeVisit(
+      aiResult?.visit,
+      aiResult?.followUpAt || aiResult?.nextAction?.dueAt,
+      stage
+    );
     const nextAction = this._normalizeNextAction(aiResult?.nextAction, {
       stage,
       visit,
@@ -711,23 +864,49 @@ Formato:
     return {
       ...(aiResult || {}),
       shouldCreateLead: aiResult?.shouldCreateLead,
-      leadType: aiResult?.leadType || (this._hasRealEstateSignal(text) ? 'cliente' : 'outro'),
-      confidence: this._clampDecimal(aiResult?.confidence, 0, 1, this._hasRealEstateSignal(text) ? 0.55 : 0),
-      intent: String(aiResult?.intent || this._inferIntent(text, stage)).slice(0, 500),
+      leadType:
+        aiResult?.leadType ||
+        (this._hasRealEstateSignal(text) ? 'cliente' : 'outro'),
+      confidence: this._clampDecimal(
+        aiResult?.confidence,
+        0,
+        1,
+        this._hasRealEstateSignal(text) ? 0.55 : 0
+      ),
+      intent: String(aiResult?.intent || this._inferIntent(text, stage)).slice(
+        0,
+        500
+      ),
       stage,
       suggestedStage: stage,
-      classification: this._normalizeClassification(aiResult?.classification, score, stage),
+      classification: this._normalizeClassification(
+        aiResult?.classification,
+        score,
+        stage
+      ),
       leadScore: score,
-      temperature: aiResult?.temperature || (score >= 75 ? 'quente' : score >= 45 ? 'morno' : 'frio'),
+      temperature:
+        aiResult?.temperature ||
+        (score >= 75 ? 'quente' : score >= 45 ? 'morno' : 'frio'),
       tags: this._enrichTags(aiResult?.tags, stage, score, visit),
       leadName: aiResult?.leadName || '',
       budget: this._normalizeMoney(aiResult?.budget),
-      interestProfile: this._normalizeInterestProfile(aiResult?.interestProfile),
+      interestProfile: this._normalizeInterestProfile(
+        aiResult?.interestProfile
+      ),
       nextAction,
       visit,
       followUpAt,
-      handoffRequired: Boolean(aiResult?.handoffRequired || score >= 80 || visit.requested),
-      handoffReason: aiResult?.handoffReason || (visit.requested ? 'Lead pediu visita' : score >= 80 ? 'Lead com alta intencao' : ''),
+      handoffRequired: Boolean(
+        aiResult?.handoffRequired || score >= 80 || visit.requested
+      ),
+      handoffReason:
+        aiResult?.handoffReason ||
+        (visit.requested
+          ? 'Lead pediu visita'
+          : score >= 80
+            ? 'Lead com alta intencao'
+            : ''),
       reply: String(aiResult?.reply || nextAction.reason || '').slice(0, 1200),
     };
   }
@@ -735,7 +914,10 @@ Formato:
   _buildLeadAIPatch({ actionPlan, stage, tags, existingLead }) {
     return {
       lead_score: actionPlan.leadScore,
-      preferences: this._buildLeadPreferences(actionPlan, existingLead?.preferences),
+      preferences: this._buildLeadPreferences(
+        actionPlan,
+        existingLead?.preferences
+      ),
       aptitude_interest: this._buildAptitudeInterest(actionPlan),
       ai_profile: {
         version: 'imobzy-agent-orchestrator-v1',
@@ -751,7 +933,8 @@ Formato:
         handoffReason: actionPlan.handoffReason,
         updatedAt: new Date().toISOString(),
       },
-      ai_next_action: actionPlan.nextAction?.title || actionPlan.nextAction?.type || null,
+      ai_next_action:
+        actionPlan.nextAction?.title || actionPlan.nextAction?.type || null,
       ai_last_intent: actionPlan.intent,
       ai_last_confidence: actionPlan.confidence,
       next_follow_up_at: actionPlan.followUpAt || null,
@@ -762,7 +945,9 @@ Formato:
   _buildLeadPreferences(actionPlan = {}, currentPreferences = {}) {
     const profile = actionPlan.interestProfile || {};
     return {
-      ...(currentPreferences && typeof currentPreferences === 'object' ? currentPreferences : {}),
+      ...(currentPreferences && typeof currentPreferences === 'object'
+        ? currentPreferences
+        : {}),
       operation: profile.operation || 'indefinido',
       type: profile.propertyType || 'indefinido',
       tipo: profile.propertyType || 'indefinido',
@@ -786,7 +971,12 @@ Formato:
       profile.city,
       profile.region,
       actionPlan.temperature,
-    ].map((item) => String(item || '').trim().toLowerCase())
+    ]
+      .map((item) =>
+        String(item || '')
+          .trim()
+          .toLowerCase()
+      )
       .filter((item) => item && item !== 'indefinido')
       .slice(0, 8);
   }
@@ -805,7 +995,10 @@ Formato:
     activityType,
     transcript = '',
   }) {
-    const personalTags = this._normalizeTags([...tags, 'pessoal', actionPlan.leadType || 'outro'], message);
+    const personalTags = this._normalizeTags(
+      [...tags, 'pessoal', actionPlan.leadType || 'outro'],
+      message
+    );
     const personalName = this._resolveLeadName(
       actionPlan.leadName,
       message.sender_name,
@@ -827,22 +1020,36 @@ Formato:
           type: 'follow_up',
           title: 'Conversa pessoal classificada',
           dueAt: '',
-          reason: 'Contato separado do funil comercial para nao criar lead imobiliario indevido.',
+          reason:
+            'Contato separado do funil comercial para nao criar lead imobiliario indevido.',
         },
         followUpAt: '',
-        visit: { requested: false, scheduledAt: '', propertyHint: '', notes: '' },
+        visit: {
+          requested: false,
+          scheduledAt: '',
+          propertyHint: '',
+          notes: '',
+        },
         handoffRequired: false,
       },
       stage: PERSONAL_STAGE,
       tags: personalTags,
     });
 
-    const personalExisting = existingLead || await this._findPersonalLeadByPhone(supabase, organizationId, normalizedPhone);
+    const personalExisting =
+      existingLead ||
+      (await this._findPersonalLeadByPhone(
+        supabase,
+        organizationId,
+        normalizedPhone
+      ));
 
     let lead;
     if (personalExisting) {
       lead = await this._persistLeadUpdate(supabase, personalExisting.id, {
-        name: this._isPlaceholderName(personalExisting.name) ? personalName : personalExisting.name,
+        name: this._isPlaceholderName(personalExisting.name)
+          ? personalName
+          : personalExisting.name,
         status: PERSONAL_STAGE,
         source: personalExisting.source || source,
         classification: 'Pessoal',
@@ -884,7 +1091,11 @@ Formato:
       },
     });
 
-    await this._upsertTags(supabase, { leadId: lead.id, organizationId, tags: personalTags });
+    await this._upsertTags(supabase, {
+      leadId: lead.id,
+      organizationId,
+      tags: personalTags,
+    });
 
     return {
       chat_id: chat.id,
@@ -911,7 +1122,8 @@ Formato:
 
   async _findLeadByNormalizedPhone(supabase, organizationId, phone) {
     const normalizedPhone = this._normalizeBRPhone(phone);
-    const tail = normalizedPhone.length >= 8 ? normalizedPhone.slice(-8) : normalizedPhone;
+    const tail =
+      normalizedPhone.length >= 8 ? normalizedPhone.slice(-8) : normalizedPhone;
     if (!tail) return null;
 
     const { data, error } = await supabase
@@ -923,11 +1135,20 @@ Formato:
       .limit(25);
 
     if (error) throw error;
-    return (data || []).find((lead) => this._normalizeBRPhone(lead.phone) === normalizedPhone) || null;
+    return (
+      (data || []).find(
+        (lead) => this._normalizeBRPhone(lead.phone) === normalizedPhone
+      ) || null
+    );
   }
 
   _isPersonalLead(lead = {}) {
-    return lead.status === PERSONAL_STAGE || String(lead.source || '').toLowerCase().includes('pessoal');
+    return (
+      lead.status === PERSONAL_STAGE ||
+      String(lead.source || '')
+        .toLowerCase()
+        .includes('pessoal')
+    );
   }
 
   async _persistLeadUpdate(supabase, leadId, updates) {
@@ -973,22 +1194,44 @@ Formato:
   }
 
   _withoutEnhancedLeadColumns(payload = {}) {
-    return Object.fromEntries(Object.entries(payload).filter(([key]) => !ENHANCED_LEAD_COLUMNS.includes(key)));
+    return Object.fromEntries(
+      Object.entries(payload).filter(
+        ([key]) => !ENHANCED_LEAD_COLUMNS.includes(key)
+      )
+    );
   }
 
   _pickEnhancedLeadColumns(payload = {}) {
-    return Object.fromEntries(Object.entries(payload).filter(([key]) => ENHANCED_LEAD_COLUMNS.includes(key)));
+    return Object.fromEntries(
+      Object.entries(payload).filter(([key]) =>
+        ENHANCED_LEAD_COLUMNS.includes(key)
+      )
+    );
   }
 
   _isMissingEnhancedLeadColumn(error) {
-    const message = String(error?.message || error?.details || '').toLowerCase();
-    return error?.code === 'pgrst204'
-      || message.includes('schema cache')
-      || ENHANCED_LEAD_COLUMNS.some((column) => message.includes(column));
+    const message = String(
+      error?.message || error?.details || ''
+    ).toLowerCase();
+    return (
+      error?.code === 'pgrst204' ||
+      message.includes('schema cache') ||
+      ENHANCED_LEAD_COLUMNS.some((column) => message.includes(column))
+    );
   }
 
-  async _loadActiveAgent(supabase, organizationId, messageType, instanceContext = {}) {
-    const preferredTool = messageType === 'audio' ? 'audio-stt' : messageType === 'document' ? 'pdf-reader' : 'whatsapp';
+  async _loadActiveAgent(
+    supabase,
+    organizationId,
+    messageType,
+    instanceContext = {}
+  ) {
+    const preferredTool =
+      messageType === 'audio'
+        ? 'audio-stt'
+        : messageType === 'document'
+          ? 'pdf-reader'
+          : 'whatsapp';
     const { data, error } = await supabase
       .from('ai_agents')
       .select('*')
@@ -1003,25 +1246,49 @@ Formato:
     }
 
     const candidates = data || [];
-    const toolCandidates = candidates.filter((agent) => (agent.tools || []).includes(preferredTool));
-    const exactCandidate = toolCandidates.find((agent) => this._agentInstanceScope(agent, instanceContext) === 'exact');
-    const globalCandidate = toolCandidates.find((agent) => this._agentInstanceScope(agent, instanceContext) === 'global');
-    const exactFallback = candidates.find((agent) => this._agentInstanceScope(agent, instanceContext) === 'exact');
-    const globalFallback = candidates.find((agent) => this._agentInstanceScope(agent, instanceContext) === 'global');
-    return exactCandidate || globalCandidate || exactFallback || globalFallback || null;
+    const toolCandidates = candidates.filter((agent) =>
+      (agent.tools || []).includes(preferredTool)
+    );
+    const exactCandidate = toolCandidates.find(
+      (agent) => this._agentInstanceScope(agent, instanceContext) === 'exact'
+    );
+    const globalCandidate = toolCandidates.find(
+      (agent) => this._agentInstanceScope(agent, instanceContext) === 'global'
+    );
+    const exactFallback = candidates.find(
+      (agent) => this._agentInstanceScope(agent, instanceContext) === 'exact'
+    );
+    const globalFallback = candidates.find(
+      (agent) => this._agentInstanceScope(agent, instanceContext) === 'global'
+    );
+    return (
+      exactCandidate ||
+      globalCandidate ||
+      exactFallback ||
+      globalFallback ||
+      null
+    );
   }
 
   _agentInstanceScope(agent, { instanceId, instanceName } = {}) {
     const config = agent?.handoff_rules?.__operational360 || {};
-    const configuredInstances = Array.isArray(config.instances) ? config.instances.filter(Boolean) : [];
+    const configuredInstances = Array.isArray(config.instances)
+      ? config.instances.filter(Boolean)
+      : [];
     if (!configuredInstances.length) return 'global';
 
-    const accepted = new Set([
-      String(instanceId || '').trim(),
-      String(instanceName || '').trim(),
-    ].filter(Boolean));
+    const accepted = new Set(
+      [
+        String(instanceId || '').trim(),
+        String(instanceName || '').trim(),
+      ].filter(Boolean)
+    );
 
-    return configuredInstances.some((instance) => accepted.has(String(instance).trim())) ? 'exact' : 'none';
+    return configuredInstances.some((instance) =>
+      accepted.has(String(instance).trim())
+    )
+      ? 'exact'
+      : 'none';
   }
 
   _canAutoReply(agent, actionPlan, options = {}) {
@@ -1031,18 +1298,24 @@ Formato:
     const config = agent?.handoff_rules?.__operational360 || {};
     const status = config.status || (agent.is_active ? 'Ativo' : 'Pausado');
     const autonomyLevel = Number(config.autonomy_level || 0);
-    const channels = Array.isArray(config.channels) && config.channels.length
-      ? config.channels
-      : [agent.channel || 'whatsapp'];
+    const channels =
+      Array.isArray(config.channels) && config.channels.length
+        ? config.channels
+        : [agent.channel || 'whatsapp'];
 
-    return status === 'Ativo'
-      && autonomyLevel >= 3
-      && channels.includes('whatsapp')
-      && (agent.tools || []).includes('whatsapp');
+    return (
+      status === 'Ativo' &&
+      autonomyLevel >= 3 &&
+      channels.includes('whatsapp') &&
+      (agent.tools || []).includes('whatsapp')
+    );
   }
 
   _hasPropertyMatches(lead = {}) {
-    return Array.isArray(lead.matched_properties) && lead.matched_properties.length > 0;
+    return (
+      Array.isArray(lead.matched_properties) &&
+      lead.matched_properties.length > 0
+    );
   }
 
   async _resolveOrganizationId(instanceId) {
@@ -1059,36 +1332,59 @@ Formato:
   _shouldCreateLeadFromAI(aiResult, text = '') {
     if (!aiResult) return this._hasRealEstateSignal(text);
 
-    const type = String(aiResult.leadType || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const type = String(aiResult.leadType || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
     if (PERSONAL_LEAD_TYPES.includes(type) && type !== 'outro') return false;
     if (aiResult.shouldCreateLead === false) return false;
 
     const confidence = Number(aiResult.confidence);
-    if (Number.isFinite(confidence) && confidence > 0 && confidence < 0.35 && !this._hasRealEstateSignal(text)) {
+    if (
+      Number.isFinite(confidence) &&
+      confidence > 0 &&
+      confidence < 0.35 &&
+      !this._hasRealEstateSignal(text)
+    ) {
       return false;
     }
 
     if (type === 'cliente') return true;
     if (aiResult.shouldCreateLead === true) {
-      return this._hasRealEstateSignal(text) || (Number.isFinite(confidence) && confidence >= 0.65);
+      return (
+        this._hasRealEstateSignal(text) ||
+        (Number.isFinite(confidence) && confidence >= 0.65)
+      );
     }
     return this._hasRealEstateSignal(text);
   }
 
   _isPersonalConversation(aiResult, text = '') {
     if (!aiResult) return false;
-    const type = String(aiResult.leadType || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const type = String(aiResult.leadType || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
     if (PERSONAL_LEAD_TYPES.includes(type)) return true;
-    if (aiResult.shouldCreateLead === false && !this._hasRealEstateSignal(text)) return true;
+    if (aiResult.shouldCreateLead === false && !this._hasRealEstateSignal(text))
+      return true;
     return false;
   }
 
   _normalizeLeadScore(aiResult = {}, text = '', stage = 'Novo') {
-    const explicit = this._clampNumber(aiResult?.leadScore ?? aiResult?.score, 0, 100, null);
+    const explicit = this._clampNumber(
+      aiResult?.leadScore ?? aiResult?.score,
+      0,
+      100,
+      null
+    );
     if (explicit !== null) return explicit;
 
     let score = this._hasRealEstateSignal(text) ? 35 : 10;
-    const normalized = String(text).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalized = String(text)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
     const stageBoosts = {
       Novo: 5,
       'QualificaÃ§Ã£o': 18,
@@ -1100,10 +1396,31 @@ Formato:
     };
 
     score += stageBoosts[stage] || 0;
-    if (aiResult?.budget || /\b(r\$|orcamento|entrada|financiamento|parcela|a vista|avista)\b/.test(normalized)) score += 12;
-    if (/\b(hoje|amanha|essa semana|urgente|agora|imediato|quanto antes)\b/.test(normalized)) score += 12;
-    if (/\b(visita|visitar|conhecer|ver o imovel|agendar|horario)\b/.test(normalized)) score += 18;
-    if (/\b(proposta|fechar|contrato|sinal|documentacao|cpf|rg|matricula)\b/.test(normalized)) score += 18;
+    if (
+      aiResult?.budget ||
+      /\b(r\$|orcamento|entrada|financiamento|parcela|a vista|avista)\b/.test(
+        normalized
+      )
+    )
+      score += 12;
+    if (
+      /\b(hoje|amanha|essa semana|urgente|agora|imediato|quanto antes)\b/.test(
+        normalized
+      )
+    )
+      score += 12;
+    if (
+      /\b(visita|visitar|conhecer|ver o imovel|agendar|horario)\b/.test(
+        normalized
+      )
+    )
+      score += 18;
+    if (
+      /\b(proposta|fechar|contrato|sinal|documentacao|cpf|rg|matricula)\b/.test(
+        normalized
+      )
+    )
+      score += 18;
 
     return this._clampNumber(score, 0, 100, 0);
   }
@@ -1120,13 +1437,24 @@ Formato:
   }
 
   _normalizeNextAction(nextAction = {}, context = {}) {
-    const type = String(nextAction?.type || '').trim() || this._inferNextActionType(context);
-    const dueAt = this._firstValidISO(nextAction?.dueAt, context.visit?.scheduledAt, context.followUpAt);
+    const type =
+      String(nextAction?.type || '').trim() ||
+      this._inferNextActionType(context);
+    const dueAt = this._firstValidISO(
+      nextAction?.dueAt,
+      context.visit?.scheduledAt,
+      context.followUpAt
+    );
     return {
       type,
-      title: String(nextAction?.title || this._defaultActionTitle(type)).slice(0, 160),
+      title: String(nextAction?.title || this._defaultActionTitle(type)).slice(
+        0,
+        160
+      ),
       dueAt,
-      reason: String(nextAction?.reason || this._defaultActionReason(type, context)).slice(0, 500),
+      reason: String(
+        nextAction?.reason || this._defaultActionReason(type, context)
+      ).slice(0, 500),
     };
   }
 
@@ -1141,27 +1469,35 @@ Formato:
   }
 
   _defaultActionTitle(type) {
-    return {
-      qualify: 'Qualificar perfil do lead',
-      recommend_property: 'Recomendar imoveis aderentes',
-      schedule_visit: 'Agendar visita',
-      follow_up: 'Criar retorno comercial',
-      collect_documents: 'Coletar documentos',
-      notify_broker: 'Acionar corretor responsavel',
-      close_deal: 'Conduzir fechamento',
-      mark_lost: 'Marcar oportunidade como perdida',
-    }[type] || 'Proxima acao comercial';
+    return (
+      {
+        qualify: 'Qualificar perfil do lead',
+        recommend_property: 'Recomendar imoveis aderentes',
+        schedule_visit: 'Agendar visita',
+        follow_up: 'Criar retorno comercial',
+        collect_documents: 'Coletar documentos',
+        notify_broker: 'Acionar corretor responsavel',
+        close_deal: 'Conduzir fechamento',
+        mark_lost: 'Marcar oportunidade como perdida',
+      }[type] || 'Proxima acao comercial'
+    );
   }
 
   _defaultActionReason(type, { score }) {
-    if (type === 'schedule_visit') return 'Lead demonstrou interesse em visita ou etapa de visita foi detectada.';
-    if (type === 'notify_broker') return `Lead com score ${score}/100 precisa de acao humana rapida.`;
-    if (type === 'qualify') return 'Ainda faltam dados para recomendar imoveis com precisao.';
+    if (type === 'schedule_visit')
+      return 'Lead demonstrou interesse em visita ou etapa de visita foi detectada.';
+    if (type === 'notify_broker')
+      return `Lead com score ${score}/100 precisa de acao humana rapida.`;
+    if (type === 'qualify')
+      return 'Ainda faltam dados para recomendar imoveis com precisao.';
     return 'Manter cadencia comercial com contexto da conversa.';
   }
 
   _normalizeVisit(visit = {}, fallbackDate, stage) {
-    const scheduledAt = this._firstValidISO(visit?.scheduledAt, stage === 'Visita' ? fallbackDate : '');
+    const scheduledAt = this._firstValidISO(
+      visit?.scheduledAt,
+      stage === 'Visita' ? fallbackDate : ''
+    );
     return {
       requested: Boolean(visit?.requested || scheduledAt || stage === 'Visita'),
       scheduledAt,
@@ -1178,7 +1514,9 @@ Formato:
       region: profile?.region || '',
       payment: profile?.payment || 'indefinido',
       timeline: profile?.timeline || 'indefinido',
-      missingFields: Array.isArray(profile?.missingFields) ? profile.missingFields.slice(0, 8) : [],
+      missingFields: Array.isArray(profile?.missingFields)
+        ? profile.missingFields.slice(0, 8)
+        : [],
     };
   }
 
@@ -1187,14 +1525,22 @@ Formato:
     if (score >= 75) base.push('quente');
     if (visit?.requested) base.push('visita');
     if (stage) base.push(stage.toLowerCase());
-    return [...new Set(base.map((tag) => String(tag).trim().toLowerCase()).filter(Boolean))].slice(0, 8);
+    return [
+      ...new Set(
+        base.map((tag) => String(tag).trim().toLowerCase()).filter(Boolean)
+      ),
+    ].slice(0, 8);
   }
 
   _inferIntent(text = '', stage) {
     if (stage === 'Visita') return 'Lead demonstrou interesse em visita.';
-    if (stage === 'SimulaÃ§Ã£o') return 'Lead demonstrou interesse financeiro ou proposta.';
-    if (stage === 'DocumentaÃ§Ã£o') return 'Lead trouxe ou solicitou documentos.';
-    return this._hasRealEstateSignal(text) ? 'Lead com interesse imobiliario identificado.' : 'Mensagem sem intencao imobiliaria clara.';
+    if (stage === 'SimulaÃ§Ã£o')
+      return 'Lead demonstrou interesse financeiro ou proposta.';
+    if (stage === 'DocumentaÃ§Ã£o')
+      return 'Lead trouxe ou solicitou documentos.';
+    return this._hasRealEstateSignal(text)
+      ? 'Lead com interesse imobiliario identificado.'
+      : 'Mensagem sem intencao imobiliaria clara.';
   }
 
   _normalizeMoney(value) {
@@ -1228,7 +1574,9 @@ Formato:
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
-    return /\b(imovel|casa|apartamento|terreno|fazenda|sitio|chacara|area|hectare|ha\b|alqueire|comprar|vender|alugar|locacao|arrendar|visita|proposta|financiamento|entrada|parcela|car\b|matricula|ccir|incra|geo|itr|contrato)\b/.test(normalized);
+    return /\b(imovel|casa|apartamento|terreno|fazenda|sitio|chacara|area|hectare|ha\b|alqueire|comprar|vender|alugar|locacao|arrendar|visita|proposta|financiamento|entrada|parcela|car\b|matricula|ccir|incra|geo|itr|contrato)\b/.test(
+      normalized
+    );
   }
 
   _resolveLeadName(...values) {
@@ -1246,38 +1594,67 @@ Formato:
 
   _isPlaceholderName(value = '') {
     const clean = String(value).trim().toLowerCase();
-    if (!clean || clean === '~' || clean === 'me' || clean === 'contato sem telefone') return true;
+    if (
+      !clean ||
+      clean === '~' ||
+      clean === 'me' ||
+      clean === 'contato sem telefone'
+    )
+      return true;
     const raw = String(value).trim();
-    if (/^([A-Z]\.?\s*){1,4}$/.test(raw) || /^([A-Za-z]\.\s*){1,4}$/.test(raw)) return true;
+    if (/^([A-Z]\.?\s*){1,4}$/.test(raw) || /^([A-Za-z]\.\s*){1,4}$/.test(raw))
+      return true;
     return /^\+?\d{8,15}$/.test(clean.replace(/\s/g, ''));
   }
 
   _normalizeStage(stage, messageType) {
-    const raw = String(stage || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const raw = String(stage || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
     if (messageType === 'document') return 'Documentação';
     if (raw.includes('document')) return 'Documentação';
-    if (raw.includes('simul') || raw.includes('proposta') || raw.includes('finance')) return 'Simulação';
+    if (
+      raw.includes('simul') ||
+      raw.includes('proposta') ||
+      raw.includes('finance')
+    )
+      return 'Simulação';
     if (raw.includes('visita')) return 'Visita';
     if (raw.includes('fechado')) return 'Fechado';
     if (raw.includes('perdido')) return 'Perdido';
-    if (raw.includes('qual') || raw.includes('atendimento')) return 'Qualificação';
+    if (raw.includes('qual') || raw.includes('atendimento'))
+      return 'Qualificação';
     return 'Novo';
   }
 
   _shouldAdvance(current, next) {
-    const stages = ['Novo', 'Qualificação', 'Visita', 'Simulação', 'Documentação', 'Fechado', 'Perdido'];
+    const stages = [
+      'Novo',
+      'Qualificação',
+      'Visita',
+      'Simulação',
+      'Documentação',
+      'Fechado',
+      'Perdido',
+    ];
     if (next === 'Perdido') return true;
     return stages.indexOf(next) > stages.indexOf(current);
   }
 
   _buildMediaHint(message) {
     if (!message?.type || message.type === 'text') return '';
-    return {
-      audio: 'Audio recebido para transcricao e qualificacao, sem criar texto generico no chat.',
-      document: `Documento recebido${message.media_mimetype?.includes('pdf') ? ' em PDF' : ''} para analise, sem criar texto generico no chat.`,
-      image: 'Imagem recebida no atendimento, sem criar texto generico no chat.',
-      video: 'Video recebido no atendimento, sem criar texto generico no chat.',
-    }[message.type] || `Midia recebida: ${message.type}.`;
+    return (
+      {
+        audio:
+          'Audio recebido para transcricao e qualificacao, sem criar texto generico no chat.',
+        document: `Documento recebido${message.media_mimetype?.includes('pdf') ? ' em PDF' : ''} para analise, sem criar texto generico no chat.`,
+        image:
+          'Imagem recebida no atendimento, sem criar texto generico no chat.',
+        video:
+          'Video recebido no atendimento, sem criar texto generico no chat.',
+      }[message.type] || `Midia recebida: ${message.type}.`
+    );
   }
 
   async _downloadMediaForAI(message) {
@@ -1306,11 +1683,19 @@ Formato:
     if (message.type === 'audio') base.push('audio');
     if (message.type === 'document') base.push('documento');
     if (message.media_mimetype?.includes('pdf')) base.push('pdf');
-    return [...new Set(base.map((tag) => String(tag).trim().toLowerCase()).filter(Boolean))].slice(0, 6);
+    return [
+      ...new Set(
+        base.map((tag) => String(tag).trim().toLowerCase()).filter(Boolean)
+      ),
+    ].slice(0, 6);
   }
 
   _buildNoteLine({ aiResult, message, chat, tags }) {
-    const text = aiResult?.transcricao || message.content || this._buildMediaHint(message) || 'Mensagem sem texto';
+    const text =
+      aiResult?.transcricao ||
+      message.content ||
+      this._buildMediaHint(message) ||
+      'Mensagem sem texto';
     return [
       `[WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]`,
       `Chat: ${chat.name || chat.chat_jid || 'sem nome'}`,
@@ -1324,7 +1709,9 @@ Formato:
   }
 
   _buildImportNoteLine({ aiResult, chat, tags, transcript }) {
-    const fallback = transcript ? transcript.split('\n').slice(-5).join('\n') : 'Conversa sem texto renderizavel';
+    const fallback = transcript
+      ? transcript.split('\n').slice(-5).join('\n')
+      : 'Conversa sem texto renderizavel';
     return [
       `[Importacao WhatsApp IA - ${new Date().toLocaleString('pt-BR')}]`,
       `Chat: ${chat.name || chat.chat_jid || 'sem nome'}`,
@@ -1340,7 +1727,9 @@ Formato:
   _buildPersonalNoteLine({ aiResult, message, chat, tags, transcript }) {
     const fallback = transcript
       ? transcript.split('\n').slice(-5).join('\n')
-      : (message.content || this._buildMediaHint(message) || 'Conversa pessoal sem texto renderizavel');
+      : message.content ||
+        this._buildMediaHint(message) ||
+        'Conversa pessoal sem texto renderizavel';
     return [
       `[WhatsApp Pessoal IA - ${new Date().toLocaleString('pt-BR')}]`,
       `Chat: ${chat.name || chat.chat_jid || 'sem nome'}`,
@@ -1354,60 +1743,100 @@ Formato:
 
   _formatInterestProfile(profile = {}) {
     const parts = [
-      profile.operation && profile.operation !== 'indefinido' ? `operacao ${profile.operation}` : '',
-      profile.propertyType && profile.propertyType !== 'indefinido' ? `tipo ${profile.propertyType}` : '',
+      profile.operation && profile.operation !== 'indefinido'
+        ? `operacao ${profile.operation}`
+        : '',
+      profile.propertyType && profile.propertyType !== 'indefinido'
+        ? `tipo ${profile.propertyType}`
+        : '',
       profile.city ? `cidade ${profile.city}` : '',
       profile.region ? `regiao ${profile.region}` : '',
-      profile.payment && profile.payment !== 'indefinido' ? `pagamento ${profile.payment}` : '',
-      profile.timeline && profile.timeline !== 'indefinido' ? `prazo ${profile.timeline}` : '',
+      profile.payment && profile.payment !== 'indefinido'
+        ? `pagamento ${profile.payment}`
+        : '',
+      profile.timeline && profile.timeline !== 'indefinido'
+        ? `prazo ${profile.timeline}`
+        : '',
     ].filter(Boolean);
     return parts.length ? parts.join('; ') : 'nao identificado';
   }
 
   _buildWhatsAppReply({ lead, actionPlan, content = '' }) {
     const matchMessage = String(lead?.match_whatsapp_message || '').trim();
-    const shouldRecommend = this._shouldRecommendProperties({ actionPlan, text: content });
+    const shouldRecommend = this._shouldRecommendProperties({
+      actionPlan,
+      text: content,
+    });
 
     if (matchMessage && this._hasPropertyMatches(lead) && shouldRecommend) {
       return matchMessage.slice(0, 2500);
     }
 
-    const matches = Array.isArray(lead?.matched_properties) ? lead.matched_properties : [];
+    const matches = Array.isArray(lead?.matched_properties)
+      ? lead.matched_properties
+      : [];
     if (matches.length && shouldRecommend) {
       const firstName = String(lead?.name || '').split(' ')[0] || 'tudo bem';
       const lines = [
         `Ola ${firstName}, encontrei algumas oportunidades que combinam com o seu perfil:`,
         '',
-        ...matches.slice(0, 3).flatMap((property, index) => [
-          `${index + 1}. ${property.title || 'Imovel selecionado'}`,
-          property.city || property.state ? `- ${[property.city, property.state].filter(Boolean).join(' / ')}` : '',
-          property.price ? `- ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property.price)}` : '',
-          ...(Array.isArray(property.reasons) ? property.reasons.slice(0, 2).map((reason) => `- ${reason}`) : []),
-          '',
-        ].filter(Boolean)),
+        ...matches
+          .slice(0, 3)
+          .flatMap((property, index) =>
+            [
+              `${index + 1}. ${property.title || 'Imovel selecionado'}`,
+              property.city || property.state
+                ? `- ${[property.city, property.state].filter(Boolean).join(' / ')}`
+                : '',
+              property.price
+                ? `- ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property.price)}`
+                : '',
+              ...(Array.isArray(property.reasons)
+                ? property.reasons.slice(0, 2).map((reason) => `- ${reason}`)
+                : []),
+              '',
+            ].filter(Boolean)
+          ),
         'Quer que eu te envie mais detalhes ou prefere agendar uma visita?',
       ];
       return lines.join('\n').slice(0, 2500);
     }
 
-    return (String(actionPlan?.reply || '').trim() || this._buildSdrQualificationReply(actionPlan)).slice(0, 1200);
+    return (
+      String(actionPlan?.reply || '').trim() ||
+      this._buildSdrQualificationReply(actionPlan)
+    ).slice(0, 1200);
   }
 
   _buildSdrQualificationReply(actionPlan = {}) {
     const profile = actionPlan.interestProfile || {};
-    const missing = Array.isArray(profile.missingFields) ? profile.missingFields : [];
+    const missing = Array.isArray(profile.missingFields)
+      ? profile.missingFields
+      : [];
     const questions = [];
 
-    if ((!profile.propertyType || profile.propertyType === 'indefinido') || missing.includes('propertyType')) {
+    if (
+      !profile.propertyType ||
+      profile.propertyType === 'indefinido' ||
+      missing.includes('propertyType')
+    ) {
       questions.push('qual tipo de imovel voce procura');
     }
-    if ((!profile.city && !profile.region) || missing.includes('city') || missing.includes('region')) {
+    if (
+      (!profile.city && !profile.region) ||
+      missing.includes('city') ||
+      missing.includes('region')
+    ) {
       questions.push('em qual cidade ou regiao');
     }
     if (!actionPlan.budget || missing.includes('budget')) {
       questions.push('qual faixa de investimento');
     }
-    if ((!profile.timeline || profile.timeline === 'indefinido') || missing.includes('timeline')) {
+    if (
+      !profile.timeline ||
+      profile.timeline === 'indefinido' ||
+      missing.includes('timeline')
+    ) {
       questions.push('para quando voce pretende avancar');
     }
 
@@ -1424,20 +1853,30 @@ Formato:
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
-    const requestedOptions = /\b(opcoes|oportunidades|imoveis|tem algo|me envia|manda|quais|catalogo|lista|disponiveis|visita|visitar|conhecer)\b/.test(normalizedText);
+    const requestedOptions =
+      /\b(opcoes|oportunidades|imoveis|tem algo|me envia|manda|quais|catalogo|lista|disponiveis|visita|visitar|conhecer)\b/.test(
+        normalizedText
+      );
     const profile = actionPlan.interestProfile || {};
-    const missing = Array.isArray(profile.missingFields) ? profile.missingFields.filter(Boolean) : [];
+    const missing = Array.isArray(profile.missingFields)
+      ? profile.missingFields.filter(Boolean)
+      : [];
     const hasMinimumProfile = Boolean(
-      profile.propertyType && profile.propertyType !== 'indefinido'
-      && (profile.city || profile.region)
-      && (actionPlan.budget || profile.payment !== 'indefinido' || profile.timeline !== 'indefinido')
+      profile.propertyType &&
+      profile.propertyType !== 'indefinido' &&
+      (profile.city || profile.region) &&
+      (actionPlan.budget ||
+        profile.payment !== 'indefinido' ||
+        profile.timeline !== 'indefinido')
     );
 
-    return actionPlan.nextAction?.type === 'recommend_property'
-      || actionPlan.visit?.requested
-      || requestedOptions
-      || (hasMinimumProfile && missing.length <= 2)
-      || Number(actionPlan.leadScore || 0) >= 70;
+    return (
+      actionPlan.nextAction?.type === 'recommend_property' ||
+      actionPlan.visit?.requested ||
+      requestedOptions ||
+      (hasMinimumProfile && missing.length <= 2) ||
+      Number(actionPlan.leadScore || 0) >= 70
+    );
   }
 
   _buildChatLink(chat = {}) {
@@ -1473,35 +1912,55 @@ Formato:
       description: activity.description,
       metadata: activity.metadata || {},
     });
-    if (error) console.warn('[AIAutomation] Atividade nao registrada:', error.message);
+    if (error)
+      console.warn('[AIAutomation] Atividade nao registrada:', error.message);
   }
 
   async _upsertTags(supabase, { leadId, organizationId, tags }) {
     if (!tags?.length) return;
-    const rows = tags.map((tag) => ({ lead_id: leadId, organization_id: organizationId, tag }));
-    const { error } = await supabase.from('lead_tags').upsert(rows, { onConflict: 'lead_id,tag' });
-    if (error) console.warn('[AIAutomation] Tags nao registradas:', error.message);
+    const rows = tags.map((tag) => ({
+      lead_id: leadId,
+      organization_id: organizationId,
+      tag,
+    }));
+    const { error } = await supabase
+      .from('lead_tags')
+      .upsert(rows, { onConflict: 'lead_id,tag' });
+    if (error)
+      console.warn('[AIAutomation] Tags nao registradas:', error.message);
   }
 
   async _upsertFollowUp(supabase, { leadId, organizationId, aiResult }) {
-    const dueAtValue = aiResult?.visit?.scheduledAt || aiResult?.nextAction?.dueAt || aiResult?.followUpAt;
+    const dueAtValue =
+      aiResult?.visit?.scheduledAt ||
+      aiResult?.nextAction?.dueAt ||
+      aiResult?.followUpAt;
     if (!dueAtValue) return;
     const dueAt = new Date(dueAtValue);
     if (Number.isNaN(dueAt.getTime())) return;
-    const isVisit = aiResult?.visit?.requested || aiResult?.nextAction?.type === 'schedule_visit';
+    const isVisit =
+      aiResult?.visit?.requested ||
+      aiResult?.nextAction?.type === 'schedule_visit';
     const { error } = await supabase.from('lead_followups').insert({
       lead_id: leadId,
       organization_id: organizationId,
       due_at: dueAt.toISOString(),
-      title: isVisit ? 'Visita sugerida pela IA' : (aiResult?.nextAction?.title || 'Retorno sugerido pela IA'),
+      title: isVisit
+        ? 'Visita sugerida pela IA'
+        : aiResult?.nextAction?.title || 'Retorno sugerido pela IA',
       notes: [
         aiResult.intent,
         aiResult?.nextAction?.reason,
-        aiResult?.visit?.propertyHint ? `Imovel: ${aiResult.visit.propertyHint}` : '',
+        aiResult?.visit?.propertyHint
+          ? `Imovel: ${aiResult.visit.propertyHint}`
+          : '',
         aiResult?.reply ? `Resposta sugerida: ${aiResult.reply}` : '',
-      ].filter(Boolean).join('\n'),
+      ]
+        .filter(Boolean)
+        .join('\n'),
       status: 'pending',
     });
-    if (error) console.warn('[AIAutomation] Follow-up nao registrado:', error.message);
+    if (error)
+      console.warn('[AIAutomation] Follow-up nao registrado:', error.message);
   }
 }

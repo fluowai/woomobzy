@@ -45,7 +45,9 @@ async function runMigrations() {
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     log.error('Variáveis de ambiente não configuradas');
-    log.info('Certifique-se que .env tem: VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY');
+    log.info(
+      'Certifique-se que .env tem: VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY'
+    );
     process.exit(1);
   }
 
@@ -103,19 +105,26 @@ async function runMigrations() {
         .map((stmt) => stmt.trim())
         .filter((stmt) => stmt.length > 0);
 
-      log.info(`[${fileNum}/${MIGRATIONS.length}] ${migrationFile} (${statements.length} statements)`);
+      log.info(
+        `[${fileNum}/${MIGRATIONS.length}] ${migrationFile} (${statements.length} statements)`
+      );
 
       // Executar cada statement
       let stmtSuccess = 0;
       for (const statement of statements) {
         try {
           // Usar RPC ou query direta
-          const { error } = await supabaseClient.rpc('exec_sql', {
-            sql: statement,
-          }).catch(async () => {
-            // Fallback: tentar query direta
-            return await supabaseClient.from('_migrations').select('*').limit(0);
-          });
+          const { error } = await supabaseClient
+            .rpc('exec_sql', {
+              sql: statement,
+            })
+            .catch(async () => {
+              // Fallback: tentar query direta
+              return await supabaseClient
+                .from('_migrations')
+                .select('*')
+                .limit(0);
+            });
 
           if (!error) {
             stmtSuccess++;
@@ -127,7 +136,9 @@ async function runMigrations() {
         }
       }
 
-      log.success(`${migrationFile} completo (${stmtSuccess}/${statements.length})`);
+      log.success(
+        `${migrationFile} completo (${stmtSuccess}/${statements.length})`
+      );
       successCount++;
     } catch (error) {
       log.error(`${migrationFile}: ${error.message}`);
@@ -141,7 +152,9 @@ async function runMigrations() {
   console.log('=====================================');
 
   if (successCount === MIGRATIONS.length) {
-    log.success(`Todas as ${MIGRATIONS.length} migrações executadas com sucesso!`);
+    log.success(
+      `Todas as ${MIGRATIONS.length} migrações executadas com sucesso!`
+    );
   } else {
     log.warn(`${successCount} migrações OK, ${failCount} com erros`);
     log.info(
@@ -155,7 +168,9 @@ async function runMigrations() {
   console.log('3. Crie sua primeira organização');
 
   console.log(`\n🔗 Dashboard Supabase:`);
-  console.log(`   ${SUPABASE_URL.replace('https://', 'https://app.supabase.com/project/')}/sql`);
+  console.log(
+    `   ${SUPABASE_URL.replace('https://', 'https://app.supabase.com/project/')}/sql`
+  );
 }
 
 // Executar

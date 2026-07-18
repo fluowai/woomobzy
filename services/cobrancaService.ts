@@ -235,19 +235,25 @@ export class CobrancaService {
   }
 
   // Novo: Simulação de Quitação Antecipada
-  calculateSettlement(billings: Billing[], discountRate: number): { totalOriginal: number, totalWithDiscount: number, savings: number } {
+  calculateSettlement(
+    billings: Billing[],
+    discountRate: number
+  ): { totalOriginal: number; totalWithDiscount: number; savings: number } {
     const totalOriginal = billings.reduce((acc, b) => acc + (b.amount || 0), 0);
     // Simples: 1% de desconto por mês de antecipação (exemplo)
-    const totalWithDiscount = totalOriginal * (1 - (discountRate / 100));
+    const totalWithDiscount = totalOriginal * (1 - discountRate / 100);
     return {
       totalOriginal,
       totalWithDiscount,
-      savings: totalOriginal - totalWithDiscount
+      savings: totalOriginal - totalWithDiscount,
     };
   }
 
   // Novo: Criação de Acordo de Renegociação
-  async createRenegotiation(contractId: string, data: { total_debt: number, installments: number, entry: number }): Promise<any> {
+  async createRenegotiation(
+    contractId: string,
+    data: { total_debt: number; installments: number; entry: number }
+  ): Promise<any> {
     try {
       const result = await callApi('/api/financeiro/renegociar', {
         method: 'POST',

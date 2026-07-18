@@ -3,7 +3,9 @@ import { Client } from 'pg';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const DATABASE_URL = stripQuotes(process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '');
+const DATABASE_URL = stripQuotes(
+  process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || ''
+);
 const NORMALIZED_DATABASE_URL = normalizeDatabaseUrl(DATABASE_URL);
 
 if (!DATABASE_URL) {
@@ -13,9 +15,11 @@ if (!DATABASE_URL) {
 
 const client = new Client({
   connectionString: NORMALIZED_DATABASE_URL,
-  ssl: DATABASE_URL.includes('supabase') || DATABASE_URL.includes('sslmode=require')
-    ? { rejectUnauthorized: false }
-    : undefined,
+  ssl:
+    DATABASE_URL.includes('supabase') ||
+    DATABASE_URL.includes('sslmode=require')
+      ? { rejectUnauthorized: false }
+      : undefined,
 });
 
 const REPORT = {
@@ -78,7 +82,8 @@ function logFinding(type, message, rows = []) {
   console.log(`\n[${type}] ${message}`);
   if (rows?.length) {
     console.table(rows.slice(0, 20));
-    if (rows.length > 20) console.log(`... mostrando 20 de ${rows.length} registros`);
+    if (rows.length > 20)
+      console.log(`... mostrando 20 de ${rows.length} registros`);
   }
 }
 
@@ -91,7 +96,7 @@ async function tableExists(tableName) {
       AND table_name = $1
     ) AS exists;
     `,
-    [tableName],
+    [tableName]
   );
 
   return result.rows[0]?.exists === true;
@@ -107,7 +112,7 @@ async function columnExists(tableName, columnName) {
       AND column_name = $2
     ) AS exists;
     `,
-    [tableName, columnName],
+    [tableName, columnName]
   );
 
   return result.rows[0]?.exists === true;
@@ -122,7 +127,7 @@ async function getColumns(tableName) {
     AND table_name = $1
     ORDER BY ordinal_position;
     `,
-    [tableName],
+    [tableName]
   );
   return result.rows.map((row) => row.column_name);
 }
@@ -172,7 +177,10 @@ async function detectSchema() {
       REPORT.schema[tableSet.label].columns = columns;
       logFinding('INFO', `Schema detectado: ${tableSet.label}`, [
         { table: tableSet.messages, columns: columns.messages.join(', ') },
-        { table: tableSet.conversations, columns: columns.conversations.join(', ') },
+        {
+          table: tableSet.conversations,
+          columns: columns.conversations.join(', '),
+        },
         { table: tableSet.instances, columns: columns.instances.join(', ') },
       ]);
       return { ...tableSet, exists, columns };
@@ -198,24 +206,30 @@ async function auditRequiredColumns(schema) {
       [schema.messages, 'tenant_id'],
       [schema.conversations, 'tenant_id'],
       [schema.messages, schema.messageConversationColumn],
-      [schema.conversations, schema.conversationChatColumn],
+      [schema.conversations, schema.conversationChatColumn]
     );
   }
 
   if (schema.exists.contacts) {
     checks.push([schema.contacts, schema.contactPhoneColumn]);
     if (schema.label === 'generic') checks.push([schema.contacts, 'tenant_id']);
-    if (schema.label === 'imobzy_whatsapp') checks.push([schema.contacts, 'instance_id']);
+    if (schema.label === 'imobzy_whatsapp')
+      checks.push([schema.contacts, 'instance_id']);
   }
 
   const rows = [];
   for (const [table, column] of checks) {
     const exists = await columnExists(table, column);
     rows.push({ table, column, exists });
-    if (!exists) REPORT.likelyCauses.push(`Coluna critica ausente: ${table}.${column}`);
+    if (!exists)
+      REPORT.likelyCauses.push(`Coluna critica ausente: ${table}.${column}`);
   }
 
-  logFinding(rows.some((row) => !row.exists) ? 'ALERTA' : 'OK', 'Colunas criticas:', rows);
+  logFinding(
+    rows.some((row) => !row.exists) ? 'ALERTA' : 'OK',
+    'Colunas criticas:',
+    rows
+  );
 }
 
 async function auditMissingTenant(schema) {
@@ -230,16 +244,22 @@ async function auditMissingTenant(schema) {
       WHERE tenant_id IS NULL
       ORDER BY created_at DESC
       LIMIT 100;
-      `,
+      `
     );
     if (rows.length) {
-      logFinding('CRITICO', `Mensagens sem tenant_id em ${schema.messages}.`, rows);
+      logFinding(
+        'CRITICO',
+        `Mensagens sem tenant_id em ${schema.messages}.`,
+        rows
+      );
       REPORT.likelyCauses.push('Mensagens foram gravadas sem tenant_id.');
     } else {
       logFinding('OK', `Nenhuma mensagem sem tenant_id em ${schema.messages}.`);
     }
   } else {
-    REPORT.recommendedFixes.push(`${schema.messages} nao possui tenant_id; isolamento precisa ser garantido por instance_id + whatsapp_instances.tenant_id.`);
+    REPORT.recommendedFixes.push(
+      `${schema.messages} nao possui tenant_id; isolamento precisa ser garantido por instance_id + whatsapp_instances.tenant_id.`
+    );
   }
 
   if (await columnExists(schema.conversations, 'tenant_id')) {
@@ -251,16 +271,25 @@ async function auditMissingTenant(schema) {
       WHERE tenant_id IS NULL
       ORDER BY created_at DESC
       LIMIT 100;
-      `,
+      `
     );
     if (rows.length) {
-      logFinding('CRITICO', `Conversas sem tenant_id em ${schema.conversations}.`, rows);
+      logFinding(
+        'CRITICO',
+        `Conversas sem tenant_id em ${schema.conversations}.`,
+        rows
+      );
       REPORT.likelyCauses.push('Conversas foram criadas sem tenant_id.');
     } else {
-      logFinding('OK', `Nenhuma conversa sem tenant_id em ${schema.conversations}.`);
+      logFinding(
+        'OK',
+        `Nenhuma conversa sem tenant_id em ${schema.conversations}.`
+      );
     }
   } else {
-    REPORT.recommendedFixes.push(`${schema.conversations} nao possui tenant_id; consultas devem sempre validar instance_id contra whatsapp_instances.tenant_id.`);
+    REPORT.recommendedFixes.push(
+      `${schema.conversations} nao possui tenant_id; consultas devem sempre validar instance_id contra whatsapp_instances.tenant_id.`
+    );
   }
 }
 
@@ -284,13 +313,22 @@ async function auditTenantMismatchWithInstance(schema) {
       AND m.tenant_id <> wi.tenant_id
       ORDER BY m.created_at DESC
       LIMIT 100;
-      `,
+      `
     );
     if (rows.length) {
-      logFinding('CRITICO', 'Mensagens com tenant_id diferente da instancia.', rows);
-      REPORT.likelyCauses.push('Ingestao/webhook atribuiu tenant errado a mensagem.');
+      logFinding(
+        'CRITICO',
+        'Mensagens com tenant_id diferente da instancia.',
+        rows
+      );
+      REPORT.likelyCauses.push(
+        'Ingestao/webhook atribuiu tenant errado a mensagem.'
+      );
     } else {
-      logFinding('OK', 'Nenhum conflito de tenant entre mensagens e instancias.');
+      logFinding(
+        'OK',
+        'Nenhum conflito de tenant entre mensagens e instancias.'
+      );
     }
   }
 
@@ -311,13 +349,22 @@ async function auditTenantMismatchWithInstance(schema) {
       AND c.tenant_id <> wi.tenant_id
       ORDER BY c.created_at DESC
       LIMIT 100;
-      `,
+      `
     );
     if (rows.length) {
-      logFinding('CRITICO', 'Conversas com tenant_id diferente da instancia.', rows);
-      REPORT.likelyCauses.push('Conversa criada ou atualizada usando tenant incorreto.');
+      logFinding(
+        'CRITICO',
+        'Conversas com tenant_id diferente da instancia.',
+        rows
+      );
+      REPORT.likelyCauses.push(
+        'Conversa criada ou atualizada usando tenant incorreto.'
+      );
     } else {
-      logFinding('OK', 'Nenhum conflito de tenant entre conversas e instancias.');
+      logFinding(
+        'OK',
+        'Nenhum conflito de tenant entre conversas e instancias.'
+      );
     }
   }
 }
@@ -343,12 +390,18 @@ async function auditInstanceAccessRisks(schema) {
     HAVING COUNT(*) > 1
     ORDER BY COUNT(*) DESC
     LIMIT 100;
-    `,
+    `
   );
 
   if (duplicateChats.length) {
-    logFinding('ALERTA', 'Mesmo chat/JID aparece em mais de uma conversa. Isso exige filtro por tenant + instance.', duplicateChats);
-    REPORT.likelyCauses.push('Possivel uso de chat_jid/whatsapp_chat_id como identificador global sem validar instance_id e tenant.');
+    logFinding(
+      'ALERTA',
+      'Mesmo chat/JID aparece em mais de uma conversa. Isso exige filtro por tenant + instance.',
+      duplicateChats
+    );
+    REPORT.likelyCauses.push(
+      'Possivel uso de chat_jid/whatsapp_chat_id como identificador global sem validar instance_id e tenant.'
+    );
   } else {
     logFinding('OK', 'Nenhum chat/JID duplicado encontrado.');
   }
@@ -363,12 +416,18 @@ async function auditInstanceAccessRisks(schema) {
     AND c.id IS NULL
     ORDER BY m.created_at DESC
     LIMIT 100;
-    `,
+    `
   );
 
   if (orphanMessages.length) {
-    logFinding('ALERTA', 'Mensagens apontam para conversa inexistente.', orphanMessages);
-    REPORT.likelyCauses.push('Mensagens foram criadas sem consistencia com conversas.');
+    logFinding(
+      'ALERTA',
+      'Mensagens apontam para conversa inexistente.',
+      orphanMessages
+    );
+    REPORT.likelyCauses.push(
+      'Mensagens foram criadas sem consistencia com conversas.'
+    );
   } else {
     logFinding('OK', 'Nenhuma mensagem orfa encontrada.');
   }
@@ -383,12 +442,18 @@ async function auditInstanceAccessRisks(schema) {
     AND wi.id IS NULL
     ORDER BY c.created_at DESC
     LIMIT 100;
-    `,
+    `
   );
 
   if (orphanConversations.length) {
-    logFinding('CRITICO', 'Conversas vinculadas a instancias inexistentes.', orphanConversations);
-    REPORT.likelyCauses.push('Conversa sem vinculo confiavel com instancia WhatsApp.');
+    logFinding(
+      'CRITICO',
+      'Conversas vinculadas a instancias inexistentes.',
+      orphanConversations
+    );
+    REPORT.likelyCauses.push(
+      'Conversa sem vinculo confiavel com instancia WhatsApp.'
+    );
   } else {
     logFinding('OK', 'Nenhuma conversa orfa sem instancia encontrada.');
   }
@@ -402,10 +467,12 @@ async function auditContacts(schema) {
     return;
   }
 
-  const tenantExpression = schema.label === 'imobzy_whatsapp' ? 'wi.tenant_id' : 'c.tenant_id';
-  const join = schema.label === 'imobzy_whatsapp'
-    ? `LEFT JOIN ${schema.instances} wi ON wi.id = c.instance_id`
-    : '';
+  const tenantExpression =
+    schema.label === 'imobzy_whatsapp' ? 'wi.tenant_id' : 'c.tenant_id';
+  const join =
+    schema.label === 'imobzy_whatsapp'
+      ? `LEFT JOIN ${schema.instances} wi ON wi.id = c.instance_id`
+      : '';
 
   const rows = await safeQuery(
     `${schema.contacts}_same_phone_multiple_tenants`,
@@ -423,12 +490,18 @@ async function auditContacts(schema) {
     HAVING COUNT(DISTINCT ${tenantExpression}) > 1
     ORDER BY COUNT(DISTINCT ${tenantExpression}) DESC
     LIMIT 100;
-    `,
+    `
   );
 
   if (rows.length) {
-    logFinding('INFO', 'Mesmo telefone aparece em multiplos tenants. Normal em SaaS, perigoso se buscar so por telefone.', rows);
-    REPORT.recommendedFixes.push('Garantir busca de contato por tenant/instance + phone, nunca apenas por phone.');
+    logFinding(
+      'INFO',
+      'Mesmo telefone aparece em multiplos tenants. Normal em SaaS, perigoso se buscar so por telefone.',
+      rows
+    );
+    REPORT.recommendedFixes.push(
+      'Garantir busca de contato por tenant/instance + phone, nunca apenas por phone.'
+    );
   } else {
     logFinding('OK', 'Nenhum telefone compartilhado entre tenants encontrado.');
   }
@@ -437,7 +510,12 @@ async function auditContacts(schema) {
 async function auditIndexesAndRls(schema) {
   section('7. INDICES, CONSTRAINTS E RLS');
 
-  const tables = [schema.messages, schema.conversations, schema.contacts, schema.instances]
+  const tables = [
+    schema.messages,
+    schema.conversations,
+    schema.contacts,
+    schema.instances,
+  ]
     .filter(Boolean)
     .filter((value, index, arr) => arr.indexOf(value) === index);
   const quoted = tables.map((table) => `'${table}'`).join(',');
@@ -450,7 +528,7 @@ async function auditIndexesAndRls(schema) {
     WHERE schemaname = 'public'
     AND tablename IN (${quoted})
     ORDER BY tablename, indexname;
-    `,
+    `
   );
   logFinding('INFO', 'Indices encontrados:', indexes);
 
@@ -462,12 +540,14 @@ async function auditIndexesAndRls(schema) {
     JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = 'public'
     AND c.relname IN (${quoted});
-    `,
+    `
   );
   logFinding('INFO', 'Status RLS:', rls);
 
   if (rls.some((row) => !row.rls_enabled)) {
-    REPORT.recommendedFixes.push('Ativar RLS nas tabelas WhatsApp se qualquer acesso direto pelo Supabase for permitido.');
+    REPORT.recommendedFixes.push(
+      'Ativar RLS nas tabelas WhatsApp se qualquer acesso direto pelo Supabase for permitido.'
+    );
   }
 }
 
@@ -475,10 +555,21 @@ async function scanCodeForDangerousPatterns() {
   section('8. AUDITORIA DO CODIGO');
 
   const patterns = [
-    { name: 'SELECT whatsapp_messages exposto sem JOIN de instancia', regex: /select[\s\S]{0,180}from\s+whatsapp_messages(?![\s\S]{0,320}join\s+whatsapp_instances)/gi },
+    {
+      name: 'SELECT whatsapp_messages exposto sem JOIN de instancia',
+      regex:
+        /select[\s\S]{0,180}from\s+whatsapp_messages(?![\s\S]{0,320}join\s+whatsapp_instances)/gi,
+    },
     { name: 'Socket io.emit global', regex: /\bio\.emit\s*\(/g },
-    { name: 'Socket broadcast sem sala tenant', regex: /broadcast\s*\([^)]*(new_message|message|chat)/gi },
-    { name: 'Uso direto de req.user.id como tenant WhatsApp', regex: /tenant_id['"]?\s*[:,=]\s*req\.user\.id|tenant_id['"]?\s*[:,=]\s*req\.user\?\.id|set\(['"]tenant_id['"],\s*req\.user\?\.id\)/g },
+    {
+      name: 'Socket broadcast sem sala tenant',
+      regex: /broadcast\s*\([^)]*(new_message|message|chat)/gi,
+    },
+    {
+      name: 'Uso direto de req.user.id como tenant WhatsApp',
+      regex:
+        /tenant_id['"]?\s*[:,=]\s*req\.user\.id|tenant_id['"]?\s*[:,=]\s*req\.user\?\.id|set\(['"]tenant_id['"],\s*req\.user\?\.id\)/g,
+    },
   ];
 
   const files = listSourceFiles(process.cwd());
@@ -500,15 +591,28 @@ async function scanCodeForDangerousPatterns() {
 
   REPORT.code.dangerousPatterns = findings;
   if (findings.length) {
-    logFinding('ALERTA', 'Pontos perigosos encontrados no codigo. Revisar manualmente.', findings);
-    REPORT.likelyCauses.push('Existem consultas/proxy/realtime potencialmente globais ou usando usuario como tenant.');
+    logFinding(
+      'ALERTA',
+      'Pontos perigosos encontrados no codigo. Revisar manualmente.',
+      findings
+    );
+    REPORT.likelyCauses.push(
+      'Existem consultas/proxy/realtime potencialmente globais ou usando usuario como tenant.'
+    );
   } else {
     logFinding('OK', 'Nenhum padrao perigoso obvio encontrado no codigo.');
   }
 }
 
 function listSourceFiles(root) {
-  const ignored = new Set(['node_modules', 'dist', 'build', '.next', '.git', 'coverage']);
+  const ignored = new Set([
+    'node_modules',
+    'dist',
+    'build',
+    '.next',
+    '.git',
+    'coverage',
+  ]);
   const output = [];
 
   function walk(dir) {
@@ -517,7 +621,10 @@ function listSourceFiles(root) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(fullPath);
-      } else if (/\.(js|ts|tsx|jsx|go)$/.test(entry.name) && entry.name !== 'audit-message-isolation.js') {
+      } else if (
+        /\.(js|ts|tsx|jsx|go)$/.test(entry.name) &&
+        entry.name !== 'audit-message-isolation.js'
+      ) {
         output.push(fullPath);
       }
     }
@@ -528,17 +635,20 @@ function listSourceFiles(root) {
 }
 
 function classifyRisk() {
-  const criticalRows = Object.entries(REPORT.database).reduce((acc, [key, item]) => {
-    if (!item?.ok) return acc;
-    if (
-      key.includes('without_tenant') ||
-      key.includes('tenant_mismatch_instance') ||
-      key.includes('orphan_without_instance')
-    ) {
-      return acc + item.count;
-    }
-    return acc;
-  }, 0);
+  const criticalRows = Object.entries(REPORT.database).reduce(
+    (acc, [key, item]) => {
+      if (!item?.ok) return acc;
+      if (
+        key.includes('without_tenant') ||
+        key.includes('tenant_mismatch_instance') ||
+        key.includes('orphan_without_instance')
+      ) {
+        return acc + item.count;
+      }
+      return acc;
+    },
+    0
+  );
 
   const codeFindings = REPORT.code.dangerousPatterns?.length || 0;
 
@@ -566,11 +676,16 @@ function generateSolutionPlan() {
     'Retornar 403 ao tentar acessar chat_id ou instance_id de outro tenant.',
   ];
 
-  REPORT.recommendedFixes = Array.from(new Set([...REPORT.recommendedFixes, ...defaultFixes]));
+  REPORT.recommendedFixes = Array.from(
+    new Set([...REPORT.recommendedFixes, ...defaultFixes])
+  );
 
   console.log('\nCAUSAS PROVAVEIS:');
   const causes = Array.from(new Set(REPORT.likelyCauses));
-  if (!causes.length) console.log('- Nenhuma causa obvia confirmada, revisar backend e socket mesmo assim.');
+  if (!causes.length)
+    console.log(
+      '- Nenhuma causa obvia confirmada, revisar backend e socket mesmo assim.'
+    );
   for (const cause of causes) console.log(`- ${cause}`);
 
   console.log('\nCORRECOES RECOMENDADAS:');
@@ -581,7 +696,10 @@ function saveReport() {
   section('10. GERANDO RELATORIO');
   classifyRisk();
 
-  const reportPath = path.join(process.cwd(), `imobzy-message-isolation-report-${Date.now()}.json`);
+  const reportPath = path.join(
+    process.cwd(),
+    `imobzy-message-isolation-report-${Date.now()}.json`
+  );
   fs.writeFileSync(reportPath, JSON.stringify(REPORT, null, 2), 'utf8');
 
   console.log(`Relatorio salvo em: ${reportPath}`);
@@ -616,7 +734,9 @@ async function main() {
     if (REPORT.riskLevel === 'CRITICAL') {
       console.log('RISCO CRITICO CONFIRMADO.');
     } else if (REPORT.riskLevel === 'HIGH') {
-      console.log('RISCO ALTO: o banco nao confirmou vazamento critico, mas o codigo tem pontos perigosos.');
+      console.log(
+        'RISCO ALTO: o banco nao confirmou vazamento critico, mas o codigo tem pontos perigosos.'
+      );
     } else {
       console.log('Nenhum vazamento obvio encontrado pela auditoria.');
     }

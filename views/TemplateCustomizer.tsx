@@ -1131,14 +1131,19 @@ const TemplateCustomizer: React.FC = () => {
                         return;
                       }
                       try {
-                        logger.info('Testando conexão Evolution API via backend...');
+                        logger.info(
+                          'Testando conexão Evolution API via backend...'
+                        );
 
                         // Save settings first so the backend can read the config
                         updateSettings(localSettings);
 
-                        const result = await callApi('/api/whatsapp-proxy/test-connection', {
-                          method: 'POST',
-                        });
+                        const result = await callApi(
+                          '/api/whatsapp-proxy/test-connection',
+                          {
+                            method: 'POST',
+                          }
+                        );
 
                         if (result.ok) {
                           alert(

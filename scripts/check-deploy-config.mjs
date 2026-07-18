@@ -20,7 +20,9 @@ const requiredEnv = [
 
 for (const key of requiredEnv) {
   if (!String(process.env[key] || '').trim()) {
-    warnings.push(`.env nao define ${key}; confirme se o Portainer fornece essa variavel.`);
+    warnings.push(
+      `.env nao define ${key}; confirme se o Portainer fornece essa variavel.`
+    );
   }
 }
 
@@ -28,7 +30,8 @@ validateSupabaseEnv();
 validateStackFiles();
 
 if (warnings.length) {
-  for (const warning of warnings) console.warn(`[deploy-config] WARN ${warning}`);
+  for (const warning of warnings)
+    console.warn(`[deploy-config] WARN ${warning}`);
 }
 
 if (errors.length) {
@@ -36,7 +39,9 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('[deploy-config] OK Supabase deploy configuration looks consistent.');
+console.log(
+  '[deploy-config] OK Supabase deploy configuration looks consistent.'
+);
 
 function validateSupabaseEnv() {
   const supabaseUrl = String(process.env.VITE_SUPABASE_URL || '').trim();
@@ -45,19 +50,27 @@ function validateSupabaseEnv() {
   const anonKey = String(process.env.VITE_SUPABASE_ANON_KEY || '').trim();
   const anon = describeSupabaseKey(anonKey);
   if (anonKey && !isUsableAnonKey(anon)) {
-    errors.push('VITE_SUPABASE_ANON_KEY no .env nao parece uma anon/publishable key valida.');
+    errors.push(
+      'VITE_SUPABASE_ANON_KEY no .env nao parece uma anon/publishable key valida.'
+    );
   }
   if (anon.jwtRef && projectRef && anon.jwtRef !== projectRef) {
-    errors.push('VITE_SUPABASE_ANON_KEY no .env pertence a outro projeto Supabase.');
+    errors.push(
+      'VITE_SUPABASE_ANON_KEY no .env pertence a outro projeto Supabase.'
+    );
   }
 
   const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   const service = describeSupabaseKey(serviceKey);
   if (serviceKey && !isUsableServiceKey(service)) {
-    errors.push('SUPABASE_SERVICE_ROLE_KEY no .env nao parece uma service_role/secret key valida.');
+    errors.push(
+      'SUPABASE_SERVICE_ROLE_KEY no .env nao parece uma service_role/secret key valida.'
+    );
   }
   if (service.jwtRef && projectRef && service.jwtRef !== projectRef) {
-    errors.push('SUPABASE_SERVICE_ROLE_KEY no .env pertence a outro projeto Supabase.');
+    errors.push(
+      'SUPABASE_SERVICE_ROLE_KEY no .env pertence a outro projeto Supabase.'
+    );
   }
 }
 
@@ -83,22 +96,30 @@ function validateStackFiles() {
 
       const info = describeSupabaseKey(value);
       if (key.includes('SERVICE_ROLE') && !isUsableServiceKey(info)) {
-        errors.push(`${file} contem ${key} literal malformada ou com role incorreta.`);
+        errors.push(
+          `${file} contem ${key} literal malformada ou com role incorreta.`
+        );
       }
       if (key.includes('ANON') && !isUsableAnonKey(info)) {
-        errors.push(`${file} contem ${key} literal malformada ou com role incorreta.`);
+        errors.push(
+          `${file} contem ${key} literal malformada ou com role incorreta.`
+        );
       }
     }
   }
 }
 
 function extractYamlEnvValues(text) {
-  const matches = text.matchAll(/^\s+([A-Z0-9_]+):\s*["']?([^"'\r\n]+)["']?\s*$/gm);
+  const matches = text.matchAll(
+    /^\s+([A-Z0-9_]+):\s*["']?([^"'\r\n]+)["']?\s*$/gm
+  );
   return [...matches].map((match) => [match[1], match[2].trim()]);
 }
 
 function isSupabaseKeyName(key) {
-  return key === 'VITE_SUPABASE_ANON_KEY' || key === 'SUPABASE_SERVICE_ROLE_KEY';
+  return (
+    key === 'VITE_SUPABASE_ANON_KEY' || key === 'SUPABASE_SERVICE_ROLE_KEY'
+  );
 }
 
 function isPlaceholder(value) {
@@ -124,7 +145,9 @@ function describeSupabaseKey(value) {
   if (parts.length !== 3) return { kind: 'unknown' };
 
   try {
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    const payload = JSON.parse(
+      Buffer.from(parts[1], 'base64url').toString('utf8')
+    );
     return {
       kind: 'jwt',
       role: payload.role || null,

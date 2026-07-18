@@ -42,11 +42,18 @@ async function getOrgPortalConfig({ supabase, organizationId, portal }) {
   return data || null;
 }
 
-export async function publishToPortal({ supabase, organizationId, property, portal }) {
+export async function publishToPortal({
+  supabase,
+  organizationId,
+  property,
+  portal,
+}) {
   const svc = getPortalService(portal);
   const config = await getOrgPortalConfig({ supabase, organizationId, portal });
   if (!config?.enabled) {
-    const error = new Error(`Portal "${portal}" não configurado para esta organização.`);
+    const error = new Error(
+      `Portal "${portal}" não configurado para esta organização.`
+    );
     error.statusCode = 400;
     throw error;
   }
@@ -72,7 +79,12 @@ export async function publishToPortal({ supabase, organizationId, property, port
   return { portal, ...publishEntry };
 }
 
-export async function unpublishFromPortal({ supabase, organizationId, propertyId, portal }) {
+export async function unpublishFromPortal({
+  supabase,
+  organizationId,
+  propertyId,
+  portal,
+}) {
   const svc = getPortalService(portal);
   const { data: property } = await supabase
     .from('properties')
@@ -103,7 +115,12 @@ export async function unpublishFromPortal({ supabase, organizationId, propertyId
   return { portal, status: 'unpublished' };
 }
 
-export async function getPortalPublishStatus({ supabase, organizationId, propertyId, portal }) {
+export async function getPortalPublishStatus({
+  supabase,
+  organizationId,
+  propertyId,
+  portal,
+}) {
   const { data: property } = await supabase
     .from('properties')
     .select('portal_publishes')

@@ -20,7 +20,8 @@ dotenv.config({ path: '.env.production', override: false });
 
 const APPLY = process.argv.includes('--apply');
 const HERO_SOURCE = readArg('--hero-source');
-const ORG_ID = process.env.FAZENDAS_ORG_ID || 'ee2eafa9-929a-460e-a38a-2e13d259e7cb';
+const ORG_ID =
+  process.env.FAZENDAS_ORG_ID || 'ee2eafa9-929a-460e-a38a-2e13d259e7cb';
 const SITE_BASE = 'https://www.fazendasbrasil.com.br';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -56,8 +57,10 @@ const MANUAL_HINTS = {
 
 const BAD_IMAGE_PATTERN =
   /semfoto|logo|google|ssl|equipe|c49-info-whats|whatsapp|facebook|youtube|instagram|tiktok|favicon/i;
-const LEGACY_STORAGE_PATTERN = /supabase\.(co|com)\/storage\/v1\/object\/public\/imobzyimg/i;
-const MINIO_STORAGE_PATTERN = /nb\.consultio\.com\.br\/(imobzycrm|imobfluow|imobzy-media)\//i;
+const LEGACY_STORAGE_PATTERN =
+  /supabase\.(co|com)\/storage\/v1\/object\/public\/imobzyimg/i;
+const MINIO_STORAGE_PATTERN =
+  /nb\.consultio\.com\.br\/(imobzycrm|imobfluow|imobzy-media)\//i;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   throw new Error('Supabase service credentials are missing.');
@@ -80,7 +83,9 @@ function decodeHtmlAttribute(value = '') {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) =>
+      String.fromCodePoint(parseInt(hex, 16))
+    )
     .replace(/&#(\d+);/g, (_, num) => String.fromCodePoint(parseInt(num, 10)));
 }
 
@@ -117,21 +122,50 @@ function normalizeImages(value) {
 }
 
 function hasUsableStoredImage(property) {
-  return normalizeImages(property.images).some((url) => MINIO_STORAGE_PATTERN.test(String(url)));
+  return normalizeImages(property.images).some((url) =>
+    MINIO_STORAGE_PATTERN.test(String(url))
+  );
 }
 
 function needsImageRefresh(property) {
   const images = normalizeImages(property.images);
   if (hasUsableStoredImage(property)) return false;
-  return images.length === 0 || images.every((url) => LEGACY_STORAGE_PATTERN.test(String(url)));
+  return (
+    images.length === 0 ||
+    images.every((url) => LEGACY_STORAGE_PATTERN.test(String(url)))
+  );
 }
 
 function titleSimilarity(a, b) {
-  const ignore = new Set(['uma', 'para', 'com', 'das', 'dos', 'em', 'de', 'da', 'do', 'as', 'os', 'por', 'px']);
-  const aTokens = new Set(normalizeText(a).split(/\s+/).filter((token) => token.length > 2 && !ignore.has(token)));
-  const bTokens = new Set(normalizeText(b).split(/\s+/).filter((token) => token.length > 2 && !ignore.has(token)));
+  const ignore = new Set([
+    'uma',
+    'para',
+    'com',
+    'das',
+    'dos',
+    'em',
+    'de',
+    'da',
+    'do',
+    'as',
+    'os',
+    'por',
+    'px',
+  ]);
+  const aTokens = new Set(
+    normalizeText(a)
+      .split(/\s+/)
+      .filter((token) => token.length > 2 && !ignore.has(token))
+  );
+  const bTokens = new Set(
+    normalizeText(b)
+      .split(/\s+/)
+      .filter((token) => token.length > 2 && !ignore.has(token))
+  );
   if (!aTokens.size || !bTokens.size) return 0;
-  const intersection = [...aTokens].filter((token) => bTokens.has(token)).length;
+  const intersection = [...aTokens].filter((token) =>
+    bTokens.has(token)
+  ).length;
   return intersection / Math.min(aTokens.size, bTokens.size);
 }
 
@@ -167,16 +201,26 @@ function collectImageUrls(html, baseUrl) {
 
   const $ = cheerio.load(html);
   $('img, source, a, meta').each((_, element) => {
-    for (const attribute of ['src', 'data-src', 'data-original', 'href', 'content']) {
+    for (const attribute of [
+      'src',
+      'data-src',
+      'data-original',
+      'href',
+      'content',
+    ]) {
       push($(element).attr(attribute));
     }
   });
 
-  for (const match of html.matchAll(/(?:src|href|data-src|data-original|content)=["']([^"']+\.(?:jpe?g|png|webp)(?:\?[^"']*)?)["']/gi)) {
+  for (const match of html.matchAll(
+    /(?:src|href|data-src|data-original|content)=["']([^"']+\.(?:jpe?g|png|webp)(?:\?[^"']*)?)["']/gi
+  )) {
     push(match[1]);
   }
 
-  for (const match of html.matchAll(/url\((["']?)([^)"']+\.(?:jpe?g|png|webp)(?:\?[^)]*)?)\1\)/gi)) {
+  for (const match of html.matchAll(
+    /url\((["']?)([^)"']+\.(?:jpe?g|png|webp)(?:\?[^)]*)?)\1\)/gi
+  )) {
     push(match[2]);
   }
 
@@ -219,7 +263,10 @@ function slugTextFromUrl(url) {
 
 async function fetchText(url) {
   const response = await fetch(url, {
-    headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125 Safari/537.36' },
+    headers: {
+      'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125 Safari/537.36',
+    },
   });
   if (!response.ok) throw new Error(`GET ${url} failed ${response.status}`);
   return response.text();
@@ -241,7 +288,9 @@ async function scrapeOldProperties() {
         slugText: slugTextFromUrl(url),
         imageUrls,
       });
-      console.log(`scraped #${code}: ${title || '(no title)'} | images=${imageUrls.length}`);
+      console.log(
+        `scraped #${code}: ${title || '(no title)'} | images=${imageUrls.length}`
+      );
     } catch (error) {
       console.warn(`scrape failed ${url}: ${error.message}`);
     }
@@ -264,10 +313,12 @@ function hintMatch(scraped, properties) {
   const hints = MANUAL_HINTS[scraped.code] || [];
   if (!hints.length) return null;
 
-  return properties.find((property) => {
-    const title = normalizeText(property.title);
-    return hints.every((hint) => title.includes(hint));
-  }) || null;
+  return (
+    properties.find((property) => {
+      const title = normalizeText(property.title);
+      return hints.every((hint) => title.includes(hint));
+    }) || null
+  );
 }
 
 function findPropertyMatch(scraped, properties) {
@@ -282,7 +333,8 @@ function findPropertyMatch(scraped, properties) {
     const titleScore = titleSimilarity(title, scraped.title);
     const slugScore = titleSimilarity(title, scraped.slugText);
     const codeScore =
-      scraped.code && String(property.external_id || '') === String(scraped.code)
+      scraped.code &&
+      String(property.external_id || '') === String(scraped.code)
         ? Math.max(titleScore, slugScore, 0.5)
         : 0;
     const score = Math.max(titleScore, slugScore, codeScore);
@@ -293,16 +345,22 @@ function findPropertyMatch(scraped, properties) {
     }
   }
 
-  if (best && bestScore >= 0.68) return { property: best, score: bestScore, reason: 'title' };
+  if (best && bestScore >= 0.68)
+    return { property: best, score: bestScore, reason: 'title' };
 
   return { property: null, score: bestScore, reason: 'none' };
 }
 
 function imageExtension(url, contentType) {
-  const fromContent = String(contentType || '').split('/')[1]?.split(';')[0];
-  if (['jpeg', 'jpg', 'png', 'webp'].includes(fromContent)) return fromContent === 'jpeg' ? '.jpg' : `.${fromContent}`;
+  const fromContent = String(contentType || '')
+    .split('/')[1]
+    ?.split(';')[0];
+  if (['jpeg', 'jpg', 'png', 'webp'].includes(fromContent))
+    return fromContent === 'jpeg' ? '.jpg' : `.${fromContent}`;
   const extension = path.extname(new URL(url).pathname).toLowerCase();
-  return ['.jpg', '.jpeg', '.png', '.webp'].includes(extension) ? extension : '.jpg';
+  return ['.jpg', '.jpeg', '.png', '.webp'].includes(extension)
+    ? extension
+    : '.jpg';
 }
 
 function downloadCandidates(url) {
@@ -326,7 +384,10 @@ async function downloadImage(url) {
 
   for (const candidate of downloadCandidates(url)) {
     const response = await fetch(candidate, {
-      headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125 Safari/537.36' },
+      headers: {
+        'user-agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125 Safari/537.36',
+      },
     });
     lastStatus = `${response.status} ${response.statusText}`;
     const contentType = response.headers.get('content-type') || '';
@@ -344,7 +405,8 @@ async function downloadImage(url) {
 
 async function uploadImages(property, sourceUrls) {
   const uploaded = [];
-  const targetUrls = MAX_IMAGES > 0 ? sourceUrls.slice(0, MAX_IMAGES) : sourceUrls;
+  const targetUrls =
+    MAX_IMAGES > 0 ? sourceUrls.slice(0, MAX_IMAGES) : sourceUrls;
   const slug = slugify(property.title);
 
   for (let index = 0; index < targetUrls.length; index += 1) {
@@ -352,7 +414,11 @@ async function uploadImages(property, sourceUrls) {
 
     try {
       const downloaded = await downloadImage(sourceUrl);
-      const hash = crypto.createHash('sha1').update(downloaded.body).digest('hex').slice(0, 12);
+      const hash = crypto
+        .createHash('sha1')
+        .update(downloaded.body)
+        .digest('hex')
+        .slice(0, 12);
       const ext = imageExtension(downloaded.url, downloaded.contentType);
       const key = `${ORG_ID}/fazendasbrasil-crm49/public-site/${property.id}-${slug}/foto-${index}-${hash}${ext}`;
       const result = await uploadStorageObject({
@@ -364,7 +430,9 @@ async function uploadImages(property, sourceUrls) {
       });
 
       uploaded.push(result.publicUrl);
-      console.log(`  uploaded ${index + 1}/${targetUrls.length}: ${result.publicUrl}`);
+      console.log(
+        `  uploaded ${index + 1}/${targetUrls.length}: ${result.publicUrl}`
+      );
     } catch (error) {
       console.warn(`  image skipped: ${error.message}`);
     }
@@ -373,7 +441,13 @@ async function uploadImages(property, sourceUrls) {
   return uploaded;
 }
 
-async function uploadResponsiveWebp({ sourcePath, key, width, height, quality }) {
+async function uploadResponsiveWebp({
+  sourcePath,
+  key,
+  width,
+  height,
+  quality,
+}) {
   const sharp = rootRequire('sharp');
   const body = await sharp(sourcePath)
     .resize(width, height, { fit: 'cover', position: 'center' })
@@ -421,7 +495,7 @@ async function ensurePublicImagePrefix() {
 
   const bucket = getConfiguredBucketName('media');
   const resource = `arn:aws:s3:::${bucket}/${ORG_ID}/fazendasbrasil-crm49/*`;
-  const policy = await getBucketPolicy(bucket) || {
+  const policy = (await getBucketPolicy(bucket)) || {
     Version: '2012-10-17',
     Statement: [],
   };
@@ -546,7 +620,9 @@ async function main() {
 
     if (item.imageUrls.length > 0) {
       console.log(`\nMigrating #${item.code} -> ${property.title}`);
-      const uploaded = APPLY ? await uploadImages(property, item.imageUrls) : item.imageUrls;
+      const uploaded = APPLY
+        ? await uploadImages(property, item.imageUrls)
+        : item.imageUrls;
 
       if (uploaded.length > 0) {
         await updatePropertyImages(property, uploaded, 'old-site-images');
@@ -557,7 +633,9 @@ async function main() {
           propertyId: property.id,
           propertyTitle: property.title,
           images: uploaded.length,
-          action: APPLY ? 'updated-from-old-site' : 'would-update-from-old-site',
+          action: APPLY
+            ? 'updated-from-old-site'
+            : 'would-update-from-old-site',
           reason: match.reason,
         });
         continue;
@@ -565,7 +643,11 @@ async function main() {
     }
 
     if (siteAssets.fallbackUrl) {
-      await updatePropertyImages(property, [siteAssets.fallbackUrl], 'clean-fallback');
+      await updatePropertyImages(
+        property,
+        [siteAssets.fallbackUrl],
+        'clean-fallback'
+      );
       report.fallbackApplied += 1;
     }
 
@@ -582,8 +664,13 @@ async function main() {
 
   if (siteAssets.fallbackUrl) {
     for (const property of properties) {
-      if (matchedPropertyIds.has(property.id) || !needsImageRefresh(property)) continue;
-      await updatePropertyImages(property, [siteAssets.fallbackUrl], 'clean-fallback-unmatched');
+      if (matchedPropertyIds.has(property.id) || !needsImageRefresh(property))
+        continue;
+      await updatePropertyImages(
+        property,
+        [siteAssets.fallbackUrl],
+        'clean-fallback-unmatched'
+      );
       report.fallbackApplied += 1;
       report.matched.push({
         propertyId: property.id,

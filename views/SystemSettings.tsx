@@ -40,7 +40,9 @@ const SystemSettings: React.FC = () => {
   const [zapsignKey, setZapsignKey] = useState('');
   const [oruloBrokerConnected, setOruloBrokerConnected] = useState(false);
   const [oruloBrokerConnecting, setOruloBrokerConnecting] = useState(false);
-  const [oruloBrokerExpiresAt, setOruloBrokerExpiresAt] = useState<string | null>(null);
+  const [oruloBrokerExpiresAt, setOruloBrokerExpiresAt] = useState<
+    string | null
+  >(null);
   const [vivarealEnabled, setVivarealEnabled] = useState(false);
   const [vivarealApiKey, setVivarealApiKey] = useState('');
   const [vivarealPartnerId, setVivarealPartnerId] = useState('');
@@ -50,7 +52,14 @@ const SystemSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'appearance' | 'users' | 'ai' | 'tracking' | 'domains' | 'support' | 'canais' | 'portals'
+    | 'appearance'
+    | 'users'
+    | 'ai'
+    | 'tracking'
+    | 'domains'
+    | 'support'
+    | 'canais'
+    | 'portals'
   >(location.pathname.endsWith('/integrations') ? 'ai' : 'appearance');
 
   useEffect(() => {
@@ -60,12 +69,18 @@ const SystemSettings: React.FC = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (settings?.integrations?.openai?.apiKey) setOpenaiKey(settings.integrations.openai.apiKey);
-    if (settings?.integrations?.groq?.apiKey) setGroqKey(settings.integrations.groq.apiKey);
-    if (settings?.integrations?.gemini?.apiKey) setGeminiKey(settings.integrations.gemini.apiKey);
-    if (settings?.integrations?.namoBana?.apiKey) setNamoBanaKey(settings.integrations.namoBana.apiKey);
-    if (settings?.integrations?.asaas?.apiKey) setAsaasKey(settings.integrations.asaas.apiKey);
-    if (settings?.integrations?.zapsign?.apiKey) setZapsignKey(settings.integrations.zapsign.apiKey);
+    if (settings?.integrations?.openai?.apiKey)
+      setOpenaiKey(settings.integrations.openai.apiKey);
+    if (settings?.integrations?.groq?.apiKey)
+      setGroqKey(settings.integrations.groq.apiKey);
+    if (settings?.integrations?.gemini?.apiKey)
+      setGeminiKey(settings.integrations.gemini.apiKey);
+    if (settings?.integrations?.namoBana?.apiKey)
+      setNamoBanaKey(settings.integrations.namoBana.apiKey);
+    if (settings?.integrations?.asaas?.apiKey)
+      setAsaasKey(settings.integrations.asaas.apiKey);
+    if (settings?.integrations?.zapsign?.apiKey)
+      setZapsignKey(settings.integrations.zapsign.apiKey);
     loadPortalConfigs();
   }, [settings]);
 
@@ -203,7 +218,9 @@ const SystemSettings: React.FC = () => {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Integração Órulo</h1>
+          <h1 className="text-2xl font-bold text-text-primary">
+            Integração Órulo
+          </h1>
           <p className="mt-2 text-sm text-text-secondary">
             O catálogo da imobiliária já usa a credencial mestre da plataforma.
           </p>
@@ -215,15 +232,19 @@ const SystemSettings: React.FC = () => {
               <Building2 className="text-sky-500" size={24} />
             </div>
             <div className="flex-1">
-              <h2 className="font-semibold text-text-primary">Minha conta Órulo</h2>
+              <h2 className="font-semibold text-text-primary">
+                Minha conta Órulo
+              </h2>
               <p className="mt-1 text-sm text-text-secondary">
-                Conecte sua própria conta para acessar contatos comerciais, arquivos, unidades e
-                outros dados protegidos.
+                Conecte sua própria conta para acessar contatos comerciais,
+                arquivos, unidades e outros dados protegidos.
               </p>
 
               <div className="mt-5 rounded-xl border border-border-subtle bg-bg-card p-4">
                 <p className="text-sm font-semibold text-text-primary">
-                  {oruloBrokerConnected ? 'Conta conectada' : 'Conta ainda não conectada'}
+                  {oruloBrokerConnected
+                    ? 'Conta conectada'
+                    : 'Conta ainda não conectada'}
                 </p>
                 {oruloBrokerExpiresAt && (
                   <p className="mt-1 text-xs text-text-secondary">
@@ -296,10 +317,17 @@ const SystemSettings: React.FC = () => {
             disabled={saving}
             className="btn-primary"
           >
-            {saving ? 'Salvando...' : saved ? (
-              <><Check size={16} /> Salvo!</>
+            {saving ? (
+              'Salvando...'
+            ) : saved ? (
+              <>
+                <Check size={16} /> Salvo!
+              </>
             ) : (
-              <><Save size={16} /> Salvar{activeTab === 'portals' ? ' Portais' : ' Chaves'}</>
+              <>
+                <Save size={16} /> Salvar
+                {activeTab === 'portals' ? ' Portais' : ' Chaves'}
+              </>
             )}
           </button>
         )}
@@ -358,7 +386,9 @@ const SystemSettings: React.FC = () => {
                         <Building2 size={22} className="text-blue-500" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-text-primary">VivaReal</h4>
+                        <h4 className="text-sm font-semibold text-text-primary">
+                          VivaReal
+                        </h4>
                         <p className="text-xs text-text-secondary mt-0.5">
                           Credenciais de parceiro VivaReal.
                         </p>
@@ -371,8 +401,12 @@ const SystemSettings: React.FC = () => {
                         onChange={(e) => setVivarealEnabled(e.target.checked)}
                         className="sr-only"
                       />
-                      <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${vivarealEnabled ? 'bg-primary' : 'bg-slate-300'}`}>
-                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${vivarealEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                      <span
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${vivarealEnabled ? 'bg-primary' : 'bg-slate-300'}`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${vivarealEnabled ? 'translate-x-5' : 'translate-x-1'}`}
+                        />
                       </span>
                       <span className="text-xs font-semibold text-text-secondary">
                         {vivarealEnabled ? 'Ativa' : 'Inativa'}
@@ -415,7 +449,9 @@ const SystemSettings: React.FC = () => {
                         <Building2 size={22} className="text-amber-500" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-text-primary">Zap Imóveis</h4>
+                        <h4 className="text-sm font-semibold text-text-primary">
+                          Zap Imóveis
+                        </h4>
                         <p className="text-xs text-text-secondary mt-0.5">
                           Credenciais de parceiro Zap Imóveis.
                         </p>
@@ -428,8 +464,12 @@ const SystemSettings: React.FC = () => {
                         onChange={(e) => setZapEnabled(e.target.checked)}
                         className="sr-only"
                       />
-                      <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${zapEnabled ? 'bg-primary' : 'bg-slate-300'}`}>
-                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${zapEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                      <span
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${zapEnabled ? 'bg-primary' : 'bg-slate-300'}`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${zapEnabled ? 'translate-x-5' : 'translate-x-1'}`}
+                        />
                       </span>
                       <span className="text-xs font-semibold text-text-secondary">
                         {zapEnabled ? 'Ativa' : 'Inativa'}
@@ -483,7 +523,8 @@ const SystemSettings: React.FC = () => {
                     Centro de Integrações 360
                   </h3>
                   <p className="text-sm text-text-secondary mt-0.5">
-                    Configure as chaves secretas para unificar Financeiro, Jurídico e IA.
+                    Configure as chaves secretas para unificar Financeiro,
+                    Jurídico e IA.
                   </p>
                 </div>
               </div>
@@ -491,10 +532,34 @@ const SystemSettings: React.FC = () => {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {[
-                    { label: 'OpenAI API Key (GPT-4o)', value: openaiKey, setter: setOpenaiKey, placeholder: 'sk-...', desc: 'Usado para gerações complexas e análise de dossiês.' },
-                    { label: 'Namo Bana AI Key', value: namoBanaKey, setter: setNamoBanaKey, placeholder: 'Chave do cliente...', desc: 'Chave personalizada do cliente para criação assistida por IA.' },
-                    { label: 'Gemini API Key (Google)', value: geminiKey, setter: setGeminiKey, placeholder: 'AIzaSy...', desc: 'Obtenha sua chave gratuita no Google AI Studio.' },
-                    { label: 'Groq API Key (Llama 3)', value: groqKey, setter: setGroqKey, placeholder: 'gsk_...', desc: 'Gerações ultrarrápidas de baixo custo.' },
+                    {
+                      label: 'OpenAI API Key (GPT-4o)',
+                      value: openaiKey,
+                      setter: setOpenaiKey,
+                      placeholder: 'sk-...',
+                      desc: 'Usado para gerações complexas e análise de dossiês.',
+                    },
+                    {
+                      label: 'Namo Bana AI Key',
+                      value: namoBanaKey,
+                      setter: setNamoBanaKey,
+                      placeholder: 'Chave do cliente...',
+                      desc: 'Chave personalizada do cliente para criação assistida por IA.',
+                    },
+                    {
+                      label: 'Gemini API Key (Google)',
+                      value: geminiKey,
+                      setter: setGeminiKey,
+                      placeholder: 'AIzaSy...',
+                      desc: 'Obtenha sua chave gratuita no Google AI Studio.',
+                    },
+                    {
+                      label: 'Groq API Key (Llama 3)',
+                      value: groqKey,
+                      setter: setGroqKey,
+                      placeholder: 'gsk_...',
+                      desc: 'Gerações ultrarrápidas de baixo custo.',
+                    },
                   ].map((field) => (
                     <div key={field.label} className="space-y-2">
                       <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
@@ -520,8 +585,20 @@ const SystemSettings: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {[
-                    { label: 'Asaas API Key (Financeiro)', value: asaasKey, setter: setAsaasKey, placeholder: '$aas_...', desc: 'Para automação de boletos, PIX e gestão de aluguéis.' },
-                    { label: 'ZapSign API Token (Jurídico)', value: zapsignKey, setter: setZapsignKey, placeholder: 'Token de acesso ZapSign', desc: 'Para envio de contratos e assinaturas digitais via WhatsApp.' },
+                    {
+                      label: 'Asaas API Key (Financeiro)',
+                      value: asaasKey,
+                      setter: setAsaasKey,
+                      placeholder: '$aas_...',
+                      desc: 'Para automação de boletos, PIX e gestão de aluguéis.',
+                    },
+                    {
+                      label: 'ZapSign API Token (Jurídico)',
+                      value: zapsignKey,
+                      setter: setZapsignKey,
+                      placeholder: 'Token de acesso ZapSign',
+                      desc: 'Para envio de contratos e assinaturas digitais via WhatsApp.',
+                    },
                   ].map((field) => (
                     <div key={field.label} className="space-y-2">
                       <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
@@ -552,7 +629,8 @@ const SystemSettings: React.FC = () => {
                           Órulo Catálogo Urbano
                         </h4>
                         <p className="text-xs text-text-secondary mt-0.5">
-                          O catálogo usa a credencial mestre da plataforma, disponível para todas as imobiliárias.
+                          O catálogo usa a credencial mestre da plataforma,
+                          disponível para todas as imobiliárias.
                         </p>
                       </div>
                     </div>
@@ -603,9 +681,11 @@ const SystemSettings: React.FC = () => {
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-3">
                   <Info size={16} className="text-primary mt-0.5 shrink-0" />
                   <p className="text-sm text-text-secondary leading-relaxed">
-                    <strong className="text-text-primary">Dica Premium:</strong> Recomendamos o uso da{' '}
-                    <strong className="text-primary">Gemini (1.5 Flash)</strong> para custos otimizados e
-                    maior velocidade de resposta em atendimentos de chat e descrições técnicas.
+                    <strong className="text-text-primary">Dica Premium:</strong>{' '}
+                    Recomendamos o uso da{' '}
+                    <strong className="text-primary">Gemini (1.5 Flash)</strong>{' '}
+                    para custos otimizados e maior velocidade de resposta em
+                    atendimentos de chat e descrições técnicas.
                   </p>
                 </div>
               </div>
@@ -623,7 +703,8 @@ const SystemSettings: React.FC = () => {
                       Segurança & Criptografia
                     </h3>
                     <p className="text-xs text-text-secondary mt-0.5">
-                      Suas chaves são armazenadas com criptografia de ponta a ponta.
+                      Suas chaves são armazenadas com criptografia de ponta a
+                      ponta.
                     </p>
                   </div>
                 </div>

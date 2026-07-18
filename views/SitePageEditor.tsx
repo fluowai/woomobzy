@@ -2,7 +2,11 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
 import { useAuth } from '../context/AuthContext';
 import { siteService } from '../services/sites';
 import { Site, SitePage, SiteMenuItem } from '../types/site';
@@ -13,9 +17,20 @@ import PropertiesSidebar from '../components/LandingPageEditor/PropertiesSidebar
 import ThemeCustomizer from '../components/LandingPageEditor/ThemeCustomizer';
 import SEOSettings from '../components/LandingPageEditor/SEOSettings';
 import {
-  Save, Eye, Globe, Settings, Palette, Code,
-  Smartphone, Tablet, Monitor, ArrowLeft, Loader,
-  Wand2, Sparkles, Check,
+  Save,
+  Eye,
+  Globe,
+  Settings,
+  Palette,
+  Code,
+  Smartphone,
+  Tablet,
+  Monitor,
+  ArrowLeft,
+  Loader,
+  Wand2,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -26,7 +41,9 @@ const SitePageEditor: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile } = useAuth();
-  const basePanelPath = location.pathname.startsWith('/urban') ? '/urban' : '/rural';
+  const basePanelPath = location.pathname.startsWith('/urban')
+    ? '/urban'
+    : '/rural';
 
   const [page, setPage] = useState<SitePage | null>(null);
   const [site, setSite] = useState<Site | null>(null);
@@ -52,7 +69,9 @@ const SitePageEditor: React.FC = () => {
       setPage(pageData);
 
       if (profile?.organization_id) {
-        const siteData = await siteService.getByOrganization(profile.organization_id);
+        const siteData = await siteService.getByOrganization(
+          profile.organization_id
+        );
         setSite(siteData);
       }
     } catch (error) {
@@ -104,7 +123,9 @@ const SitePageEditor: React.FC = () => {
     if (!page) return;
     setPage({
       ...page,
-      blocks: page.blocks.map((b) => (b.id === blockId ? { ...b, ...updates } : b)),
+      blocks: page.blocks.map((b) =>
+        b.id === blockId ? { ...b, ...updates } : b
+      ),
     });
   };
 
@@ -112,7 +133,9 @@ const SitePageEditor: React.FC = () => {
     if (!page) return;
     setPage({
       ...page,
-      blocks: page.blocks.filter((b) => b.id !== blockId).map((b, i) => ({ ...b, order: i })),
+      blocks: page.blocks
+        .filter((b) => b.id !== blockId)
+        .map((b, i) => ({ ...b, order: i })),
     });
   };
 
@@ -122,30 +145,142 @@ const SitePageEditor: React.FC = () => {
 
     const oldIndex = page.blocks.findIndex((b) => b.id === active.id);
     const newIndex = page.blocks.findIndex((b) => b.id === over.id);
-    const newBlocks = arrayMove(page.blocks, oldIndex, newIndex).map((b: Block, i: number) => ({ ...b, order: i }));
+    const newBlocks = arrayMove(page.blocks, oldIndex, newIndex).map(
+      (b: Block, i: number) => ({ ...b, order: i })
+    );
     setPage({ ...page, blocks: newBlocks });
   };
 
   const getDefaultConfig = (type: BlockType): any => {
     const configs: Record<string, any> = {
-      [BlockType.HERO]: { title: 'Título', subtitle: 'Subtítulo', backgroundImage: '', overlayOpacity: 0.4, ctaText: 'Saiba Mais', height: 500, alignment: 'center', textColor: '#ffffff' },
-      [BlockType.TEXT]: { content: '<p>Adicione seu texto aqui...</p>', fontSize: 16, fontWeight: 400, color: '#1e293b', alignment: 'left' },
-      [BlockType.IMAGE]: { src: '', alt: 'Imagem', width: '100%', height: 'auto', objectFit: 'cover' },
-      [BlockType.FORM]: { title: 'Entre em Contato', fields: [{ name: 'name', type: 'text', label: 'Nome', required: true, placeholder: 'Seu nome' }, { name: 'email', type: 'email', label: 'Email', required: true, placeholder: 'seu@email.com' }, { name: 'message', type: 'textarea', label: 'Mensagem', required: false, placeholder: 'Sua mensagem' }], submitText: 'Enviar', successMessage: 'Mensagem enviada!' },
-      [BlockType.CTA]: { title: 'Pronto para começar?', description: '', buttonText: 'Fale Conosco', buttonLink: '#', backgroundColor: '#2563eb', textColor: '#ffffff' },
-      [BlockType.PROPERTY_GRID]: { columns: 3, gap: 24, showFilters: true, maxItems: 12, sortBy: 'price', cardStyle: 'modern' },
-      [BlockType.PROPERTY_CAROUSEL]: { autoplay: true, interval: 5000, showArrows: true, showDots: true, itemsPerView: 3 },
-      [BlockType.STATS]: { stats: [{ value: '500+', label: 'Clientes', icon: '👥' }, { value: '15', label: 'Anos', icon: '⭐' }], columns: 2, animated: true },
-      [BlockType.TESTIMONIALS]: { testimonials: [{ name: 'Cliente', rating: 5, text: 'Excelente serviço!' }], layout: 'carousel', showRating: true },
-      [BlockType.MAP]: { latitude: -23.5505, longitude: -46.6333, zoom: 12, markers: [] },
+      [BlockType.HERO]: {
+        title: 'Título',
+        subtitle: 'Subtítulo',
+        backgroundImage: '',
+        overlayOpacity: 0.4,
+        ctaText: 'Saiba Mais',
+        height: 500,
+        alignment: 'center',
+        textColor: '#ffffff',
+      },
+      [BlockType.TEXT]: {
+        content: '<p>Adicione seu texto aqui...</p>',
+        fontSize: 16,
+        fontWeight: 400,
+        color: '#1e293b',
+        alignment: 'left',
+      },
+      [BlockType.IMAGE]: {
+        src: '',
+        alt: 'Imagem',
+        width: '100%',
+        height: 'auto',
+        objectFit: 'cover',
+      },
+      [BlockType.FORM]: {
+        title: 'Entre em Contato',
+        fields: [
+          {
+            name: 'name',
+            type: 'text',
+            label: 'Nome',
+            required: true,
+            placeholder: 'Seu nome',
+          },
+          {
+            name: 'email',
+            type: 'email',
+            label: 'Email',
+            required: true,
+            placeholder: 'seu@email.com',
+          },
+          {
+            name: 'message',
+            type: 'textarea',
+            label: 'Mensagem',
+            required: false,
+            placeholder: 'Sua mensagem',
+          },
+        ],
+        submitText: 'Enviar',
+        successMessage: 'Mensagem enviada!',
+      },
+      [BlockType.CTA]: {
+        title: 'Pronto para começar?',
+        description: '',
+        buttonText: 'Fale Conosco',
+        buttonLink: '#',
+        backgroundColor: '#2563eb',
+        textColor: '#ffffff',
+      },
+      [BlockType.PROPERTY_GRID]: {
+        columns: 3,
+        gap: 24,
+        showFilters: true,
+        maxItems: 12,
+        sortBy: 'price',
+        cardStyle: 'modern',
+      },
+      [BlockType.PROPERTY_CAROUSEL]: {
+        autoplay: true,
+        interval: 5000,
+        showArrows: true,
+        showDots: true,
+        itemsPerView: 3,
+      },
+      [BlockType.STATS]: {
+        stats: [
+          { value: '500+', label: 'Clientes', icon: '👥' },
+          { value: '15', label: 'Anos', icon: '⭐' },
+        ],
+        columns: 2,
+        animated: true,
+      },
+      [BlockType.TESTIMONIALS]: {
+        testimonials: [
+          { name: 'Cliente', rating: 5, text: 'Excelente serviço!' },
+        ],
+        layout: 'carousel',
+        showRating: true,
+      },
+      [BlockType.MAP]: {
+        latitude: -23.5505,
+        longitude: -46.6333,
+        zoom: 12,
+        markers: [],
+      },
       [BlockType.GALLERY]: { images: [], columns: 3, gap: 16, lightbox: true },
-      [BlockType.VIDEO]: { url: '', autoplay: false, loop: false, muted: false, controls: true },
-      [BlockType.FEATURES]: { features: [{ title: 'Feature 1', description: 'Descrição', icon: '✅' }], columns: 3 },
-      [BlockType.BROKER_CARD]: { name: 'Nome do Corretor', creci: '', phone: '', email: '' },
-      [BlockType.TIMELINE]: { title: 'Nossa História', items: [{ title: '2024', description: 'Marco importante' }] },
+      [BlockType.VIDEO]: {
+        url: '',
+        autoplay: false,
+        loop: false,
+        muted: false,
+        controls: true,
+      },
+      [BlockType.FEATURES]: {
+        features: [
+          { title: 'Feature 1', description: 'Descrição', icon: '✅' },
+        ],
+        columns: 3,
+      },
+      [BlockType.BROKER_CARD]: {
+        name: 'Nome do Corretor',
+        creci: '',
+        phone: '',
+        email: '',
+      },
+      [BlockType.TIMELINE]: {
+        title: 'Nossa História',
+        items: [{ title: '2024', description: 'Marco importante' }],
+      },
       [BlockType.CUSTOM_HTML]: { html: '<div>Seu HTML aqui</div>' },
       [BlockType.SPACER]: { height: 60 },
-      [BlockType.DIVIDER]: { style: 'solid', color: '#e5e7eb', thickness: 1, width: '100%' },
+      [BlockType.DIVIDER]: {
+        style: 'solid',
+        color: '#e5e7eb',
+        thickness: 1,
+        width: '100%',
+      },
     };
     return configs[type] || {};
   };
@@ -203,7 +338,9 @@ const SitePageEditor: React.FC = () => {
             className="bg-transparent text-white font-semibold text-lg outline-none border-b border-transparent focus:border-indigo-500 px-1"
           />
           <span className="text-xs text-gray-500">/{page.slug}</span>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${page.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-gray-700 text-gray-400'}`}>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${page.status === 'published' ? 'bg-green-900 text-green-300' : 'bg-gray-700 text-gray-400'}`}
+          >
             {page.status === 'published' ? 'Publicado' : 'Rascunho'}
           </span>
         </div>
@@ -217,7 +354,13 @@ const SitePageEditor: React.FC = () => {
                 onClick={() => setViewMode(mode)}
                 className={`p-1.5 rounded ${viewMode === mode ? 'bg-gray-800 text-white shadow' : 'text-gray-400 hover:text-white'}`}
               >
-                {mode === 'desktop' ? <Monitor size={15} /> : mode === 'tablet' ? <Tablet size={15} /> : <Smartphone size={15} />}
+                {mode === 'desktop' ? (
+                  <Monitor size={15} />
+                ) : mode === 'tablet' ? (
+                  <Tablet size={15} />
+                ) : (
+                  <Smartphone size={15} />
+                )}
               </button>
             ))}
           </div>
@@ -243,12 +386,18 @@ const SitePageEditor: React.FC = () => {
             disabled={saving}
             className="flex items-center gap-2 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
           >
-            {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+            {saving ? (
+              <Loader size={14} className="animate-spin" />
+            ) : (
+              <Save size={14} />
+            )}
             Salvar
           </button>
 
           {lastSaved && (
-            <span className="text-xs text-gray-500">Salvo às {lastSaved.toLocaleTimeString()}</span>
+            <span className="text-xs text-gray-500">
+              Salvo às {lastSaved.toLocaleTimeString()}
+            </span>
           )}
         </div>
       </div>
@@ -260,9 +409,17 @@ const SitePageEditor: React.FC = () => {
 
         {/* Canvas */}
         <div className="flex-1 overflow-y-auto bg-gray-100">
-          <div className={`mx-auto transition-all duration-300 ${viewMode === 'desktop' ? 'max-w-full' : viewMode === 'tablet' ? 'max-w-3xl' : 'max-w-sm'}`}>
-            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={page.blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+          <div
+            className={`mx-auto transition-all duration-300 ${viewMode === 'desktop' ? 'max-w-full' : viewMode === 'tablet' ? 'max-w-3xl' : 'max-w-sm'}`}
+          >
+            <DndContext
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={page.blocks.map((b) => b.id)}
+                strategy={verticalListSortingStrategy}
+              >
                 <CanvasArea
                   blocks={page.blocks}
                   selectedBlockId={selectedBlockId}
@@ -270,7 +427,7 @@ const SitePageEditor: React.FC = () => {
                   onUpdateBlock={handleUpdateBlock}
                   onDeleteBlock={handleDeleteBlock}
                   onDuplicateBlock={() => {}}
-                  themeConfig={site?.globalTheme as any || {}}
+                  themeConfig={(site?.globalTheme as any) || {}}
                   viewMode={viewMode}
                 />
               </SortableContext>
@@ -293,7 +450,7 @@ const SitePageEditor: React.FC = () => {
         {showThemeCustomizer && (
           <div className="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto">
             <ThemeCustomizer
-              themeConfig={site?.globalTheme as any || {}}
+              themeConfig={(site?.globalTheme as any) || {}}
               onUpdate={(themeUpdates) => {
                 // Save global theme via site update
               }}
@@ -307,7 +464,15 @@ const SitePageEditor: React.FC = () => {
           <div className="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto p-4">
             <SEOSettings
               page={page as any}
-              onUpdate={(seo) => setPage({ ...page, metaTitle: seo.metaTitle, metaDescription: seo.metaDescription, ogImage: seo.ogImage, metaKeywords: seo.metaKeywords } as any)}
+              onUpdate={(seo) =>
+                setPage({
+                  ...page,
+                  metaTitle: seo.metaTitle,
+                  metaDescription: seo.metaDescription,
+                  ogImage: seo.ogImage,
+                  metaKeywords: seo.metaKeywords,
+                } as any)
+              }
               onClose={() => setShowSEOSettings(false)}
             />
           </div>

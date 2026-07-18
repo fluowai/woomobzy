@@ -17,7 +17,9 @@ export const LeadDistributionModal: React.FC<Props> = ({
   selectedLeadIds = [],
   onSuccess,
 }) => {
-  const [strategies, setStrategies] = useState<{ key: string; value: string; label: string }[]>([]);
+  const [strategies, setStrategies] = useState<
+    { key: string; value: string; label: string }[]
+  >([]);
   const [selectedStrategy, setSelectedStrategy] = useState('balanced');
   const [loading, setLoading] = useState(false);
 
@@ -45,14 +47,17 @@ export const LeadDistributionModal: React.FC<Props> = ({
       toast.error('Nenhum lead selecionado.');
       return;
     }
-    
+
     setLoading(true);
     try {
       if (selectedLeadIds.length === 1) {
         await leadService.distribute(selectedLeadIds[0], selectedStrategy);
         toast.success('Lead distribuído com sucesso!');
       } else {
-        const res = await leadService.bulkDistribute(selectedLeadIds, selectedStrategy);
+        const res = await leadService.bulkDistribute(
+          selectedLeadIds,
+          selectedStrategy
+        );
         toast.success(`${res.distributed} leads distribuídos com sucesso!`);
       }
       onSuccess();
@@ -71,15 +76,19 @@ export const LeadDistributionModal: React.FC<Props> = ({
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-semibold text-slate-900">Distribuir Leads</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-md text-slate-400">
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-slate-100 rounded-md text-slate-400"
+          >
             <X size={18} />
           </button>
         </div>
 
         <div className="p-5 space-y-4">
           <p className="text-sm text-slate-600">
-            Você está prestes a distribuir <strong>{selectedLeadIds.length}</strong> lead(s).
-            Escolha a estratégia de distribuição:
+            Você está prestes a distribuir{' '}
+            <strong>{selectedLeadIds.length}</strong> lead(s). Escolha a
+            estratégia de distribuição:
           </p>
 
           <div className="space-y-3">
@@ -100,7 +109,9 @@ export const LeadDistributionModal: React.FC<Props> = ({
                   onChange={(e) => setSelectedStrategy(e.target.value)}
                   className="mr-3"
                 />
-                <span className="text-sm font-medium text-slate-800">{strat.label}</span>
+                <span className="text-sm font-medium text-slate-800">
+                  {strat.label}
+                </span>
               </label>
             ))}
           </div>

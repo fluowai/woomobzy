@@ -6,7 +6,12 @@
 import { Router } from 'express';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
-import { startDripCampaign, cancelDripCampaigns, getLeadDripCampaigns, DRIP_TEMPLATES } from '../../services/emailDripService.js';
+import {
+  startDripCampaign,
+  cancelDripCampaigns,
+  getLeadDripCampaigns,
+  DRIP_TEMPLATES,
+} from '../../services/emailDripService.js';
 
 const router = Router();
 
@@ -38,14 +43,23 @@ router.post('/start', verifyAuth, requireTenant, async (req, res) => {
     const { lead_id, template_key, lead_data } = req.body;
 
     if (!lead_id || !template_key) {
-      return res.status(400).json({ error: 'lead_id e template_key são obrigatórios' });
+      return res
+        .status(400)
+        .json({ error: 'lead_id e template_key são obrigatórios' });
     }
 
     if (!DRIP_TEMPLATES[template_key]) {
-      return res.status(400).json({ error: `Template desconhecido: ${template_key}` });
+      return res
+        .status(400)
+        .json({ error: `Template desconhecido: ${template_key}` });
     }
 
-    const result = await startDripCampaign(req.orgId, lead_id, template_key, lead_data || {});
+    const result = await startDripCampaign(
+      req.orgId,
+      lead_id,
+      template_key,
+      lead_data || {}
+    );
     res.json({ success: true, ...result });
   } catch (err) {
     console.error('[Drip] Start error:', err.message);

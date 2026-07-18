@@ -13,22 +13,24 @@ const pool = new Pool({
   database: 'postgres',
   user: 'postgres',
   password: process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 });
 
 async function runMigration() {
   console.log('🚀 Running WhatsApp Baileys migration...');
-  
+
   const sql = fs.readFileSync('./migrations/001_whatsapp_baileys.sql', 'utf-8');
-  const statements = sql.split(';').filter(s => s.trim().length > 0 && !s.trim().startsWith('--'));
-  
+  const statements = sql
+    .split(';')
+    .filter((s) => s.trim().length > 0 && !s.trim().startsWith('--'));
+
   let success = 0;
   let skipped = 0;
   let errors = 0;
-  
+
   for (const stmt of statements) {
     if (!stmt.trim()) continue;
-    
+
     try {
       await pool.query(stmt.trim());
       success++;
@@ -49,14 +51,14 @@ async function runMigration() {
       }
     }
   }
-  
+
   await pool.end();
-  
+
   console.log('\n📊 Migration Summary:');
   console.log(`  ✅ Success: ${success}`);
   console.log(`  ⏭️  Skipped: ${skipped}`);
   console.log(`  ❌ Errors: ${errors}`);
-  
+
   if (errors === 0) {
     console.log('\n✅ Migration completed successfully!');
   }

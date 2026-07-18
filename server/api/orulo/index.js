@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { verifyAdmin, verifyAuth, verifySuperAdmin } from '../../middleware/auth.js';
+import {
+  verifyAdmin,
+  verifyAuth,
+  verifySuperAdmin,
+} from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import {
@@ -24,13 +28,16 @@ import {
 } from '../../services/oruloService.js';
 
 const router = Router();
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 function defaultUpdatedAfter() {
   const date = new Date();
@@ -103,16 +110,17 @@ async function getEndUserAuth(organizationId, userId) {
 }
 
 async function saveEndUserAuth(organizationId, userId, token) {
-  const { error } = await supabase
-    .from('orulo_user_credentials')
-    .upsert({
+  const { error } = await supabase.from('orulo_user_credentials').upsert(
+    {
       organization_id: organizationId,
       user_id: userId,
       encrypted_token: encryptOruloPayload(token),
       expires_at: token.expiresAt || null,
       connected_at: token.connectedAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'organization_id,user_id' });
+    },
+    { onConflict: 'organization_id,user_id' }
+  );
 
   if (error) throw error;
 }
@@ -133,9 +141,11 @@ async function getFreshEndUserAuth(organizationId, userId) {
 }
 
 function getWebhookSecret(req) {
-  return req.headers['x-orulo-webhook-secret']
-    || req.headers['x-webhook-secret']
-    || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  return (
+    req.headers['x-orulo-webhook-secret'] ||
+    req.headers['x-webhook-secret'] ||
+    String(req.headers.authorization || '').replace(/^Bearer\s+/i, '')
+  );
 }
 
 function assertWebhookAllowed(req) {
@@ -151,20 +161,21 @@ function assertWebhookAllowed(req) {
 
 function normalizeWebhookPayload(payload = {}) {
   const event = String(
-    payload.event
-      || payload.event_type
-      || payload.type
-      || payload.action
-      || payload.status
-      || ''
+    payload.event ||
+      payload.event_type ||
+      payload.type ||
+      payload.action ||
+      payload.status ||
+      ''
   ).toLowerCase();
 
-  const buildingId = payload.building_id
-    || payload.buildingId
-    || payload.id
-    || payload.building?.id
-    || payload.data?.building_id
-    || payload.data?.building?.id;
+  const buildingId =
+    payload.building_id ||
+    payload.buildingId ||
+    payload.id ||
+    payload.building?.id ||
+    payload.data?.building_id ||
+    payload.data?.building?.id;
 
   return {
     event,
@@ -173,10 +184,16 @@ function normalizeWebhookPayload(payload = {}) {
 }
 
 function classifyWebhookEvent(event) {
-  if (['removed', 'excluded_from_distribution', 'inactive', 'deleted'].includes(event)) {
+  if (
+    ['removed', 'excluded_from_distribution', 'inactive', 'deleted'].includes(
+      event
+    )
+  ) {
     return 'remove';
   }
-  if (['active', 'added_to_distribution', 'updated', 'created'].includes(event)) {
+  if (
+    ['active', 'added_to_distribution', 'updated', 'created'].includes(event)
+  ) {
     return 'upsert';
   }
   return 'unknown';
@@ -193,10 +210,15 @@ async function findWebhookTargets(buildingId) {
 
   const credentials = await getMasterOruloCredentials();
   const organizationIds = [
-    ...new Set((data || []).map((item) => item.organization_id).filter(Boolean)),
+    ...new Set(
+      (data || []).map((item) => item.organization_id).filter(Boolean)
+    ),
   ];
 
-  return organizationIds.map((organizationId) => ({ organizationId, credentials }));
+  return organizationIds.map((organizationId) => ({
+    organizationId,
+    credentials,
+  }));
 }
 
 async function processWebhookForTarget({ target, action, event, buildingId }) {
@@ -296,15 +318,16 @@ router.put('/master-credentials', verifySuperAdmin, async (req, res) => {
       });
     }
 
-    const { error } = await supabase
-      .from('platform_integrations')
-      .upsert({
+    const { error } = await supabase.from('platform_integrations').upsert(
+      {
         provider: 'orulo',
         enabled: true,
         encrypted_credentials: encryptOruloPayload({ clientId, clientSecret }),
         configured_by: req.user.id,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'provider' });
+      },
+      { onConflict: 'provider' }
+    );
 
     if (error) throw error;
 
@@ -377,20 +400,25 @@ router.post('/sync', verifyAdmin, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/buildings/:buildingId/import', verifyAdmin, requireTenant, async (req, res) => {
-  try {
-    const result = await importBuildingTypologies({
-      supabase,
-      organizationId: req.orgId,
-      buildingId: req.params.buildingId,
-      credentials: await getMasterOruloCredentials(),
-    });
+router.post(
+  '/buildings/:buildingId/import',
+  verifyAdmin,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const result = await importBuildingTypologies({
+        supabase,
+        organizationId: req.orgId,
+        buildingId: req.params.buildingId,
+        credentials: await getMasterOruloCredentials(),
+      });
 
-    return res.json({ success: true, ...result });
-  } catch (error) {
-    return handleError(res, error);
+      return res.json({ success: true, ...result });
+    } catch (error) {
+      return handleError(res, error);
+    }
   }
-});
+);
 
 router.get('/metadata/:type', verifyAdmin, requireTenant, async (req, res) => {
   try {
@@ -406,19 +434,24 @@ router.get('/metadata/:type', verifyAdmin, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/publication-links/:buildingId', verifyAdmin, requireTenant, async (req, res) => {
-  try {
-    const data = await updatePublicationLinks({
-      credentials: await getMasterOruloCredentials(),
-      buildingId: req.params.buildingId,
-      publicationLinks: req.body?.publication_links,
-    });
+router.post(
+  '/publication-links/:buildingId',
+  verifyAdmin,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const data = await updatePublicationLinks({
+        credentials: await getMasterOruloCredentials(),
+        buildingId: req.params.buildingId,
+        publicationLinks: req.body?.publication_links,
+      });
 
-    return res.json({ success: true, data });
-  } catch (error) {
-    return handleError(res, error);
+      return res.json({ success: true, data });
+    } catch (error) {
+      return handleError(res, error);
+    }
   }
-});
+);
 
 router.get('/end-user/status', verifyAuth, requireTenant, async (req, res) => {
   try {
@@ -434,53 +467,65 @@ router.get('/end-user/status', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/end-user/authorize-url', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const redirectUri = req.body?.redirect_uri;
-    if (!redirectUri) {
-      return res.status(400).json({ success: false, error: 'redirect_uri obrigatório.' });
-    }
+router.post(
+  '/end-user/authorize-url',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const redirectUri = req.body?.redirect_uri;
+      if (!redirectUri) {
+        return res
+          .status(400)
+          .json({ success: false, error: 'redirect_uri obrigatório.' });
+      }
 
-    const authUrl = buildEndUserAuthorizationUrl({
-      credentials: await getMasterOruloCredentials(),
-      redirectUri,
-      state: `${req.orgId}:${req.user.id}`,
-    });
-
-    return res.json({ success: true, authUrl });
-  } catch (error) {
-    return handleError(res, error);
-  }
-});
-
-router.post('/end-user/callback', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { code, redirect_uri: redirectUri } = req.body || {};
-    if (!code || !redirectUri) {
-      return res.status(400).json({
-        success: false,
-        error: 'code e redirect_uri são obrigatórios.',
+      const authUrl = buildEndUserAuthorizationUrl({
+        credentials: await getMasterOruloCredentials(),
+        redirectUri,
+        state: `${req.orgId}:${req.user.id}`,
       });
+
+      return res.json({ success: true, authUrl });
+    } catch (error) {
+      return handleError(res, error);
     }
-
-    const token = await exchangeEndUserCode({
-      credentials: await getMasterOruloCredentials(),
-      code,
-      redirectUri,
-    });
-
-    await saveEndUserAuth(req.orgId, req.user.id, token);
-
-    return res.json({
-      success: true,
-      connected: true,
-      expiresAt: token.expiresAt,
-      connectedAt: token.connectedAt,
-    });
-  } catch (error) {
-    return handleError(res, error);
   }
-});
+);
+
+router.post(
+  '/end-user/callback',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { code, redirect_uri: redirectUri } = req.body || {};
+      if (!code || !redirectUri) {
+        return res.status(400).json({
+          success: false,
+          error: 'code e redirect_uri são obrigatórios.',
+        });
+      }
+
+      const token = await exchangeEndUserCode({
+        credentials: await getMasterOruloCredentials(),
+        code,
+        redirectUri,
+      });
+
+      await saveEndUserAuth(req.orgId, req.user.id, token);
+
+      return res.json({
+        success: true,
+        connected: true,
+        expiresAt: token.expiresAt,
+        connectedAt: token.connectedAt,
+      });
+    } catch (error) {
+      return handleError(res, error);
+    }
+  }
+);
 
 router.post('/end-user/proxy', verifyAuth, requireTenant, async (req, res) => {
   try {
@@ -496,19 +541,24 @@ router.post('/end-user/proxy', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.delete('/end-user/connection', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { error } = await supabase
-      .from('orulo_user_credentials')
-      .delete()
-      .eq('organization_id', req.orgId)
-      .eq('user_id', req.user.id);
+router.delete(
+  '/end-user/connection',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { error } = await supabase
+        .from('orulo_user_credentials')
+        .delete()
+        .eq('organization_id', req.orgId)
+        .eq('user_id', req.user.id);
 
-    if (error) throw error;
-    return res.json({ success: true, connected: false });
-  } catch (error) {
-    return handleError(res, error);
+      if (error) throw error;
+      return res.json({ success: true, connected: false });
+    } catch (error) {
+      return handleError(res, error);
+    }
   }
-});
+);
 
 export default router;

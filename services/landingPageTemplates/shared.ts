@@ -31,7 +31,6 @@ export const generateBlocksFromTemplate = (
   }));
 };
 
-
 type PremiumTemplateInput = {
   id: string;
   name: string;
@@ -66,7 +65,12 @@ export const defaultPremiumTheme: LandingPageTheme = {
   fontFamily: 'Inter',
   borderRadius: '1rem',
   spacing: { xs: '0.5rem', sm: '1rem', md: '1.5rem', lg: '2rem', xl: '4rem' },
-  fontSize: { base: '1rem', heading1: '4rem', heading2: '2.75rem', heading3: '1.75rem' }
+  fontSize: {
+    base: '1rem',
+    heading1: '4rem',
+    heading2: '2.75rem',
+    heading3: '1.75rem',
+  },
 };
 
 export const templateBlock = (
@@ -82,30 +86,73 @@ export const templateBlock = (
   config,
   styles,
   responsive: {},
-  containerWidth
+  containerWidth,
 });
 
 export const premiumFormFields = [
-  { name: 'name', label: 'Nome', type: 'text', required: true, placeholder: 'Seu nome completo' },
-  { name: 'phone', label: 'WhatsApp', type: 'tel', required: true, placeholder: '(00) 00000-0000' },
-  { name: 'email', label: 'E-mail', type: 'email', required: false, placeholder: 'voce@email.com' },
+  {
+    name: 'name',
+    label: 'Nome',
+    type: 'text',
+    required: true,
+    placeholder: 'Seu nome completo',
+  },
+  {
+    name: 'phone',
+    label: 'WhatsApp',
+    type: 'tel',
+    required: true,
+    placeholder: '(00) 00000-0000',
+  },
+  {
+    name: 'email',
+    label: 'E-mail',
+    type: 'email',
+    required: false,
+    placeholder: 'voce@email.com',
+  },
   {
     name: 'interest',
     label: 'Interesse',
     type: 'select',
     required: true,
-    options: ['Agendar visita', 'Falar no WhatsApp', 'Receber material', 'Simular financiamento']
+    options: [
+      'Agendar visita',
+      'Falar no WhatsApp',
+      'Receber material',
+      'Simular financiamento',
+    ],
   },
-  { name: 'message', label: 'Mensagem', type: 'textarea', required: false, placeholder: 'Conte rapidamente o que voce procura' }
+  {
+    name: 'message',
+    label: 'Mensagem',
+    type: 'textarea',
+    required: false,
+    placeholder: 'Conte rapidamente o que voce procura',
+  },
 ] as any;
 
-export const buildPremiumTemplate = (input: PremiumTemplateInput): LandingPageTemplate => {
+export const buildPremiumTemplate = (
+  input: PremiumTemplateInput
+): LandingPageTemplate => {
   const theme = { ...defaultPremiumTheme, ...input.theme };
   const galleryImages = [
     { src: input.thumbnail, alt: input.name, caption: 'Imagem principal' },
-    { src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1600&auto=format&fit=crop', alt: 'Ambiente interno', caption: 'Ambientes planejados' },
-    { src: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop', alt: 'Fachada', caption: 'Fachada e acesso' },
-    { src: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=1600&auto=format&fit=crop', alt: 'Area externa', caption: 'Area externa' }
+    {
+      src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1600&auto=format&fit=crop',
+      alt: 'Ambiente interno',
+      caption: 'Ambientes planejados',
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop',
+      alt: 'Fachada',
+      caption: 'Fachada e acesso',
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=1600&auto=format&fit=crop',
+      alt: 'Area externa',
+      caption: 'Area externa',
+    },
   ];
 
   return {
@@ -126,75 +173,138 @@ export const buildPremiumTemplate = (input: PremiumTemplateInput): LandingPageTe
     conversionEvent: input.conversionEvent,
     themeConfig: theme,
     blocks: [
-      templateBlock(BlockType.HERO, 0, {
-        title: input.heroTitle,
-        subtitle: input.heroSubtitle,
-        backgroundImage: input.thumbnail,
-        overlayOpacity: 0.42,
-        ctaText: input.ctaText,
-        ctaLink: '#contato',
-        height: 720,
-        alignment: 'center',
-        textColor: '#ffffff'
-      }, { padding: '0' }, 'full'),
-      templateBlock(BlockType.STATS, 1, {
-        stats: input.stats.map((stat) => ({ ...stat, icon: '' })),
-        columns: Math.min(4, input.stats.length)
-      }, { padding: '80px 20px', backgroundColor: '#f8fafc' }),
-      templateBlock(BlockType.TEXT, 2, {
-        content: `<h2>${input.name}</h2><p>${input.description}</p><ul>${input.highlights.map((item) => `<li>${item}</li>`).join('')}</ul>`,
-        alignment: 'left',
-        fontSize: 18,
-        fontWeight: 400,
-        color: theme.textColor
-      }, { padding: '80px 20px' }),
-      templateBlock(BlockType.GALLERY, 3, {
-        images: galleryImages,
-        columns: 4,
-        spacing: 18,
-        lightbox: true
-      }, { padding: '60px 20px', backgroundColor: '#ffffff' }),
-      templateBlock(BlockType.VIDEO, 4, {
-        title: 'Tour virtual e video de apresentacao',
-        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        autoplay: false,
-        loop: false,
-        muted: false,
-        controls: true,
-        coverImage: input.thumbnail
-      }, { padding: '70px 20px', backgroundColor: '#f8fafc' }),
-      templateBlock(BlockType.MAP, 5, {
-        address: input.location,
-        title: 'Localizacao estrategica',
-        description: 'Mapa integrado para orientar visitas, proximidades e logistica.',
-        zoom: 14,
-        height: 460,
-        showCard: true
-      }, { padding: '0' }, 'full'),
-      templateBlock(BlockType.TESTIMONIALS, 6, {
-        layout: 'grid',
-        showRating: true,
-        testimonials: [
-          { name: 'Cliente comprador', text: 'A pagina trouxe todas as informacoes que eu precisava antes de falar com o corretor.', rating: 5 },
-          { name: 'Investidor', text: 'O material tecnico e a agenda facilitaram a tomada de decisao.', rating: 5 },
-          { name: 'Corretor responsavel', text: 'Os leads chegam mais qualificados porque a landing ja filtra o interesse.', rating: 5 }
-        ]
-      }, { padding: '80px 20px', backgroundColor: '#f8fafc' }),
-      templateBlock(BlockType.FORM, 7, {
-        title: input.formTitle,
-        fields: premiumFormFields,
-        submitText: input.formSubmit,
-        successMessage: 'Recebemos seus dados. Um especialista vai falar com voce.'
-      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
-      templateBlock(BlockType.CTA, 8, {
-        title: 'Pronto para avancar?',
-        description: 'Fale com o corretor, agende uma visita ou receba o material completo no WhatsApp.',
-        buttonText: input.ctaText,
-        buttonLink: '#contato',
-        backgroundColor: theme.primaryColor,
-        textColor: '#ffffff'
-      }, { padding: '0' }, 'full')
-    ]
+      templateBlock(
+        BlockType.HERO,
+        0,
+        {
+          title: input.heroTitle,
+          subtitle: input.heroSubtitle,
+          backgroundImage: input.thumbnail,
+          overlayOpacity: 0.42,
+          ctaText: input.ctaText,
+          ctaLink: '#contato',
+          height: 720,
+          alignment: 'center',
+          textColor: '#ffffff',
+        },
+        { padding: '0' },
+        'full'
+      ),
+      templateBlock(
+        BlockType.STATS,
+        1,
+        {
+          stats: input.stats.map((stat) => ({ ...stat, icon: '' })),
+          columns: Math.min(4, input.stats.length),
+        },
+        { padding: '80px 20px', backgroundColor: '#f8fafc' }
+      ),
+      templateBlock(
+        BlockType.TEXT,
+        2,
+        {
+          content: `<h2>${input.name}</h2><p>${input.description}</p><ul>${input.highlights.map((item) => `<li>${item}</li>`).join('')}</ul>`,
+          alignment: 'left',
+          fontSize: 18,
+          fontWeight: 400,
+          color: theme.textColor,
+        },
+        { padding: '80px 20px' }
+      ),
+      templateBlock(
+        BlockType.GALLERY,
+        3,
+        {
+          images: galleryImages,
+          columns: 4,
+          spacing: 18,
+          lightbox: true,
+        },
+        { padding: '60px 20px', backgroundColor: '#ffffff' }
+      ),
+      templateBlock(
+        BlockType.VIDEO,
+        4,
+        {
+          title: 'Tour virtual e video de apresentacao',
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          autoplay: false,
+          loop: false,
+          muted: false,
+          controls: true,
+          coverImage: input.thumbnail,
+        },
+        { padding: '70px 20px', backgroundColor: '#f8fafc' }
+      ),
+      templateBlock(
+        BlockType.MAP,
+        5,
+        {
+          address: input.location,
+          title: 'Localizacao estrategica',
+          description:
+            'Mapa integrado para orientar visitas, proximidades e logistica.',
+          zoom: 14,
+          height: 460,
+          showCard: true,
+        },
+        { padding: '0' },
+        'full'
+      ),
+      templateBlock(
+        BlockType.TESTIMONIALS,
+        6,
+        {
+          layout: 'grid',
+          showRating: true,
+          testimonials: [
+            {
+              name: 'Cliente comprador',
+              text: 'A pagina trouxe todas as informacoes que eu precisava antes de falar com o corretor.',
+              rating: 5,
+            },
+            {
+              name: 'Investidor',
+              text: 'O material tecnico e a agenda facilitaram a tomada de decisao.',
+              rating: 5,
+            },
+            {
+              name: 'Corretor responsavel',
+              text: 'Os leads chegam mais qualificados porque a landing ja filtra o interesse.',
+              rating: 5,
+            },
+          ],
+        },
+        { padding: '80px 20px', backgroundColor: '#f8fafc' }
+      ),
+      templateBlock(
+        BlockType.FORM,
+        7,
+        {
+          title: input.formTitle,
+          fields: premiumFormFields,
+          submitText: input.formSubmit,
+          successMessage:
+            'Recebemos seus dados. Um especialista vai falar com voce.',
+        },
+        { padding: '80px 20px', backgroundColor: '#ffffff' }
+      ),
+      templateBlock(
+        BlockType.CTA,
+        8,
+        {
+          title: 'Pronto para avancar?',
+          description:
+            'Fale com o corretor, agende uma visita ou receba o material completo no WhatsApp.',
+          buttonText: input.ctaText,
+          buttonLink: '#contato',
+          backgroundColor: theme.primaryColor,
+          textColor: '#ffffff',
+        },
+        { padding: '0' },
+        'full'
+      ),
+    ],
   };
 };
 
@@ -213,7 +323,7 @@ export const premiumBaseSections = [
   'FAQ',
   'Agenda',
   'CRM',
-  'SEO e LGPD'
+  'SEO e LGPD',
 ];
 
 type DesignedTemplateInput = {
@@ -258,54 +368,190 @@ type DesignedTemplateInput = {
 };
 
 export const landingImage = {
-  mansion: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?q=80&w=1920&auto=format&fit=crop',
-  house: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1920&auto=format&fit=crop',
-  interior: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop',
-  condo: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?q=80&w=1600&auto=format&fit=crop',
-  warehouse: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1920&auto=format&fit=crop',
-  warehouseInside: 'https://images.unsplash.com/photo-1565793298595-6a879b1d9492?q=80&w=1600&auto=format&fit=crop',
+  mansion:
+    'https://images.unsplash.com/photo-1613977257363-707ba9348227?q=80&w=1920&auto=format&fit=crop',
+  house:
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1920&auto=format&fit=crop',
+  interior:
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop',
+  condo:
+    'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?q=80&w=1600&auto=format&fit=crop',
+  warehouse:
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1920&auto=format&fit=crop',
+  warehouseInside:
+    'https://images.unsplash.com/photo-1565793298595-6a879b1d9492?q=80&w=1600&auto=format&fit=crop',
   farm: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1920&auto=format&fit=crop',
-  crops: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
-  launch: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1920&auto=format&fit=crop',
-  luxuryApt: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=1920&auto=format&fit=crop',
-  family: 'https://images.unsplash.com/photo-1597047084897-51e81819a499?q=80&w=1920&auto=format&fit=crop',
+  crops:
+    'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
+  launch:
+    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1920&auto=format&fit=crop',
+  luxuryApt:
+    'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=1920&auto=format&fit=crop',
+  family:
+    'https://images.unsplash.com/photo-1597047084897-51e81819a499?q=80&w=1920&auto=format&fit=crop',
   lots: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920&auto=format&fit=crop',
-  broker: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop',
-  map: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'
+  broker:
+    'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop',
+  map: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop',
 };
 
-export const buildDesignedTemplate = (input: DesignedTemplateInput): LandingPageTemplate => {
+export const buildDesignedTemplate = (
+  input: DesignedTemplateInput
+): LandingPageTemplate => {
   const cls = `lp-designed-${input.id}`;
   const fieldToken = (key: string) => `{{${key}}}`;
   const editableFields = [
-    { key: 'logo', label: 'Logo / nome da marca', type: 'text' as const, value: input.logo },
-    { key: 'whatsappLabel', label: 'Botao do topo', type: 'text' as const, value: 'Fale no WhatsApp' },
-    { key: 'badge', label: 'Etiqueta do hero', type: 'text' as const, value: input.badge },
-    { key: 'headline', label: 'Titulo principal', type: 'textarea' as const, value: input.headline },
-    { key: 'highlight', label: 'Trecho destacado do titulo', type: 'text' as const, value: input.highlight || '' },
-    { key: 'subtitle', label: 'Subtitulo', type: 'textarea' as const, value: input.subtitle },
-    { key: 'location', label: 'Localizacao', type: 'text' as const, value: input.location },
-    { key: 'price', label: 'Preco / chamada de valor', type: 'text' as const, value: input.price || '' },
-    { key: 'primaryCta', label: 'Botao principal', type: 'text' as const, value: input.primaryCta },
-    { key: 'secondaryCta', label: 'Botao secundario', type: 'text' as const, value: input.secondaryCta },
-    { key: 'featuresTitle', label: 'Titulo dos diferenciais', type: 'textarea' as const, value: 'Solucoes desenhadas para converter leads de verdade.' },
-    { key: 'galleryTitle', label: 'Titulo da galeria', type: 'textarea' as const, value: input.group === 'Lancamentos' ? 'Ambientes, plantas e diferenciais.' : input.group === 'Rural' ? 'Dados, imagens e materiais tecnicos.' : 'Oportunidades selecionadas para voce.' },
-    { key: 'mapTitle', label: 'Titulo da localizacao', type: 'textarea' as const, value: 'Perto do que importa, longe da duvida.' },
-    { key: 'processTitle', label: 'Titulo do processo', type: 'textarea' as const, value: 'Fluxo simples, visual e pronto para atendimento.' },
-    { key: 'testimonialTitle', label: 'Titulo da prova social', type: 'textarea' as const, value: 'Pagina feita para gerar confianca antes do primeiro contato.' },
-    { key: 'testimonialText', label: 'Texto do depoimento', type: 'textarea' as const, value: 'Informacoes completas, atendimento rapido e processo transparente do inicio ao fim.' },
-    { key: 'formTitle', label: 'Titulo do formulario', type: 'text' as const, value: input.formTitle },
-    { key: 'formSubtitle', label: 'Subtitulo do formulario', type: 'textarea' as const, value: input.formSubtitle },
-    { key: 'faqTitle', label: 'Titulo do FAQ', type: 'text' as const, value: 'Duvidas frequentes' },
-    { key: 'footerDescription', label: 'Descricao do rodape', type: 'textarea' as const, value: 'Landing premium com WhatsApp, CRM, agenda, SEO, LGPD e funil integrado.' }
+    {
+      key: 'logo',
+      label: 'Logo / nome da marca',
+      type: 'text' as const,
+      value: input.logo,
+    },
+    {
+      key: 'whatsappLabel',
+      label: 'Botao do topo',
+      type: 'text' as const,
+      value: 'Fale no WhatsApp',
+    },
+    {
+      key: 'badge',
+      label: 'Etiqueta do hero',
+      type: 'text' as const,
+      value: input.badge,
+    },
+    {
+      key: 'headline',
+      label: 'Titulo principal',
+      type: 'textarea' as const,
+      value: input.headline,
+    },
+    {
+      key: 'highlight',
+      label: 'Trecho destacado do titulo',
+      type: 'text' as const,
+      value: input.highlight || '',
+    },
+    {
+      key: 'subtitle',
+      label: 'Subtitulo',
+      type: 'textarea' as const,
+      value: input.subtitle,
+    },
+    {
+      key: 'location',
+      label: 'Localizacao',
+      type: 'text' as const,
+      value: input.location,
+    },
+    {
+      key: 'price',
+      label: 'Preco / chamada de valor',
+      type: 'text' as const,
+      value: input.price || '',
+    },
+    {
+      key: 'primaryCta',
+      label: 'Botao principal',
+      type: 'text' as const,
+      value: input.primaryCta,
+    },
+    {
+      key: 'secondaryCta',
+      label: 'Botao secundario',
+      type: 'text' as const,
+      value: input.secondaryCta,
+    },
+    {
+      key: 'featuresTitle',
+      label: 'Titulo dos diferenciais',
+      type: 'textarea' as const,
+      value: 'Solucoes desenhadas para converter leads de verdade.',
+    },
+    {
+      key: 'galleryTitle',
+      label: 'Titulo da galeria',
+      type: 'textarea' as const,
+      value:
+        input.group === 'Lancamentos'
+          ? 'Ambientes, plantas e diferenciais.'
+          : input.group === 'Rural'
+            ? 'Dados, imagens e materiais tecnicos.'
+            : 'Oportunidades selecionadas para voce.',
+    },
+    {
+      key: 'mapTitle',
+      label: 'Titulo da localizacao',
+      type: 'textarea' as const,
+      value: 'Perto do que importa, longe da duvida.',
+    },
+    {
+      key: 'processTitle',
+      label: 'Titulo do processo',
+      type: 'textarea' as const,
+      value: 'Fluxo simples, visual e pronto para atendimento.',
+    },
+    {
+      key: 'testimonialTitle',
+      label: 'Titulo da prova social',
+      type: 'textarea' as const,
+      value: 'Pagina feita para gerar confianca antes do primeiro contato.',
+    },
+    {
+      key: 'testimonialText',
+      label: 'Texto do depoimento',
+      type: 'textarea' as const,
+      value:
+        'Informacoes completas, atendimento rapido e processo transparente do inicio ao fim.',
+    },
+    {
+      key: 'formTitle',
+      label: 'Titulo do formulario',
+      type: 'text' as const,
+      value: input.formTitle,
+    },
+    {
+      key: 'formSubtitle',
+      label: 'Subtitulo do formulario',
+      type: 'textarea' as const,
+      value: input.formSubtitle,
+    },
+    {
+      key: 'faqTitle',
+      label: 'Titulo do FAQ',
+      type: 'text' as const,
+      value: 'Duvidas frequentes',
+    },
+    {
+      key: 'footerDescription',
+      label: 'Descricao do rodape',
+      type: 'textarea' as const,
+      value:
+        'Landing premium com WhatsApp, CRM, agenda, SEO, LGPD e funil integrado.',
+    },
   ];
-  const formOptions = input.group === 'Rural'
-    ? ['Compra de fazenda', 'Venda de fazenda', 'Visita tecnica', 'Receber dossie']
-    : input.group === 'Lancamentos'
-      ? ['Lista VIP', 'Plantas', 'Simulacao', 'Agendar apresentacao']
-      : input.group === 'Aluguel'
-        ? ['Visita presencial', 'Visita por video', 'Pre-cadastro', 'WhatsApp']
-        : ['Agendar visita', 'Falar no WhatsApp', 'Receber material', 'Avaliacao'];
+  const formOptions =
+    input.group === 'Rural'
+      ? [
+          'Compra de fazenda',
+          'Venda de fazenda',
+          'Visita tecnica',
+          'Receber dossie',
+        ]
+      : input.group === 'Lancamentos'
+        ? ['Lista VIP', 'Plantas', 'Simulacao', 'Agendar apresentacao']
+        : input.group === 'Aluguel'
+          ? [
+              'Visita presencial',
+              'Visita por video',
+              'Pre-cadastro',
+              'WhatsApp',
+            ]
+          : [
+              'Agendar visita',
+              'Falar no WhatsApp',
+              'Receber material',
+              'Avaliacao',
+            ];
 
   const html = `
     <main class="${cls}">
@@ -328,16 +574,25 @@ export const buildDesignedTemplate = (input: DesignedTemplateInput): LandingPage
           </div>
         </div>
         <aside class="lp-hero-panel">
-          ${input.stats.slice(0, 4).map((stat) => `
+          ${input.stats
+            .slice(0, 4)
+            .map(
+              (stat) => `
             <div><span>${stat.icon}</span><strong>${stat.value}</strong><small>${stat.label}</small></div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </aside>
       </section>
 
       <section class="lp-statbar">
-        ${input.stats.map((stat) => `
+        ${input.stats
+          .map(
+            (stat) => `
           <div><span>${stat.icon}</span><strong>${stat.value}</strong><small>${stat.label}</small></div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </section>
 
       <section class="lp-section lp-features">
@@ -346,13 +601,17 @@ export const buildDesignedTemplate = (input: DesignedTemplateInput): LandingPage
           <h2>${fieldToken('featuresTitle')}</h2>
         </div>
         <div class="lp-feature-grid">
-          ${input.features.map((feature) => `
+          ${input.features
+            .map(
+              (feature) => `
             <article>
               <span>${feature.icon}</span>
               <h3>${feature.title}</h3>
               <p>${feature.text}</p>
             </article>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       </section>
 
@@ -365,7 +624,9 @@ export const buildDesignedTemplate = (input: DesignedTemplateInput): LandingPage
           <a href="#contato">Ver todos</a>
         </div>
         <div class="lp-card-grid">
-          ${input.cards.map((card) => `
+          ${input.cards
+            .map(
+              (card) => `
             <article>
               <img src="${card.image}" alt="${card.title}" />
               <div>
@@ -374,7 +635,9 @@ export const buildDesignedTemplate = (input: DesignedTemplateInput): LandingPage
                 ${card.price ? `<b>${card.price}</b>` : ''}
               </div>
             </article>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       </section>
 
@@ -401,9 +664,18 @@ export const buildDesignedTemplate = (input: DesignedTemplateInput): LandingPage
           <h2>${fieldToken('processTitle')}</h2>
         </div>
         <div class="lp-steps">
-          ${['Contato qualificado', 'Analise do perfil', 'Visita ou material', 'Negociacao segura'].map((step, index) => `
+          ${[
+            'Contato qualificado',
+            'Analise do perfil',
+            'Visita ou material',
+            'Negociacao segura',
+          ]
+            .map(
+              (step, index) => `
             <div><b>${index + 1}</b><strong>${step}</strong><p>${index === 0 ? 'Lead entra pela landing.' : index === 1 ? 'CRM classifica e organiza.' : index === 2 ? 'Corretor recebe contexto.' : 'Tudo fica registrado.'}</p></div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       </section>
 
@@ -472,11 +744,17 @@ export const buildDesignedTemplate = (input: DesignedTemplateInput): LandingPage
       backgroundColor: input.palette.background,
       textColor: input.palette.text,
       fontFamily: 'Inter',
-      headingFontFamily: 'Georgia'
+      headingFontFamily: 'Georgia',
     },
     blocks: [
-      templateBlock(BlockType.CUSTOM_HTML, 0, { html, css, editableFields }, { padding: '0' }, 'full')
-    ]
+      templateBlock(
+        BlockType.CUSTOM_HTML,
+        0,
+        { html, css, editableFields },
+        { padding: '0' },
+        'full'
+      ),
+    ],
   };
 };
 
@@ -492,7 +770,7 @@ export const designedSections = [
   'Prova social',
   'Formulario qualificado',
   'FAQ',
-  'Rodape completo'
+  'Rodape completo',
 ];
 
 type ElementorReferenceInput = {
@@ -534,10 +812,12 @@ export const defaultElementorResources = [
   'Agenda',
   'CRM',
   'SEO',
-  'LGPD'
+  'LGPD',
 ];
 
-export const buildElementorReferenceTemplate = (input: ElementorReferenceInput): LandingPageTemplate =>
+export const buildElementorReferenceTemplate = (
+  input: ElementorReferenceInput
+): LandingPageTemplate =>
   buildDesignedTemplate({
     ...input,
     nav: ['Inicio', 'Detalhes', 'Fotos', 'Localizacao', 'FAQ', 'Contato'],
@@ -545,6 +825,5 @@ export const buildElementorReferenceTemplate = (input: ElementorReferenceInput):
     pipeline: `${input.group} - ${input.objective}`,
     crmTags: [`Tema ${input.group}`, input.objective, input.category],
     conversionEvent: 'landing_template_reference_submit',
-    sections: designedSections
+    sections: designedSections,
   });
-

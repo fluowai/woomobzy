@@ -5,9 +5,9 @@ const IV_BYTES = 12;
 
 function getEncryptionKey() {
   const material =
-    process.env.ORULO_CREDENTIALS_ENCRYPTION_KEY
-    || process.env.EMAIL_ENCRYPTION_KEY
-    || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    process.env.ORULO_CREDENTIALS_ENCRYPTION_KEY ||
+    process.env.EMAIL_ENCRYPTION_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!material) {
     throw new Error(
@@ -19,7 +19,11 @@ function getEncryptionKey() {
     return Buffer.from(material, 'hex');
   }
 
-  return crypto.createHash('sha256').update(material).digest().subarray(0, KEY_BYTES);
+  return crypto
+    .createHash('sha256')
+    .update(material)
+    .digest()
+    .subarray(0, KEY_BYTES);
 }
 
 export function encryptOruloPayload(payload) {
@@ -40,7 +44,9 @@ export function encryptOruloPayload(payload) {
 }
 
 export function decryptOruloPayload(value) {
-  const [version, ivValue, tagValue, encryptedValue] = String(value || '').split(':');
+  const [version, ivValue, tagValue, encryptedValue] = String(
+    value || ''
+  ).split(':');
   if (version !== 'v1' || !ivValue || !tagValue || !encryptedValue) {
     throw new Error('Formato de credencial Órulo criptografada inválido.');
   }

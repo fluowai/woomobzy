@@ -49,10 +49,21 @@ const priorityLabel: Record<string, { label: string; color: string }> = {
   urgent: { label: 'Urgente', color: 'bg-red-100 text-red-600' },
 };
 
-const statusLabel: Record<string, { label: string; color: string; icon: string }> = {
+const statusLabel: Record<
+  string,
+  { label: string; color: string; icon: string }
+> = {
   open: { label: 'Aberto', color: 'bg-orange-100 text-orange-700', icon: '🟠' },
-  in_progress: { label: 'Em Andamento', color: 'bg-blue-100 text-blue-700', icon: '🔵' },
-  resolved: { label: 'Resolvido', color: 'bg-green-100 text-green-700', icon: '🟢' },
+  in_progress: {
+    label: 'Em Andamento',
+    color: 'bg-blue-100 text-blue-700',
+    icon: '🔵',
+  },
+  resolved: {
+    label: 'Resolvido',
+    color: 'bg-green-100 text-green-700',
+    icon: '🟢',
+  },
   closed: { label: 'Fechado', color: 'bg-gray-100 text-gray-500', icon: '⚪' },
 };
 
@@ -63,7 +74,9 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
   // New Ticket form
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [priority, setPriority] = useState<
+    'low' | 'medium' | 'high' | 'urgent'
+  >('medium');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -194,16 +207,24 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
-        style={{ maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
-        
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
+        style={{ maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+      >
         {/* ═══════ HEADER ═══════ */}
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between"
-          style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)' }}>
+        <div
+          className="p-5 border-b border-gray-100 flex items-center justify-between"
+          style={{
+            background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+          }}
+        >
           <div className="flex items-center gap-3 text-white">
             {tab === 'detail' ? (
               <button
-                onClick={() => { setTab('tickets'); setSelectedTicket(null); }}
+                onClick={() => {
+                  setTab('tickets');
+                  setSelectedTicket(null);
+                }}
                 className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
               >
                 <ArrowLeft size={20} />
@@ -213,11 +234,13 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
             )}
             <div>
               <h3 className="text-lg font-bold">
-                {tab === 'detail' ? 'Detalhes do Chamado' : 'Central de Suporte'}
+                {tab === 'detail'
+                  ? 'Detalhes do Chamado'
+                  : 'Central de Suporte'}
               </h3>
               <p className="text-xs opacity-80">
-                {tab === 'detail' 
-                  ? selectedTicket?.subject 
+                {tab === 'detail'
+                  ? selectedTicket?.subject
                   : 'Abra chamados e acompanhe suas solicitações'}
               </p>
             </div>
@@ -265,7 +288,6 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
 
         {/* ═══════ CONTENT ═══════ */}
         <div className="flex-1 overflow-y-auto">
-
           {/* ────── TICKETS LIST ────── */}
           {tab === 'tickets' && (
             <div>
@@ -279,9 +301,12 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                   <div className="w-16 h-16 bg-gray-100 text-gray-300 rounded-full flex items-center justify-center mb-4">
                     <MessageCircle size={32} />
                   </div>
-                  <h4 className="text-lg font-bold text-gray-700 mb-2">Nenhum chamado</h4>
+                  <h4 className="text-lg font-bold text-gray-700 mb-2">
+                    Nenhum chamado
+                  </h4>
                   <p className="text-sm text-gray-400 mb-6 max-w-xs">
-                    Você ainda não abriu nenhum chamado de suporte. Precisa de ajuda? Clique abaixo.
+                    Você ainda não abriu nenhum chamado de suporte. Precisa de
+                    ajuda? Clique abaixo.
                   </p>
                   <button
                     onClick={() => setTab('new')}
@@ -294,7 +319,8 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                 <div className="divide-y divide-gray-50">
                   {tickets.map((ticket) => {
                     const st = statusLabel[ticket.status] || statusLabel.open;
-                    const pr = priorityLabel[ticket.priority] || priorityLabel.medium;
+                    const pr =
+                      priorityLabel[ticket.priority] || priorityLabel.medium;
                     return (
                       <button
                         key={ticket.id}
@@ -303,19 +329,23 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                       >
                         {/* Status dot */}
                         <div className="text-xl flex-shrink-0">{st.icon}</div>
-                        
+
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-bold text-gray-800 text-sm truncate">
                               {ticket.subject}
                             </h4>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pr.color}`}>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${pr.color}`}
+                            >
                               {pr.label}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.color}`}>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.color}`}
+                            >
                               {st.label}
                             </span>
                             <span className="text-[11px] text-gray-400 flex items-center gap-1">
@@ -326,7 +356,10 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                         </div>
 
                         {/* Arrow */}
-                        <ChevronRight size={16} className="text-gray-300 group-hover:text-indigo-400 transition-colors" />
+                        <ChevronRight
+                          size={16}
+                          className="text-gray-300 group-hover:text-indigo-400 transition-colors"
+                        />
                       </button>
                     );
                   })}
@@ -398,7 +431,10 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                   </div>
 
                   <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 flex gap-3">
-                    <AlertTriangle className="text-amber-600 shrink-0" size={18} />
+                    <AlertTriangle
+                      className="text-amber-600 shrink-0"
+                      size={18}
+                    />
                     <p className="text-xs text-amber-800 leading-relaxed font-medium">
                       <strong>Dica:</strong> Detalhe o máximo possível para que
                       possamos resolver seu problema no primeiro contato.
@@ -410,7 +446,9 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                     disabled={loading}
                     className="w-full py-3.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {loading ? 'Enviando...' : (
+                    {loading ? (
+                      'Enviando...'
+                    ) : (
                       <>
                         <Send size={18} /> Enviar Chamado
                       </>
@@ -423,21 +461,43 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
 
           {/* ────── TICKET DETAIL / CONVERSATION ────── */}
           {tab === 'detail' && selectedTicket && (
-            <div className="flex flex-col" style={{ height: 'calc(85vh - 140px)' }}>
+            <div
+              className="flex flex-col"
+              style={{ height: 'calc(85vh - 140px)' }}
+            >
               {/* Ticket Info Header */}
               <div className="p-4 bg-gray-50 border-b border-gray-100">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                      (statusLabel[selectedTicket.status] || statusLabel.open).color
-                    }`}>
-                      {(statusLabel[selectedTicket.status] || statusLabel.open).icon}{' '}
-                      {(statusLabel[selectedTicket.status] || statusLabel.open).label}
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                        (statusLabel[selectedTicket.status] || statusLabel.open)
+                          .color
+                      }`}
+                    >
+                      {
+                        (statusLabel[selectedTicket.status] || statusLabel.open)
+                          .icon
+                      }{' '}
+                      {
+                        (statusLabel[selectedTicket.status] || statusLabel.open)
+                          .label
+                      }
                     </span>
-                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                      (priorityLabel[selectedTicket.priority] || priorityLabel.medium).color
-                    }`}>
-                      {(priorityLabel[selectedTicket.priority] || priorityLabel.medium).label}
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                        (
+                          priorityLabel[selectedTicket.priority] ||
+                          priorityLabel.medium
+                        ).color
+                      }`}
+                    >
+                      {
+                        (
+                          priorityLabel[selectedTicket.priority] ||
+                          priorityLabel.medium
+                        ).label
+                      }
                     </span>
                   </div>
                   <span className="text-[11px] text-gray-400">
@@ -459,7 +519,10 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
               <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
-                    <MessageCircle size={32} className="mx-auto text-gray-200 mb-3" />
+                    <MessageCircle
+                      size={32}
+                      className="mx-auto text-gray-200 mb-3"
+                    />
                     <p className="text-sm text-gray-400 font-medium">
                       Aguardando resposta da equipe de suporte...
                     </p>
@@ -482,14 +545,19 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                       >
                         <div
                           className={`text-[10px] font-bold mb-1 ${
-                            msg.is_admin_reply ? 'text-indigo-500' : 'text-white/70'
+                            msg.is_admin_reply
+                              ? 'text-indigo-500'
+                              : 'text-white/70'
                           }`}
                         >
-                          {msg.is_admin_reply ? '🛡️ Equipe Suporte' : 'Você'}{' '}
-                          • {new Date(msg.created_at).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {msg.is_admin_reply ? '🛡️ Equipe Suporte' : 'Você'} •{' '}
+                          {new Date(msg.created_at).toLocaleTimeString(
+                            'pt-BR',
+                            {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }
+                          )}
                         </div>
                         <p className="text-sm leading-relaxed">{msg.message}</p>
                       </div>
@@ -500,31 +568,40 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               {/* Reply Input */}
-              {selectedTicket.status !== 'closed' && selectedTicket.status !== 'resolved' && (
-                <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-gray-100 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Escreva uma mensagem..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={sendingMessage || !newMessage.trim()}
-                    className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center gap-1.5 font-bold text-sm"
+              {selectedTicket.status !== 'closed' &&
+                selectedTicket.status !== 'resolved' && (
+                  <form
+                    onSubmit={handleSendMessage}
+                    className="p-3 bg-white border-t border-gray-100 flex gap-2"
                   >
-                    <Send size={14} />
-                  </button>
-                </form>
-              )}
+                    <input
+                      type="text"
+                      placeholder="Escreva uma mensagem..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={sendingMessage || !newMessage.trim()}
+                      className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center gap-1.5 font-bold text-sm"
+                    >
+                      <Send size={14} />
+                    </button>
+                  </form>
+                )}
 
               {/* Resolved/Closed banner */}
-              {(selectedTicket.status === 'closed' || selectedTicket.status === 'resolved') && (
+              {(selectedTicket.status === 'closed' ||
+                selectedTicket.status === 'resolved') && (
                 <div className="p-3 bg-green-50 border-t border-green-100 text-center">
                   <p className="text-sm text-green-700 font-bold flex items-center justify-center gap-2">
                     <CheckCircle size={16} />
-                    Este chamado foi {selectedTicket.status === 'resolved' ? 'resolvido' : 'encerrado'}.
+                    Este chamado foi{' '}
+                    {selectedTicket.status === 'resolved'
+                      ? 'resolvido'
+                      : 'encerrado'}
+                    .
                   </p>
                 </div>
               )}

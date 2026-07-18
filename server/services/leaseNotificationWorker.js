@@ -6,24 +6,31 @@ const DEFAULT_DAYS_BEFORE_DUE = 5;
 const DEFAULT_DAYS_BEFORE_ADJUSTMENT = 30;
 const DEFAULT_DAYS_BEFORE_EXPIRY = 30;
 const DEFAULT_OVERDUE_DAYS = 1;
-const NOTIFICATION_FROM_EMAIL = process.env.NOTIFICATION_FROM_EMAIL || 'noreply@wootech.com.br';
+const NOTIFICATION_FROM_EMAIL =
+  process.env.NOTIFICATION_FROM_EMAIL || 'noreply@wootech.com.br';
 
 export class LeaseNotificationWorker {
-
-  static async checkInvoicesDueSoon(orgId, daysAhead = DEFAULT_DAYS_BEFORE_DUE) {
+  static async checkInvoicesDueSoon(
+    orgId,
+    daysAhead = DEFAULT_DAYS_BEFORE_DUE
+  ) {
     const supabase = getSupabaseServer();
     const today = new Date();
-    const targetDate = new Date(today.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    const targetDate = new Date(
+      today.getTime() + daysAhead * 24 * 60 * 60 * 1000
+    );
 
     const { data: invoices, error } = await supabase
       .from('invoices')
-      .select(`
+      .select(
+        `
         *,
         lease:lease_id (
           contract_number, tenant_name, tenant_email, monthly_rent,
           organization_id
         )
-      `)
+      `
+      )
       .eq('organization_id', orgId)
       .eq('status', 'pendente')
       .gte('due_date', today.toISOString().split('T')[0])
@@ -47,29 +54,48 @@ export class LeaseNotificationWorker {
           },
           lease.tenant_email
         );
-        results.push({ invoice_id: inv.id, notified: true, method: 'email', to: lease.tenant_email });
+        results.push({
+          invoice_id: inv.id,
+          notified: true,
+          method: 'email',
+          to: lease.tenant_email,
+        });
       } catch (err) {
-        console.error('[NotificationWorker] Failed to send due-soon email:', err.message);
-        results.push({ invoice_id: inv.id, notified: false, error: err.message });
+        console.error(
+          '[NotificationWorker] Failed to send due-soon email:',
+          err.message
+        );
+        results.push({
+          invoice_id: inv.id,
+          notified: false,
+          error: err.message,
+        });
       }
     }
     return results;
   }
 
-  static async checkOverdueInvoices(orgId, overdueSinceDays = DEFAULT_OVERDUE_DAYS) {
+  static async checkOverdueInvoices(
+    orgId,
+    overdueSinceDays = DEFAULT_OVERDUE_DAYS
+  ) {
     const supabase = getSupabaseServer();
     const today = new Date();
-    const overdueDate = new Date(today.getTime() - overdueSinceDays * 24 * 60 * 60 * 1000);
+    const overdueDate = new Date(
+      today.getTime() - overdueSinceDays * 24 * 60 * 60 * 1000
+    );
 
     const { data: invoices, error } = await supabase
       .from('invoices')
-      .select(`
+      .select(
+        `
         *,
         lease:lease_id (
           contract_number, tenant_name, tenant_email, monthly_rent,
           organization_id
         )
-      `)
+      `
+      )
       .eq('organization_id', orgId)
       .eq('status', 'pendente')
       .lt('due_date', overdueDate.toISOString().split('T')[0]);
@@ -92,19 +118,36 @@ export class LeaseNotificationWorker {
           },
           lease.tenant_email
         );
-        results.push({ invoice_id: inv.id, notified: true, method: 'email', to: lease.tenant_email });
+        results.push({
+          invoice_id: inv.id,
+          notified: true,
+          method: 'email',
+          to: lease.tenant_email,
+        });
       } catch (err) {
-        console.error('[NotificationWorker] Failed to send overdue email:', err.message);
-        results.push({ invoice_id: inv.id, notified: false, error: err.message });
+        console.error(
+          '[NotificationWorker] Failed to send overdue email:',
+          err.message
+        );
+        results.push({
+          invoice_id: inv.id,
+          notified: false,
+          error: err.message,
+        });
       }
     }
     return results;
   }
 
-  static async checkUpcomingAdjustments(orgId, daysAhead = DEFAULT_DAYS_BEFORE_ADJUSTMENT) {
+  static async checkUpcomingAdjustments(
+    orgId,
+    daysAhead = DEFAULT_DAYS_BEFORE_ADJUSTMENT
+  ) {
     const supabase = getSupabaseServer();
     const today = new Date();
-    const targetDate = new Date(today.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    const targetDate = new Date(
+      today.getTime() + daysAhead * 24 * 60 * 60 * 1000
+    );
 
     const { data: leases, error } = await supabase
       .from('leases')
@@ -132,19 +175,36 @@ export class LeaseNotificationWorker {
           },
           lease.tenant_email
         );
-        results.push({ lease_id: lease.id, notified: true, method: 'email', to: lease.tenant_email });
+        results.push({
+          lease_id: lease.id,
+          notified: true,
+          method: 'email',
+          to: lease.tenant_email,
+        });
       } catch (err) {
-        console.error('[NotificationWorker] Failed to send adjustment email:', err.message);
-        results.push({ lease_id: lease.id, notified: false, error: err.message });
+        console.error(
+          '[NotificationWorker] Failed to send adjustment email:',
+          err.message
+        );
+        results.push({
+          lease_id: lease.id,
+          notified: false,
+          error: err.message,
+        });
       }
     }
     return results;
   }
 
-  static async checkContractsExpiringSoon(orgId, daysAhead = DEFAULT_DAYS_BEFORE_EXPIRY) {
+  static async checkContractsExpiringSoon(
+    orgId,
+    daysAhead = DEFAULT_DAYS_BEFORE_EXPIRY
+  ) {
     const supabase = getSupabaseServer();
     const today = new Date();
-    const targetDate = new Date(today.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    const targetDate = new Date(
+      today.getTime() + daysAhead * 24 * 60 * 60 * 1000
+    );
 
     const { data: leases, error } = await supabase
       .from('leases')
@@ -172,10 +232,22 @@ export class LeaseNotificationWorker {
           },
           lease.tenant_email
         );
-        results.push({ lease_id: lease.id, notified: true, method: 'email', to: lease.tenant_email });
+        results.push({
+          lease_id: lease.id,
+          notified: true,
+          method: 'email',
+          to: lease.tenant_email,
+        });
       } catch (err) {
-        console.error('[NotificationWorker] Failed to send expiry email:', err.message);
-        results.push({ lease_id: lease.id, notified: false, error: err.message });
+        console.error(
+          '[NotificationWorker] Failed to send expiry email:',
+          err.message
+        );
+        results.push({
+          lease_id: lease.id,
+          notified: false,
+          error: err.message,
+        });
       }
     }
     return results;
@@ -192,7 +264,10 @@ export class LeaseNotificationWorker {
 
   static _buildDueSoonMessage(inv, lease) {
     const dueDate = new Date(inv.due_date).toLocaleDateString('pt-BR');
-    const amount = Number(inv.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const amount = Number(inv.total).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
     return `
 Olá ${lease.tenant_name || 'Locatário(a)'},
 
@@ -209,7 +284,10 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
 
   static _buildOverdueMessage(inv, lease) {
     const dueDate = new Date(inv.due_date).toLocaleDateString('pt-BR');
-    const amount = Number(inv.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const amount = Number(inv.total).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
     return `
 Olá ${lease.tenant_name || 'Locatário(a)'},
 
@@ -228,7 +306,10 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     const adjDate = lease.next_rent_adjustment
       ? new Date(lease.next_rent_adjustment).toLocaleDateString('pt-BR')
       : 'em breve';
-    const currentRent = Number(lease.monthly_rent).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const currentRent = Number(lease.monthly_rent).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
     return `
 Olá ${lease.tenant_name || 'Locatário(a)'},
 

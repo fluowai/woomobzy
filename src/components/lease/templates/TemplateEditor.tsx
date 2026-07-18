@@ -1,15 +1,41 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FileText, Save, Eye, Upload, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import {
+  FileText,
+  Save,
+  Eye,
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  ArrowLeft,
+} from 'lucide-react';
 import type { ContractTemplate } from '../../../types/lease';
-import { getTemplate, createTemplate, updateTemplate, validateTemplate } from '../../../services/lease/leaseService';
+import {
+  getTemplate,
+  createTemplate,
+  updateTemplate,
+  validateTemplate,
+} from '../../../services/lease/leaseService';
 
 const REQUIRED_VARIABLES = [
-  'nome_locador', 'cpf_locador', 'nome_locatario', 'cpf_locatario',
-  'endereco_imovel', 'valor_aluguel', 'valor_caucao', 'data_inicio',
-  'data_fim', 'prazo_meses', 'dia_vencimento', 'indice_reajuste',
-  'tipo_garantia', 'multa_atraso', 'juros_atraso', 'cidade', 'data_geracao',
+  'nome_locador',
+  'cpf_locador',
+  'nome_locatario',
+  'cpf_locatario',
+  'endereco_imovel',
+  'valor_aluguel',
+  'valor_caucao',
+  'data_inicio',
+  'data_fim',
+  'prazo_meses',
+  'dia_vencimento',
+  'indice_reajuste',
+  'tipo_garantia',
+  'multa_atraso',
+  'juros_atraso',
+  'cidade',
+  'data_geracao',
 ];
 
 const DEFAULT_CONTENT = `CONTRATO DE LOCAÇÃO DE IMÓVEL URBANO
@@ -79,9 +105,9 @@ export const TemplateEditor: React.FC = () => {
 
   const validateContent = async () => {
     if (!content) return;
-    const extracted = [...content.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]);
+    const extracted = [...content.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
     const unique = [...new Set(extracted)];
-    const missing = REQUIRED_VARIABLES.filter(v => !unique.includes(v));
+    const missing = REQUIRED_VARIABLES.filter((v) => !unique.includes(v));
 
     setFoundVars(unique);
     setMissingVars(missing);
@@ -89,7 +115,7 @@ export const TemplateEditor: React.FC = () => {
   };
 
   const extractVars = () => {
-    const extracted = [...content.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]);
+    const extracted = [...content.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
     return [...new Set(extracted)];
   };
 
@@ -143,10 +169,13 @@ export const TemplateEditor: React.FC = () => {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-black uppercase italic tracking-tighter">
-              {isEditing ? 'Editar' : 'Novo'} <span className="text-blue-600">Modelo</span>
+              {isEditing ? 'Editar' : 'Novo'}{' '}
+              <span className="text-blue-600">Modelo</span>
             </h1>
             <p className="text-black/60 font-medium">
-              {isEditing ? 'Editando modelo de contrato' : 'Crie um novo modelo de contrato com variáveis dinâmicas'}
+              {isEditing
+                ? 'Editando modelo de contrato'
+                : 'Crie um novo modelo de contrato com variáveis dinâmicas'}
             </p>
           </div>
         </div>
@@ -163,10 +192,14 @@ export const TemplateEditor: React.FC = () => {
         {/* Config */}
         <div className="lg:col-span-1 space-y-6">
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">Configuração</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">
+              Configuração
+            </h3>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nome do Modelo</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Nome do Modelo
+                </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -175,7 +208,9 @@ export const TemplateEditor: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Descrição</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Descrição
+                </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -184,21 +219,29 @@ export const TemplateEditor: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-600">Modelo Ativo</label>
+                <label className="text-xs font-bold text-slate-600">
+                  Modelo Ativo
+                </label>
                 <button
                   onClick={() => setIsActive(!isActive)}
                   className={`w-12 h-6 rounded-full transition-all ${isActive ? 'bg-emerald-500' : 'bg-slate-200'}`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-all ${isActive ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                  <div
+                    className={`w-5 h-5 bg-white rounded-full shadow-sm transition-all ${isActive ? 'translate-x-6' : 'translate-x-0.5'}`}
+                  />
                 </button>
               </div>
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-600">Modelo Padrão</label>
+                <label className="text-xs font-bold text-slate-600">
+                  Modelo Padrão
+                </label>
                 <button
                   onClick={() => setIsDefault(!isDefault)}
                   className={`w-12 h-6 rounded-full transition-all ${isDefault ? 'bg-blue-600' : 'bg-slate-200'}`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-all ${isDefault ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                  <div
+                    className={`w-5 h-5 bg-white rounded-full shadow-sm transition-all ${isDefault ? 'translate-x-6' : 'translate-x-0.5'}`}
+                  />
                 </button>
               </div>
             </div>
@@ -206,33 +249,68 @@ export const TemplateEditor: React.FC = () => {
 
           {/* Upload DOCX */}
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">Upload de Arquivo</h3>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">
+              Upload de Arquivo
+            </h3>
             <label className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-all">
               <Upload size={24} className="text-slate-300" />
-              <span className="text-sm font-bold text-slate-500">Upload DOCX</span>
-              <span className="text-[10px] text-slate-400">ou arraste o arquivo aqui</span>
-              <input type="file" accept=".docx,.txt" onChange={handleFileUpload} className="hidden" />
+              <span className="text-sm font-bold text-slate-500">
+                Upload DOCX
+              </span>
+              <span className="text-[10px] text-slate-400">
+                ou arraste o arquivo aqui
+              </span>
+              <input
+                type="file"
+                accept=".docx,.txt"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
             </label>
           </section>
 
           {/* Variáveis */}
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">Variáveis</h3>
-            <div className={`p-3 rounded-xl text-xs font-bold mb-4 ${
-              isValid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-            }`}>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">
+              Variáveis
+            </h3>
+            <div
+              className={`p-3 rounded-xl text-xs font-bold mb-4 ${
+                isValid
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-amber-50 text-amber-700'
+              }`}
+            >
               <div className="flex items-center gap-2">
-                {isValid ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
-                {isValid ? 'Todas as variáveis obrigatórias presentes' : `${missingVars.length} variáveis obrigatórias faltando`}
+                {isValid ? (
+                  <CheckCircle size={14} />
+                ) : (
+                  <AlertCircle size={14} />
+                )}
+                {isValid
+                  ? 'Todas as variáveis obrigatórias presentes'
+                  : `${missingVars.length} variáveis obrigatórias faltando`}
               </div>
             </div>
             <div className="max-h-48 overflow-y-auto space-y-1">
               {foundVars.map((v) => (
-                <div key={v} className={`px-3 py-1.5 rounded-lg text-xs font-mono ${
-                  REQUIRED_VARIABLES.includes(v) ? 'bg-green-50 text-green-700' : 'bg-slate-50 text-slate-500'
-                }`}>
-                  {'{{'}{v}{'}}'}
-                  {REQUIRED_VARIABLES.includes(v) && <CheckCircle size={10} className="inline ml-1 text-green-500" />}
+                <div
+                  key={v}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono ${
+                    REQUIRED_VARIABLES.includes(v)
+                      ? 'bg-green-50 text-green-700'
+                      : 'bg-slate-50 text-slate-500'
+                  }`}
+                >
+                  {'{{'}
+                  {v}
+                  {'}}'}
+                  {REQUIRED_VARIABLES.includes(v) && (
+                    <CheckCircle
+                      size={10}
+                      className="inline ml-1 text-green-500"
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -243,11 +321,15 @@ export const TemplateEditor: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <section className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800">Conteúdo do Contrato</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                Conteúdo do Contrato
+              </h3>
               <button
                 onClick={() => setShowPreview(!showPreview)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  showPreview ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200'
+                  showPreview
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-slate-600 border border-slate-200'
                 }`}
               >
                 <Eye size={14} /> {showPreview ? 'Editar' : 'Preview'}
@@ -274,15 +356,19 @@ export const TemplateEditor: React.FC = () => {
 
           {/* Atalhos de variáveis */}
           <section className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Inserir Variável</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+              Inserir Variável
+            </p>
             <div className="flex flex-wrap gap-1.5">
               {REQUIRED_VARIABLES.map((v) => (
                 <button
                   key={v}
-                  onClick={() => setContent(prev => prev + `{{${v}}}`)}
+                  onClick={() => setContent((prev) => prev + `{{${v}}}`)}
                   className="px-2.5 py-1 text-[11px] font-mono bg-slate-50 text-slate-600 rounded-lg hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-slate-100 transition-all"
                 >
-                  {'{{'}{v}{'}}'}
+                  {'{{'}
+                  {v}
+                  {'}}'}
                 </button>
               ))}
             </div>

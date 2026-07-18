@@ -54,7 +54,11 @@ export default defineConfig(({ mode }) => {
           theme_color: '#16a34a',
           background_color: '#f8fafc',
           display: 'standalone',
-          display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
+          display_override: [
+            'window-controls-overlay',
+            'standalone',
+            'minimal-ui',
+          ],
           orientation: 'portrait-primary',
           lang: 'pt-BR',
           dir: 'ltr',

@@ -57,7 +57,13 @@ export type EmailAgendaActivity = {
   from_email?: string;
   email_id?: string | null;
   created_at: string;
-  leads?: { id: string; name: string; email?: string | null; phone?: string | null; status?: string | null } | null;
+  leads?: {
+    id: string;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    status?: string | null;
+  } | null;
   metadata?: Record<string, any>;
 };
 
@@ -93,7 +99,10 @@ export const emailService = {
     });
     if (search) params.set('search', search);
     const data = await callApi(`/api/email/emails?${params.toString()}`);
-    return data as { emails: EmailMessage[]; pagination: { total: number; page: number; pages: number } };
+    return data as {
+      emails: EmailMessage[];
+      pagination: { total: number; page: number; pages: number };
+    };
   },
 
   listAgenda: async () => {
@@ -124,7 +133,10 @@ export const emailService = {
       body: JSON.stringify({ body_html }),
     }),
 
-  updateEmail: async (emailId: string, patch: Partial<Pick<EmailMessage, 'is_read' | 'is_archived' | 'lead_id'>>) =>
+  updateEmail: async (
+    emailId: string,
+    patch: Partial<Pick<EmailMessage, 'is_read' | 'is_archived' | 'lead_id'>>
+  ) =>
     callApi(`/api/email/emails/${emailId}`, {
       method: 'PATCH',
       body: JSON.stringify(patch),

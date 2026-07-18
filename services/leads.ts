@@ -119,7 +119,10 @@ export const leadService = {
   },
 
   // Add lead activity
-  async addActivity(id: string, activity: { type: string; description: string; metadata?: any }) {
+  async addActivity(
+    id: string,
+    activity: { type: string; description: string; metadata?: any }
+  ) {
     const data = await callApi(`/api/crm/leads/${id}/activities`, {
       method: 'POST',
       body: JSON.stringify(activity),
@@ -137,7 +140,7 @@ export const leadService = {
     });
     return data;
   },
-  
+
   // Delete lead
   async delete(id: string) {
     const data = await callApi(`/api/crm/leads/${id}`, {
@@ -145,7 +148,7 @@ export const leadService = {
     });
     return data;
   },
-  
+
   // Bulk delete leads
   async bulkDelete(ids: string[]) {
     const data = await callApi('/api/crm/leads/bulk-delete', {
@@ -186,7 +189,11 @@ export const leadService = {
   async startDripCampaign(leadId: string, templateKey: string, leadData?: any) {
     const data = await callApi('/api/crm/drip/start', {
       method: 'POST',
-      body: JSON.stringify({ lead_id: leadId, template_key: templateKey, lead_data: leadData }),
+      body: JSON.stringify({
+        lead_id: leadId,
+        template_key: templateKey,
+        lead_data: leadData,
+      }),
     });
     return data;
   },
@@ -247,7 +254,9 @@ const mapToModel = (dbItem: any): Lead => ({
   organic_channel: dbItem.organic_channel,
   campaign: dbItem.campaign,
   last_contacted_at: dbItem.last_contacted_at,
-  matched_properties: Array.isArray(dbItem.matched_properties) ? dbItem.matched_properties : [],
+  matched_properties: Array.isArray(dbItem.matched_properties)
+    ? dbItem.matched_properties
+    : [],
   match_summary: dbItem.match_summary,
   matched_at: dbItem.matched_at,
   match_profile: dbItem.match_profile,

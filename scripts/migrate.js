@@ -31,7 +31,9 @@ console.log(`${colors.cyan}
 ${colors.reset}`);
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error(`${colors.red}❌ Erro: Variáveis de ambiente não configuradas${colors.reset}`);
+  console.error(
+    `${colors.red}❌ Erro: Variáveis de ambiente não configuradas${colors.reset}`
+  );
   console.log(`
 ${colors.yellow}Configure seu arquivo .env:${colors.reset}
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -51,7 +53,7 @@ async function checkConnection() {
       path: url.pathname,
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
       },
     };
@@ -67,12 +69,16 @@ async function checkConnection() {
 }
 
 async function main() {
-  console.log(`${colors.blue}📍 Verificando conexão com Supabase...${colors.reset}\n`);
+  console.log(
+    `${colors.blue}📍 Verificando conexão com Supabase...${colors.reset}\n`
+  );
 
   const connected = await checkConnection();
 
   if (!connected) {
-    console.error(`${colors.red}❌ Não consegui conectar ao Supabase${colors.reset}`);
+    console.error(
+      `${colors.red}❌ Não consegui conectar ao Supabase${colors.reset}`
+    );
     console.log(`
 ${colors.yellow}Verifique:${colors.reset}
 1. URL do Supabase está correta: ${SUPABASE_URL}
@@ -98,15 +104,21 @@ ${colors.yellow}Verifique:${colors.reset}
   console.log(`${colors.blue}Arquivos a executar:${colors.reset}`);
   MIGRATIONS.forEach((file, i) => {
     const exists = fs.existsSync(file);
-    const status = exists ? `${colors.green}✅${colors.reset}` : `${colors.red}❌${colors.reset}`;
+    const status = exists
+      ? `${colors.green}✅${colors.reset}`
+      : `${colors.red}❌${colors.reset}`;
     console.log(`  ${status} ${i + 1}. ${file}`);
   });
 
   console.log(`\n${colors.yellow}⚠️  IMPORTANTE:${colors.reset}`);
-  console.log(`A execução de migrações via API não é suportada diretamente no Supabase.`);
+  console.log(
+    `A execução de migrações via API não é suportada diretamente no Supabase.`
+  );
   console.log(`${colors.cyan}Use uma destas opções:${colors.reset}\n`);
 
-  console.log(`${colors.green}OPÇÃO 1: Web Interface (Recomendado - 5 minutos)${colors.reset}`);
+  console.log(
+    `${colors.green}OPÇÃO 1: Web Interface (Recomendado - 5 minutos)${colors.reset}`
+  );
   console.log(`
   1. Acesse: ${colors.cyan}https://app.supabase.com/${colors.reset}
   2. Vá para: ${colors.cyan}SQL Editor${colors.reset}
@@ -127,7 +139,9 @@ ${colors.yellow}Verifique:${colors.reset}
   4. Depois:  ${colors.cyan}supabase db push${colors.reset}
 `);
 
-  console.log(`${colors.green}OPÇÃO 3: Executar Manualmente via Node.js${colors.reset}`);
+  console.log(
+    `${colors.green}OPÇÃO 3: Executar Manualmente via Node.js${colors.reset}`
+  );
   console.log(`
   npm install @supabase/supabase-js dotenv
   node scripts/migrate-supabase.js
@@ -139,7 +153,9 @@ ${colors.yellow}Verifique:${colors.reset}
     console.log(`https://app.supabase.com/project/${projectId}/sql`);
   }
 
-  console.log(`\n${colors.cyan}🔍 Para verificar status depois, execute:${colors.reset}`);
+  console.log(
+    `\n${colors.cyan}🔍 Para verificar status depois, execute:${colors.reset}`
+  );
   console.log(`npm run check-db`);
 
   console.log(`\n`);

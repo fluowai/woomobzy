@@ -21,7 +21,8 @@ const VisualPreview: React.FC<VisualPreviewProps> = ({
             Identidade Visual Detectada
           </h2>
           <p className="text-slate-500">
-            Extraímos o DNA visual do site original para sugerir um tema WooTech Imob.
+            Extraímos o DNA visual do site original para sugerir um tema WooTech
+            Imob.
           </p>
         </div>
         <div className="flex gap-3">

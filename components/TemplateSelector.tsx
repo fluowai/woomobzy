@@ -25,11 +25,16 @@ const allLabel = 'Todos';
 const getUniqueValues = (
   templates: LandingPageTemplate[],
   getter: (template: LandingPageTemplate) => string | undefined
-) => [allLabel, ...Array.from(new Set(templates.map(getter).filter(Boolean) as string[]))];
+) => [
+  allLabel,
+  ...Array.from(new Set(templates.map(getter).filter(Boolean) as string[])),
+];
 
 const getResourceValues = (templates: LandingPageTemplate[]) => [
   allLabel,
-  ...Array.from(new Set(templates.flatMap((template) => template.resources || []))),
+  ...Array.from(
+    new Set(templates.flatMap((template) => template.resources || []))
+  ),
 ];
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -47,18 +52,26 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   const [resourceFilter, setResourceFilter] = useState(allLabel);
 
   const categories = useMemo(
-    () => getUniqueValues(LANDING_PAGE_TEMPLATES, (template) => template.group || template.category),
+    () =>
+      getUniqueValues(
+        LANDING_PAGE_TEMPLATES,
+        (template) => template.group || template.category
+      ),
     []
   );
   const objectives = useMemo(
-    () => getUniqueValues(LANDING_PAGE_TEMPLATES, (template) => template.objective),
+    () =>
+      getUniqueValues(LANDING_PAGE_TEMPLATES, (template) => template.objective),
     []
   );
   const styles = useMemo(
     () => getUniqueValues(LANDING_PAGE_TEMPLATES, (template) => template.style),
     []
   );
-  const resources = useMemo(() => getResourceValues(LANDING_PAGE_TEMPLATES), []);
+  const resources = useMemo(
+    () => getResourceValues(LANDING_PAGE_TEMPLATES),
+    []
+  );
 
   const filteredTemplates = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -85,9 +98,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         template.category === categoryFilter;
       const matchesObjective =
         objectiveFilter === allLabel || template.objective === objectiveFilter;
-      const matchesStyle = styleFilter === allLabel || template.style === styleFilter;
+      const matchesStyle =
+        styleFilter === allLabel || template.style === styleFilter;
       const matchesResource =
-        resourceFilter === allLabel || template.resources?.includes(resourceFilter);
+        resourceFilter === allLabel ||
+        template.resources?.includes(resourceFilter);
 
       return (
         matchesSearch &&
@@ -97,9 +112,17 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         matchesResource
       );
     });
-  }, [categoryFilter, objectiveFilter, resourceFilter, searchTerm, styleFilter]);
+  }, [
+    categoryFilter,
+    objectiveFilter,
+    resourceFilter,
+    searchTerm,
+    styleFilter,
+  ]);
 
-  const selectedTemplate = LANDING_PAGE_TEMPLATES.find((template) => template.id === selectedId);
+  const selectedTemplate = LANDING_PAGE_TEMPLATES.find(
+    (template) => template.id === selectedId
+  );
 
   const handleConfirm = () => {
     if (selectedId) {
@@ -111,11 +134,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     value: string;
     active: boolean;
     onClick: () => void;
-  }> = ({
-    value,
-    active,
-    onClick,
-  }) => (
+  }> = ({ value, active, onClick }) => (
     <button
       type="button"
       onClick={onClick}
@@ -257,7 +276,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         {filteredTemplates.map((template) => {
           const isSelected = selectedId === template.id;
           const sectionCount =
-            template.sectionCount || template.sections?.length || Math.max(template.blocks.length, 8);
+            template.sectionCount ||
+            template.sections?.length ||
+            Math.max(template.blocks.length, 8);
 
           return (
             <article
@@ -314,11 +335,15 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
                 <div className="mt-5 grid grid-cols-2 gap-3 text-xs text-slate-500">
                   <div className="rounded-xl bg-slate-50 p-3">
-                    <span className="block font-bold text-slate-900">Pipeline</span>
+                    <span className="block font-bold text-slate-900">
+                      Pipeline
+                    </span>
                     <span>{template.pipeline || 'CRM integrado'}</span>
                   </div>
                   <div className="rounded-xl bg-slate-50 p-3">
-                    <span className="block font-bold text-slate-900">Estilo</span>
+                    <span className="block font-bold text-slate-900">
+                      Estilo
+                    </span>
                     <span>{template.style || 'Profissional'}</span>
                   </div>
                 </div>
@@ -427,7 +452,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                         {previewTemplate.group || previewTemplate.category}
                       </span>
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-                        {previewTemplate.sectionCount || previewTemplate.sections?.length || previewTemplate.blocks.length} secoes
+                        {previewTemplate.sectionCount ||
+                          previewTemplate.sections?.length ||
+                          previewTemplate.blocks.length}{' '}
+                        secoes
                       </span>
                     </div>
                     <h3 className="text-2xl font-bold text-slate-950">
@@ -488,21 +516,22 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     Estrutura da pagina
                   </h4>
                   <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
-                    {(previewTemplate.sections || previewTemplate.blocks.map((block) => block.type)).map(
-                      (section, index) => (
-                        <div
-                          key={`${section}-${index}`}
-                          className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"
-                        >
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-bold text-indigo-600 shadow-sm">
-                            {index + 1}
-                          </span>
-                          <span className="text-sm font-semibold text-slate-700">
-                            {section}
-                          </span>
-                        </div>
-                      )
-                    )}
+                    {(
+                      previewTemplate.sections ||
+                      previewTemplate.blocks.map((block) => block.type)
+                    ).map((section, index) => (
+                      <div
+                        key={`${section}-${index}`}
+                        className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-bold text-indigo-600 shadow-sm">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm font-semibold text-slate-700">
+                          {section}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

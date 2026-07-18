@@ -24,7 +24,10 @@ router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.warn('[AIAgents] Falha ao listar ai_agents, usando fallback:', error.message);
+      console.warn(
+        '[AIAgents] Falha ao listar ai_agents, usando fallback:',
+        error.message
+      );
       const agents = await listFallbackAgentsSafe(supabase, req.orgId);
       return res.json({
         success: true,
@@ -42,7 +45,8 @@ router.get('/agents', verifyAuth, requireTenant, async (req, res) => {
       success: true,
       agents: [],
       setup_required: true,
-      message: 'Nao foi possivel carregar agentes agora. A tela foi carregada em modo seguro.',
+      message:
+        'Nao foi possivel carregar agentes agora. A tela foi carregada em modo seguro.',
     });
   }
 });
@@ -65,7 +69,9 @@ router.post('/agents', verifyAuth, requireTenant, async (req, res) => {
     if (error) {
       if (isMissingRelationError(error)) {
         const agent = await createFallbackAgent(supabase, req.orgId, payload);
-        return res.status(201).json({ success: true, agent, setup_required: true });
+        return res
+          .status(201)
+          .json({ success: true, agent, setup_required: true });
       }
       throw error;
     }
@@ -90,8 +96,14 @@ router.patch('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
 
     if (error) {
       if (isMissingRelationError(error)) {
-        const agent = await updateFallbackAgent(supabase, req.orgId, req.params.id, payload);
-        if (!agent) return res.status(404).json({ error: 'Agente nao encontrado' });
+        const agent = await updateFallbackAgent(
+          supabase,
+          req.orgId,
+          req.params.id,
+          payload
+        );
+        if (!agent)
+          return res.status(404).json({ error: 'Agente nao encontrado' });
         return res.json({ success: true, agent, setup_required: true });
       }
       throw error;

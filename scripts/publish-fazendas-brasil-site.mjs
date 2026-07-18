@@ -5,7 +5,8 @@ dotenv.config({ path: '.env' });
 
 const { Client } = pg;
 
-const rawConnectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+const rawConnectionString =
+  process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
 
 if (!rawConnectionString) {
   console.error('DATABASE_URL or SUPABASE_DB_URL is required.');
@@ -57,7 +58,7 @@ function pickColumns(columns, data) {
 async function upsertOrganization() {
   const orgColumns = await tableColumns('organizations');
   const ownerEmailClause = orgColumns.has('owner_email')
-    ? 'or lower(coalesce(owner_email, \'\')) = lower($7)'
+    ? "or lower(coalesce(owner_email, '')) = lower($7)"
     : '';
 
   await client.query(
@@ -115,7 +116,9 @@ async function upsertOrganization() {
   });
 
   if (rows[0]) {
-    const setSql = fields.map(([key], index) => `${key} = $${index + 1}`).join(', ');
+    const setSql = fields
+      .map(([key], index) => `${key} = $${index + 1}`)
+      .join(', ');
     await client.query(
       `update public.organizations set ${setSql} where id = $${fields.length + 1}`,
       [...fields.map(([, value]) => value), rows[0].id]
@@ -135,7 +138,12 @@ async function upsertOrganization() {
 
 async function upsertDomains(organizationId) {
   const columns = await tableColumns('domains');
-  if (columns.size === 0 || !columns.has('organization_id') || !columns.has('domain')) return;
+  if (
+    columns.size === 0 ||
+    !columns.has('organization_id') ||
+    !columns.has('domain')
+  )
+    return;
 
   const domains = [
     FAZENDAS.domain,
@@ -197,7 +205,9 @@ async function upsertSiteSettings(organizationId) {
     contact_phone: FAZENDAS.phone,
     contact_email: FAZENDAS.email,
     footer_text: `© ${new Date().getFullYear()} Fazendas Brasil. Todos os direitos reservados.`,
-    social_links: JSON.stringify({ whatsapp: `https://wa.me/${FAZENDAS.phoneDigits}` }),
+    social_links: JSON.stringify({
+      whatsapp: `https://wa.me/${FAZENDAS.phoneDigits}`,
+    }),
     home_content: JSON.stringify({
       broker_name: 'Renato Piovesana',
       broker_creci: 'CRECI 16644F',
@@ -219,7 +229,9 @@ async function upsertSiteSettings(organizationId) {
   if (rows[0]) {
     const fields = payload.filter(([key]) => key !== 'organization_id');
     if (fields.length === 0) return;
-    const setSql = fields.map(([key], index) => `${key} = $${index + 1}`).join(', ');
+    const setSql = fields
+      .map(([key], index) => `${key} = $${index + 1}`)
+      .join(', ');
     await client.query(
       `update public.site_settings set ${setSql} where organization_id = $${fields.length + 1}`,
       [...fields.map(([, value]) => value), organizationId]
@@ -237,7 +249,12 @@ async function upsertSiteSettings(organizationId) {
 
 async function ensurePublishedMarker(organizationId) {
   const columns = await tableColumns('landing_pages');
-  if (columns.size === 0 || !columns.has('organization_id') || !columns.has('slug')) return;
+  if (
+    columns.size === 0 ||
+    !columns.has('organization_id') ||
+    !columns.has('slug')
+  )
+    return;
 
   const { rows } = await client.query(
     `
@@ -285,8 +302,12 @@ async function ensurePublishedMarker(organizationId) {
   });
 
   if (rows[0]) {
-    const fields = payload.filter(([key]) => key !== 'organization_id' && key !== 'slug');
-    const setSql = fields.map(([key], index) => `${key} = $${index + 1}`).join(', ');
+    const fields = payload.filter(
+      ([key]) => key !== 'organization_id' && key !== 'slug'
+    );
+    const setSql = fields
+      .map(([key], index) => `${key} = $${index + 1}`)
+      .join(', ');
     await client.query(
       `update public.landing_pages set ${setSql} where id = $${fields.length + 1}`,
       [...fields.map(([, value]) => value), rows[0].id]
@@ -310,7 +331,9 @@ try {
   await upsertSiteSettings(organizationId);
   await ensurePublishedMarker(organizationId);
   await client.query('commit');
-  console.log(`Fazendas Brasil published for organization ${organizationId} at ${FAZENDAS.domain}`);
+  console.log(
+    `Fazendas Brasil published for organization ${organizationId} at ${FAZENDAS.domain}`
+  );
 } catch (error) {
   await client.query('rollback').catch(() => {});
   console.error('Failed to publish Fazendas Brasil site:', error.message);

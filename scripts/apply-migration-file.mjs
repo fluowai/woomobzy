@@ -6,7 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config();
 
 const migrationFile = process.argv[2];
-const rawConnectionString = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+const rawConnectionString =
+  process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -16,7 +17,9 @@ if (!migrationFile) {
 }
 
 if (!rawConnectionString && (!supabaseUrl || !serviceRoleKey)) {
-  console.error('Configure SUPABASE_DB_URL/DATABASE_URL ou VITE_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.');
+  console.error(
+    'Configure SUPABASE_DB_URL/DATABASE_URL ou VITE_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.'
+  );
   process.exit(1);
 }
 
@@ -46,7 +49,9 @@ try {
     await client.end();
   }
 } catch (directError) {
-  console.warn(`Postgres direto falhou (${directError.message}). Tentando RPC exec_sql...`);
+  console.warn(
+    `Postgres direto falhou (${directError.message}). Tentando RPC exec_sql...`
+  );
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw directError;

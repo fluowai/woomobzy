@@ -6,7 +6,9 @@ const DEFAULT_API_URL = 'same-origin';
 
 // Utility to handle API calls to the configured backend.
 export const getApiUrl = (path: string = '') => {
-  const baseUrl = normalizeApiBaseUrl(getRuntimeEnv('VITE_API_URL', DEFAULT_API_URL));
+  const baseUrl = normalizeApiBaseUrl(
+    getRuntimeEnv('VITE_API_URL', DEFAULT_API_URL)
+  );
   const sanitizedPath = path.startsWith('/') ? path : `/${path}`;
   const sanitizedBaseUrl = baseUrl.endsWith('/')
     ? baseUrl.slice(0, -1)
@@ -28,7 +30,10 @@ function normalizeApiBaseUrl(url: string): string {
 let _activeOrganizationId: string | null = null;
 let _activeOrganizationUserId: string | null = null;
 
-export function setActiveOrganizationId(id: string | null, userId?: string | null) {
+export function setActiveOrganizationId(
+  id: string | null,
+  userId?: string | null
+) {
   _activeOrganizationId = id;
   _activeOrganizationUserId = id && userId ? userId : null;
 }
@@ -75,8 +80,13 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   }
 
   const method = (options.method || 'GET').toUpperCase();
-  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-  if (!isFormData && !headers.has('Content-Type') && (options.body || method !== 'GET')) {
+  const isFormData =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
+  if (
+    !isFormData &&
+    !headers.has('Content-Type') &&
+    (options.body || method !== 'GET')
+  ) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -97,14 +107,17 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
       headers.set('Authorization', `Bearer ${refreshedSession.access_token}`);
       response = await request();
     } else {
-      refreshErrorMessage = refreshError?.message || 'nao foi possivel renovar a sessao';
+      refreshErrorMessage =
+        refreshError?.message || 'nao foi possivel renovar a sessao';
     }
   }
 
   if (!response.ok) {
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
-      throw new Error(`Backend indisponível em ${url}: resposta HTML (${response.status})`);
+      throw new Error(
+        `Backend indisponível em ${url}: resposta HTML (${response.status})`
+      );
     }
 
     if (response.status === 401) {
@@ -149,7 +162,9 @@ export const downloadApiFile = async (path: string, filename: string) => {
   const response = await fetch(url, { headers });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Erro ao baixar arquivo: ${response.statusText}`);
+    throw new Error(
+      errorData.error || `Erro ao baixar arquivo: ${response.statusText}`
+    );
   }
 
   const blob = await response.blob();
@@ -177,4 +192,3 @@ function getImpersonatedOrgId(): string | null {
 
   return null;
 }
-

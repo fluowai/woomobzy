@@ -14,7 +14,12 @@ const router = Router();
 
 const terminationSchema = z.object({
   lease_id: z.string().uuid(),
-  termination_type: z.enum(['acordo', 'unilateral_locatario', 'unilateral_locador', 'quebra_contratual']),
+  termination_type: z.enum([
+    'acordo',
+    'unilateral_locatario',
+    'unilateral_locador',
+    'quebra_contratual',
+  ]),
   termination_date: z.string(),
   reason: z.string().optional(),
   fine_amount: z.number().optional(),
@@ -29,7 +34,8 @@ const terminationSchema = z.object({
 router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { lease_id } = req.params;
-    if (!isValidUUID(lease_id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!isValidUUID(lease_id))
+      return res.status(400).json({ error: 'ID inválido' });
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
@@ -55,7 +61,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
     const validation = terminationSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();

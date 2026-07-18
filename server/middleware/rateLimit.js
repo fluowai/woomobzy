@@ -12,7 +12,10 @@ export const loginLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.', code: 'RATE_LIMIT_LOGIN' },
+  message: {
+    error: 'Muitas tentativas de login. Tente novamente em 15 minutos.',
+    code: 'RATE_LIMIT_LOGIN',
+  },
   keyGenerator: (req) => {
     // Rate limit por IP + email para prevenir credential stuffing
     const email = req.body?.email || 'unknown';
@@ -26,7 +29,10 @@ export const registerLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Limite de registros atingido. Tente novamente mais tarde.', code: 'RATE_LIMIT_REGISTER' },
+  message: {
+    error: 'Limite de registros atingido. Tente novamente mais tarde.',
+    code: 'RATE_LIMIT_REGISTER',
+  },
 });
 
 /** Public lead capture: max 20 por IP por hora (anti spam) */
@@ -35,7 +41,10 @@ export const publicLeadLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Muitas submissoes. Aguarde antes de tentar novamente.', code: 'RATE_LIMIT_LEAD' },
+  message: {
+    error: 'Muitas submissoes. Aguarde antes de tentar novamente.',
+    code: 'RATE_LIMIT_LEAD',
+  },
 });
 
 /** WhatsApp proxy: max 60 por IP por minuto */
@@ -44,7 +53,10 @@ export const whatsappLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Limite de requisicoes WhatsApp atingido.', code: 'RATE_LIMIT_WHATSAPP' },
+  message: {
+    error: 'Limite de requisicoes WhatsApp atingido.',
+    code: 'RATE_LIMIT_WHATSAPP',
+  },
 });
 
 /** WhatsApp internal (sem auth): max 30 por IP por minuto */
@@ -53,7 +65,10 @@ export const whatsappInternalLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Limite de requisicoes internas WhatsApp.', code: 'RATE_LIMIT_WHATSAPP_INTERNAL' },
+  message: {
+    error: 'Limite de requisicoes internas WhatsApp.',
+    code: 'RATE_LIMIT_WHATSAPP_INTERNAL',
+  },
 });
 
 /** Send welcome: max 10 por IP por hora (rota sem auth) */
@@ -62,7 +77,10 @@ export const sendWelcomeLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Muitas requisicoes de boas-vindas.', code: 'RATE_LIMIT_WELCOME' },
+  message: {
+    error: 'Muitas requisicoes de boas-vindas.',
+    code: 'RATE_LIMIT_WELCOME',
+  },
 });
 
 /** Quiz submission: max 30 por IP por hora */
@@ -71,7 +89,10 @@ export const quizLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Limite de respostas de quiz atingido.', code: 'RATE_LIMIT_QUIZ' },
+  message: {
+    error: 'Limite de respostas de quiz atingido.',
+    code: 'RATE_LIMIT_QUIZ',
+  },
 });
 
 /** Import/export: max 5 por IP por hora */
@@ -80,5 +101,8 @@ export const importLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Limite de importacoes atingido.', code: 'RATE_LIMIT_IMPORT' },
+  message: {
+    error: 'Limite de importacoes atingido.',
+    code: 'RATE_LIMIT_IMPORT',
+  },
 });

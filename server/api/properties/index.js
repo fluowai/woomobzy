@@ -13,13 +13,16 @@ import {
 
 const router = Router();
 
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 /**
  * GET /api/properties
@@ -60,14 +63,14 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     if (error) throw error;
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       properties: data,
       pagination: {
         total: count,
         page: Number(page),
-        limit: Number(limit)
-      }
+        limit: Number(limit),
+      },
     });
   } catch (err) {
     console.error('[Properties] List error:', err.message);
@@ -87,13 +90,13 @@ router.post('/', verifyAdmin, requireTenant, async (req, res) => {
       : isUrbanType(propertyData.property_type)
         ? 'urbano'
         : '';
-    
+
     const { data, error } = await supabase
       .from('properties')
       .insert({
         ...propertyData,
         niche: explicitNiche || inferredNiche || propertyData.niche || null,
-        organization_id: req.orgId // FORÇADO
+        organization_id: req.orgId, // FORÇADO
       })
       .select()
       .single();
@@ -147,7 +150,8 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (error || !data) return res.status(404).json({ error: 'Imóvel não encontrado' });
+    if (error || !data)
+      return res.status(404).json({ error: 'Imóvel não encontrado' });
     res.json({ success: true, property: data });
   } catch (err) {
     console.error('[Properties] Get error:', err.message);
@@ -187,7 +191,11 @@ router.post('/:id/acp', verifyAdmin, requireTenant, async (req, res) => {
 
     if (error) throw error;
 
-    res.json({ success: true, property: data, acp: data.features?.acp || null });
+    res.json({
+      success: true,
+      property: data,
+      acp: data.features?.acp || null,
+    });
   } catch (err) {
     console.error('[Properties] ACP error:', err.message);
     res.status(500).json({ error: 'Erro ao processar ACP' });

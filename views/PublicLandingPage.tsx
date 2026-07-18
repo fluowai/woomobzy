@@ -94,7 +94,12 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     try {
       setLoading(true);
       const isDirectLPLink = location.pathname.startsWith('/lp/');
-      logger.info('🔍 Loading Public Site. Mode:', isDirectLPLink ? 'Direct LP' : 'Org/Subdomain', 'Value:', slugOrOrg);
+      logger.info(
+        '🔍 Loading Public Site. Mode:',
+        isDirectLPLink ? 'Direct LP' : 'Org/Subdomain',
+        'Value:',
+        slugOrOrg
+      );
 
       let resolvedOrg: any = null;
       let targetPage: any = null;
@@ -131,7 +136,9 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
           const { data: orgDirect } = await supabase
             .from('organizations')
             .select('id, name, slug, custom_domain')
-            .or(`slug.eq.${slugOrOrg},custom_domain.eq.${slugOrOrg},subdomain.eq.${slugOrOrg}`)
+            .or(
+              `slug.eq.${slugOrOrg},custom_domain.eq.${slugOrOrg},subdomain.eq.${slugOrOrg}`
+            )
             .maybeSingle();
           resolvedOrg = orgDirect;
         }
@@ -139,7 +146,9 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       if (!resolvedOrg) {
         if (activeSlug === 'okaimoveis' || activeSlug === 'fazendasbrasil') {
-          logger.warn(`Organization not found for slug ${activeSlug}, rendering fallback site`);
+          logger.warn(
+            `Organization not found for slug ${activeSlug}, rendering fallback site`
+          );
           setOrganization(null);
           setShowMainSite(true);
           setLoading(false);

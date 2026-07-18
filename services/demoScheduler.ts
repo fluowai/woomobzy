@@ -42,7 +42,9 @@ export const demoSchedulerService = {
     return data.slots || [];
   },
 
-  async createBooking(payload: DemoQualification & { slotId: string; notes?: string }): Promise<DemoBooking> {
+  async createBooking(
+    payload: DemoQualification & { slotId: string; notes?: string }
+  ): Promise<DemoBooking> {
     const data = await callApi('/api/demo/bookings', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -50,11 +52,18 @@ export const demoSchedulerService = {
     return data.booking;
   },
 
-  async getAdminOverview(): Promise<{ slots: DemoSlot[]; bookings: DemoBooking[] }> {
+  async getAdminOverview(): Promise<{
+    slots: DemoSlot[];
+    bookings: DemoBooking[];
+  }> {
     return callApi('/api/demo/admin/overview');
   },
 
-  async createSlots(payload: { date: string; startTime: string; endTime: string }): Promise<DemoSlot[]> {
+  async createSlots(payload: {
+    date: string;
+    startTime: string;
+    endTime: string;
+  }): Promise<DemoSlot[]> {
     const data = await callApi('/api/demo/admin/slots', {
       method: 'POST',
       body: JSON.stringify({
@@ -69,7 +78,10 @@ export const demoSchedulerService = {
     await callApi(`/api/demo/admin/slots/${id}`, { method: 'DELETE' });
   },
 
-  async updateBookingStatus(id: string, status: DemoBooking['status']): Promise<DemoBooking> {
+  async updateBookingStatus(
+    id: string,
+    status: DemoBooking['status']
+  ): Promise<DemoBooking> {
     const data = await callApi(`/api/demo/admin/bookings/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
@@ -82,7 +94,14 @@ export const scoreQualification = (data: Partial<DemoQualification>) => {
   let score = 0;
   if (['6-15', '16-40', '40+'].includes(data.teamSize || '')) score += 2;
   if (['51-150', '150+'].includes(data.monthlyLeads || '')) score += 2;
-  if (['organizar_atendimento', 'aumentar_vendas', 'automatizar_processos'].includes(data.mainGoal || '')) score += 2;
+  if (
+    [
+      'organizar_atendimento',
+      'aumentar_vendas',
+      'automatizar_processos',
+    ].includes(data.mainGoal || '')
+  )
+    score += 2;
   if (['agora', '30_dias'].includes(data.urgency || '')) score += 1;
   return score;
 };

@@ -2,7 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import './whatsapp.css';
 import { useWebSocket } from './hooks/useWebSocket';
 import { instanceApi, type Instance } from './hooks/api';
-import { X, QrCode, Loader2, CheckCircle2, RefreshCw, Smartphone, KeyRound, Phone } from 'lucide-react';
+import {
+  X,
+  QrCode,
+  Loader2,
+  CheckCircle2,
+  RefreshCw,
+  Smartphone,
+  KeyRound,
+  Phone,
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface QRCodeModalProps {
@@ -122,12 +131,21 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
       setPairingLoading(true);
       setPairingError('');
       setPairingCode('');
-      const data = await instanceApi.requestPairingCode(instance.id, pairingPhone);
+      const data = await instanceApi.requestPairingCode(
+        instance.id,
+        pairingPhone
+      );
       setPairingCode(data.pairing_code);
       setPairingPhone(data.phone || pairingPhone);
-      setExpiresAt(data.expires_in ? new Date(Date.now() + data.expires_in * 1000).toISOString() : '');
+      setExpiresAt(
+        data.expires_in
+          ? new Date(Date.now() + data.expires_in * 1000).toISOString()
+          : ''
+      );
     } catch (error: any) {
-      setPairingError(error.message || 'Nao foi possivel gerar o codigo de pareamento.');
+      setPairingError(
+        error.message || 'Nao foi possivel gerar o codigo de pareamento.'
+      );
     } finally {
       setPairingLoading(false);
     }
@@ -146,12 +164,18 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
               <CheckCircle2 size={64} />
             </div>
             <h3>Conectado com sucesso!</h3>
-            <p>Instância <strong>{instance.name}</strong> está online.</p>
+            <p>
+              Instância <strong>{instance.name}</strong> está online.
+            </p>
           </div>
         ) : (
           <>
             <div className="wa-qr-header">
-              {pairingMode === 'qr' ? <QrCode size={28} className="text-[#25D366]" /> : <KeyRound size={28} className="text-[#25D366]" />}
+              {pairingMode === 'qr' ? (
+                <QrCode size={28} className="text-[#25D366]" />
+              ) : (
+                <KeyRound size={28} className="text-[#25D366]" />
+              )}
               <div>
                 <h3>Conectar WhatsApp</h3>
                 <p className="wa-qr-subtitle">{instance.name}</p>
@@ -159,10 +183,16 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
             </div>
 
             <div className="wa-pair-tabs">
-              <button className={pairingMode === 'qr' ? 'active' : ''} onClick={() => setPairingMode('qr')}>
+              <button
+                className={pairingMode === 'qr' ? 'active' : ''}
+                onClick={() => setPairingMode('qr')}
+              >
                 <QrCode size={15} /> QR
               </button>
-              <button className={pairingMode === 'code' ? 'active' : ''} onClick={() => setPairingMode('code')}>
+              <button
+                className={pairingMode === 'code' ? 'active' : ''}
+                onClick={() => setPairingMode('code')}
+              >
                 <KeyRound size={15} /> Codigo
               </button>
             </div>
@@ -174,11 +204,16 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
               </div>
               <div className="wa-qr-step">
                 <span className="wa-qr-step-num">2</span>
-                <span>Toque em <strong>Menu</strong> ou <strong>Configurações</strong></span>
+                <span>
+                  Toque em <strong>Menu</strong> ou{' '}
+                  <strong>Configurações</strong>
+                </span>
               </div>
               <div className="wa-qr-step">
                 <span className="wa-qr-step-num">3</span>
-                <span>Selecione <strong>Aparelhos Conectados</strong></span>
+                <span>
+                  Selecione <strong>Aparelhos Conectados</strong>
+                </span>
               </div>
               <div className="wa-qr-step">
                 <span className="wa-qr-step-num">4</span>
@@ -197,12 +232,24 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                       placeholder="+55 11 99999-9999"
                     />
                   </label>
-                  <button onClick={requestPairingCode} className="wa-qr-retry" disabled={pairingLoading || !pairingPhone.trim()}>
-                    {pairingLoading ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+                  <button
+                    onClick={requestPairingCode}
+                    className="wa-qr-retry"
+                    disabled={pairingLoading || !pairingPhone.trim()}
+                  >
+                    {pairingLoading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <KeyRound size={14} />
+                    )}
                     Gerar codigo
                   </button>
-                  {pairingCode && <strong className="wa-pair-code">{pairingCode}</strong>}
-                  {pairingError && <p className="wa-pair-error">{pairingError}</p>}
+                  {pairingCode && (
+                    <strong className="wa-pair-code">{pairingCode}</strong>
+                  )}
+                  {pairingError && (
+                    <p className="wa-pair-error">{pairingError}</p>
+                  )}
                 </div>
               ) : loading ? (
                 <div className="wa-qr-loading">
@@ -252,7 +299,10 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
             {(qrCode || pairingCode) && (
               <p className="wa-qr-note">
                 O QR Code é renovado automaticamente
-                {expiresAt ? ` até ${new Date(expiresAt).toLocaleTimeString('pt-BR')}` : ''}.
+                {expiresAt
+                  ? ` até ${new Date(expiresAt).toLocaleTimeString('pt-BR')}`
+                  : ''}
+                .
               </p>
             )}
           </>

@@ -37,8 +37,16 @@ const statusLabels: Record<
   { label: string; color: string; bg: string }
 > = {
   projeto: { label: 'Projeto', color: 'text-slate-600', bg: 'bg-slate-100' },
-  aprovacao: { label: 'Aprovação', color: 'text-indigo-600', bg: 'bg-indigo-50' },
-  pre_venda: { label: 'Pré-Venda', color: 'text-purple-600', bg: 'bg-purple-50' },
+  aprovacao: {
+    label: 'Aprovação',
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+  },
+  pre_venda: {
+    label: 'Pré-Venda',
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+  },
   em_obras: { label: 'Em Obras', color: 'text-amber-700', bg: 'bg-amber-100' },
   lancamento: {
     label: 'Lançamento',
@@ -99,7 +107,9 @@ const Empreendimentos: React.FC = () => {
   const handleSave = async () => {
     if (!form.name) return;
     if (!profile?.organization_id) {
-      alert('Erro: Organização não identificada. Por favor, recarregue a página.');
+      alert(
+        'Erro: Organização não identificada. Por favor, recarregue a página.'
+      );
       return;
     }
 
@@ -152,7 +162,8 @@ const Empreendimentos: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja excluir este empreendimento e todos os seus lotes?')) return;
+    if (!confirm('Deseja excluir este empreendimento e todos os seus lotes?'))
+      return;
     const { error } = await supabase
       .from('developments')
       .delete()
@@ -233,7 +244,9 @@ const Empreendimentos: React.FC = () => {
             key={idx}
             className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow"
           >
-            <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}>
+            <div
+              className={`p-3 rounded-2xl ${stat.bg} ${stat.color} w-fit mb-4`}
+            >
               <stat.icon size={24} />
             </div>
             <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">
@@ -275,22 +288,33 @@ const Empreendimentos: React.FC = () => {
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-20 text-slate-400 animate-pulse">
+                  <td
+                    colSpan={6}
+                    className="text-center py-20 text-slate-400 animate-pulse"
+                  >
                     Carregando empreendimentos...
                   </td>
                 </tr>
               ) : developments.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-20 text-slate-400">
-                    <Building2 className="mx-auto mb-4 text-slate-200" size={60} />
-                    <p className="font-bold uppercase tracking-widest text-xs">Nenhum loteamento encontrado</p>
+                    <Building2
+                      className="mx-auto mb-4 text-slate-200"
+                      size={60}
+                    />
+                    <p className="font-bold uppercase tracking-widest text-xs">
+                      Nenhum loteamento encontrado
+                    </p>
                   </td>
                 </tr>
               ) : (
                 developments.map((dev) => {
                   const st = statusLabels[dev.status] || statusLabels.projeto;
                   return (
-                    <tr key={dev.id} className="hover:bg-slate-50/50 transition-all group">
+                    <tr
+                      key={dev.id}
+                      className="hover:bg-slate-50/50 transition-all group"
+                    >
                       <td className="px-8 py-6">
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-900 uppercase italic tracking-tighter text-lg leading-none">
@@ -331,7 +355,9 @@ const Empreendimentos: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className={`text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider ${st.bg} ${st.color} border border-black/5`}>
+                        <span
+                          className={`text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider ${st.bg} ${st.color} border border-black/5`}
+                        >
                           {st.label}
                         </span>
                       </td>
@@ -343,7 +369,10 @@ const Empreendimentos: React.FC = () => {
                           >
                             <Map size={14} /> Mapa / Lotes
                           </Link>
-                          <button onClick={() => handleEdit(dev)} className="p-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">
+                          <button
+                            onClick={() => handleEdit(dev)}
+                            className="p-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
+                          >
                             <Pencil size={16} />
                           </button>
                           <button
@@ -374,9 +403,13 @@ const Empreendimentos: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-slate-900 uppercase italic tracking-tighter">
-                    {editingId ? 'Editar Empreendimento' : 'Novo Empreendimento'}
+                    {editingId
+                      ? 'Editar Empreendimento'
+                      : 'Novo Empreendimento'}
                   </h3>
-                  <p className="text-slate-400 text-sm font-medium">Configure os dados básicos da loteadora.</p>
+                  <p className="text-slate-400 text-sm font-medium">
+                    Configure os dados básicos da loteadora.
+                  </p>
                 </div>
               </div>
               <button
@@ -422,7 +455,9 @@ const Empreendimentos: React.FC = () => {
                   </label>
                   <input
                     value={form.state}
-                    onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })}
+                    onChange={(e) =>
+                      setForm({ ...form, state: e.target.value.toUpperCase() })
+                    }
                     className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
                     maxLength={2}
                     placeholder="SP"
@@ -437,7 +472,9 @@ const Empreendimentos: React.FC = () => {
                   </label>
                   <input
                     value={form.registration_number}
-                    onChange={(e) => setForm({ ...form, registration_number: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, registration_number: e.target.value })
+                    }
                     className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
                     placeholder="Ex: 123.456 no CRI de Sorocaba"
                   />
@@ -452,7 +489,9 @@ const Empreendimentos: React.FC = () => {
                   <input
                     type="number"
                     value={form.total_units}
-                    onChange={(e) => setForm({ ...form, total_units: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setForm({ ...form, total_units: Number(e.target.value) })
+                    }
                     className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
                   />
                 </div>
@@ -465,7 +504,9 @@ const Empreendimentos: React.FC = () => {
                     min={0}
                     max={100}
                     value={form.progress_pct}
-                    onChange={(e) => setForm({ ...form, progress_pct: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setForm({ ...form, progress_pct: Number(e.target.value) })
+                    }
                     className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
                   />
                 </div>
@@ -475,7 +516,9 @@ const Empreendimentos: React.FC = () => {
                   </label>
                   <select
                     value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, status: e.target.value })
+                    }
                     className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
                   >
                     <option value="projeto">Projeto / Viabilidade</option>
@@ -499,7 +542,9 @@ const Empreendimentos: React.FC = () => {
                 onClick={handleSave}
                 className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-95"
               >
-                {editingId ? 'Atualizar Empreendimento' : 'Salvar Empreendimento'}
+                {editingId
+                  ? 'Atualizar Empreendimento'
+                  : 'Salvar Empreendimento'}
               </button>
             </div>
           </div>

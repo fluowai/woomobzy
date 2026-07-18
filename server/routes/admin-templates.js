@@ -20,15 +20,78 @@ const templateSchema = z.object({
 });
 
 const DEFAULT_TEMPLATES = [
-  { name: 'Landing Fazenda Premium', type: 'landing_page', category: 'Rural', description: 'Template premium para fazendas com mapa e ficha técnica', preview: '🏡', is_default: true },
-  { name: 'Landing Apartamento', type: 'landing_page', category: 'Urbano', description: 'Template para apartamentos com galeria e financiamento', preview: '🏢', is_default: true },
-  { name: 'Landing Empreendimento', type: 'landing_page', category: 'Urbano', description: 'Template para lançamentos com tabela de preços', preview: '🏗', is_default: true },
-  { name: 'Email - Novo Lead', type: 'email', category: 'Geral', description: 'Template de email para novos leads', preview: '📧', is_default: true },
-  { name: 'Email - Follow Up', type: 'email', category: 'Geral', description: 'Template de email para follow up automático', preview: '📬', is_default: true },
-  { name: 'Contrato de Venda', type: 'contract', category: 'Geral', description: 'Modelo padrão de contrato de compra e venda', preview: '📄', is_default: true },
-  { name: 'Contrato de Locação', type: 'contract', category: 'Urbano', description: 'Modelo padrão de contrato de locação residencial', preview: '🔑', is_default: true },
-  { name: 'Relatório Mensal', type: 'report', category: 'Geral', description: 'Template de relatório mensal para proprietários', preview: '📊', is_default: true },
-  { name: 'Dossiê Rural', type: 'report', category: 'Rural', description: 'Template de dossiê técnico para propriedades rurais', preview: '📋', is_default: true },
+  {
+    name: 'Landing Fazenda Premium',
+    type: 'landing_page',
+    category: 'Rural',
+    description: 'Template premium para fazendas com mapa e ficha técnica',
+    preview: '🏡',
+    is_default: true,
+  },
+  {
+    name: 'Landing Apartamento',
+    type: 'landing_page',
+    category: 'Urbano',
+    description: 'Template para apartamentos com galeria e financiamento',
+    preview: '🏢',
+    is_default: true,
+  },
+  {
+    name: 'Landing Empreendimento',
+    type: 'landing_page',
+    category: 'Urbano',
+    description: 'Template para lançamentos com tabela de preços',
+    preview: '🏗',
+    is_default: true,
+  },
+  {
+    name: 'Email - Novo Lead',
+    type: 'email',
+    category: 'Geral',
+    description: 'Template de email para novos leads',
+    preview: '📧',
+    is_default: true,
+  },
+  {
+    name: 'Email - Follow Up',
+    type: 'email',
+    category: 'Geral',
+    description: 'Template de email para follow up automático',
+    preview: '📬',
+    is_default: true,
+  },
+  {
+    name: 'Contrato de Venda',
+    type: 'contract',
+    category: 'Geral',
+    description: 'Modelo padrão de contrato de compra e venda',
+    preview: '📄',
+    is_default: true,
+  },
+  {
+    name: 'Contrato de Locação',
+    type: 'contract',
+    category: 'Urbano',
+    description: 'Modelo padrão de contrato de locação residencial',
+    preview: '🔑',
+    is_default: true,
+  },
+  {
+    name: 'Relatório Mensal',
+    type: 'report',
+    category: 'Geral',
+    description: 'Template de relatório mensal para proprietários',
+    preview: '📊',
+    is_default: true,
+  },
+  {
+    name: 'Dossiê Rural',
+    type: 'report',
+    category: 'Rural',
+    description: 'Template de dossiê técnico para propriedades rurais',
+    preview: '📋',
+    is_default: true,
+  },
 ];
 
 router.get('/', verifyAdmin, requireTenant, async (req, res) => {
@@ -63,7 +126,9 @@ router.post('/', verifyAdmin, requireTenant, async (req, res) => {
   try {
     const validation = templateSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: validation.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
     const supabase = getSupabaseServer();
@@ -136,7 +201,9 @@ router.delete('/:id', verifyAdmin, requireTenant, async (req, res) => {
     }
 
     if (template.is_default) {
-      return res.status(400).json({ error: 'Templates padrão não podem ser excluídos' });
+      return res
+        .status(400)
+        .json({ error: 'Templates padrão não podem ser excluídos' });
     }
 
     const { error } = await supabase
@@ -165,7 +232,11 @@ async function seedDefaultTemplates(orgId) {
     .select();
 
   if (error) {
-    return DEFAULT_TEMPLATES.map((t, i) => ({ ...t, id: `local-${i}`, organization_id: orgId }));
+    return DEFAULT_TEMPLATES.map((t, i) => ({
+      ...t,
+      id: `local-${i}`,
+      organization_id: orgId,
+    }));
   }
 
   return data || [];

@@ -139,9 +139,8 @@ const Migration: React.FC = () => {
               </button>
             </div>
             <p className="mt-4 text-xs text-slate-400 flex items-center gap-2">
-              <AlertTriangle size={12} className="text-amber-500" />
-              O processo de migração é executado em segundo plano no servidor de
-              backend.
+              <AlertTriangle size={12} className="text-amber-500" />O processo
+              de migração é executado em segundo plano no servidor de backend.
             </p>
           </div>
 

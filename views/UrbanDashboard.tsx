@@ -67,14 +67,18 @@ const UrbanDashboard: React.FC = () => {
         .from('properties')
         .select('id', { count: 'exact' })
         .eq('organization_id', organizationId)
-        .or(`niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`);
+        .or(
+          `niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`
+        );
 
       // 2. Contagem por Status
       const { data: pByStatus } = await supabase
         .from('properties')
         .select('id,status,price,property_type,niche,created_at')
         .eq('organization_id', organizationId)
-        .or(`niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`);
+        .or(
+          `niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`
+        );
 
       const statsMap = { available: 0, sold: 0, rented: 0 };
       pByStatus?.forEach((p) => {
@@ -86,7 +90,9 @@ const UrbanDashboard: React.FC = () => {
       // 3. VGV (Valor Geral de Vendas)
       const totalVgv =
         pByStatus
-          ?.filter((p) => p.status === 'Disponível' || p.status === 'Disponivel')
+          ?.filter(
+            (p) => p.status === 'Disponível' || p.status === 'Disponivel'
+          )
           .reduce((sum, p) => sum + (p.price || 0), 0) || 0;
 
       // 4. Contagem de Leads
@@ -107,7 +113,9 @@ const UrbanDashboard: React.FC = () => {
 
       const { data: allLeads } = await supabase
         .from('leads')
-        .select('id,source,status,created_at,assigned_to,broker_id,match_profile')
+        .select(
+          'id,source,status,created_at,assigned_to,broker_id,match_profile'
+        )
         .eq('organization_id', organizationId)
         .or('match_profile.eq.urbano,match_profile.is.null')
         .order('created_at', { ascending: false });
@@ -169,9 +177,15 @@ const UrbanDashboard: React.FC = () => {
   const channelData = React.useMemo(() => {
     const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
     return labels.map((name, month) => {
-      const monthLeads = urbanLeads.filter((lead) => new Date(lead.created_at).getMonth() === month);
+      const monthLeads = urbanLeads.filter(
+        (lead) => new Date(lead.created_at).getMonth() === month
+      );
       const countBySource = (source: string) =>
-        monthLeads.filter((lead) => String(lead.source || '').toLowerCase().includes(source)).length;
+        monthLeads.filter((lead) =>
+          String(lead.source || '')
+            .toLowerCase()
+            .includes(source)
+        ).length;
 
       return {
         name,
@@ -184,16 +198,24 @@ const UrbanDashboard: React.FC = () => {
   }, [urbanLeads]);
 
   const conversionData = React.useMemo(() => {
-    const grouped: Record<string, { name: string; leads: number; vendas: number }> = {};
+    const grouped: Record<
+      string,
+      { name: string; leads: number; vendas: number }
+    > = {};
     urbanLeads.forEach((lead) => {
       const key = lead.assigned_to || lead.broker_id || 'Sem corretor';
       grouped[key] = grouped[key] || {
-        name: key === 'Sem corretor' ? key : `Corretor ${String(key).slice(0, 4)}`,
+        name:
+          key === 'Sem corretor' ? key : `Corretor ${String(key).slice(0, 4)}`,
         leads: 0,
         vendas: 0,
       };
       grouped[key].leads++;
-      if (['convertido', 'vendido', 'fechado'].includes(String(lead.status || '').toLowerCase())) {
+      if (
+        ['convertido', 'vendido', 'fechado'].includes(
+          String(lead.status || '').toLowerCase()
+        )
+      ) {
         grouped[key].vendas++;
       }
     });
@@ -250,7 +272,9 @@ const UrbanDashboard: React.FC = () => {
             style={{ borderColor: `var(--color-border-subtle)` }}
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl border ${stat.bg} ${stat.color} ${stat.borderColor}`}>
+              <div
+                className={`p-3 rounded-xl border ${stat.bg} ${stat.color} ${stat.borderColor}`}
+              >
                 <stat.icon size={20} />
               </div>
               {stat.trend !== 'neutral' && (
@@ -260,7 +284,11 @@ const UrbanDashboard: React.FC = () => {
                   }`}
                 >
                   {stat.change}
-                  {stat.trend === 'up' ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+                  {stat.trend === 'up' ? (
+                    <ArrowUpRight size={13} />
+                  ) : (
+                    <ArrowDownRight size={13} />
+                  )}
                 </div>
               )}
             </div>
@@ -279,7 +307,9 @@ const UrbanDashboard: React.FC = () => {
         {/* Leads by Channel */}
         <div className="lg:col-span-2 workspace-card p-5">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-base font-semibold text-text-primary">Leads por Canal</h3>
+            <h3 className="text-base font-semibold text-text-primary">
+              Leads por Canal
+            </h3>
             <select className="bg-bg-hover border border-border-subtle rounded-lg text-sm text-text-secondary px-3 py-1.5 outline-none focus:border-primary transition-colors">
               <option>Últimos 6 meses</option>
               <option>Este ano</option>
@@ -298,14 +328,57 @@ const UrbanDashboard: React.FC = () => {
                     <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#1e293b"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="whatsapp" name="WhatsApp" stroke="#007850" strokeWidth={2} fillOpacity={1} fill="url(#colorWA)" />
-                <Area type="monotone" dataKey="site" name="Site" stroke="#7c3aed" strokeWidth={2} fillOpacity={1} fill="url(#colorSite)" />
-                <Area type="monotone" dataKey="portal" name="Portal" stroke="#f59600" strokeWidth={2} fillOpacity={0} />
-                <Area type="monotone" dataKey="indicacao" name="Indicação" stroke="#0891b2" strokeWidth={2} fillOpacity={0} />
+                <Area
+                  type="monotone"
+                  dataKey="whatsapp"
+                  name="WhatsApp"
+                  stroke="#007850"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorWA)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="site"
+                  name="Site"
+                  stroke="#7c3aed"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorSite)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="portal"
+                  name="Portal"
+                  stroke="#f59600"
+                  strokeWidth={2}
+                  fillOpacity={0}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="indicacao"
+                  name="Indicação"
+                  stroke="#0891b2"
+                  strokeWidth={2}
+                  fillOpacity={0}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -313,13 +386,26 @@ const UrbanDashboard: React.FC = () => {
 
         {/* Stock by Type */}
         <div className="workspace-card p-5">
-          <h3 className="text-base font-semibold text-text-primary mb-6">Estoque por Tipo</h3>
+          <h3 className="text-base font-semibold text-text-primary mb-6">
+            Estoque por Tipo
+          </h3>
           <div className="h-[170px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={typeData} cx="50%" cy="50%" innerRadius={45} outerRadius={72} paddingAngle={4} dataKey="value">
+                <Pie
+                  data={typeData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={45}
+                  outerRadius={72}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
                   {typeData.map((_, idx) => (
-                    <Cell key={idx} fill={BRAND_COLORS[idx % BRAND_COLORS.length]} />
+                    <Cell
+                      key={idx}
+                      fill={BRAND_COLORS[idx % BRAND_COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
@@ -328,12 +414,20 @@ const UrbanDashboard: React.FC = () => {
           </div>
           <div className="mt-4 space-y-2">
             {typeData.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between text-sm">
+              <div
+                key={idx}
+                className="flex items-center justify-between text-sm"
+              >
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: BRAND_COLORS[idx] }} />
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: BRAND_COLORS[idx] }}
+                  />
                   <span className="text-text-secondary">{item.name}</span>
                 </div>
-                <span className="font-semibold text-text-primary">{item.value}%</span>
+                <span className="font-semibold text-text-primary">
+                  {item.value}%
+                </span>
               </div>
             ))}
           </div>
@@ -344,16 +438,44 @@ const UrbanDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Conversion by Broker */}
         <div className="workspace-card p-5">
-          <h3 className="text-base font-semibold text-text-primary mb-6">Conversão por Corretor</h3>
+          <h3 className="text-base font-semibold text-text-primary mb-6">
+            Conversão por Corretor
+          </h3>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={conversionData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#1e293b" />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} width={80} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  horizontal={false}
+                  stroke="#1e293b"
+                />
+                <XAxis
+                  type="number"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12 }}
+                />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                  width={80}
+                />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="leads" name="Leads" fill="#1e293b" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="vendas" name="Vendas" fill="#007850" radius={[0, 4, 4, 0]} />
+                <Bar
+                  dataKey="leads"
+                  name="Leads"
+                  fill="#1e293b"
+                  radius={[0, 4, 4, 0]}
+                />
+                <Bar
+                  dataKey="vendas"
+                  name="Vendas"
+                  fill="#007850"
+                  radius={[0, 4, 4, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -362,8 +484,13 @@ const UrbanDashboard: React.FC = () => {
         {/* Recent Leads */}
         <div className="workspace-card p-5">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-base font-semibold text-text-primary">Leads Recentes</h3>
-            <Link to="/urban/crm" className="text-xs font-semibold text-primary hover:underline">
+            <h3 className="text-base font-semibold text-text-primary">
+              Leads Recentes
+            </h3>
+            <Link
+              to="/urban/crm"
+              className="text-xs font-semibold text-primary hover:underline"
+            >
               Ver CRM →
             </Link>
           </div>
@@ -379,14 +506,18 @@ const UrbanDashboard: React.FC = () => {
                     {lead.name?.charAt(0) || 'L'}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-text-primary">{lead.name}</p>
+                    <p className="text-sm font-semibold text-text-primary">
+                      {lead.name}
+                    </p>
                     <p className="text-xs text-text-tertiary">
                       {lead.property?.title || 'Interesse Geral'}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider ${channelColors[lead.source] || 'bg-slate-500/15 text-slate-400'}`}>
+                  <span
+                    className={`text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider ${channelColors[lead.source] || 'bg-slate-500/15 text-slate-400'}`}
+                  >
                     {lead.source || 'Site'}
                   </span>
                   <span className="text-xs text-text-tertiary">

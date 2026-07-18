@@ -40,17 +40,19 @@ export function getSupabaseServer() {
     const missing = [];
     if (!url) missing.push('VITE_SUPABASE_URL');
     if (!key) missing.push('SUPABASE_SERVICE_ROLE_KEY');
-    
+
     throw new Error(
       `❌ Variáveis de ambiente obrigatórias não encontradas: ${missing.join(', ')}.\n` +
-      '   → Em produção: configure no ambiente do servidor (SaaS/Docker).\n' +
-      '   → Em desenvolvimento: verifique o arquivo .env na raiz.\n'
+        '   → Em produção: configure no ambiente do servidor (SaaS/Docker).\n' +
+        '   → Em desenvolvimento: verifique o arquivo .env na raiz.\n'
     );
   }
 
   // Sanity check: chaves JWT do Supabase costumam ser longas e começar com 'ey'
   if (key.length < 50) {
-    console.warn('[Supabase] ⚠️ Alerta: SUPABASE_SERVICE_ROLE_KEY parece curta demais ou inválida.');
+    console.warn(
+      '[Supabase] ⚠️ Alerta: SUPABASE_SERVICE_ROLE_KEY parece curta demais ou inválida.'
+    );
   }
 
   _client = createClient(url, key);
@@ -75,7 +77,7 @@ export function getSupabaseAuthServer() {
   if (!url || !key) {
     throw new Error(
       'Variáveis de autenticação obrigatórias não configuradas. ' +
-      'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.'
+        'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.'
     );
   }
 

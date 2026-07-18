@@ -7,23 +7,32 @@ import { getPlatformOriginList } from './platform-config.js';
 
 const staticAllowedOrigins = [
   ...getPlatformOriginList(),
-  "https://okaimoveis.com.br",
-  "https://www.okaimoveis.com.br",
-  "https://fazendasbrasil.com",
-  "https://www.fazendasbrasil.com",
-  "https://fazendasbrasil.com.br",
-  "https://www.fazendasbrasil.com.br",
+  'https://okaimoveis.com.br',
+  'https://www.okaimoveis.com.br',
+  'https://fazendasbrasil.com',
+  'https://www.fazendasbrasil.com',
+  'https://fazendasbrasil.com.br',
+  'https://www.fazendasbrasil.com.br',
 ];
 
 const envAllowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  ? process.env.ALLOWED_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
   : [];
 
-const productionAllowedOrigins = new Set([...staticAllowedOrigins, ...envAllowedOrigins]);
+const productionAllowedOrigins = new Set([
+  ...staticAllowedOrigins,
+  ...envAllowedOrigins,
+]);
 const customOriginCache = new Map();
 const CUSTOM_ORIGIN_CACHE_TTL_MS = 60 * 1000;
 
-async function isAllowedCustomOrigin(origin, normalizeDomain, getSupabaseServer) {
+async function isAllowedCustomOrigin(
+  origin,
+  normalizeDomain,
+  getSupabaseServer
+) {
   try {
     const url = new URL(origin);
     if (!['https:', 'http:'].includes(url.protocol)) return false;
@@ -61,7 +70,11 @@ async function isAllowedCustomOrigin(origin, normalizeDomain, getSupabaseServer)
   }
 }
 
-export function createCorsOptions({ isProduction, normalizeDomain, getSupabaseServer }) {
+export function createCorsOptions({
+  isProduction,
+  normalizeDomain,
+  getSupabaseServer,
+}) {
   const dynamicOriginValidator = (origin, callback) => {
     if (!origin) return callback(null, true);
     if (productionAllowedOrigins.has(origin)) return callback(null, true);
@@ -70,7 +83,7 @@ export function createCorsOptions({ isProduction, normalizeDomain, getSupabaseSe
       isAllowedCustomOrigin(origin, normalizeDomain, getSupabaseServer)
         .then((allowed) => {
           if (allowed) return callback(null, true);
-          console.error("CORS BLOCKED:", origin);
+          console.error('CORS BLOCKED:', origin);
           return callback(new Error(`CORS blocked for origin: ${origin}`));
         })
         .catch((error) => callback(error));
@@ -78,24 +91,24 @@ export function createCorsOptions({ isProduction, normalizeDomain, getSupabaseSe
     }
 
     if (
-      origin.endsWith(".wootech.com.br") ||
-      origin.endsWith(".imobfluow.com.br") ||
-      origin.endsWith(".okaimoveis.com.br") ||
-      origin.endsWith(".pages.dev") ||
-      origin.endsWith(".onrender.com") ||
-      origin.startsWith("http://localhost") ||
-      origin.startsWith("http://127.0.0.1")
+      origin.endsWith('.wootech.com.br') ||
+      origin.endsWith('.imobfluow.com.br') ||
+      origin.endsWith('.okaimoveis.com.br') ||
+      origin.endsWith('.pages.dev') ||
+      origin.endsWith('.onrender.com') ||
+      origin.startsWith('http://localhost') ||
+      origin.startsWith('http://127.0.0.1')
     ) {
       return callback(null, true);
     }
 
-    console.error("❌ CORS BLOCKED:", origin);
+    console.error('❌ CORS BLOCKED:', origin);
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   };
 
   return {
     origin: dynamicOriginValidator,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   };
 }

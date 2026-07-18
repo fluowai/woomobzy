@@ -101,14 +101,20 @@ app.use((req, res, next) => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
     const currentTiming = res.getHeader('Server-Timing');
     const appTiming = `app;dur=${durationMs.toFixed(1)}`;
-    res.setHeader('Server-Timing', currentTiming ? `${currentTiming}, ${appTiming}` : appTiming);
+    res.setHeader(
+      'Server-Timing',
+      currentTiming ? `${currentTiming}, ${appTiming}` : appTiming
+    );
     res.setHeader('X-Response-Time', `${durationMs.toFixed(1)}ms`);
     res.setHeader('X-Process-Memory-Rss', String(process.memoryUsage().rss));
   };
 
   res.json = (body) => {
     if (!res.headersSent) {
-      res.setHeader('X-Response-Bytes', Buffer.byteLength(JSON.stringify(body), 'utf8'));
+      res.setHeader(
+        'X-Response-Bytes',
+        Buffer.byteLength(JSON.stringify(body), 'utf8')
+      );
       recordTimingHeaders();
     }
     return originalJson(body);
@@ -131,14 +137,43 @@ app.use(
       ? {
           useDefaults: true,
           directives: {
-            "default-src": ["'self'"],
-            "script-src": ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com", "https://connect.facebook.net"],
-            "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            "img-src": ["'self'", "data:", "blob:", "https:"],
-            "media-src": ["'self'", "data:", "blob:", "https:"],
-            "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-            "connect-src": ["'self'", "https://*.supabase.co", "wss://*.supabase.co", ...platformOrigins, ...platformOrigins.map((origin) => origin.replace(/^https:/, 'wss:')), "https://okaimoveis.com.br", "wss://okaimoveis.com.br", "https://www.okaimoveis.com.br", "wss://www.okaimoveis.com.br", "https://fazendasbrasil.com", "wss://fazendasbrasil.com", "https://www.fazendasbrasil.com", "wss://www.fazendasbrasil.com", "https://fazendasbrasil.com.br", "wss://fazendasbrasil.com.br", "https://www.fazendasbrasil.com.br", "wss://www.fazendasbrasil.com.br"],
-            "frame-ancestors": ["'self'"],
+            'default-src': ["'self'"],
+            'script-src': [
+              "'self'",
+              "'unsafe-inline'",
+              'https://www.googletagmanager.com',
+              'https://connect.facebook.net',
+            ],
+            'style-src': [
+              "'self'",
+              "'unsafe-inline'",
+              'https://fonts.googleapis.com',
+            ],
+            'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+            'media-src': ["'self'", 'data:', 'blob:', 'https:'],
+            'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com'],
+            'connect-src': [
+              "'self'",
+              'https://*.supabase.co',
+              'wss://*.supabase.co',
+              ...platformOrigins,
+              ...platformOrigins.map((origin) =>
+                origin.replace(/^https:/, 'wss:')
+              ),
+              'https://okaimoveis.com.br',
+              'wss://okaimoveis.com.br',
+              'https://www.okaimoveis.com.br',
+              'wss://www.okaimoveis.com.br',
+              'https://fazendasbrasil.com',
+              'wss://fazendasbrasil.com',
+              'https://www.fazendasbrasil.com',
+              'wss://www.fazendasbrasil.com',
+              'https://fazendasbrasil.com.br',
+              'wss://fazendasbrasil.com.br',
+              'https://www.fazendasbrasil.com.br',
+              'wss://www.fazendasbrasil.com.br',
+            ],
+            'frame-ancestors': ["'self'"],
           },
         }
       : false,
@@ -157,7 +192,11 @@ if (!isProduction) {
 }
 
 // --- CORS Configuration (extracted to lib/cors-config.js) ---
-const corsOptions = createCorsOptions({ isProduction, normalizeDomain, getSupabaseServer });
+const corsOptions = createCorsOptions({
+  isProduction,
+  normalizeDomain,
+  getSupabaseServer,
+});
 
 app.use(cors(corsOptions));
 // MUITO IMPORTANTE: Garante o Preflight (OPTIONS)
@@ -176,7 +215,9 @@ app.use(express.urlencoded({ extended: true }));
 if (!isProduction) {
   app.use((req, res, next) => {
     const auth = req.headers.authorization ? 'auth' : 'anon';
-    console.log(`[${new Date().toISOString()}] ${auth} ${req.method} ${req.path}`);
+    console.log(
+      `[${new Date().toISOString()}] ${auth} ${req.method} ${req.path}`
+    );
     next();
   });
 }
@@ -227,17 +268,17 @@ app.get('/api/system-status', async (req, res) => {
   try {
     return res.status(200).json({
       success: true,
-      status: "online",
-      service: "wootech-imob-backend",
+      status: 'online',
+      service: 'wootech-imob-backend',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
     });
   } catch (error) {
-    console.error("SYSTEM STATUS ERROR:", error.message);
+    console.error('SYSTEM STATUS ERROR:', error.message);
     return res.status(500).json({
       success: false,
-      error: isDev ? error.message : 'Erro ao verificar status'
+      error: isDev ? error.message : 'Erro ao verificar status',
     });
   }
 });
@@ -274,16 +315,29 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   try {
     const traefikSync = await syncPlatformTraefikServices();
     if (!traefikSync.skipped) {
-      console.log(`[Traefik] Platform services synchronized: ${traefikSync.configPath}`);
+      console.log(
+        `[Traefik] Platform services synchronized: ${traefikSync.configPath}`
+      );
     }
 
     const supabase = getSupabaseServer();
-    const domainSync = await syncRegisteredDockerDomains(supabase, { validateDns: false });
-    const syncedCount = domainSync.results.filter((result) => result.status === 'success').length;
-    const skippedCount = domainSync.results.filter((result) => result.status !== 'success').length;
-    console.log(`[Traefik] Registered domains synchronized: ${syncedCount} ok, ${skippedCount} skipped`);
+    const domainSync = await syncRegisteredDockerDomains(supabase, {
+      validateDns: false,
+    });
+    const syncedCount = domainSync.results.filter(
+      (result) => result.status === 'success'
+    ).length;
+    const skippedCount = domainSync.results.filter(
+      (result) => result.status !== 'success'
+    ).length;
+    console.log(
+      `[Traefik] Registered domains synchronized: ${syncedCount} ok, ${skippedCount} skipped`
+    );
   } catch (error) {
-    console.error('[Traefik] Failed to synchronize dynamic configuration:', error.message);
+    console.error(
+      '[Traefik] Failed to synchronize dynamic configuration:',
+      error.message
+    );
   }
 });
 
@@ -293,27 +347,39 @@ app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
   try {
     const { name, phone, propertyTitle } = req.body;
     if (!name || !phone) {
-      return res.status(400).json({ success: false, error: 'Nome e telefone sao obrigatorios' });
+      return res
+        .status(400)
+        .json({ success: false, error: 'Nome e telefone sao obrigatorios' });
     }
 
     const activityData = {
       organization_id: req.orgId || null,
       type: 'WhatsApp',
       description: `Boas-vindas enviada para ${name} (${phone}) - Imovel: ${propertyTitle || 'N/A'}`,
-      metadata: { name, phone, property_title: propertyTitle, source: 'lead-capture-modal' },
+      metadata: {
+        name,
+        phone,
+        property_title: propertyTitle,
+        source: 'lead-capture-modal',
+      },
     };
 
     try {
       const supabase = getSupabaseServer();
       await supabase.from('lead_activities').insert(activityData);
     } catch (dbErr) {
-      console.warn('[SendWelcome] Nao foi possivel registrar atividade:', dbErr.message);
+      console.warn(
+        '[SendWelcome] Nao foi possivel registrar atividade:',
+        dbErr.message
+      );
     }
 
     res.json({ success: true, message: 'Boas-vindas registrada' });
   } catch (err) {
     console.error('[SendWelcome Error]', err.message);
-    res.status(500).json({ success: false, error: 'Erro ao enviar boas-vindas' });
+    res
+      .status(500)
+      .json({ success: false, error: 'Erro ao enviar boas-vindas' });
   }
 });
 
@@ -325,16 +391,16 @@ setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
 app.all(/(.*)/, (req, res) => {
   res.status(404).json({
     success: false,
-    error: "Route not found"
+    error: 'Route not found',
   });
 });
 
 // 7. TRATAMENTO GLOBAL DE ERROS
 app.use((err, req, res, next) => {
   const isDev = process.env.NODE_ENV !== 'production';
-  console.error("GLOBAL ERROR:", isDev ? err : err.message);
+  console.error('GLOBAL ERROR:', isDev ? err : err.message);
 
-  if (err.message && err.message.includes("CORS")) {
+  if (err.message && err.message.includes('CORS')) {
     return res.status(403).json({
       success: false,
       error: isDev ? err.message : 'Acesso bloqueado por CORS',
@@ -354,7 +420,8 @@ app.use((err, req, res, next) => {
   if (err.code === '23503') {
     return res.status(409).json({
       success: false,
-      error: 'Operação não permitida: registro possui vínculos com outros dados.',
+      error:
+        'Operação não permitida: registro possui vínculos com outros dados.',
       code: 'FOREIGN_KEY_VIOLATION',
     });
   }
@@ -383,4 +450,3 @@ server.keepAliveTimeout = 65000;
 server.headersTimeout = 66000;
 
 export default app;
-

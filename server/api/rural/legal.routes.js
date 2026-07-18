@@ -5,7 +5,13 @@ import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { SicarService } from '../../services/sicarService.js';
 import { applyRuralFilter } from '../../utils/propertyNiche.js';
-import { sanitizeInput, isValidUUID, extractUfFromRuralCode, extractGeoServerException, featureCollectionToMapTarget } from '../../lib/shared-utils.js';
+import {
+  sanitizeInput,
+  isValidUUID,
+  extractUfFromRuralCode,
+  extractGeoServerException,
+  featureCollectionToMapTarget,
+} from '../../lib/shared-utils.js';
 
 const router = Router();
 
@@ -22,24 +28,32 @@ const cpfCnpjSchema = z
 
 function ruralPropertiesQuery(supabase, orgId, columns = '*') {
   return applyRuralFilter(
-    supabase
-      .from('properties')
-      .select(columns)
-      .eq('organization_id', orgId)
+    supabase.from('properties').select(columns).eq('organization_id', orgId)
   );
 }
 
 function normalizeCarFeature(feature = {}, fallbackCode = '') {
   const properties = feature.properties || {};
-  const codImovel = properties.cod_imovel || properties.cod_imovel_car || fallbackCode;
-  const areaHa = Number(properties.num_area || properties.area || properties.area_ha) || 0;
-  const municipio = properties.nom_munici || properties.municipio || properties.nom_municipio || null;
-  const uf = properties.cod_estado || properties.uf || extractUfFromRuralCode(codImovel) || null;
+  const codImovel =
+    properties.cod_imovel || properties.cod_imovel_car || fallbackCode;
+  const areaHa =
+    Number(properties.num_area || properties.area || properties.area_ha) || 0;
+  const municipio =
+    properties.nom_munici ||
+    properties.municipio ||
+    properties.nom_municipio ||
+    null;
+  const uf =
+    properties.cod_estado ||
+    properties.uf ||
+    extractUfFromRuralCode(codImovel) ||
+    null;
 
   return {
     codImovel,
     areaHa,
-    status: properties.ind_status || properties.status || properties.situacao || null,
+    status:
+      properties.ind_status || properties.status || properties.situacao || null,
     municipio,
     uf,
     geometry: feature.geometry || null,
@@ -74,14 +88,18 @@ async function fetchCarFeatureByCode(codigo) {
   const contentType = response.headers.get('content-type') || '';
 
   if (!response.ok) {
-    const message = extractGeoServerException(rawText) || 'Falha ao consultar servidor do CAR';
+    const message =
+      extractGeoServerException(rawText) ||
+      'Falha ao consultar servidor do CAR';
     const error = new Error(message);
     error.statusCode = 502;
     throw error;
   }
 
   if (!contentType.includes('json') && rawText.trim().startsWith('<')) {
-    const message = extractGeoServerException(rawText) || 'Servidor do CAR retornou XML em vez de JSON.';
+    const message =
+      extractGeoServerException(rawText) ||
+      'Servidor do CAR retornou XML em vez de JSON.';
     const error = new Error(message);
     error.statusCode = 502;
     throw error;
@@ -91,7 +109,9 @@ async function fetchCarFeatureByCode(codigo) {
   try {
     data = JSON.parse(rawText);
   } catch (parseError) {
-    const error = new Error(`Resposta invalida do servidor do CAR: ${parseError.message}`);
+    const error = new Error(
+      `Resposta invalida do servidor do CAR: ${parseError.message}`
+    );
     error.statusCode = 502;
     throw error;
   }
@@ -122,16 +142,22 @@ router.get('/sncr/buscar', verifyAuth, requireTenant, async (req, res) => {
     const cpfCnpjClean = req.query.cpfCnpj.replace(/\D/g, '');
 
     const supabase = getSupabaseServer();
-    const { data: properties } = await ruralPropertiesQuery(supabase, req.orgId, 'id, title, features, property_type, niche')
-      .filter('features->legal->>ccirNumber', 'ilike', `*${cpfCnpjClean}*`);
+    const { data: properties } = await ruralPropertiesQuery(
+      supabase,
+      req.orgId,
+      'id, title, features, property_type, niche'
+    ).filter('features->legal->>ccirNumber', 'ilike', `*${cpfCnpjClean}*`);
 
     const results =
       properties?.map((p) => ({
         codigoImovel: p.features?.legal?.ccirNumber,
         denominacao: p.title,
-          municipio: p.city || p.features?.location?.city,
-          uf: p.state || p.features?.location?.state,
-          areaHa: p.total_area_ha || p.features?.areaHectares || p.features?.physical?.area,
+        municipio: p.city || p.features?.location?.city,
+        uf: p.state || p.features?.location?.state,
+        areaHa:
+          p.total_area_ha ||
+          p.features?.areaHectares ||
+          p.features?.physical?.area,
       })) || [];
 
     res.json({ success: true, data: results, count: results.length });
@@ -168,8 +194,14 @@ router.get(
           denominacao: property.title,
           municipio: property.city || property.features?.location?.city,
           uf: property.state || property.features?.location?.state,
-          areaHa: property.total_area_ha || property.features?.areaHectares || property.features?.physical?.area,
-          areaTotal: property.total_area_ha || property.features?.areaHectares || property.features?.physical?.area,
+          areaHa:
+            property.total_area_ha ||
+            property.features?.areaHectares ||
+            property.features?.physical?.area,
+          areaTotal:
+            property.total_area_ha ||
+            property.features?.areaHectares ||
+            property.features?.physical?.area,
           situacao: 'ATIVO',
           dataAtualizacao: property.updated_at,
         },
@@ -209,8 +241,14 @@ router.get(
           denominacao: property.title,
           municipio: property.city || property.features?.location?.city,
           uf: property.state || property.features?.location?.state,
-          areaCertificada: property.total_area_ha || property.features?.areaHectares || property.features?.physical?.area,
-          areaShape: property.total_area_ha || property.features?.areaHectares || property.features?.physical?.area,
+          areaCertificada:
+            property.total_area_ha ||
+            property.features?.areaHectares ||
+            property.features?.physical?.area,
+          areaShape:
+            property.total_area_ha ||
+            property.features?.areaHectares ||
+            property.features?.physical?.area,
           situacao: 'CERTIFICADO',
           dataCertificacao: property.updated_at,
         },
@@ -222,73 +260,101 @@ router.get(
   }
 );
 
-router.get('/car/consultar/:codigo', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const codigo = sanitizeInput(req.params.codigo, 80).toUpperCase();
-    if (!codigo) {
-      return res.status(400).json({ success: false, error: 'Codigo CAR invalido' });
-    }
-
-    const result = await fetchCarFeatureByCode(codigo);
-    res.json({ success: true, data: result.data, ...result.target });
-  } catch (error) {
-    console.error('CAR WFS error:', error);
-    res.status(error.statusCode || 500).json({ success: false, error: error.message, data: error.data || null });
-  }
-});
-
-router.get('/sigef/consultar/:codigo', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const codigo = sanitizeInput(req.params.codigo, 80).toUpperCase();
-    if (!codigo) {
-      return res.status(400).json({ success: false, error: 'Codigo SIGEF invalido' });
-    }
-
-    const params = new URLSearchParams({
-      service: 'WFS',
-      version: '1.1.0',
-      request: 'GetFeature',
-      typeName: 'incra:certificada_sigef_particular',
-      outputFormat: 'application/json',
-      cql_filter: `cod_imovel='${codigo}'`,
-    });
-    const wfsUrl = `https://geoinfo.incra.gov.br/geoserver/wfs?${params.toString()}`;
-
-    const response = await fetch(wfsUrl, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(20000),
-    });
-    const rawText = await response.text();
-    const contentType = response.headers.get('content-type') || '';
-
-    if (!response.ok) {
-      const message = extractGeoServerException(rawText) || 'Falha ao consultar servidor do SIGEF';
-      return res.status(502).json({ success: false, error: message, status: response.status });
-    }
-
-    if (!contentType.includes('json') && rawText.trim().startsWith('<')) {
-      const message = extractGeoServerException(rawText) || 'Servidor do SIGEF retornou XML em vez de JSON.';
-      return res.status(200).json({ success: false, error: message, data: null });
-    }
-
-    let data;
+router.get(
+  '/car/consultar/:codigo',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
     try {
-      data = JSON.parse(rawText);
-    } catch (parseError) {
-      return res.status(502).json({
-        success: false,
-        error: 'Resposta invalida do servidor do SIGEF.',
-        details: parseError.message,
-      });
-    }
+      const codigo = sanitizeInput(req.params.codigo, 80).toUpperCase();
+      if (!codigo) {
+        return res
+          .status(400)
+          .json({ success: false, error: 'Codigo CAR invalido' });
+      }
 
-    const target = featureCollectionToMapTarget(data);
-    res.json({ success: true, data, ...(target || {}) });
-  } catch (error) {
-    console.error('SIGEF WFS error:', error);
-    res.status(500).json({ success: false, error: error.message });
+      const result = await fetchCarFeatureByCode(codigo);
+      res.json({ success: true, data: result.data, ...result.target });
+    } catch (error) {
+      console.error('CAR WFS error:', error);
+      res
+        .status(error.statusCode || 500)
+        .json({
+          success: false,
+          error: error.message,
+          data: error.data || null,
+        });
+    }
   }
-});
+);
+
+router.get(
+  '/sigef/consultar/:codigo',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const codigo = sanitizeInput(req.params.codigo, 80).toUpperCase();
+      if (!codigo) {
+        return res
+          .status(400)
+          .json({ success: false, error: 'Codigo SIGEF invalido' });
+      }
+
+      const params = new URLSearchParams({
+        service: 'WFS',
+        version: '1.1.0',
+        request: 'GetFeature',
+        typeName: 'incra:certificada_sigef_particular',
+        outputFormat: 'application/json',
+        cql_filter: `cod_imovel='${codigo}'`,
+      });
+      const wfsUrl = `https://geoinfo.incra.gov.br/geoserver/wfs?${params.toString()}`;
+
+      const response = await fetch(wfsUrl, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(20000),
+      });
+      const rawText = await response.text();
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!response.ok) {
+        const message =
+          extractGeoServerException(rawText) ||
+          'Falha ao consultar servidor do SIGEF';
+        return res
+          .status(502)
+          .json({ success: false, error: message, status: response.status });
+      }
+
+      if (!contentType.includes('json') && rawText.trim().startsWith('<')) {
+        const message =
+          extractGeoServerException(rawText) ||
+          'Servidor do SIGEF retornou XML em vez de JSON.';
+        return res
+          .status(200)
+          .json({ success: false, error: message, data: null });
+      }
+
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseError) {
+        return res.status(502).json({
+          success: false,
+          error: 'Resposta invalida do servidor do SIGEF.',
+          details: parseError.message,
+        });
+      }
+
+      const target = featureCollectionToMapTarget(data);
+      res.json({ success: true, data, ...(target || {}) });
+    } catch (error) {
+      console.error('SIGEF WFS error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
 
 router.get('/car/:codigo', verifyAuth, requireTenant, async (req, res) => {
   try {
@@ -298,8 +364,10 @@ router.get('/car/:codigo', verifyAuth, requireTenant, async (req, res) => {
     }
 
     const supabase = getSupabaseServer();
-    const { data: properties } = await ruralPropertiesQuery(supabase, req.orgId)
-      .eq('features->legal->carNumber', codigo);
+    const { data: properties } = await ruralPropertiesQuery(
+      supabase,
+      req.orgId
+    ).eq('features->legal->carNumber', codigo);
 
     if (!properties || properties.length === 0) {
       return res.status(404).json({ error: 'CAR nao encontrado no sistema' });
@@ -343,8 +411,8 @@ router.get(
         success: true,
         data: {
           nirf,
-        situacao: 'CONSULTA_EXTERNA_NECESSARIA',
-        tipo: 'NAO_VERIFICADA',
+          situacao: 'CONSULTA_EXTERNA_NECESSARIA',
+          tipo: 'NAO_VERIFICADA',
           mensagem: 'Consulte a certidao no portal e-CAC da Receita Federal',
           dataEmissao: new Date().toISOString(),
           link: `https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/portal-cnir`,
@@ -431,7 +499,10 @@ router.get(
           ? {
               source: 'ITR',
               success: true,
-              data: { codigo: legal.itrNumber || legal.nirf, situacao: legal.itrStatus || 'REGULAR' },
+              data: {
+                codigo: legal.itrNumber || legal.nirf,
+                situacao: legal.itrStatus || 'REGULAR',
+              },
             }
           : {
               source: 'ITR',
@@ -452,7 +523,11 @@ router.get(
         propertyId,
         propertyTitle: property.title,
         location: `${location.city}/${location.state}`,
-        areaHa: physical.area || property.total_area_ha || property.features?.areaHectares || 0,
+        areaHa:
+          physical.area ||
+          property.total_area_ha ||
+          property.features?.areaHectares ||
+          0,
         validations,
         riskScore: Math.max(0, riskScore),
         riskLevel:

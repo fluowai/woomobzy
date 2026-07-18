@@ -14,8 +14,12 @@ describe('property niche classification', () => {
   });
 
   it('classifies rural properties by explicit niche', () => {
-    expect(isRuralProperty({ niche: 'rural', property_type: 'Apartamento' })).toBe(true);
-    expect(isUrbanProperty({ niche: 'rural', property_type: 'Apartamento' })).toBe(false);
+    expect(
+      isRuralProperty({ niche: 'rural', property_type: 'Apartamento' })
+    ).toBe(true);
+    expect(
+      isUrbanProperty({ niche: 'rural', property_type: 'Apartamento' })
+    ).toBe(false);
   });
 
   it('classifies rural properties by legacy type when niche is missing', () => {
@@ -26,7 +30,9 @@ describe('property niche classification', () => {
   });
 
   it('classifies urban properties by explicit niche or urban type', () => {
-    expect(isUrbanProperty({ niche: 'urbano', property_type: 'Fazenda' })).toBe(true);
+    expect(isUrbanProperty({ niche: 'urbano', property_type: 'Fazenda' })).toBe(
+      true
+    );
     expect(isUrbanProperty({ property_type: 'Apartamento' })).toBe(true);
     expect(isUrbanProperty({ property_type: 'Galpão Industrial' })).toBe(true);
   });

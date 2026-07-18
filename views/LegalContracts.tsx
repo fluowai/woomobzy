@@ -90,8 +90,12 @@ const LegalContracts: React.FC = () => {
   const loadResources = async () => {
     const { data: props } = await supabase
       .from('properties')
-      .select('id, title, price, city, state, address, total_area_ha, features');
-    const { data: leadsData } = await supabase.from('leads').select('id, name, phone');
+      .select(
+        'id, title, price, city, state, address, total_area_ha, features'
+      );
+    const { data: leadsData } = await supabase
+      .from('leads')
+      .select('id, name, phone');
     setDbProperties(props || []);
     setDbLeads(leadsData || []);
   };
@@ -141,9 +145,7 @@ const LegalContracts: React.FC = () => {
 
   const handleCreateContract = async (e: React.FormEvent) => {
     e.preventDefault();
-    const property = dbProperties.find(
-      (p) => p.id === newContract.propertyId
-    );
+    const property = dbProperties.find((p) => p.id === newContract.propertyId);
     const lead = dbLeads.find((l) => l.id === newContract.clientId);
 
     try {
@@ -238,8 +240,7 @@ const LegalContracts: React.FC = () => {
       logger.error('Erro ao enviar WhatsApp:', error);
       setWhatsappStatus({
         type: 'error',
-        message:
-          error.message || 'Falha de conexão com o servidor.',
+        message: error.message || 'Falha de conexão com o servidor.',
       });
     } finally {
       setIsSendingWhatsApp(false);
@@ -248,22 +249,52 @@ const LegalContracts: React.FC = () => {
   };
 
   const getGeneratedContent = (contract: Contract) => {
-    const template = CONTRACT_TEMPLATES.find((t) => t.id === contract.templateId);
+    const template = CONTRACT_TEMPLATES.find(
+      (t) => t.id === contract.templateId
+    );
     if (!template) return '';
     const property = dbProperties.find((p) => p.id === contract.propertyId);
-    const area = property?.total_area_ha || property?.features?.areaHectares || 0;
-    const registration = property?.features?.registration || property?.features?.legal?.registration;
+    const area =
+      property?.total_area_ha || property?.features?.areaHectares || 0;
+    const registration =
+      property?.features?.registration ||
+      property?.features?.legal?.registration;
 
     return template.content
       .replace(/{{client_name}}/g, contract.clientName)
       .replace(/{{property_name}}/g, contract.propertyName)
-      .replace(/{{property_location}}/g, property ? [property.city, property.state].filter(Boolean).join(', ') || property.address || 'Local não informado' : 'Local não informado')
+      .replace(
+        /{{property_location}}/g,
+        property
+          ? [property.city, property.state].filter(Boolean).join(', ') ||
+              property.address ||
+              'Local não informado'
+          : 'Local não informado'
+      )
       .replace(/{{property_registration}}/g, registration || 'Não informada')
       .replace(/{{property_area}}/g, String(area))
-      .replace(/{{contract_value}}/g, contract.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
-      .replace(/{{entry_value}}/g, ((contract as any).entryValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
+      .replace(
+        /{{contract_value}}/g,
+        contract.value.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        })
+      )
+      .replace(
+        /{{entry_value}}/g,
+        ((contract as any).entryValue || 0).toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        })
+      )
       .replace(/{{installments}}/g, String((contract as any).installments || 1))
-      .replace(/{{installment_value}}/g, ((contract.value - ((contract as any).entryValue || 0)) / ((contract as any).installments || 1)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
+      .replace(
+        /{{installment_value}}/g,
+        (
+          (contract.value - ((contract as any).entryValue || 0)) /
+          ((contract as any).installments || 1)
+        ).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+      )
       .replace(/{{current_date}}/g, new Date().toLocaleDateString('pt-BR'))
       .replace(/{{duration}}/g, '12')
       .replace(/{{start_date}}/g, new Date().toLocaleDateString('pt-BR'))

@@ -16,20 +16,22 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function runMigration() {
   console.log('🚀 Running WhatsApp Baileys migration...');
-  
+
   const sql = fs.readFileSync('./migrations/001_whatsapp_baileys.sql', 'utf-8');
-  const statements = sql.split(';').filter(s => s.trim().length > 0 && !s.trim().startsWith('--'));
-  
+  const statements = sql
+    .split(';')
+    .filter((s) => s.trim().length > 0 && !s.trim().startsWith('--'));
+
   let success = 0;
   let skipped = 0;
   let errors = 0;
-  
+
   for (const stmt of statements) {
     if (!stmt.trim()) continue;
-    
+
     try {
       const { error } = await supabase.rpc('exec_sql', { sql: stmt.trim() });
-      
+
       if (error) {
         if (
           error.message.includes('already exists') ||
@@ -54,16 +56,16 @@ async function runMigration() {
       console.log(`  ❌ Exception: ${e.message.substring(0, 100)}`);
     }
   }
-  
+
   console.log('\n📊 Migration Summary:');
   console.log(`  ✅ Success: ${success}`);
   console.log(`  ⏭️  Skipped: ${skipped}`);
   console.log(`  ❌ Errors: ${errors}`);
-  
+
   // Verify tables exist
   console.log('\n🔍 Verifying tables...');
   const tables = ['whatsapp_instances', 'whatsapp_chats', 'whatsapp_messages'];
-  
+
   for (const table of tables) {
     try {
       const { error } = await supabase.from(table).select('id').limit(1);

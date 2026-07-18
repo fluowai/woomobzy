@@ -77,8 +77,18 @@ export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
       required: true,
       options: [
         { value: 'yes', label: `Sim, quero morar em ${city}`, score: 20 },
-        { value: 'moving', label: `Estou me mudando para ${city} a trabalho`, score: 20 },
-        { value: 'no', label: 'Não, procuro em outra cidade', score: 0, disqualify: true, reason: `Não pretende morar em ${city}` },
+        {
+          value: 'moving',
+          label: `Estou me mudando para ${city} a trabalho`,
+          score: 20,
+        },
+        {
+          value: 'no',
+          label: 'Não, procuro em outra cidade',
+          score: 0,
+          disqualify: true,
+          reason: `Não pretende morar em ${city}`,
+        },
       ],
     },
     {
@@ -99,8 +109,18 @@ export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
       type: 'single',
       required: true,
       options: [
-        { value: `${bedrooms}+`, label: `Sim, ${bedrooms} quartos ou mais`, score: 15 },
-        { value: 'less', label: 'Um imóvel menor seria suficiente', score: 0, disqualify: true, reason: `Busca imóvel menor que ${bedrooms} quartos` },
+        {
+          value: `${bedrooms}+`,
+          label: `Sim, ${bedrooms} quartos ou mais`,
+          score: 15,
+        },
+        {
+          value: 'less',
+          label: 'Um imóvel menor seria suficiente',
+          score: 0,
+          disqualify: true,
+          reason: `Busca imóvel menor que ${bedrooms} quartos`,
+        },
       ],
     },
     {
@@ -109,9 +129,23 @@ export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
       type: 'single',
       required: true,
       options: [
-        { value: 'below', label: `Abaixo de R$ ${below.toLocaleString('pt-BR')}`, score: 0, disqualify: true, reason: 'Faixa de aluguel incompatível com a campanha' },
-        { value: 'compatible', label: `De R$ ${minRent.toLocaleString('pt-BR')} a R$ ${maxRent.toLocaleString('pt-BR')}`, score: 20 },
-        { value: 'above', label: `Acima de R$ ${maxRent.toLocaleString('pt-BR')}`, score: 20 },
+        {
+          value: 'below',
+          label: `Abaixo de R$ ${below.toLocaleString('pt-BR')}`,
+          score: 0,
+          disqualify: true,
+          reason: 'Faixa de aluguel incompatível com a campanha',
+        },
+        {
+          value: 'compatible',
+          label: `De R$ ${minRent.toLocaleString('pt-BR')} a R$ ${maxRent.toLocaleString('pt-BR')}`,
+          score: 20,
+        },
+        {
+          value: 'above',
+          label: `Acima de R$ ${maxRent.toLocaleString('pt-BR')}`,
+          score: 20,
+        },
       ],
     },
     {
@@ -123,7 +157,12 @@ export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
         { value: '15', label: 'Em até 15 dias', score: 15 },
         { value: '30', label: 'Em até 30 dias', score: 15 },
         { value: '60', label: 'Entre 31 e 60 dias', score: 8 },
-        { value: 'later', label: 'Depois de 60 dias ou sem prazo', score: 0, reason: 'Sem urgência de mudança' },
+        {
+          value: 'later',
+          label: 'Depois de 60 dias ou sem prazo',
+          score: 0,
+          reason: 'Sem urgência de mudança',
+        },
       ],
     },
     {
@@ -133,18 +172,34 @@ export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
       required: true,
       options: [
         { value: 'yes', label: 'Sim', score: 10 },
-        { value: 'guarantor', label: 'Tenho responsável financeiro ou garantia', score: 6 },
-        { value: 'no', label: 'Não possuo renda ou responsável', score: 0, disqualify: true, reason: 'Sem condição mínima de cadastro' },
+        {
+          value: 'guarantor',
+          label: 'Tenho responsável financeiro ou garantia',
+          score: 6,
+        },
+        {
+          value: 'no',
+          label: 'Não possuo renda ou responsável',
+          score: 0,
+          disqualify: true,
+          reason: 'Sem condição mínima de cadastro',
+        },
       ],
     },
     {
       id: 'restrictions',
-      label: 'Existe alguma restrição de cadastro que a imobiliária precisa conhecer?',
+      label:
+        'Existe alguma restrição de cadastro que a imobiliária precisa conhecer?',
       type: 'single',
       required: true,
       options: [
         { value: 'no', label: 'Não', score: 5 },
-        { value: 'yes', label: 'Sim, prefiro explicar no atendimento', score: 0, reason: 'Possui restrição de cadastro' },
+        {
+          value: 'yes',
+          label: 'Sim, prefiro explicar no atendimento',
+          score: 0,
+          reason: 'Possui restrição de cadastro',
+        },
       ],
     },
     {
@@ -164,7 +219,11 @@ export function buildRentalQuestions(input: RentalQuizInput): QuizQuestion[] {
       required: true,
       options: [
         { value: 'yes', label: 'Sim, quero visitar', score: 2 },
-        { value: 'details', label: 'Quero receber mais detalhes primeiro', score: 1 },
+        {
+          value: 'details',
+          label: 'Quero receber mais detalhes primeiro',
+          score: 1,
+        },
         { value: 'no', label: 'Ainda não', score: 0 },
       ],
     },
@@ -186,10 +245,27 @@ export function buildRuralQuestions(input: RuralQuizInput): QuizQuestion[] {
       type: 'single',
       required: true,
       options: [
-        { value: 'production', label: `Produção ligada a ${aptitude}`, score: 18 },
-        { value: 'investment', label: 'Investimento patrimonial ou expansão de carteira', score: 16 },
-        { value: 'leisure', label: 'Lazer, moradia rural ou uso familiar', score: 10 },
-        { value: 'curiosity', label: 'Ainda estou apenas pesquisando mercado', score: 0, reason: 'Lead em fase inicial de pesquisa' },
+        {
+          value: 'production',
+          label: `Produção ligada a ${aptitude}`,
+          score: 18,
+        },
+        {
+          value: 'investment',
+          label: 'Investimento patrimonial ou expansão de carteira',
+          score: 16,
+        },
+        {
+          value: 'leisure',
+          label: 'Lazer, moradia rural ou uso familiar',
+          score: 10,
+        },
+        {
+          value: 'curiosity',
+          label: 'Ainda estou apenas pesquisando mercado',
+          score: 0,
+          reason: 'Lead em fase inicial de pesquisa',
+        },
       ],
     },
     {
@@ -199,8 +275,18 @@ export function buildRuralQuestions(input: RuralQuizInput): QuizQuestion[] {
       required: true,
       options: [
         { value: 'yes', label: 'Sim, é a região que procuro', score: 16 },
-        { value: 'nearby', label: 'Pode ser em municípios próximos', score: 12 },
-        { value: 'other', label: 'Procuro em outra região', score: 0, disqualify: true, reason: `Busca fora da região ${region}` },
+        {
+          value: 'nearby',
+          label: 'Pode ser em municípios próximos',
+          score: 12,
+        },
+        {
+          value: 'other',
+          label: 'Procuro em outra região',
+          score: 0,
+          disqualify: true,
+          reason: `Busca fora da região ${region}`,
+        },
       ],
     },
     {
@@ -209,9 +295,23 @@ export function buildRuralQuestions(input: RuralQuizInput): QuizQuestion[] {
       type: 'single',
       required: true,
       options: [
-        { value: 'below', label: `Abaixo de ${minArea.toLocaleString('pt-BR')} ha`, score: 0, disqualify: true, reason: 'Área desejada abaixo do perfil da campanha' },
-        { value: 'compatible', label: `Entre ${minArea.toLocaleString('pt-BR')} e ${maxArea.toLocaleString('pt-BR')} ha`, score: 18 },
-        { value: 'above', label: `Acima de ${maxArea.toLocaleString('pt-BR')} ha`, score: 14 },
+        {
+          value: 'below',
+          label: `Abaixo de ${minArea.toLocaleString('pt-BR')} ha`,
+          score: 0,
+          disqualify: true,
+          reason: 'Área desejada abaixo do perfil da campanha',
+        },
+        {
+          value: 'compatible',
+          label: `Entre ${minArea.toLocaleString('pt-BR')} e ${maxArea.toLocaleString('pt-BR')} ha`,
+          score: 18,
+        },
+        {
+          value: 'above',
+          label: `Acima de ${maxArea.toLocaleString('pt-BR')} ha`,
+          score: 14,
+        },
       ],
     },
     {
@@ -220,20 +320,48 @@ export function buildRuralQuestions(input: RuralQuizInput): QuizQuestion[] {
       type: 'single',
       required: true,
       options: [
-        { value: 'below', label: `Abaixo de R$ ${Math.max(0, minBudget - 1).toLocaleString('pt-BR')}`, score: 0, disqualify: true, reason: 'Orçamento abaixo do perfil da campanha' },
-        { value: 'compatible', label: `De R$ ${minBudget.toLocaleString('pt-BR')} a R$ ${maxBudget.toLocaleString('pt-BR')}`, score: 18 },
-        { value: 'above', label: `Acima de R$ ${maxBudget.toLocaleString('pt-BR')}`, score: 18 },
+        {
+          value: 'below',
+          label: `Abaixo de R$ ${Math.max(0, minBudget - 1).toLocaleString('pt-BR')}`,
+          score: 0,
+          disqualify: true,
+          reason: 'Orçamento abaixo do perfil da campanha',
+        },
+        {
+          value: 'compatible',
+          label: `De R$ ${minBudget.toLocaleString('pt-BR')} a R$ ${maxBudget.toLocaleString('pt-BR')}`,
+          score: 18,
+        },
+        {
+          value: 'above',
+          label: `Acima de R$ ${maxBudget.toLocaleString('pt-BR')}`,
+          score: 18,
+        },
       ],
     },
     {
       id: 'documentation',
-      label: 'Você precisa que a propriedade tenha documentação rural validada?',
+      label:
+        'Você precisa que a propriedade tenha documentação rural validada?',
       type: 'single',
       required: true,
       options: [
-        { value: 'complete', label: 'Sim, CAR, matrícula e documentação em ordem são essenciais', score: 12 },
-        { value: 'analyze', label: 'Aceito analisar pendências com due diligence', score: 8 },
-        { value: 'unknown', label: 'Não tenho clareza sobre documentação rural', score: 2, reason: 'Precisa de orientação documental' },
+        {
+          value: 'complete',
+          label: 'Sim, CAR, matrícula e documentação em ordem são essenciais',
+          score: 12,
+        },
+        {
+          value: 'analyze',
+          label: 'Aceito analisar pendências com due diligence',
+          score: 8,
+        },
+        {
+          value: 'unknown',
+          label: 'Não tenho clareza sobre documentação rural',
+          score: 2,
+          reason: 'Precisa de orientação documental',
+        },
       ],
     },
     {
@@ -242,21 +370,43 @@ export function buildRuralQuestions(input: RuralQuizInput): QuizQuestion[] {
       type: 'single',
       required: true,
       options: [
-        { value: 'essential', label: 'Sim, água, acesso e estrutura impactam a decisão', score: 10 },
-        { value: 'flexible', label: 'São importantes, mas posso avaliar caso a caso', score: 7 },
-        { value: 'not_required', label: 'Não são prioridade para este momento', score: 3 },
+        {
+          value: 'essential',
+          label: 'Sim, água, acesso e estrutura impactam a decisão',
+          score: 10,
+        },
+        {
+          value: 'flexible',
+          label: 'São importantes, mas posso avaliar caso a caso',
+          score: 7,
+        },
+        {
+          value: 'not_required',
+          label: 'Não são prioridade para este momento',
+          score: 3,
+        },
       ],
     },
     {
       id: 'purchase_time',
-      label: 'Em quanto tempo pretende avançar para proposta ou visita técnica?',
+      label:
+        'Em quanto tempo pretende avançar para proposta ou visita técnica?',
       type: 'single',
       required: true,
       options: [
-        { value: 'now', label: 'Agora, quero avançar nos próximos dias', score: 12 },
+        {
+          value: 'now',
+          label: 'Agora, quero avançar nos próximos dias',
+          score: 12,
+        },
         { value: '30', label: 'Em até 30 dias', score: 10 },
         { value: '90', label: 'Entre 30 e 90 dias', score: 6 },
-        { value: 'later', label: 'Sem prazo definido', score: 0, reason: 'Sem prazo de compra definido' },
+        {
+          value: 'later',
+          label: 'Sem prazo definido',
+          score: 0,
+          reason: 'Sem prazo de compra definido',
+        },
       ],
     },
     {
@@ -265,9 +415,23 @@ export function buildRuralQuestions(input: RuralQuizInput): QuizQuestion[] {
       type: 'single',
       required: true,
       options: [
-        { value: 'decision_maker', label: 'Sim, sou decisor ou coproprietário do investimento', score: 6 },
-        { value: 'advisor', label: 'Sou consultor, familiar ou representante do comprador', score: 4 },
-        { value: 'no', label: 'Não participo da decisão', score: 0, disqualify: true, reason: 'Não participa da decisão de compra' },
+        {
+          value: 'decision_maker',
+          label: 'Sim, sou decisor ou coproprietário do investimento',
+          score: 6,
+        },
+        {
+          value: 'advisor',
+          label: 'Sou consultor, familiar ou representante do comprador',
+          score: 4,
+        },
+        {
+          value: 'no',
+          label: 'Não participo da decisão',
+          score: 0,
+          disqualify: true,
+          reason: 'Não participa da decisão de compra',
+        },
       ],
     },
   ];
@@ -289,7 +453,9 @@ export const quizService = {
     }
   },
 
-  async createCampaign(payload: Omit<QuizCampaign, 'id' | 'created_at' | 'quiz_submissions'>) {
+  async createCampaign(
+    payload: Omit<QuizCampaign, 'id' | 'created_at' | 'quiz_submissions'>
+  ) {
     const response = await callApi('/api/quiz/campaigns', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -308,7 +474,10 @@ export const quizService = {
       method: 'POST',
       body: formData,
     });
-    return response.campaign as Omit<QuizCampaign, 'id' | 'created_at' | 'quiz_submissions'>;
+    return response.campaign as Omit<
+      QuizCampaign,
+      'id' | 'created_at' | 'quiz_submissions'
+    >;
   },
 
   async updateCampaign(id: string, payload: Partial<QuizCampaign>) {
@@ -336,23 +505,37 @@ export const quizService = {
   },
 
   async getPublicCampaign(slug: string): Promise<QuizCampaign> {
-    const response = await fetch(getApiUrl(`/api/quiz/public/${encodeURIComponent(slug)}`));
+    const response = await fetch(
+      getApiUrl(`/api/quiz/public/${encodeURIComponent(slug)}`)
+    );
     if (response.ok) return (await response.json()).campaign;
 
     const apiData = await response.json().catch(() => ({}));
-    const { data, error } = await supabase.rpc('get_public_quiz', { p_slug: slug });
-    if (error || !data) throw new Error(error?.message || apiData.error || 'Quiz indisponível.');
+    const { data, error } = await supabase.rpc('get_public_quiz', {
+      p_slug: slug,
+    });
+    if (error || !data)
+      throw new Error(error?.message || apiData.error || 'Quiz indisponível.');
     return data as QuizCampaign;
   },
 
   async submitPublic(slug: string, payload: Record<string, unknown>) {
-    const response = await fetch(getApiUrl(`/api/quiz/public/${encodeURIComponent(slug)}/submissions`), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      getApiUrl(`/api/quiz/public/${encodeURIComponent(slug)}/submissions`),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
     const data = await response.json().catch(() => ({}));
-    if (response.ok) return data as { qualified: boolean; score: number; message: string; whatsapp_url?: string | null };
+    if (response.ok)
+      return data as {
+        qualified: boolean;
+        score: number;
+        message: string;
+        whatsapp_url?: string | null;
+      };
 
     const { data: fallback, error } = await supabase.rpc('submit_public_quiz', {
       p_slug: slug,
@@ -362,7 +545,15 @@ export const quizService = {
       p_answers: payload.answers || {},
       p_utm: payload.utm || {},
     });
-    if (error || !fallback) throw new Error(error?.message || data.error || 'Não foi possível concluir o quiz.');
-    return fallback as { qualified: boolean; score: number; message: string; whatsapp_url?: string | null };
+    if (error || !fallback)
+      throw new Error(
+        error?.message || data.error || 'Não foi possível concluir o quiz.'
+      );
+    return fallback as {
+      qualified: boolean;
+      score: number;
+      message: string;
+      whatsapp_url?: string | null;
+    };
   },
 };

@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 const baseUrl = 'https://app.imobfluow.com.br/api';
@@ -9,41 +8,40 @@ console.log(`🚀 Tentando criar instância: ${instanceName}`);
 console.log(`📡 URL: ${baseUrl}`);
 
 async function test() {
-    try {
-        const payload = {
-            instanceName: instanceName,
-            token: Math.random().toString(36).substring(7),
-            qrcode: true,
-            integration: "WHATSAPP-BAILEYS"
-        };
-        
-        console.log("📦 Payload:", JSON.stringify(payload, null, 2));
+  try {
+    const payload = {
+      instanceName: instanceName,
+      token: Math.random().toString(36).substring(7),
+      qrcode: true,
+      integration: 'WHATSAPP-BAILEYS',
+    };
 
-        const response = await axios.post(`${baseUrl}/instance/create`, payload, {
-            headers: {
-                'apikey': apiKey
-            }
-        });
+    console.log('📦 Payload:', JSON.stringify(payload, null, 2));
 
-        console.log("✅ SUCESSO! Instância criada.");
-        console.log("Dados:", response.data);
+    const response = await axios.post(`${baseUrl}/instance/create`, payload, {
+      headers: {
+        apikey: apiKey,
+      },
+    });
 
-        // Limpar
-        console.log("🧹 Deletando instância de teste...");
-        await axios.delete(`${baseUrl}/instance/delete/${instanceName}`, {
-            headers: { 'apikey': apiKey }
-        });
-        console.log("✅ Deletada.");
+    console.log('✅ SUCESSO! Instância criada.');
+    console.log('Dados:', response.data);
 
-    } catch (error) {
-        console.error("❌ ERRO:");
-        if (error.response) {
-            console.error("Status:", error.response.status);
-            console.error("Data:", JSON.stringify(error.response.data, null, 2));
-        } else {
-            console.error(error.message);
-        }
+    // Limpar
+    console.log('🧹 Deletando instância de teste...');
+    await axios.delete(`${baseUrl}/instance/delete/${instanceName}`, {
+      headers: { apikey: apiKey },
+    });
+    console.log('✅ Deletada.');
+  } catch (error) {
+    console.error('❌ ERRO:');
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Data:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error(error.message);
     }
+  }
 }
 
 test();

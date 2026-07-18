@@ -25,7 +25,9 @@ console.log(`${colors.cyan}
 ${colors.reset}`);
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error(`${colors.red}❌ SERVICE_ROLE_KEY não configurada${colors.reset}`);
+  console.error(
+    `${colors.red}❌ SERVICE_ROLE_KEY não configurada${colors.reset}`
+  );
   process.exit(1);
 }
 
@@ -42,14 +44,18 @@ const MIGRATIONS = [
 ];
 
 async function executeMigrations() {
-  console.log(`${colors.blue}📋 Executando ${MIGRATIONS.length} migrações...${colors.reset}\n`);
+  console.log(
+    `${colors.blue}📋 Executando ${MIGRATIONS.length} migrações...${colors.reset}\n`
+  );
 
   for (let i = 0; i < MIGRATIONS.length; i++) {
     const file = MIGRATIONS[i];
     const num = i + 1;
 
     if (!fs.existsSync(file)) {
-      console.log(`${colors.yellow}⚠️  [${num}/${MIGRATIONS.length}] ${file} - NÃO ENCONTRADO${colors.reset}`);
+      console.log(
+        `${colors.yellow}⚠️  [${num}/${MIGRATIONS.length}] ${file} - NÃO ENCONTRADO${colors.reset}`
+      );
       continue;
     }
 
@@ -57,10 +63,12 @@ async function executeMigrations() {
       const sql = fs.readFileSync(file, 'utf-8');
       const statements = sql
         .split(';')
-        .map(s => s.trim())
-        .filter(s => s && !s.startsWith('--'));
+        .map((s) => s.trim())
+        .filter((s) => s && !s.startsWith('--'));
 
-      console.log(`${colors.blue}[${num}/${MIGRATIONS.length}] ${file}${colors.reset}`);
+      console.log(
+        `${colors.blue}[${num}/${MIGRATIONS.length}] ${file}${colors.reset}`
+      );
       console.log(`    └─ ${statements.length} statements`);
 
       let success = 0;
@@ -88,7 +96,7 @@ async function executeMigrations() {
   console.log(`3. Ou execute: npm run check-db\n`);
 }
 
-executeMigrations().catch(err => {
+executeMigrations().catch((err) => {
   console.error(`${colors.red}❌ Erro: ${err.message}${colors.reset}`);
   process.exit(1);
 });

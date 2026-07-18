@@ -3,7 +3,10 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
-import { encryptEmailSecret, maskEmailSecret } from '../../services/email/crypto.js';
+import {
+  encryptEmailSecret,
+  maskEmailSecret,
+} from '../../services/email/crypto.js';
 import {
   normalizeEmailAddress,
   normalizeEmailConnectionConfig,
@@ -14,13 +17,16 @@ import {
 } from '../../services/email/emailService.js';
 
 const router = Router();
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 const accountSchema = z.object({
   email: z.string().email().transform(normalizeEmailAddress),
@@ -47,13 +53,19 @@ router.get('/accounts', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('email_accounts')
-      .select('id, email, imap_host, imap_port, imap_secure, smtp_host, smtp_port, smtp_secure, auth_method, oauth_provider, last_inbox_uid, last_synced_at, sync_status, sync_error, is_active, created_at')
+      .select(
+        'id, email, imap_host, imap_port, imap_secure, smtp_host, smtp_port, smtp_secure, auth_method, oauth_provider, last_inbox_uid, last_synced_at, sync_status, sync_error, is_active, created_at'
+      )
       .eq('organization_id', req.orgId)
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    res.json({ success: true, accounts: data || [], password: maskEmailSecret() });
+    res.json({
+      success: true,
+      accounts: data || [],
+      password: maskEmailSecret(),
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -61,9 +73,14 @@ router.get('/accounts', async (req, res) => {
 
 router.post('/accounts/test', async (req, res) => {
   try {
-    const account = normalizeEmailConnectionConfig(accountSchema.parse(req.body));
+    const account = normalizeEmailConnectionConfig(
+      accountSchema.parse(req.body)
+    );
     await testEmailConnection(account);
-    res.json({ success: true, message: 'Conexao IMAP/SMTP validada com sucesso.' });
+    res.json({
+      success: true,
+      message: 'Conexao IMAP/SMTP validada com sucesso.',
+    });
   } catch (error) {
     res.status(error.statusCode || 400).json({ error: error.message });
   }
@@ -71,7 +88,9 @@ router.post('/accounts/test', async (req, res) => {
 
 router.post('/accounts', async (req, res) => {
   try {
-    const account = normalizeEmailConnectionConfig(accountSchema.parse(req.body));
+    const account = normalizeEmailConnectionConfig(
+      accountSchema.parse(req.body)
+    );
     await testEmailConnection(account);
 
     const accountPayload = {
@@ -112,7 +131,9 @@ router.post('/accounts', async (req, res) => {
       : supabase.from('email_accounts').insert(accountPayload);
 
     const { data, error } = await query
-      .select('id, email, imap_host, imap_port, smtp_host, smtp_port, last_synced_at, sync_status, created_at')
+      .select(
+        'id, email, imap_host, imap_port, smtp_host, smtp_port, last_synced_at, sync_status, created_at'
+      )
       .single();
 
     if (error) throw error;
@@ -141,7 +162,13 @@ router.delete('/accounts/:id', async (req, res) => {
 router.post('/sync', async (req, res) => {
   try {
     const accountId = z.string().uuid().parse(req.body.account_id);
-    const limit = z.coerce.number().int().min(1).max(200).default(50).parse(req.body.limit ?? 50);
+    const limit = z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(200)
+      .default(50)
+      .parse(req.body.limit ?? 50);
     const result = await syncEmailAccount({
       accountId,
       organizationId: req.orgId,
@@ -158,7 +185,9 @@ router.get('/agenda', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('lead_activities')
-      .select('id, type, description, metadata, created_at, leads(id, name, email, phone, status)')
+      .select(
+        'id, type, description, metadata, created_at, leads(id, name, email, phone, status)'
+      )
       .eq('organization_id', req.orgId)
       .contains('metadata', { source: 'email_agent' })
       .order('created_at', { ascending: false })
@@ -192,7 +221,10 @@ router.get('/emails', async (req, res) => {
 
     let query = supabase
       .from('emails')
-      .select('id, account_id, folder, direction, subject, from_name, from_email, to_email, preview, date, is_read, is_archived, message_id, in_reply_to, thread_id, lead_id, leads(id, name, email)', { count: 'exact' })
+      .select(
+        'id, account_id, folder, direction, subject, from_name, from_email, to_email, preview, date, is_read, is_archived, message_id, in_reply_to, thread_id, lead_id, leads(id, name, email)',
+        { count: 'exact' }
+      )
       .eq('organization_id', req.orgId)
       .order('date', { ascending: false, nullsFirst: false })
       .range(offset, offset + limit - 1);
@@ -204,8 +236,13 @@ router.get('/emails', async (req, res) => {
     }
 
     if (search) {
-      const clean = search.replace(/[,%_().]/g, ' ').replace(/\s+/g, ' ').trim();
-      query = query.or(`subject.ilike.%${clean}%,from_email.ilike.%${clean}%,body_text.ilike.%${clean}%`);
+      const clean = search
+        .replace(/[,%_().]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      query = query.or(
+        `subject.ilike.%${clean}%,from_email.ilike.%${clean}%,body_text.ilike.%${clean}%`
+      );
     }
 
     const { data, error, count } = await query;
@@ -214,7 +251,12 @@ router.get('/emails', async (req, res) => {
     res.json({
       success: true,
       emails: data || [],
-      pagination: { page, limit, total: count || 0, pages: Math.ceil((count || 0) / limit) },
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        pages: Math.ceil((count || 0) / limit),
+      },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -230,7 +272,8 @@ router.get('/emails/:id/thread', async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (findError || !email) return res.status(404).json({ error: 'Email nao encontrado.' });
+    if (findError || !email)
+      return res.status(404).json({ error: 'Email nao encontrado.' });
 
     const { data, error } = await supabase
       .from('emails')
@@ -270,14 +313,19 @@ router.post('/emails/:id/reply', async (req, res) => {
     const html = z.string().min(1).max(200000).parse(req.body.body_html);
     const { data: original, error: findError } = await supabase
       .from('emails')
-      .select('account_id, subject, from_email, message_id, references_ids, thread_id, lead_id')
+      .select(
+        'account_id, subject, from_email, message_id, references_ids, thread_id, lead_id'
+      )
       .eq('id', req.params.id)
       .eq('organization_id', req.orgId)
       .single();
 
-    if (findError || !original) return res.status(404).json({ error: 'Email original nao encontrado.' });
+    if (findError || !original)
+      return res.status(404).json({ error: 'Email original nao encontrado.' });
 
-    const subject = String(original.subject || '').toLowerCase().startsWith('re:')
+    const subject = String(original.subject || '')
+      .toLowerCase()
+      .startsWith('re:')
       ? original.subject
       : `Re: ${original.subject || '(sem assunto)'}`;
 
@@ -289,12 +337,23 @@ router.post('/emails/:id/reply', async (req, res) => {
       subject,
       html,
       inReplyTo: original.message_id,
-      references: [...(original.references_ids || []), original.message_id].filter(Boolean),
+      references: [
+        ...(original.references_ids || []),
+        original.message_id,
+      ].filter(Boolean),
       leadId: original.lead_id || null,
     });
 
-    await supabase.from('emails').update({ thread_id: original.thread_id }).eq('id', saved.id);
-    res.status(201).json({ success: true, email: { ...saved, thread_id: original.thread_id } });
+    await supabase
+      .from('emails')
+      .update({ thread_id: original.thread_id })
+      .eq('id', saved.id);
+    res
+      .status(201)
+      .json({
+        success: true,
+        email: { ...saved, thread_id: original.thread_id },
+      });
   } catch (error) {
     res.status(error.statusCode || 400).json({ error: error.message });
   }
@@ -316,7 +375,8 @@ router.patch('/emails/:id', async (req, res) => {
         .eq('id', updates.lead_id)
         .eq('organization_id', req.orgId)
         .maybeSingle();
-      if (leadError || !lead) return res.status(404).json({ error: 'Lead nao encontrado.' });
+      if (leadError || !lead)
+        return res.status(404).json({ error: 'Lead nao encontrado.' });
     }
 
     const { data, error } = await supabase

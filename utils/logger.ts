@@ -15,7 +15,11 @@ const isDebugMode = () => {
       const parts = debugToken.split('.');
       if (parts.length === 3) {
         const payload = JSON.parse(atob(parts[1]));
-        if (payload.exp && payload.exp * 1000 > Date.now() && payload.role === 'superadmin') {
+        if (
+          payload.exp &&
+          payload.exp * 1000 > Date.now() &&
+          payload.role === 'superadmin'
+        ) {
           return true;
         }
       }
@@ -47,14 +51,23 @@ const maskData = (data: any): any => {
 
   const masked = { ...data };
   const sensitiveKeys = [
-    'password', 'token', 'access_token', 'refresh_token', 
-    'secret', 'key', 'api_key', 'apikey', 'auth', 
-    'credential', 'private', 'jwt'
+    'password',
+    'token',
+    'access_token',
+    'refresh_token',
+    'secret',
+    'key',
+    'api_key',
+    'apikey',
+    'auth',
+    'credential',
+    'private',
+    'jwt',
   ];
-  
+
   for (const key of Object.keys(masked)) {
     const lowerKey = key.toLowerCase();
-    if (sensitiveKeys.some(sk => lowerKey.includes(sk))) {
+    if (sensitiveKeys.some((sk) => lowerKey.includes(sk))) {
       masked[key] = '[REDACTED]';
     } else if (lowerKey === 'email' && typeof masked[key] === 'string') {
       const parts = masked[key].split('@');
@@ -95,11 +108,21 @@ class Logger {
     }
   }
 
-  debug(message: string, ...optionalParams: any[]) { this.log('debug', message, ...optionalParams); }
-  info(message: string, ...optionalParams: any[]) { this.log('info', message, ...optionalParams); }
-  warn(message: string, ...optionalParams: any[]) { this.log('warn', message, ...optionalParams); }
-  error(message: string, ...optionalParams: any[]) { this.log('error', message, ...optionalParams); }
-  audit(message: string, ...optionalParams: any[]) { this.log('audit', message, ...optionalParams); }
+  debug(message: string, ...optionalParams: any[]) {
+    this.log('debug', message, ...optionalParams);
+  }
+  info(message: string, ...optionalParams: any[]) {
+    this.log('info', message, ...optionalParams);
+  }
+  warn(message: string, ...optionalParams: any[]) {
+    this.log('warn', message, ...optionalParams);
+  }
+  error(message: string, ...optionalParams: any[]) {
+    this.log('error', message, ...optionalParams);
+  }
+  audit(message: string, ...optionalParams: any[]) {
+    this.log('audit', message, ...optionalParams);
+  }
 }
 
 export const logger = new Logger();

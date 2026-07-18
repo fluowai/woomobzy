@@ -12,7 +12,9 @@ interface ConsultingAgentProps {
   };
 }
 
-const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) => {
+const ConsultingAgent: React.FC<ConsultingAgentProps> = ({
+  initialLeadData,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -44,7 +46,10 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
         [...messages, userMessage],
         initialLeadData
       );
-      setMessages((prev) => [...prev, { role: 'assistant', content: response }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: response },
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -77,21 +82,31 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
             </div>
             <div>
               <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest">
-                Clara <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Clara{' '}
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
               <div className="text-[10px] font-bold uppercase tracking-tighter text-slate-400">
                 Especialista {COMMERCIAL_PRODUCT_NAME}
               </div>
             </div>
           </div>
-          <button onClick={() => setIsOpen(false)} className="text-slate-400 transition-colors hover:text-white">
+          <button
+            onClick={() => setIsOpen(false)}
+            className="text-slate-400 transition-colors hover:text-white"
+          >
             <X size={24} />
           </button>
         </div>
 
-        <div ref={scrollRef} className="flex-1 space-y-6 overflow-y-auto bg-slate-50/50 p-6">
+        <div
+          ref={scrollRef}
+          className="flex-1 space-y-6 overflow-y-auto bg-slate-50/50 p-6"
+        >
           {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div
+              key={i}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
               <div
                 className={`max-w-[80%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm ${
                   msg.role === 'user'
@@ -163,7 +178,8 @@ const ConsultingAgent: React.FC<ConsultingAgentProps> = ({ initialLeadData }) =>
           </form>
           <div className="mt-4 flex items-center justify-center gap-4">
             <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-              <Bot size={12} className="text-emerald-500" /> Powered by {COMMERCIAL_PRODUCT_NAME} AI
+              <Bot size={12} className="text-emerald-500" /> Powered by{' '}
+              {COMMERCIAL_PRODUCT_NAME} AI
             </div>
           </div>
         </div>

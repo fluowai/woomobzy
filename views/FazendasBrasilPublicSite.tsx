@@ -75,8 +75,10 @@ const PHONE_LABEL = '(44) 99843-3030';
 const EMAIL = 'contato@fazendasbrasil.com.br';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
 const BROKER_IMAGE = '/images/fazendas-brasil/broker-renato.jpeg';
-const HERO_IMAGE = 'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/hero/fazendas-brasil-hero-clean.webp';
-const CARD_FALLBACK_IMAGE = 'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/fallback/fazendas-brasil-card-fallback.webp';
+const HERO_IMAGE =
+  'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/hero/fazendas-brasil-hero-clean.webp';
+const CARD_FALLBACK_IMAGE =
+  'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/fallback/fazendas-brasil-card-fallback.webp';
 const BROKER_NAME = 'Renato Piovesana';
 const PROPERTIES_PER_PAGE = 12;
 const PROPERTIES_PER_GRID = 4;
@@ -102,8 +104,18 @@ const AREA_RANGES: NumericRange[] = [
 const PRICE_RANGES: NumericRange[] = [
   { id: 'up-1m', label: 'Ate R$ 1 mi', max: 1_000_000 },
   { id: '1m-5m', label: 'R$ 1 mi a R$ 5 mi', min: 1_000_000, max: 5_000_000 },
-  { id: '5m-20m', label: 'R$ 5 mi a R$ 20 mi', min: 5_000_000, max: 20_000_000 },
-  { id: '20m-70m', label: 'R$ 20 mi a R$ 70 mi', min: 20_000_000, max: 70_000_000 },
+  {
+    id: '5m-20m',
+    label: 'R$ 5 mi a R$ 20 mi',
+    min: 5_000_000,
+    max: 20_000_000,
+  },
+  {
+    id: '20m-70m',
+    label: 'R$ 20 mi a R$ 70 mi',
+    min: 20_000_000,
+    max: 70_000_000,
+  },
   { id: 'over-70m', label: 'Acima de R$ 70 mi', min: 70_000_000 },
   { id: 'unknown', label: 'Sob consulta' },
 ];
@@ -112,27 +124,52 @@ const quizQuestions = [
   {
     id: 'objective',
     label: 'Qual e o objetivo principal?',
-    options: ['Comprar para produzir', 'Investimento patrimonial', 'Expansao rural', 'Reserva familiar'],
+    options: [
+      'Comprar para produzir',
+      'Investimento patrimonial',
+      'Expansao rural',
+      'Reserva familiar',
+    ],
   },
   {
     id: 'budgetRange',
     label: 'Qual faixa de investimento?',
-    options: ['Ate R$ 10 mi', 'R$ 10 mi a R$ 30 mi', 'R$ 30 mi a R$ 70 mi', 'Acima de R$ 70 mi'],
+    options: [
+      'Ate R$ 10 mi',
+      'R$ 10 mi a R$ 30 mi',
+      'R$ 30 mi a R$ 70 mi',
+      'Acima de R$ 70 mi',
+    ],
   },
   {
     id: 'timeline',
     label: 'Quando pretende avançar?',
-    options: ['Imediatamente', 'Em ate 30 dias', 'Em 3 meses', 'Ainda pesquisando'],
+    options: [
+      'Imediatamente',
+      'Em ate 30 dias',
+      'Em 3 meses',
+      'Ainda pesquisando',
+    ],
   },
   {
     id: 'areaNeed',
     label: 'Qual tamanho faz sentido?',
-    options: ['Ate 500 ha', '500 a 1.500 ha', '1.500 a 3.000 ha', 'Acima de 3.000 ha'],
+    options: [
+      'Ate 500 ha',
+      '500 a 1.500 ha',
+      '1.500 a 3.000 ha',
+      'Acima de 3.000 ha',
+    ],
   },
   {
     id: 'payment',
     label: 'Como pretende negociar?',
-    options: ['A vista', 'Entrada e prazo', 'Financiamento', 'Depende da oportunidade'],
+    options: [
+      'A vista',
+      'Entrada e prazo',
+      'Financiamento',
+      'Depende da oportunidade',
+    ],
   },
 ];
 
@@ -171,7 +208,11 @@ const footerStats = [
   { icon: FileText, value: '+1.000', label: 'fazendas negociadas' },
   { icon: UsersRound, value: '+10.000', label: 'clientes atendidos' },
   { icon: MapPin, value: 'Todo o Brasil', label: 'atuacao nacional' },
-  { icon: Star, value: 'Referencia', label: 'em imoveis rurais de alto padrao' },
+  {
+    icon: Star,
+    value: 'Referencia',
+    label: 'em imoveis rurais de alto padrao',
+  },
 ];
 
 function normalizeImages(images?: string[] | string) {
@@ -188,7 +229,9 @@ function normalizeImages(images?: string[] | string) {
 }
 
 function isLegacyBrokenImage(url: string) {
-  return /supabase\.(co|com)\/storage\/v1\/object\/public\/imobzyimg/i.test(String(url || ''));
+  return /supabase\.(co|com)\/storage\/v1\/object\/public\/imobzyimg/i.test(
+    String(url || '')
+  );
 }
 
 function formatCurrency(value?: number) {
@@ -242,23 +285,35 @@ function getPropertyArea(property: PublicProperty) {
   return (
     property.total_area_ha ||
     property.useful_area_ha ||
-    getFeatureNumber(property, ['areaHectares', 'area_ha', 'areaHa', 'hectares'])
+    getFeatureNumber(property, [
+      'areaHectares',
+      'area_ha',
+      'areaHa',
+      'hectares',
+    ])
   );
 }
 
 function getAptitude(property: PublicProperty) {
-  if (Array.isArray(property.aptitude) && property.aptitude[0]) return property.aptitude[0];
-  if (typeof property.aptitude === 'string' && property.aptitude) return property.aptitude;
+  if (Array.isArray(property.aptitude) && property.aptitude[0])
+    return property.aptitude[0];
+  if (typeof property.aptitude === 'string' && property.aptitude)
+    return property.aptitude;
   return property.property_type || 'Fazenda';
 }
 
 function getPropertyImage(property: PublicProperty, _index: number) {
-  const images = normalizeImages(property.images).filter((image) => !isLegacyBrokenImage(image));
+  const images = normalizeImages(property.images).filter(
+    (image) => !isLegacyBrokenImage(image)
+  );
   return images[0] || CARD_FALLBACK_IMAGE || HERO_IMAGE;
 }
 
 function getPropertyLocation(property: PublicProperty) {
-  return [property.city, property.state].filter(Boolean).join(' / ') || 'Fazendas Brasil';
+  return (
+    [property.city, property.state].filter(Boolean).join(' / ') ||
+    'Fazendas Brasil'
+  );
 }
 
 function getPropertyUrlToken(property: PublicProperty) {
@@ -267,7 +322,9 @@ function getPropertyUrlToken(property: PublicProperty) {
 
 function getPropertyTokenFromUrl() {
   if (typeof window === 'undefined') return '';
-  return new URLSearchParams(window.location.search).get(PROPERTY_QUERY_PARAM) || '';
+  return (
+    new URLSearchParams(window.location.search).get(PROPERTY_QUERY_PARAM) || ''
+  );
 }
 
 function findPropertyByUrlToken(properties: PublicProperty[], token: string) {
@@ -278,8 +335,10 @@ function findPropertyByUrlToken(properties: PublicProperty[], token: string) {
     decodedToken = token;
   }
   const normalizedToken = normalizeSearchValue(decodedToken);
-  return properties.find((property) =>
-    property.id === decodedToken || normalizeSearchValue(property.title) === normalizedToken
+  return properties.find(
+    (property) =>
+      property.id === decodedToken ||
+      normalizeSearchValue(property.title) === normalizedToken
   );
 }
 
@@ -322,7 +381,9 @@ function getPropertyDetailTags(property: PublicProperty) {
     features.legal?.escritura ? 'Escritura' : null,
   ].filter(Boolean) as string[];
 
-  return tags.length > 0 ? tags.slice(0, 12) : ['Detalhes complementares serao confirmados pelo corretor responsavel.'];
+  return tags.length > 0
+    ? tags.slice(0, 12)
+    : ['Detalhes complementares serao confirmados pelo corretor responsavel.'];
 }
 
 function normalizeSearchValue(value: unknown) {
@@ -335,12 +396,16 @@ function normalizeSearchValue(value: unknown) {
 }
 
 function uniqueSorted(values: string[]) {
-  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b, 'pt-BR')
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort(
+    (a, b) => a.localeCompare(b, 'pt-BR')
   );
 }
 
-function matchesNumberRange(value: number, rangeId: string, ranges: NumericRange[]) {
+function matchesNumberRange(
+  value: number,
+  rangeId: string,
+  ranges: NumericRange[]
+) {
   if (!rangeId) return true;
   if (rangeId === 'unknown') return !value;
 
@@ -351,16 +416,25 @@ function matchesNumberRange(value: number, rangeId: string, ranges: NumericRange
   return true;
 }
 
-function propertyMatchesFilters(property: PublicProperty, filters: PropertyFilters) {
+function propertyMatchesFilters(
+  property: PublicProperty,
+  filters: PropertyFilters
+) {
   const area = getPropertyArea(property);
   const price = toNumber(property.price);
   const aptitude = getAptitude(property);
 
-  if (filters.state && normalizeSearchValue(property.state) !== normalizeSearchValue(filters.state)) {
+  if (
+    filters.state &&
+    normalizeSearchValue(property.state) !== normalizeSearchValue(filters.state)
+  ) {
     return false;
   }
 
-  if (filters.aptitude && normalizeSearchValue(aptitude) !== normalizeSearchValue(filters.aptitude)) {
+  if (
+    filters.aptitude &&
+    normalizeSearchValue(aptitude) !== normalizeSearchValue(filters.aptitude)
+  ) {
     return false;
   }
 
@@ -373,14 +447,16 @@ function propertyMatchesFilters(property: PublicProperty, filters: PropertyFilte
   }
 
   if (filters.query) {
-    const haystack = normalizeSearchValue([
-      property.title,
-      property.city,
-      property.state,
-      property.property_type,
-      aptitude,
-      JSON.stringify(property.features || {}),
-    ].join(' '));
+    const haystack = normalizeSearchValue(
+      [
+        property.title,
+        property.city,
+        property.state,
+        property.property_type,
+        aptitude,
+        JSON.stringify(property.features || {}),
+      ].join(' ')
+    );
     return haystack.includes(normalizeSearchValue(filters.query));
   }
 
@@ -388,10 +464,17 @@ function propertyMatchesFilters(property: PublicProperty, filters: PropertyFilte
 }
 
 function getLeadFirstName(name: string) {
-  return String(name || '').trim().split(/\s+/)[0] || 'tudo bem';
+  return (
+    String(name || '')
+      .trim()
+      .split(/\s+/)[0] || 'tudo bem'
+  );
 }
 
-function buildInitialAttendanceMessage(leadName: string, property: PublicProperty) {
+function buildInitialAttendanceMessage(
+  leadName: string,
+  property: PublicProperty
+) {
   const location = getPropertyLocation(property);
   const area = formatArea(getPropertyArea(property));
   const price = formatCurrency(property.price);
@@ -400,26 +483,37 @@ function buildInitialAttendanceMessage(leadName: string, property: PublicPropert
     location !== 'Fazendas Brasil' ? location : null,
     area !== 'Sob consulta' ? `area ${area}` : null,
     price !== 'Sob consulta' ? `valor ${price}` : null,
-  ].filter(Boolean).join(', ');
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   return `Oi ${getLeadFirstName(leadName)}, aqui e o ${BROKER_NAME} da Fazendas Brasil. Vi que voce se cadastrou para receber informacoes sobre a fazenda ${details}. Vou continuar seu atendimento por aqui.`;
 }
 
 function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
 }
 
 const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   organizationId,
 }) => {
   const [properties, setProperties] = useState<PublicProperty[]>([]);
-  const [resolvedOrganizationId, setResolvedOrganizationId] = useState<string | undefined>(organizationId || FAZENDAS_ORG_ID);
+  const [resolvedOrganizationId, setResolvedOrganizationId] = useState<
+    string | undefined
+  >(organizationId || FAZENDAS_ORG_ID);
   const [currentPage, setCurrentPage] = useState(1);
   const [isUsingFallback, setIsUsingFallback] = useState(true);
-  const [draftFilters, setDraftFilters] = useState<PropertyFilters>(EMPTY_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState<PropertyFilters>(EMPTY_FILTERS);
-  const [selectedProperty, setSelectedProperty] = useState<PublicProperty | null>(null);
-  const [leadStep, setLeadStep] = useState<'contact' | 'quiz' | 'success' | 'details'>('contact');
+  const [draftFilters, setDraftFilters] =
+    useState<PropertyFilters>(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] =
+    useState<PropertyFilters>(EMPTY_FILTERS);
+  const [selectedProperty, setSelectedProperty] =
+    useState<PublicProperty | null>(null);
+  const [leadStep, setLeadStep] = useState<
+    'contact' | 'quiz' | 'success' | 'details'
+  >('contact');
   const [quizIndex, setQuizIndex] = useState(0);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState('');
@@ -477,7 +571,10 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         setProperties([]);
         setIsUsingFallback(true);
       } catch (error) {
-        logger.warn('[Fazendas Brasil] Não foi possível carregar a vitrine real:', error);
+        logger.warn(
+          '[Fazendas Brasil] Não foi possível carregar a vitrine real:',
+          error
+        );
         setResolvedOrganizationId(organizationId || FAZENDAS_ORG_ID);
         setProperties([]);
         setIsUsingFallback(true);
@@ -498,12 +595,18 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
   );
 
   const filteredProperties = useMemo(
-    () => properties.filter((property) => propertyMatchesFilters(property, appliedFilters)),
+    () =>
+      properties.filter((property) =>
+        propertyMatchesFilters(property, appliedFilters)
+      ),
     [properties, appliedFilters]
   );
 
   const totalFilteredProperties = filteredProperties.length;
-  const totalPages = Math.max(1, Math.ceil(totalFilteredProperties / PROPERTIES_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalFilteredProperties / PROPERTIES_PER_PAGE)
+  );
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -522,8 +625,14 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     return grids;
   }, [pagedProperties]);
 
-  const firstPropertyIndex = totalFilteredProperties === 0 ? 0 : (currentPage - 1) * PROPERTIES_PER_PAGE + 1;
-  const lastPropertyIndex = Math.min(currentPage * PROPERTIES_PER_PAGE, totalFilteredProperties);
+  const firstPropertyIndex =
+    totalFilteredProperties === 0
+      ? 0
+      : (currentPage - 1) * PROPERTIES_PER_PAGE + 1;
+  const lastPropertyIndex = Math.min(
+    currentPage * PROPERTIES_PER_PAGE,
+    totalFilteredProperties
+  );
   const hasActiveFilters = Object.values(appliedFilters).some(Boolean);
 
   const goToPage = (page: number) => {
@@ -531,7 +640,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     setMobileMenuOpen(false);
     setCurrentPage(nextPage);
     window.requestAnimationFrame(() => {
-      document.getElementById('fazendas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document
+        .getElementById('fazendas')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
 
@@ -540,7 +651,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     setAppliedFilters(draftFilters);
     setCurrentPage(1);
     window.requestAnimationFrame(() => {
-      document.getElementById('fazendas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document
+        .getElementById('fazendas')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
 
@@ -550,7 +663,10 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     setCurrentPage(1);
   };
 
-  const openPropertyDetails = (property: PublicProperty, options?: { captured?: boolean }) => {
+  const openPropertyDetails = (
+    property: PublicProperty,
+    options?: { captured?: boolean }
+  ) => {
     setMobileMenuOpen(false);
     setSelectedProperty(property);
     setLeadStep('details');
@@ -634,7 +750,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
   const submitQualifiedLead = async (answers: Record<string, string>) => {
     if (!selectedProperty || !resolvedOrganizationId) {
-      setLeadError('Nao foi possivel identificar a Fazendas Brasil para salvar o lead.');
+      setLeadError(
+        'Nao foi possivel identificar a Fazendas Brasil para salvar o lead.'
+      );
       return;
     }
 
@@ -644,7 +762,10 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
     try {
       const score = qualifyScore(answers);
       const area = getPropertyArea(selectedProperty);
-      const initialAttendanceMessage = buildInitialAttendanceMessage(leadForm.name, selectedProperty);
+      const initialAttendanceMessage = buildInitialAttendanceMessage(
+        leadForm.name,
+        selectedProperty
+      );
       const notes = [
         `Lead qualificado pelo site Fazendas Brasil.`,
         '',
@@ -652,25 +773,38 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         initialAttendanceMessage,
         '',
         `Imovel de interesse: ${selectedProperty.title}`,
-        selectedProperty.city || selectedProperty.state ? `Localizacao do imovel: ${[selectedProperty.city, selectedProperty.state].filter(Boolean).join(' / ')}` : null,
+        selectedProperty.city || selectedProperty.state
+          ? `Localizacao do imovel: ${[selectedProperty.city, selectedProperty.state].filter(Boolean).join(' / ')}`
+          : null,
         area ? `Area do imovel: ${formatArea(area)}` : null,
-        selectedProperty.price ? `Valor do imovel: ${formatCurrency(selectedProperty.price)}` : null,
+        selectedProperty.price
+          ? `Valor do imovel: ${formatCurrency(selectedProperty.price)}`
+          : null,
         '',
         'Respostas do quiz:',
-        ...quizQuestions.map((question) => `- ${question.label} ${answers[question.id] || 'Nao informado'}`),
-      ].filter(Boolean).join('\n');
+        ...quizQuestions.map(
+          (question) =>
+            `- ${question.label} ${answers[question.id] || 'Nao informado'}`
+        ),
+      ]
+        .filter(Boolean)
+        .join('\n');
 
       await leadService.create({
         organization_id: resolvedOrganizationId,
         organization_slug: 'fazendasbrasil',
-        organization_domain: window.location.hostname.replace(/^www\./, '') || 'fazendasbrasil.com',
+        organization_domain:
+          window.location.hostname.replace(/^www\./, '') ||
+          'fazendasbrasil.com',
         owner_email: EMAIL,
         site_key: 'fazendasbrasil',
         referrer_url: window.location.href,
         name: leadForm.name,
         phone: leadForm.phone,
         email: leadForm.email || undefined,
-        propertyId: isUuid(selectedProperty.id) ? selectedProperty.id : undefined,
+        propertyId: isUuid(selectedProperty.id)
+          ? selectedProperty.id
+          : undefined,
         source: 'Site Fazendas Brasil',
         ad_reference: selectedProperty.title,
         organic_channel: 'Site publico',
@@ -680,7 +814,10 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         aptitude_interest: getAptitude(selectedProperty) as any,
         match_profile: 'rural',
         status: 'Qualificação',
-        classification: score >= 75 ? 'Lead qualificado - Alta prioridade' : 'Lead qualificado',
+        classification:
+          score >= 75
+            ? 'Lead qualificado - Alta prioridade'
+            : 'Lead qualificado',
         lead_score: score,
       } as any);
 
@@ -688,7 +825,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
       setLeadStep('details');
       setPropertyUrl(selectedProperty);
     } catch (error: any) {
-      setLeadError(error?.message || 'Erro ao cadastrar lead. Tente novamente.');
+      setLeadError(
+        error?.message || 'Erro ao cadastrar lead. Tente novamente.'
+      );
     } finally {
       setLeadSubmitting(false);
     }
@@ -1483,17 +1622,41 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
       <div className="fb-topbar">
         <div className="fb-shell">
           <div className="fb-topbar-group">
-            <span className="fb-topbar-item"><Star size={14} />Especialistas em fazendas de alto padrao</span>
-            <span className="fb-topbar-item"><Headphones size={14} />Atendimento personalizado</span>
-            <span className="fb-topbar-item"><Lock size={14} />Sigilo absoluto</span>
-            <span className="fb-topbar-item"><Handshake size={14} />Experiencia e tradicao</span>
+            <span className="fb-topbar-item">
+              <Star size={14} />
+              Especialistas em fazendas de alto padrao
+            </span>
+            <span className="fb-topbar-item">
+              <Headphones size={14} />
+              Atendimento personalizado
+            </span>
+            <span className="fb-topbar-item">
+              <Lock size={14} />
+              Sigilo absoluto
+            </span>
+            <span className="fb-topbar-item">
+              <Handshake size={14} />
+              Experiencia e tradicao
+            </span>
           </div>
           <div className="fb-top-actions">
-            <a className="fb-top-action" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={15} />{PHONE_LABEL}
+            <a
+              className="fb-top-action"
+              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <MessageCircle size={15} />
+              {PHONE_LABEL}
             </a>
-            <a className="fb-top-action yellow" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={14} />Fale conosco
+            <a
+              className="fb-top-action yellow"
+              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <MessageCircle size={14} />
+              Fale conosco
             </a>
           </div>
         </div>
@@ -1519,14 +1682,33 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
             id="fazendas-mobile-menu"
             aria-label="Menu principal"
           >
-            <a href="#fazendas" onClick={() => setMobileMenuOpen(false)}>Fazendas a venda <ChevronDown size={13} /></a>
-            <a href="#quem-somos" onClick={() => setMobileMenuOpen(false)}>Quem somos</a>
-            <a href="#servicos" onClick={() => setMobileMenuOpen(false)}>Servicos <ChevronDown size={13} /></a>
-            <a href="#localizacoes" onClick={() => setMobileMenuOpen(false)}>Localizacoes <ChevronDown size={13} /></a>
-            <a href="#noticias" onClick={() => setMobileMenuOpen(false)}>Noticias</a>
-            <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>
-            <a className="fb-mobile-contact" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" onClick={() => setMobileMenuOpen(false)}>
-              <MessageCircle size={16} />Fale conosco
+            <a href="#fazendas" onClick={() => setMobileMenuOpen(false)}>
+              Fazendas a venda <ChevronDown size={13} />
+            </a>
+            <a href="#quem-somos" onClick={() => setMobileMenuOpen(false)}>
+              Quem somos
+            </a>
+            <a href="#servicos" onClick={() => setMobileMenuOpen(false)}>
+              Servicos <ChevronDown size={13} />
+            </a>
+            <a href="#localizacoes" onClick={() => setMobileMenuOpen(false)}>
+              Localizacoes <ChevronDown size={13} />
+            </a>
+            <a href="#noticias" onClick={() => setMobileMenuOpen(false)}>
+              Noticias
+            </a>
+            <a href="#contato" onClick={() => setMobileMenuOpen(false)}>
+              Contato
+            </a>
+            <a
+              className="fb-mobile-contact"
+              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <MessageCircle size={16} />
+              Fale conosco
             </a>
           </div>
           <a className="fb-favorites" href="#fazendas">
@@ -1548,27 +1730,48 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
               <span className="green">estao aqui!</span>
             </h1>
             <p className="fb-subtitle">
-              Conectamos compradores exigentes as melhores oportunidades. Fazendas selecionadas com rigor e total seguranca.
+              Conectamos compradores exigentes as melhores oportunidades.
+              Fazendas selecionadas com rigor e total seguranca.
             </p>
             <div className="fb-hero-points">
               <div className="fb-point">
-                <span className="fb-point-icon"><ShieldCheck size={23} /></span>
-                <span><strong>Seguranca</strong><span>Negocios com total seguranca juridica</span></span>
+                <span className="fb-point-icon">
+                  <ShieldCheck size={23} />
+                </span>
+                <span>
+                  <strong>Seguranca</strong>
+                  <span>Negocios com total seguranca juridica</span>
+                </span>
               </div>
               <div className="fb-point">
-                <span className="fb-point-icon"><Gem size={23} /></span>
-                <span><strong>Exclusividade</strong><span>Imoveis rurais de alto padrao selecionados</span></span>
+                <span className="fb-point-icon">
+                  <Gem size={23} />
+                </span>
+                <span>
+                  <strong>Exclusividade</strong>
+                  <span>Imoveis rurais de alto padrao selecionados</span>
+                </span>
               </div>
               <div className="fb-point">
-                <span className="fb-point-icon"><UsersRound size={23} /></span>
-                <span><strong>Atendimento</strong><span>Consultores especialistas ao seu lado</span></span>
+                <span className="fb-point-icon">
+                  <UsersRound size={23} />
+                </span>
+                <span>
+                  <strong>Atendimento</strong>
+                  <span>Consultores especialistas ao seu lado</span>
+                </span>
               </div>
             </div>
             <div className="fb-actions">
               <a className="fb-btn fb-btn-green" href="#fazendas">
                 Ver fazendas a venda <ArrowRight size={18} />
               </a>
-              <a className="fb-btn fb-btn-outline" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
+              <a
+                className="fb-btn fb-btn-outline"
+                href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Falar com especialista <MessageCircle size={17} />
               </a>
             </div>
@@ -1576,7 +1779,11 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         </div>
       </header>
 
-      <form className="fb-search" aria-label="Busca de fazendas" onSubmit={handleFilterSubmit}>
+      <form
+        className="fb-search"
+        aria-label="Busca de fazendas"
+        onSubmit={handleFilterSubmit}
+      >
         <div className="fb-search-row">
           <label className="fb-filter">
             <MapPin size={24} />
@@ -1586,11 +1793,18 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                 <select
                   className="fb-filter-control"
                   value={draftFilters.state}
-                  onChange={(event) => setDraftFilters((current) => ({ ...current, state: event.target.value }))}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      state: event.target.value,
+                    }))
+                  }
                 >
                   <option value="">Todos os estados</option>
                   {stateOptions.map((state) => (
-                    <option value={state} key={state}>{state}</option>
+                    <option value={state} key={state}>
+                      {state}
+                    </option>
                   ))}
                 </select>
                 <ChevronDown size={14} />
@@ -1605,11 +1819,18 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                 <select
                   className="fb-filter-control"
                   value={draftFilters.areaRange}
-                  onChange={(event) => setDraftFilters((current) => ({ ...current, areaRange: event.target.value }))}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      areaRange: event.target.value,
+                    }))
+                  }
                 >
                   <option value="">Todas as areas</option>
                   {AREA_RANGES.map((range) => (
-                    <option value={range.id} key={range.id}>{range.label}</option>
+                    <option value={range.id} key={range.id}>
+                      {range.label}
+                    </option>
                   ))}
                 </select>
                 <ChevronDown size={14} />
@@ -1624,11 +1845,18 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                 <select
                   className="fb-filter-control"
                   value={draftFilters.aptitude}
-                  onChange={(event) => setDraftFilters((current) => ({ ...current, aptitude: event.target.value }))}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      aptitude: event.target.value,
+                    }))
+                  }
                 >
                   <option value="">Todas as atividades</option>
                   {aptitudeOptions.map((aptitude) => (
-                    <option value={aptitude} key={aptitude}>{aptitude}</option>
+                    <option value={aptitude} key={aptitude}>
+                      {aptitude}
+                    </option>
                   ))}
                 </select>
                 <ChevronDown size={14} />
@@ -1643,30 +1871,48 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                 <select
                   className="fb-filter-control"
                   value={draftFilters.priceRange}
-                  onChange={(event) => setDraftFilters((current) => ({ ...current, priceRange: event.target.value }))}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      priceRange: event.target.value,
+                    }))
+                  }
                 >
                   <option value="">Todos os valores</option>
                   {PRICE_RANGES.map((range) => (
-                    <option value={range.id} key={range.id}>{range.label}</option>
+                    <option value={range.id} key={range.id}>
+                      {range.label}
+                    </option>
                   ))}
                 </select>
                 <ChevronDown size={14} />
               </span>
             </span>
           </label>
-          <button className="fb-search-button" type="submit">Buscar fazendas <Search size={17} /></button>
+          <button className="fb-search-button" type="submit">
+            Buscar fazendas <Search size={17} />
+          </button>
         </div>
         <div className="fb-advanced">
           <label className="fb-advanced-field">
             <Search size={15} />
             <input
               value={draftFilters.query}
-              onChange={(event) => setDraftFilters((current) => ({ ...current, query: event.target.value }))}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  query: event.target.value,
+                }))
+              }
               placeholder="Buscar por cidade, titulo, estado ou atividade"
             />
           </label>
           {hasActiveFilters && (
-            <button className="fb-clear-filters" type="button" onClick={clearFilters}>
+            <button
+              className="fb-clear-filters"
+              type="button"
+              onClick={clearFilters}
+            >
               Limpar filtros <X size={14} />
             </button>
           )}
@@ -1677,7 +1923,13 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         <section className="fb-section" id="fazendas">
           <div className="fb-section-head">
             <h2 className="fb-heading">Imoveis em destaque</h2>
-            <button className="fb-all-link" type="button" onClick={clearFilters}>Ver todos os imoveis <ArrowRight size={17} /></button>
+            <button
+              className="fb-all-link"
+              type="button"
+              onClick={clearFilters}
+            >
+              Ver todos os imoveis <ArrowRight size={17} />
+            </button>
           </div>
 
           {propertyGrids.length > 0 ? (
@@ -1685,22 +1937,47 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
               <div className="fb-grid-group" key={`grid-${gridIndex + 1}`}>
                 <div className="fb-cards">
                   {grid.map((property, index) => {
-                    const absoluteIndex = (currentPage - 1) * PROPERTIES_PER_PAGE + gridIndex * PROPERTIES_PER_GRID + index;
+                    const absoluteIndex =
+                      (currentPage - 1) * PROPERTIES_PER_PAGE +
+                      gridIndex * PROPERTIES_PER_GRID +
+                      index;
                     const area = getPropertyArea(property);
                     return (
                       <article className="fb-card" key={property.id}>
-                        <div className="fb-card-image" style={{ backgroundImage: `url("${getPropertyImage(property, absoluteIndex)}")` }}>
-                          <span className="fb-sale">{highlights[absoluteIndex % highlights.length]}</span>
+                        <div
+                          className="fb-card-image"
+                          style={{
+                            backgroundImage: `url("${getPropertyImage(property, absoluteIndex)}")`,
+                          }}
+                        >
+                          <span className="fb-sale">
+                            {highlights[absoluteIndex % highlights.length]}
+                          </span>
                         </div>
                         <div className="fb-card-body">
                           <h3>{property.title}</h3>
-                          <div className="fb-location"><MapPin size={12} />{property.city || property.state || 'Brasil'}</div>
-                          <div className="fb-specs">
-                            <span className="fb-spec"><BadgeCheck size={14} />{formatArea(area)}</span>
-                            <span className="fb-spec"><Heart size={14} />{getAptitude(property)}</span>
+                          <div className="fb-location">
+                            <MapPin size={12} />
+                            {property.city || property.state || 'Brasil'}
                           </div>
-                          <strong className="fb-price">{formatCurrency(property.price)}</strong>
-                          <button className="fb-card-link" type="button" onClick={() => openPropertyDetails(property)}>
+                          <div className="fb-specs">
+                            <span className="fb-spec">
+                              <BadgeCheck size={14} />
+                              {formatArea(area)}
+                            </span>
+                            <span className="fb-spec">
+                              <Heart size={14} />
+                              {getAptitude(property)}
+                            </span>
+                          </div>
+                          <strong className="fb-price">
+                            {formatCurrency(property.price)}
+                          </strong>
+                          <button
+                            className="fb-card-link"
+                            type="button"
+                            onClick={() => openPropertyDetails(property)}
+                          >
                             Ver detalhes <ArrowRight size={16} />
                           </button>
                         </div>
@@ -1714,13 +1991,16 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
             <div className="fb-empty-results">
               <strong>Nenhum imovel encontrado</strong>
               <span>Ajuste os filtros para ver outras oportunidades.</span>
-              <button type="button" onClick={clearFilters}>Limpar filtros</button>
+              <button type="button" onClick={clearFilters}>
+                Limpar filtros
+              </button>
             </div>
           )}
 
           <div className="fb-pagination" aria-label="Paginacao de imoveis">
             <div className="fb-page-summary">
-              Mostrando {firstPropertyIndex} a {lastPropertyIndex} de {totalFilteredProperties} imoveis
+              Mostrando {firstPropertyIndex} a {lastPropertyIndex} de{' '}
+              {totalFilteredProperties} imoveis
             </div>
             <div className="fb-page-controls">
               <button
@@ -1731,17 +2011,19 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
               >
                 Anterior
               </button>
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                <button
-                  className={`fb-page-button ${page === currentPage ? 'active' : ''}`}
-                  type="button"
-                  key={page}
-                  disabled={isUsingFallback}
-                  onClick={() => goToPage(page)}
-                >
-                  {page}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                (page) => (
+                  <button
+                    className={`fb-page-button ${page === currentPage ? 'active' : ''}`}
+                    type="button"
+                    key={page}
+                    disabled={isUsingFallback}
+                    onClick={() => goToPage(page)}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
               <button
                 className="fb-page-button"
                 type="button"
@@ -1756,7 +2038,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
         <section className="fb-why" id="quem-somos">
           <div className="fb-intro">
-            <h2>Por que escolher a <span>Fazendas Brasil?</span></h2>
+            <h2>
+              Por que escolher a <span>Fazendas Brasil?</span>
+            </h2>
           </div>
           {benefits.map((benefit) => {
             const Icon = benefit.icon;
@@ -1772,18 +2056,34 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
 
         <section className="fb-broker" aria-label="Especialista responsavel">
           <div className="fb-broker-photo-wrap">
-            <img className="fb-broker-photo" src={BROKER_IMAGE} alt={BROKER_NAME} />
-            <img className="fb-broker-logo" src={LOGO_URL} alt="Fazendas Brasil" />
+            <img
+              className="fb-broker-photo"
+              src={BROKER_IMAGE}
+              alt={BROKER_NAME}
+            />
+            <img
+              className="fb-broker-logo"
+              src={LOGO_URL}
+              alt="Fazendas Brasil"
+            />
           </div>
           <div>
             <small>Especialista responsavel</small>
             <h2>{BROKER_NAME}</h2>
             <p>
-              Atendimento consultivo para compradores e investidores que buscam fazendas, areas rurais e oportunidades selecionadas em todo o Brasil.
+              Atendimento consultivo para compradores e investidores que buscam
+              fazendas, areas rurais e oportunidades selecionadas em todo o
+              Brasil.
             </p>
             <div className="fb-broker-meta">
-              <span><BadgeCheck size={14} />CRECI 16644F</span>
-              <span><Phone size={14} />{PHONE_LABEL}</span>
+              <span>
+                <BadgeCheck size={14} />
+                CRECI 16644F
+              </span>
+              <span>
+                <Phone size={14} />
+                {PHONE_LABEL}
+              </span>
             </div>
           </div>
           <a className="fb-broker-action" href="#fazendas">
@@ -1798,7 +2098,10 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           return (
             <div className="fb-stat" key={stat.value}>
               <Icon size={38} />
-              <span><strong>{stat.value}</strong>{stat.label}</span>
+              <span>
+                <strong>{stat.value}</strong>
+                {stat.label}
+              </span>
             </div>
           );
         })}
@@ -1807,13 +2110,28 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
       <footer className="fb-footer" id="localizacoes">
         <div className="fb-shell">
           <div>
-            <img className="fb-footer-logo" src={LOGO_URL} alt="Fazendas Brasil" />
-            <p>Conectamos compradores exigentes as melhores fazendas do Brasil, com seguranca, sigilo e excelencia em cada negociacao.</p>
+            <img
+              className="fb-footer-logo"
+              src={LOGO_URL}
+              alt="Fazendas Brasil"
+            />
+            <p>
+              Conectamos compradores exigentes as melhores fazendas do Brasil,
+              com seguranca, sigilo e excelencia em cada negociacao.
+            </p>
             <div className="fb-social">
-              <span><Facebook size={14} /></span>
-              <span><Instagram size={14} /></span>
-              <span><MessageCircle size={14} /></span>
-              <span><Mail size={14} /></span>
+              <span>
+                <Facebook size={14} />
+              </span>
+              <span>
+                <Instagram size={14} />
+              </span>
+              <span>
+                <MessageCircle size={14} />
+              </span>
+              <span>
+                <Mail size={14} />
+              </span>
             </div>
           </div>
           <div className="fb-footer-links">
@@ -1842,9 +2160,27 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
           </div>
           <div id="contato">
             <h3>Contato</h3>
-            <div className="fb-contact-row"><Phone size={14} /> <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">{PHONE_LABEL}</a></div>
-            <div className="fb-contact-row"><Mail size={14} /> <a href={`mailto:${EMAIL}`}>{EMAIL}</a></div>
-            <div className="fb-contact-row"><MapPin size={14} /> <p>Rua Deputado Branco Mendes, 390<br />Centro - Colorado/PR</p></div>
+            <div className="fb-contact-row">
+              <Phone size={14} />{' '}
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {PHONE_LABEL}
+              </a>
+            </div>
+            <div className="fb-contact-row">
+              <Mail size={14} /> <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+            </div>
+            <div className="fb-contact-row">
+              <MapPin size={14} />{' '}
+              <p>
+                Rua Deputado Branco Mendes, 390
+                <br />
+                Centro - Colorado/PR
+              </p>
+            </div>
           </div>
         </div>
         <div className="fb-footer-bottom">
@@ -1856,7 +2192,12 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
       </footer>
 
       {selectedProperty && (
-        <div className="fb-lead-modal" role="dialog" aria-modal="true" aria-label="Cadastro de interesse">
+        <div
+          className="fb-lead-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Cadastro de interesse"
+        >
           <div className="fb-lead-dialog">
             <div className="fb-lead-head">
               <div>
@@ -1869,7 +2210,12 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                       : 'Receba informacoes deste imovel'}
                 </h2>
               </div>
-              <button className="fb-lead-close" type="button" onClick={closeLeadFlow} aria-label="Fechar">
+              <button
+                className="fb-lead-close"
+                type="button"
+                onClick={closeLeadFlow}
+                aria-label="Fechar"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -1878,12 +2224,15 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
               <div className="fb-lead-property">
                 <div
                   className="fb-lead-thumb"
-                  style={{ backgroundImage: `url("${getPropertyImage(selectedProperty, 0)}")` }}
+                  style={{
+                    backgroundImage: `url("${getPropertyImage(selectedProperty, 0)}")`,
+                  }}
                 />
                 <div>
                   <strong>{selectedProperty.title}</strong>
                   <span>
-                    {getPropertyLocation(selectedProperty)} - {formatCurrency(selectedProperty.price)}
+                    {getPropertyLocation(selectedProperty)} -{' '}
+                    {formatCurrency(selectedProperty.price)}
                   </span>
                 </div>
               </div>
@@ -1895,7 +2244,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                     <input
                       required
                       value={leadForm.name}
-                      onChange={(event) => setLeadForm({ ...leadForm, name: event.target.value })}
+                      onChange={(event) =>
+                        setLeadForm({ ...leadForm, name: event.target.value })
+                      }
                       placeholder="Seu nome"
                     />
                   </div>
@@ -1905,7 +2256,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                       required
                       type="tel"
                       value={leadForm.phone}
-                      onChange={(event) => setLeadForm({ ...leadForm, phone: event.target.value })}
+                      onChange={(event) =>
+                        setLeadForm({ ...leadForm, phone: event.target.value })
+                      }
                       placeholder="(00) 00000-0000"
                     />
                   </div>
@@ -1914,14 +2267,18 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                     <input
                       type="email"
                       value={leadForm.email}
-                      onChange={(event) => setLeadForm({ ...leadForm, email: event.target.value })}
+                      onChange={(event) =>
+                        setLeadForm({ ...leadForm, email: event.target.value })
+                      }
                       placeholder="voce@email.com"
                     />
                   </div>
                   <button className="fb-lead-primary" type="submit">
                     Continuar qualificacao <ArrowRight size={17} />
                   </button>
-                  {leadError && <div className="fb-lead-error">{leadError}</div>}
+                  {leadError && (
+                    <div className="fb-lead-error">{leadError}</div>
+                  )}
                 </form>
               )}
 
@@ -1930,7 +2287,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                   <div className="fb-quiz-progress">
                     Pergunta {quizIndex + 1} de {quizQuestions.length}
                   </div>
-                  <h3 className="fb-quiz-question">{quizQuestions[quizIndex].label}</h3>
+                  <h3 className="fb-quiz-question">
+                    {quizQuestions[quizIndex].label}
+                  </h3>
                   <div className="fb-quiz-options">
                     {quizQuestions[quizIndex].options.map((option) => (
                       <button
@@ -1958,8 +2317,14 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                   >
                     Voltar
                   </button>
-                  {leadSubmitting && <div className="fb-quiz-progress">Salvando lead qualificado no Kanban...</div>}
-                  {leadError && <div className="fb-lead-error">{leadError}</div>}
+                  {leadSubmitting && (
+                    <div className="fb-quiz-progress">
+                      Salvando lead qualificado no Kanban...
+                    </div>
+                  )}
+                  {leadError && (
+                    <div className="fb-lead-error">{leadError}</div>
+                  )}
                 </div>
               )}
 
@@ -1968,9 +2333,16 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                   <ShieldCheck size={42} />
                   <h3>Cadastro enviado com sucesso</h3>
                   <p>
-                    Atendimento iniciado. O corretor responsavel recebeu seus dados e vai continuar pelo WhatsApp.
+                    Atendimento iniciado. O corretor responsavel recebeu seus
+                    dados e vai continuar pelo WhatsApp.
                   </p>
-                  <button className="fb-lead-primary" type="button" onClick={() => openPropertyDetails(selectedProperty, { captured: true })}>
+                  <button
+                    className="fb-lead-primary"
+                    type="button"
+                    onClick={() =>
+                      openPropertyDetails(selectedProperty, { captured: true })
+                    }
+                  >
                     Ver detalhes do imovel <ArrowRight size={17} />
                   </button>
                 </div>
@@ -1983,19 +2355,27 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                       <ShieldCheck size={24} />
                       <div>
                         <strong>Atendimento iniciado</strong>
-                        <span>O corretor responsavel recebeu seus dados e o resumo deste imovel para continuar pelo WhatsApp.</span>
+                        <span>
+                          O corretor responsavel recebeu seus dados e o resumo
+                          deste imovel para continuar pelo WhatsApp.
+                        </span>
                       </div>
                     </div>
                   )}
                   <div
                     className="fb-detail-cover"
-                    style={{ backgroundImage: `url("${getPropertyImage(selectedProperty, 0)}")` }}
+                    style={{
+                      backgroundImage: `url("${getPropertyImage(selectedProperty, 0)}")`,
+                    }}
                   >
                     <span>{getAptitude(selectedProperty)}</span>
                   </div>
                   <div className="fb-detail-title">
                     <h3>{selectedProperty.title}</h3>
-                    <p><MapPin size={14} />{getPropertyLocation(selectedProperty)}</p>
+                    <p>
+                      <MapPin size={14} />
+                      {getPropertyLocation(selectedProperty)}
+                    </p>
                   </div>
                   <div className="fb-detail-grid">
                     <div className="fb-detail-stat">
@@ -2006,7 +2386,9 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                     <div className="fb-detail-stat">
                       <BadgeCheck size={18} />
                       <span>Area</span>
-                      <strong>{formatArea(getPropertyArea(selectedProperty))}</strong>
+                      <strong>
+                        {formatArea(getPropertyArea(selectedProperty))}
+                      </strong>
                     </div>
                     <div className="fb-detail-stat">
                       <Heart size={18} />
@@ -2016,24 +2398,36 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
                     <div className="fb-detail-stat">
                       <FileText size={18} />
                       <span>Tipo</span>
-                      <strong>{selectedProperty.property_type || 'Rural'}</strong>
+                      <strong>
+                        {selectedProperty.property_type || 'Rural'}
+                      </strong>
                     </div>
                   </div>
                   <div className="fb-detail-section">
                     <h4>Caracteristicas principais</h4>
                     <div className="fb-detail-tags">
                       {getPropertyDetailTags(selectedProperty).map((tag) => (
-                        <span className="fb-detail-tag" key={tag}>{tag}</span>
+                        <span className="fb-detail-tag" key={tag}>
+                          {tag}
+                        </span>
                       ))}
                     </div>
                   </div>
                   <div className="fb-detail-actions">
                     {!leadCaptured && (
-                      <button className="fb-lead-primary" type="button" onClick={() => openLeadFlow(selectedProperty)}>
+                      <button
+                        className="fb-lead-primary"
+                        type="button"
+                        onClick={() => openLeadFlow(selectedProperty)}
+                      >
                         Receber atendimento <ArrowRight size={17} />
                       </button>
                     )}
-                    <button className="fb-lead-secondary" type="button" onClick={closeLeadFlow}>
+                    <button
+                      className="fb-lead-secondary"
+                      type="button"
+                      onClick={closeLeadFlow}
+                    >
                       Fechar
                     </button>
                   </div>

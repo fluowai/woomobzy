@@ -47,12 +47,7 @@ export type TerminationType =
   | 'unilateral_locador'
   | 'quebra_contratual';
 
-export type AdjustmentIndex =
-  | 'IGPM'
-  | 'IPCA'
-  | 'INCC'
-  | 'ICV'
-  | 'POUPANCA';
+export type AdjustmentIndex = 'IGPM' | 'IPCA' | 'INCC' | 'ICV' | 'POUPANCA';
 
 export interface Lease {
   id: string;
@@ -227,7 +222,13 @@ export interface Signature {
   id: string;
   lease_id: string;
   organization_id: string;
-  signer_type: 'locador' | 'locatario' | 'fiador' | 'co_locatario' | 'testemunha_1' | 'testemunha_2';
+  signer_type:
+    | 'locador'
+    | 'locatario'
+    | 'fiador'
+    | 'co_locatario'
+    | 'testemunha_1'
+    | 'testemunha_2';
   signer_name: string;
   signer_email?: string;
   signer_phone?: string;
@@ -424,7 +425,11 @@ export const SIGNATURE_STATUS_LABELS: Record<SignatureStatus, string> = {
 };
 
 export const ADJUSTMENT_INDICES: AdjustmentIndex[] = [
-  'IGPM', 'IPCA', 'INCC', 'ICV', 'POUPANCA',
+  'IGPM',
+  'IPCA',
+  'INCC',
+  'ICV',
+  'POUPANCA',
 ];
 
 export const ADJUSTMENT_INDICES_LABELS: Record<AdjustmentIndex, string> = {

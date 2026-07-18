@@ -2,7 +2,14 @@ import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { oruloService } from '../../services/orulo';
-import { Key, Save, Server, AlertTriangle, Building2, CheckCircle2 } from 'lucide-react';
+import {
+  Key,
+  Save,
+  Server,
+  AlertTriangle,
+  Building2,
+  CheckCircle2,
+} from 'lucide-react';
 
 const GlobalSettings: React.FC = () => {
   const [settings, setSettings] = useState({
@@ -196,8 +203,9 @@ const GlobalSettings: React.FC = () => {
                     : 'Credencial mestre ainda não configurada'}
                 </p>
                 <p className="mt-1 text-sm text-gray-600">
-                  Esta credencial libera o catálogo para todas as imobiliárias. Cada corretor conecta
-                  a própria conta separadamente para acessar dados protegidos.
+                  Esta credencial libera o catálogo para todas as imobiliárias.
+                  Cada corretor conecta a própria conta separadamente para
+                  acessar dados protegidos.
                 </p>
                 {oruloStatus.clientId && (
                   <p className="mt-2 text-xs font-mono text-gray-500">
@@ -217,7 +225,11 @@ const GlobalSettings: React.FC = () => {
                 type="password"
                 value={oruloClientId}
                 onChange={(event) => setOruloClientId(event.target.value)}
-                placeholder={oruloStatus.configured ? 'Informe para substituir' : 'Client ID da Órulo'}
+                placeholder={
+                  oruloStatus.configured
+                    ? 'Informe para substituir'
+                    : 'Client ID da Órulo'
+                }
                 autoComplete="off"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
               />
@@ -230,7 +242,11 @@ const GlobalSettings: React.FC = () => {
                 type="password"
                 value={oruloClientSecret}
                 onChange={(event) => setOruloClientSecret(event.target.value)}
-                placeholder={oruloStatus.configured ? 'Informe para substituir' : 'Client Secret da Órulo'}
+                placeholder={
+                  oruloStatus.configured
+                    ? 'Informe para substituir'
+                    : 'Client Secret da Órulo'
+                }
                 autoComplete="new-password"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
               />

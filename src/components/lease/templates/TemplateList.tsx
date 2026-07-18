@@ -1,9 +1,23 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Plus, Edit, Copy, Trash2, CheckCircle, XCircle, Eye, Download, History } from 'lucide-react';
+import {
+  FileText,
+  Plus,
+  Edit,
+  Copy,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Download,
+  History,
+} from 'lucide-react';
 import type { ContractTemplate } from '../../../types/lease';
-import { listTemplates, deleteTemplate } from '../../../services/lease/leaseService';
+import {
+  listTemplates,
+  deleteTemplate,
+} from '../../../services/lease/leaseService';
 
 export const TemplateList: React.FC = () => {
   const navigate = useNavigate();
@@ -58,9 +72,24 @@ export const TemplateList: React.FC = () => {
 
       {loading ? (
         <div className="text-center py-12">
-          <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <svg
+            className="animate-spin h-8 w-8 text-blue-600 mx-auto"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+              fill="none"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
         </div>
       ) : (
@@ -79,12 +108,18 @@ export const TemplateList: React.FC = () => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${template.is_active ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                  <div
+                    className={`p-2.5 rounded-xl ${template.is_active ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}
+                  >
                     <FileText size={20} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">{template.name}</p>
-                    <p className="text-[10px] text-slate-400">v{template.version}</p>
+                    <p className="text-sm font-bold text-slate-800">
+                      {template.name}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      v{template.version}
+                    </p>
                   </div>
                 </div>
                 {template.is_default && (
@@ -95,24 +130,36 @@ export const TemplateList: React.FC = () => {
               </div>
 
               {template.description && (
-                <p className="text-xs text-slate-500 mb-4 line-clamp-2">{template.description}</p>
+                <p className="text-xs text-slate-500 mb-4 line-clamp-2">
+                  {template.description}
+                </p>
               )}
 
               <div className="flex items-center gap-2 mb-4">
-                <span className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full ${
-                  template.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400'
-                }`}>
-                  {template.is_active ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                <span
+                  className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full ${
+                    template.is_active
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-slate-50 text-slate-400'
+                  }`}
+                >
+                  {template.is_active ? (
+                    <CheckCircle size={10} />
+                  ) : (
+                    <XCircle size={10} />
+                  )}
                   {template.is_active ? 'Ativo' : 'Inativo'}
                 </span>
                 <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-full">
-                  {(template.variables?.length || 0)} variáveis
+                  {template.variables?.length || 0} variáveis
                 </span>
               </div>
 
               <div className="flex gap-2 pt-4 border-t border-slate-50">
                 <button
-                  onClick={() => navigate(`/urban/locacao/templates/${template.id}`)}
+                  onClick={() =>
+                    navigate(`/urban/locacao/templates/${template.id}`)
+                  }
                   className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all"
                 >
                   <Edit size={12} /> Editar

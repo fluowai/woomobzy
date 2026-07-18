@@ -34,7 +34,8 @@ export const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
         }}
       >
         <div className="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-          A prévia usa somente imóveis reais; conecte uma fonte de propriedades ao bloco.
+          A prévia usa somente imóveis reais; conecte uma fonte de propriedades
+          ao bloco.
         </div>
         {displayProperties.map((property) => (
           <div

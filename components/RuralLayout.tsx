@@ -1,6 +1,12 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link as RouterLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import {
+  NavLink,
+  Link as RouterLink,
+  Navigate,
+  Outlet,
+  useLocation,
+} from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -71,7 +77,11 @@ const RuralLayout: React.FC = () => {
   const assetItems: MenuItem[] = [
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
     { icon: MapIcon, label: 'Território Rural', path: '/rural/territorio' },
-    { icon: DollarSign, label: 'Valuation CAR', path: '/rural/territorio/valuation' },
+    {
+      icon: DollarSign,
+      label: 'Valuation CAR',
+      path: '/rural/territorio/valuation',
+    },
   ];
 
   const growthItems: MenuItem[] = [
@@ -79,7 +89,11 @@ const RuralLayout: React.FC = () => {
     { icon: Globe, label: 'Meu Site', path: '/rural/site' },
     { icon: Sparkles, label: 'Editor Visual', path: '/rural/visual-editor' },
     { icon: Settings, label: 'Configurar Site', path: '/rural/site-setup' },
-    { icon: LayoutTemplate, label: 'Landing Pages', path: '/rural/landing-pages' },
+    {
+      icon: LayoutTemplate,
+      label: 'Landing Pages',
+      path: '/rural/landing-pages',
+    },
     { icon: FileQuestion, label: 'Quiz', path: '/rural/quiz' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
     { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
@@ -118,11 +132,16 @@ const RuralLayout: React.FC = () => {
   const isMenuItemActive = (path: string, isActive: boolean) => {
     if (path === '/rural/territorio/valuation') return pathname === path;
     if (path === '/rural/territorio') {
-      return pathname.startsWith('/rural/territorio') && pathname !== '/rural/territorio/valuation';
+      return (
+        pathname.startsWith('/rural/territorio') &&
+        pathname !== '/rural/territorio/valuation'
+      );
     }
     return isActive;
   };
-  const isWorkspaceRoute = pathname.startsWith('/rural/whatsapp') || pathname.startsWith('/rural/email');
+  const isWorkspaceRoute =
+    pathname.startsWith('/rural/whatsapp') ||
+    pathname.startsWith('/rural/email');
 
   const renderMenuItem = (item: MenuItem) => (
     <NavLink
@@ -133,9 +152,7 @@ const RuralLayout: React.FC = () => {
       className={({ isActive }) => {
         const active = isMenuItemActive(item.path, isActive);
         return `workspace-nav-item flex items-center justify-between group ${
-          active
-            ? 'workspace-nav-item-active'
-            : ''
+          active ? 'workspace-nav-item-active' : ''
         }`;
       }}
     >
@@ -147,14 +164,22 @@ const RuralLayout: React.FC = () => {
             <div className="flex items-center gap-3.5 min-w-0">
               <item.icon
                 size={20}
-                className={active ? 'text-primary shrink-0' : 'text-slate-400 group-hover:text-primary shrink-0'}
+                className={
+                  active
+                    ? 'text-primary shrink-0'
+                    : 'text-slate-400 group-hover:text-primary shrink-0'
+                }
               />
               <span className="truncate">{item.label}</span>
             </div>
             {item.path !== '/rural' && (
               <ChevronRight
                 size={14}
-                className={active ? 'text-primary/70 shrink-0' : 'text-slate-300 group-hover:text-primary shrink-0'}
+                className={
+                  active
+                    ? 'text-primary/70 shrink-0'
+                    : 'text-slate-300 group-hover:text-primary shrink-0'
+                }
               />
             )}
           </>
@@ -172,8 +197,8 @@ const RuralLayout: React.FC = () => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <img
-                  src="/logo-wootech-imob.svg"
-                  alt="WooTech Imob"
+            src="/logo-wootech-imob.svg"
+            alt="WooTech Imob"
             className="workspace-logo transition-transform group-hover:scale-[1.02]"
           />
         </RouterLink>
@@ -182,12 +207,8 @@ const RuralLayout: React.FC = () => {
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 custom-scrollbar">
         {menuSections.map((section) => (
           <div key={section.title} className="space-y-2">
-            <p className="workspace-section-title">
-              {section.title}
-            </p>
-            <div className="space-y-1">
-              {section.items.map(renderMenuItem)}
-            </div>
+            <p className="workspace-section-title">{section.title}</p>
+            <div className="space-y-1">{section.items.map(renderMenuItem)}</div>
           </div>
         ))}
 
@@ -196,7 +217,10 @@ const RuralLayout: React.FC = () => {
           className="workspace-nav-item flex items-center justify-between w-full group"
         >
           <div className="flex items-center gap-3.5">
-            <Headset size={20} className="text-slate-400 group-hover:text-primary" />
+            <Headset
+              size={20}
+              className="text-slate-400 group-hover:text-primary"
+            />
             <span>Suporte</span>
           </div>
         </button>
@@ -217,7 +241,11 @@ const RuralLayout: React.FC = () => {
               </span>
             ) : (
               <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide truncate">
-                {profile?.role === 'admin' ? 'Admin Imobiliária' : loading ? '...' : profile?.role || 'Corretor'}
+                {profile?.role === 'admin'
+                  ? 'Admin Imobiliária'
+                  : loading
+                    ? '...'
+                    : profile?.role || 'Corretor'}
               </p>
             )}
           </div>
@@ -275,7 +303,13 @@ const RuralLayout: React.FC = () => {
             isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >
-          <div className={isWorkspaceRoute ? 'w-full h-full min-h-0' : 'max-w-[1600px] mx-auto'}>
+          <div
+            className={
+              isWorkspaceRoute
+                ? 'w-full h-full min-h-0'
+                : 'max-w-[1600px] mx-auto'
+            }
+          >
             <Outlet />
           </div>
         </div>

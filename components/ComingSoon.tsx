@@ -1,6 +1,14 @@
 import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
-import { Mail, Phone, User, Send, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import {
+  Mail,
+  Phone,
+  User,
+  Send,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+} from 'lucide-react';
 import { leadService } from '../services/leads';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 
@@ -66,7 +74,9 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
         <div className="mb-10 w-full animate-in fade-in slide-in-from-bottom-8 text-center duration-1000">
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md">
             <Sparkles size={14} className="text-indigo-400" />
-            <span className="text-xs font-medium uppercase tracking-widest text-slate-300">Em Construcao</span>
+            <span className="text-xs font-medium uppercase tracking-widest text-slate-300">
+              Em Construcao
+            </span>
           </div>
 
           <h1 className="mb-6 bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-5xl font-bold tracking-tight text-transparent md:text-6xl">
@@ -74,7 +84,12 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
           </h1>
 
           <p className="mx-auto max-w-md text-lg font-light leading-relaxed text-slate-400 md:text-xl">
-            Estamos preparando uma plataforma imobiliaria de alto padrao em parceria com a <strong className="font-medium text-indigo-400">{COMMERCIAL_PRODUCT_NAME}</strong>.
+            Estamos preparando uma plataforma imobiliaria de alto padrao em
+            parceria com a{' '}
+            <strong className="font-medium text-indigo-400">
+              {COMMERCIAL_PRODUCT_NAME}
+            </strong>
+            .
           </p>
         </div>
 
@@ -87,9 +102,12 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
               <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
                 <CheckCircle2 size={48} strokeWidth={1.5} />
               </div>
-              <h2 className="mb-3 text-3xl font-bold text-white">Lugar Garantido!</h2>
+              <h2 className="mb-3 text-3xl font-bold text-white">
+                Lugar Garantido!
+              </h2>
               <p className="mb-8 leading-relaxed text-slate-400">
-                Voce recebera um convite exclusivo assim que a nova plataforma estiver no ar.
+                Voce recebera um convite exclusivo assim que a nova plataforma
+                estiver no ar.
               </p>
               <button
                 onClick={() => setSuccess(false)}
@@ -101,7 +119,9 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
           ) : (
             <>
               <div className="mb-8 text-center">
-                <h2 className="mb-2 text-2xl font-bold text-white">Lista VIP</h2>
+                <h2 className="mb-2 text-2xl font-bold text-white">
+                  Lista VIP
+                </h2>
                 <p className="text-sm text-slate-400">
                   Cadastre-se para ser notificado no lancamento oficial.
                 </p>
@@ -187,7 +207,9 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
 
         <div className="mt-12 animate-in text-center fade-in duration-1000 delay-300">
           <div className="flex flex-col items-center gap-3">
-            <span className="text-xs font-medium uppercase tracking-widest text-slate-500">Desenvolvido por</span>
+            <span className="text-xs font-medium uppercase tracking-widest text-slate-500">
+              Desenvolvido por
+            </span>
             <img
               src="/logo-wootech-imob.svg"
               alt={COMMERCIAL_PRODUCT_NAME}

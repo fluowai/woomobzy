@@ -1,11 +1,9 @@
-import {
-  Property,
-  PropertyType,
-  PropertyStatus,
-} from '../types';
+import { Property, PropertyType, PropertyStatus } from '../types';
 import { callApi } from '../src/lib/api';
 
-function mapToDatabase(model: Partial<Property> & { organization_id?: string; niche?: string }): any {
+function mapToDatabase(
+  model: Partial<Property> & { organization_id?: string; niche?: string }
+): any {
   const source = model as any;
   const payload: any = {
     title: model.title,
@@ -24,7 +22,8 @@ function mapToDatabase(model: Partial<Property> & { organization_id?: string; ni
     images: source.images || [],
     highlighted: source.highlighted,
     owner_info: source.ownerInfo || source.owner_info,
-    total_area_ha: source.total_area_ha || source.features?.areaHectares || null,
+    total_area_ha:
+      source.total_area_ha || source.features?.areaHectares || null,
     source: source.source,
     external_id: source.external_id,
     external_updated_at: source.external_updated_at,
@@ -91,33 +90,34 @@ export const propertyService = {
   },
 };
 
-const mapToModel = (dbItem: any): Property => ({
-  id: dbItem.id,
-  organization_id: dbItem.organization_id,
-  title: dbItem.title || '',
-  description: dbItem.description || '',
-  price: dbItem.price || 0,
-  type: (dbItem.property_type || dbItem.type) as PropertyType,
-  purpose: dbItem.purpose || 'Venda',
-  status: dbItem.status as PropertyStatus,
-  location: {
-    city: dbItem.city || '',
-    state: dbItem.state || '',
-    address: dbItem.address || '',
-    neighborhood: dbItem.neighborhood || '',
-  },
-  aptitude: dbItem.aptitude || [],
-  features: dbItem.features || {},
-  images: dbItem.images || [],
-  source: dbItem.source,
-  external_id: dbItem.external_id,
-  external_updated_at: dbItem.external_updated_at,
-  external_listing_status: dbItem.external_listing_status,
-  imported_at: dbItem.imported_at,
-  published_at: dbItem.published_at,
-  broker_id: dbItem.broker_id || '',
-  niche: dbItem.niche || 'urbano',
-  total_area_ha: dbItem.total_area_ha || 0,
-  created_at: dbItem.created_at,
-  updated_at: dbItem.updated_at,
-} as any);
+const mapToModel = (dbItem: any): Property =>
+  ({
+    id: dbItem.id,
+    organization_id: dbItem.organization_id,
+    title: dbItem.title || '',
+    description: dbItem.description || '',
+    price: dbItem.price || 0,
+    type: (dbItem.property_type || dbItem.type) as PropertyType,
+    purpose: dbItem.purpose || 'Venda',
+    status: dbItem.status as PropertyStatus,
+    location: {
+      city: dbItem.city || '',
+      state: dbItem.state || '',
+      address: dbItem.address || '',
+      neighborhood: dbItem.neighborhood || '',
+    },
+    aptitude: dbItem.aptitude || [],
+    features: dbItem.features || {},
+    images: dbItem.images || [],
+    source: dbItem.source,
+    external_id: dbItem.external_id,
+    external_updated_at: dbItem.external_updated_at,
+    external_listing_status: dbItem.external_listing_status,
+    imported_at: dbItem.imported_at,
+    published_at: dbItem.published_at,
+    broker_id: dbItem.broker_id || '',
+    niche: dbItem.niche || 'urbano',
+    total_area_ha: dbItem.total_area_ha || 0,
+    created_at: dbItem.created_at,
+    updated_at: dbItem.updated_at,
+  }) as any;

@@ -13,16 +13,16 @@ Não é tecnicamente correto afirmar que “todas as funções” foram exercita
 
 ## Evidências executadas
 
-| Verificação | Resultado |
-| --- | --- |
-| `npm run type-check` | Aprovado |
-| `npm run lint` | Aprovado, zero warnings |
-| `npm run test` | 13 arquivos e 80 testes aprovados |
-| `npm run build` | Aprovado, 3.893 módulos transformados |
-| `npm run check-db` | Aprovado; 7 tabelas centrais encontradas |
-| `npm run check-deploy-config` | Aprovado |
-| Backend `GET /health` | Aprovado; resposta `status: ok` |
-| `git diff --check` | Aprovado |
+| Verificação                   | Resultado                                |
+| ----------------------------- | ---------------------------------------- |
+| `npm run type-check`          | Aprovado                                 |
+| `npm run lint`                | Aprovado, zero warnings                  |
+| `npm run test`                | 13 arquivos e 80 testes aprovados        |
+| `npm run build`               | Aprovado, 3.893 módulos transformados    |
+| `npm run check-db`            | Aprovado; 7 tabelas centrais encontradas |
+| `npm run check-deploy-config` | Aprovado                                 |
+| Backend `GET /health`         | Aprovado; resposta `status: ok`          |
+| `git diff --check`            | Aprovado                                 |
 
 ## Correções realizadas
 
@@ -81,17 +81,17 @@ Não é tecnicamente correto afirmar que “todas as funções” foram exercita
 
 ## Matriz de validação externa pendente
 
-| Integração | Estado nesta auditoria | Próximo teste necessário |
-| --- | --- | --- |
-| Supabase | Conectividade/tabelas confirmadas | CRUD autenticado por papel e teste de RLS multi-tenant |
-| WhatsApp/WAHA | Código presente | Instância real conectada, envio/recebimento/mídia/websocket |
-| IA | Proxy presente | Chaves de servidor, timeout, JSON inválido e limites |
-| Agro Intelligence | Fallback fictício removido | Microserviço online e fonte CEPEA real |
-| E-mail/IMAP/SMTP | Não exercitado E2E | Conta de teste e ciclo enviar/receber/anexos |
-| MinIO/storage | Não exercitado E2E | Upload, download, autorização e reconciliação |
-| Orulo/portais | Não exercitado E2E | Credenciais sandbox e publicação/retorno de erros |
-| Assinatura/locação | Testes parciais | Jornada completa com template, signatários e webhook |
-| APIs legais/governo | Parcial | Provedores oficiais e tratamento de indisponibilidade |
+| Integração          | Estado nesta auditoria            | Próximo teste necessário                                    |
+| ------------------- | --------------------------------- | ----------------------------------------------------------- |
+| Supabase            | Conectividade/tabelas confirmadas | CRUD autenticado por papel e teste de RLS multi-tenant      |
+| WhatsApp/WAHA       | Código presente                   | Instância real conectada, envio/recebimento/mídia/websocket |
+| IA                  | Proxy presente                    | Chaves de servidor, timeout, JSON inválido e limites        |
+| Agro Intelligence   | Fallback fictício removido        | Microserviço online e fonte CEPEA real                      |
+| E-mail/IMAP/SMTP    | Não exercitado E2E                | Conta de teste e ciclo enviar/receber/anexos                |
+| MinIO/storage       | Não exercitado E2E                | Upload, download, autorização e reconciliação               |
+| Orulo/portais       | Não exercitado E2E                | Credenciais sandbox e publicação/retorno de erros           |
+| Assinatura/locação  | Testes parciais                   | Jornada completa com template, signatários e webhook        |
+| APIs legais/governo | Parcial                           | Provedores oficiais e tratamento de indisponibilidade       |
 
 ## Recomendação de sequência
 
@@ -101,4 +101,3 @@ Não é tecnicamente correto afirmar que “todas as funções” foram exercita
 4. Persistir Template Manager e implementar backend do Marketing SEO.
 5. Reativar gradualmente as regras de React Hooks/unused variables e corrigir violações.
 6. Instrumentar eventos reais antes de voltar a exibir MRR, uso de features ou tendências.
-

@@ -23,10 +23,13 @@ const MAX_IMAGES = Number(process.env.FAZENDAS_MAX_IMAGES || 20);
 const APPLY = process.argv.includes('--apply');
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY sao obrigatorios.');
+  console.error(
+    'VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY sao obrigatorios.'
+  );
   process.exit(1);
 }
 
@@ -48,11 +51,16 @@ function sleep(ms) {
 
 function absoluteUrl(value) {
   if (!value) return '';
-  return new URL(String(value).trim(), BASE_URL).toString().replace(/([^:]\/)\/+/g, '$1');
+  return new URL(String(value).trim(), BASE_URL)
+    .toString()
+    .replace(/([^:]\/)\/+/g, '$1');
 }
 
 function cleanText(value) {
-  return String(value || '').replace(/\?{2,}/g, '').replace(/\s+/g, ' ').trim();
+  return String(value || '')
+    .replace(/\?{2,}/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function normalizeTitle(value) {
@@ -78,7 +86,11 @@ function parsePrice(text) {
 }
 
 function parseAreaHa(text) {
-  const candidates = [...String(text || '').matchAll(/([\d.]+(?:,\d+)?)\s*(hectares|hectare|ha|alqueires|alqueire)\b/gi)];
+  const candidates = [
+    ...String(text || '').matchAll(
+      /([\d.]+(?:,\d+)?)\s*(hectares|hectare|ha|alqueires|alqueire)\b/gi
+    ),
+  ];
   if (candidates.length === 0) return null;
 
   const [raw, unit] = candidates[0].slice(1);
@@ -91,12 +103,16 @@ function parseAreaHa(text) {
 function parseLocation({ title, htmlText }) {
   const sources = [title, htmlText];
   for (const source of sources) {
-    const slashMatch = String(source || '').match(/\b([A-Za-zÀ-ÿ\s.'-]{2,80})\/([A-Z]{2})\b/);
+    const slashMatch = String(source || '').match(
+      /\b([A-Za-zÀ-ÿ\s.'-]{2,80})\/([A-Z]{2})\b/
+    );
     if (slashMatch) {
       return { city: cleanText(slashMatch[1]), state: slashMatch[2] };
     }
 
-    const match = String(source || '').match(/\b(?:em|de)\s+([A-Za-zÀ-ÿ\s.'-]{2,80})\s*[-,]\s*([A-Z]{2})\b/);
+    const match = String(source || '').match(
+      /\b(?:em|de)\s+([A-Za-zÀ-ÿ\s.'-]{2,80})\s*[-,]\s*([A-Z]{2})\b/
+    );
     if (match) {
       return { city: cleanText(match[1]), state: match[2] };
     }
@@ -113,7 +129,9 @@ function inferPropertyType(title) {
 }
 
 function imageExtension(url, contentType) {
-  const fromContent = String(contentType || '').split('/')[1]?.split(';')[0];
+  const fromContent = String(contentType || '')
+    .split('/')[1]
+    ?.split(';')[0];
   if (fromContent && ['jpeg', 'jpg', 'png', 'webp'].includes(fromContent)) {
     return fromContent === 'jpeg' ? '.jpg' : `.${fromContent}`;
   }
@@ -125,7 +143,11 @@ function imageExtension(url, contentType) {
 function isValidImage(src) {
   const lower = String(src || '').toLowerCase();
   if (!/\.(jpe?g|png|webp)(\?|$)/i.test(lower)) return false;
-  if (/(logo|icon|facebook|instagram|twitter|youtube|tiktok|whatsapp|semfoto|pixel|gallery\/google|ssl|banner)/i.test(lower)) {
+  if (
+    /(logo|icon|facebook|instagram|twitter|youtube|tiktok|whatsapp|semfoto|pixel|gallery\/google|ssl|banner)/i.test(
+      lower
+    )
+  ) {
     return false;
   }
   return /\/exportacao\/fotos\/|\/admin\/imovel\/|\/fotos\//i.test(lower);
@@ -147,7 +169,8 @@ function collectImages($) {
 
   $('img').each((_, el) => {
     const src = $(el).attr('data-src') || $(el).attr('src');
-    if (isValidImage(src) && !String(src).includes('/mini/')) images.add(absoluteUrl(src));
+    if (isValidImage(src) && !String(src).includes('/mini/'))
+      images.add(absoluteUrl(src));
   });
 
   return [...images].slice(0, MAX_IMAGES);
@@ -160,7 +183,10 @@ async function getFazendasOrganization() {
     .eq('slug', FAZENDAS_ORG_SLUG)
     .single();
 
-  if (error) throw new Error(`Organizacao ${FAZENDAS_ORG_SLUG} nao encontrada: ${error.message}`);
+  if (error)
+    throw new Error(
+      `Organizacao ${FAZENDAS_ORG_SLUG} nao encontrada: ${error.message}`
+    );
   return data;
 }
 
@@ -171,7 +197,8 @@ async function getExistingProperties(organizationId) {
     .eq('organization_id', organizationId)
     .range(0, 5000);
 
-  if (error) throw new Error(`Falha ao consultar imoveis existentes: ${error.message}`);
+  if (error)
+    throw new Error(`Falha ao consultar imoveis existentes: ${error.message}`);
   return data || [];
 }
 
@@ -205,11 +232,25 @@ async function scrapeProperty({ externalId, url }) {
   const { data: html } = await http.get(url);
   const $ = cheerio.load(html);
   const bodyText = cleanText($('body').text());
-  const metaDescription = cleanText($('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content'));
-  const pageTitle = cleanText($('title').first().text()).replace(/\s*\|\s*Fazendas Brasil\s*$/i, '');
-  const detailIntro = cleanText($('.c49-property-features p, .c49-property-description p, .descricao p').first().text());
+  const metaDescription = cleanText(
+    $('meta[property="og:description"]').attr('content') ||
+      $('meta[name="description"]').attr('content')
+  );
+  const pageTitle = cleanText($('title').first().text()).replace(
+    /\s*\|\s*Fazendas Brasil\s*$/i,
+    ''
+  );
+  const detailIntro = cleanText(
+    $('.c49-property-features p, .c49-property-description p, .descricao p')
+      .first()
+      .text()
+  );
   const description =
-    cleanText($('.c49-property-description, .descricao, [class*="descr"]').first().text()) ||
+    cleanText(
+      $('.c49-property-description, .descricao, [class*="descr"]')
+        .first()
+        .text()
+    ) ||
     detailIntro ||
     metaDescription ||
     bodyText.slice(0, 1600);
@@ -240,7 +281,11 @@ async function scrapeProperty({ externalId, url }) {
 }
 
 function isMatch(scraped, existing) {
-  if (existing.source === 'fazendasbrasil' && existing.external_id === scraped.externalId) return true;
+  if (
+    existing.source === 'fazendasbrasil' &&
+    existing.external_id === scraped.externalId
+  )
+    return true;
   const normalized = normalizeTitle(scraped.title);
   const existingTitle = normalizeTitle(existing.title);
   return existingTitle === normalized;
@@ -265,11 +310,35 @@ function findMatch(scraped, existing) {
 }
 
 function titleSimilarity(a, b) {
-  const ignore = new Set(['a', 'o', 'os', 'as', 'de', 'da', 'do', 'das', 'dos', 'em', 'para', 'com', 'r']);
-  const aTokens = new Set(String(a).split(/\s+/).filter((token) => token.length > 2 && !ignore.has(token)));
-  const bTokens = new Set(String(b).split(/\s+/).filter((token) => token.length > 2 && !ignore.has(token)));
+  const ignore = new Set([
+    'a',
+    'o',
+    'os',
+    'as',
+    'de',
+    'da',
+    'do',
+    'das',
+    'dos',
+    'em',
+    'para',
+    'com',
+    'r',
+  ]);
+  const aTokens = new Set(
+    String(a)
+      .split(/\s+/)
+      .filter((token) => token.length > 2 && !ignore.has(token))
+  );
+  const bTokens = new Set(
+    String(b)
+      .split(/\s+/)
+      .filter((token) => token.length > 2 && !ignore.has(token))
+  );
   if (aTokens.size === 0 || bTokens.size === 0) return 0;
-  const intersection = [...aTokens].filter((token) => bTokens.has(token)).length;
+  const intersection = [...aTokens].filter((token) =>
+    bTokens.has(token)
+  ).length;
   return intersection / Math.min(aTokens.size, bTokens.size);
 }
 
@@ -304,7 +373,10 @@ function buildPayload(property, organizationId, uploadedImages) {
   if (property.areaHa) {
     payload.total_area_ha = property.areaHa;
     payload.area_total_ha = property.areaHa;
-    if (property.price) payload.price_per_ha = Number((property.price / property.areaHa).toFixed(2));
+    if (property.price)
+      payload.price_per_ha = Number(
+        (property.price / property.areaHa).toFixed(2)
+      );
   }
 
   if (property.city) {
@@ -318,7 +390,9 @@ function buildPayload(property, organizationId, uploadedImages) {
   }
 
   if (property.city || property.state) {
-    payload.address = [property.city, property.state].filter(Boolean).join(' - ');
+    payload.address = [property.city, property.state]
+      .filter(Boolean)
+      .join(' - ');
   }
 
   return payload;
@@ -326,14 +400,20 @@ function buildPayload(property, organizationId, uploadedImages) {
 
 async function uploadImages(property, organizationId) {
   const uploaded = [];
-  const slug = normalizeTitle(property.title).replace(/\s+/g, '-').slice(0, 48) || property.externalId;
+  const slug =
+    normalizeTitle(property.title).replace(/\s+/g, '-').slice(0, 48) ||
+    property.externalId;
 
   for (let index = 0; index < property.images.length; index += 1) {
     const imageUrl = property.images[index];
     const response = await http.get(imageUrl, { responseType: 'arraybuffer' });
     const buffer = Buffer.from(response.data);
     const ext = imageExtension(imageUrl, response.headers['content-type']);
-    const hash = crypto.createHash('sha1').update(`${property.externalId}-${index}-${imageUrl}`).digest('hex').slice(0, 10);
+    const hash = crypto
+      .createHash('sha1')
+      .update(`${property.externalId}-${index}-${imageUrl}`)
+      .digest('hex')
+      .slice(0, 10);
     const key = `${organizationId}/fazendasbrasil/${property.externalId}-${slug}/foto-${index}-${hash}${ext}`;
     const { publicUrl } = await uploadStorageObject({
       supabase,
@@ -351,7 +431,11 @@ async function uploadImages(property, organizationId) {
 }
 
 async function main() {
-  console.log(APPLY ? 'Modo APPLY: migrando ausentes.' : 'Modo DRY-RUN: apenas comparando.');
+  console.log(
+    APPLY
+      ? 'Modo APPLY: migrando ausentes.'
+      : 'Modo DRY-RUN: apenas comparando.'
+  );
 
   const organization = await getFazendasOrganization();
   const existing = await getExistingProperties(organization.id);
@@ -389,7 +473,9 @@ async function main() {
   if (missing.length > 0) {
     console.log('\nAusentes:');
     missing.forEach((property) => {
-      console.log(`- #${property.externalId} ${property.title} (${property.images.length} fotos)`);
+      console.log(
+        `- #${property.externalId} ${property.title} (${property.images.length} fotos)`
+      );
     });
   }
 
@@ -400,7 +486,11 @@ async function main() {
     console.log(`\nMigrando #${property.externalId}: ${property.title}`);
     const uploadedImages = await uploadImages(property, organization.id);
     const payload = buildPayload(property, organization.id, uploadedImages);
-    const { data, error } = await supabase.from('properties').insert(payload).select('id').single();
+    const { data, error } = await supabase
+      .from('properties')
+      .insert(payload)
+      .select('id')
+      .single();
     if (error) {
       console.error(`   erro ao inserir: ${error.message}`);
       continue;

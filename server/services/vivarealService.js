@@ -84,7 +84,7 @@ function extractAmenities(features) {
   if (features.areaLazer) list.push('leisure_area');
   if (features.quadra) list.push('sports_court');
   if (features.salaoFestas) list.push('party_room');
-  if (features. playground) list.push('playground');
+  if (features.playground) list.push('playground');
   if (features.sacada) list.push('balcony');
   return list;
 }
@@ -99,7 +99,9 @@ async function vivarealRequest(path, { config, method = 'GET', body } = {}) {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    const error = new Error(`Erro na API VivaReal (${response.status}): ${detail}`);
+    const error = new Error(
+      `Erro na API VivaReal (${response.status}): ${detail}`
+    );
     error.statusCode = response.status >= 500 ? 502 : response.status;
     throw error;
   }
@@ -145,7 +147,9 @@ export const vivarealService = {
   },
 
   async status(listingId, config) {
-    const data = await vivarealRequest(`/listings/${listingId}/status`, { config });
+    const data = await vivarealRequest(`/listings/${listingId}/status`, {
+      config,
+    });
     return {
       status: data.status || 'unknown',
       views: data.views || 0,

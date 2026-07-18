@@ -10,7 +10,10 @@ interface AIGenerationModalProps {
   onClose: () => void;
 }
 
-const AIGenerationModal: React.FC<AIGenerationModalProps> = ({ onGenerate, onClose }) => {
+const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
+  onGenerate,
+  onClose,
+}) => {
   const { profile } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [niche, setNiche] = useState<'rural' | 'urban'>('rural');
@@ -37,7 +40,10 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({ onGenerate, onClo
       }
     } catch (err: any) {
       logger.error('Erro ao gerar com IA:', err);
-      setError(err.response?.data?.error || 'Erro ao conectar com Namo Bana. Verifique sua chave nas configurações.');
+      setError(
+        err.response?.data?.error ||
+          'Erro ao conectar com Namo Bana. Verifique sua chave nas configurações.'
+      );
     } finally {
       setLoading(false);
     }
@@ -54,9 +60,12 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({ onGenerate, onClo
                 <Sparkles size={14} />
                 Namo Bana AI Engine
               </div>
-              <h2 className="text-3xl font-bold tracking-tight">Criar com IA</h2>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Criar com IA
+              </h2>
               <p className="text-indigo-100 max-w-md">
-                Descreva o imóvel ou o objetivo da página e nossa IA criará um layout profissional pronto para publicar.
+                Descreva o imóvel ou o objetivo da página e nossa IA criará um
+                layout profissional pronto para publicar.
               </p>
             </div>
             <button
@@ -113,7 +122,9 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({ onGenerate, onClo
 
           {error && (
             <div className="p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl text-sm flex items-center gap-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">!</div>
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+                !
+              </div>
               {error}
             </div>
           )}
@@ -121,7 +132,9 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({ onGenerate, onClo
           <div className="p-4 bg-blue-50/50 rounded-2xl flex items-start gap-3">
             <Info size={18} className="text-blue-500 mt-0.5 shrink-0" />
             <p className="text-xs text-blue-700 leading-relaxed">
-              <strong>Dica:</strong> Quanto mais detalhes você der sobre a infraestrutura, localização e diferenciais, melhor será o resultado da Namo Bana.
+              <strong>Dica:</strong> Quanto mais detalhes você der sobre a
+              infraestrutura, localização e diferenciais, melhor será o
+              resultado da Namo Bana.
             </p>
           </div>
 

@@ -76,9 +76,11 @@ const mapPageToDB = (model: Partial<SitePage>): any => {
   if (model.slug !== undefined) db.slug = model.slug;
   if (model.sortOrder !== undefined) db.sort_order = model.sortOrder;
   if (model.blocks !== undefined) db.blocks = model.blocks;
-  if (model.themeOverrides !== undefined) db.theme_overrides = model.themeOverrides;
+  if (model.themeOverrides !== undefined)
+    db.theme_overrides = model.themeOverrides;
   if (model.metaTitle !== undefined) db.meta_title = model.metaTitle;
-  if (model.metaDescription !== undefined) db.meta_description = model.metaDescription;
+  if (model.metaDescription !== undefined)
+    db.meta_description = model.metaDescription;
   if (model.metaKeywords !== undefined) db.meta_keywords = model.metaKeywords;
   if (model.ogImage !== undefined) db.og_image = model.ogImage;
   if (model.status !== undefined) db.status = model.status;
@@ -89,13 +91,14 @@ const mapPageToDB = (model: Partial<SitePage>): any => {
 };
 
 function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || 'pagina';
+  return (
+    name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'pagina'
+  );
 }
 
 export const siteService = {
@@ -218,7 +221,10 @@ export const siteService = {
     return mapPageFromDB(data);
   },
 
-  async updatePage(pageId: string, input: UpdateSitePageInput): Promise<SitePage> {
+  async updatePage(
+    pageId: string,
+    input: UpdateSitePageInput
+  ): Promise<SitePage> {
     const payload = mapPageToDB(input);
     payload.updated_at = new Date().toISOString();
 
@@ -292,7 +298,9 @@ export const siteService = {
     return dup;
   },
 
-  async getPublicSite(orgId: string): Promise<{ site: Site | null; pages: SitePage[] }> {
+  async getPublicSite(
+    orgId: string
+  ): Promise<{ site: Site | null; pages: SitePage[] }> {
     const site = await this.getByOrganization(orgId);
     if (!site) return { site: null, pages: [] };
 

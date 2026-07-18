@@ -99,7 +99,9 @@ async function zapRequest(path, { config, method = 'GET', body } = {}) {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    const error = new Error(`Erro na API Zap Imóveis (${response.status}): ${detail}`);
+    const error = new Error(
+      `Erro na API Zap Imóveis (${response.status}): ${detail}`
+    );
     error.statusCode = response.status >= 500 ? 502 : response.status;
     throw error;
   }

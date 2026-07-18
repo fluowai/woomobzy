@@ -13,7 +13,9 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error('❌ VITE_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não encontrados no .env');
+  console.error(
+    '❌ VITE_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não encontrados no .env'
+  );
   process.exit(1);
 }
 
@@ -24,9 +26,9 @@ async function executeSQL(sql) {
       { sql },
       {
         headers: {
-          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json',
-          'apikey': SERVICE_ROLE_KEY,
+          apikey: SERVICE_ROLE_KEY,
         },
       }
     );
@@ -49,11 +51,19 @@ async function runFix() {
   const result = await executeSQL(sql);
 
   if (result && result.error) {
-    console.error(`❌ Erro ao executar SQL:`, JSON.stringify(result.error, null, 2));
-    
-    if (result.error.message && result.error.message.includes('function "exec_sql" does not exist')) {
-        console.log('\n⚠️  A função RPC "exec_sql" não existe no seu Supabase.');
-        console.log('Por favor, execute o conteúdo de sql/fix_niche_and_isolation.sql manualmente no SQL Editor do Supabase.');
+    console.error(
+      `❌ Erro ao executar SQL:`,
+      JSON.stringify(result.error, null, 2)
+    );
+
+    if (
+      result.error.message &&
+      result.error.message.includes('function "exec_sql" does not exist')
+    ) {
+      console.log('\n⚠️  A função RPC "exec_sql" não existe no seu Supabase.');
+      console.log(
+        'Por favor, execute o conteúdo de sql/fix_niche_and_isolation.sql manualmente no SQL Editor do Supabase.'
+      );
     }
   } else {
     console.log(`✅ Sucesso! Mudanças de banco de dados aplicadas.`);

@@ -1,7 +1,10 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
-const DOCUMENT_WORKER_URL = process.env.DOCUMENT_WORKER_URL || 'http://localhost:8001';
-const DOCUMENT_WEBHOOK_SECRET = String(process.env.DOCUMENT_WEBHOOK_SECRET || '').trim();
+const DOCUMENT_WORKER_URL =
+  process.env.DOCUMENT_WORKER_URL || 'http://localhost:8001';
+const DOCUMENT_WEBHOOK_SECRET = String(
+  process.env.DOCUMENT_WEBHOOK_SECRET || ''
+).trim();
 
 export class DocumentService {
   static async uploadAndProcess(file, propertyId, orgId, userId) {
@@ -55,12 +58,19 @@ export class DocumentService {
       const response = await fetch(`${DOCUMENT_WORKER_URL}/document/extract`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ document_id: documentId, file_url: fileUrl, organization_id: orgId }),
+        body: JSON.stringify({
+          document_id: documentId,
+          file_url: fileUrl,
+          organization_id: orgId,
+        }),
         signal: AbortSignal.timeout(120000),
       });
 
       if (!response.ok) {
-        console.error('[DocumentWorker] Failed to dispatch:', await response.text());
+        console.error(
+          '[DocumentWorker] Failed to dispatch:',
+          await response.text()
+        );
         await this._updateStatus(documentId, 'failed', 'Worker indisponivel');
       }
     } catch (error) {
@@ -107,7 +117,10 @@ export class DocumentService {
       analysis_type: 'classification',
       provider: 'gemini',
       confidence: result.classification_confidence || 0,
-      result: { document_type: result.document_type, alternatives: result.alternatives },
+      result: {
+        document_type: result.document_type,
+        alternatives: result.alternatives,
+      },
     });
 
     await supabase.from('document_analyses').insert({
@@ -132,9 +145,10 @@ export class DocumentService {
 
     if (!doc || !doc.extracted_data) return;
 
-    const extracted = typeof doc.extracted_data === 'string'
-      ? JSON.parse(doc.extracted_data)
-      : doc.extracted_data;
+    const extracted =
+      typeof doc.extracted_data === 'string'
+        ? JSON.parse(doc.extracted_data)
+        : doc.extracted_data;
 
     const validations = [];
 
@@ -143,7 +157,9 @@ export class DocumentService {
         const uf = extracted.codigo.match(/^([A-Z]{2})/i)?.[1];
         if (uf) {
           const wfsUrl = `https://geoserver.car.gov.br/geoserver/sicar/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=sicar:sicar_imoveis_${uf.toLowerCase()}&outputFormat=application/json&CQL_FILTER=cod_imovel='${extracted.codigo}'`;
-          const response = await fetch(wfsUrl, { signal: AbortSignal.timeout(15000) });
+          const response = await fetch(wfsUrl, {
+            signal: AbortSignal.timeout(15000),
+          });
           const data = await response.json();
 
           validations.push({
@@ -170,7 +186,7 @@ export class DocumentService {
         });
       }
 
-      const allMatched = validations.every(v => v.matched);
+      const allMatched = validations.every((v) => v.matched);
       const score = allMatched ? 90 : 40;
       const status = allMatched ? 'valid' : 'inconsistent';
 
@@ -221,7 +237,11 @@ export class DocumentService {
       .select('*')
       .eq('document_id', documentId);
 
-    return { document: doc, analyses: analyses || [], external_validations: validations || [] };
+    return {
+      document: doc,
+      analyses: analyses || [],
+      external_validations: validations || [],
+    };
   }
 
   static async classify(documentId, orgId, documentType) {
@@ -253,7 +273,11 @@ export class DocumentService {
     if (!doc) throw new Error('Documento nao encontrado');
 
     await supabase.storage.from(doc.bucket).remove([doc.object_key]);
-    await supabase.from('documents').delete().eq('id', documentId).eq('organization_id', orgId);
+    await supabase
+      .from('documents')
+      .delete()
+      .eq('id', documentId)
+      .eq('organization_id', orgId);
 
     return { success: true };
   }

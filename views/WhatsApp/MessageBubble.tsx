@@ -1,7 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, CheckCheck, Clock, Contact, FileText, FileVideo, Image, MapPin } from 'lucide-react';
+import {
+  Check,
+  CheckCheck,
+  Clock,
+  Contact,
+  FileText,
+  FileVideo,
+  Image,
+  MapPin,
+} from 'lucide-react';
 import AudioMessagePlayer from './AudioMessagePlayer';
-import { formatPhoneDisplay, isPlaceholderName, mediaApi, type Message } from './hooks/api';
+import {
+  formatPhoneDisplay,
+  isPlaceholderName,
+  mediaApi,
+  type Message,
+} from './hooks/api';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session - never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
@@ -16,7 +30,11 @@ interface MessageBubbleProps {
   onOpenDetails?: () => void;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName, onOpenDetails }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({
+  message,
+  chatDisplayName,
+  onOpenDetails,
+}) => {
   const [avatarError, setAvatarError] = useState(false);
   const [mediaError, setMediaError] = useState(false);
   const [mediaSourceUrl, setMediaSourceUrl] = useState(message.media_url || '');
@@ -25,7 +43,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
   const autoRefreshMedia = useRef(false);
   const isSent = message.is_from_me;
   const content = (message.content || '').trim();
-  const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
+  const hasMedia = Boolean(
+    message.media_url ||
+    message.media_id ||
+    message.media_filename ||
+    message.media_status === 'pending'
+  );
   const isRenderable = message.type !== 'text' || content || hasMedia;
 
   useEffect(() => {
@@ -54,7 +77,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
       })
       .catch((error: any) => {
         if (!active) return;
-        setMediaLoadError(error?.message || 'Nao foi possivel carregar a midia.');
+        setMediaLoadError(
+          error?.message || 'Nao foi possivel carregar a midia.'
+        );
       })
       .finally(() => {
         if (active) setMediaLoading(false);
@@ -68,8 +93,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
   if (!isRenderable) return null;
 
   const senderPhone = formatPhoneDisplay(message.sender_phone);
-  const senderName = resolveSenderName(message.sender_name, chatDisplayName, senderPhone);
-  const senderInitial = (senderName.match(/[A-Za-z0-9]/)?.[0] || '?').toUpperCase();
+  const senderName = resolveSenderName(
+    message.sender_name,
+    chatDisplayName,
+    senderPhone
+  );
+  const senderInitial = (
+    senderName.match(/[A-Za-z0-9]/)?.[0] || '?'
+  ).toUpperCase();
   const showSenderName = !isSent;
   const deliveryStatus = message.delivery_status || 'sent';
 
@@ -80,7 +111,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
     });
   };
 
-  const refreshMediaUrl = (event?: React.MouseEvent, expiresInSeconds = 900) => {
+  const refreshMediaUrl = (
+    event?: React.MouseEvent,
+    expiresInSeconds = 900
+  ) => {
     if (event) event.stopPropagation();
     if (!message.media_id || mediaLoading) return;
     setMediaLoading(true);
@@ -97,7 +131,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
         setMediaLoadError(result?.error || 'Midia ainda em processamento.');
       })
       .catch((error: any) => {
-        setMediaLoadError(error?.message || 'Nao foi possivel carregar a midia.');
+        setMediaLoadError(
+          error?.message || 'Nao foi possivel carregar a midia.'
+        );
       })
       .finally(() => setMediaLoading(false));
   };
@@ -135,7 +171,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
             ) : (
               <MediaPlaceholder
                 icon={<Image size={24} />}
-                label={mediaPlaceholderLabel(message, mediaLoading, mediaLoadError)}
+                label={mediaPlaceholderLabel(
+                  message,
+                  mediaLoading,
+                  mediaLoadError
+                )}
                 onRetry={message.media_id ? refreshMediaUrl : undefined}
               />
             )}
@@ -161,12 +201,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
                 onClick={(event) => event.stopPropagation()}
                 onError={handleMediaError}
               >
-                <source src={mediaSourceUrl} type={message.media_mimetype || 'video/mp4'} />
+                <source
+                  src={mediaSourceUrl}
+                  type={message.media_mimetype || 'video/mp4'}
+                />
               </video>
             ) : (
               <MediaPlaceholder
                 icon={<FileVideo size={24} />}
-                label={mediaPlaceholderLabel(message, mediaLoading, mediaLoadError, 'Video')}
+                label={mediaPlaceholderLabel(
+                  message,
+                  mediaLoading,
+                  mediaLoadError,
+                  'Video'
+                )}
                 onRetry={message.media_id ? refreshMediaUrl : undefined}
               />
             )}
@@ -185,14 +233,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
           >
             <FileText size={28} />
             <div>
-              <span className="wa-doc-name">{message.media_filename || 'Arquivo recebido'}</span>
-              {message.media_mimetype && <span className="wa-doc-type">{message.media_mimetype}</span>}
+              <span className="wa-doc-name">
+                {message.media_filename || 'Arquivo recebido'}
+              </span>
+              {message.media_mimetype && (
+                <span className="wa-doc-type">{message.media_mimetype}</span>
+              )}
             </div>
           </a>
         ) : (
           <MediaPlaceholder
             icon={<FileText size={24} />}
-            label={mediaPlaceholderLabel(message, mediaLoading, mediaLoadError, message.media_filename || 'Documento')}
+            label={mediaPlaceholderLabel(
+              message,
+              mediaLoading,
+              mediaLoadError,
+              message.media_filename || 'Documento'
+            )}
             onRetry={message.media_id ? refreshMediaUrl : undefined}
           />
         );
@@ -227,7 +284,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
             ) : (
               <MediaPlaceholder
                 icon={<Image size={22} />}
-                label={mediaPlaceholderLabel(message, mediaLoading, mediaLoadError, 'Figurinha')}
+                label={mediaPlaceholderLabel(
+                  message,
+                  mediaLoading,
+                  mediaLoadError,
+                  'Figurinha'
+                )}
                 onRetry={message.media_id ? refreshMediaUrl : undefined}
               />
             )}
@@ -243,8 +305,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
     <div className={`wa-bubble-wrapper ${isSent ? 'sent' : 'received'}`}>
       {!isSent && (
         <div className="wa-message-avatar">
-          {message.sender_avatar_url && !isWhatsAppCdnUrl(message.sender_avatar_url) && !avatarError ? (
-            <img src={message.sender_avatar_url} alt="" className="wa-avatar-img" onError={() => setAvatarError(true)} />
+          {message.sender_avatar_url &&
+          !isWhatsAppCdnUrl(message.sender_avatar_url) &&
+          !avatarError ? (
+            <img
+              src={message.sender_avatar_url}
+              alt=""
+              className="wa-avatar-img"
+              onError={() => setAvatarError(true)}
+            />
           ) : (
             <span>{senderInitial}</span>
           )}
@@ -263,20 +332,28 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, chatDisplayName,
           }
         }}
       >
-        {showSenderName && <span className="wa-bubble-sender">{senderName}</span>}
+        {showSenderName && (
+          <span className="wa-bubble-sender">{senderName}</span>
+        )}
 
         {message.type !== 'text' && renderMedia()}
         {message.type === 'text' && <p className="wa-bubble-text">{content}</p>}
 
         <div className="wa-bubble-meta">
-          <span className="wa-bubble-time">{formatTime(message.timestamp)}</span>
-          {isSent && (
-            deliveryStatus === 'sent'
-              ? <Check size={14} className="wa-bubble-check" />
-              : deliveryStatus === 'failed'
-                ? <Clock size={14} className="wa-bubble-check failed" />
-                : <CheckCheck size={14} className={`wa-bubble-check ${deliveryStatus === 'read' || deliveryStatus === 'played' ? 'read' : ''}`} />
-          )}
+          <span className="wa-bubble-time">
+            {formatTime(message.timestamp)}
+          </span>
+          {isSent &&
+            (deliveryStatus === 'sent' ? (
+              <Check size={14} className="wa-bubble-check" />
+            ) : deliveryStatus === 'failed' ? (
+              <Clock size={14} className="wa-bubble-check failed" />
+            ) : (
+              <CheckCheck
+                size={14}
+                className={`wa-bubble-check ${deliveryStatus === 'read' || deliveryStatus === 'played' ? 'read' : ''}`}
+              />
+            ))}
         </div>
       </div>
     </div>
@@ -289,7 +366,11 @@ interface MediaPlaceholderProps {
   onRetry?: (event: React.MouseEvent) => void;
 }
 
-const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({ icon, label, onRetry }) => (
+const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
+  icon,
+  label,
+  onRetry,
+}) => (
   <button
     type="button"
     className="wa-bubble-media-placeholder"
@@ -327,7 +408,11 @@ function mediaPlaceholderLabel(
 
 export default MessageBubble;
 
-function resolveSenderName(rawName?: string, fallbackName?: string, fallbackPhone?: string): string {
+function resolveSenderName(
+  rawName?: string,
+  fallbackName?: string,
+  fallbackPhone?: string
+): string {
   const cleanName = (rawName || '').trim();
   if (cleanName && !isPlaceholderName(cleanName)) return cleanName;
 

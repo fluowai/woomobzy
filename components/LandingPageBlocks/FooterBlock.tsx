@@ -32,7 +32,7 @@ interface FooterBlockProps {
   theme: any;
 }
 
-const FooterBlock: React.FC<FooterBlockProps> = ({ config, theme }) => {
+const FooterBlock: React.FC<FooterBlockProps> = ({ config }) => {
   const bg = config.backgroundColor || '#1f2937';
   const color = config.textColor || '#ffffff';
   const currentYear = new Date().getFullYear();

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MessageCircle } from 'lucide-react';
+import { Phone, MessageCircle } from 'lucide-react';
 
 export interface HeaderBlockConfig {
   logo?: string;

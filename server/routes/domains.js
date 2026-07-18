@@ -37,11 +37,9 @@ router.post('/add', verifyAdmin, async (req, res) => {
   }
 
   if (req.userRole !== 'superadmin' && organizationId !== req.orgId) {
-    return res
-      .status(403)
-      .json({
-        error: 'Voce so pode alterar o dominio da sua propria organizacao.',
-      });
+    return res.status(403).json({
+      error: 'Voce so pode alterar o dominio da sua propria organizacao.',
+    });
   }
 
   try {
@@ -164,11 +162,9 @@ router.delete('/remove', verifyAdmin, async (req, res) => {
   }
 
   if (req.userRole !== 'superadmin' && organizationId !== req.orgId) {
-    return res
-      .status(403)
-      .json({
-        error: 'Voce so pode alterar o dominio da sua propria organizacao.',
-      });
+    return res.status(403).json({
+      error: 'Voce so pode alterar o dominio da sua propria organizacao.',
+    });
   }
 
   try {
@@ -220,11 +216,9 @@ router.get('/verify/:domain', verifyAdmin, async (req, res) => {
 // ==========================================
 router.post('/sync-all', verifyAdmin, async (req, res) => {
   if (req.userRole !== 'superadmin') {
-    return res
-      .status(403)
-      .json({
-        error: 'Apenas Super Admins podem sincronizar todos os dominios.',
-      });
+    return res.status(403).json({
+      error: 'Apenas Super Admins podem sincronizar todos os dominios.',
+    });
   }
 
   try {

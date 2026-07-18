@@ -47,12 +47,10 @@ export function createWahaRouter({
       res.status(202).json({ ok: true, ...result });
     } catch (error) {
       console.error('[WAHA] Webhook failed:', error.message);
-      res
-        .status(500)
-        .json({
-          error: 'Falha ao processar webhook WAHA',
-          message: error.message,
-        });
+      res.status(500).json({
+        error: 'Falha ao processar webhook WAHA',
+        message: error.message,
+      });
     }
   });
 
@@ -255,12 +253,10 @@ export function createWahaRouter({
           message: 'Pairing code generated',
         });
       } catch (error) {
-        res
-          .status(502)
-          .json({
-            error: 'Pairing code not available',
-            message: error.message,
-          });
+        res.status(502).json({
+          error: 'Pairing code not available',
+          message: error.message,
+        });
       }
     }
   );
@@ -431,12 +427,10 @@ export function createWahaRouter({
         await touchChat(chat.id, content, now);
         res.json(data);
       } catch (error) {
-        res
-          .status(502)
-          .json({
-            error: 'Falha ao enviar mensagem pelo WAHA',
-            message: error.message,
-          });
+        res.status(502).json({
+          error: 'Falha ao enviar mensagem pelo WAHA',
+          message: error.message,
+        });
       }
     }
   );
@@ -504,12 +498,10 @@ export function createWahaRouter({
         await touchChat(chat.id, preview, now);
         res.json({ message: 'Media sent', data });
       } catch (error) {
-        res
-          .status(502)
-          .json({
-            error: 'Falha ao enviar midia pelo WAHA',
-            message: error.message,
-          });
+        res.status(502).json({
+          error: 'Falha ao enviar midia pelo WAHA',
+          message: error.message,
+        });
       }
     }
   );

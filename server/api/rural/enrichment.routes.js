@@ -740,12 +740,10 @@ router.post(
         const legal = property.features?.legal || {};
         const carNumberFromProp = legal.carNumber;
         if (!carNumberFromProp) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              error: 'Propriedade sem CAR vinculado. Informe carNumber.',
-            });
+          return res.status(400).json({
+            success: false,
+            error: 'Propriedade sem CAR vinculado. Informe carNumber.',
+          });
         }
         enrichment = await FarmValuationService.valuationByCAR(
           carNumberFromProp,

@@ -62,24 +62,20 @@ router.post(
       if (googleMapsUrl && (!lat || !lng)) {
         const coords = await extractLatLngFromGoogleMapsUrl(googleMapsUrl);
         if (!coords) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              error: 'Nao foi possivel extrair coordenadas do link informado.',
-            });
+          return res.status(400).json({
+            success: false,
+            error: 'Nao foi possivel extrair coordenadas do link informado.',
+          });
         }
         lat = coords.lat;
         lng = coords.lng;
       }
 
       if (!lat || !lng) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: 'Latitude e Longitude sao obrigatorios.',
-          });
+        return res.status(400).json({
+          success: false,
+          error: 'Latitude e Longitude sao obrigatorios.',
+        });
       }
 
       let locationInfo = { uf: forceUf, municipality: null, method: 'manual' };
@@ -171,13 +167,11 @@ router.post(
       });
     } catch (error) {
       console.error('[CARSearch] Erro critico:', error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: 'Erro interno ao processar busca de localizacao.',
-          message: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        error: 'Erro interno ao processar busca de localizacao.',
+        message: error.message,
+      });
     }
   }
 );

@@ -73,11 +73,9 @@ export default async function handler(req, res) {
     }
 
     if (!organization) {
-      return res
-        .status(404)
-        .json({
-          error: 'Organização não encontrada para o domínio ' + cleanHost,
-        });
+      return res.status(404).json({
+        error: 'Organização não encontrada para o domínio ' + cleanHost,
+      });
     }
 
     // Fetch site settings

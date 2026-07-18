@@ -119,11 +119,9 @@ router.post('/generate-page', verifyAuth, requireTenant, async (req, res) => {
       process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return res
-        .status(400)
-        .json({
-          error: 'Nenhuma chave de IA configurada para esta organizacao.',
-        });
+      return res.status(400).json({
+        error: 'Nenhuma chave de IA configurada para esta organizacao.',
+      });
     }
 
     const layout = await generateLayoutWithAI(provider, apiKey, prompt, niche);
@@ -182,12 +180,10 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
       }
 
       if (!groqKey) {
-        return res
-          .status(500)
-          .json({
-            error:
-              'Nenhuma chave de IA disponivel (Gemini falhou e Groq nao configurado).',
-          });
+        return res.status(500).json({
+          error:
+            'Nenhuma chave de IA disponivel (Gemini falhou e Groq nao configurado).',
+        });
       }
 
       const groqResponse = await axios.post(

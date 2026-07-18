@@ -348,12 +348,10 @@ router.post('/emails/:id/reply', async (req, res) => {
       .from('emails')
       .update({ thread_id: original.thread_id })
       .eq('id', saved.id);
-    res
-      .status(201)
-      .json({
-        success: true,
-        email: { ...saved, thread_id: original.thread_id },
-      });
+    res.status(201).json({
+      success: true,
+      email: { ...saved, thread_id: original.thread_id },
+    });
   } catch (error) {
     res.status(error.statusCode || 400).json({ error: error.message });
   }

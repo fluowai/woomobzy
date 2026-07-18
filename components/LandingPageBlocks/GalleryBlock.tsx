@@ -6,8 +6,8 @@ interface GalleryBlockProps {
   theme: LandingPageTheme;
 }
 
-const GalleryBlock: React.FC<GalleryBlockProps> = ({ config, theme }) => {
-  const { images = [], columns = 3, spacing = 16, lightbox = true } = config;
+const GalleryBlock: React.FC<GalleryBlockProps> = ({ config }) => {
+  const { images = [], columns = 3, spacing = 16 } = config;
 
   if (!images || images.length === 0) {
     return (

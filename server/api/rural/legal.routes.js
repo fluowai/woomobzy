@@ -277,13 +277,11 @@ router.get(
       res.json({ success: true, data: result.data, ...result.target });
     } catch (error) {
       console.error('CAR WFS error:', error);
-      res
-        .status(error.statusCode || 500)
-        .json({
-          success: false,
-          error: error.message,
-          data: error.data || null,
-        });
+      res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+        data: error.data || null,
+      });
     }
   }
 );

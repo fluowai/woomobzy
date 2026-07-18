@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Key, Star, Sparkles } from 'lucide-react';
+
 import { DividerBlockConfig } from '../../types/landingPage';
 
 interface DividerBlockProps {
@@ -7,11 +7,6 @@ interface DividerBlockProps {
 }
 
 const DividerBlock: React.FC<DividerBlockProps> = ({ config }) => {
-  const Icon = () => {
-    // Optional: add config for icon choice later
-    return <Sparkles size={20} className="text-gray-300" />;
-  };
-
   const getBorderStyle = () => {
     switch (config.style) {
       case 'dotted':

@@ -1290,11 +1290,9 @@ router.put(
         console.warn(
           `[Security] ❌ Bloqueio de ação cross-tenant por ${req.user.email}`
         );
-        return res
-          .status(403)
-          .json({
-            error: 'Não autorizado: Usuário não pertence à sua organização',
-          });
+        return res.status(403).json({
+          error: 'Não autorizado: Usuário não pertence à sua organização',
+        });
       }
 
       const { error } = await supabase.auth.admin.updateUserById(id, {
@@ -1324,11 +1322,9 @@ router.delete('/users/:id', verifyAdmin, requireTenant, async (req, res) => {
       .single();
 
     if (checkError || targetUser.organization_id !== req.orgId) {
-      return res
-        .status(403)
-        .json({
-          error: 'Não autorizado: Usuário não pertence à sua organização',
-        });
+      return res.status(403).json({
+        error: 'Não autorizado: Usuário não pertence à sua organização',
+      });
     }
 
     const { error } = await supabase.auth.admin.deleteUser(id);

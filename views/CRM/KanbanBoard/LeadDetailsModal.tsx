@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../../../services/supabase';

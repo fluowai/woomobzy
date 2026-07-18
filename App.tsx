@@ -30,7 +30,6 @@ import { PlansProvider } from './context/PlansContext';
 const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 
 // Public Views (Static for SEO/Initial Load)
-import LandingPage from './views/LandingPage';
 import SystemSalesPage from './views/SystemSalesPage';
 import Login from './views/Login';
 import Onboarding from './views/Onboarding';

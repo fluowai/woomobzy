@@ -39,8 +39,6 @@ const InlineEditable: React.FC<InlineEditableProps> = ({
     return <Component className={className}>{children}</Component>;
   }
 
-  const isActive = activeKey === textKey;
-
   // Extract text content from children if it's a string, or fallback to key
   const getInitialValue = () => {
     if (texts[textKey]) return texts[textKey];

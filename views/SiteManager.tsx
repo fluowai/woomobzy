@@ -84,16 +84,14 @@ const SiteManager: React.FC = () => {
           .single();
 
         if (newSite) {
-          await supabase
-            .from('site_pages')
-            .insert({
-              site_id: newSite.id,
-              title: 'Início',
-              slug: 'home',
-              sort_order: 0,
-              status: 'published',
-              is_home: true,
-            });
+          await supabase.from('site_pages').insert({
+            site_id: newSite.id,
+            title: 'Início',
+            slug: 'home',
+            sort_order: 0,
+            status: 'published',
+            is_home: true,
+          });
         }
 
         siteData = await siteService.getByOrganization(profile.organization_id);

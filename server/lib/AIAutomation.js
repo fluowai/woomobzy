@@ -29,13 +29,14 @@ export class AIAutomationEngine {
   constructor(apiKey) {
     const validKey = apiKey && !apiKey.includes('YOUR_') && apiKey.length > 20;
     this.defaultApiKey = validKey ? apiKey : null;
-    this.genAI = validKey ? new GoogleGenerativeAI(apiKey) : null;
-    this.model = this.genAI
-      ? this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
-      : null;
-    if (!validKey) {
+    if (validKey) {
+      this.genAI = new GoogleGenerativeAI(apiKey);
+      this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    } else {
+      this.genAI = null;
+      this.model = null;
       console.warn(
-        '[AIAutomation] GEMINI_API_KEY inválida ou não configurada. Automação de IA desativada.'
+        '[AIAutomation] GEMINI_API_KEY não configurada no .env. Tentarei buscar do banco de dados (saas_settings).'
       );
     }
   }
@@ -50,13 +51,20 @@ export class AIAutomationEngine {
           .maybeSingle()
       : { data: null };
 
+    const { data: saasSettings } = await supabase
+      .from('saas_settings')
+      .select('global_gemini_key')
+      .single()
+      .catch(() => ({ data: null }));
+
     const dbKey =
       settings?.integrations?.gemini?.apiKey ||
       settings?.integrations?.groq?.apiKey;
-    const finalKey = dbKey || this.defaultApiKey;
+    const globalKey = saasSettings?.global_gemini_key;
+    const finalKey = dbKey || globalKey || this.defaultApiKey;
 
     if (!finalKey)
-      throw new Error('Nenhuma chave de IA configurada para esta organizacao.');
+      throw new Error('Nenhuma chave de IA configurada para esta organizacao ou plataforma.');
 
     const genAI = new GoogleGenerativeAI(finalKey);
     return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });

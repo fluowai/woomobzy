@@ -147,12 +147,26 @@ const statBadges = [
 ];
 
 const BrandLockup = ({ compact = false }: { compact?: boolean }) => (
-  <div className="flex items-center">
-    <img 
-      src="/logo-wootech-imob.svg" 
-      alt="WooTech Imob" 
-      className={compact ? "h-8 w-auto" : "h-10 w-auto"} 
-    />
+  <div className="flex items-center gap-3">
+    <div className={`flex items-center justify-center rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] p-[2px] shadow-lg ${compact ? 'h-8 w-8' : 'h-10 w-10'}`}>
+      <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-[#020617]">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-3/5 w-3/5 text-[#6366f1]">
+          <path d="M3 21L7.5 12L12 21L16.5 12L21 21M3 12L7.5 3L12 12L16.5 3L21 12" stroke="url(#paint0_linear)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <defs>
+            <linearGradient id="paint0_linear" x1="3" y1="12" x2="21" y2="12" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#3b82f6"/>
+              <stop offset="1" stopColor="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+    {!compact && (
+      <div className="flex flex-col">
+        <span className="text-lg font-black leading-none tracking-tight text-white">WooTech</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6366f1]">Imob</span>
+      </div>
+    )}
   </div>
 );
 
@@ -211,14 +225,14 @@ const SystemSalesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-[#ff7a00]/30 selection:text-[#ff9b45]">
+    <div className="min-h-screen bg-[#020617] text-white selection:bg-[#3b82f6]/30 selection:text-[#6366f1]">
       {/* Background Glow Accents */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[#ff7a00]/10 blur-[120px]" />
-        <div className="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-[#ff7a00]/5 blur-[120px]" />
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[#3b82f6]/10 blur-[120px]" />
+        <div className="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-[#3b82f6]/5 blur-[120px]" />
       </div>
 
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#050505]/80 backdrop-blur-2xl">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#020617]/80 backdrop-blur-2xl">
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-6 lg:px-8 relative z-10">
           <button
             type="button"
@@ -250,7 +264,7 @@ const SystemSalesPage: React.FC = () => {
             </button>
             <button
               onClick={() => scrollToSection('cta-final')}
-              className="h-11 rounded-xl bg-gradient-to-r from-[#ff7a00] to-[#ff9b45] px-6 text-sm font-bold text-white shadow-[0_4px_20px_rgba(255,122,0,0.3)] transition hover:shadow-[0_8px_25px_rgba(255,122,0,0.45)] hover:scale-105 active:scale-95"
+              className="h-11 rounded-xl bg-gradient-to-r from-[#3b82f6] to-[#6366f1] px-6 text-sm font-bold text-white shadow-[0_4px_20px_rgba(59,130,246,0.3)] transition hover:shadow-[0_8px_25px_rgba(59,130,246,0.45)] hover:scale-105 active:scale-95"
             >
               Agendar demonstração
             </button>
@@ -271,7 +285,7 @@ const SystemSalesPage: React.FC = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="border-t border-white/5 bg-[#050505]/95 backdrop-blur-xl lg:hidden overflow-hidden"
+              className="border-t border-white/5 bg-[#020617]/95 backdrop-blur-xl lg:hidden overflow-hidden"
             >
               <div className="flex flex-col gap-2 p-6">
                 {navItems.map((item) => (
@@ -292,7 +306,7 @@ const SystemSalesPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => scrollToSection('cta-final')}
-                    className="w-full rounded-xl bg-gradient-to-r from-[#ff7a00] to-[#ff9b45] px-4 py-3 text-center text-base font-bold text-white shadow-lg"
+                    className="w-full rounded-xl bg-gradient-to-r from-[#3b82f6] to-[#6366f1] px-4 py-3 text-center text-base font-bold text-white shadow-lg"
                   >
                     Agendar demonstração
                   </button>
@@ -311,13 +325,13 @@ const SystemSalesPage: React.FC = () => {
             variants={staggerContainer}
             className="max-w-[620px] pt-8"
           >
-            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 rounded-full border border-[#ff7a00]/30 bg-[#ff7a00]/10 px-4 py-2 mb-8">
-              <Sparkles size={16} className="text-[#ff7a00]" />
-              <span className="text-sm font-bold text-[#ff9b45]">O futuro da gestão imobiliária chegou</span>
+            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 rounded-full border border-[#3b82f6]/30 bg-[#3b82f6]/10 px-4 py-2 mb-8">
+              <Sparkles size={16} className="text-[#3b82f6]" />
+              <span className="text-sm font-bold text-[#6366f1]">O futuro da gestão imobiliária chegou</span>
             </motion.div>
             
             <motion.h1 variants={fadeIn} className="text-5xl font-black leading-[1.1] tracking-tight text-white md:text-6xl xl:text-7xl">
-              O <span className="bg-gradient-to-r from-[#ff7a00] to-[#ffb347] bg-clip-text text-transparent">CRM imobiliário</span> completo para quem quer crescer.
+              O <span className="bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] bg-clip-text text-transparent">CRM imobiliário</span> completo para quem quer crescer.
             </motion.h1>
             
             <motion.p variants={fadeIn} className="mt-6 text-xl font-medium leading-relaxed text-white/60">
@@ -327,7 +341,7 @@ const SystemSalesPage: React.FC = () => {
             <motion.div variants={fadeIn} className="mt-10 flex flex-wrap gap-4">
               <button
                 onClick={() => scrollToSection('cta-final')}
-                className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff7a00] to-[#ff9b45] px-8 text-base font-black text-white shadow-[0_10px_30px_rgba(255,122,0,0.3)] transition hover:shadow-[0_15px_40px_rgba(255,122,0,0.5)] hover:scale-105 active:scale-95"
+                className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#3b82f6] to-[#6366f1] px-8 text-base font-black text-white shadow-[0_10px_30px_rgba(59,130,246,0.3)] transition hover:shadow-[0_15px_40px_rgba(59,130,246,0.5)] hover:scale-105 active:scale-95"
               >
                 Agendar demonstração <ArrowRight size={18} />
               </button>
@@ -342,7 +356,7 @@ const SystemSalesPage: React.FC = () => {
             <motion.div variants={fadeIn} className="mt-12 flex flex-wrap gap-x-8 gap-y-4">
               {statBadges.map((item) => (
                 <div key={item.title} className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-[#ff7a00]">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-[#3b82f6]">
                     <CheckCircle2 size={18} />
                   </span>
                   <div>
@@ -361,7 +375,7 @@ const SystemSalesPage: React.FC = () => {
             className="relative flex justify-center lg:justify-end"
           >
             {/* Decorative blur behind mockup */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-[600px] max-h-[600px] bg-gradient-to-tr from-[#ff7a00]/20 to-transparent rounded-full blur-[80px] -z-10" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-[600px] max-h-[600px] bg-gradient-to-tr from-[#3b82f6]/20 to-transparent rounded-full blur-[80px] -z-10" />
             
             <div className="w-full max-w-[760px] rounded-[2.5rem] border border-white/10 bg-white/[0.02] p-4 shadow-2xl backdrop-blur-3xl">
               <div className="grid gap-4 lg:grid-cols-[180px_1fr]">
@@ -377,7 +391,7 @@ const SystemSalesPage: React.FC = () => {
                     ].map((item, index) => (
                       <div
                         key={item}
-                        className={`rounded-xl px-4 py-2.5 transition-colors ${index === 0 ? 'bg-gradient-to-r from-[#ff7a00]/20 to-transparent border border-[#ff7a00]/30 text-white' : 'hover:bg-white/5'}`}
+                        className={`rounded-xl px-4 py-2.5 transition-colors ${index === 0 ? 'bg-gradient-to-r from-[#3b82f6]/20 to-transparent border border-[#3b82f6]/30 text-white' : 'hover:bg-white/5'}`}
                       >
                         {item}
                       </div>
@@ -402,7 +416,7 @@ const SystemSalesPage: React.FC = () => {
                       { title: 'Imóveis ativos', value: '1.240', note: '+12 este mês', color: 'text-emerald-400' },
                       { title: 'Novos Leads', value: '532', note: '+18% este mês', color: 'text-emerald-400' },
                       { title: 'Atendimentos', value: '1.032', note: 'Tempo médio 4m', color: 'text-white/50' },
-                      { title: 'Negociações', value: '287', note: '+3 aprovações', color: 'text-[#ff9b45]' },
+                      { title: 'Negociações', value: '287', note: '+3 aprovações', color: 'text-[#6366f1]' },
                     ].map((card, i) => (
                       <div key={card.title} className="rounded-2xl border border-white/5 bg-white/5 p-5 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full opacity-50" />
@@ -419,12 +433,12 @@ const SystemSalesPage: React.FC = () => {
                       <div className="mt-6 flex items-center gap-6">
                         <div className="relative h-32 w-32 shrink-0">
                           <div className="absolute inset-0 rounded-full border-[14px] border-white/5" />
-                          <div className="absolute inset-0 rounded-full border-[14px] border-[#ff7a00] border-r-transparent border-b-transparent border-l-transparent rotate-45" />
-                          <div className="absolute inset-0 rounded-full border-[14px] border-[#ff9b45] border-t-transparent border-b-transparent border-l-transparent rotate-45" />
+                          <div className="absolute inset-0 rounded-full border-[14px] border-[#3b82f6] border-r-transparent border-b-transparent border-l-transparent rotate-45" />
+                          <div className="absolute inset-0 rounded-full border-[14px] border-[#6366f1] border-t-transparent border-b-transparent border-l-transparent rotate-45" />
                         </div>
                         <div className="space-y-3 text-xs font-bold text-white/60">
-                          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#ff7a00]" /> Site 48%</div>
-                          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#ff9b45]" /> WhatsApp 26%</div>
+                          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#3b82f6]" /> Site 48%</div>
+                          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#6366f1]" /> WhatsApp 26%</div>
                           <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-white/20" /> Indicação 14%</div>
                         </div>
                       </div>
@@ -445,7 +459,7 @@ const SystemSalesPage: React.FC = () => {
                             />
                             <div className="flex-1">
                               <p className="text-xs font-black text-white">{item.name}</p>
-                              <p className="text-[10px] font-bold text-[#ff9b45]">{item.city}</p>
+                              <p className="text-[10px] font-bold text-[#6366f1]">{item.city}</p>
                             </div>
                           </div>
                         ))}
@@ -481,8 +495,8 @@ const SystemSalesPage: React.FC = () => {
             variants={fadeIn}
             className="mx-auto max-w-[820px] text-center"
           >
-            <div className="inline-flex items-center justify-center rounded-full bg-[#ff7a00]/10 px-4 py-1.5 mb-6 border border-[#ff7a00]/20">
-              <p className="text-xs font-black uppercase tracking-widest text-[#ff7a00]">Soluções completas</p>
+            <div className="inline-flex items-center justify-center rounded-full bg-[#3b82f6]/10 px-4 py-1.5 mb-6 border border-[#3b82f6]/20">
+              <p className="text-xs font-black uppercase tracking-widest text-[#3b82f6]">Soluções completas</p>
             </div>
             <h2 className="text-4xl font-black leading-tight text-white md:text-5xl">
               Tudo que sua imobiliária precisa <br/>
@@ -504,8 +518,8 @@ const SystemSalesPage: React.FC = () => {
                 key={item.title}
                 className="group relative rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 transition-all hover:bg-white/[0.04] hover:border-white/10"
               >
-                <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-[#ff7a00]/0 to-[#ff7a00]/0 opacity-0 transition-opacity group-hover:from-[#ff7a00]/5 group-hover:opacity-100" />
-                <span className="relative mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff7a00]/20 to-[#ff7a00]/5 border border-[#ff7a00]/20 text-[#ff9b45] transition-transform group-hover:scale-110">
+                <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-[#3b82f6]/0 to-[#3b82f6]/0 opacity-0 transition-opacity group-hover:from-[#3b82f6]/5 group-hover:opacity-100" />
+                <span className="relative mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3b82f6]/20 to-[#3b82f6]/5 border border-[#3b82f6]/20 text-[#6366f1] transition-transform group-hover:scale-110">
                   <item.icon size={26} strokeWidth={2} />
                 </span>
                 <h3 className="relative text-xl font-black text-white">{item.title}</h3>
@@ -518,17 +532,17 @@ const SystemSalesPage: React.FC = () => {
         </section>
 
         {/* Highlights Section */}
-        <section id="recursos" className="relative border-t border-white/5 bg-[#080808]">
+        <section id="recursos" className="relative border-t border-white/5 bg-[#0f172a]">
           <div className="mx-auto grid max-w-[1440px] gap-16 px-6 py-24 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-8 xl:py-32">
             <motion.div
               initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}
               variants={fadeIn}
             >
-              <div className="inline-flex items-center justify-center rounded-full bg-[#ff7a00]/10 px-4 py-1.5 mb-6 border border-[#ff7a00]/20">
-                <p className="text-xs font-black uppercase tracking-widest text-[#ff7a00]">Tecnologia Avançada</p>
+              <div className="inline-flex items-center justify-center rounded-full bg-[#3b82f6]/10 px-4 py-1.5 mb-6 border border-[#3b82f6]/20">
+                <p className="text-xs font-black uppercase tracking-widest text-[#3b82f6]">Tecnologia Avançada</p>
               </div>
               <h2 className="text-4xl font-black leading-tight text-white md:text-5xl">
-                Inteligência que transforma <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff7a00] to-[#ffb347]">dados em negócios</span>
+                Inteligência que transforma <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6]">dados em negócios</span>
               </h2>
               <p className="mt-6 max-w-[540px] text-lg font-medium leading-relaxed text-white/60">
                 Utilizamos a mais alta tecnologia de automações e inteligência artificial para otimizar seu tempo, aumentar a produtividade do time e revolucionar a experiência do cliente.
@@ -537,7 +551,7 @@ const SystemSalesPage: React.FC = () => {
               <div className="mt-10 space-y-5">
                 {techBullets.map((item) => (
                   <div key={item} className="flex items-center gap-4">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ff7a00] to-[#ff9b45] text-white shadow-lg">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#3b82f6] to-[#6366f1] text-white shadow-lg">
                       <CheckCircle2 size={16} />
                     </span>
                     <p className="text-base font-bold text-white/80">{item}</p>
@@ -553,7 +567,7 @@ const SystemSalesPage: React.FC = () => {
               transition={{ duration: 0.8 }}
               className="relative flex justify-center"
             >
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-gradient-to-tl from-[#ff7a00]/10 to-transparent rounded-full blur-[100px] -z-10" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-gradient-to-tl from-[#3b82f6]/10 to-transparent rounded-full blur-[100px] -z-10" />
               <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/5 p-4 shadow-2xl">
                 <img
                   src="/templates/urban/urban_gated_community.png"
@@ -569,17 +583,17 @@ const SystemSalesPage: React.FC = () => {
                   className="absolute bottom-10 right-10 w-[240px] rounded-[1.8rem] border border-white/10 bg-black/70 p-6 shadow-2xl backdrop-blur-xl"
                 >
                   <p className="text-xs font-black uppercase tracking-widest text-white/70 text-center mb-4">Score do Lead</p>
-                  <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full border-[10px] border-white/5 border-t-[#ff7a00] border-r-[#ff9b45] shadow-[0_0_20px_rgba(255,122,0,0.2)]">
+                  <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full border-[10px] border-white/5 border-t-[#3b82f6] border-r-[#6366f1] shadow-[0_0_20px_rgba(59,130,246,0.2)]">
                     <div className="text-center">
                       <p className="text-5xl font-black text-white">92</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-[#ff9b45]">
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-[#6366f1]">
                         Muito quente
                       </p>
                     </div>
                   </div>
                   <div className="mt-6 space-y-2">
                     <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full w-[92%] bg-gradient-to-r from-[#ff7a00] to-[#ff9b45]" />
+                      <div className="h-full w-[92%] bg-gradient-to-r from-[#3b82f6] to-[#6366f1]" />
                     </div>
                     <p className="text-center text-[10px] font-bold text-white/50 uppercase">Probabilidade de Fechamento</p>
                   </div>
@@ -591,14 +605,14 @@ const SystemSalesPage: React.FC = () => {
 
         {/* Testimonials */}
         <section id="clientes" className="relative border-t border-white/5 py-24 xl:py-32">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#ff7a00]/5 to-transparent -z-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#3b82f6]/5 to-transparent -z-10" />
           <div className="mx-auto max-w-[1440px] px-6 lg:px-8">
             <motion.div 
               initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn}
               className="text-center"
             >
               <h2 className="text-4xl font-black text-white md:text-5xl">
-                Histórias de quem <span className="text-[#ff9b45]">cresce com a gente</span>
+                Histórias de quem <span className="text-[#6366f1]">cresce com a gente</span>
               </h2>
             </motion.div>
 
@@ -612,18 +626,18 @@ const SystemSalesPage: React.FC = () => {
                   key={item.name}
                   className="relative rounded-[2rem] border border-white/5 bg-black/40 p-10 backdrop-blur-md transition hover:bg-white/5"
                 >
-                  <p className="text-6xl font-serif text-[#ff7a00]/20 absolute top-6 left-6">"</p>
+                  <p className="text-6xl font-serif text-[#3b82f6]/20 absolute top-6 left-6">"</p>
                   <p className="relative z-10 text-lg font-medium leading-relaxed text-white/70 pt-4">
                     {item.quote}
                   </p>
                   <div className="mt-10 flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ff7a00] to-[#ff9b45] text-lg font-black text-white shadow-lg">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#3b82f6] to-[#6366f1] text-lg font-black text-white shadow-lg">
                       {index === 0 ? 'J' : index === 1 ? 'C' : 'F'}
                     </div>
                     <div>
                       <p className="text-base font-black text-white">{item.name}</p>
                       <p className="text-xs font-bold text-white/40 uppercase tracking-wide">{item.role}</p>
-                      <p className="text-xs font-bold text-[#ff9b45]">{item.company}</p>
+                      <p className="text-xs font-bold text-[#6366f1]">{item.company}</p>
                     </div>
                   </div>
                 </motion.article>
@@ -636,21 +650,21 @@ const SystemSalesPage: React.FC = () => {
         <section id="cta-final" className="mx-auto max-w-[1440px] px-6 py-12 lg:px-8 pb-24">
           <motion.div 
             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-gradient-to-br from-[#151515] to-[#0a0a0a] px-8 py-16 shadow-2xl lg:px-16"
+            className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-gradient-to-br from-[#1e293b] to-[#0f172a] px-8 py-16 shadow-2xl lg:px-16"
           >
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#ff7a00]/20 to-transparent rounded-bl-full blur-[80px] -z-10" />
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#3b82f6]/20 to-transparent rounded-bl-full blur-[80px] -z-10" />
             
             <div className="grid gap-12 lg:grid-cols-[1fr_0.8fr] lg:items-center relative z-10">
               <div>
                 <h2 className="text-4xl font-black leading-tight text-white md:text-5xl">
-                  Pronto para elevar sua imobiliária <span className="text-[#ff9b45]">ao próximo nível?</span>
+                  Pronto para elevar sua imobiliária <span className="text-[#6366f1]">ao próximo nível?</span>
                 </h2>
                 <p className="mt-6 max-w-[500px] text-lg font-medium leading-relaxed text-white/60">
                   Agende uma demonstração gratuita e descubra como a {COMMERCIAL_PRODUCT_NAME} vai transformar completamente sua operação.
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-6 text-sm font-bold text-white/70">
-                  <div className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff7a00]" /> Demonstração 1 a 1</div>
-                  <div className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff7a00]" /> Sem compromisso</div>
+                  <div className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#3b82f6]" /> Demonstração 1 a 1</div>
+                  <div className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#3b82f6]" /> Sem compromisso</div>
                 </div>
               </div>
 
@@ -661,7 +675,7 @@ const SystemSalesPage: React.FC = () => {
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="h-12 rounded-xl border border-white/10 bg-black/50 px-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#ff7a00] focus:bg-black"
+                      className="h-12 rounded-xl border border-white/10 bg-black/50 px-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#3b82f6] focus:bg-black"
                       placeholder="Nome completo"
                     />
                     <input
@@ -669,33 +683,33 @@ const SystemSalesPage: React.FC = () => {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="h-12 rounded-xl border border-white/10 bg-black/50 px-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#ff7a00] focus:bg-black"
+                      className="h-12 rounded-xl border border-white/10 bg-black/50 px-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#3b82f6] focus:bg-black"
                       placeholder="E-mail profissional"
                     />
                     <input
                       required
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="h-12 rounded-xl border border-white/10 bg-black/50 px-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#ff7a00] focus:bg-black"
+                      className="h-12 rounded-xl border border-white/10 bg-black/50 px-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#3b82f6] focus:bg-black"
                       placeholder="WhatsApp"
                     />
                     <input
                       required
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      className="h-12 rounded-xl border border-white/10 bg-black/50 px-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#ff7a00] focus:bg-black"
+                      className="h-12 rounded-xl border border-white/10 bg-black/50 px-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#3b82f6] focus:bg-black"
                       placeholder="Nome da Imobiliária"
                     />
                   </div>
                   <textarea
                     value={formData.goal}
                     onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
-                    className="min-h-[100px] rounded-xl border border-white/10 bg-black/50 p-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#ff7a00] focus:bg-black resize-none"
+                    className="min-h-[100px] rounded-xl border border-white/10 bg-black/50 p-4 text-sm font-semibold text-white placeholder:text-white/30 outline-none transition focus:border-[#3b82f6] focus:bg-black resize-none"
                     placeholder="Conte rapidamente o que você quer resolver ou acelerar na sua operação..."
                   />
                   <button
                     disabled={isSubmitting}
-                    className="mt-2 inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff7a00] to-[#ff9b45] text-base font-black text-white shadow-[0_10px_20px_rgba(255,122,0,0.3)] transition hover:shadow-[0_15px_30px_rgba(255,122,0,0.4)] hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:hover:scale-100"
+                    className="mt-2 inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-base font-black text-white shadow-[0_10px_20px_rgba(59,130,246,0.3)] transition hover:shadow-[0_15px_30px_rgba(59,130,246,0.4)] hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:hover:scale-100"
                   >
                     {isSubmitting ? <Loader2 className="animate-spin" /> : 'Agendar demonstração'}
                     {!isSubmitting && <ArrowRight size={18} />}
@@ -707,7 +721,7 @@ const SystemSalesPage: React.FC = () => {
         </section>
       </main>
 
-      <footer className="border-t border-white/5 bg-[#030303]">
+      <footer className="border-t border-white/5 bg-[#020617]">
         <div className="mx-auto grid max-w-[1440px] gap-12 px-6 py-20 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-8">
           <div>
             <BrandLockup />
@@ -718,7 +732,7 @@ const SystemSalesPage: React.FC = () => {
               {['IG', 'FB', 'IN', 'YT'].map((item) => (
                 <button
                   key={item}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-xs font-black text-white/60 transition hover:bg-[#ff7a00] hover:text-white"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-xs font-black text-white/60 transition hover:bg-[#3b82f6] hover:text-white"
                 >
                   {item}
                 </button>
@@ -733,7 +747,7 @@ const SystemSalesPage: React.FC = () => {
                 {column.items.map((item) => (
                   <button
                     key={item}
-                    className="block text-sm font-medium text-white/50 transition hover:text-[#ff7a00]"
+                    className="block text-sm font-medium text-white/50 transition hover:text-[#3b82f6]"
                   >
                     {item}
                   </button>

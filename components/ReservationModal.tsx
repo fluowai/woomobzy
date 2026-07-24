@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export const ReservationModal = ({ unit, onClose, onConfirm }) => {
+export const ReservationModal = ({ unit, onClose, onConfirm }: any) => {
   const [leadId, setLeadId] = useState('');
 
   return (
@@ -35,7 +35,7 @@ export const ReservationModal = ({ unit, onClose, onConfirm }) => {
   );
 };
 
-const overlayStyle = {
+const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0,
   left: 0,
@@ -48,7 +48,7 @@ const overlayStyle = {
   zIndex: 1000
 };
 
-const contentStyle = {
+const contentStyle: React.CSSProperties = {
   background: '#fff',
   padding: '20px',
   borderRadius: '8px',
@@ -56,7 +56,7 @@ const contentStyle = {
   boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
 };
 
-const btnCancelStyle = {
+const btnCancelStyle: React.CSSProperties = {
   padding: '8px 16px',
   background: '#e0e0e0',
   border: 'none',
@@ -64,7 +64,7 @@ const btnCancelStyle = {
   cursor: 'pointer'
 };
 
-const btnConfirmStyle = {
+const btnConfirmStyle: React.CSSProperties = {
   padding: '8px 16px',
   background: '#4caf50',
   color: '#fff',

@@ -54,7 +54,7 @@ export const AdminTicketsBoard = ({ initialTickets = [] }) => {
           ))}
           {filteredTickets.length === 0 && (
             <tr>
-              <td colSpan="7" style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+              <td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
                 Nenhum chamado encontrado.
               </td>
             </tr>

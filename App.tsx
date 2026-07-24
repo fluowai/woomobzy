@@ -20,7 +20,7 @@ import SuperAdminGuard from './components/SuperAdminGuard';
 import SubscriptionGuard from './components/SubscriptionGuard';
 import PanelGuard from './components/PanelGuard';
 import { Toaster } from 'sonner';
-import { PaperclipAssistant } from './components/PaperclipAssistant';
+
 
 // Context
 import { SettingsProvider, useSettings } from './context/SettingsContext';
@@ -164,7 +164,7 @@ const AppContent: React.FC = () => {
   return (
     <Suspense fallback={<FullScreenSpinner />}>
       <Toaster richColors closeButton position="top-right" />
-      <PaperclipAssistant />
+
       <ImpersonationBanner />
       <SuperAdminGuard>
         <Routes>

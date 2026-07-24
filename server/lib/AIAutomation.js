@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
+import { AgentOrchestrator } from '../services/ai/agentOrchestrator.js';
 
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',
@@ -181,6 +182,8 @@ Modo operacional:
 - Se houver pedido de visita ou horario claro, preencha visit.requested=true e visit.scheduledAt.
 - Se houver promessa de retorno, preencha nextAction.dueAt ou followUpAt em ISO.
 - reply deve ser curta, humana e com postura de SDR. Quando faltarem dados, pergunte apenas os proximos dados mais importantes.
+- IMPORTANTE: Se o final da mensagem contiver a tag [RESPOSTA AUTONOMA GERADA: <texto>], copie <texto> EXATAMENTE para o campo "reply".
+- IMPORTANTE: Se o final da mensagem contiver a tag [RESPOSTA AUTONOMA GERADA: <texto>], não crie sua própria resposta, use APENAS o texto fornecido.
 
 Formato:
 {
@@ -280,14 +283,44 @@ Formato:
     );
     const audioData =
       message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
+      
+    // Step 1: Executar Agente Autonomo (ReAct/Function Calling) caso existam ferramentas ativas
+    let autonomousReply = null;
+    if (agent && agent.tools && agent.tools.length > 0) {
+      try {
+        const orchestrator = new AgentOrchestrator(this.defaultApiKey);
+        const history = await this._getConversationMemory(organizationId, normalizedPhone, 8);
+        
+        // Determina o lead id (se ja existe na base)
+        const existingLeadForTools = await this._findLeadByNormalizedPhone(supabase, organizationId, normalizedPhone);
+        
+        autonomousReply = await orchestrator.processAgentConversation({
+          content,
+          organizationId,
+          agent,
+          history,
+          leadId: existingLeadForTools?.id || null
+        });
+      } catch (err) {
+        console.error('[AIAutomation] Erro ao executar orquestrador de ferramentas:', err.message);
+      }
+    }
+
+    // Step 2: Extrair JSON estruturado para o CRM
     const aiResult = await this.processIntent({
-      content,
+      content: autonomousReply ? `${content}\n\n[RESPOSTA AUTONOMA GERADA: ${autonomousReply}]` : content,
       audioData,
       organizationId,
       mimeType: message.media_mimetype,
       agent,
       phone: normalizedPhone,
     });
+    
+    // Se a IA autonoma gerou resposta, forcar o CRM a utiliza-la
+    if (aiResult && autonomousReply) {
+      aiResult.reply = autonomousReply;
+    }
+
     const actionPlan = this._buildActionPlan({
       aiResult,
       text: content,

@@ -49,6 +49,7 @@ import valuationRoutes from './api/valuation/index.js';
 import documentRoutes from './api/documents/index.js';
 import externalDataRoutes from './api/external-data/index.js';
 import quizRoutes from './api/quiz/index.js';
+import jarvisRoutes from './routes/jarvis.js';
 import accountRoutes from './routes/account.js';
 import whatsappProxyRoutes from './routes/whatsapp-proxy.js';
 import {
@@ -254,6 +255,7 @@ app.use('/api/valuation', valuationRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/external-data', externalDataRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/jarvis', jarvisRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);

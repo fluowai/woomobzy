@@ -101,7 +101,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const senderInitial = (
     senderName.match(/[A-Za-z0-9]/)?.[0] || '?'
   ).toUpperCase();
-  const showSenderName = !isSent;
+  const showSenderName = true; // Exibe o nome para ambas (enviadas e recebidas)
   const deliveryStatus = message.delivery_status || 'sent';
 
   const formatTime = (timestamp: string) => {
@@ -356,6 +356,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             ))}
         </div>
       </div>
+      {isSent && (
+        <div className="wa-message-avatar wa-message-avatar-sent">
+          {message.sender_avatar_url &&
+          !isWhatsAppCdnUrl(message.sender_avatar_url) &&
+          !avatarError ? (
+            <img
+              src={message.sender_avatar_url}
+              alt=""
+              className="wa-avatar-img"
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <span>{senderInitial}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

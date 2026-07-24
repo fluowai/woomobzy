@@ -26,6 +26,7 @@ const AppearanceSettings: React.FC = () => {
     isLive: false,
     contactEmail: '',
     contactPhone: '',
+    urbanSubtype: 'imobiliaria' as 'imobiliaria' | 'loteadora' | 'incorporadora',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -44,6 +45,7 @@ const AppearanceSettings: React.FC = () => {
         isLive: settings.isLive ?? false,
         contactEmail: settings.contactEmail || '',
         contactPhone: settings.contactPhone || '',
+        urbanSubtype: settings.urbanSubtype || 'imobiliaria',
       });
       setLogoPreview(settings.logoUrl || null);
     }
@@ -213,6 +215,22 @@ const AppearanceSettings: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="(00) 00000-0000"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Modelo de Negócio (Urbano)
+              </label>
+              <select
+                value={formData.urbanSubtype}
+                onChange={(e) =>
+                  setFormData({ ...formData, urbanSubtype: e.target.value as any })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="imobiliaria">Imobiliária Tradicional</option>
+                <option value="loteadora">Loteadora Exclusiva</option>
+                <option value="incorporadora">Incorporadora</option>
+              </select>
             </div>
           </div>
         </div>

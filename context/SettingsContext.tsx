@@ -127,6 +127,7 @@ export const SettingsProvider: React.FC<{
             linkedin: data.social_links?.linkedin || data.linkedin_url,
           },
           homeContent: layoutConfig.homeContent || {},
+          urbanSubtype: layoutConfig.urbanSubtype || 'imobiliaria',
           integrations: sanitizeClientIntegrations(data.integrations),
         });
       }
@@ -200,6 +201,7 @@ export const SettingsProvider: React.FC<{
           templateId: newSettings.templateId,
           isLive: newSettings.isLive,
           homeContent: newSettings.homeContent,
+          urbanSubtype: newSettings.urbanSubtype,
         },
         integrations: sanitizeClientIntegrations(newSettings.integrations),
         contact_email: newSettings.contactEmail,

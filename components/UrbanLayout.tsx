@@ -30,6 +30,7 @@ import {
   LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import SupportModal from './SupportModal';
 
 type MenuItem = {
@@ -44,7 +45,11 @@ type MenuSection = {
 };
 
 const UrbanLayout: React.FC = () => {
-  const { profile, signOut, isImpersonating, loading } = useAuth();
+  const { profile, signOut, isImpersonating, loading: authLoading } = useAuth();
+  const { settings, loading: settingsLoading } = useSettings();
+  const loading = authLoading || settingsLoading;
+  const subtype = settings?.urbanSubtype || 'imobiliaria';
+  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
@@ -77,13 +82,27 @@ const UrbanLayout: React.FC = () => {
     { icon: Users, label: 'Clientes Unificado', path: '/urban/clients' },
   ];
 
-  const assetItems: MenuItem[] = [
-    { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
-    { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
-    { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
-    { icon: Building2, label: 'Adm. Condomínios', path: '/urban/condominios' },
-    { icon: Key, label: 'Controle de Chaves', path: '/urban/chaves' },
-  ];
+  let assetItems: MenuItem[] = [];
+  
+  if (subtype === 'loteadora') {
+    assetItems = [
+      { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
+    ];
+  } else if (subtype === 'incorporadora') {
+    assetItems = [
+      { icon: Building2, label: 'Unidades', path: '/urban/properties' },
+      { icon: MapIcon, label: 'Empreendimentos', path: '/urban/loteamentos' },
+    ];
+  } else {
+    // imobiliaria (default)
+    assetItems = [
+      { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
+      { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
+      { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
+      { icon: Building2, label: 'Adm. Condomínios', path: '/urban/condominios' },
+      { icon: Key, label: 'Controle de Chaves', path: '/urban/chaves' },
+    ];
+  }
 
   const managementItems: MenuItem[] = [
     { icon: DollarSign, label: 'Financeiro & ERP', path: '/urban/financeiro' },

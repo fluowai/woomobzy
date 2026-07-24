@@ -77,6 +77,7 @@ export interface SiteSettings {
     quintoandar?: { enabled?: boolean; apiKey?: string; secret?: string };
     imovelweb?: { enabled?: boolean; apiKey?: string };
   };
+  urbanSubtype?: 'imobiliaria' | 'loteadora' | 'incorporadora';
   layout_config?: LayoutConfig;
   custom_css?: string;
   custom_js?: string;

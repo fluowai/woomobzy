@@ -170,6 +170,20 @@ services:
     networks:
       - imobfluow_internal
 
+  omniroute:
+    image: diegosouzapw/omniroute:latest
+    container_name: imobzy-omniroute
+    ports:
+      - '20128:20128'
+    volumes:
+      - ./docker/omniroute:/app/config
+    environment:
+      - PORT=20128
+      - OMNIROUTE_CONFIG=/app/config/omniroute.yml
+    restart: unless-stopped
+    networks:
+      - imobfluow_internal
+
 volumes:
   whatsapp_sessions:
   waha_sessions:

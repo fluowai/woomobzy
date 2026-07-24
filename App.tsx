@@ -49,6 +49,7 @@ const VisualSiteEditor = lazy(() => import('./views/VisualSiteEditor'));
 const SiteSetupWizard = lazy(() => import('./views/SiteSetupWizard'));
 const AIAssistant = lazy(() => import('./views/AIAssistant'));
 const AIAgents = lazy(() => import('./views/AIAgents'));
+const WooTechAI = lazy(() => import('./views/WooTechAI'));
 const ConsultingQualificacao = lazy(
   () => import('./views/ConsultingQualificacao')
 );
@@ -280,6 +281,7 @@ const AppContent: React.FC = () => {
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai-agents" element={<AIAgents />} />
+            <Route path="wootech-ai" element={<WooTechAI />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="financial" element={<FinanceiroRural />} />
             <Route path="financeiro-advanced" element={<Locacao />} />
@@ -343,6 +345,7 @@ const AppContent: React.FC = () => {
             <Route path="visual-editor" element={<VisualSiteEditor />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai-agents" element={<AIAgents />} />
+            <Route path="wootech-ai" element={<WooTechAI />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="email" element={<EmailCenter />} />

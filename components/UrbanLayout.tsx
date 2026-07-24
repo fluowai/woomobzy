@@ -120,6 +120,7 @@ const UrbanLayout: React.FC = () => {
     { icon: Sparkles, label: 'Editor Visual', path: '/urban/visual-editor' },
     { icon: Settings, label: 'Configurar Site', path: '/urban/site-setup' },
     { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
+    { icon: Bot, label: 'WooTech AI', path: '/urban/wootech-ai' },
     {
       icon: LayoutTemplate,
       label: 'Landing Pages',

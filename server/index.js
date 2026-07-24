@@ -52,6 +52,7 @@ import quizRoutes from './api/quiz/index.js';
 import jarvisRoutes from './routes/jarvis.js';
 import accountRoutes from './routes/account.js';
 import whatsappProxyRoutes from './routes/whatsapp-proxy.js';
+import wootechAiRoutes from './routes/wootechAi.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -247,6 +248,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/demo', demoRoutes);
 app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/wootech-ai', wootechAiRoutes);
 app.use('/api/sites', siteRoutes);
 app.use('/api/orulo', oruloRoutes);
 app.use('/api/portals', portalRoutes);

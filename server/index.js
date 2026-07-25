@@ -394,15 +394,7 @@ app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
 // O server real e passado para registrar o upgrade do WebSocket.
 setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
 
-// 10. HARDENING EXTRA - Fallback para rotas nao encontradas
-app.all(/(.*)/, (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Route not found',
-  });
-});
-
-// 7. TRATAMENTO GLOBAL DE ERROS
+// 7. TRATAMENTO GLOBAL DE ERROS (deve vir antes do 404 catch-all)
 app.use((err, req, res, next) => {
   const isDev = process.env.NODE_ENV !== 'production';
   console.error('GLOBAL ERROR:', isDev ? err : err.message);
@@ -447,6 +439,14 @@ app.use((err, req, res, next) => {
     error: isDev ? err.message : 'Erro interno do servidor',
     ...(isDev && { stack: err.stack?.split('\n').slice(0, 5).join('\n') }),
     code: err.code || 'INTERNAL_ERROR',
+  });
+});
+
+// 10. HARDENING EXTRA - Fallback para rotas nao encontradas
+app.all(/(.*)/, (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Route not found',
   });
 });
 

@@ -334,13 +334,13 @@ const LandingPageEditor: React.FC = () => {
     : null;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-slate-50">
       {/* Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
+      <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-md text-slate-100 relative z-50">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/landing-pages')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-300 hover:text-white"
             title="Voltar"
           >
             <ArrowLeft size={20} />
@@ -351,9 +351,10 @@ const LandingPageEditor: React.FC = () => {
               type="text"
               value={page.name}
               onChange={(e) => setPage({ ...page, name: e.target.value })}
-              className="text-lg font-semibold border-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+              className="text-lg font-semibold bg-transparent border-none text-white focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 placeholder-slate-400"
+              placeholder="Nome da Landing Page"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-400 ml-2">
               {lastSaved
                 ? `Salvo às ${lastSaved.toLocaleTimeString()}`
                 : 'Não salvo'}
@@ -415,7 +416,7 @@ const LandingPageEditor: React.FC = () => {
           {/* Actions */}
           <button
             onClick={() => setShowThemeCustomizer(true)}
-            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-slate-200 rounded-lg transition-colors"
             title="Tema"
           >
             <Palette size={18} />
@@ -424,7 +425,7 @@ const LandingPageEditor: React.FC = () => {
 
           <button
             onClick={() => setShowSEOSettings(true)}
-            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-slate-200 rounded-lg transition-colors"
             title="SEO"
           >
             <Settings size={18} />
@@ -433,7 +434,7 @@ const LandingPageEditor: React.FC = () => {
 
           <button
             onClick={handlePreview}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors"
           >
             <Eye size={18} />
             <span className="hidden md:inline">Preview</span>
@@ -442,7 +443,7 @@ const LandingPageEditor: React.FC = () => {
           <button
             onClick={() => handleSave(false)}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50"
           >
             {saving ? (
               <Loader className="animate-spin" size={18} />
@@ -484,9 +485,9 @@ const LandingPageEditor: React.FC = () => {
         <BlocksSidebar onAddBlock={handleAddBlock} />
 
         {/* Center - Canvas */}
-        <div className="flex-1 overflow-auto bg-gray-100 p-6">
+        <div className="flex-1 overflow-auto bg-slate-100/50 p-8 shadow-inner relative">
           <div
-            className="mx-auto bg-white shadow-lg transition-all duration-300"
+            className="mx-auto bg-white shadow-2xl rounded ring-1 ring-slate-900/5 transition-all duration-300"
             style={{
               width: getViewModeWidth(),
               minHeight: '100%',

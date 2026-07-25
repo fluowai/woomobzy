@@ -13,20 +13,16 @@ const HeroBlock: React.FC<HeroBlockProps> = ({ config, theme }) => {
       style={{
         height: `${config.height}px`,
         minHeight: '400px',
-        backgroundImage: config.backgroundImage
-          ? `url(${config.backgroundImage})`
-          : undefined,
+        backgroundImage: `url(${config.backgroundImage || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=2000'})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       {/* Overlay */}
-      {config.backgroundImage && (
-        <div
-          className="absolute inset-0 bg-black"
-          style={{ opacity: config.overlayOpacity }}
-        />
-      )}
+      <div
+        className="absolute inset-0 bg-black"
+        style={{ opacity: config.overlayOpacity ?? 0.5 }}
+      />
 
       {/* Content */}
       <div

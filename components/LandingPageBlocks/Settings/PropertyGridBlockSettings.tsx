@@ -115,21 +115,43 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
         </label>
       </div>
 
-      <div className="border-t border-gray-200 pt-4">
+      <div className="border-t border-gray-200 pt-4 space-y-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Seleção Automática de Imóveis
+        </label>
+        
         <button
-          onClick={() => _setShowPropertySelector(true)}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          onClick={() => onUpdatePage({
+            ...page,
+            propertySelection: { ...page.propertySelection, mode: 'all', sortBy: 'date' }
+          })}
+          className="w-full px-4 py-2 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors text-sm text-left flex items-center gap-2"
         >
-          Selecionar Imóveis
+          <span className="flex-1">Últimos Lançamentos</span>
+          {page.propertySelection.mode === 'all' && page.propertySelection.sortBy === 'date' && <span className="w-2 h-2 rounded-full bg-blue-500"></span>}
         </button>
-        <p className="text-xs text-gray-500 mt-2 text-center">
-          {page.propertySelection.mode === 'manual' &&
-          page.propertySelection.propertyIds
-            ? `${page.propertySelection.propertyIds.length} imóveis selecionados`
-            : page.propertySelection.mode === 'filter'
-              ? 'Seleção por filtros'
-              : 'Todos os imóveis'}
-        </p>
+
+        <button
+          onClick={() => onUpdatePage({
+            ...page,
+            propertySelection: { ...page.propertySelection, mode: 'all', sortBy: 'price' }
+          })}
+          className="w-full px-4 py-2 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors text-sm text-left flex items-center gap-2"
+        >
+          <span className="flex-1">Destaques (Maior Valor)</span>
+          {page.propertySelection.mode === 'all' && page.propertySelection.sortBy === 'price' && <span className="w-2 h-2 rounded-full bg-blue-500"></span>}
+        </button>
+
+        <button
+          onClick={() => onUpdatePage({
+            ...page,
+            propertySelection: { ...page.propertySelection, mode: 'all', sortBy: 'area' }
+          })}
+          className="w-full px-4 py-2 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors text-sm text-left flex items-center gap-2"
+        >
+          <span className="flex-1">Por Maior Área</span>
+          {page.propertySelection.mode === 'all' && page.propertySelection.sortBy === 'area' && <span className="w-2 h-2 rounded-full bg-blue-500"></span>}
+        </button>
       </div>
     </div>
   );

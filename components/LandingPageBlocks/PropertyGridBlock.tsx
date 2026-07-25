@@ -33,9 +33,38 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
           style={{ gap: `${config.gap}px` }}
         >
           {displayProperties.length === 0 && (
-            <div className="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-              Nenhum imóvel real disponível para este bloco.
-            </div>
+            <>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg overflow-hidden group border border-slate-100">
+                  <div className="relative h-48 bg-slate-200 overflow-hidden">
+                    <img 
+                      src={`https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800&sig=${i}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                      alt="Casa Exemplo"
+                    />
+                    <div 
+                      className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm"
+                      style={{ backgroundColor: theme.primaryColor }}
+                    >
+                      Exemplo
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="h-5 bg-slate-200 rounded w-3/4 mb-3"></div>
+                    <div className="h-4 bg-slate-100 rounded w-1/2 mb-4"></div>
+                    <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                      <div className="h-6 bg-slate-200 rounded w-1/3"></div>
+                      <div 
+                        className="px-4 py-2 rounded-lg font-medium text-white opacity-80 text-sm"
+                        style={{ backgroundColor: theme.primaryColor }}
+                      >
+                        Ver Detalhes
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
           )}
           {displayProperties.map((property) => (
             <PropertyCard

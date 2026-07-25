@@ -268,9 +268,191 @@ router.delete('/resellers/:id', verifyMegaAdmin, async (req, res) => {
 
     if (deleteOrgError) throw deleteOrgError;
 
-    res.json({ success: true, message: `Reseller "${org.name}" excluído` });
+    res.json({ success: true, message: 'Reseller excluído com sucesso' });
   } catch (error) {
     console.error('[MegaAdmin] Error deleting reseller:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- CLIENTES DIRETOS (Mega Admin Direct Clients) ---
+
+// GET /api/mega/direct-clients — Listar todos os clientes diretos
+router.get('/direct-clients', verifyMegaAdmin, async (req, res) => {
+  try {
+    const { data: clients, error } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('is_reseller', false)
+      .is('parent_id', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ success: true, clients });
+  } catch (error) {
+    console.error('[MegaAdmin] Error fetching direct clients:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/mega/direct-clients — Criar um novo cliente direto
+router.post('/direct-clients', verifyMegaAdmin, async (req, res) => {
+  try {
+    const { name, slug, owner_name, owner_email, password, niche } = req.body;
+    if (!name || !owner_email) {
+      return res.status(400).json({ error: 'Nome e email são obrigatórios' });
+    }
+
+    const finalPassword = password || Math.random().toString(36).slice(-10) + 'A!';
+    
+    // Check slug uniqueness if provided
+    let finalSlug = slug || name.toLowerCase().replace(/\s+/g, '-');
+    const { data: existingSlug } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('slug', finalSlug)
+      .maybeSingle();
+
+    if (existingSlug) {
+      return res.status(409).json({ error: 'Este slug já está em uso' });
+    }
+
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
+      .insert([
+        {
+          name,
+          slug: finalSlug,
+          status: 'active',
+          plan: 'enterprise',
+          is_reseller: false,
+          parent_id: null,
+          niche: normalizeNiche(niche, name, finalSlug),
+          owner_name: owner_name || null,
+          owner_email: owner_email || null,
+        },
+      ])
+      .select()
+      .single();
+
+    if (orgError) throw orgError;
+
+    let authUser = await findAuthUserByEmail(String(owner_email).toLowerCase().trim());
+
+    if (!authUser) {
+      const { data, error: createError } = await supabase.auth.admin.createUser({
+        email: String(owner_email).toLowerCase().trim(),
+        password: finalPassword,
+        email_confirm: true,
+        user_metadata: {
+          name: owner_name || name,
+          role: 'admin',
+        },
+        app_metadata: {
+          role: 'admin',
+        },
+      });
+      if (createError) throw createError;
+      authUser = data.user;
+    } else {
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        authUser.id,
+        {
+          password: finalPassword,
+          email_confirm: true,
+          app_metadata: { ...(authUser.app_metadata || {}), role: 'admin' },
+          user_metadata: { ...(authUser.user_metadata || {}), name: owner_name || name, role: 'admin' },
+        }
+      );
+      if (updateError) throw updateError;
+    }
+
+    const { error: profileError } = await supabase.from('profiles').upsert(
+      {
+        id: authUser.id,
+        organization_id: org.id,
+        name: owner_name || name,
+        email: String(owner_email).toLowerCase().trim(),
+        role: 'admin',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    );
+
+    if (profileError) throw profileError;
+
+    res.json({
+      success: true,
+      client: org,
+      owner_user_id: authUser.id,
+      setup_password: finalPassword,
+    });
+  } catch (error) {
+    console.error('[MegaAdmin] Error creating direct client:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/mega/direct-clients/:id — Atualizar cliente direto
+router.put('/direct-clients/:id', verifyMegaAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, slug, owner_name, owner_email, status, niche } = req.body;
+
+    const updatePayload = {};
+    if (name) updatePayload.name = name;
+    if (slug) updatePayload.slug = slug;
+    if (status) updatePayload.status = status;
+    if (niche) updatePayload.niche = normalizeNiche(niche, name, slug);
+    if (owner_name !== undefined) updatePayload.owner_name = owner_name;
+    if (owner_email !== undefined) updatePayload.owner_email = owner_email;
+
+    if (Object.keys(updatePayload).length === 0) {
+      return res.status(400).json({ error: 'Nada para atualizar' });
+    }
+
+    updatePayload.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('organizations')
+      .update(updatePayload)
+      .eq('id', id)
+      .eq('is_reseller', false)
+      .is('parent_id', null)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    res.json({ success: true, client: data });
+  } catch (error) {
+    console.error('[MegaAdmin] Error updating direct client:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/mega/direct-clients/:id — Excluir cliente direto
+router.delete('/direct-clients/:id', verifyMegaAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .eq('id', id)
+      .eq('is_reseller', false)
+      .is('parent_id', null)
+      .maybeSingle();
+
+    if (!org) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    const { error: deleteOrgError } = await supabase.from('organizations').delete().eq('id', id);
+    if (deleteOrgError) throw deleteOrgError;
+
+    res.json({ success: true, message: 'Cliente excluído com sucesso' });
+  } catch (error) {
+    console.error('[MegaAdmin] Error deleting direct client:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -145,6 +145,7 @@ const MarketingManager = lazy(
 );
 const GlobalSettings = lazy(() => import('./views/megaadmin/GlobalSettings'));
 const BillingOverview = lazy(() => import('./views/megaadmin/BillingOverview'));
+const MegaAuditLog = lazy(() => import('./views/megaadmin/AuditLog'));
 
 // Mega Admin
 const MegaAdminLayout = lazy(
@@ -387,6 +388,7 @@ const AppContent: React.FC = () => {
             <Route path="monitoring" element={<PlatformMonitoring />} />
             <Route path="billing" element={<BillingOverview />} />
             <Route path="feature-flags" element={<FeatureFlags />} />
+            <Route path="audit-log" element={<MegaAuditLog />} />
             <Route path="importer" element={<SmartImporter />} />
             <Route path="fluowai-migration" element={<FluowaiMigration />} />
             <Route

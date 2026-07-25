@@ -266,7 +266,11 @@ const emptyAgent: BuilderDraft = {
   response_style: 'consultivo',
   autonomy_level: 2,
   operation_mode: 'Semiautônomo',
-  channel_scope: 'Omniconst presets: TemplatePreset[] = [
+  channel_scope: 'Omnichannel CRM',
+  handoff_rules: defaultHandoff,
+};
+
+const presets: TemplatePreset[] = [
   {
     name: 'Zya',
     role: 'Atendimento e Qualificação',

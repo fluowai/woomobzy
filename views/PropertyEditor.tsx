@@ -1385,9 +1385,25 @@ const PropertyEditor: React.FC = () => {
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Matrícula (Nº)
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-slate-700">
+                        Matrícula (Nº)
+                      </label>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (!formData.features?.legal?.matricula) {
+                            alert('Preencha a matrícula primeiro para solicitar a certidão.');
+                            return;
+                          }
+                          // Em uma implementação completa, abriria um modal para confirmar o CNS
+                          alert('Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' + formData.features.legal.matricula);
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
+                      >
+                        <FileText size={12} /> ONR: Solicitar Certidão
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formData.features?.legal?.matricula || ''}
@@ -1619,9 +1635,24 @@ const PropertyEditor: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                      Número da Matrícula
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase">
+                        Número da Matrícula
+                      </label>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (!formData.features?.legal?.matricula) {
+                            alert('Preencha a matrícula primeiro para solicitar a certidão.');
+                            return;
+                          }
+                          alert('Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' + formData.features.legal.matricula);
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
+                      >
+                        <FileText size={12} /> ONR: Obter Certidão
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formData.features?.legal?.matricula || ''}

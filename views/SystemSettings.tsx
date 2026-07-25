@@ -516,6 +516,40 @@ const SystemSettings: React.FC = () => {
                       />
                     </div>
                   </div>
+                  {zapEnabled && (
+                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                      <label className="text-xs font-semibold text-emerald-700 uppercase tracking-widest mb-1 block">
+                        URL do Feed XML (ZAP / Canal Pro)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`https://api.imobzy.com/api/public/zap/feed/${profile?.organization?.custom_domain || profile?.organization_id}.xml`}
+                          className="w-full bg-white/50 text-emerald-900 border border-emerald-200 rounded-lg px-3 py-2 text-sm font-mono cursor-copy"
+                          onClick={(e) => {
+                            (e.target as HTMLInputElement).select();
+                            navigator.clipboard.writeText((e.target as HTMLInputElement).value);
+                            alert('URL copiada para a área de transferência!');
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            const url = `https://api.imobzy.com/api/public/zap/feed/${profile?.organization?.custom_domain || profile?.organization_id}.xml`;
+                            navigator.clipboard.writeText(url);
+                            alert('URL copiada!');
+                          }}
+                          className="p-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg transition-colors"
+                          title="Copiar URL"
+                        >
+                          <Copy size={16} />
+                        </button>
+                      </div>
+                      <p className="text-xs text-emerald-600 mt-2">
+                        Copie esta URL e cole na configuração de Integração de Anúncios no painel do Canal Pro.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

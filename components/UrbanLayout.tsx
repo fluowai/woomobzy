@@ -26,7 +26,6 @@ import {
   Bot,
   Link as LinkIcon,
   Globe,
-  Sparkles,
   LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -117,8 +116,6 @@ const UrbanLayout: React.FC = () => {
 
   const growthItems: MenuItem[] = [
     { icon: Globe, label: 'Meu Site', path: '/urban/site' },
-    { icon: Sparkles, label: 'Editor Visual', path: '/urban/visual-editor' },
-    { icon: Settings, label: 'Configurar Site', path: '/urban/site-setup' },
     { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
     { icon: Bot, label: 'WooTech AI', path: '/urban/wootech-ai' },
     {

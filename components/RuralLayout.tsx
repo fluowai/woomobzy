@@ -26,7 +26,6 @@ import {
   Headset,
   Briefcase,
   Target,
-  Sparkles,
   Zap,
   Bot,
   Link as LinkIcon,
@@ -87,8 +86,6 @@ const RuralLayout: React.FC = () => {
   const growthItems: MenuItem[] = [
     { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
     { icon: Globe, label: 'Meu Site', path: '/rural/site' },
-    { icon: Sparkles, label: 'Editor Visual', path: '/rural/visual-editor' },
-    { icon: Settings, label: 'Configurar Site', path: '/rural/site-setup' },
     {
       icon: LayoutTemplate,
       label: 'Landing Pages',

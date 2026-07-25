@@ -89,7 +89,10 @@ const Matchmaking360 = lazy(() => import('./views/admin/Matchmaking360'));
 // Urban-Specific
 const Empreendimentos = lazy(() => import('./views/urban/Empreendimentos'));
 const LoteamentoDetails = lazy(() => import('./views/urban/LoteamentoDetails'));
-const Locacao = lazy(() => import('./views/urban/Locacao'));
+const Locacao = lazy(() => import('./views/urban/Locacao')); // legacy
+const RentalsManagement = lazy(() => import('./views/RentalsManagement').then(m => ({ default: m.RentalsManagement })));
+const RentalsContractEditor = lazy(() => import('./views/RentalsContractEditor').then(m => ({ default: m.RentalsContractEditor })));
+const RentalsBordero = lazy(() => import('./views/RentalsBordero').then(m => ({ default: m.RentalsBordero })));
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
 const Simulator360 = lazy(() => import('./views/urban/Simulator360'));
@@ -333,7 +336,12 @@ const AppContent: React.FC = () => {
             <Route path="empreendimentos" element={<Empreendimentos />} />
             <Route path="loteamentos" element={<Empreendimentos />} />
             <Route path="loteamentos/:id" element={<LoteamentoDetails />} />
-            <Route path="locacao" element={<Locacao />} />
+            
+            {/* Novo módulo de Aluguéis (Rentals) */}
+            <Route path="locacao" element={<RentalsManagement />} />
+            <Route path="locacao/contrato" element={<RentalsContractEditor />} />
+            <Route path="locacao/bordero" element={<RentalsBordero />} />
+            
             <Route path="compliance" element={<ComplianceUrbano />} />
             <Route path="cobranca" element={<Cobranca />} />
             <Route path="simulador" element={<Simulator360 />} />

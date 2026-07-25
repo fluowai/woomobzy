@@ -22,6 +22,7 @@ import adjustmentRoutes from './adjustment.routes.js';
 import terminationRoutes from './termination.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import notificationRoutes from './notification.routes.js';
+import borderoRoutes from './bordero.routes.js';
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use('/adjustments', adjustmentRoutes);
 router.use('/terminations', terminationRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/bordero', borderoRoutes);
 
 export default router;

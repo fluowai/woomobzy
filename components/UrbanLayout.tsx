@@ -27,6 +27,8 @@ import {
   Link as LinkIcon,
   Globe,
   LucideIcon,
+  Landmark,
+  Trophy,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -112,6 +114,8 @@ const UrbanLayout: React.FC = () => {
       label: 'Simulador Financeiro',
       path: '/urban/simulador',
     },
+    { icon: Landmark, label: 'Financial Hub', path: '/urban/fintech' },
+    { icon: Trophy, label: 'Clube Imobzy', path: '/urban/clube' },
     { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
     { icon: FileText, label: 'Documentos (GED)', path: '/urban/documentos' },
   ];

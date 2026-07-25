@@ -109,6 +109,8 @@ const ControleChaves = lazy(() => import('./views/urban/ControleChaves'));
 const FinanceiroUrbano = lazy(() => import('./views/urban/FinanceiroUrbano'));
 const GestaoDocumentos = lazy(() => import('./views/urban/GestaoDocumentos'));
 const ConexoesUrbano = lazy(() => import('./views/urban/ConexoesUrbano'));
+const FinancialHub = lazy(() => import('./views/urban/FinancialHub'));
+const ClubeImobzy = lazy(() => import('./views/urban/ClubeImobzy'));
 
 // Super Admin
 const SuperAdminLayout = lazy(
@@ -380,6 +382,8 @@ const AppContent: React.FC = () => {
             <Route path="connections" element={<ConexoesUrbano />} />
             <Route path="integrations" element={<SystemSettings />} />
             <Route path="settings" element={<SystemSettings />} />
+            <Route path="fintech" element={<FinancialHub />} />
+            <Route path="clube" element={<ClubeImobzy />} />
           </Route>
 
           {/* ====== MEGA ADMIN ====== */}

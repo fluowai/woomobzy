@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/Card';
-import { Button } from '@/components/Button';
+
 import { FileDown, Calendar, Search, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -69,7 +68,7 @@ export function RentalsBordero() {
         <p className="text-gray-500">Geração de folhas de repasse (Split) para os proprietários</p>
       </div>
 
-      <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row gap-4 items-end">
+      <div className="p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row gap-4 items-end">
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mês de Referência</label>
           <select 
@@ -93,14 +92,14 @@ export function RentalsBordero() {
           </select>
         </div>
         <div className="flex-none">
-          <Button className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2">
+          <button className="w-full md:w-auto px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2">
             <Search className="w-4 h-4" />
             Filtrar
-          </Button>
+          </button>
         </div>
-      </Card>
+      </div>
 
-      <Card className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div className="overflow-hidden rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <h2 className="font-semibold text-gray-900 dark:text-white">Contratos Elegíveis para Repasse</h2>
         </div>
@@ -135,16 +134,14 @@ export function RentalsBordero() {
                       </div>
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <button 
                         onClick={() => generateBordero(lease.id)}
                         disabled={loading}
-                        className="flex items-center gap-2 ml-auto"
+                        className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center gap-2 ml-auto"
                       >
                         <FileDown className="w-4 h-4" />
                         Gerar Extrato
-                      </Button>
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -152,7 +149,7 @@ export function RentalsBordero() {
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/Card';
-import { Button } from '@/components/Button';
+
 import { FileText, Plus, FileSignature, DollarSign, Calendar, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -70,19 +69,19 @@ export function RentalsManagement() {
           <p className="text-gray-500">Controle completo de contratos, faturas e repasses ({settings.agencyName})</p>
         </div>
         <div className="mt-4 md:mt-0 flex space-x-3">
-          <Button variant="outline" className="flex items-center gap-2">
+          <button className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
             <DollarSign className="w-4 h-4" />
             Borderô / Repasses
-          </Button>
-          <Button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+          </button>
+          <button className="flex items-center gap-2 rounded-md px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium">
             <Plus className="w-4 h-4" />
             Novo Contrato
-          </Button>
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+        <div className="rounded-lg p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Receita Prevista</p>
@@ -92,9 +91,9 @@ export function RentalsManagement() {
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-        </Card>
+        </div>
         
-        <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+        <div className="rounded-lg p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Inadimplência</p>
@@ -104,9 +103,9 @@ export function RentalsManagement() {
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+        <div className="rounded-lg p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Contratos Ativos</p>
@@ -116,9 +115,9 @@ export function RentalsManagement() {
               <FileText className="w-5 h-5" />
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+        <div className="rounded-lg p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Aguardando Assinatura</p>
@@ -128,10 +127,10 @@ export function RentalsManagement() {
               <FileSignature className="w-5 h-5" />
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
-      <Card className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div className="overflow-hidden rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
           <h2 className="text-lg font-semibold">Contratos de Locação</h2>
           <div className="relative w-full sm:w-64">
@@ -190,9 +189,9 @@ export function RentalsManagement() {
                       {getStatusBadge(lease.status)}
                     </td>
                     <td className="px-4 py-3">
-                      <Button variant="ghost" size="sm" className="text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                      <button className="text-sm font-medium rounded-md px-3 py-1 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                         Gerenciar
-                      </Button>
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -200,7 +199,7 @@ export function RentalsManagement() {
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Card } from '@/components/Card';
-import { Button } from '@/components/Button';
+
 import { FileSignature, Send, UserCheck, X } from 'lucide-react';
 import { CONTRACT_TEMPLATES } from '@/constants/ContractTemplates';
 import { useAuth } from '@/context/AuthContext';
@@ -58,12 +57,12 @@ export function RentalsContractEditor() {
           <p className="text-gray-500">Edite as variáveis e envie direto para assinatura eletrônica</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
+          <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center">
             <X className="w-4 h-4 mr-2" />
             Cancelar
-          </Button>
-          <Button 
-            className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
+          </button>
+          <button 
+            className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
             onClick={handleSendToZapSign}
             disabled={saving}
           >
@@ -73,13 +72,13 @@ export function RentalsContractEditor() {
                 Enviar para Assinar
               </>
             )}
-          </Button>
+          </button>
         </div>
       </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
         {/* Painel de Variáveis */}
-        <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-100 overflow-y-auto">
+        <div className="rounded-lg p-4 bg-white dark:bg-gray-800 border border-gray-100 overflow-y-auto">
           <h3 className="font-semibold mb-4 text-gray-900 dark:text-white">Variáveis do Contrato</h3>
           <div className="space-y-4">
             {Object.entries(variables).map(([key, value]) => (
@@ -106,16 +105,16 @@ export function RentalsContractEditor() {
               <span>Locatário: {variables.client_name}</span>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Pré-visualização do Contrato */}
-        <Card className="lg:col-span-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-6 overflow-y-auto font-serif">
+        <div className="rounded-lg lg:col-span-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-6 overflow-y-auto font-serif">
           <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 p-12 shadow-sm rounded-sm border border-gray-200 dark:border-gray-700 min-h-full">
             <pre className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 font-serif leading-relaxed">
               {getReplacedContent()}
             </pre>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

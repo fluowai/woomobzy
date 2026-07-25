@@ -15,6 +15,7 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
   config,
   onUpdate,
   page,
+  onUpdatePage,
 }) => {
   const [_showPropertySelector, _setShowPropertySelector] = useState(false);
 

@@ -816,6 +816,10 @@
   color: #25D366;
   margin-bottom: 2px;
 }
+.wa-bubble-sent .wa-bubble-sender {
+  text-align: right;
+  color: #128C7E;
+}
 .wa-bubble-text {
   font-size: 1rem;
   line-height: 1.55;

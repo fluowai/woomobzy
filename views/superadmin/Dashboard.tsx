@@ -1,13 +1,18 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { Users, Building2, Activity } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Users, Building2, Activity, TreePine, Building, DollarSign } from 'lucide-react';
 
 const SuperAdminDashboard: React.FC = () => {
   logger.info('📊 [SuperAdminDashboard] Rendering...');
+  const { profile } = useAuth();
   const [stats, setStats] = useState({
     totalTenants: 0,
     activeTenants: 0,
+    urbanTenants: 0,
+    ruralTenants: 0,
+    mrr: 0,
   });
   const [loading, setLoading] = useState(true);
   const [isFresh, setIsFresh] = useState(false);
@@ -18,20 +23,67 @@ const SuperAdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      // 1. Count Tenants
-      const { count: total, error: err1 } = await supabase
-        .from('organizations')
-        .select('*', { count: 'exact', head: true });
+      const isReseller = profile?.organization?.is_reseller;
+      const orgId = profile?.organization_id;
 
-      // 2. Count Active
-      const { count: active, error: err2 } = await supabase
+      const baseFilter = (query: any) => {
+        if (isReseller && orgId) {
+          return query.eq('parent_id', orgId);
+        }
+        return query;
+      };
+
+      const [
+        { count: total },
+        { count: active },
+        { count: urban },
+        { count: rural },
+      ] = await Promise.all([
+        baseFilter(
+          supabase.from('organizations').select('*', { count: 'exact', head: true })
+        ),
+        baseFilter(
+          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('status', 'active')
+        ),
+        baseFilter(
+          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('niche', 'traditional')
+        ),
+        baseFilter(
+          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('niche', 'rural')
+        ),
+      ]);
+
+      let orgsQuery = supabase
         .from('organizations')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
+        .select('plan_id')
+        .eq('status', 'active')
+        .eq('is_reseller', false);
+      if (isReseller && orgId) {
+        orgsQuery = orgsQuery.eq('parent_id', orgId);
+      }
+      const { data: orgsData } = await orgsQuery;
+
+      const { data: plansData } = await supabase
+        .from('plans')
+        .select('id, price_monthly');
+
+      let mrr = 0;
+      if (orgsData && plansData) {
+        const prices: Record<string, number> = {};
+        plansData.forEach(p => { prices[p.id] = p.price_monthly || 0; });
+        orgsData.forEach(org => {
+          if (org.plan_id && prices[org.plan_id]) {
+            mrr += prices[org.plan_id];
+          }
+        });
+      }
 
       setStats({
         totalTenants: total || 0,
         activeTenants: active || 0,
+        urbanTenants: urban || 0,
+        ruralTenants: rural || 0,
+        mrr,
       });
       setIsFresh((total || 0) === 0);
     } catch (error) {
@@ -54,6 +106,24 @@ const SuperAdminDashboard: React.FC = () => {
       icon: Users,
       color: 'bg-green-500',
     },
+    {
+      title: 'Imobiliárias Urbanas',
+      value: stats.urbanTenants,
+      icon: Building,
+      color: 'bg-indigo-500',
+    },
+    {
+      title: 'Imobiliárias Rurais',
+      value: stats.ruralTenants,
+      icon: TreePine,
+      color: 'bg-emerald-500',
+    },
+    {
+      title: 'MRR Total',
+      value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.mrr),
+      icon: DollarSign,
+      color: 'bg-amber-500',
+    }
   ];
 
   if (loading) return <div>Carregando dashboard...</div>;
@@ -98,7 +168,7 @@ const SuperAdminDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {modules.map((mod, index) => {
           const Icon = mod.icon;
           return (

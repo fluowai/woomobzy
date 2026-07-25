@@ -4,7 +4,7 @@ import {
   HeroWithFormBlockConfig,
   LandingPageTheme,
 } from '../../types/landingPage';
-import { Send, CheckCircle, Shield, Star, Clock } from 'lucide-react';
+import { Shield, Star, Clock } from 'lucide-react';
 import { getApiUrl } from '../../src/lib/api';
 
 interface HeroWithFormBlockProps {

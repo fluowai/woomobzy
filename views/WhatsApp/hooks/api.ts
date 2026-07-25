@@ -886,11 +886,7 @@ export function formatPhoneDisplay(phone: string): string {
 export function formatPhoneFriendly(phone: string): string {
   const normalized = formatPhone(phone);
   if (!isValidBrazilianPhone(normalized)) return normalized;
-  const local = normalized.slice(2);
-  if (local.length === 11) {
-    return `+55 (${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
-  }
-  return `+55 (${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+  return `+${normalized}`; // Exibição bruta padrão E.164, conforme solicitado
 }
 
 export function getDisplayName(

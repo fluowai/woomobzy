@@ -13,6 +13,9 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { AsyncLocalStorage } from 'async_hooks';
+
+export const tenantContext = new AsyncLocalStorage();
 
 let _client = null;
 let _authClient = null;
@@ -26,11 +29,18 @@ function getSupabaseUrl() {
 }
 
 /**
- * Retorna o cliente Supabase (service role) singleton.
+ * Retorna o cliente Supabase (service role) singleton ou do tenant (BYOB).
  * Inicializado na primeira chamada — seguro contra ESM hoisting.
  * @returns {import('@supabase/supabase-js').SupabaseClient}
  */
 export function getSupabaseServer() {
+  // 1. Tenta pegar o client do tenant (se estivermos dentro de uma requisição com BYOB)
+  const store = tenantContext.getStore();
+  if (store && store.supabaseClient) {
+    return store.supabaseClient;
+  }
+
+  // 2. Fallback: Retorna o client Master
   if (_client) return _client;
 
   const url = getSupabaseUrl();

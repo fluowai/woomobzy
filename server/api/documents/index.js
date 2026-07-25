@@ -5,6 +5,7 @@ import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { DocumentService } from '../../services/documentService.js';
 import { isValidUUID } from '../../lib/shared-utils.js';
+import onrRoutes from './onr.js';
 
 const router = Router();
 const upload = multer({
@@ -186,5 +187,7 @@ router.post('/webhook/worker-result', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.use('/onr', onrRoutes);
 
 export default router;

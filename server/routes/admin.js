@@ -558,7 +558,30 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
     console.log(
       `[Admin] 🏢 Fetching organizations for superadmin: ${req.user?.email}`
     );
-    const { data, error } = await queryOrganizations(supabase);
+
+    // If user is a reseller, only show their child organizations
+    let query = supabase
+      .from('organizations')
+      .select(
+        'id, name, slug, custom_domain, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, created_at, updated_at'
+      );
+
+    if (req.realOrgId) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('is_reseller')
+        .eq('id', req.realOrgId)
+        .maybeSingle();
+
+      if (org?.is_reseller) {
+        query = query.eq('parent_id', req.realOrgId);
+      }
+    }
+
+    const { data, error } = await query.order('created_at', {
+      ascending: false,
+      nullsFirst: false,
+    });
 
     if (error) {
       console.error(
@@ -652,6 +675,19 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       payload.plan_id = plan_id;
       payload.subscription_status = 'active';
       payload.selected_plan_at = new Date().toISOString();
+    }
+
+    // If user is a reseller, set parent_id to their organization
+    if (req.realOrgId) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('is_reseller')
+        .eq('id', req.realOrgId)
+        .maybeSingle();
+
+      if (org?.is_reseller) {
+        payload.parent_id = req.realOrgId;
+      }
     }
 
     const { data, error } = await supabase

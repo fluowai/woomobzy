@@ -512,3 +512,74 @@ export async function sendEmail({ organizationId, userId, accountId, to, subject
 
   return saved;
 }
+
+export async function sendSystemEmail({ organizationId, to, subject, html, replyTo = null }) {
+  const supabase = getSupabaseServer();
+  let smtpConfig = null;
+  let fromEmail = process.env.SMTP_FROM_EMAIL || 'no-reply@imobfluow.com';
+  let fromName = process.env.SMTP_FROM_NAME || 'Plataforma';
+
+  if (organizationId) {
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('name, parent_id, site_settings!inner(smtp_config)')
+      .eq('id', organizationId)
+      .maybeSingle();
+
+    if (orgData?.site_settings?.smtp_config?.host && orgData?.site_settings?.smtp_config?.password_encrypted) {
+      smtpConfig = orgData.site_settings.smtp_config;
+      fromName = orgData.name;
+    } else if (orgData?.parent_id) {
+      const { data: parentData } = await supabase
+        .from('organizations')
+        .select('name, site_settings!inner(smtp_config)')
+        .eq('id', orgData.parent_id)
+        .maybeSingle();
+      
+      if (parentData?.site_settings?.smtp_config?.host && parentData?.site_settings?.smtp_config?.password_encrypted) {
+        smtpConfig = parentData.site_settings.smtp_config;
+        fromName = parentData.name;
+      }
+    }
+  }
+
+  const cleanTo = Array.isArray(to) ? to.map(normalizeEmailAddress).filter(Boolean) : String(to || '').split(',').map(normalizeEmailAddress).filter(Boolean);
+  if (!cleanTo.length) throw new Error('Informe ao menos um destinatario.');
+
+  const cleanHtml = sanitizeEmailHtml(html);
+  let transport;
+  let senderEmail = fromEmail;
+
+  if (smtpConfig) {
+    const password = decryptEmailSecret(smtpConfig.password_encrypted);
+    const account = normalizeEmailConnectionConfig({
+      smtp_host: smtpConfig.host,
+      smtp_port: smtpConfig.port,
+      smtp_secure: smtpConfig.secure,
+      email: smtpConfig.email,
+    });
+    transport = createSmtpTransport(account, password);
+    senderEmail = smtpConfig.email;
+  } else {
+    if (!process.env.SMTP_HOST || !process.env.SMTP_PASS) {
+      console.warn('[EmailService] SMTP da plataforma nao configurado. Ignorando envio de e-mail.');
+      return null;
+    }
+    transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 465),
+      secure: Number(process.env.SMTP_PORT) === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    senderEmail = process.env.SMTP_USER || fromEmail;
+  }
+
+  return transport.sendMail({
+    from: `"${fromName}" <${senderEmail}>`,
+    to: cleanTo,
+    subject: String(subject || '(sem assunto)').trim(),
+    html: cleanHtml,
+    replyTo: replyTo || undefined,
+  });
+}
+

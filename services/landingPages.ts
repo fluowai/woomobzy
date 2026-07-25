@@ -94,7 +94,7 @@ export const landingPageService = {
       .from('landing_pages')
       .select('id')
       .eq('slug', slug)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       slug = `${slug}-${Date.now()}`;

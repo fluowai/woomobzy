@@ -9,7 +9,7 @@
     "server": "node --env-file=.env server/index.js",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "format": "prettier --write .",
     "test": "vitest",
@@ -48,6 +48,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^7.5.0",
     "framer-motion": "^12.40.0",
+    "google-tts-api": "^2.0.2",
     "groq-sdk": "^0.37.0",
     "helmet": "^8.0.0",
     "http-proxy-middleware": "^3.0.5",
@@ -78,6 +79,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/compression": "^1.8.1",

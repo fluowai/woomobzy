@@ -57,7 +57,7 @@ function getImpersonatedOrgId(): string | null {
   return null;
 }
 
-export const supabase = createClient(
+let activeClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
   {
@@ -66,6 +66,25 @@ export const supabase = createClient(
     },
   }
 );
+
+export const setTenantSupabase = (url: string, key: string) => {
+  activeClient = createClient(url, key, {
+    global: {
+      headers: getHeaders(),
+    },
+  });
+  logger.info(`🔌 BYOB: Cliente Supabase atualizado para locatário com URL: ${url}`);
+};
+
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(target, prop) {
+    if (!activeClient) {
+      throw new Error("Supabase client not initialized");
+    }
+    const value = (activeClient as any)[prop];
+    return typeof value === 'function' ? value.bind(activeClient) : value;
+  }
+}) as ReturnType<typeof createClient>;
 
 export const publicSupabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',

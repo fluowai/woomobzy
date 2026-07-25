@@ -26,10 +26,10 @@ import {
   Bot,
   Link as LinkIcon,
   Globe,
-  Sparkles,
   LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import SupportModal from './SupportModal';
 
 type MenuItem = {
@@ -44,19 +44,25 @@ type MenuSection = {
 };
 
 const UrbanLayout: React.FC = () => {
-  const { profile, signOut, isImpersonating, loading } = useAuth();
+  const { profile, signOut, isImpersonating, loading: authLoading } = useAuth();
+  const { settings, loading: settingsLoading } = useSettings();
+  const loading = authLoading || settingsLoading;
+  const subtype = settings?.urbanSubtype || 'imobiliaria';
+  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
   const isWorkspaceRoute =
     pathname.startsWith('/urban/whatsapp') ||
     pathname.startsWith('/urban/email');
+  const isLandingPageEditor = pathname.includes('/landing-pages/') && pathname.split('/').length > 3;
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
     logger.info(
-      '[UrbanLayout] Guard triggered. Redirecting Super Admin to /superadmin'
+      '[UrbanLayout] Guard triggered. Redirecting Super Admin to their panel'
     );
-    return <Navigate to="/superadmin" replace />;
+    const isMegaAdmin = !profile?.organization?.is_reseller;
+    return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
   }
 
   const handleLogout = async () => {
@@ -77,13 +83,27 @@ const UrbanLayout: React.FC = () => {
     { icon: Users, label: 'Clientes Unificado', path: '/urban/clients' },
   ];
 
-  const assetItems: MenuItem[] = [
-    { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
-    { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
-    { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
-    { icon: Building2, label: 'Adm. Condomínios', path: '/urban/condominios' },
-    { icon: Key, label: 'Controle de Chaves', path: '/urban/chaves' },
-  ];
+  let assetItems: MenuItem[] = [];
+  
+  if (subtype === 'loteadora') {
+    assetItems = [
+      { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
+    ];
+  } else if (subtype === 'incorporadora') {
+    assetItems = [
+      { icon: Building2, label: 'Unidades', path: '/urban/properties' },
+      { icon: MapIcon, label: 'Empreendimentos', path: '/urban/loteamentos' },
+    ];
+  } else {
+    // imobiliaria (default)
+    assetItems = [
+      { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
+      { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
+      { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
+      { icon: Building2, label: 'Adm. Condomínios', path: '/urban/condominios' },
+      { icon: Key, label: 'Controle de Chaves', path: '/urban/chaves' },
+    ];
+  }
 
   const managementItems: MenuItem[] = [
     { icon: DollarSign, label: 'Financeiro & ERP', path: '/urban/financeiro' },
@@ -98,9 +118,8 @@ const UrbanLayout: React.FC = () => {
 
   const growthItems: MenuItem[] = [
     { icon: Globe, label: 'Meu Site', path: '/urban/site' },
-    { icon: Sparkles, label: 'Editor Visual', path: '/urban/visual-editor' },
-    { icon: Settings, label: 'Configurar Site', path: '/urban/site-setup' },
     { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
+    { icon: Bot, label: 'WooTech AI', path: '/urban/wootech-ai' },
     {
       icon: LayoutTemplate,
       label: 'Landing Pages',
@@ -117,10 +136,11 @@ const UrbanLayout: React.FC = () => {
   ];
 
   if (profile?.role === 'superadmin') {
+    const isMegaAdmin = !profile?.organization?.is_reseller;
     systemItems.push({
       icon: ShieldAlert,
-      label: 'Super Admin',
-      path: '/superadmin',
+      label: isMegaAdmin ? 'Mega Admin' : 'Super Admin',
+      path: isMegaAdmin ? '/megaadmin' : '/superadmin',
     });
   }
 
@@ -277,9 +297,11 @@ const UrbanLayout: React.FC = () => {
         </div>
       )}
 
-      <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
-        {renderSidebarContent()}
-      </aside>
+      {!isLandingPageEditor && (
+        <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
+          {renderSidebarContent()}
+        </aside>
+      )}
 
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <button
@@ -291,7 +313,7 @@ const UrbanLayout: React.FC = () => {
         </button>
         <div
           className={`flex-1 overflow-y-auto ${
-            isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isLandingPageEditor ? 'p-0' : isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >
           <Outlet />

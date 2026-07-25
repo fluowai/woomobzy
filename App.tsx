@@ -17,9 +17,11 @@ import ErrorBoundary from './components/ErrorBoundary';
 import FullScreenSpinner from './components/FullScreenSpinner';
 import NicheRedirect from './components/NicheRedirect';
 import SuperAdminGuard from './components/SuperAdminGuard';
+import MegaAdminGuard from './components/MegaAdminGuard';
 import SubscriptionGuard from './components/SubscriptionGuard';
 import PanelGuard from './components/PanelGuard';
 import { Toaster } from 'sonner';
+
 
 // Context
 import { SettingsProvider, useSettings } from './context/SettingsContext';
@@ -33,6 +35,7 @@ const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 import SystemSalesPage from './views/SystemSalesPage';
 import Login from './views/Login';
 import Onboarding from './views/Onboarding';
+import SetupWhitelabel from './views/SetupWhitelabel';
 
 // Lazy Loaded Views
 const Register = lazy(() => import('./views/Register'));
@@ -48,6 +51,7 @@ const VisualSiteEditor = lazy(() => import('./views/VisualSiteEditor'));
 const SiteSetupWizard = lazy(() => import('./views/SiteSetupWizard'));
 const AIAssistant = lazy(() => import('./views/AIAssistant'));
 const AIAgents = lazy(() => import('./views/AIAgents'));
+const WooTechAI = lazy(() => import('./views/WooTechAI'));
 const ConsultingQualificacao = lazy(
   () => import('./views/ConsultingQualificacao')
 );
@@ -85,7 +89,10 @@ const Matchmaking360 = lazy(() => import('./views/admin/Matchmaking360'));
 // Urban-Specific
 const Empreendimentos = lazy(() => import('./views/urban/Empreendimentos'));
 const LoteamentoDetails = lazy(() => import('./views/urban/LoteamentoDetails'));
-const Locacao = lazy(() => import('./views/urban/Locacao'));
+const Locacao = lazy(() => import('./views/urban/Locacao')); // legacy
+const RentalsManagement = lazy(() => import('./views/RentalsManagement').then(m => ({ default: m.RentalsManagement })));
+const RentalsContractEditor = lazy(() => import('./views/RentalsContractEditor').then(m => ({ default: m.RentalsContractEditor })));
+const RentalsBordero = lazy(() => import('./views/RentalsBordero').then(m => ({ default: m.RentalsBordero })));
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
 const Simulator360 = lazy(() => import('./views/urban/Simulator360'));
@@ -116,28 +123,45 @@ const GlobalSettings = lazy(() => import('./views/superadmin/GlobalSettings'));
 const DomainManager = lazy(() => import('./views/superadmin/DomainManager'));
 const PlanManager = lazy(() => import('./views/superadmin/PlanManager'));
 const BillingManager = lazy(() => import('./views/superadmin/BillingManager'));
-const FeatureFlags = lazy(() => import('./views/superadmin/FeatureFlags'));
+const FeatureFlags = lazy(() => import('./views/megaadmin/FeatureFlags'));
 const AuditLog = lazy(() => import('./views/superadmin/AuditLog'));
 const TemplateManager = lazy(
   () => import('./views/superadmin/TemplateManager')
 );
 const PlatformMonitoring = lazy(
-  () => import('./views/superadmin/PlatformMonitoring')
+  () => import('./views/megaadmin/PlatformMonitoring')
 );
 const AnalyticsDashboard = lazy(
-  () => import('./views/superadmin/AnalyticsDashboard')
+  () => import('./views/megaadmin/AnalyticsDashboard')
 );
 const SupportManager = lazy(() => import('./views/superadmin/SupportManager'));
 const TeamManager = lazy(() => import('./views/superadmin/TeamManager'));
-const SmartImporter = lazy(() => import('./views/superadmin/SmartImporter'));
+const SmartImporter = lazy(() => import('./views/megaadmin/SmartImporter'));
 const FluowaiMigration = lazy(
-  () => import('./views/superadmin/FluowaiMigration')
+  () => import('./views/megaadmin/FluowaiMigration')
 );
 const StorageIntelligence = lazy(
-  () => import('./views/superadmin/StorageIntelligence')
+  () => import('./views/megaadmin/StorageIntelligence')
 );
 const MarketingManager = lazy(
   () => import('./views/superadmin/MarketingManager')
+);
+const MegaGlobalSettings = lazy(() => import('./views/megaadmin/GlobalSettings'));
+const BillingOverview = lazy(() => import('./views/megaadmin/BillingOverview'));
+const MegaAuditLog = lazy(() => import('./views/megaadmin/AuditLog'));
+
+// Mega Admin
+const MegaAdminLayout = lazy(
+  () => import('./views/megaadmin/MegaAdminLayout')
+);
+const MegaAdminDashboard = lazy(
+  () => import('./views/megaadmin/Dashboard')
+);
+const ResellerManager = lazy(
+  () => import('./views/megaadmin/ResellerManager')
+);
+const DirectClientsManager = lazy(
+  () => import('./views/megaadmin/DirectClientsManager')
 );
 
 // Site Builder
@@ -162,6 +186,7 @@ const AppContent: React.FC = () => {
   return (
     <Suspense fallback={<FullScreenSpinner />}>
       <Toaster richColors closeButton position="top-right" />
+
       <ImpersonationBanner />
       <SuperAdminGuard>
         <Routes>
@@ -185,6 +210,7 @@ const AppContent: React.FC = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/portal-locatario" element={<PortalLocatario />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/setup-whitelabel" element={<SetupWhitelabel />} />
           <Route path="/:slug/site/*" element={<PublicSite />} />
           <Route path="/site/:slug/*" element={<PublicSite />} />
           <Route path="/sites/:slug/*" element={<PublicSite />} />
@@ -274,10 +300,11 @@ const AppContent: React.FC = () => {
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
-            <Route path="site-setup" element={<SiteSetupWizard />} />
-            <Route path="visual-editor" element={<VisualSiteEditor />} />
+            <Route path="site-setup" element={<Navigate to="/rural/site" replace />} />
+            <Route path="visual-editor" element={<Navigate to="/rural/site" replace />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai-agents" element={<AIAgents />} />
+            <Route path="wootech-ai" element={<WooTechAI />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="financial" element={<FinanceiroRural />} />
             <Route path="financeiro-advanced" element={<Locacao />} />
@@ -309,7 +336,12 @@ const AppContent: React.FC = () => {
             <Route path="empreendimentos" element={<Empreendimentos />} />
             <Route path="loteamentos" element={<Empreendimentos />} />
             <Route path="loteamentos/:id" element={<LoteamentoDetails />} />
-            <Route path="locacao" element={<Locacao />} />
+            
+            {/* Novo módulo de Aluguéis (Rentals) */}
+            <Route path="locacao" element={<RentalsManagement />} />
+            <Route path="locacao/contrato" element={<RentalsContractEditor />} />
+            <Route path="locacao/bordero" element={<RentalsBordero />} />
+            
             <Route path="compliance" element={<ComplianceUrbano />} />
             <Route path="cobranca" element={<Cobranca />} />
             <Route path="simulador" element={<Simulator360 />} />
@@ -337,16 +369,45 @@ const AppContent: React.FC = () => {
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
-            <Route path="site-setup" element={<SiteSetupWizard />} />
-            <Route path="visual-editor" element={<VisualSiteEditor />} />
+            <Route path="site-setup" element={<Navigate to="/urban/site" replace />} />
+            <Route path="visual-editor" element={<Navigate to="/urban/site" replace />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai-agents" element={<AIAgents />} />
+            <Route path="wootech-ai" element={<WooTechAI />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="email" element={<EmailCenter />} />
             <Route path="connections" element={<ConexoesUrbano />} />
             <Route path="integrations" element={<SystemSettings />} />
             <Route path="settings" element={<SystemSettings />} />
+          </Route>
+
+          {/* ====== MEGA ADMIN ====== */}
+          <Route
+            path="/megaadmin"
+            element={
+              <ProtectedRoute>
+                <MegaAdminGuard>
+                  <MegaAdminLayout />
+                </MegaAdminGuard>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<MegaAdminDashboard />} />
+            <Route path="resellers" element={<ResellerManager />} />
+            <Route path="direct-clients" element={<DirectClientsManager />} />
+            <Route path="analytics" element={<AnalyticsDashboard />} />
+            <Route path="monitoring" element={<PlatformMonitoring />} />
+            <Route path="billing" element={<BillingOverview />} />
+            <Route path="feature-flags" element={<FeatureFlags />} />
+            <Route path="audit-log" element={<MegaAuditLog />} />
+            <Route path="importer" element={<SmartImporter />} />
+            <Route path="fluowai-migration" element={<FluowaiMigration />} />
+            <Route
+              path="storage-intelligence"
+              element={<StorageIntelligence />}
+            />
+            <Route path="settings" element={<MegaGlobalSettings />} />
           </Route>
 
           {/* ====== SUPER ADMIN ====== */}
@@ -359,8 +420,6 @@ const AppContent: React.FC = () => {
             }
           >
             <Route index element={<SuperAdminDashboard />} />
-            <Route path="analytics" element={<AnalyticsDashboard />} />
-            <Route path="monitoring" element={<PlatformMonitoring />} />
             <Route path="tenants" element={<TenantManager />} />
             <Route path="support" element={<SupportManager />} />
             <Route path="team" element={<TeamManager />} />
@@ -368,16 +427,10 @@ const AppContent: React.FC = () => {
             <Route path="consulting" element={<ConsultingLeads />} />
             <Route path="plans" element={<PlanManager />} />
             <Route path="billing" element={<BillingManager />} />
-            <Route path="feature-flags" element={<FeatureFlags />} />
             <Route path="audit-log" element={<AuditLog />} />
             <Route path="templates" element={<TemplateManager />} />
-            <Route path="importer" element={<SmartImporter />} />
-            <Route path="fluowai-migration" element={<FluowaiMigration />} />
-            <Route
-              path="storage-intelligence"
-              element={<StorageIntelligence />}
-            />
             <Route path="marketing" element={<MarketingManager />} />
+            {/* O reseller também tem settings, vamos manter a rota por enquanto até adaptarmos */}
             <Route path="settings" element={<GlobalSettings />} />
           </Route>
 
@@ -397,16 +450,16 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
-          <SettingsProvider>
-            <TextsProvider>
-              <PlansProvider>
-                <DomainRouter>
+          <DomainRouter>
+            <SettingsProvider>
+              <TextsProvider>
+                <PlansProvider>
                   <TrackingPixels />
                   <AppContent />
-                </DomainRouter>
-              </PlansProvider>
-            </TextsProvider>
-          </SettingsProvider>
+                </PlansProvider>
+              </TextsProvider>
+            </SettingsProvider>
+          </DomainRouter>
         </AuthProvider>
       </Router>
     </ErrorBoundary>

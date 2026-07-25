@@ -27,6 +27,16 @@ const GlobalSettings: React.FC = () => {
     source?: string;
     updatedAt?: string | null;
   }>({ configured: false });
+  const [byobSettings, setByobSettings] = useState({
+    domain: '',
+    supabase_url: '',
+    supabase_anon_key: '',
+    supabase_service_role_key: '',
+    minio_endpoint: '',
+    minio_access_key: '',
+    minio_secret_key: '',
+    minio_bucket_name: '',
+  });
 
   useEffect(() => {
     fetchSettings();
@@ -34,14 +44,16 @@ const GlobalSettings: React.FC = () => {
 
   const fetchSettings = async () => {
     try {
-      const [{ data }, masterStatus] = await Promise.all([
+      const [{ data }, masterStatus, { data: byobData }] = await Promise.all([
         supabase.from('saas_settings').select('*').single(),
         oruloService.getMasterCredentials().catch(() => ({
           configured: false,
         })),
+        supabase.from('reseller_infrastructure').select('*').single(),
       ]);
 
       if (data) setSettings(data);
+      if (byobData) setByobSettings(byobData);
       setOruloStatus(masterStatus);
     } catch (error) {
       logger.error('Error fetching global settings:', error);
@@ -64,6 +76,18 @@ const GlobalSettings: React.FC = () => {
         .select();
 
       if (error) throw error;
+
+      // Save BYOB settings
+      if (byobSettings.domain && byobSettings.supabase_url) {
+        // Obter organization_id do superadmin atual
+        const { data: userProfile } = await supabase.from('profiles').select('organization_id').single();
+        if (userProfile?.organization_id) {
+            const { error: byobError } = await supabase
+              .from('reseller_infrastructure')
+              .upsert({ ...byobSettings, organization_id: userProfile.organization_id }, { onConflict: 'organization_id' });
+            if (byobError) throw byobError;
+        }
+      }
 
       if (oruloClientId.trim() || oruloClientSecret.trim()) {
         if (!oruloClientId.trim() || !oruloClientSecret.trim()) {
@@ -249,6 +273,74 @@ const GlobalSettings: React.FC = () => {
                 }
                 autoComplete="new-password"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* BYOB (Bring Your Own Backend) */}
+        <div className="pt-6 border-t border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Server size={20} className="text-blue-600" /> Infraestrutura Customizada (BYOB)
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Se preenchido, os acessos neste domínio serão roteados para o seu próprio Supabase e MinIO em vez do banco de dados central (Master).
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Seu Domínio (Ex: painel.suaimobiliaria.com.br)
+              </label>
+              <input
+                type="text"
+                value={byobSettings?.domain || ''}
+                onChange={(e) =>
+                  setByobSettings({ ...byobSettings, domain: e.target.value })
+                }
+                className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
+                placeholder="Seu domínio personalizado..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Supabase URL
+              </label>
+              <input
+                type="text"
+                value={byobSettings?.supabase_url || ''}
+                onChange={(e) =>
+                  setByobSettings({ ...byobSettings, supabase_url: e.target.value })
+                }
+                className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
+                placeholder="https://sua-instancia.supabase.co"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Supabase Anon Key
+              </label>
+              <input
+                type="password"
+                value={byobSettings?.supabase_anon_key || ''}
+                onChange={(e) =>
+                  setByobSettings({ ...byobSettings, supabase_anon_key: e.target.value })
+                }
+                className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
+                placeholder="eyJhbG..."
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Supabase Service Role Key
+              </label>
+              <input
+                type="password"
+                value={byobSettings?.supabase_service_role_key || ''}
+                onChange={(e) =>
+                  setByobSettings({ ...byobSettings, supabase_service_role_key: e.target.value })
+                }
+                className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
+                placeholder="Chave para permissões administrativas (Backend)"
               />
             </div>
           </div>

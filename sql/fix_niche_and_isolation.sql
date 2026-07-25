@@ -44,7 +44,7 @@ ALTER TABLE landing_pages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public Access to Landing Pages" ON landing_pages;
 CREATE POLICY "Public Access to Landing Pages" ON landing_pages
 FOR SELECT
-USING (status = 'published');
+USING (is_active = true);
 
 -- 5. FUNÇÃO PARA ATUALIZAR NICHE DOS IMÓVEIS EXISTENTES BASEADO NO TIPO
 UPDATE properties 

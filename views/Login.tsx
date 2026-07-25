@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 import {
   AlertCircle,
@@ -45,6 +46,10 @@ const Login: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const { signIn, user, profile, loading: authLoading } = useAuth();
+  const { settings } = useSettings();
+  
+  const displayProductName = settings?.agencyName || COMMERCIAL_PRODUCT_NAME;
+  const displayLogo = settings?.logoUrl || '/logo-wootech-imob.svg';
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('wootech-login-email');
@@ -124,9 +129,9 @@ const Login: React.FC = () => {
               className="inline-flex rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c8ff66] focus:ring-offset-4 focus:ring-offset-[#0b1c18]"
             >
               <img
-                src="/logo-wootech-imob.svg"
-                alt="WooTech Imob"
-                className="h-12 w-auto brightness-0 invert"
+                src={displayLogo}
+                alt={displayProductName}
+                className="h-12 w-auto brightness-0 invert object-contain"
               />
             </Link>
           </div>
@@ -142,7 +147,7 @@ const Login: React.FC = () => {
             </h1>
 
             <p className="mt-6 max-w-[500px] text-lg font-medium leading-relaxed text-white/76">
-              {COMMERCIAL_PRODUCT_NAME} organiza leads, carteira, contratos e
+              {displayProductName} organiza leads, carteira, contratos e
               inteligencia territorial para equipes urbanas e rurais.
             </p>
           </div>
@@ -178,9 +183,9 @@ const Login: React.FC = () => {
                 className="inline-flex"
               >
                 <img
-                  src="/logo-wootech-imob.svg"
-                  alt="WooTech Imob"
-                  className="h-12 w-auto"
+                  src={displayLogo}
+                  alt={displayProductName}
+                  className="h-12 w-auto object-contain"
                 />
               </Link>
             </div>
@@ -203,7 +208,7 @@ const Login: React.FC = () => {
                   Painel administrativo
                 </p>
                 <h2 className="mb-0 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">
-                  Entrar no {COMMERCIAL_PRODUCT_NAME}
+                  Entrar no {displayProductName}
                 </h2>
                 <p className="mb-0 mt-4 text-base font-medium leading-relaxed text-slate-500">
                   Acesse seu ambiente para acompanhar leads, imoveis, contratos,

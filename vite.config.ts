@@ -156,6 +156,7 @@ export default defineConfig(({ mode }) => {
       ],
     },
     build: {
+      sourcemap: false,
       chunkSizeWarningLimit: 900,
       rollupOptions: {
         output: {
@@ -172,6 +173,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
+      exclude: ['**/node_modules/**', '**/dist/**', 'tests/e2e/**'],
     },
   };
 });

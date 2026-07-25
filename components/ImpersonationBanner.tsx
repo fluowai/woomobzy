@@ -28,7 +28,7 @@ const ImpersonationBanner: React.FC = () => {
         <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-black/20 rounded-full border border-white/20">
           <UserCircle size={14} />
           <span className="text-[10px] font-medium uppercase tracking-wider">
-            Acesso Super Admin
+            Acesso Administrativo
           </span>
         </div>
 

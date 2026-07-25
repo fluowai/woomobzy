@@ -489,6 +489,11 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       return;
     }
 
+    if (!profile?.organization_id) {
+      alert('Erro: usuário não possui organização vinculada');
+      return;
+    }
+
     try {
       setCreating(true);
       const template = getTemplateById(templateId);
@@ -496,7 +501,7 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
 
       const newPage = await landingPageService.create({
         userId: user.id,
-        organizationId: profile?.organization_id,
+        organizationId: profile.organization_id,
         name: template.name,
         slug: template.id + '-' + Date.now(),
         title: template.name,
@@ -544,6 +549,11 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       return;
     }
 
+    if (!profile?.organization_id) {
+      alert('Erro: usuário não possui organização vinculada');
+      return;
+    }
+
     if (!name || !slug) {
       alert('Preencha nome e slug');
       return;
@@ -554,7 +564,7 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
 
       const newPage = await landingPageService.create({
         userId: user.id,
-        organizationId: profile?.organization_id,
+        organizationId: profile.organization_id,
         name,
         slug,
         title: name,

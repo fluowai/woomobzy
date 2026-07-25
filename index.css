@@ -52,7 +52,7 @@
   --radius-full: 9999px;
 
   /* Typography Scale */
-  --font-primary: 'Inter', system-ui, sans-serif;
+  --font-primary: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-size-2xs: 0.625rem; /* 10px */
   --font-size-xs: 0.75rem; /* 12px */
   --font-size-sm: 0.8125rem; /* 13px */
@@ -72,8 +72,9 @@
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
+  --font-weight-semibold: 500;
+  --font-weight-bold: 600;
+  --font-weight-extrabold: 700;
 
   --letter-spacing-tight: -0.02em;
   --letter-spacing-wide: 0.04em;
@@ -261,7 +262,7 @@
   .workspace-section-title {
     padding-inline: 14px;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #8a96a8;
@@ -273,7 +274,7 @@
     padding: 9px 12px;
     color: #4b5563;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     transition:
       background-color 160ms ease,
       color 160ms ease,
@@ -305,7 +306,7 @@
     background: #eef3f8;
     color: #1f2937;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     outline: none;
     transition:
       background-color 160ms ease,
@@ -352,7 +353,7 @@
     color: #111827;
     padding: 0 16px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
     transition:
       transform 160ms ease,
@@ -395,7 +396,7 @@
   .workspace-eyebrow {
     color: #00855c;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
@@ -404,22 +405,22 @@
     margin: 0;
     color: #111827;
     font-size: clamp(1.35rem, 2vw, 1.75rem);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.18;
-    letter-spacing: 0;
+    letter-spacing: -0.01em;
   }
 
   .workspace-subtitle {
     color: #64748b;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 1.5;
   }
 
   .workspace-muted-label {
     color: #8a96a8;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
@@ -428,7 +429,7 @@
     background: #f8fafc;
     color: #64748b;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
@@ -443,7 +444,7 @@
     color: #475569;
     padding: 5px 10px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .workspace-chip-active {

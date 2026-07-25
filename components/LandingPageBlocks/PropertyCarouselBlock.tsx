@@ -10,13 +10,11 @@ interface PropertyCarouselBlockProps {
 
 const PropertyCarouselBlock: React.FC<PropertyCarouselBlockProps> = ({
   config,
-  theme,
-  properties = [],
+  theme: _theme,
+  properties: _properties = [],
 }) => {
   const {
     images = [],
-    autoplay = false,
-    autoplayDelay = 4000,
     showThumbnails = true,
     showDots = true,
   } = config;

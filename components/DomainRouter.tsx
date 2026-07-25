@@ -1,9 +1,11 @@
 import { logger } from '@/utils/logger';
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState, createContext } from 'react';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
 import { getAllPlatformHosts, PANEL_HOST } from '@/utils/branding';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+
+export const PlatformTenantContext = createContext<{ id: string; slug: string } | null>(null);
 
 const PublicLandingPage = lazy(() => import('../views/PublicLandingPage'));
 
@@ -93,6 +95,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const [isPublicSite, setIsPublicSite] = useState(false);
   const [loading, setLoading] = useState(!initialSystemPath);
   const [resolvedSlug, setResolvedSlug] = useState<string | null>(null);
+  const [platformTenant, setPlatformTenant] = useState<{ id: string; slug: string } | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const lastCheckedPath = React.useRef<string | null>(null);
 
@@ -156,18 +159,29 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
           try {
             const { data, error } = await supabase
-              .rpc('get_tenant_by_domain', { domain_input: currentHost })
+              .rpc('get_tenant_by_any_domain', { domain_input: currentHost })
               .maybeSingle();
 
             if (data && !error) {
               const tenant = data as any;
-              log(
-                `[Router] Tenant found via domain: ${tenant.name} (${tenant.slug})`
-              );
-              setResolvedSlug(tenant.slug);
-              setIsPublicSite(true);
-              setLoading(false);
-              return;
+              
+              if (tenant.domain_type === 'platform') {
+                log(
+                  `[Router] Platform Tenant found via domain: ${tenant.name} (${tenant.slug})`
+                );
+                setPlatformTenant({ id: tenant.id, slug: tenant.slug });
+                setIsPublicSite(false);
+                setLoading(false);
+                return;
+              } else {
+                log(
+                  `[Router] Public Site Tenant found via domain: ${tenant.name} (${tenant.slug})`
+                );
+                setResolvedSlug(tenant.slug);
+                setIsPublicSite(true);
+                setLoading(false);
+                return;
+              }
             }
 
             log(`[Router] Domain not found in DB: ${hostname}`);
@@ -349,10 +363,10 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   }
 
   return (
-    <>
+    <PlatformTenantContext.Provider value={platformTenant}>
       {children}
       {renderDebug()}
-    </>
+    </PlatformTenantContext.Provider>
   );
 };
 

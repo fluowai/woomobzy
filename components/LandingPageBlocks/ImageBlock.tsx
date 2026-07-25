@@ -6,7 +6,7 @@ interface ImageBlockProps {
   theme: LandingPageTheme;
 }
 
-const ImageBlock: React.FC<ImageBlockProps> = ({ config, theme }) => {
+const ImageBlock: React.FC<ImageBlockProps> = ({ config }) => {
   const {
     src = '',
     alt = 'Imagem',

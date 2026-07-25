@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { X, Wand2, Loader, Globe } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Block } from '../../types/landingPage';
 
 interface AICloneModalProps {
   onClone: (layoutConfig: any) => void;

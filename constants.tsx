@@ -16,4 +16,5 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     whatsapp: '',
   },
   footerText: 'Sua imobiliária de confiança no mercado.',
+  urbanSubtype: 'imobiliaria',
 };

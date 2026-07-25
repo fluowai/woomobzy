@@ -26,7 +26,6 @@ import {
   Headset,
   Briefcase,
   Target,
-  Sparkles,
   Zap,
   Bot,
   Link as LinkIcon,
@@ -87,8 +86,6 @@ const RuralLayout: React.FC = () => {
   const growthItems: MenuItem[] = [
     { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
     { icon: Globe, label: 'Meu Site', path: '/rural/site' },
-    { icon: Sparkles, label: 'Editor Visual', path: '/rural/visual-editor' },
-    { icon: Settings, label: 'Configurar Site', path: '/rural/site-setup' },
     {
       icon: LayoutTemplate,
       label: 'Landing Pages',
@@ -97,6 +94,8 @@ const RuralLayout: React.FC = () => {
     { icon: FileQuestion, label: 'Quiz', path: '/rural/quiz' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
     { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
+    { icon: Bot, label: 'WooTech AI', path: '/rural/wootech-ai' },
+
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
   ];
 
@@ -106,10 +105,11 @@ const RuralLayout: React.FC = () => {
   ];
 
   if (profile?.role === 'superadmin') {
+    const isMegaAdmin = !profile?.organization?.is_reseller;
     systemItems.push({
       icon: ShieldAlert,
-      label: 'Super Admin',
-      path: '/superadmin',
+      label: isMegaAdmin ? 'Mega Admin' : 'Super Admin',
+      path: isMegaAdmin ? '/megaadmin' : '/superadmin',
     });
   }
 
@@ -126,7 +126,8 @@ const RuralLayout: React.FC = () => {
   }, [pathname]);
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
-    return <Navigate to="/superadmin" replace />;
+    const isMegaAdmin = !profile?.organization?.is_reseller;
+    return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
   }
 
   const isMenuItemActive = (path: string, isActive: boolean) => {
@@ -142,6 +143,7 @@ const RuralLayout: React.FC = () => {
   const isWorkspaceRoute =
     pathname.startsWith('/rural/whatsapp') ||
     pathname.startsWith('/rural/email');
+  const isLandingPageEditor = pathname.includes('/landing-pages/') && pathname.split('/').length > 3;
 
   const renderMenuItem = (item: MenuItem) => (
     <NavLink
@@ -286,9 +288,11 @@ const RuralLayout: React.FC = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
-        {renderSidebarContent()}
-      </aside>
+      {!isLandingPageEditor && (
+        <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
+          {renderSidebarContent()}
+        </aside>
+      )}
 
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <button
@@ -300,12 +304,12 @@ const RuralLayout: React.FC = () => {
         </button>
         <div
           className={`flex-1 overflow-y-auto ${
-            isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isLandingPageEditor ? 'p-0' : isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >
           <div
             className={
-              isWorkspaceRoute
+              isLandingPageEditor || isWorkspaceRoute
                 ? 'w-full h-full min-h-0'
                 : 'max-w-[1600px] mx-auto'
             }

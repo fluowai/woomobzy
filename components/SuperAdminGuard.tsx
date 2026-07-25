@@ -32,13 +32,31 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
       publicPath === '/' ? path === '/' : path.startsWith(publicPath)
     );
 
-    if (
-      !isPublicPath &&
-      !path.startsWith('/superadmin') &&
-      path !== '/login' &&
-      path !== '/impersonate'
-    ) {
-      return <Navigate to="/superadmin" replace />;
+    const isMegaAdmin = !profile?.organization?.is_reseller;
+
+    if (isMegaAdmin) {
+      if (
+        !isPublicPath &&
+        !path.startsWith('/megaadmin') &&
+        path !== '/login' &&
+        path !== '/impersonate'
+      ) {
+        return <Navigate to="/megaadmin" replace />;
+      }
+    } else {
+      if (
+        !isPublicPath &&
+        !path.startsWith('/superadmin') &&
+        path !== '/login' &&
+        path !== '/impersonate'
+      ) {
+        return <Navigate to="/superadmin" replace />;
+      }
+    }
+  } else if (profile && profile.role !== 'superadmin' && !isImpersonating) {
+    const path = location.pathname;
+    if (path.startsWith('/megaadmin') || path.startsWith('/superadmin')) {
+      return <Navigate to="/" replace />;
     }
   }
 

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Circle, CheckCircle, Clock } from 'lucide-react';
 
 export interface TimelineItem {
   title: string;

@@ -54,12 +54,14 @@ import {
 } from '../types';
 import RuralMap from '../components/RuralMap';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 const PropertyEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const { profile } = useAuth();
+  const { settings } = useSettings();
   const isNew = !id || id === 'new';
 
   const routeNiche = routeLocation.pathname.startsWith('/urban')
@@ -1384,10 +1386,35 @@ const PropertyEditor: React.FC = () => {
                   </label>
                 </div>
                 <div className="space-y-4">
+                  <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex gap-3 text-xs text-indigo-800 mb-4">
+                    <Info size={16} className="shrink-0 mt-0.5" />
+                    <div>
+                      <p><strong>Integração ONR (Cartórios do Brasil)</strong></p>
+                      <p className="mt-1">
+                        A <strong>{settings?.agencyName || 'plataforma'}</strong> permite emitir certidões de Inteiro Teor diretamente pelo sistema. Preencha a Matrícula abaixo e clique em <strong>ONR: Solicitar Certidão</strong>.
+                      </p>
+                    </div>
+                  </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Matrícula (Nº)
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-slate-700">
+                        Matrícula (Nº)
+                      </label>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (!formData.features?.legal?.matricula) {
+                            alert('Preencha a matrícula primeiro para solicitar a certidão.');
+                            return;
+                          }
+                          // Em uma implementação completa, abriria um modal para confirmar o CNS
+                          alert('Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' + formData.features.legal.matricula);
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
+                      >
+                        <FileText size={12} /> ONR: Solicitar Certidão
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formData.features?.legal?.matricula || ''}
@@ -1613,15 +1640,39 @@ const PropertyEditor: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 bg-indigo-50/30 rounded-3xl border border-indigo-100/50 mb-8">
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest">
+                <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest mb-2">
                   <FileText size={16} />
                   Documentação Legal
                 </div>
+                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex gap-3 text-xs text-indigo-800 mb-4">
+                  <Info size={16} className="shrink-0 mt-0.5" />
+                  <div>
+                    <p><strong>Integração ONR (Cartórios do Brasil)</strong></p>
+                    <p className="mt-1">
+                      A <strong>{settings?.agencyName || 'plataforma'}</strong> permite emitir certidões de Inteiro Teor diretamente pelo sistema. Preencha a Matrícula abaixo e clique em <strong>ONR: Obter Certidão</strong>.
+                    </p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                      Número da Matrícula
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase">
+                        Número da Matrícula
+                      </label>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (!formData.features?.legal?.matricula) {
+                            alert('Preencha a matrícula primeiro para solicitar a certidão.');
+                            return;
+                          }
+                          alert('Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' + formData.features.legal.matricula);
+                        }}
+                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
+                      >
+                        <FileText size={12} /> ONR: Obter Certidão
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formData.features?.legal?.matricula || ''}

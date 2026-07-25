@@ -41,24 +41,19 @@ export const PlansProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, profile?.organization_id]);
 
   const fetchPlan = async () => {
     if (!user) return;
     try {
-      // 1. Get Org ID from profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single();
+      const organizationId = profile?.organization_id;
 
-      if (!profileData?.organization_id) {
+      if (!organizationId) {
         setLoading(false);
         return;
       }
 
-      // 2. Get Plan details via Organization
+      // Get Plan details via Organization
       const { data: orgData, error } = await supabase
         .from('organizations')
         .select(
@@ -72,7 +67,7 @@ export const PlansProvider: React.FC<{ children: React.ReactNode }> = ({
                     )
                 `
         )
-        .eq('id', profileData.organization_id)
+        .eq('id', organizationId)
         .single();
 
       if (error) throw error;

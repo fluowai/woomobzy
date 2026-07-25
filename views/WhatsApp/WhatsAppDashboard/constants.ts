@@ -1,4 +1,4 @@
-import { type Chat, type Instance } from './hooks/api';
+import { type Chat, type Instance } from '../hooks/api';
 
 export const HISTORY_PERIOD_OPTIONS = [
   { value: 7, label: '7 dias', chatLimit: 80, perChat: 40 },

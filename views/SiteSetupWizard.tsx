@@ -10,6 +10,7 @@ import {
   generateBlocksFromTemplate,
 } from '../services/landingPageTemplates';
 import { useNavigate } from 'react-router-dom';
+import { isRuralOrganization } from '../components/NicheRedirect';
 import {
   Sparkles,
   ArrowRight,
@@ -260,8 +261,10 @@ const SiteSetupWizard: React.FC = () => {
       alert('🎉 Site gerado com sucesso!');
 
       // Envia pra edição visual nativa
-      const baseRoute =
-        (profile.role as string) === 'rural_broker' ? 'rural' : 'urban';
+      const org: any = profile?.organization;
+      const baseRoute = isRuralOrganization(org?.niche, org?.name, org?.slug)
+        ? 'rural'
+        : 'urban';
       navigate(`/${baseRoute}/visual-editor`);
     } catch (error) {
       logger.error('Erro ao gerar site', error);

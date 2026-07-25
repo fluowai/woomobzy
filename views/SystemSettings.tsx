@@ -20,6 +20,7 @@ import {
   Shield,
   Link,
   Building2,
+  Mail,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
@@ -27,6 +28,7 @@ import AppearanceSettings from './admin/AppearanceSettings';
 import UserManagement from './admin/UserManagement';
 import SupportPortal from './admin/SupportPortal';
 import ChannelsSettings from './admin/ChannelsSettings';
+import SmtpSettings from './admin/SmtpSettings';
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -38,6 +40,8 @@ const SystemSettings: React.FC = () => {
   const [namoBanaKey, setNamoBanaKey] = useState('');
   const [asaasKey, setAsaasKey] = useState('');
   const [zapsignKey, setZapsignKey] = useState('');
+  const [cvcrmKey, setCvcrmKey] = useState('');
+  const [biaKey, setBiaKey] = useState('');
   const [oruloBrokerConnected, setOruloBrokerConnected] = useState(false);
   const [oruloBrokerConnecting, setOruloBrokerConnecting] = useState(false);
   const [oruloBrokerExpiresAt, setOruloBrokerExpiresAt] = useState<
@@ -60,6 +64,7 @@ const SystemSettings: React.FC = () => {
     | 'support'
     | 'canais'
     | 'portals'
+    | 'smtp'
   >(location.pathname.endsWith('/integrations') ? 'ai' : 'appearance');
 
   useEffect(() => {
@@ -81,6 +86,10 @@ const SystemSettings: React.FC = () => {
       setAsaasKey(settings.integrations.asaas.apiKey);
     if (settings?.integrations?.zapsign?.apiKey)
       setZapsignKey(settings.integrations.zapsign.apiKey);
+    if (settings?.integrations?.cvcrm?.apiKey)
+      setCvcrmKey(settings.integrations.cvcrm.apiKey);
+    if (settings?.integrations?.bia?.apiKey)
+      setBiaKey(settings.integrations.bia.apiKey);
     loadPortalConfigs();
   }, [settings]);
 
@@ -157,6 +166,8 @@ const SystemSettings: React.FC = () => {
           namoBana: { apiKey: namoBanaKey },
           asaas: { apiKey: asaasKey, environment: 'production' },
           zapsign: { apiKey: zapsignKey },
+          cvcrm: { apiKey: cvcrmKey },
+          bia: { apiKey: biaKey },
         },
       });
 
@@ -293,6 +304,7 @@ const SystemSettings: React.FC = () => {
     { id: 'tracking', label: 'Tracking', icon: Activity },
     { id: 'canais', label: 'Canais', icon: Link },
     { id: 'portals', label: 'Portais', icon: Globe },
+    { id: 'smtp', label: 'Servidor de E-mail', icon: Mail },
     { id: 'support', label: 'Ajuda & Suporte', icon: HelpCircle },
   ];
 
@@ -361,6 +373,7 @@ const SystemSettings: React.FC = () => {
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
         {activeTab === 'canais' && <ChannelsSettings />}
+        {activeTab === 'smtp' && <SmtpSettings />}
         {activeTab === 'portals' && (
           <div className="space-y-6">
             <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">
@@ -503,6 +516,46 @@ const SystemSettings: React.FC = () => {
                       />
                     </div>
                   </div>
+                  {zapEnabled && (
+                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                      <label className="text-xs font-semibold text-emerald-700 uppercase tracking-widest mb-1 block">
+                        URL do Feed XML (ZAP / Canal Pro)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`https://api.imobzy.com/api/public/zap/feed/${profile?.organization?.custom_domain || profile?.organization_id}.xml`}
+                          className="w-full bg-white/50 text-emerald-900 border border-emerald-200 rounded-lg px-3 py-2 text-sm font-mono cursor-copy"
+                          onClick={(e) => {
+                            (e.target as HTMLInputElement).select();
+                            navigator.clipboard.writeText((e.target as HTMLInputElement).value);
+                            alert('URL copiada para a área de transferência!');
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            const url = `https://api.imobzy.com/api/public/zap/feed/${profile?.organization?.custom_domain || profile?.organization_id}.xml`;
+                            navigator.clipboard.writeText(url);
+                            alert('URL copiada!');
+                          }}
+                          className="p-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg transition-colors"
+                          title="Copiar URL"
+                        >
+                          <Copy size={16} />
+                        </button>
+                      </div>
+                      <div className="text-xs text-emerald-700 mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                        <p className="font-bold mb-2">Como ativar a integração ZAP para a {settings?.agencyName || 'sua imobiliária'}:</p>
+                        <ol className="list-decimal list-inside space-y-1.5 ml-1">
+                           <li>Acesse sua conta corporativa no <strong>Canal Pro</strong> (Grupo ZAP).</li>
+                           <li>Vá no menu <strong>Configurações &gt; Integração de Anúncios</strong>.</li>
+                           <li>Cole a URL acima no campo de <strong>Feed XML</strong>.</li>
+                           <li>O ZAP passará a consultar a <strong>{settings?.agencyName || 'nossa plataforma'}</strong> automaticamente todos os dias para atualizar sua vitrine!</li>
+                        </ol>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -598,6 +651,20 @@ const SystemSettings: React.FC = () => {
                       setter: setZapsignKey,
                       placeholder: 'Token de acesso ZapSign',
                       desc: 'Para envio de contratos e assinaturas digitais via WhatsApp.',
+                    },
+                    {
+                      label: 'CVcrm API Token (CRM)',
+                      value: cvcrmKey,
+                      setter: setCvcrmKey,
+                      placeholder: 'Token do CVcrm',
+                      desc: 'Para registrar histórico de atendimentos.',
+                    },
+                    {
+                      label: 'BIA API Key (Xano)',
+                      value: biaKey,
+                      setter: setBiaKey,
+                      placeholder: 'Chave da API BIA',
+                      desc: 'Para disparo de atendimento com IA.',
                     },
                   ].map((field) => (
                     <div key={field.label} className="space-y-2">

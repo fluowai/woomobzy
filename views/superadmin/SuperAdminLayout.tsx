@@ -12,18 +12,10 @@ import {
   X,
   ShieldAlert,
   Globe,
-  CheckCircle,
   Calendar,
-  ArrowLeft,
-  ToggleRight,
   ScrollText,
   Layout,
   DollarSign,
-  Activity,
-  BarChart3,
-  Zap,
-  CloudCog,
-  HardDrive,
   Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -34,8 +26,6 @@ const SuperAdminLayout: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // rendering...
-
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
@@ -43,38 +33,16 @@ const SuperAdminLayout: React.FC = () => {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/superadmin' },
-    { icon: BarChart3, label: 'Analytics', path: '/superadmin/analytics' },
-    { icon: Activity, label: 'Monitoring', path: '/superadmin/monitoring' },
     { icon: Building2, label: 'Imobiliárias', path: '/superadmin/tenants' },
     { icon: HelpCircle, label: 'Suporte', path: '/superadmin/support' },
     { icon: Users, label: 'Equipe', path: '/superadmin/team' },
     { icon: CreditCard, label: 'Planos', path: '/superadmin/plans' },
     { icon: DollarSign, label: 'Billing', path: '/superadmin/billing' },
-    {
-      icon: ToggleRight,
-      label: 'Feature Flags',
-      path: '/superadmin/feature-flags',
-    },
     { icon: ScrollText, label: 'Audit Log', path: '/superadmin/audit-log' },
     { icon: Layout, label: 'Templates', path: '/superadmin/templates' },
     { icon: Globe, label: 'Domínios', path: '/superadmin/domains' },
     { icon: Calendar, label: 'Consultoria', path: '/superadmin/consulting' },
-    { icon: Zap, label: 'Importador IA', path: '/superadmin/importer' },
-    {
-      icon: CloudCog,
-      label: 'Migração FluowAI',
-      path: '/superadmin/fluowai-migration',
-    },
-    {
-      icon: HardDrive,
-      label: 'Storage Intelligence',
-      path: '/superadmin/storage-intelligence',
-    },
-    {
-      icon: Megaphone,
-      label: 'Marketing & SEO',
-      path: '/superadmin/marketing',
-    },
+    { icon: Megaphone, label: 'Marketing & SEO', path: '/superadmin/marketing' },
     { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
   ];
 

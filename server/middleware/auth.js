@@ -914,3 +914,34 @@ export const verifySuperAdmin = (req, res, next) => {
     next();
   });
 };
+
+/** Shortcut para rotas restritas ao Mega Admin (dono do sistema) */
+export const verifyMegaAdmin = (req, res, next) => {
+  verifyAuth(req, res, async (err) => {
+    if (err) return next(err);
+
+    if (req.userRole !== 'superadmin') {
+      return res.status(403).json({
+        error: 'Acesso negado: Requer privilégios de mega administrador',
+      });
+    }
+
+    // Mega admin = superadmin SEM organization ou com org NÃO-reseller
+    if (req.realOrgId) {
+      const supabase = getSupabaseServer();
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('is_reseller')
+        .eq('id', req.realOrgId)
+        .maybeSingle();
+
+      if (org?.is_reseller) {
+        return res.status(403).json({
+          error: 'Acesso negado: Apenas o mega administrador pode acessar',
+        });
+      }
+    }
+
+    next();
+  });
+};

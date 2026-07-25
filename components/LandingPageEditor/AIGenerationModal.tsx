@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { X, Sparkles, Loader, Info } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { LandingPageTemplate } from '../../types/landingPage';
 
 interface AIGenerationModalProps {
   onGenerate: (layout: any) => void;

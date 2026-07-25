@@ -39,6 +39,13 @@ export interface SiteSettings {
       testMode?: boolean;
     };
   };
+  smtp_config?: {
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    email?: string;
+  };
+  onboarding_config?: any;
   homeContent?: {
     heroTitle?: string;
     heroSubtitle?: string;
@@ -76,7 +83,10 @@ export interface SiteSettings {
     zap?: { enabled?: boolean; apiKey?: string; partnerId?: string };
     quintoandar?: { enabled?: boolean; apiKey?: string; secret?: string };
     imovelweb?: { enabled?: boolean; apiKey?: string };
+    cvcrm?: { apiKey?: string };
+    bia?: { apiKey?: string; baseUrl?: string };
   };
+  urbanSubtype?: 'imobiliaria' | 'loteadora' | 'incorporadora';
   layout_config?: LayoutConfig;
   custom_css?: string;
   custom_js?: string;

@@ -13,6 +13,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
 import { callApi } from '../src/lib/api';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
+import { PlatformTenantContext } from '../components/DomainRouter';
 
 interface SettingsContextType {
   settings: SiteSettings;
@@ -57,15 +58,16 @@ export const SettingsProvider: React.FC<{
   const [settingsLoading, setSettingsLoading] = useState(true);
 
   const authContext = useAuth();
+  const platformTenant = useContext(PlatformTenantContext);
   const profileOrgId = authContext?.profile?.organization_id;
   const authLoading = authContext?.loading || false;
 
   const loadSettings = useCallback(async () => {
     // Determine which organization ID to load settings for
-    const activeOrgId = propsOrgId || profileOrgId;
+    const activeOrgId = propsOrgId || profileOrgId || platformTenant?.id;
 
     // If no explicit org ID is provided and auth is still loading, wait before fetching
-    if (!propsOrgId && authLoading) {
+    if (!propsOrgId && !platformTenant?.id && authLoading) {
       return;
     }
 
@@ -127,6 +129,7 @@ export const SettingsProvider: React.FC<{
             linkedin: data.social_links?.linkedin || data.linkedin_url,
           },
           homeContent: layoutConfig.homeContent || {},
+          urbanSubtype: layoutConfig.urbanSubtype || 'imobiliaria',
           integrations: sanitizeClientIntegrations(data.integrations),
         });
       }
@@ -136,7 +139,7 @@ export const SettingsProvider: React.FC<{
       logger.info('🏁 [SettingsContext] finished loading cycle.');
       setSettingsLoading(false);
     }
-  }, [propsOrgId, profileOrgId, authLoading]);
+  }, [propsOrgId, profileOrgId, platformTenant?.id, authLoading]);
 
   useEffect(() => {
     loadSettings();
@@ -200,6 +203,7 @@ export const SettingsProvider: React.FC<{
           templateId: newSettings.templateId,
           isLive: newSettings.isLive,
           homeContent: newSettings.homeContent,
+          urbanSubtype: newSettings.urbanSubtype,
         },
         integrations: sanitizeClientIntegrations(newSettings.integrations),
         contact_email: newSettings.contactEmail,
@@ -214,7 +218,7 @@ export const SettingsProvider: React.FC<{
       }
 
       // AUDIT FIX: Always include organization_id to prevent orphan records
-      const activeOrgId = propsOrgId || profileOrgId;
+      const activeOrgId = propsOrgId || profileOrgId || platformTenant?.id;
       if (activeOrgId) {
         payload.organization_id = activeOrgId;
       }

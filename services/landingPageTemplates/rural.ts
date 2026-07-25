@@ -1,304 +1,281 @@
-import { buildDesignedTemplate, landingImage, designedSections } from './shared';
+import { BlockType } from '../../types/landingPage';
+import { LandingPageTemplate, templateBlock, defaultPremiumTheme, landingImage } from './shared';
 
-export const RURAL_TEMPLATES = [
-  buildDesignedTemplate({
-    id: 'rural-fazenda-produtiva',
-    name: 'Fazenda Produtiva Premium',
-    description: 'Venda de grandes áreas agrícolas (soja, milho). Foco em produtividade e dados técnicos.',
+export const RURAL_TEMPLATES: LandingPageTemplate[] = [
+  {
+    id: 'rural-fazendas-brasil',
+    name: 'Fazendas Brasil Premium',
+    description: 'Venda de grandes áreas agrícolas (soja, milho) com foco em produtividade e dados técnicos.',
     thumbnail: landingImage.farm,
-    group: 'Rural',
     category: 'Venda de Fazenda',
-    objective: 'Captar Investidores Agrícolas',
-    style: 'Profissional e Técnico',
-    resources: ['Dados Técnicos', 'Mapa Integrado', 'Tour 360', 'WhatsApp'],
-    pipeline: 'CRM Rural',
-    crmTags: ['fazenda', 'lavoura', 'investidor'],
-    conversionEvent: 'Download do Dossiê / Contato',
-    palette: {
-      primary: '#166534',
-      secondary: '#15803d',
-      accent: '#22c55e',
-      background: '#f8fafc',
-      text: '#1e293b',
-      footer: '#064e3b',
-    },
-    logo: 'AgroPremium',
-    nav: ['Oportunidade', 'Estrutura', 'Produtividade', 'Contato'],
-    badge: 'Oportunidade Exclusiva',
-    headline: 'Fazenda Produtiva de',
-    highlight: 'Alta Rentabilidade',
-    subtitle: 'Área com excelência em produtividade, topografia plana e abundância de água. Pronta para safra.',
-    price: 'Sob Consulta',
-    location: 'Mato Grosso, Brasil',
-    primaryCta: 'Agendar Visita Técnica',
-    secondaryCta: 'Baixar Dossiê Completo',
-    heroImage: landingImage.crops,
-    stats: [
-      { label: 'Hectares', value: '1.200', icon: '📏' },
-      { label: 'Produtividade', value: 'Alta', icon: '📈' },
-      { label: 'Água', value: 'Nascentes', icon: '💧' },
-      { label: 'Topografia', value: 'Plana', icon: '🚜' },
-    ],
-    features: [
-      { title: 'Solo Fértil', text: 'Alto teor de argila, ideal para soja e milho.', icon: '🌱' },
-      { title: 'Logística', text: 'Fácil acesso à rodovia principal e silos.', icon: '🛣️' },
-      { title: 'Infraestrutura', text: 'Casa sede, galpões e alojamentos.', icon: '🏠' },
-      { title: 'Recursos Hídricos', text: 'Rica em água, com potencial para irrigação.', icon: '🌊' },
-      { title: 'Documentação', text: '100% regularizada, CAR e GEO prontos.', icon: '📜' },
-    ],
-    cards: [
-      { title: 'Área de Plantio', meta: 'Plana e mecanizável', image: landingImage.crops },
-      { title: 'Sede da Fazenda', meta: 'Estrutura completa', image: landingImage.house },
-      { title: 'Galpões', meta: 'Armazenagem e maquinário', image: landingImage.warehouseInside },
-      { title: 'Nascentes', meta: 'Água abundante', image: landingImage.farm },
-    ],
-    sections: designedSections,
-    formTitle: 'Fale com nosso especialista rural',
-    formSubtitle: 'Agende uma visita técnica ou solicite o dossiê completo com as matrículas.',
-    faq: [
-      'Qual a capacidade de plantio?',
-      'Aceita permuta?',
-      'Como funciona o agendamento de visitas?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'rural-pecuaria-elite',
-    name: 'Pecuária de Elite e Confinamento',
-    description: 'Propriedades com estrutura para gado, curral, balança e pastagem de alta qualidade.',
-    thumbnail: 'https://images.unsplash.com/photo-1544320953-ebbd1bbbbbe8?q=80&w=1920&auto=format&fit=crop',
     group: 'Rural',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#166534',
+      secondaryColor: '#22c55e',
+      backgroundColor: '#f8fafc',
+      textColor: '#1e293b',
+    },
+    blocks: [
+      {
+        ...templateBlock(BlockType.HERO_WITH_FORM, 0, {
+          title: 'Fazenda Produtiva de Alta Rentabilidade',
+          subtitle: 'Área com excelência em produtividade, topografia plana e abundância de água.',
+          backgroundImage: landingImage.crops,
+          overlayOpacity: 0.6,
+          formTitle: 'Baixar Dossiê Completo',
+          submitText: 'Quero Receber',
+          fields: [
+            { name: 'name', type: 'text', label: 'Nome', required: true },
+            { name: 'phone', type: 'tel', label: 'WhatsApp', required: true },
+            { name: 'email', type: 'email', label: 'E-mail Corporativo', required: true }
+          ],
+          height: 700,
+          textColor: '#ffffff',
+          showBadges: true,
+          badges: [
+            { icon: 'map', title: '1.200 Hectares', description: 'Área útil' },
+            { icon: 'file-text', title: 'Documentação OK', description: 'CAR e GEO prontos' }
+          ]
+        }, { padding: '0px' }, 'full')
+      },
+      templateBlock(BlockType.STATS, 1, {
+        animated: true,
+        columns: 4,
+        stats: [
+          { label: 'Hectares', value: '1.200', icon: '📏' },
+          { label: 'Produtividade', value: 'Alta', icon: '📈' },
+          { label: 'Água', value: 'Nascentes', icon: '💧' },
+          { label: 'Topografia', value: 'Plana', icon: '🚜' }
+        ]
+      }, { padding: '60px 20px', backgroundColor: '#166534', textColor: '#ffffff' }),
+      templateBlock(BlockType.PROPERTY_GRID, 2, {
+        columns: 3,
+        gap: 24,
+        showFilters: true,
+        maxItems: 6,
+        sortBy: 'area',
+        cardStyle: 'modern'
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.TESTIMONIALS, 3, {
+        layout: 'grid',
+        showRating: true,
+        testimonials: [
+          { name: 'Grupo Investidor', text: 'Excelente área, solo rico e logística favorável.', rating: 5 },
+          { name: 'Engenheiro Agrônomo', text: 'Potencial incrível para dupla safra.', rating: 5 }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#f0fdf4' }),
+      templateBlock(BlockType.FOOTER, 4, {}, { padding: '40px 20px', backgroundColor: '#14532d' }, 'full')
+    ]
+  },
+  {
+    id: 'rural-agro-invest',
+    name: 'Agro Invest',
+    description: 'Foco financeiro e corporativo para fundos e grandes investidores.',
+    thumbnail: landingImage.warehouse,
+    category: 'Investimentos Rurais',
+    group: 'Rural',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#0f172a',
+      secondaryColor: '#3b82f6',
+      backgroundColor: '#f8fafc',
+      textColor: '#0f172a',
+    },
+    blocks: [
+      templateBlock(BlockType.HERO, 0, {
+        title: 'Oportunidades de Investimento no Agro',
+        subtitle: 'Terras com alto potencial de valorização e retorno garantido.',
+        backgroundImage: landingImage.farm,
+        overlayOpacity: 0.7,
+        ctaText: 'Ver Portfólio',
+        ctaLink: '#imoveis',
+        height: 600,
+        alignment: 'center',
+        textColor: '#ffffff'
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.FEATURES, 1, {
+        columns: 3,
+        layout: 'grid',
+        features: [
+          { title: 'Diligência Prévia', description: 'Todas as áreas são checadas juridicamente.', icon: '⚖️' },
+          { title: 'Estudo de Solo', description: 'Relatório agronômico completo.', icon: '📊' },
+          { title: 'Sigilo', description: 'Transações off-market e NDAs.', icon: '🔒' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.PROPERTY_GRID, 2, {
+        columns: 2,
+        gap: 32,
+        showFilters: true,
+        maxItems: 4,
+        sortBy: 'price',
+        cardStyle: 'minimal'
+      }, { padding: '60px 20px', backgroundColor: '#f8fafc' }),
+      templateBlock(BlockType.CTA, 3, {
+        title: 'Quer receber nosso relatório mensal?',
+        description: 'Cadastre-se para receber oportunidades de terras brutas e áreas consolidadas.',
+        buttonText: 'Assinar Newsletter',
+        buttonLink: '#',
+        backgroundColor: '#0f172a',
+        textColor: '#ffffff'
+      }, { padding: '60px 20px' }),
+      templateBlock(BlockType.FOOTER, 4, {}, { padding: '40px 20px', backgroundColor: '#020617' }, 'full')
+    ]
+  },
+  {
+    id: 'rural-pecuaria-forte',
+    name: 'Pecuária Forte',
+    description: 'Propriedades estruturadas para gado, curral e confinamento.',
+    thumbnail: landingImage.house,
     category: 'Pecuária',
-    objective: 'Venda de Fazenda Pecuária',
-    style: 'Rústico e Premium',
-    resources: ['Galeria de Estruturas', 'Mapa', 'WhatsApp'],
-    pipeline: 'CRM Rural',
-    crmTags: ['pecuaria', 'gado', 'confinamento'],
-    conversionEvent: 'Agendar Visita',
-    palette: {
-      primary: '#78350f',
-      secondary: '#92400e',
-      accent: '#d97706',
-      background: '#fffbeb',
-      text: '#451a03',
-      footer: '#451a03',
+    group: 'Rural',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#78350f',
+      secondaryColor: '#d97706',
+      backgroundColor: '#fffbeb',
+      textColor: '#451a03',
     },
-    logo: 'Pecuária Forte',
-    nav: ['A Fazenda', 'Estrutura', 'Pastagens', 'Contato'],
-    badge: 'Estrutura Completa',
-    headline: 'Fazenda Preparada para',
-    highlight: 'Pecuária de Resultados',
-    subtitle: 'Curralama de primeira, pastagem formada e abundância de água para o seu rebanho.',
-    price: 'R$ 15.000.000',
-    location: 'Mato Grosso do Sul, Brasil',
-    primaryCta: 'Falar com Especialista',
-    secondaryCta: 'Ver Galeria de Fotos',
-    heroImage: 'https://images.unsplash.com/photo-1544320953-ebbd1bbbbbe8?q=80&w=1920&auto=format&fit=crop',
-    stats: [
-      { label: 'Alqueires', value: '500', icon: '📏' },
-      { label: 'Capacidade', value: '2.000 CB', icon: '🐄' },
-      { label: 'Divisões', value: '40', icon: '🚧' },
-      { label: 'Curral', value: 'Anti-stress', icon: '⚖️' },
-    ],
-    features: [
-      { title: 'Pastagem Formada', text: 'Brachiaria e Mombasa de alta qualidade.', icon: '🌿' },
-      { title: 'Curralama', text: 'Curral anti-stress, balança e tronco.', icon: '⚖️' },
-      { title: 'Água Abundante', text: 'Bebedouros em todas as divisões de pasto.', icon: '💧' },
-      { title: 'Confinamento', text: 'Estrutura pronta para confinamento.', icon: '🏗️' },
-      { title: 'Acesso', text: 'Estradas internas bem conservadas.', icon: '🚜' },
-    ],
-    cards: [
-      { title: 'Curral', meta: 'Estrutura completa e balança', image: 'https://images.unsplash.com/photo-1544320953-ebbd1bbbbbe8?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Pastagens', meta: 'Diversas divisões', image: landingImage.farm },
-      { title: 'Sede', meta: 'Conforto para a família', image: landingImage.house },
-      { title: 'Alojamento', meta: 'Para funcionários', image: landingImage.interior },
-    ],
-    sections: designedSections,
-    formTitle: 'Solicite mais informações',
-    formSubtitle: 'Preencha o formulário para receber o relatório completo da propriedade.',
-    faq: [
-      'Qual a capacidade de cabeças de gado?',
-      'A propriedade possui energia trifásica?',
-      'As cercas estão em boas condições?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'rural-refugio-lazer',
-    name: 'Refúgio e Sítio de Lazer',
-    description: 'Foco em qualidade de vida, turismo rural, haras e chácaras de fim de semana.',
+    blocks: [
+      templateBlock(BlockType.HERO, 0, {
+        title: 'Fazendas Estruturadas para Pecuária',
+        subtitle: 'Curralama de primeira, pastagem formada e abundância de água.',
+        backgroundImage: 'https://images.unsplash.com/photo-1544320953-ebbd1bbbbbe8?q=80&w=1920&auto=format&fit=crop',
+        overlayOpacity: 0.5,
+        ctaText: 'Ver Fazendas',
+        ctaLink: '#imoveis',
+        height: 600,
+        alignment: 'left',
+        textColor: '#ffffff'
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.GALLERY, 1, {
+        columns: 4,
+        gap: 16,
+        lightbox: true,
+        images: [
+          { src: 'https://images.unsplash.com/photo-1544320953-ebbd1bbbbbe8?q=80&w=600&auto=format&fit=crop', alt: 'Gado' },
+          { src: landingImage.farm, alt: 'Pasto' },
+          { src: landingImage.house, alt: 'Sede' },
+          { src: landingImage.interior, alt: 'Curral' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.PROPERTY_GRID, 2, {
+        columns: 3,
+        gap: 24,
+        showFilters: false,
+        maxItems: 6,
+        sortBy: 'area',
+        cardStyle: 'modern'
+      }, { padding: '80px 20px', backgroundColor: '#fffbeb' }),
+      templateBlock(BlockType.FOOTER, 3, {}, { padding: '40px 20px', backgroundColor: '#451a03' }, 'full')
+    ]
+  },
+  {
+    id: 'rural-chacaras-lazer',
+    name: 'Chácaras & Lazer',
+    description: 'Foco em qualidade de vida, turismo rural e sítios de fim de semana.',
     thumbnail: landingImage.mansion,
-    group: 'Rural',
     category: 'Lazer e Descanso',
-    objective: 'Venda de Sítios',
-    style: 'Aconchegante e Elegante',
-    resources: ['Fotos Premium', 'Tour Virtual', 'WhatsApp'],
-    pipeline: 'CRM Alto Padrão',
-    crmTags: ['sitio', 'lazer', 'haras'],
-    conversionEvent: 'Agendar Visita',
-    palette: {
-      primary: '#0f766e',
-      secondary: '#0d9488',
-      accent: '#14b8a6',
-      background: '#f0fdfa',
-      text: '#134e4a',
-      footer: '#042f2e',
+    group: 'Rural',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#0f766e',
+      secondaryColor: '#14b8a6',
+      backgroundColor: '#f0fdfa',
+      textColor: '#134e4a',
     },
-    logo: 'Refúgio Verde',
-    nav: ['O Sítio', 'Lazer', 'Acomodações', 'Contato'],
-    badge: 'Exclusividade',
-    headline: 'Seu Refúgio Particular',
-    highlight: 'Perto da Cidade',
-    subtitle: 'Conecte-se com a natureza sem abrir mão do conforto e da segurança para sua família.',
-    price: 'R$ 3.500.000',
-    location: 'Interior de São Paulo, SP',
-    primaryCta: 'Agendar Visita',
-    secondaryCta: 'Fazer Tour Virtual',
-    heroImage: landingImage.mansion,
-    stats: [
-      { label: 'Área Total', value: '20.000 m²', icon: '📏' },
-      { label: 'Suítes', value: '5', icon: '🛏️' },
-      { label: 'Lazer', value: 'Completo', icon: '🏊' },
-      { label: 'Distância', value: '1h da capital', icon: '🚗' },
-    ],
-    features: [
-      { title: 'Casa Sede', text: 'Arquitetura moderna integrada à natureza.', icon: '🏡' },
-      { title: 'Área Gourmet', text: 'Churrasqueira, forno de pizza e piscina.', icon: '🍖' },
-      { title: 'Haras', text: 'Baias para cavalos e pista de equitação.', icon: '🐴' },
-      { title: 'Pomar e Horta', text: 'Árvores frutíferas produzindo.', icon: '🍎' },
-      { title: 'Segurança', text: 'Condomínio rural fechado ou área segura.', icon: '🔒' },
-    ],
-    cards: [
-      { title: 'Casa Principal', meta: 'Alto padrão', image: landingImage.mansion },
-      { title: 'Área Gourmet', meta: 'Piscina e churrasqueira', image: landingImage.interior },
-      { title: 'Jardins', meta: 'Paisagismo impecável', image: landingImage.house },
-      { title: 'Baias', meta: 'Estrutura para cavalos', image: landingImage.farm },
-    ],
-    sections: designedSections,
-    formTitle: 'Agende sua visita',
-    formSubtitle: 'Venha conhecer pessoalmente o seu novo refúgio.',
-    faq: [
-      'Tem internet de alta velocidade?',
-      'O acesso é asfaltado?',
-      'Aceita imóvel na cidade como permuta?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'rural-captacao-fazendas',
-    name: 'Captação de Fazendas (Proprietários)',
-    description: 'Landing page para corretores rurais captarem novos imóveis e proprietários.',
+    blocks: [
+      templateBlock(BlockType.HERO, 0, {
+        title: 'O Seu Refúgio Perto da Cidade',
+        subtitle: 'Chácaras, Sítios e Haras para você se conectar com a natureza.',
+        backgroundImage: landingImage.mansion,
+        overlayOpacity: 0.4,
+        ctaText: 'Explorar Propriedades',
+        ctaLink: '#imoveis',
+        height: 600,
+        alignment: 'center',
+        textColor: '#ffffff'
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.FEATURES, 1, {
+        columns: 4,
+        layout: 'grid',
+        features: [
+          { title: 'Piscina e Lazer', description: 'Para curtir com a família.', icon: '🏊' },
+          { title: 'Natureza', description: 'Ar puro e tranquilidade.', icon: '🌳' },
+          { title: 'Acesso Fácil', description: 'Próximo de rodovias asfaltadas.', icon: '🛣️' },
+          { title: 'Segurança', description: 'Em condomínios ou áreas seguras.', icon: '🔒' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.PROPERTY_GRID, 2, {
+        columns: 4,
+        gap: 16,
+        showFilters: true,
+        maxItems: 8,
+        sortBy: 'price',
+        cardStyle: 'classic'
+      }, { padding: '80px 20px', backgroundColor: '#f0fdfa' }),
+      templateBlock(BlockType.TESTIMONIALS, 3, {
+        layout: 'grid',
+        showRating: true,
+        testimonials: [
+          { name: 'Família Costa', text: 'Compramos nosso sítio de fim de semana e foi a melhor decisão!', rating: 5 },
+          { name: 'João P.', text: 'O atendimento ajudou a achar um haras com a estrutura exata que eu precisava.', rating: 5 }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.FOOTER, 4, {}, { padding: '40px 20px', backgroundColor: '#115e59' }, 'full')
+    ]
+  },
+  {
+    id: 'rural-off-market',
+    name: 'Rural Off-Market (Sigilo)',
+    description: 'Para propriedades gigantescas e fundos institucionais onde o sigilo é exigido.',
     thumbnail: landingImage.farm,
-    group: 'Rural',
     category: 'Captação de Imóveis',
-    objective: 'Geração de Leads B2B',
-    style: 'Autoridade e Confiança',
-    resources: ['Formulário Qualificado', 'Prova Social', 'WhatsApp'],
-    pipeline: 'CRM Captação',
-    crmTags: ['captacao', 'proprietario', 'fazenda'],
-    conversionEvent: 'Cadastro de Propriedade',
-    palette: {
-      primary: '#1e3a8a',
-      secondary: '#1d4ed8',
-      accent: '#3b82f6',
-      background: '#eff6ff',
-      text: '#172554',
-      footer: '#172554',
-    },
-    logo: 'AgroBrokers',
-    nav: ['Como Funciona', 'Nossos Clientes', 'Vantagens', 'Avaliar Fazenda'],
-    badge: 'Para Proprietários',
-    headline: 'Venda sua Fazenda com',
-    highlight: 'Discrição e Eficiência',
-    subtitle: 'Conectamos sua propriedade a investidores qualificados do Brasil e do exterior, garantindo a melhor negociação.',
-    price: 'Avaliação Gratuita',
-    location: 'Atendimento Nacional',
-    primaryCta: 'Avaliar Minha Propriedade',
-    secondaryCta: 'Falar com Especialista',
-    heroImage: landingImage.crops,
-    stats: [
-      { label: 'Fazendas Vendidas', value: '+50', icon: '🤝' },
-      { label: 'Investidores', value: '+5.000', icon: '💼' },
-      { label: 'Sigilo', value: '100%', icon: '🔒' },
-      { label: 'Atendimento', value: 'Personalizado', icon: '⭐' },
-    ],
-    features: [
-      { title: 'Carteira de Investidores', text: 'Temos compradores ativos buscando terras.', icon: '👥' },
-      { title: 'Marketing Direcionado', text: 'Anúncios sigilosos e assertivos.', icon: '🎯' },
-      { title: 'Assessoria Jurídica', text: 'Apoio em toda a documentação.', icon: '⚖️' },
-      { title: 'Avaliação Precisa', text: 'Análise de mercado, solo e estrutura.', icon: '📊' },
-      { title: 'Agilidade', text: 'Fechamento de negócios em tempo recorde.', icon: '⚡' },
-    ],
-    cards: [
-      { title: 'Avaliação', meta: 'Gratuita e confidencial', image: landingImage.farm },
-      { title: 'Marketing', meta: 'Material profissional', image: landingImage.crops },
-      { title: 'Visitas', meta: 'Apenas clientes qualificados', image: landingImage.house },
-      { title: 'Fechamento', meta: 'Segurança jurídica', image: landingImage.warehouseInside },
-    ],
-    sections: designedSections,
-    formTitle: 'Cadastre sua fazenda',
-    formSubtitle: 'Deixe seus dados e nossa equipe entrará em contato com total confidencialidade.',
-    faq: [
-      'A venda é mantida em sigilo?',
-      'Vocês cobram exclusividade?',
-      'Como é feita a avaliação?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'rural-leilao-oportunidade',
-    name: 'Leilão / Oportunidade Rural',
-    description: 'Venda rápida, oportunidades com desconto, liquidação e arrendamentos.',
-    thumbnail: 'https://images.unsplash.com/photo-1592982537447-6f23f79efb10?q=80&w=1920&auto=format&fit=crop',
     group: 'Rural',
-    category: 'Oportunidade',
-    objective: 'Venda Urgente / Investimento',
-    style: 'Urgência e Impacto',
-    resources: ['Contador de Tempo', 'Formulário', 'WhatsApp'],
-    pipeline: 'CRM Oportunidades',
-    crmTags: ['leilao', 'oportunidade', 'urgente'],
-    conversionEvent: 'Dar Lance / Proposta',
-    palette: {
-      primary: '#991b1b',
-      secondary: '#b91c1c',
-      accent: '#ef4444',
-      background: '#fef2f2',
-      text: '#450a0a',
-      footer: '#450a0a',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#1e3a8a',
+      secondaryColor: '#3b82f6',
+      backgroundColor: '#eff6ff',
+      textColor: '#1e3a8a',
     },
-    logo: 'AgroOportunidades',
-    nav: ['A Propriedade', 'Condições', 'Documentação', 'Fazer Proposta'],
-    badge: 'Oferta por Tempo Limitado',
-    headline: 'Oportunidade Única de',
-    highlight: 'Investimento Rural',
-    subtitle: 'Fazenda abaixo do preço de mercado. Condições especiais para pagamento à vista ou curto prazo.',
-    price: 'Oportunidade',
-    location: 'Goiás, Brasil',
-    primaryCta: 'Fazer Proposta',
-    secondaryCta: 'Entender o Motivo da Venda',
-    heroImage: 'https://images.unsplash.com/photo-1592982537447-6f23f79efb10?q=80&w=1920&auto=format&fit=crop',
-    stats: [
-      { label: 'Desconto Estimado', value: '30%', icon: '📉' },
-      { label: 'Hectares', value: '800', icon: '📏' },
-      { label: 'Aptidão', value: 'Dupla', icon: '🌾' },
-      { label: 'Retorno', value: 'Rápido', icon: '💰' },
-    ],
-    features: [
-      { title: 'Abaixo da Avaliação', text: 'Preço altamente atrativo para investidores.', icon: '💲' },
-      { title: 'Pronta para Uso', text: 'Infraestrutura existente e operacional.', icon: '⚙️' },
-      { title: 'Documentação OK', text: 'Análise jurídica prévia realizada.', icon: '✅' },
-      { title: 'Localização', text: 'Região de forte valorização.', icon: '📍' },
-      { title: 'Condições', text: 'Flexibilidade na negociação rápida.', icon: '🤝' },
-    ],
-    cards: [
-      { title: 'A Fazenda', meta: 'Visão geral', image: 'https://images.unsplash.com/photo-1592982537447-6f23f79efb10?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Potencial', meta: 'Área agricultável', image: landingImage.crops },
-      { title: 'Sede', meta: 'Estrutura básica', image: landingImage.house },
-      { title: 'Acesso', meta: 'Proximidade do asfalto', image: landingImage.farm },
-    ],
-    sections: designedSections,
-    formTitle: 'Registre seu interesse',
-    formSubtitle: 'Oportunidade sujeita à disponibilidade. Seja o primeiro a negociar.',
-    faq: [
-      'Qual o motivo da venda?',
-      'Quais as formas de pagamento aceitas?',
-      'A posse é imediata?',
-    ],
-  }),
+    blocks: [
+      templateBlock(BlockType.HERO_WITH_FORM, 0, {
+        title: 'Áreas Rurais com Sigilo Absoluto',
+        subtitle: 'Operações off-market exclusivas para grupos investidores e fundos.',
+        backgroundImage: landingImage.farm,
+        overlayOpacity: 0.8,
+        formTitle: 'Assinar NDA',
+        submitText: 'Solicitar Acesso',
+        fields: [
+          { name: 'name', type: 'text', label: 'Nome / Empresa', required: true },
+          { name: 'email', type: 'email', label: 'E-mail Corporativo', required: true },
+          { name: 'phone', type: 'tel', label: 'Telefone', required: true }
+        ],
+        height: 700,
+        textColor: '#ffffff',
+        showBadges: true,
+        badges: [
+          { icon: 'lock', title: '100% Sigiloso', description: 'Informações protegidas por NDA' }
+        ]
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.TEXT, 1, {
+        content: '<h2>Operações Estruturadas</h2><p>Trabalhamos com propriedades rurais de grande escala que não estão anunciadas publicamente. Nossa equipe cuida de todo o processo de due diligence e estruturação da operação.</p>',
+        alignment: 'center',
+        fontSize: 18,
+        fontWeight: 400,
+        color: '#1e3a8a'
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.TIMELINE, 2, {
+        title: 'Processo de Aquisição',
+        items: [
+          { title: 'Contato Inicial', description: 'Assinatura do NDA.' },
+          { title: 'Apresentação', description: 'Teaser e dados macro da propriedade.' },
+          { title: 'Diligência', description: 'Acesso ao data room e visita in loco.' },
+          { title: 'Fechamento', description: 'Estruturação jurídica e financeira.' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#eff6ff' }),
+      templateBlock(BlockType.FOOTER, 3, {}, { padding: '40px 20px', backgroundColor: '#172554' }, 'full')
+    ]
+  }
 ];

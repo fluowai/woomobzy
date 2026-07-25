@@ -143,6 +143,7 @@ const RuralLayout: React.FC = () => {
   const isWorkspaceRoute =
     pathname.startsWith('/rural/whatsapp') ||
     pathname.startsWith('/rural/email');
+  const isLandingPageEditor = pathname.includes('/landing-pages/') && pathname.split('/').length > 3;
 
   const renderMenuItem = (item: MenuItem) => (
     <NavLink
@@ -287,9 +288,11 @@ const RuralLayout: React.FC = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
-        {renderSidebarContent()}
-      </aside>
+      {!isLandingPageEditor && (
+        <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
+          {renderSidebarContent()}
+        </aside>
+      )}
 
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <button
@@ -301,12 +304,12 @@ const RuralLayout: React.FC = () => {
         </button>
         <div
           className={`flex-1 overflow-y-auto ${
-            isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isLandingPageEditor ? 'p-0' : isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >
           <div
             className={
-              isWorkspaceRoute
+              isLandingPageEditor || isWorkspaceRoute
                 ? 'w-full h-full min-h-0'
                 : 'max-w-[1600px] mx-auto'
             }

@@ -55,6 +55,7 @@ const UrbanLayout: React.FC = () => {
   const isWorkspaceRoute =
     pathname.startsWith('/urban/whatsapp') ||
     pathname.startsWith('/urban/email');
+  const isLandingPageEditor = pathname.includes('/landing-pages/') && pathname.split('/').length > 3;
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
     logger.info(
@@ -296,9 +297,11 @@ const UrbanLayout: React.FC = () => {
         </div>
       )}
 
-      <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
-        {renderSidebarContent()}
-      </aside>
+      {!isLandingPageEditor && (
+        <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
+          {renderSidebarContent()}
+        </aside>
+      )}
 
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <button
@@ -310,7 +313,7 @@ const UrbanLayout: React.FC = () => {
         </button>
         <div
           className={`flex-1 overflow-y-auto ${
-            isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isLandingPageEditor ? 'p-0' : isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
           }`}
         >
           <Outlet />

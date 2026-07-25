@@ -1,304 +1,268 @@
-import { buildDesignedTemplate, landingImage, designedSections } from './shared';
+import { BlockType } from '../../types/landingPage';
+import { LandingPageTemplate, templateBlock, defaultPremiumTheme, landingImage } from './shared';
 
-export const INCORPORADORA_TEMPLATES = [
-  buildDesignedTemplate({
-    id: 'incorp-lancamento-luxo',
-    name: 'Lançamento Luxo (Dark Editorial)',
-    description: 'Design premium, misterioso e elegante para imóveis de altíssimo padrão.',
-    thumbnail: landingImage.luxuryApt,
-    group: 'Incorporadora',
-    category: 'Lançamento de Luxo',
-    objective: 'Venda de Imóveis Alto Padrão',
-    style: 'Dark e Minimalista',
-    resources: ['Galeria Editorial', 'Vídeo Conceito', 'Tour Virtual', 'WhatsApp'],
-    pipeline: 'CRM Lançamentos',
-    crmTags: ['lancamento', 'luxo', 'altopadrao'],
-    conversionEvent: 'Agendar Apresentação Exclusiva',
-    palette: {
-      primary: '#09090b',
-      secondary: '#18181b',
-      accent: '#d4af37',
-      background: '#000000',
-      text: '#fafafa',
-      footer: '#09090b',
+export const INCORPORADORA_TEMPLATES: LandingPageTemplate[] = [
+  {
+    id: 'incorp-o-loteamento',
+    name: 'O Loteamento',
+    description: 'Foco em loteamentos e condomínios horizontais (Vídeo, Mapa, Plantas, CTA de Vendas).',
+    thumbnail: landingImage.lots,
+    category: 'Loteamento',
+    group: 'Lançamentos',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#047857',
+      secondaryColor: '#f59e0b',
+      backgroundColor: '#f0fdf4',
+      textColor: '#064e3b',
     },
-    logo: 'Maison Noir',
-    nav: ['O Conceito', 'Design', 'Plantas', 'Privilégio'],
-    badge: 'Lançamento Exclusivo',
-    headline: 'Redefinindo o Padrão do',
-    highlight: 'Luxo Urbano',
-    subtitle: 'Uma obra de arte arquitetônica para poucos privilegiados. Conheça o novo ícone da cidade.',
-    price: 'A partir de R$ 5 Milhões',
-    location: 'Bairro Nobre, Cidade',
-    primaryCta: 'Solicitar Book Exclusivo',
-    secondaryCta: 'Ver Galeria',
-    heroImage: landingImage.luxuryApt,
-    stats: [
-      { label: 'Unidades', value: 'Apenas 20', icon: '🔑' },
-      { label: 'Suítes', value: '4 a 5', icon: '🛏️' },
-      { label: 'Vagas', value: '4 ou mais', icon: '🚗' },
-      { label: 'Entrega', value: '2027', icon: '📅' },
-    ],
-    features: [
-      { title: 'Arquitetura Autoral', text: 'Assinado por renomados arquitetos.', icon: '🏛️' },
-      { title: 'Tecnologia', text: 'Automação residencial completa.', icon: '📱' },
-      { title: 'Lazer Privativo', text: 'Piscina aquecida na varanda.', icon: '🏊' },
-      { title: 'Segurança', text: 'Biometria e portaria blindada.', icon: '🛡️' },
-      { title: 'Sustentabilidade', text: 'Certificação verde e reuso de água.', icon: '🌱' },
-    ],
-    cards: [
-      { title: 'Living', meta: 'Pé direito duplo', image: landingImage.interior },
-      { title: 'Fachada', meta: 'Design imponente', image: landingImage.luxuryApt },
-      { title: 'Lazer', meta: 'Spa e academia', image: landingImage.mansion },
-      { title: 'Planta', meta: 'Total integração', image: landingImage.condo },
-    ],
-    sections: designedSections,
-    formTitle: 'Atendimento Exclusivo',
-    formSubtitle: 'Deixe seus dados para que nosso concierge imobiliário entre em contato.',
-    faq: [
-      'Quais as opções de plantas?',
-      'O projeto aceita personalização?',
-      'Qual a previsão de entrega?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'incorp-lista-vip',
-    name: 'Lista VIP (Pré-lançamento)',
-    description: 'Página curta focada em captação de leads ansiosos antes da abertura de vendas.',
+    blocks: [
+      templateBlock(BlockType.HERO_WITH_FORM, 0, {
+        title: 'Seu Lote no Melhor Ponto da Cidade',
+        subtitle: 'Loteamento aberto com infraestrutura completa. Cadastre-se e ganhe condições especiais de pré-lançamento.',
+        backgroundImage: landingImage.lots,
+        overlayOpacity: 0.6,
+        formTitle: 'Garantir Meu Lote',
+        submitText: 'Quero Tabela e Condições',
+        fields: [
+          { name: 'name', type: 'text', label: 'Nome', required: true },
+          { name: 'phone', type: 'tel', label: 'WhatsApp', required: true }
+        ],
+        height: 600,
+        textColor: '#ffffff',
+        showBadges: true,
+        badges: [
+          { icon: 'map-pin', title: 'Excelente Localização', description: 'Perto do centro' },
+          { icon: 'check-circle', title: 'Infraestrutura Pronta', description: 'Água, luz e asfalto' }
+        ]
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.MAP, 1, {
+        latitude: -23.5505,
+        longitude: -46.6333,
+        zoom: 15,
+        markers: [{ lat: -23.5505, lng: -46.6333, title: 'Local do Loteamento' }]
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.FEATURES, 2, {
+        columns: 4,
+        layout: 'grid',
+        features: [
+          { title: 'Asfalto', description: '100% asfaltado.', icon: '🛣️' },
+          { title: 'Água e Esgoto', description: 'Rede completa.', icon: '💧' },
+          { title: 'Energia', description: 'Iluminação em LED.', icon: '⚡' },
+          { title: 'Lazer', description: 'Praças equipadas.', icon: '🌳' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.TIMELINE, 3, {
+        title: 'Andamento das Obras',
+        items: [
+          { title: 'Terraplanagem', description: '100% Concluído', time: 'Jan/2025' },
+          { title: 'Asfalto e Guias', description: 'Em andamento (80%)', time: 'Mar/2025' },
+          { title: 'Liberação para Construir', description: 'Previsão de entrega', time: 'Jul/2025' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#f0fdf4' }),
+      templateBlock(BlockType.FOOTER, 4, {}, { padding: '40px 20px', backgroundColor: '#022c22' }, 'full')
+    ]
+  },
+  {
+    id: 'incorp-master',
+    name: 'Incorporadora Master (Institucional)',
+    description: 'Apresentação da Incorporadora, VGV, histórico de prédios entregues.',
     thumbnail: landingImage.launch,
-    group: 'Incorporadora',
-    category: 'Pré-lançamento',
-    objective: 'Captação de Leads VIP',
-    style: 'Impactante e Urgente',
-    resources: ['Formulário Curto', 'Contador', 'WhatsApp'],
-    pipeline: 'CRM Pré-lançamento',
-    crmTags: ['lancamento', 'listavip', 'investidor'],
-    conversionEvent: 'Cadastro na Lista VIP',
-    palette: {
-      primary: '#1e1b4b',
-      secondary: '#312e81',
-      accent: '#6366f1',
-      background: '#eef2ff',
-      text: '#1e1b4b',
-      footer: '#1e1b4b',
+    category: 'Institucional',
+    group: 'Lançamentos',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#1e3a8a',
+      secondaryColor: '#3b82f6',
+      backgroundColor: '#f8fafc',
+      textColor: '#1e293b',
     },
-    logo: 'Future Residence',
-    nav: ['O Projeto', 'Vantagens VIP', 'Localização', 'Garantir Vaga'],
-    badge: 'Breve Lançamento',
-    headline: 'Antecipe-se ao Maior',
-    highlight: 'Lançamento do Ano',
-    subtitle: 'Cadastre-se na Lista VIP e tenha acesso exclusivo à tabela zero antes da abertura oficial de vendas.',
-    price: 'Condições Especiais VIP',
-    location: 'Região Central',
-    primaryCta: 'Quero Ser VIP',
-    secondaryCta: 'Saber Mais',
-    heroImage: landingImage.launch,
-    stats: [
-      { label: 'Vantagem VIP', value: 'Tabela Zero', icon: '💰' },
-      { label: 'Escolha', value: 'Prioritária', icon: '🎯' },
-      { label: 'Desconto', value: 'Exclusivo', icon: '📉' },
-      { label: 'Vagas', value: 'Limitadas', icon: '⏳' },
-    ],
-    features: [
-      { title: 'Melhor Preço', text: 'Compre no menor valor que o imóvel terá.', icon: '💲' },
-      { title: 'Prioridade', text: 'Escolha a melhor unidade e andar.', icon: '🥇' },
-      { title: 'Valorização', text: 'Ganho de capital garantido até a entrega.', icon: '📈' },
-      { title: 'Informação', text: 'Receba plantas e detalhes em primeira mão.', icon: 'ℹ️' },
-      { title: 'Exclusividade', text: 'Evento fechado apenas para cadastrados.', icon: '🎟️' },
-    ],
-    cards: [
-      { title: 'O Projeto', meta: 'Conceito inovador', image: landingImage.launch },
-      { title: 'Localização', meta: 'Região valorizada', image: landingImage.map },
-      { title: 'Investimento', meta: 'Alta rentabilidade', image: landingImage.luxuryApt },
-      { title: 'Lazer', meta: 'Infraestrutura completa', image: landingImage.interior },
-    ],
-    sections: designedSections,
-    formTitle: 'Garanta seu acesso VIP',
-    formSubtitle: 'O cadastro não gera compromisso de compra, apenas garante sua prioridade.',
-    faq: [
-      'O que é a Tabela Zero?',
-      'Como funciona a escolha prioritária?',
-      'Quando será o lançamento?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'incorp-mcmv-familia',
-    name: 'Minha Casa Minha Vida (Foco Família)',
-    description: 'Cores amigáveis, foco em subsídios, financiamento da Caixa e facilidade.',
+    blocks: [
+      templateBlock(BlockType.HERO, 0, {
+        title: 'Construindo Histórias, Entregando Qualidade',
+        subtitle: 'Conheça o portfólio da incorporadora líder na região.',
+        backgroundImage: landingImage.launch,
+        overlayOpacity: 0.7,
+        ctaText: 'Ver Nossos Empreendimentos',
+        ctaLink: '#imoveis',
+        height: 600,
+        alignment: 'center',
+        textColor: '#ffffff'
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.STATS, 1, {
+        animated: true,
+        columns: 4,
+        stats: [
+          { label: 'Obras Entregues', value: '45+', icon: '🏗️' },
+          { label: 'Anos de Mercado', value: '20', icon: '📅' },
+          { label: 'Unidades Vendidas', value: '5.000', icon: '🔑' },
+          { label: 'VGV Entregue', value: 'R$ 2 Bi', icon: '💰' }
+        ]
+      }, { padding: '60px 20px', backgroundColor: '#1e3a8a', textColor: '#ffffff' }),
+      templateBlock(BlockType.PROPERTY_GRID, 2, {
+        columns: 3,
+        gap: 24,
+        showFilters: true,
+        maxItems: 6,
+        sortBy: 'date',
+        cardStyle: 'modern'
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.FOOTER, 3, {}, { padding: '40px 20px', backgroundColor: '#0f172a' }, 'full')
+    ]
+  },
+  {
+    id: 'incorp-lancamento-vertical',
+    name: 'Lançamento Vertical (Prédio)',
+    description: 'Focado em vender apartamentos na planta. Formulário agressivo no topo, carrosel de plantas.',
+    thumbnail: landingImage.luxuryApt,
+    category: 'Apartamento na Planta',
+    group: 'Lançamentos',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#0f172a',
+      secondaryColor: '#2563eb',
+      backgroundColor: '#ffffff',
+      textColor: '#0f172a',
+    },
+    blocks: [
+      templateBlock(BlockType.HERO_WITH_FORM, 0, {
+        title: 'Seu Novo Apartamento no Centro',
+        subtitle: 'Plantas de 2 e 3 dormitórios com sacada gourmet. Reserve no pré-lançamento.',
+        backgroundImage: landingImage.luxuryApt,
+        overlayOpacity: 0.6,
+        formTitle: 'Baixar Apresentação',
+        submitText: 'Baixar PDF e Plantas',
+        fields: [
+          { name: 'name', type: 'text', label: 'Nome', required: true },
+          { name: 'phone', type: 'tel', label: 'WhatsApp', required: true },
+          { name: 'email', type: 'email', label: 'E-mail', required: true }
+        ],
+        height: 700,
+        textColor: '#ffffff',
+        showBadges: false
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.FEATURES, 1, {
+        columns: 3,
+        layout: 'grid',
+        features: [
+          { title: 'Lazer Completo', description: 'Piscina, Academia, Salão de Festas.', icon: '🏊' },
+          { title: 'Segurança', description: 'Portaria 24h blindada.', icon: '🛡️' },
+          { title: 'Localização', description: 'Próximo a supermercados e escolas.', icon: '📍' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#f8fafc' }),
+      templateBlock(BlockType.GALLERY, 2, {
+        columns: 4,
+        gap: 12,
+        lightbox: true,
+        images: [
+          { src: landingImage.interior, alt: 'Living' },
+          { src: landingImage.luxuryApt, alt: 'Fachada' },
+          { src: landingImage.mansion, alt: 'Piscina' },
+          { src: landingImage.interior, alt: 'Varanda Gourmet' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.FOOTER, 3, {}, { padding: '40px 20px', backgroundColor: '#0f172a' }, 'full')
+    ]
+  },
+  {
+    id: 'incorp-mcmv',
+    name: 'Minha Casa Minha Vida (Popular)',
+    description: 'Cores populares (Verde/Azul). Formulário de simulação CAIXA/FGTS logo no topo.',
     thumbnail: landingImage.family,
-    group: 'Incorporadora',
-    category: 'Imóveis Populares',
-    objective: 'Vendas MCMV',
-    style: 'Amigável e Acessível',
-    resources: ['Simulador Caixa', 'Depoimentos', 'WhatsApp'],
-    pipeline: 'CRM MCMV',
-    crmTags: ['mcmv', 'financiamento', 'familia'],
-    conversionEvent: 'Simular Financiamento',
-    palette: {
-      primary: '#0369a1',
-      secondary: '#0284c7',
-      accent: '#f59e0b',
-      background: '#f0f9ff',
-      text: '#0c4a6e',
-      footer: '#082f49',
+    category: 'Empreendimento Popular',
+    group: 'Lançamentos',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#0ea5e9',
+      secondaryColor: '#10b981',
+      backgroundColor: '#f0f9ff',
+      textColor: '#0f172a',
     },
-    logo: 'Lar Feliz',
-    nav: ['O Condomínio', 'Lazer', 'Facilidades', 'Simular'],
-    badge: 'Use seu FGTS',
-    headline: 'Realize o Sonho da',
-    highlight: 'Casa Própria',
-    subtitle: 'Sair do aluguel nunca foi tão fácil. Entrada facilitada, subsídio do governo e parcelas menores que o aluguel.',
-    price: 'Parcelas a partir de R$ 600',
-    location: 'Bairro em Crescimento',
-    primaryCta: 'Fazer Simulação Grátis',
-    secondaryCta: 'Ver Planta do Apartamento',
-    heroImage: landingImage.family,
-    stats: [
-      { label: 'Subsídio', value: 'Até R$ 55 mil', icon: '💰' },
-      { label: 'FGTS', value: 'Aceitamos', icon: '🏦' },
-      { label: 'Entrada', value: 'Facilitada', icon: '💳' },
-      { label: 'Lazer', value: 'Completo', icon: '🎉' },
-    ],
-    features: [
-      { title: 'Subsídio do Governo', text: 'Descontos pelo programa MCMV.', icon: '🏷️' },
-      { title: 'Use seu FGTS', text: 'Utilize seu saldo como parte da entrada.', icon: '💼' },
-      { title: 'Parcelamento', text: 'Entrada em até 60x direto com a construtora.', icon: '🗓️' },
-      { title: 'Lazer Completo', text: 'Piscina, quadra, salão de festas e playground.', icon: '⚽' },
-      { title: 'Segurança', text: 'Condomínio fechado com portaria 24h.', icon: '👮' },
-    ],
-    cards: [
-      { title: 'Fachada', meta: 'Moderno e seguro', image: landingImage.condo },
-      { title: 'Lazer', meta: 'Diversão para a família', image: landingImage.family },
-      { title: 'Planta', meta: '2 quartos com sacada', image: landingImage.interior },
-      { title: 'Localização', meta: 'Perto de tudo', image: landingImage.map },
-    ],
-    sections: designedSections,
-    formTitle: 'Descubra quanto a Caixa libera para você',
-    formSubtitle: 'Faça uma simulação sem compromisso. É rápido e gratuito.',
-    faq: [
-      'O que é preciso para ser aprovado?',
-      'Posso juntar renda com outra pessoa?',
-      'Como funciona o uso do FGTS?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'incorp-mixed-use',
-    name: 'Empreendimento Mixed-Use',
-    description: 'Residencial + Comercial, foco em praticidade e estilo de vida urbano.',
-    thumbnail: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop',
-    group: 'Incorporadora',
-    category: 'Mixed-Use / Studios',
-    objective: 'Venda para Moradores e Investidores',
-    style: 'Moderno e Urbano',
-    resources: ['Tour Virtual', 'Ficha Técnica', 'WhatsApp'],
-    pipeline: 'CRM Lançamentos',
-    crmTags: ['mixeduse', 'studio', 'comercial', 'investidor'],
-    conversionEvent: 'Agendar Visita ao Decorado',
-    palette: {
-      primary: '#334155',
-      secondary: '#475569',
-      accent: '#0284c7',
-      background: '#f8fafc',
-      text: '#0f172a',
-      footer: '#0f172a',
+    blocks: [
+      templateBlock(BlockType.HERO_WITH_FORM, 0, {
+        title: 'Saia do Aluguel Agora Mesmo!',
+        subtitle: 'Apartamentos com subsídio do governo e uso do FGTS na entrada.',
+        backgroundImage: landingImage.family,
+        overlayOpacity: 0.6,
+        formTitle: 'Simular Meu Financiamento',
+        submitText: 'Fazer Simulação Grátis',
+        fields: [
+          { name: 'name', type: 'text', label: 'Nome', required: true },
+          { name: 'phone', type: 'tel', label: 'WhatsApp', required: true },
+          { name: 'income', type: 'text', label: 'Renda Familiar Bruta', required: true }
+        ],
+        height: 600,
+        textColor: '#ffffff',
+        showBadges: true,
+        badges: [
+          { icon: 'home', title: 'Programa Governo', description: 'Faixas 1, 2 e 3' },
+          { icon: 'dollar-sign', title: 'Entrada Facilitada', description: 'Parcele em até 48x' }
+        ]
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.TIMELINE, 1, {
+        title: 'Como Comprar',
+        items: [
+          { title: 'Simulação', description: 'Descubra o valor do seu subsídio e parcelas.' },
+          { title: 'Documentação', description: 'Envie RG, CPF, Comprovante de Renda e Endereço.' },
+          { title: 'Aprovação Caixa', description: 'Avaliamos seu crédito rapidinho.' },
+          { title: 'Assinatura', description: 'Você assina o contrato e garante seu apê!' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.FOOTER, 2, {}, { padding: '40px 20px', backgroundColor: '#0ea5e9' }, 'full')
+    ]
+  },
+  {
+    id: 'incorp-condominio-fechado',
+    name: 'Condomínio Fechado',
+    description: 'Foco no clube do condomínio, mapa de localização e terrenos (lotes de alto padrão).',
+    thumbnail: landingImage.lots,
+    category: 'Lotes Premium',
+    group: 'Lançamentos',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#3f2c20',
+      secondaryColor: '#d97706',
+      backgroundColor: '#fdf8f5',
+      textColor: '#291d15',
     },
-    logo: 'Nexus Tower',
-    nav: ['O Conceito', 'Studios', 'Lojas', 'Investimento'],
-    badge: 'Lançamento',
-    headline: 'Tudo o que você precisa',
-    highlight: 'A um elevador de distância',
-    subtitle: 'Mora, trabalhe e divirta-se no mesmo lugar. O complexo mixed-use mais moderno da região.',
-    price: 'A partir de R$ 450.000',
-    location: 'Centro Expandido',
-    primaryCta: 'Agendar Visita ao Decorado',
-    secondaryCta: 'Conhecer as Lojas',
-    heroImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop',
-    stats: [
-      { label: 'Studios', value: '150 unid.', icon: '🏢' },
-      { label: 'Lojas', value: '20 espaços', icon: '🛍️' },
-      { label: 'Coworking', value: '500m²', icon: '💻' },
-      { label: 'Lazer', value: 'Rooftop', icon: '🌆' },
-    ],
-    features: [
-      { title: 'Praticidade', text: 'Shopping, mercado e serviços no térreo.', icon: '🛒' },
-      { title: 'Rentabilidade', text: 'Alta demanda por locação na região.', icon: '📈' },
-      { title: 'Coworking', text: 'Estrutura completa para trabalhar em casa.', icon: '💼' },
-      { title: 'Rooftop', text: 'Piscina de borda infinita e bar no topo.', icon: '🍸' },
-      { title: 'Mobilidade', text: 'Ao lado do metrô e principais avenidas.', icon: '🚇' },
-    ],
-    cards: [
-      { title: 'Studios', meta: 'Compactos inteligentes', image: landingImage.interior },
-      { title: 'Mall no Térreo', meta: 'Conveniência', image: 'https://images.unsplash.com/photo-1519999482648-25049ddd37b1?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Rooftop', meta: 'Lazer nas alturas', image: landingImage.luxuryApt },
-      { title: 'Coworking', meta: 'Trabalho focado', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=600&auto=format&fit=crop' },
-    ],
-    sections: designedSections,
-    formTitle: 'Fale com um consultor',
-    formSubtitle: 'Receba a apresentação completa com rentabilidade estimada e plantas.',
-    faq: [
-      'Qual a previsão de condomínio?',
-      'As lojas já estão alugadas?',
-      'O pool de locação será administrado por quem?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'incorp-resort-segunda-residencia',
-    name: 'Resort / Segunda Residência',
-    description: 'Imóveis no litoral ou campo para investimento em Airbnb ou lazer.',
-    thumbnail: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?q=80&w=1920&auto=format&fit=crop',
-    group: 'Incorporadora',
-    category: 'Lazer e Investimento',
-    objective: 'Venda de Segunda Residência',
-    style: 'Praia / Campo, Relaxante',
-    resources: ['Fotos do Lazer', 'Projeção de ROI', 'WhatsApp'],
-    pipeline: 'CRM Investidores',
-    crmTags: ['praia', 'airbnb', 'investidor'],
-    conversionEvent: 'Receber Apresentação',
-    palette: {
-      primary: '#0ea5e9',
-      secondary: '#0284c7',
-      accent: '#f59e0b',
-      background: '#f0f9ff',
-      text: '#0c4a6e',
-      footer: '#082f49',
-    },
-    logo: 'Ocean View Resort',
-    nav: ['O Resort', 'Lazer', 'Rentabilidade', 'Localização'],
-    badge: 'Invista e Aproveite',
-    headline: 'Suas Férias Rendem',
-    highlight: 'Dinheiro o Ano Todo',
-    subtitle: 'Um resort completo de frente para o mar. Aproveite com a família e rentabilize com locação por temporada.',
-    price: 'A partir de R$ 600.000',
-    location: 'Litoral, Praia Bela',
-    primaryCta: 'Receber Estudo de Rentabilidade',
-    secondaryCta: 'Ver Fotos do Resort',
-    heroImage: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?q=80&w=1920&auto=format&fit=crop',
-    stats: [
-      { label: 'Frente Mar', value: '100%', icon: '🌊' },
-      { label: 'Piscinas', value: '5', icon: '🏊' },
-      { label: 'ROI Estimado', value: '12% a.a', icon: '📈' },
-      { label: 'Gestão', value: 'Completa', icon: '🔑' },
-    ],
-    features: [
-      { title: 'Gestão de Locação', text: 'Não se preocupe com nada, nós alugamos para você.', icon: '📱' },
-      { title: 'Lazer de Resort', text: 'Parque aquático, quadras, spa e restaurantes.', icon: '🏖️' },
-      { title: 'Localização Premium', text: 'Pé na areia na melhor praia da região.', icon: '📍' },
-      { title: 'Mobiliado', text: 'Opção de entrega 100% mobiliado e decorado.', icon: '🛋️' },
-      { title: 'Uso Próprio', text: 'Bloqueie as datas que quiser para usar com a família.', icon: '👨‍👩‍👧‍👦' },
-    ],
-    cards: [
-      { title: 'Pé na Areia', meta: 'Acesso direto à praia', image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Apartamentos', meta: 'Varanda gourmet', image: landingImage.interior },
-      { title: 'Complexo Aquático', meta: '5 piscinas', image: 'https://images.unsplash.com/photo-1582610116397-edb318620f90?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Rentabilidade', meta: 'Alta procura via Airbnb', image: landingImage.luxuryApt },
-    ],
-    sections: designedSections,
-    formTitle: 'Invista no que te faz feliz',
-    formSubtitle: 'Fale com nossos especialistas em investimento imobiliário focado em turismo.',
-    faq: [
-      'Como funciona a gestão da locação?',
-      'Quais são os custos mensais?',
-      'Posso usar o imóvel o ano todo se quiser?',
-    ],
-  }),
+    blocks: [
+      templateBlock(BlockType.HERO, 0, {
+        title: 'Condomínio Clube Resort',
+        subtitle: 'Lotes a partir de 400m² em um verdadeiro resort.',
+        backgroundImage: landingImage.lots,
+        overlayOpacity: 0.5,
+        ctaText: 'Agendar Visita ao Decorado',
+        ctaLink: '#contato',
+        height: 600,
+        alignment: 'center',
+        textColor: '#ffffff'
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.GALLERY, 1, {
+        columns: 3,
+        gap: 16,
+        lightbox: true,
+        images: [
+          { src: landingImage.lots, alt: 'Pórtico' },
+          { src: landingImage.mansion, alt: 'Clube' },
+          { src: landingImage.interior, alt: 'Salão de Festas' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.MAP, 2, {
+        latitude: -23.5505,
+        longitude: -46.6333,
+        zoom: 14,
+        markers: [{ lat: -23.5505, lng: -46.6333, title: 'Condomínio' }]
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.FORM, 3, {
+        title: 'Venha conhecer',
+        fields: [
+          { name: 'name', type: 'text', label: 'Nome', required: true },
+          { name: 'phone', type: 'tel', label: 'WhatsApp', required: true }
+        ],
+        submitText: 'Agendar',
+        successMessage: 'Entraremos em contato!'
+      }, { padding: '80px 20px', backgroundColor: '#fdf8f5' }),
+      templateBlock(BlockType.FOOTER, 4, {}, { padding: '40px 20px', backgroundColor: '#291d15' }, 'full')
+    ]
+  }
 ];

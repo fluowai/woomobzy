@@ -545,9 +545,15 @@ const SystemSettings: React.FC = () => {
                           <Copy size={16} />
                         </button>
                       </div>
-                      <p className="text-xs text-emerald-600 mt-2">
-                        Copie esta URL e cole na configuração de Integração de Anúncios no painel do Canal Pro.
-                      </p>
+                      <div className="text-xs text-emerald-700 mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                        <p className="font-bold mb-2">Como ativar a integração ZAP para a {settings?.agencyName || 'sua imobiliária'}:</p>
+                        <ol className="list-decimal list-inside space-y-1.5 ml-1">
+                           <li>Acesse sua conta corporativa no <strong>Canal Pro</strong> (Grupo ZAP).</li>
+                           <li>Vá no menu <strong>Configurações &gt; Integração de Anúncios</strong>.</li>
+                           <li>Cole a URL acima no campo de <strong>Feed XML</strong>.</li>
+                           <li>O ZAP passará a consultar a <strong>{settings?.agencyName || 'nossa plataforma'}</strong> automaticamente todos os dias para atualizar sua vitrine!</li>
+                        </ol>
+                      </div>
                     </div>
                   )}
                 </div>

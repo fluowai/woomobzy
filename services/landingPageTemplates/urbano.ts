@@ -1,304 +1,262 @@
-import { buildDesignedTemplate, landingImage, designedSections } from './shared';
+import { BlockType } from '../../types/landingPage';
+import { LandingPageTemplate, templateBlock, defaultPremiumTheme, landingImage } from './shared';
 
-export const URBANO_TEMPLATES = [
-  buildDesignedTemplate({
-    id: 'urbano-casa-luxo',
-    name: 'Casa / Mansão Urbana Premium',
-    description: 'Apresentação detalhada de um imóvel avulso específico de alto valor.',
+export const URBANO_TEMPLATES: LandingPageTemplate[] = [
+  {
+    id: 'urbano-classic',
+    name: 'Urban Classic',
+    description: 'Design limpo e tradicional, focado em busca fácil e confiança.',
     thumbnail: landingImage.house,
-    group: 'Imobiliária',
     category: 'Avulso Alto Padrão',
-    objective: 'Venda de Imóvel Premium',
-    style: 'Luxo e Elegância',
-    resources: ['Tour Virtual', 'Fotos Profissionais', 'WhatsApp'],
-    pipeline: 'CRM Alto Padrão',
-    crmTags: ['casa', 'mansao', 'altopadrao', 'avulso'],
-    conversionEvent: 'Agendar Visita Discreta',
-    palette: {
-      primary: '#09090b',
-      secondary: '#18181b',
-      accent: '#c2410c',
-      background: '#fafafa',
-      text: '#09090b',
-      footer: '#18181b',
-    },
-    logo: 'Prime Properties',
-    nav: ['A Casa', 'Diferenciais', 'Localização', 'Agendar Visita'],
-    badge: 'Exclusividade',
-    headline: 'Casa Contemporânea em',
-    highlight: 'Condomínio Fechado',
-    subtitle: 'Arquitetura assinada, ambientes integrados e acabamento impecável. Pronta para morar com todo conforto.',
-    price: 'R$ 4.800.000',
-    location: 'Condomínio Alphaville',
-    primaryCta: 'Agendar Visita',
-    secondaryCta: 'Fazer Tour 360º',
-    heroImage: landingImage.house,
-    stats: [
-      { label: 'Área Construída', value: '450m²', icon: '📐' },
-      { label: 'Suítes', value: '4', icon: '🛏️' },
-      { label: 'Vagas', value: '6', icon: '🚗' },
-      { label: 'Ano', value: '2025', icon: '🏗️' },
-    ],
-    features: [
-      { title: 'Acabamento', text: 'Mármore importado e esquadrias de PVC.', icon: '✨' },
-      { title: 'Automação', text: 'Controle de luz, som e ar pelo celular.', icon: '📱' },
-      { title: 'Sustentável', text: 'Energia fotovoltaica e aquecimento solar.', icon: '☀️' },
-      { title: 'Lazer Privativo', text: 'Piscina aquecida e espaço gourmet.', icon: '🏊' },
-      { title: 'Localização', text: 'No melhor ponto do condomínio.', icon: '📍' },
-    ],
-    cards: [
-      { title: 'Living', meta: 'Pé direito duplo', image: landingImage.interior },
-      { title: 'Fachada', meta: 'Imponente', image: landingImage.house },
-      { title: 'Piscina', meta: 'Lazer e privacidade', image: landingImage.mansion },
-      { title: 'Suíte Master', meta: 'Closet enorme', image: 'https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=600&auto=format&fit=crop' },
-    ],
-    sections: designedSections,
-    formTitle: 'Agendamento de Visita',
-    formSubtitle: 'Atendimento exclusivo e confidencial para clientes selecionados.',
-    faq: [
-      'A casa é vendida mobiliada (porteira fechada)?',
-      'Aceita permuta por imóvel menor?',
-      'O condomínio possui clube?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'urbano-locacao-agil',
-    name: 'Locação Ágil 360º',
-    description: 'Foco em aluguel sem fiador, rápido e digital. Voltado para estudantes e jovens profissionais.',
-    thumbnail: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1920&auto=format&fit=crop',
     group: 'Imobiliária',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#0f172a',
+      secondaryColor: '#3b82f6',
+      backgroundColor: '#ffffff',
+      textColor: '#1e293b',
+    },
+    blocks: [
+      templateBlock(BlockType.HERO, 0, {
+        title: 'Encontre o Imóvel dos Seus Sonhos',
+        subtitle: 'As melhores opções da cidade selecionadas para você.',
+        backgroundImage: landingImage.house,
+        overlayOpacity: 0.5,
+        ctaText: 'Ver Imóveis',
+        ctaLink: '#imoveis',
+        height: 600,
+        alignment: 'center',
+        textColor: '#ffffff'
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.FEATURES, 1, {
+        columns: 3,
+        layout: 'grid',
+        features: [
+          { title: 'Busca Inteligente', description: 'Filtre por bairro, preço e tipo.', icon: '🔍' },
+          { title: 'Atendimento Rápido', description: 'Corretores online o tempo todo.', icon: '⚡' },
+          { title: 'Compra Segura', description: 'Assessoria jurídica inclusa.', icon: '🛡️' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#f8fafc' }),
+      templateBlock(BlockType.PROPERTY_GRID, 2, {
+        columns: 3,
+        gap: 24,
+        showFilters: true,
+        maxItems: 6,
+        sortBy: 'price',
+        cardStyle: 'modern'
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.BROKER_CARD, 3, {
+        name: 'Equipe de Vendas',
+        photoUrl: landingImage.broker,
+        creci: 'CRECI 12345-J',
+        specialty: 'Especialistas em imóveis urbanos',
+        phone: '(00) 00000-0000',
+        email: 'contato@imobzy.com.br',
+        description: 'Estamos prontos para te ajudar a encontrar o lar perfeito.'
+      }, { padding: '60px 20px', backgroundColor: '#f8fafc' }),
+      templateBlock(BlockType.FOOTER, 4, {}, { padding: '40px 20px', backgroundColor: '#0f172a' }, 'full')
+    ]
+  },
+  {
+    id: 'urbano-metropole-smart',
+    name: 'Metrópole Smart',
+    description: 'Dark mode, moderno, ideal para studios e apartamentos compactos.',
+    thumbnail: landingImage.luxuryApt,
+    category: 'Lançamentos e Studios',
+    group: 'Imobiliária',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#171717',
+      secondaryColor: '#a8a29e',
+      backgroundColor: '#0a0a0a',
+      textColor: '#e5e5e5',
+    },
+    blocks: [
+      templateBlock(BlockType.HERO_WITH_FORM, 0, {
+        title: 'Moradia Inteligente na Metrópole',
+        subtitle: 'Studios e compactos perto do metrô. Assine para receber lançamentos.',
+        backgroundImage: landingImage.luxuryApt,
+        overlayOpacity: 0.7,
+        formTitle: 'Receba Lançamentos Exclusivos',
+        submitText: 'Quero Receber',
+        fields: [
+          { name: 'name', type: 'text', label: 'Nome', required: true },
+          { name: 'phone', type: 'tel', label: 'WhatsApp', required: true }
+        ],
+        height: 700,
+        textColor: '#ffffff',
+        showBadges: true,
+        badges: [
+          { icon: 'subway', title: 'Perto do Metrô', description: 'Mobilidade total' },
+          { icon: 'wifi', title: 'Pronto para morar', description: 'Mobiliados' }
+        ]
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.PROPERTY_CAROUSEL, 1, {
+        autoplay: true,
+        interval: 3000,
+        showArrows: true,
+        showDots: true,
+        itemsPerView: 3
+      }, { padding: '80px 20px', backgroundColor: '#171717' }),
+      templateBlock(BlockType.FOOTER, 2, {}, { padding: '40px 20px', backgroundColor: '#000000' }, 'full')
+    ]
+  },
+  {
+    id: 'urbano-bairro-prime',
+    name: 'Bairro Prime',
+    description: 'Cores quentes (terracota). Foco no bairro, vida em família e comércio local.',
+    thumbnail: landingImage.family,
+    category: 'Imóveis Familiares',
+    group: 'Imobiliária',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#9a3412',
+      secondaryColor: '#f97316',
+      backgroundColor: '#fff7ed',
+      textColor: '#431407',
+    },
+    blocks: [
+      templateBlock(BlockType.HERO, 0, {
+        title: 'Viva no Melhor Ponto da Cidade',
+        subtitle: 'Espaço, segurança e qualidade de vida para sua família.',
+        backgroundImage: landingImage.family,
+        overlayOpacity: 0.4,
+        ctaText: 'Explorar Bairro',
+        ctaLink: '#imoveis',
+        height: 600,
+        alignment: 'left',
+        textColor: '#ffffff'
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.TESTIMONIALS, 1, {
+        layout: 'grid',
+        showRating: true,
+        testimonials: [
+          { name: 'Família Silva', text: 'Encontramos a casa perfeita perto da escola das crianças.', rating: 5 },
+          { name: 'Carlos E.', text: 'O atendimento foi focado exatamente no que a gente precisava.', rating: 5 }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffedd5' }),
+      templateBlock(BlockType.PROPERTY_GRID, 2, {
+        columns: 2,
+        gap: 32,
+        showFilters: false,
+        maxItems: 4,
+        sortBy: 'date',
+        cardStyle: 'classic'
+      }, { padding: '80px 20px' }),
+      templateBlock(BlockType.MAP, 3, {
+        latitude: -23.5505,
+        longitude: -46.6333,
+        zoom: 14,
+        markers: [{ lat: -23.5505, lng: -46.6333, title: 'Nossa Região' }]
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.FOOTER, 4, {}, { padding: '40px 20px', backgroundColor: '#7c2d12' }, 'full')
+    ]
+  },
+  {
+    id: 'urbano-aluguel-express',
+    name: 'Aluguel Express',
+    description: 'Focado em locação descomplicada, sem fiador e 100% online.',
+    thumbnail: landingImage.interior,
     category: 'Locação',
-    objective: 'Aluguel Rápido',
-    style: 'Jovem e Descomplicado',
-    resources: ['Tour 360', 'Agendamento Online', 'WhatsApp'],
-    pipeline: 'CRM Locação',
-    crmTags: ['aluguel', 'apartamento', 'semfiador'],
-    conversionEvent: 'Proposta / Agendar Visita',
-    palette: {
-      primary: '#4f46e5',
-      secondary: '#4338ca',
-      accent: '#ec4899',
-      background: '#f8fafc',
-      text: '#1e293b',
-      footer: '#1e1b4b',
+    group: 'Imobiliária',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#4f46e5',
+      secondaryColor: '#818cf8',
+      backgroundColor: '#f8fafc',
+      textColor: '#1e293b',
     },
-    logo: 'Aluguel Express',
-    nav: ['O Apê', 'Facilidades', 'Como Alugar', 'Agendar'],
-    badge: 'Alugue sem Fiador',
-    headline: 'Apartamento Pronto para',
-    highlight: 'Morar Amanhã',
-    subtitle: 'Mobiliado, perto do metrô e com contrato 100% digital. Sem fiador e sem burocracia.',
-    price: 'R$ 2.500 / mês',
-    location: 'Bairro Universitário',
-    primaryCta: 'Alugar Agora',
-    secondaryCta: 'Agendar Visita',
-    heroImage: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1920&auto=format&fit=crop',
-    stats: [
-      { label: 'Quartos', value: '2', icon: '🛏️' },
-      { label: 'Metragem', value: '65m²', icon: '📐' },
-      { label: 'Mobiliado', value: 'Sim', icon: '🛋️' },
-      { label: 'Metrô', value: '5 min', icon: '🚇' },
-    ],
-    features: [
-      { title: '100% Digital', text: 'Assine o contrato pelo celular.', icon: '📱' },
-      { title: 'Sem Fiador', text: 'Aceitamos seguro fiança e cartão.', icon: '💳' },
-      { title: 'Mobiliado', text: 'Geladeira, fogão, cama e armários.', icon: '🛋️' },
-      { title: 'Pet Friendly', text: 'Seu pet é bem-vindo aqui.', icon: '🐕' },
-      { title: 'Condomínio', text: 'Piscina, academia e lavanderia.', icon: '🏢' },
-    ],
-    cards: [
-      { title: 'Sala', meta: 'Conforto', image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Cozinha', meta: 'Equipada', image: 'https://images.unsplash.com/photo-1556910103-1c02745a872f?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Quarto', meta: 'Cama Queen', image: 'https://images.unsplash.com/photo-1505693314120-0d443867891c?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Condomínio', meta: 'Lazer', image: landingImage.condo },
-    ],
-    sections: designedSections,
-    formTitle: 'Envie sua proposta ou dúvida',
-    formSubtitle: 'Processo de locação simplificado para você não perder tempo.',
-    faq: [
-      'Quais são as opções de garantia locatícia?',
-      'O valor do IPTU e Condomínio já estão inclusos?',
-      'Como funciona a reserva do imóvel?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'urbano-corretor-elite',
-    name: 'Corretor de Elite (Personal Branding)',
-    description: 'Página para o corretor se apresentar, mostrar seus resultados e captar clientes.',
+    blocks: [
+      templateBlock(BlockType.HERO, 0, {
+        title: 'Alugue sem Burocracia',
+        subtitle: 'Processo 100% digital, sem fiador e aprovação em 15 minutos.',
+        backgroundImage: landingImage.interior,
+        overlayOpacity: 0.6,
+        ctaText: 'Ver Imóveis para Alugar',
+        ctaLink: '#imoveis',
+        height: 500,
+        alignment: 'center',
+        textColor: '#ffffff'
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.FEATURES, 1, {
+        columns: 4,
+        layout: 'grid',
+        features: [
+          { title: 'Sem Fiador', description: 'Use cartão de crédito ou seguro fiança.', icon: '💳' },
+          { title: '100% Digital', description: 'Assinatura pelo celular.', icon: '📱' },
+          { title: 'Rápido', description: 'Aprovação em minutos.', icon: '⚡' },
+          { title: 'Suporte', description: 'Manutenção garantida.', icon: '🔧' }
+        ]
+      }, { padding: '60px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.PROPERTY_GRID, 2, {
+        columns: 4,
+        gap: 16,
+        showFilters: true,
+        maxItems: 8,
+        sortBy: 'price',
+        cardStyle: 'modern'
+      }, { padding: '60px 20px' }),
+      templateBlock(BlockType.CTA, 3, {
+        title: 'Dúvidas sobre locação?',
+        description: 'Chame nosso time no WhatsApp e resolva na hora.',
+        buttonText: 'Falar no WhatsApp',
+        buttonLink: '#',
+        backgroundColor: '#4f46e5',
+        textColor: '#ffffff'
+      }, { padding: '60px 20px' }),
+      templateBlock(BlockType.FOOTER, 4, {}, { padding: '40px 20px', backgroundColor: '#1e293b' }, 'full')
+    ]
+  },
+  {
+    id: 'urbano-avaliador-pro',
+    name: 'Avaliador Pro (Captação)',
+    description: 'Focado em captar proprietários interessados em vender ou alugar.',
     thumbnail: landingImage.broker,
-    group: 'Imobiliária',
-    category: 'Corretor',
-    objective: 'Captação e Autoridade',
-    style: 'Profissional e Moderno',
-    resources: ['Depoimentos', 'Portfólio', 'WhatsApp'],
-    pipeline: 'CRM Contatos',
-    crmTags: ['corretor', 'autoridade', 'branding'],
-    conversionEvent: 'Contato WhatsApp',
-    palette: {
-      primary: '#171717',
-      secondary: '#262626',
-      accent: '#eab308',
-      background: '#f5f5f5',
-      text: '#171717',
-      footer: '#0a0a0a',
-    },
-    logo: 'Seu Nome Broker',
-    nav: ['Sobre Mim', 'Especialidade', 'Imóveis', 'Falar Comigo'],
-    badge: 'Consultoria Imobiliária',
-    headline: 'Seu Especialista em',
-    highlight: 'Imóveis de Alto Padrão',
-    subtitle: 'Ajudo famílias a encontrarem o lar perfeito e investidores a realizarem os melhores negócios na região.',
-    price: 'Atendimento Exclusivo',
-    location: 'Atuando em São Paulo',
-    primaryCta: 'Falar no WhatsApp',
-    secondaryCta: 'Ver Portfólio de Imóveis',
-    heroImage: landingImage.broker,
-    stats: [
-      { label: 'Anos de Mercado', value: '10+', icon: '📈' },
-      { label: 'Imóveis Vendidos', value: '300+', icon: '🔑' },
-      { label: 'Volume Vendas', value: 'R$ 150M', icon: '💰' },
-      { label: 'Clientes Felizes', value: '100%', icon: '⭐' },
-    ],
-    features: [
-      { title: 'Atendimento', text: 'Personalizado e focado nas suas necessidades.', icon: '🤝' },
-      { title: 'Curadoria', text: 'Seleciono apenas os melhores imóveis do mercado.', icon: '🎯' },
-      { title: 'Segurança', text: 'Assessoria jurídica do início ao fim.', icon: '⚖️' },
-      { title: 'Discrição', text: 'Total sigilo nas transações de alto valor.', icon: '🤫' },
-      { title: 'Networking', text: 'Acesso a imóveis que não estão na internet.', icon: '🌐' },
-    ],
-    cards: [
-      { title: 'Casa Alphaville', meta: 'Vendido em 15 dias', image: landingImage.mansion },
-      { title: 'Apartamento Jardins', meta: 'Locação Rápida', image: landingImage.luxuryApt },
-      { title: 'Cobertura', meta: 'Venda Exclusiva', image: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Terreno', meta: 'Oportunidade', image: landingImage.farm },
-    ],
-    sections: designedSections,
-    formTitle: 'Vamos tomar um café?',
-    formSubtitle: 'Deixe seus contatos que te ligo para entender o que você busca.',
-    faq: [
-      'Você atua em quais bairros?',
-      'Posso deixar meu imóvel para você vender?',
-      'Como funciona sua consultoria para investidores?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'urbano-avaliacao-imovel',
-    name: 'Avaliação Gratuita de Imóvel',
-    description: 'Isca digital clássica para captar proprietários querendo vender.',
-    thumbnail: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1920&auto=format&fit=crop',
-    group: 'Imobiliária',
     category: 'Captação',
-    objective: 'Lead Proprietário',
-    style: 'Direto e Confiável',
-    resources: ['Formulário de Captação', 'Prova Social', 'WhatsApp'],
-    pipeline: 'CRM Captação',
-    crmTags: ['avaliacao', 'captacao', 'proprietario'],
-    conversionEvent: 'Solicitar Avaliação',
-    palette: {
-      primary: '#0369a1',
-      secondary: '#0284c7',
-      accent: '#ef4444',
-      background: '#f0f9ff',
-      text: '#0c4a6e',
-      footer: '#082f49',
-    },
-    logo: 'Imob. Avalia',
-    nav: ['Como Funciona', 'Por Que Avaliar', 'Vender Rápido', 'Avaliar'],
-    badge: 'Descubra o Valor Real',
-    headline: 'Quanto Vale o Seu',
-    highlight: 'Imóvel Hoje?',
-    subtitle: 'Faça uma avaliação gratuita e sem compromisso com nossos especialistas e descubra o valor de mercado do seu patrimônio.',
-    price: 'Serviço Gratuito',
-    location: 'Para Imóveis na Cidade',
-    primaryCta: 'Quero Avaliar Meu Imóvel',
-    secondaryCta: 'Falar com Especialista',
-    heroImage: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1920&auto=format&fit=crop',
-    stats: [
-      { label: 'Avaliações', value: '2.000+', icon: '📊' },
-      { label: 'Precisão', value: '98%', icon: '🎯' },
-      { label: 'Custo', value: 'Grátis', icon: '💰' },
-      { label: 'Tempo', value: '24h', icon: '⏱️' },
-    ],
-    features: [
-      { title: 'Estudo de Mercado', text: 'Analisamos imóveis similares na sua rua.', icon: '📈' },
-      { title: 'Venda Mais Rápido', text: 'O preço certo é o segredo para vender rápido.', icon: '⚡' },
-      { title: 'Documento Completo', text: 'Receba um relatório em PDF com a avaliação.', icon: '📄' },
-      { title: 'Sem Compromisso', text: 'Você não é obrigado a vender conosco.', icon: '🤝' },
-      { title: 'Sigilo Absoluto', text: 'Seus dados e o valor são confidenciais.', icon: '🔒' },
-    ],
-    cards: [
-      { title: 'Passo 1', meta: 'Preencha o formulário', image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Passo 2', meta: 'Nossa equipe analisa', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Passo 3', meta: 'Você recebe o relatório', image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Passo 4', meta: 'Decide se quer vender', image: landingImage.house },
-    ],
-    sections: designedSections,
-    formTitle: 'Solicite a avaliação do seu imóvel',
-    formSubtitle: 'Precisaremos de alguns dados básicos sobre a propriedade para iniciar o estudo.',
-    faq: [
-      'A avaliação é realmente gratuita?',
-      'Vou ser obrigado a vender o imóvel com vocês?',
-      'Como vocês chegam no valor do imóvel?',
-    ],
-  }),
-  buildDesignedTemplate({
-    id: 'urbano-galpao-logistico',
-    name: 'Galpão Logístico / Corporativo',
-    description: 'Imóveis comerciais de alto padrão para locação ou venda B2B.',
-    thumbnail: landingImage.warehouse,
     group: 'Imobiliária',
-    category: 'Comercial/Corporativo',
-    objective: 'Venda/Locação B2B',
-    style: 'Corporativo e Técnico',
-    resources: ['Planta Baixa', 'Dados Técnicos', 'WhatsApp'],
-    pipeline: 'CRM Corporativo',
-    crmTags: ['galpao', 'logistica', 'b2b'],
-    conversionEvent: 'Reunião Comercial',
-    palette: {
-      primary: '#0f172a',
-      secondary: '#1e293b',
-      accent: '#2563eb',
-      background: '#f8fafc',
-      text: '#0f172a',
-      footer: '#020617',
+    themeConfig: {
+      ...defaultPremiumTheme,
+      primaryColor: '#047857',
+      secondaryColor: '#10b981',
+      backgroundColor: '#f0fdf4',
+      textColor: '#064e3b',
     },
-    logo: 'LogisReal',
-    nav: ['O Galpão', 'Logística', 'Infraestrutura', 'Comercial'],
-    badge: 'Disponível para Locação',
-    headline: 'A Estrutura Certa para a',
-    highlight: 'Expansão da Sua Empresa',
-    subtitle: 'Galpão logístico padrão AAA, pé direito de 12m e piso de alta resistência. Pronto para operação.',
-    price: 'R$ 25,00 / m² (Locação)',
-    location: 'Polo Industrial',
-    primaryCta: 'Agendar Visita Técnica',
-    secondaryCta: 'Receber Ficha Técnica',
-    heroImage: landingImage.warehouseInside,
-    stats: [
-      { label: 'Área Bruta', value: '10.000m²', icon: '📐' },
-      { label: 'Pé Direito', value: '12m', icon: '🏗️' },
-      { label: 'Docas', value: '15', icon: '🚛' },
-      { label: 'Piso', value: '6 ton/m²', icon: '⚖️' },
-    ],
-    features: [
-      { title: 'Logística', text: 'Acesso rápido às principais rodovias.', icon: '🛣️' },
-      { title: 'Infraestrutura', text: 'Sprinklers, hidrantes e segurança 24h.', icon: '🚒' },
-      { title: 'Escritórios', text: 'Mezanino com área administrativa pronta.', icon: '🏢' },
-      { title: 'Pátio', text: 'Amplo pátio para manobra de carretas.', icon: '🔄' },
-      { title: 'Energia', text: 'Cabine primária e gerador de emergência.', icon: '⚡' },
-    ],
-    cards: [
-      { title: 'Galpão', meta: 'Vão livre', image: landingImage.warehouseInside },
-      { title: 'Docas', meta: 'Niveladoras instaladas', image: landingImage.warehouse },
-      { title: 'Fachada', meta: 'Imagem corporativa', image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=600&auto=format&fit=crop' },
-      { title: 'Escritório', meta: 'Pronto para uso', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=600&auto=format&fit=crop' },
-    ],
-    sections: designedSections,
-    formTitle: 'Solicite uma proposta comercial',
-    formSubtitle: 'Nossa equipe B2B está pronta para atender as necessidades logísticas da sua empresa.',
-    faq: [
-      'Há possibilidade de expansão da área?',
-      'Qual o valor do condomínio e IPTU?',
-      'O AVCB está em dia?',
-    ],
-  }),
+    blocks: [
+      templateBlock(BlockType.HERO_WITH_FORM, 0, {
+        title: 'Descubra o Valor Real do Seu Imóvel',
+        subtitle: 'Avaliação gratuita e sem compromisso feita por especialistas da sua região.',
+        backgroundImage: landingImage.house,
+        overlayOpacity: 0.6,
+        formTitle: 'Solicite uma Avaliação',
+        submitText: 'Quero Avaliar Meu Imóvel',
+        fields: [
+          { name: 'name', type: 'text', label: 'Nome', required: true },
+          { name: 'phone', type: 'tel', label: 'WhatsApp', required: true },
+          { name: 'address', type: 'text', label: 'Endereço do Imóvel', required: true }
+        ],
+        height: 600,
+        textColor: '#ffffff',
+        showBadges: false
+      }, { padding: '0px' }, 'full'),
+      templateBlock(BlockType.TIMELINE, 1, {
+        title: 'Como funciona nossa venda',
+        items: [
+          { title: 'Avaliação Precisa', description: 'Analisamos o mercado local para o preço certo.' },
+          { title: 'Fotos Profissionais', description: 'Seu imóvel com a melhor apresentação.' },
+          { title: 'Marketing Direcionado', description: 'Anúncios para quem realmente quer comprar.' },
+          { title: 'Fechamento Seguro', description: 'Assessoria jurídica completa até a entrega das chaves.' }
+        ]
+      }, { padding: '80px 20px', backgroundColor: '#ffffff' }),
+      templateBlock(BlockType.STATS, 2, {
+        animated: true,
+        columns: 3,
+        stats: [
+          { label: 'Imóveis Vendidos', value: '500+', icon: '🔑' },
+          { label: 'Dias Média Venda', value: '45', icon: '⏱️' },
+          { label: 'Clientes Satisfeitos', value: '100%', icon: '⭐' }
+        ]
+      }, { padding: '60px 20px', backgroundColor: '#047857' }),
+      templateBlock(BlockType.FOOTER, 3, {}, { padding: '40px 20px', backgroundColor: '#022c22' }, 'full')
+    ]
+  }
 ];

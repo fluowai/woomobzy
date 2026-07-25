@@ -30,6 +30,8 @@ interface UserProfile {
     plan_id?: string;
     trial_ends_at?: string;
     subscription_status?: 'trial' | 'active' | 'payment_required' | 'suspended';
+    is_reseller?: boolean;
+    parent_id?: string | null;
   };
   created_at: string;
 }
@@ -198,7 +200,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           const { data: orgData, error: orgError } = await supabase
             .from('organizations')
             .select(
-              'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status'
+              'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
             )
             .eq('id', impOrgId)
             .single();
@@ -229,7 +231,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             const { data: orgData, error: orgError } = await supabase
               .from('organizations')
               .select(
-                'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status'
+                'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
               )
               .eq('id', finalProfile.organization_id)
               .maybeSingle();

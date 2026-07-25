@@ -137,9 +137,10 @@ const UrbanLayout: React.FC = () => {
   ];
 
   if (profile?.role === 'superadmin') {
+    const isMegaAdmin = !profile?.organization?.is_reseller;
     systemItems.push({
       icon: ShieldAlert,
-      label: 'Super Admin',
+      label: isMegaAdmin ? 'Mega Admin' : 'Super Admin',
       path: '/superadmin',
     });
   }

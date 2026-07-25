@@ -34,6 +34,9 @@ const SuperAdminLayout: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const isMegaAdmin = profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
+  const panelTitle = isMegaAdmin ? 'Mega Admin' : 'Super Admin';
+
   // rendering...
 
   const handleSignOut = async () => {
@@ -83,7 +86,7 @@ const SuperAdminLayout: React.FC = () => {
       <div className="h-screen flex flex-col items-center justify-center bg-red-50 text-red-800 p-4">
         <ShieldAlert size={64} className="mb-4" />
         <h1 className="text-2xl font-bold mb-2">Acesso Negado</h1>
-        <p className="mb-6">Você não tem permissão de Super Admin.</p>
+        <p className="mb-6">Você não tem permissão de Super Admin/Mega Admin.</p>
         <button
           onClick={() => navigate('/admin')}
           className="px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900"
@@ -108,7 +111,7 @@ const SuperAdminLayout: React.FC = () => {
           <div className="p-6 border-b border-slate-700 flex items-center justify-between">
             <div className="flex items-center gap-2 text-red-500 font-bold text-xl">
               <ShieldAlert />
-              <span>Super Admin</span>
+              <span>{panelTitle}</span>
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
@@ -175,7 +178,7 @@ const SuperAdminLayout: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         <header className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <div className="font-bold text-slate-800">Super Admin</div>
+          <div className="font-bold text-slate-800">{panelTitle}</div>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"

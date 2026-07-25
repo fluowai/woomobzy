@@ -575,7 +575,7 @@ export async function sendSystemEmail({ organizationId, to, subject, html, reply
   }
 
   return transport.sendMail({
-    from: \"\\" <\>,
+    from: `"${fromName}" <${senderEmail}>`,
     to: cleanTo,
     subject: String(subject || '(sem assunto)').trim(),
     html: cleanHtml,

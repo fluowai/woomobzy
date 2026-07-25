@@ -52,6 +52,7 @@ const SiteManager: React.FC = () => {
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState('');
   const [orgSlug, setOrgSlug] = useState<string>('');
+  const [tableError, setTableError] = useState(false);
 
   useEffect(() => {
     loadSite();
@@ -60,6 +61,7 @@ const SiteManager: React.FC = () => {
   const loadSite = async () => {
     try {
       setLoading(true);
+      setTableError(false);
       if (!profile?.organization_id) return;
 
       const { data: orgData } = await supabase
@@ -69,12 +71,22 @@ const SiteManager: React.FC = () => {
         .single();
       setOrgSlug(orgData?.slug || '');
 
-      let siteData = await siteService.getByOrganization(
-        profile.organization_id
-      );
+      let siteData: Site | null = null;
+      try {
+        siteData = await siteService.getByOrganization(
+          profile.organization_id
+        );
+      } catch (fetchError: any) {
+        if (fetchError?.code === '42P01' || fetchError?.status === 404 || String(fetchError?.message || '').includes('does not exist') || String(fetchError?.message || '').includes('404')) {
+          setTableError(true);
+          setLoading(false);
+          return;
+        }
+        throw fetchError;
+      }
 
       if (!siteData) {
-        const { data: newSite, error } = await supabase
+        const { data: newSite, error: insertError } = await supabase
           .from('sites')
           .insert({
             organization_id: profile.organization_id,
@@ -82,6 +94,15 @@ const SiteManager: React.FC = () => {
           })
           .select()
           .single();
+
+        if (insertError) {
+          if (insertError?.code === '42P01' || insertError?.status === 404 || String(insertError?.message || '').includes('does not exist') || String(insertError?.message || '').includes('404')) {
+            setTableError(true);
+            setLoading(false);
+            return;
+          }
+          logger.error('[SiteManager] Erro ao criar site:', insertError);
+        }
 
         if (newSite) {
           await supabase.from('site_pages').insert({
@@ -203,6 +224,34 @@ const SiteManager: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="animate-spin text-indigo-500" size={32} />
+      </div>
+    );
+  }
+
+  if (tableError) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Meu Site</h1>
+            <p className="text-gray-400 text-sm mt-1">
+              Gerencie o site da sua imobiliária
+            </p>
+          </div>
+        </div>
+        <div className="bg-yellow-900/30 border border-yellow-700 rounded-xl p-8 text-center">
+          <Globe size={48} className="mx-auto mb-4 text-yellow-400" />
+          <h2 className="text-xl font-bold text-white mb-2">
+            Tabela de sites não configurada
+          </h2>
+          <p className="text-gray-400 max-w-md mx-auto mb-4">
+            A tabela <code className="bg-gray-800 px-2 py-0.5 rounded text-yellow-300">sites</code> não foi encontrada no banco de dados. 
+            Execute o script de migração no Supabase para habilitar o construtor de sites.
+          </p>
+          <p className="text-gray-500 text-sm">
+            Arquivo: <code className="bg-gray-800 px-2 py-0.5 rounded">sql/setup_site_builder.sql</code>
+          </p>
+        </div>
       </div>
     );
   }

@@ -1,29 +1,24 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
+import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
-  CreditCard,
-  HelpCircle,
-  Users,
+  BarChart3,
+  Activity,
+  DollarSign,
+  ToggleRight,
+  ScrollText,
   Settings,
   LogOut,
   Menu,
   X,
   ShieldAlert,
-  Globe,
-  Calendar,
-  ScrollText,
-  Layout,
-  DollarSign,
-  Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const SuperAdminLayout: React.FC = () => {
+const MegaAdminLayout: React.FC = () => {
   const { signOut, profile } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -32,31 +27,31 @@ const SuperAdminLayout: React.FC = () => {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/superadmin' },
-    { icon: Building2, label: 'Imobiliárias', path: '/superadmin/tenants' },
-    { icon: HelpCircle, label: 'Suporte', path: '/superadmin/support' },
-    { icon: Users, label: 'Equipe', path: '/superadmin/team' },
-    { icon: CreditCard, label: 'Planos', path: '/superadmin/plans' },
-    { icon: DollarSign, label: 'Billing', path: '/superadmin/billing' },
-    { icon: ScrollText, label: 'Audit Log', path: '/superadmin/audit-log' },
-    { icon: Layout, label: 'Templates', path: '/superadmin/templates' },
-    { icon: Globe, label: 'Domínios', path: '/superadmin/domains' },
-    { icon: Calendar, label: 'Consultoria', path: '/superadmin/consulting' },
-    { icon: Megaphone, label: 'Marketing & SEO', path: '/superadmin/marketing' },
-    { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/megaadmin' },
+    { icon: Building2, label: 'Resellers', path: '/megaadmin/resellers' },
+    { icon: BarChart3, label: 'Analytics', path: '/megaadmin/analytics' },
+    { icon: Activity, label: 'Monitoring', path: '/megaadmin/monitoring' },
+    { icon: DollarSign, label: 'Billing', path: '/megaadmin/billing' },
+    {
+      icon: ToggleRight,
+      label: 'Feature Flags',
+      path: '/megaadmin/feature-flags',
+    },
+    { icon: ScrollText, label: 'Audit Log', path: '/megaadmin/audit-log' },
+    { icon: Settings, label: 'Configurações', path: '/megaadmin/settings' },
   ];
 
-  if (profile?.role !== 'superadmin') {
+  if (profile?.role !== 'superadmin' || profile?.organization?.is_reseller) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-red-50 text-red-800 p-4">
         <ShieldAlert size={64} className="mb-4" />
         <h1 className="text-2xl font-bold mb-2">Acesso Negado</h1>
-        <p className="mb-6">Você não tem permissão de Super Admin.</p>
+        <p className="mb-6">Apenas o Mega Admin do sistema pode acessar.</p>
         <button
-          onClick={() => navigate('/admin')}
+          onClick={() => navigate('/login')}
           className="px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900"
         >
-          Voltar para Painel
+          Voltar
         </button>
       </div>
     );
@@ -64,7 +59,6 @@ const SuperAdminLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
       <aside
         className={`
         fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-200 ease-in-out
@@ -72,11 +66,10 @@ const SuperAdminLayout: React.FC = () => {
       `}
       >
         <div className="h-full flex flex-col">
-          {/* Header */}
           <div className="p-6 border-b border-slate-700 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-red-500 font-bold text-xl">
+            <div className="flex items-center gap-2 text-purple-500 font-bold text-xl">
               <ShieldAlert />
-              <span>Super Admin</span>
+              <span>Mega Admin</span>
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
@@ -86,7 +79,6 @@ const SuperAdminLayout: React.FC = () => {
             </button>
           </div>
 
-          {/* Nav */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -94,13 +86,13 @@ const SuperAdminLayout: React.FC = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  end={item.path === '/superadmin'}
+                  end={item.path === '/megaadmin'}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={({ isActive }) => `
                     w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                     ${
                       isActive
-                        ? 'bg-red-600 text-white shadow-lg shadow-red-900/20'
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     }
                   `}
@@ -112,11 +104,10 @@ const SuperAdminLayout: React.FC = () => {
             })}
           </nav>
 
-          {/* User Info & Logout */}
           <div className="p-4 border-t border-slate-800 bg-slate-900">
             <div className="flex items-center gap-3 mb-4 px-2">
-              <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-sm font-bold">
-                {profile?.full_name?.charAt(0) || 'A'}
+              <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm font-bold">
+                {profile?.full_name?.charAt(0) || 'M'}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
@@ -139,11 +130,9 @@ const SuperAdminLayout: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
         <header className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <div className="font-bold text-slate-800">Super Admin</div>
+          <div className="font-bold text-slate-800">Mega Admin</div>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -152,7 +141,6 @@ const SuperAdminLayout: React.FC = () => {
           </button>
         </header>
 
-        {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
@@ -161,4 +149,4 @@ const SuperAdminLayout: React.FC = () => {
   );
 };
 
-export default SuperAdminLayout;
+export default MegaAdminLayout;

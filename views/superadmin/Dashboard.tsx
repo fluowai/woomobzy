@@ -1,10 +1,12 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { Users, Building2, Activity, TreePine, Building, DollarSign } from 'lucide-react';
 
 const SuperAdminDashboard: React.FC = () => {
   logger.info('📊 [SuperAdminDashboard] Rendering...');
+  const { profile } = useAuth();
   const [stats, setStats] = useState({
     totalTenants: 0,
     activeTenants: 0,
@@ -21,35 +23,46 @@ const SuperAdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      // 1. Count Tenants
-      const { count: total, error: err1 } = await supabase
-        .from('organizations')
-        .select('*', { count: 'exact', head: true });
+      const isReseller = profile?.organization?.is_reseller;
+      const orgId = profile?.organization_id;
 
-      // 2. Count Active
-      const { count: active, error: err2 } = await supabase
-        .from('organizations')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
+      const baseFilter = (query: any) => {
+        if (isReseller && orgId) {
+          return query.eq('parent_id', orgId);
+        }
+        return query;
+      };
 
-      // 3. Count Urban
-      const { count: urban, error: err3 } = await supabase
-        .from('organizations')
-        .select('*', { count: 'exact', head: true })
-        .eq('niche', 'traditional');
+      const [
+        { count: total },
+        { count: active },
+        { count: urban },
+        { count: rural },
+      ] = await Promise.all([
+        baseFilter(
+          supabase.from('organizations').select('*', { count: 'exact', head: true })
+        ),
+        baseFilter(
+          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('status', 'active')
+        ),
+        baseFilter(
+          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('niche', 'traditional')
+        ),
+        baseFilter(
+          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('niche', 'rural')
+        ),
+      ]);
 
-      // 4. Count Rural
-      const { count: rural, error: err4 } = await supabase
-        .from('organizations')
-        .select('*', { count: 'exact', head: true })
-        .eq('niche', 'rural');
-
-      // 5. Calculate MRR
-      const { data: orgsData } = await supabase
+      let orgsQuery = supabase
         .from('organizations')
         .select('plan_id')
-        .eq('status', 'active');
-        
+        .eq('status', 'active')
+        .eq('is_reseller', false);
+      if (isReseller && orgId) {
+        orgsQuery = orgsQuery.eq('parent_id', orgId);
+      }
+      const { data: orgsData } = await orgsQuery;
+
       const { data: plansData } = await supabase
         .from('plans')
         .select('id, price_monthly');

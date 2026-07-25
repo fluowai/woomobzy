@@ -17,6 +17,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import FullScreenSpinner from './components/FullScreenSpinner';
 import NicheRedirect from './components/NicheRedirect';
 import SuperAdminGuard from './components/SuperAdminGuard';
+import MegaAdminGuard from './components/MegaAdminGuard';
 import SubscriptionGuard from './components/SubscriptionGuard';
 import PanelGuard from './components/PanelGuard';
 import { Toaster } from 'sonner';
@@ -140,6 +141,17 @@ const StorageIntelligence = lazy(
 );
 const MarketingManager = lazy(
   () => import('./views/superadmin/MarketingManager')
+);
+
+// Mega Admin
+const MegaAdminLayout = lazy(
+  () => import('./views/megaadmin/MegaAdminLayout')
+);
+const MegaAdminDashboard = lazy(
+  () => import('./views/megaadmin/Dashboard')
+);
+const ResellerManager = lazy(
+  () => import('./views/megaadmin/ResellerManager')
 );
 
 // Site Builder
@@ -277,8 +289,8 @@ const AppContent: React.FC = () => {
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
-            <Route path="site-setup" element={<SiteSetupWizard />} />
-            <Route path="visual-editor" element={<VisualSiteEditor />} />
+            <Route path="site-setup" element={<Navigate to="/rural/site" replace />} />
+            <Route path="visual-editor" element={<Navigate to="/rural/site" replace />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai-agents" element={<AIAgents />} />
             <Route path="wootech-ai" element={<WooTechAI />} />
@@ -341,8 +353,8 @@ const AppContent: React.FC = () => {
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
-            <Route path="site-setup" element={<SiteSetupWizard />} />
-            <Route path="visual-editor" element={<VisualSiteEditor />} />
+            <Route path="site-setup" element={<Navigate to="/urban/site" replace />} />
+            <Route path="visual-editor" element={<Navigate to="/urban/site" replace />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai-agents" element={<AIAgents />} />
             <Route path="wootech-ai" element={<WooTechAI />} />
@@ -352,6 +364,21 @@ const AppContent: React.FC = () => {
             <Route path="connections" element={<ConexoesUrbano />} />
             <Route path="integrations" element={<SystemSettings />} />
             <Route path="settings" element={<SystemSettings />} />
+          </Route>
+
+          {/* ====== MEGA ADMIN ====== */}
+          <Route
+            path="/megaadmin"
+            element={
+              <ProtectedRoute>
+                <MegaAdminGuard>
+                  <MegaAdminLayout />
+                </MegaAdminGuard>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<MegaAdminDashboard />} />
+            <Route path="resellers" element={<ResellerManager />} />
           </Route>
 
           {/* ====== SUPER ADMIN ====== */}

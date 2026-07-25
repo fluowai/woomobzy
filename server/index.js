@@ -54,6 +54,7 @@ import accountRoutes from './routes/account.js';
 import whatsappProxyRoutes from './routes/whatsapp-proxy.js';
 import wootechAiRoutes from './routes/wootechAi.js';
 import cvcrmBiaRoutes from './routes/cvcrmBia.js';
+import megaAdminRoutes from './routes/mega-admin.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -262,6 +263,7 @@ app.use('/api/jarvis', jarvisRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
 app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
+app.use('/api/mega', megaAdminRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 

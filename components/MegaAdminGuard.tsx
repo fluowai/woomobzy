@@ -18,7 +18,10 @@ const PUBLIC_PATHS = [
   '/impersonate',
 ];
 
-const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
+const isMegaAdmin = (profile: any) =>
+  profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
+
+const MegaAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { profile, isImpersonating, loading } = useAuth();
@@ -26,36 +29,23 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
 
   if (loading) return <FullScreenSpinner />;
 
-  if (profile?.role === 'superadmin' && !isImpersonating) {
+  if (isMegaAdmin(profile) && !isImpersonating) {
     const path = location.pathname;
     const isPublicPath = PUBLIC_PATHS.some((publicPath) =>
       publicPath === '/' ? path === '/' : path.startsWith(publicPath)
     );
 
-    const isMegaAdmin = !profile?.organization?.is_reseller;
-
-    if (isMegaAdmin) {
-      if (
-        !isPublicPath &&
-        !path.startsWith('/megaadmin') &&
-        path !== '/login' &&
-        path !== '/impersonate'
-      ) {
-        return <Navigate to="/megaadmin" replace />;
-      }
-    } else {
-      if (
-        !isPublicPath &&
-        !path.startsWith('/superadmin') &&
-        path !== '/login' &&
-        path !== '/impersonate'
-      ) {
-        return <Navigate to="/superadmin" replace />;
-      }
+    if (
+      !isPublicPath &&
+      !path.startsWith('/megaadmin') &&
+      path !== '/login' &&
+      path !== '/impersonate'
+    ) {
+      return <Navigate to="/megaadmin" replace />;
     }
   }
 
   return <>{children}</>;
 };
 
-export default SuperAdminGuard;
+export default MegaAdminGuard;

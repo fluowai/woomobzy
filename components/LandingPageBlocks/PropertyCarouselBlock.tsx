@@ -15,8 +15,6 @@ const PropertyCarouselBlock: React.FC<PropertyCarouselBlockProps> = ({
 }) => {
   const {
     images = [],
-    autoplay = false,
-    autoplayDelay = 4000,
     showThumbnails = true,
     showDots = true,
   } = config;

@@ -20,7 +20,6 @@ const MapBlock: React.FC<MapBlockProps> = ({ config, theme }) => {
   const encodedAddress = encodeURIComponent(config.address);
   // Using OpenStreetMap embed for public usage without API key for simplicity
   // In production, Google Maps Embed API or similar would be better
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=-48.0,-26.0,-47.0,-25.0&layer=mapnik&marker=${encodedAddress}`;
   // Note: The bounding box above is random. For a real address search without API key, we might just link to Google Maps or use a static image.
   // A robust "no-key" solution is simply an iframe to Google Maps searching for the address.
   const googleMapsEmbedUrl = `https://maps.google.com/maps?q=${encodedAddress}&t=&z=${config.zoom || 15}&ie=UTF8&iwloc=&output=embed`;

@@ -53,6 +53,11 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
         return <Navigate to="/superadmin" replace />;
       }
     }
+  } else if (profile && profile.role !== 'superadmin' && !isImpersonating) {
+    const path = location.pathname;
+    if (path.startsWith('/megaadmin') || path.startsWith('/superadmin')) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <>{children}</>;

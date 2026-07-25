@@ -58,9 +58,10 @@ const UrbanLayout: React.FC = () => {
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
     logger.info(
-      '[UrbanLayout] Guard triggered. Redirecting Super Admin to /superadmin'
+      '[UrbanLayout] Guard triggered. Redirecting Super Admin to their panel'
     );
-    return <Navigate to="/superadmin" replace />;
+    const isMegaAdmin = !profile?.organization?.is_reseller;
+    return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
   }
 
   const handleLogout = async () => {
@@ -138,7 +139,7 @@ const UrbanLayout: React.FC = () => {
     systemItems.push({
       icon: ShieldAlert,
       label: isMegaAdmin ? 'Mega Admin' : 'Super Admin',
-      path: '/superadmin',
+      path: isMegaAdmin ? '/megaadmin' : '/superadmin',
     });
   }
 

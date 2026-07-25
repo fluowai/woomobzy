@@ -12,6 +12,9 @@ import {
   LogOut,
   Menu,
   X,
+  Database,
+  UploadCloud,
+  HardDrive,
   ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -38,6 +41,9 @@ const MegaAdminLayout: React.FC = () => {
       path: '/megaadmin/feature-flags',
     },
     { icon: ScrollText, label: 'Audit Log', path: '/megaadmin/audit-log' },
+    { icon: UploadCloud, label: 'Importador', path: '/megaadmin/importer' },
+    { icon: Database, label: 'Migração FluowAI', path: '/megaadmin/fluowai-migration' },
+    { icon: HardDrive, label: 'Storage', path: '/megaadmin/storage-intelligence' },
     { icon: Settings, label: 'Configurações', path: '/megaadmin/settings' },
   ];
 

@@ -35,6 +35,7 @@ const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 import SystemSalesPage from './views/SystemSalesPage';
 import Login from './views/Login';
 import Onboarding from './views/Onboarding';
+import SetupWhitelabel from './views/SetupWhitelabel';
 
 // Lazy Loaded Views
 const Register = lazy(() => import('./views/Register'));
@@ -119,29 +120,31 @@ const GlobalSettings = lazy(() => import('./views/superadmin/GlobalSettings'));
 const DomainManager = lazy(() => import('./views/superadmin/DomainManager'));
 const PlanManager = lazy(() => import('./views/superadmin/PlanManager'));
 const BillingManager = lazy(() => import('./views/superadmin/BillingManager'));
-const FeatureFlags = lazy(() => import('./views/superadmin/FeatureFlags'));
+const FeatureFlags = lazy(() => import('./views/megaadmin/FeatureFlags'));
 const AuditLog = lazy(() => import('./views/superadmin/AuditLog'));
 const TemplateManager = lazy(
   () => import('./views/superadmin/TemplateManager')
 );
 const PlatformMonitoring = lazy(
-  () => import('./views/superadmin/PlatformMonitoring')
+  () => import('./views/megaadmin/PlatformMonitoring')
 );
 const AnalyticsDashboard = lazy(
-  () => import('./views/superadmin/AnalyticsDashboard')
+  () => import('./views/megaadmin/AnalyticsDashboard')
 );
 const SupportManager = lazy(() => import('./views/superadmin/SupportManager'));
 const TeamManager = lazy(() => import('./views/superadmin/TeamManager'));
-const SmartImporter = lazy(() => import('./views/superadmin/SmartImporter'));
+const SmartImporter = lazy(() => import('./views/megaadmin/SmartImporter'));
 const FluowaiMigration = lazy(
-  () => import('./views/superadmin/FluowaiMigration')
+  () => import('./views/megaadmin/FluowaiMigration')
 );
 const StorageIntelligence = lazy(
-  () => import('./views/superadmin/StorageIntelligence')
+  () => import('./views/megaadmin/StorageIntelligence')
 );
 const MarketingManager = lazy(
   () => import('./views/superadmin/MarketingManager')
 );
+const GlobalSettings = lazy(() => import('./views/megaadmin/GlobalSettings'));
+const BillingOverview = lazy(() => import('./views/megaadmin/BillingOverview'));
 
 // Mega Admin
 const MegaAdminLayout = lazy(
@@ -200,6 +203,7 @@ const AppContent: React.FC = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/portal-locatario" element={<PortalLocatario />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/setup-whitelabel" element={<SetupWhitelabel />} />
           <Route path="/:slug/site/*" element={<PublicSite />} />
           <Route path="/site/:slug/*" element={<PublicSite />} />
           <Route path="/sites/:slug/*" element={<PublicSite />} />
@@ -379,6 +383,17 @@ const AppContent: React.FC = () => {
           >
             <Route index element={<MegaAdminDashboard />} />
             <Route path="resellers" element={<ResellerManager />} />
+            <Route path="analytics" element={<AnalyticsDashboard />} />
+            <Route path="monitoring" element={<PlatformMonitoring />} />
+            <Route path="billing" element={<BillingOverview />} />
+            <Route path="feature-flags" element={<FeatureFlags />} />
+            <Route path="importer" element={<SmartImporter />} />
+            <Route path="fluowai-migration" element={<FluowaiMigration />} />
+            <Route
+              path="storage-intelligence"
+              element={<StorageIntelligence />}
+            />
+            <Route path="settings" element={<GlobalSettings />} />
           </Route>
 
           {/* ====== SUPER ADMIN ====== */}
@@ -391,8 +406,6 @@ const AppContent: React.FC = () => {
             }
           >
             <Route index element={<SuperAdminDashboard />} />
-            <Route path="analytics" element={<AnalyticsDashboard />} />
-            <Route path="monitoring" element={<PlatformMonitoring />} />
             <Route path="tenants" element={<TenantManager />} />
             <Route path="support" element={<SupportManager />} />
             <Route path="team" element={<TeamManager />} />
@@ -400,16 +413,10 @@ const AppContent: React.FC = () => {
             <Route path="consulting" element={<ConsultingLeads />} />
             <Route path="plans" element={<PlanManager />} />
             <Route path="billing" element={<BillingManager />} />
-            <Route path="feature-flags" element={<FeatureFlags />} />
             <Route path="audit-log" element={<AuditLog />} />
             <Route path="templates" element={<TemplateManager />} />
-            <Route path="importer" element={<SmartImporter />} />
-            <Route path="fluowai-migration" element={<FluowaiMigration />} />
-            <Route
-              path="storage-intelligence"
-              element={<StorageIntelligence />}
-            />
             <Route path="marketing" element={<MarketingManager />} />
+            {/* O reseller também tem settings, vamos manter a rota por enquanto até adaptarmos */}
             <Route path="settings" element={<GlobalSettings />} />
           </Route>
 

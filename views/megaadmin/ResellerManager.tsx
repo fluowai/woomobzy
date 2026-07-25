@@ -35,6 +35,7 @@ const ResellerManager: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [setupInfo, setSetupInfo] = useState<{ email: string; password?: string } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -63,6 +64,7 @@ const ResellerManager: React.FC = () => {
   };
 
   const handleOpenModal = (reseller?: Reseller) => {
+    setSetupInfo(null);
     if (reseller) {
       setEditingId(reseller.id);
       setFormData({
@@ -106,14 +108,18 @@ const ResellerManager: React.FC = () => {
           method: 'PUT',
           body: JSON.stringify(payload),
         });
+        setIsModalOpen(false);
       } else {
-        await callApi('/api/mega/resellers', {
+        const response = await callApi('/api/mega/resellers', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
+        setSetupInfo({
+          email: formData.owner_email || '',
+          password: response.setup_password || formData.password,
+        });
       }
 
-      setIsModalOpen(false);
       await fetchResellers();
     } catch (error: any) {
       logger.error('Error saving reseller:', error);
@@ -364,7 +370,7 @@ const ResellerManager: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-800">
-                {editingId ? 'Editar Reseller' : 'Novo Reseller'}
+                {setupInfo ? 'Whitelabel Criado com Sucesso!' : editingId ? 'Editar Reseller' : 'Novo Whitelabel'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -374,6 +380,49 @@ const ResellerManager: React.FC = () => {
               </button>
             </div>
 
+            {setupInfo ? (
+              <div className="p-8 text-center space-y-6">
+                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle size={32} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Tudo pronto! Plataforma liberada.
+                  </h3>
+                  <p className="text-sm text-slate-500 mt-2">
+                    O Whitelabel foi criado no plano <strong className="text-purple-600">Enterprise</strong> com todas as funções ativas.
+                  </p>
+                </div>
+                
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left space-y-3">
+                  <p className="text-xs font-bold text-slate-500 uppercase">Link de Setup Guiado</p>
+                  <p className="text-sm text-slate-600 mb-2">Envie este link para o dono do Whitelabel. Ele mesmo configurará a senha, logo e cores:</p>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      readOnly 
+                      value={`${window.location.origin}/setup-whitelabel?email=${encodeURIComponent(setupInfo.email)}&t=${setupInfo.password}`}
+                      className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 outline-none"
+                    />
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/setup-whitelabel?email=${encodeURIComponent(setupInfo.email)}&t=${setupInfo.password}`);
+                        alert('Link copiado!');
+                      }}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-bold shrink-0"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-full py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold transition-colors"
+                >
+                  Fechar Janela
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -422,10 +471,11 @@ const ResellerManager: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email do Responsável
+                  Email do Responsável *
                 </label>
                 <input
                   type="email"
+                  required
                   value={formData.owner_email}
                   onChange={(e) =>
                     setFormData({ ...formData, owner_email: e.target.value })
@@ -437,17 +487,18 @@ const ResellerManager: React.FC = () => {
               {!editingId && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Senha (para o usuário superadmin)
+                    Senha Provisória (Opcional)
                   </label>
                   <input
-                    type="password"
+                    type="text"
                     value={formData.password}
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Se vazio, será gerada automaticamente"
                   />
+                  <p className="text-xs text-gray-400 mt-1">Essa senha não precisa ser enviada. Usaremos um Link de Ativação Guiado.</p>
                 </div>
               )}
 
@@ -466,6 +517,16 @@ const ResellerManager: React.FC = () => {
                   <option value="rural">Rural</option>
                 </select>
               </div>
+              
+              {!editingId && (
+                <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 flex gap-3 items-start">
+                  <CheckCircle size={20} className="text-purple-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-purple-900">Plano Enterprise Ativo</h4>
+                    <p className="text-xs text-purple-700 mt-1">Ao criar, esta plataforma já nascerá com todas as funcionalidades liberadas e sem restrições.</p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                 <button
@@ -481,10 +542,11 @@ const ResellerManager: React.FC = () => {
                   className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-60"
                 >
                   <Save size={18} />
-                  {formLoading ? 'Salvando...' : 'Salvar'}
+                  {formLoading ? 'Processando...' : editingId ? 'Salvar' : 'Criar & Gerar Link'}
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

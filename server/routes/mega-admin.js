@@ -94,10 +94,10 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
         .status(400)
         .json({ error: 'Email do responsável é obrigatório' });
     }
-    if (!password || password.length < 6) {
-      return res
-        .status(400)
-        .json({ error: 'Senha deve ter no mínimo 6 caracteres' });
+    let finalPassword = password;
+    if (!finalPassword || finalPassword.length < 6) {
+      // Se não enviou senha, geramos uma senha provisória forte para o Setup Guiado
+      finalPassword = Math.random().toString(36).slice(-10) + 'A1!';
     }
 
     const { data: existingSlug } = await supabase
@@ -117,6 +117,7 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
           name,
           slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
           status: 'active',
+          plan: 'enterprise', // Liberar todas as funções
           is_reseller: true,
           niche: normalizeNiche(niche, name, slug),
           owner_name: owner_name || null,
@@ -136,7 +137,7 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
       const { data, error: createError } =
         await supabase.auth.admin.createUser({
           email: String(owner_email).toLowerCase().trim(),
-          password,
+          password: finalPassword,
           email_confirm: true,
           user_metadata: {
             name: owner_name || name,
@@ -152,7 +153,7 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
       const { error: updateError } = await supabase.auth.admin.updateUserById(
         authUser.id,
         {
-          password,
+          password: finalPassword,
           email_confirm: true,
           app_metadata: {
             ...(authUser.app_metadata || {}),
@@ -186,6 +187,7 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
       success: true,
       reseller: org,
       owner_user_id: authUser.id,
+      setup_password: finalPassword, // Usado para o Link de Setup Guiado
     });
   } catch (error) {
     console.error('[MegaAdmin] Error creating reseller:', error);

@@ -109,7 +109,7 @@ const RuralLayout: React.FC = () => {
     systemItems.push({
       icon: ShieldAlert,
       label: isMegaAdmin ? 'Mega Admin' : 'Super Admin',
-      path: '/superadmin',
+      path: isMegaAdmin ? '/megaadmin' : '/superadmin',
     });
   }
 
@@ -126,7 +126,8 @@ const RuralLayout: React.FC = () => {
   }, [pathname]);
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
-    return <Navigate to="/superadmin" replace />;
+    const isMegaAdmin = !profile?.organization?.is_reseller;
+    return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
   }
 
   const isMenuItemActive = (path: string, isActive: boolean) => {

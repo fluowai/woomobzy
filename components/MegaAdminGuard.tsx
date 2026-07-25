@@ -29,20 +29,8 @@ const MegaAdminGuard: React.FC<{ children: React.ReactNode }> = ({
 
   if (loading) return <FullScreenSpinner />;
 
-  if (isMegaAdmin(profile) && !isImpersonating) {
-    const path = location.pathname;
-    const isPublicPath = PUBLIC_PATHS.some((publicPath) =>
-      publicPath === '/' ? path === '/' : path.startsWith(publicPath)
-    );
-
-    if (
-      !isPublicPath &&
-      !path.startsWith('/megaadmin') &&
-      path !== '/login' &&
-      path !== '/impersonate'
-    ) {
-      return <Navigate to="/megaadmin" replace />;
-    }
+  if (!isMegaAdmin(profile) || isImpersonating) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

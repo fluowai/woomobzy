@@ -143,7 +143,7 @@ const StorageIntelligence = lazy(
 const MarketingManager = lazy(
   () => import('./views/superadmin/MarketingManager')
 );
-const GlobalSettings = lazy(() => import('./views/megaadmin/GlobalSettings'));
+const MegaGlobalSettings = lazy(() => import('./views/megaadmin/GlobalSettings'));
 const BillingOverview = lazy(() => import('./views/megaadmin/BillingOverview'));
 const MegaAuditLog = lazy(() => import('./views/megaadmin/AuditLog'));
 
@@ -395,7 +395,7 @@ const AppContent: React.FC = () => {
               path="storage-intelligence"
               element={<StorageIntelligence />}
             />
-            <Route path="settings" element={<GlobalSettings />} />
+            <Route path="settings" element={<MegaGlobalSettings />} />
           </Route>
 
           {/* ====== SUPER ADMIN ====== */}

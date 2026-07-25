@@ -77,17 +77,17 @@ export const BillingManager = lazy(
   () => import('../../views/superadmin/BillingManager')
 );
 export const FeatureFlags = lazy(
-  () => import('../../views/superadmin/FeatureFlags')
+  () => import('../../views/megaadmin/FeatureFlags')
 );
 export const AuditLog = lazy(() => import('../../views/superadmin/AuditLog'));
 export const TemplateManager = lazy(
   () => import('../../views/superadmin/TemplateManager')
 );
 export const PlatformMonitoring = lazy(
-  () => import('../../views/superadmin/PlatformMonitoring')
+  () => import('../../views/megaadmin/PlatformMonitoring')
 );
 export const AnalyticsDashboard = lazy(
-  () => import('../../views/superadmin/AnalyticsDashboard')
+  () => import('../../views/megaadmin/AnalyticsDashboard')
 );
 export const SupportManager = lazy(
   () => import('../../views/superadmin/SupportManager')
@@ -96,7 +96,7 @@ export const TeamManager = lazy(
   () => import('../../views/superadmin/TeamManager')
 );
 export const SmartImporter = lazy(
-  () => import('../../views/superadmin/SmartImporter')
+  () => import('../../views/megaadmin/SmartImporter')
 );
 
 export const LoadingFallback = () => (

@@ -157,6 +157,9 @@ const MegaAdminDashboard = lazy(
 const ResellerManager = lazy(
   () => import('./views/megaadmin/ResellerManager')
 );
+const DirectClientsManager = lazy(
+  () => import('./views/megaadmin/DirectClientsManager')
+);
 
 // Site Builder
 const SiteManager = lazy(() => import('./views/SiteManager'));
@@ -384,6 +387,7 @@ const AppContent: React.FC = () => {
           >
             <Route index element={<MegaAdminDashboard />} />
             <Route path="resellers" element={<ResellerManager />} />
+            <Route path="direct-clients" element={<DirectClientsManager />} />
             <Route path="analytics" element={<AnalyticsDashboard />} />
             <Route path="monitoring" element={<PlatformMonitoring />} />
             <Route path="billing" element={<BillingOverview />} />

@@ -32,6 +32,7 @@ const MegaAdminLayout: React.FC = () => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/megaadmin' },
     { icon: Building2, label: 'Resellers', path: '/megaadmin/resellers' },
+    { icon: Building2, label: 'Clientes Diretos', path: '/megaadmin/direct-clients' },
     { icon: BarChart3, label: 'Analytics', path: '/megaadmin/analytics' },
     { icon: Activity, label: 'Monitoring', path: '/megaadmin/monitoring' },
     { icon: DollarSign, label: 'Billing', path: '/megaadmin/billing' },

@@ -180,9 +180,20 @@ router.post('/leads', async (req, res) => {
     }
 
     // Formata telefone
-    const fullPhone = ddd && phone ? \`\${ddd}\${phone}\` : (phone || '');
+    const fullPhone = ddd && phone ? `${ddd}${phone}` : (phone || '');
 
     const supabase = getSupabaseServer();
+
+    // Busca um SDR (Admin) disponível na organização para pré-qualificar o lead.
+    // NÃO atribuímos ao corretor (broker) nesta etapa para não inflar o Kanban de vendas.
+    const { data: sdrs } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('organization_id', orgId)
+      .in('role', ['admin', 'superadmin']) // Apenas perfis administrativos/SDR
+      .limit(1);
+
+    const assignedAgentId = sdrs && sdrs.length > 0 ? sdrs[0].id : null;
 
     // Insere o Lead na tabela
     // O usuário requisitou que o status seja para qualificação do SDR, 
@@ -193,9 +204,10 @@ router.post('/leads', async (req, res) => {
       email: email || null,
       phone: fullPhone,
       source: 'PORTAL',
-      notes: message ? \`Mensagem do Portal: \${message}\\nOrigem: \${leadOrigin || 'ZAP'}\` : \`Origem: \${leadOrigin || 'ZAP'}\`,
+      notes: message ? `Mensagem do Portal: ${message}\nOrigem: ${leadOrigin || 'ZAP'}` : `Origem: ${leadOrigin || 'ZAP'}`,
       property_id: clientListingId || null,
       status: 'NEW', // Para que o SDR qualifique manualmente
+      assigned_to: assignedAgentId, // Vincula ao agente encontrado
     };
 
     const { error } = await supabase

@@ -42,7 +42,7 @@ const ResellerManager: React.FC = () => {
     owner_name: '',
     owner_email: '',
     password: '',
-    niche: 'traditional',
+    niche: 'both',
   });
 
   useEffect(() => {
@@ -73,7 +73,7 @@ const ResellerManager: React.FC = () => {
         owner_name: reseller.owner_name || '',
         owner_email: reseller.owner_email || '',
         password: '',
-        niche: reseller.niche === 'rural' ? 'rural' : 'traditional',
+        niche: reseller.niche === 'rural' ? 'rural' : reseller.niche === 'both' ? 'both' : 'traditional',
       });
     } else {
       setEditingId(null);
@@ -83,7 +83,7 @@ const ResellerManager: React.FC = () => {
         owner_name: '',
         owner_email: '',
         password: '',
-        niche: 'traditional',
+        niche: 'both',
       });
     }
     setIsModalOpen(true);
@@ -300,10 +300,12 @@ const ResellerManager: React.FC = () => {
                       className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
                         reseller.niche === 'rural'
                           ? 'bg-green-100 text-green-700'
+                          : reseller.niche === 'both'
+                          ? 'bg-purple-100 text-purple-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}
                     >
-                      {reseller.niche || 'traditional'}
+                      {reseller.niche === 'both' ? 'Ambos (Híbrido)' : reseller.niche || 'traditional'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -513,8 +515,9 @@ const ResellerManager: React.FC = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                 >
-                  <option value="traditional">Urbano / Traditional</option>
-                  <option value="rural">Rural</option>
+                  <option value="both">Ambos (Urbano e Rural) - Completo</option>
+                  <option value="traditional">Apenas Urbano / Tradicional</option>
+                  <option value="rural">Apenas Rural</option>
                 </select>
               </div>
               

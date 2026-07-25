@@ -20,11 +20,14 @@ function normalizeNiche(niche, ...signals) {
   const normalized = String(niche || '')
     .toLowerCase()
     .trim();
+  if (normalized === 'both' || normalized === 'ambos' || normalized === 'hibrido' || normalized === 'hybrid') return 'both';
   if (normalized === 'rural') return 'rural';
   if (['traditional', 'urban', 'urbano'].includes(normalized))
     return 'traditional';
 
   const text = signals.filter(Boolean).join(' ').toLowerCase();
+  if (/\b(ambos|híbrido|hibrido)\b/.test(text)) return 'both';
+  
   return /\b(rural|fazenda|fazendas|sitio|sítio|chacara|chácara|agro|haras)\b/.test(
     text
   )

@@ -10,8 +10,8 @@ interface PropertyCarouselBlockProps {
 
 const PropertyCarouselBlock: React.FC<PropertyCarouselBlockProps> = ({
   config,
-  theme,
-  properties = [],
+  theme: _theme,
+  properties: _properties = [],
 }) => {
   const {
     images = [],

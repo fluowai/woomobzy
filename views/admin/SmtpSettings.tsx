@@ -47,7 +47,7 @@ const SmtpSettings: React.FC = () => {
         body: JSON.stringify(payload)
       });
       
-      await loadSettings();
+      await refreshSettings();
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);

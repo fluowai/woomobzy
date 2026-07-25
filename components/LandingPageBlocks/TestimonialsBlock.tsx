@@ -51,7 +51,7 @@ const TestimonialsBlock: React.FC<TestimonialsBlockProps> = ({
             {config.showRating && renderStars(item.rating)}
 
             <p className="text-gray-600 mb-6 flex-grow italic leading-relaxed">
-              "{item.text}"
+              &quot;{item.text}&quot;
             </p>
 
             <div className="flex items-center gap-4 mt-auto">

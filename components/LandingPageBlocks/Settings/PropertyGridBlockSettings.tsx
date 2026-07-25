@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   PropertyGridBlockConfig,
   LandingPage,
@@ -16,6 +16,8 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
   onUpdate,
   page,
 }) => {
+  const [_showPropertySelector, _setShowPropertySelector] = useState(false);
+
   const updateField = (field: keyof PropertyGridBlockConfig, value: any) => {
     onUpdate({ ...config, [field]: value });
   };
@@ -115,7 +117,7 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
 
       <div className="border-t border-gray-200 pt-4">
         <button
-          onClick={() => setShowPropertySelector(true)}
+          onClick={() => _setShowPropertySelector(true)}
           className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Selecionar Imóveis

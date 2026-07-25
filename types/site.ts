@@ -83,6 +83,8 @@ export interface SiteSettings {
     zap?: { enabled?: boolean; apiKey?: string; partnerId?: string };
     quintoandar?: { enabled?: boolean; apiKey?: string; secret?: string };
     imovelweb?: { enabled?: boolean; apiKey?: string };
+    cvcrm?: { apiKey?: string };
+    bia?: { apiKey?: string; baseUrl?: string };
   };
   urbanSubtype?: 'imobiliaria' | 'loteadora' | 'incorporadora';
   layout_config?: LayoutConfig;

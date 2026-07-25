@@ -40,6 +40,8 @@ const SystemSettings: React.FC = () => {
   const [namoBanaKey, setNamoBanaKey] = useState('');
   const [asaasKey, setAsaasKey] = useState('');
   const [zapsignKey, setZapsignKey] = useState('');
+  const [cvcrmKey, setCvcrmKey] = useState('');
+  const [biaKey, setBiaKey] = useState('');
   const [oruloBrokerConnected, setOruloBrokerConnected] = useState(false);
   const [oruloBrokerConnecting, setOruloBrokerConnecting] = useState(false);
   const [oruloBrokerExpiresAt, setOruloBrokerExpiresAt] = useState<
@@ -84,6 +86,10 @@ const SystemSettings: React.FC = () => {
       setAsaasKey(settings.integrations.asaas.apiKey);
     if (settings?.integrations?.zapsign?.apiKey)
       setZapsignKey(settings.integrations.zapsign.apiKey);
+    if (settings?.integrations?.cvcrm?.apiKey)
+      setCvcrmKey(settings.integrations.cvcrm.apiKey);
+    if (settings?.integrations?.bia?.apiKey)
+      setBiaKey(settings.integrations.bia.apiKey);
     loadPortalConfigs();
   }, [settings]);
 
@@ -160,6 +166,8 @@ const SystemSettings: React.FC = () => {
           namoBana: { apiKey: namoBanaKey },
           asaas: { apiKey: asaasKey, environment: 'production' },
           zapsign: { apiKey: zapsignKey },
+          cvcrm: { apiKey: cvcrmKey },
+          bia: { apiKey: biaKey },
         },
       });
 
@@ -603,6 +611,20 @@ const SystemSettings: React.FC = () => {
                       setter: setZapsignKey,
                       placeholder: 'Token de acesso ZapSign',
                       desc: 'Para envio de contratos e assinaturas digitais via WhatsApp.',
+                    },
+                    {
+                      label: 'CVcrm API Token (CRM)',
+                      value: cvcrmKey,
+                      setter: setCvcrmKey,
+                      placeholder: 'Token do CVcrm',
+                      desc: 'Para registrar histórico de atendimentos.',
+                    },
+                    {
+                      label: 'BIA API Key (Xano)',
+                      value: biaKey,
+                      setter: setBiaKey,
+                      placeholder: 'Chave da API BIA',
+                      desc: 'Para disparo de atendimento com IA.',
                     },
                   ].map((field) => (
                     <div key={field.label} className="space-y-2">

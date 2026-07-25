@@ -402,16 +402,16 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
-          <SettingsProvider>
-            <TextsProvider>
-              <PlansProvider>
-                <DomainRouter>
+          <DomainRouter>
+            <SettingsProvider>
+              <TextsProvider>
+                <PlansProvider>
                   <TrackingPixels />
                   <AppContent />
-                </DomainRouter>
-              </PlansProvider>
-            </TextsProvider>
-          </SettingsProvider>
+                </PlansProvider>
+              </TextsProvider>
+            </SettingsProvider>
+          </DomainRouter>
         </AuthProvider>
       </Router>
     </ErrorBoundary>

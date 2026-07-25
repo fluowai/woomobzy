@@ -39,6 +39,13 @@ export interface SiteSettings {
       testMode?: boolean;
     };
   };
+  smtp_config?: {
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    email?: string;
+  };
+  onboarding_config?: any;
   homeContent?: {
     heroTitle?: string;
     heroSubtitle?: string;

@@ -49,6 +49,8 @@ import {
   WandSparkles,
   Workflow,
   Zap,
+  Calculator,
+  Brain,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -63,6 +65,7 @@ import {
   type Instance as WhatsAppInstance,
 } from './WhatsApp/hooks/api';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
+import { AgentPremiumDashboard } from '../components/AgentPremiumDashboard';
 
 type BuilderDraft = AIAgentPayload & {
   status?: string;
@@ -192,6 +195,9 @@ const toolOptions = [
   },
   { id: 'criar-tarefa', label: 'Criar tarefa', icon: ClipboardCheck },
   { id: 'mover-etapa-funil', label: 'Mover etapa do funil', icon: MoveRight },
+  { id: 'simulador-financiamento', label: 'Simulador Financeiro', icon: Calculator },
+  { id: 'neural-sales', label: 'Neural Sales (Scoring)', icon: Brain },
+  { id: 'voice-ai', label: 'Voice AI (Áudios)', icon: Mic },
 ];
 
 const handoffRules = [
@@ -691,6 +697,7 @@ const AIAgents: React.FC = () => {
   const [feedbackInput, setFeedbackInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const { pathname } = useLocation();
+  const [dashboardMode, setDashboardMode] = useState(true);
 
   const selectedAgent = useMemo(
     () => agents.find((agent) => agent.id === selectedId),
@@ -868,6 +875,7 @@ const AIAgents: React.FC = () => {
 
   const startBlankAgent = () => {
     setSelectedId('new');
+    setDashboardMode(false);
     setDraft({
       ...emptyAgent,
       name: '',
@@ -879,6 +887,7 @@ const AIAgents: React.FC = () => {
 
   const applyPreset = (preset: TemplatePreset) => {
     setSelectedId('new');
+    setDashboardMode(false);
     setDraft({
       ...emptyAgent,
       ...preset.payload,
@@ -1227,7 +1236,10 @@ const AIAgents: React.FC = () => {
                     {agents.slice(0, 5).map((agent) => (
                       <button
                         key={agent.id}
-                        onClick={() => setSelectedId(agent.id)}
+                        onClick={() => {
+                          setSelectedId(agent.id);
+                          setDashboardMode(true);
+                        }}
                         className={`min-w-52 rounded-lg border px-3 py-2 text-left transition ${
                           selectedId === agent.id
                             ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
@@ -1254,6 +1266,34 @@ const AIAgents: React.FC = () => {
           </aside>
 
           <div className="grid grid-cols-1 gap-5 items-start">
+            {dashboardMode && selectedAgent ? (
+              <main className="min-w-0 space-y-5">
+                <AgentPremiumDashboard
+                  agent={selectedAgent}
+                  onEditKnowledge={() => {
+                    setDashboardMode(false);
+                    setActiveTab('knowledge');
+                  }}
+                  onEditSettings={() => {
+                    setDashboardMode(false);
+                    setActiveTab('identity');
+                  }}
+                  onToggleStatus={async () => {
+                    const nextStatus = !selectedAgent.is_active;
+                    try {
+                      await aiAgentService.update(selectedAgent.id, { is_active: nextStatus });
+                      await loadAgents();
+                      toast.success(nextStatus ? 'Assistente ativado!' : 'Assistente pausado.');
+                    } catch (e: any) {
+                      toast.error('Erro ao atualizar status: ' + e.message);
+                    }
+                  }}
+                  onOpenWebChat={() => {
+                    toast.info('Widget de Web Chat será liberado em breve!');
+                  }}
+                />
+              </main>
+            ) : (
             <main className="min-w-0 space-y-5">
               <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -2144,6 +2184,7 @@ const AIAgents: React.FC = () => {
                 </div>
               </footer>
             </main>
+            )}
           </div>
         </div>
       </div>

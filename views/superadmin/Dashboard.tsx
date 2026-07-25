@@ -1,13 +1,16 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { Users, Building2, Activity } from 'lucide-react';
+import { Users, Building2, Activity, TreePine, Building, DollarSign } from 'lucide-react';
 
 const SuperAdminDashboard: React.FC = () => {
   logger.info('📊 [SuperAdminDashboard] Rendering...');
   const [stats, setStats] = useState({
     totalTenants: 0,
     activeTenants: 0,
+    urbanTenants: 0,
+    ruralTenants: 0,
+    mrr: 0,
   });
   const [loading, setLoading] = useState(true);
   const [isFresh, setIsFresh] = useState(false);
@@ -29,9 +32,45 @@ const SuperAdminDashboard: React.FC = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
+      // 3. Count Urban
+      const { count: urban, error: err3 } = await supabase
+        .from('organizations')
+        .select('*', { count: 'exact', head: true })
+        .eq('niche', 'traditional');
+
+      // 4. Count Rural
+      const { count: rural, error: err4 } = await supabase
+        .from('organizations')
+        .select('*', { count: 'exact', head: true })
+        .eq('niche', 'rural');
+
+      // 5. Calculate MRR
+      const { data: orgsData } = await supabase
+        .from('organizations')
+        .select('plan_id')
+        .eq('status', 'active');
+        
+      const { data: plansData } = await supabase
+        .from('plans')
+        .select('id, price_monthly');
+
+      let mrr = 0;
+      if (orgsData && plansData) {
+        const prices: Record<string, number> = {};
+        plansData.forEach(p => { prices[p.id] = p.price_monthly || 0; });
+        orgsData.forEach(org => {
+          if (org.plan_id && prices[org.plan_id]) {
+            mrr += prices[org.plan_id];
+          }
+        });
+      }
+
       setStats({
         totalTenants: total || 0,
         activeTenants: active || 0,
+        urbanTenants: urban || 0,
+        ruralTenants: rural || 0,
+        mrr,
       });
       setIsFresh((total || 0) === 0);
     } catch (error) {
@@ -54,6 +93,24 @@ const SuperAdminDashboard: React.FC = () => {
       icon: Users,
       color: 'bg-green-500',
     },
+    {
+      title: 'Imobiliárias Urbanas',
+      value: stats.urbanTenants,
+      icon: Building,
+      color: 'bg-indigo-500',
+    },
+    {
+      title: 'Imobiliárias Rurais',
+      value: stats.ruralTenants,
+      icon: TreePine,
+      color: 'bg-emerald-500',
+    },
+    {
+      title: 'MRR Total',
+      value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.mrr),
+      icon: DollarSign,
+      color: 'bg-amber-500',
+    }
   ];
 
   if (loading) return <div>Carregando dashboard...</div>;
@@ -98,7 +155,7 @@ const SuperAdminDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {modules.map((mod, index) => {
           const Icon = mod.icon;
           return (

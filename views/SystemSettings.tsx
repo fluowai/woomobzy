@@ -20,6 +20,7 @@ import {
   Shield,
   Link,
   Building2,
+  Mail,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
@@ -27,6 +28,7 @@ import AppearanceSettings from './admin/AppearanceSettings';
 import UserManagement from './admin/UserManagement';
 import SupportPortal from './admin/SupportPortal';
 import ChannelsSettings from './admin/ChannelsSettings';
+import SmtpSettings from './admin/SmtpSettings';
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -60,6 +62,7 @@ const SystemSettings: React.FC = () => {
     | 'support'
     | 'canais'
     | 'portals'
+    | 'smtp'
   >(location.pathname.endsWith('/integrations') ? 'ai' : 'appearance');
 
   useEffect(() => {
@@ -293,6 +296,7 @@ const SystemSettings: React.FC = () => {
     { id: 'tracking', label: 'Tracking', icon: Activity },
     { id: 'canais', label: 'Canais', icon: Link },
     { id: 'portals', label: 'Portais', icon: Globe },
+    { id: 'smtp', label: 'Servidor de E-mail', icon: Mail },
     { id: 'support', label: 'Ajuda & Suporte', icon: HelpCircle },
   ];
 
@@ -361,6 +365,7 @@ const SystemSettings: React.FC = () => {
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
         {activeTab === 'canais' && <ChannelsSettings />}
+        {activeTab === 'smtp' && <SmtpSettings />}
         {activeTab === 'portals' && (
           <div className="space-y-6">
             <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">

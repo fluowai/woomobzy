@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '../context/SettingsContext';
 import { AnimatePresence } from 'framer-motion';
 import { callApi } from '../src/lib/api';
 import {
@@ -65,6 +66,7 @@ const SITE_TEMPLATES = {
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -135,7 +137,8 @@ const Onboarding: React.FC = () => {
             password: formData.password,
             agencyName: formData.agencyName,
             profileType: formData.niche === 'rural' ? 'rural' : 'traditional',
-            plan: 'pro', // Defaulting to pro as requested in previous flow to avoid free plan limitations
+            plan: 'pro',
+            parent_id: settings.id, // Reseller ID
           }),
         });
         setSuccess(data);
@@ -251,16 +254,16 @@ const Onboarding: React.FC = () => {
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => update('niche', 'urban')}
-            className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${formData.niche === 'urban' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+            className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${formData.niche === 'urban' ? 'border-[var(--color-primary)] bg-[var(--color-primary-alpha-10)]' : 'border-slate-100 bg-white hover:border-slate-200'}`}
           >
             <Home
               size={24}
               className={
-                formData.niche === 'urban' ? 'text-blue-600' : 'text-slate-400'
+                formData.niche === 'urban' ? 'text-[var(--color-primary)]' : 'text-slate-400'
               }
             />
             <span
-              className={`font-bold ${formData.niche === 'urban' ? 'text-blue-900' : 'text-slate-600'}`}
+              className={`font-bold ${formData.niche === 'urban' ? 'text-[var(--color-primary)]' : 'text-slate-600'}`}
             >
               Urbano
             </span>
@@ -295,7 +298,7 @@ const Onboarding: React.FC = () => {
             <button
               key={t.id}
               onClick={() => update('template', t.id)}
-              className={`p-3 rounded-xl border-2 text-left transition-all ${formData.template === t.id ? (formData.niche === 'urban' ? 'border-blue-500 bg-blue-50' : 'border-emerald-500 bg-emerald-50') : 'border-slate-100 bg-white hover:border-slate-200'}`}
+              className={`p-3 rounded-xl border-2 text-left transition-all ${formData.template === t.id ? (formData.niche === 'urban' ? 'border-[var(--color-primary)] bg-[var(--color-primary-alpha-10)]' : 'border-[var(--color-primary)] bg-[var(--color-primary-alpha-10)]') : 'border-slate-100 bg-white hover:border-slate-200'}`}
             >
               {t.image ? (
                 <div
@@ -502,7 +505,7 @@ const Onboarding: React.FC = () => {
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Passo {step} de 4
               </span>
-              <span className="text-xs font-bold text-blue-600">
+              <span className="text-xs font-bold text-[var(--color-primary)]">
                 {step === 1 && 'Fundação'}
                 {step === 2 && 'Inteligência'}
                 {step === 3 && 'Canais'}
@@ -511,7 +514,7 @@ const Onboarding: React.FC = () => {
             </div>
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-500"
                 style={{ width: `${(step / 4) * 100}%` }}
               />
             </div>
@@ -550,7 +553,7 @@ const Onboarding: React.FC = () => {
               <button
                 onClick={handleNext}
                 disabled={loading}
-                className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-blue-600/20"
+                className="bg-[var(--color-primary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-black/10"
               >
                 {loading ? (
                   <Loader2 size={18} className="animate-spin" />

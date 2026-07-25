@@ -18,6 +18,7 @@ import {
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import InstanceManager from './InstanceManager';
+import { QueuesManagerModal } from './QueuesManagerModal';
 import {
   MessageSquare,
   Settings,
@@ -30,6 +31,7 @@ import {
   ArrowRightLeft,
   Tag,
   ShieldCheck,
+  GitMerge,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
@@ -61,6 +63,7 @@ const WhatsAppDashboard: React.FC = () => {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [showInstanceManager, setShowInstanceManager] = useState(false);
+  const [showQueuesManager, setShowQueuesManager] = useState(false);
   const [loading, setLoading] = useState(true);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [serviceError, setServiceError] = useState('');
@@ -799,6 +802,13 @@ const WhatsAppDashboard: React.FC = () => {
           )}
 
           <button
+            onClick={() => setShowQueuesManager(true)}
+            className="wa-settings-btn"
+            title="Filas de Atendimento"
+          >
+            <GitMerge size={18} />
+          </button>
+          <button
             onClick={() => setShowInstanceManager(true)}
             className="wa-settings-btn"
             title="Gerenciar Instâncias"
@@ -909,6 +919,10 @@ const WhatsAppDashboard: React.FC = () => {
           }}
           onInstanceCreated={loadInstances}
         />
+      )}
+
+      {showQueuesManager && (
+        <QueuesManagerModal onClose={() => setShowQueuesManager(false)} />
       )}
     </div>
   );

@@ -118,7 +118,7 @@ const BillingManager: React.FC = () => {
           Receita por Plano
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {['Starter', 'Professional', 'Enterprise'].map((planName) => {
+          {['Essencial', 'Profissional', 'Enterprise'].map((planName) => {
             const planTenants = tenants.filter(
               (t) => t.plans?.name?.toLowerCase() === planName.toLowerCase()
             );
@@ -127,9 +127,14 @@ const BillingManager: React.FC = () => {
               (sum, t) => sum + (t.plans?.price_monthly || 0),
               0
             );
+            const fallbackPrices: Record<string, number> = {
+              'essencial': 97,
+              'profissional': 197,
+              'enterprise': 397,
+            };
             const price =
               planTenants[0]?.plans?.price_monthly ||
-              planPrices[planName.toLowerCase()] ||
+              fallbackPrices[planName.toLowerCase()] ||
               0;
 
             return (

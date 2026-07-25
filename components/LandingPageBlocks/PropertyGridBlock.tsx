@@ -4,7 +4,7 @@ import {
   LandingPageTheme,
 } from '../../types/landingPage';
 import { Property } from '../../types';
-import { MapPin, Maximize2, DollarSign } from 'lucide-react';
+import { MapPin, Maximize2 } from 'lucide-react';
 
 interface PropertyGridBlockProps {
   config: PropertyGridBlockConfig;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { HeroBlockConfig } from '../../../types/landingPage';
-import { Upload } from 'lucide-react';
+
 
 interface HeroBlockSettingsProps {
   config: HeroBlockConfig;

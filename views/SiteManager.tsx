@@ -96,7 +96,7 @@ const SiteManager: React.FC = () => {
           .single();
 
         if (insertError) {
-          if (insertError?.code === '42P01' || insertError?.status === 404 || String(insertError?.message || '').includes('does not exist') || String(insertError?.message || '').includes('404')) {
+          if (insertError?.code === '42P01' || (insertError as any)?.status === 404 || String(insertError?.message || '').includes('does not exist') || String(insertError?.message || '').includes('404')) {
             setTableError(true);
             setLoading(false);
             return;

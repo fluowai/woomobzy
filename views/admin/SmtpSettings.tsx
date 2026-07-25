@@ -5,7 +5,7 @@ import { Save, Check, Mail, Lock, Server } from 'lucide-react';
 import { logger } from '@/utils/logger';
 
 const SmtpSettings: React.FC = () => {
-  const { settings, loadSettings } = useSettings();
+  const { settings, refreshSettings } = useSettings();
   const [smtpHost, setSmtpHost] = useState('');
   const [smtpPort, setSmtpPort] = useState(465);
   const [smtpSecure, setSmtpSecure] = useState(true);

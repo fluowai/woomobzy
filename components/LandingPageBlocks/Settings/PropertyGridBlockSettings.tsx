@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   PropertyGridBlockConfig,
   LandingPage,
-  PropertySelectionMode,
 } from '../../../types/landingPage';
-import { Property } from '../../../types';
 
 interface PropertyGridBlockSettingsProps {
   config: PropertyGridBlockConfig;
@@ -17,10 +15,7 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
   config,
   onUpdate,
   page,
-  onUpdatePage,
 }) => {
-  const [showPropertySelector, setShowPropertySelector] = useState(false);
-
   const updateField = (field: keyof PropertyGridBlockConfig, value: any) => {
     onUpdate({ ...config, [field]: value });
   };

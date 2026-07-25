@@ -62,6 +62,7 @@ const MIGRATIONS = [
   'migrations/20260603_whatsapp_media_pipeline.sql',
   'migrations/20260604_email_center.sql',
   'migrations/20260725_add_indexes_reseller.sql',
+  'migrations/20260725_reseller_infrastructure.sql',
 ];
 
 async function executeMigrations() {

@@ -79,6 +79,11 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     }
   }
 
+  // Inject BYOB tenant domain
+  if (typeof window !== 'undefined') {
+    headers.set('x-tenant-domain', window.location.hostname);
+  }
+
   const method = (options.method || 'GET').toUpperCase();
   const isFormData =
     typeof FormData !== 'undefined' && options.body instanceof FormData;
@@ -157,6 +162,11 @@ export const downloadApiFile = async (path: string, filename: string) => {
   } else {
     const activeOrgId = getActiveOrganizationId();
     if (activeOrgId) headers.set('x-organization-id', activeOrgId);
+  }
+
+  // Inject BYOB tenant domain
+  if (typeof window !== 'undefined') {
+    headers.set('x-tenant-domain', window.location.hostname);
   }
 
   const response = await fetch(url, { headers });

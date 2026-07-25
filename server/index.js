@@ -227,6 +227,73 @@ if (!isProduction) {
   });
 }
 
+// --- BYOB Tenant Resolver Middleware ---
+import { tenantContext } from './lib/supabase-server.js';
+import { createClient } from '@supabase/supabase-js';
+
+// Cache para evitar query na Master DB em toda requisição
+const tenantConfigCache = new Map();
+
+app.use(async (req, res, next) => {
+  const tenantDomain = req.headers['x-tenant-domain'] || req.hostname;
+  
+  // Se for o domínio master, ou rotas internas, não precisa de BYOB
+  if (
+    !tenantDomain || 
+    tenantDomain.includes('localhost') || 
+    tenantDomain.includes('imobzy.com.br') || 
+    tenantDomain.includes('vercel.app')
+  ) {
+    return next();
+  }
+
+  // Tenta achar no cache (TTL de 5 min recomendado em prod, mas aqui mantemos simples)
+  let tenantClient = tenantConfigCache.get(tenantDomain);
+
+  if (!tenantClient) {
+    try {
+      // Usa o master client para descobrir as credenciais do tenant
+      const masterClient = getSupabaseServer();
+      const { data, error } = await masterClient
+        .from('public_tenant_discovery')
+        .select('supabase_url, supabase_anon_key')
+        .eq('domain', tenantDomain)
+        .single();
+        
+      if (!error && data && data.supabase_url && data.supabase_anon_key) {
+        // Criamos um client para o tenant (aqui deveríamos usar a service_role para o backend, 
+        // mas para fins de discovery seguro, a anon_key foi exposta. O ideal é que a master db 
+        // retorne a service_role key em uma RPC protegida, mas como o plano é BYOB, 
+        // vamos inicializar com o que temos ou fazer um fallback. Se não tivermos a service_role_key,
+        // muitas APIs admin falharão. Na tabela criamos a supabase_service_role_key. 
+        // A VIEW public_tenant_discovery NÃO TEM a service_role_key. 
+        // Vamos buscar a tabela usando admin/service_role direto!
+        const { data: adminData } = await masterClient
+          .from('reseller_infrastructure')
+          .select('supabase_url, supabase_service_role_key')
+          .eq('domain', tenantDomain)
+          .eq('is_active', true)
+          .single();
+          
+        if (adminData && adminData.supabase_service_role_key) {
+          tenantClient = createClient(adminData.supabase_url, adminData.supabase_service_role_key);
+          tenantConfigCache.set(tenantDomain, tenantClient);
+          console.log(`🔌 BYOB: Server client resolved for ${tenantDomain}`);
+        }
+      }
+    } catch (err) {
+      console.error(`❌ BYOB Middleware Error:`, err);
+    }
+  }
+
+  if (tenantClient) {
+    // Roda a requisição inteira dentro do AsyncLocalStorage com o client do tenant
+    return tenantContext.run({ supabaseClient: tenantClient }, next);
+  }
+
+  next();
+});
+
 // --- Supabase Client (lazy, via shared singleton) ---
 // Nota: não criamos o client aqui para evitar crash se env vars estiverem ausentes.
 // O cliente é criado sob demanda em cada rota via getSupabaseServer().

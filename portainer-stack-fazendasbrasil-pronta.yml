@@ -48,8 +48,8 @@ services:
       VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0'
       SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo'
       SUPABASE_JWT_SECRET: 'RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=='
-      DATABASE_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
-      SUPABASE_DB_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
+      DATABASE_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
+      SUPABASE_DB_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
       PGSSLMODE: require
       WHATSAPP_API_URL: 'http://whatsapp-service:3100'
       WHATSMEOW_URL: 'http://whatsapp-service:3100'
@@ -119,8 +119,8 @@ services:
       VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0'
       SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo'
       SUPABASE_JWT_SECRET: 'RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=='
-      DATABASE_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
-      SUPABASE_DB_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
+      DATABASE_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
+      SUPABASE_DB_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
       PGSSLMODE: require
       NODE_URL: 'http://api:3002'
       WHATSMEOW_URL: 'http://whatsapp-service:3100'

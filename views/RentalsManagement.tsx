@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { FileText, Plus, FileSignature, DollarSign, Calendar, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { supabase } from '@/services/supabase';
+import { logger } from '@/utils/logger';
 
-// Interfaces Básicas
 interface Lease {
   id: string;
   tenant_name: string;
@@ -17,34 +17,64 @@ interface Lease {
   end_date: string;
 }
 
+interface DashboardStats {
+  receita_mensal: number;
+  valor_inadimplencia: number;
+  ativos: number;
+  pending_signatures: number;
+}
+
 export function RentalsManagement() {
   const { user } = useAuth();
   const { settings } = useSettings();
   const [leases, setLeases] = useState<Lease[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    receita_mensal: 0,
+    valor_inadimplencia: 0,
+    ativos: 0,
+    pending_signatures: 0,
+  });
 
-  useEffect(() => {
-    fetchLeases();
-  }, []);
-
-  const fetchLeases = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/locacao/leases', {
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setLeases(data.data);
+      const headers = { Authorization: `Bearer ${session?.access_token}` };
+
+      const [leasesRes, dashboardRes] = await Promise.all([
+        fetch('/api/locacao/leases', { headers }),
+        fetch('/api/locacao/dashboard/resumo', { headers }),
+      ]);
+
+      const leasesData = await leasesRes.json();
+      if (leasesData.success) {
+        setLeases(leasesData.data);
+      }
+
+      const dashData = await dashboardRes.json();
+      if (dashData.success) {
+        const allLeases = leasesData.data || [];
+        const pendingSigs = allLeases.filter(
+          (l: Lease) => l.signature_status === 'pending_signatures' || l.status === 'pending_signatures'
+        ).length;
+
+        setStats({
+          receita_mensal: dashData.data.receita_mensal || 0,
+          valor_inadimplencia: dashData.data.valor_inadimplencia || 0,
+          ativos: dashData.data.ativos || 0,
+          pending_signatures: pendingSigs,
+        });
       }
     } catch (error) {
-      console.error('Erro ao buscar locações', error);
+      logger.error('Erro ao buscar dados de locações:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
@@ -87,7 +117,7 @@ export function RentalsManagement() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Receita Prevista</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">R$ 14.500,00</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.receita_mensal)}</p>
             </div>
             <div className="p-3 bg-green-50 text-green-600 rounded-lg">
               <DollarSign className="w-5 h-5" />
@@ -99,7 +129,7 @@ export function RentalsManagement() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Inadimplência</p>
-              <p className="text-xl font-bold text-red-600">R$ 2.300,00</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(stats.valor_inadimplencia)}</p>
             </div>
             <div className="p-3 bg-red-50 text-red-600 rounded-lg">
               <DollarSign className="w-5 h-5" />
@@ -111,7 +141,7 @@ export function RentalsManagement() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Contratos Ativos</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{leases.length}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.ativos}</p>
             </div>
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
               <FileText className="w-5 h-5" />
@@ -123,7 +153,7 @@ export function RentalsManagement() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Aguardando Assinatura</p>
-              <p className="text-xl font-bold text-amber-600">3</p>
+              <p className="text-xl font-bold text-amber-600">{stats.pending_signatures}</p>
             </div>
             <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
               <FileSignature className="w-5 h-5" />

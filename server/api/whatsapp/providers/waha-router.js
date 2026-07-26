@@ -127,7 +127,7 @@ export function createWahaRouter({
     const { data, error } = await supabase
       .from('whatsapp_instances')
       .select(
-        'id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at'
+        'id, tenant_id, name, status, qr_code, phone, jid, provider, created_at, updated_at'
       )
       .eq('tenant_id', req.orgId)
       .order('created_at', { ascending: false });
@@ -141,9 +141,9 @@ export function createWahaRouter({
     const supabase = getSupabaseServer();
     const { data: instance, error } = await supabase
       .from('whatsapp_instances')
-      .insert({ tenant_id: req.orgId, name, status: 'connecting' })
+      .insert({ tenant_id: req.orgId, name, status: 'connecting', provider: 'waha' })
       .select(
-        'id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at'
+        'id, tenant_id, name, status, qr_code, phone, jid, provider, created_at, updated_at'
       )
       .single();
 
@@ -528,7 +528,7 @@ async function getInstance(id, tenantId) {
   const { data, error } = await supabase
     .from('whatsapp_instances')
     .select(
-      'id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at'
+      'id, tenant_id, name, status, qr_code, phone, jid, provider, created_at, updated_at'
     )
     .eq('id', id)
     .eq('tenant_id', tenantId)
@@ -549,7 +549,7 @@ async function getInstanceBySession(session) {
   const { data, error } = await supabase
     .from('whatsapp_instances')
     .select(
-      'id, tenant_id, name, status, qr_code, phone, jid, created_at, updated_at'
+      'id, tenant_id, name, status, qr_code, phone, jid, provider, created_at, updated_at'
     )
     .limit(500);
 
@@ -901,6 +901,7 @@ function normalizeInstanceRow(row) {
     qr_code: row.qr_code || undefined,
     phone: row.phone || undefined,
     jid: row.jid || undefined,
+    provider: row.provider || 'waha',
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

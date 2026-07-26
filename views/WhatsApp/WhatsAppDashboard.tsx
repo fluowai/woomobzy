@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { uploadFile } from '@/services/storage';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './whatsapp.css';
 import { useWebSocket } from './hooks/useWebSocket';
@@ -537,11 +538,20 @@ const WhatsAppDashboard: React.FC = () => {
         if (selectedChat.platform === 'instagram') {
           const convId = selectedChat.instagram_conversation_id;
           if (!convId) return;
+          let mediaUrl: string | undefined;
+          if (file) {
+            const uploadedUrl = await uploadFile(file, 'imobzymsg', 'instagram');
+            if (!uploadedUrl) {
+              toast.error('Falha ao enviar midia para Instagram.');
+              return;
+            }
+            mediaUrl = uploadedUrl;
+          }
           const result: any = await instagramApi.messages.send({
             conversation_id: convId,
             content,
             message_type: file ? 'image' : 'text',
-            media_url: undefined,
+            media_url: mediaUrl,
           });
           if (result?.data) {
             const unifiedMsg = instagramMessageToUnified(result.data, convId);

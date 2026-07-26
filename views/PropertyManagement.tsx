@@ -450,11 +450,13 @@ const PropertyManagement: React.FC = () => {
         </>
       )}
 
-      <InstagramPostGenerator
-        property={instagramProperty as any}
-        isOpen={!!instagramProperty}
-        onClose={() => setInstagramProperty(null)}
-      />
+      {instagramProperty && (
+        <InstagramPostGenerator
+          property={instagramProperty}
+          isOpen={!!instagramProperty}
+          onClose={() => setInstagramProperty(null)}
+        />
+      )}
     </div>
   );
 };

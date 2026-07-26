@@ -23,6 +23,7 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
 }) => {
   const [instances, setInstances] = useState<Instance[]>(initialInstances);
   const [newName, setNewName] = useState('');
+  const [newProvider, setNewProvider] = useState<'whatsmeow' | 'waha'>('whatsmeow');
   const [creating, setCreating] = useState(false);
   const [qrInstance, setQrInstance] = useState<Instance | null>(null);
   const [error, setError] = useState('');
@@ -66,7 +67,7 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
     setCreating(true);
     setError('');
     try {
-      const inst = await instanceApi.create(newName.trim());
+      const inst = await instanceApi.create(newName.trim(), newProvider);
       setInstances((prev) => [inst, ...prev]);
       setNewName('');
       onInstanceCreated();
@@ -152,26 +153,48 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
             </button>
           </div>
 
-          {/* Create New */}
-          <div className="wa-create-instance">
-            <input
-              type="text"
-              placeholder={isLimitReached ? "Limite do plano atingido" : "Nome da nova instância..."}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              disabled={isLimitReached}
-              className="wa-create-input"
-              id="new-instance-name"
-            />
-            <button
-              onClick={handleCreate}
-              disabled={creating || !newName.trim() || isLimitReached}
-              className={`wa-create-btn ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-              {creating ? 'Criando...' : 'Criar'}
-            </button>
+          {/* Header & Create */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Instâncias do WhatsApp</h2>
+              <p className="text-sm text-gray-400">
+                {instances.length} de {maxInstances} instâncias permitidas
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <select
+                value={newProvider}
+                onChange={(e) => setNewProvider(e.target.value as 'whatsmeow' | 'waha')}
+                className="w-full sm:w-auto bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-green-500"
+                disabled={creating || isLimitReached}
+              >
+                <option value="whatsmeow">WooTech 1 (Estável)</option>
+                <option value="waha">WooTech 2 (BETA)</option>
+              </select>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Nome da nova instância..."
+                  className="flex-1 sm:w-64 bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-green-500"
+                  disabled={creating || isLimitReached}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
+                />
+                <button
+                  onClick={handleCreate}
+                  disabled={creating || !newName.trim() || isLimitReached}
+                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {creating ? (
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Plus className="w-5 h-5" />
+                  )}
+                  <span className="hidden sm:inline">Nova Instância</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {isLimitReached && (

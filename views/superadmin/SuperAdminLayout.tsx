@@ -64,6 +64,14 @@ const SuperAdminLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      {/* Mobile Menu Overlay & Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={`

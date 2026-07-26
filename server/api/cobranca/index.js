@@ -30,8 +30,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     let query = supabase
       .from('billing')
       .select(
-        `*,
-        contract:rental_contracts(tenant_name, monthly_rent, property:property_id(title, address))`,
+        '*',
         { count: 'exact' }
       )
       .eq('organization_id', req.orgId)
@@ -51,9 +50,43 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const { data, error, count } = await query;
     if (error) throw error;
 
+    const billingList = data || [];
+
+    const contractIds = [...new Set(billingList.map((b) => b.contract_id).filter(Boolean))];
+    let contractMap = {};
+    if (contractIds.length > 0) {
+      const { data: contracts } = await supabase
+        .from('rental_contracts')
+        .select('id, tenant_name, monthly_rent')
+        .in('id', contractIds)
+        .eq('organization_id', req.orgId);
+      if (contracts) {
+        contractMap = Object.fromEntries(contracts.map((c) => [c.id, c]));
+      }
+    }
+
+    const propertyIds = [...new Set(billingList.map((b) => contractMap[b.contract_id]?.property_id).filter(Boolean))];
+    let propertyMap = {};
+    if (propertyIds.length > 0) {
+      const { data: properties } = await supabase
+        .from('properties')
+        .select('id, title, address')
+        .in('id', propertyIds)
+        .eq('organization_id', req.orgId);
+      if (properties) {
+        propertyMap = Object.fromEntries(properties.map((p) => [p.id, p]));
+      }
+    }
+
+    const enriched = billingList.map((b) => {
+      const contract = b.contract_id ? contractMap[b.contract_id] || null : null;
+      const property = contract?.property_id ? propertyMap[contract.property_id] || null : null;
+      return { ...b, contract: contract ? { ...contract, property } : null };
+    });
+
     res.json({
       success: true,
-      data: data || [],
+      data: enriched,
       pagination: {
         total: count,
         page: Number(page),
@@ -139,7 +172,7 @@ router.post('/gerar-mensal', verifyAuth, requireTenant, async (req, res) => {
 
     const { data: contracts } = await supabase
       .from('rental_contracts')
-      .select('*, property:property_id(title, address)')
+      .select('*')
       .eq('organization_id', req.orgId)
       .eq('status', 'active')
       .eq('payment_status', 'em_dia');
@@ -423,12 +456,7 @@ router.get(
 
       let query = supabase
         .from('billing')
-        .select(
-          `
-      *,
-      contract:rental_contracts(tenant_name, tenant_cpf)
-    `
-        )
+        .select('*')
         .eq('organization_id', req.orgId)
         .order('due_date', { ascending: true });
 
@@ -444,8 +472,24 @@ router.get(
           .lte('due_date', `${ano}-12-31`);
       }
 
-      const { data, error } = await query;
+      const { data: rawBilling, error } = await query;
       if (error) throw error;
+
+      const billingList = rawBilling || [];
+      const contractIds = [...new Set(billingList.map((b) => b.contract_id).filter(Boolean))];
+      let contractMap = {};
+      if (contractIds.length > 0) {
+        const { data: contracts } = await supabase
+          .from('rental_contracts')
+          .select('id, tenant_name, tenant_cpf')
+          .in('id', contractIds)
+          .eq('organization_id', req.orgId);
+        if (contracts) contractMap = Object.fromEntries(contracts.map((c) => [c.id, c]));
+      }
+      const data = billingList.map((b) => ({
+        ...b,
+        contract: b.contract_id ? contractMap[b.contract_id] || null : null,
+      }));
 
       if (formato === 'csv') {
         const headers = [
@@ -525,19 +569,42 @@ router.get(
 
       const { data: contracts } = await supabase
         .from('rental_contracts')
-        .select(
-          `
-        *,
-        property:property_id(title, address),
-        billing:billings()
-      `
-        )
+        .select('*')
         .eq('organization_id', req.orgId)
         .eq('payment_status', 'inadimplente');
 
+      const contractIds = (contracts || []).map((c) => c.id);
+      let billingMap = {};
+      if (contractIds.length > 0) {
+        const { data: allBilling } = await supabase
+          .from('billing')
+          .select('*')
+          .in('contract_id', contractIds)
+          .eq('organization_id', req.orgId);
+        if (allBilling) {
+          for (const b of allBilling) {
+            if (!billingMap[b.contract_id]) billingMap[b.contract_id] = [];
+            billingMap[b.contract_id].push(b);
+          }
+        }
+      }
+
+      const propertyIds = [...new Set((contracts || []).map((c) => c.property_id).filter(Boolean))];
+      let propertyMap = {};
+      if (propertyIds.length > 0) {
+        const { data: properties } = await supabase
+          .from('properties')
+          .select('id, title, address')
+          .in('id', propertyIds)
+          .eq('organization_id', req.orgId);
+        if (properties) propertyMap = Object.fromEntries(properties.map((p) => [p.id, p]));
+      }
+
       const inadimplentes = (contracts || [])
         .map((c) => {
-          const totalDebito = (c.billings || [])
+          const contractBillings = billingMap[c.id] || [];
+          const property = c.property_id ? propertyMap[c.property_id] || null : null;
+          const totalDebito = contractBillings
             .filter((b) => b.status !== 'pago')
             .reduce((sum, b) => sum + (b.amount || 0), 0);
 
@@ -545,13 +612,14 @@ router.get(
             0,
             Math.ceil(
               (new Date().getTime() -
-                new Date(c.billings?.[0]?.due_date || c.updated_at).getTime()) /
+                new Date(contractBillings[0]?.due_date || c.updated_at).getTime()) /
                 (1000 * 60 * 60 * 24)
             )
           );
 
           return {
             ...c,
+            property,
             total_debito: totalDebito,
             dias_vencido: diasVencido,
             nivel:

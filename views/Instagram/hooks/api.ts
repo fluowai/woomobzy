@@ -77,6 +77,7 @@ export interface InstagramConversation {
   status: 'open' | 'pending' | 'resolved' | 'archived';
   assigned_to: string | null;
   priority: 'low' | 'normal' | 'high' | 'urgent';
+  tags: string[];
   unread_count: number;
   last_message_preview: string | null;
   last_message_at: string | null;

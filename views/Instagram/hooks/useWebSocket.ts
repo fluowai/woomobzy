@@ -8,7 +8,7 @@ interface WSEvent {
 export function useInstagramWebSocket(companyId: string | null, onEvent: (event: WSEvent) => void) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const connect = useCallback(() => {
     if (!companyId || wsRef.current?.readyState === WebSocket.OPEN) return;

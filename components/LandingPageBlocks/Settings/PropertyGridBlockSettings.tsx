@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   PropertyGridBlockConfig,
   LandingPage,
+  PropertySelectionMode,
 } from '../../../types/landingPage';
 
 interface PropertyGridBlockSettingsProps {
@@ -124,7 +125,7 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
         <button
           onClick={() => onUpdatePage({
             ...page,
-            propertySelection: { ...page.propertySelection, mode: 'all', sortBy: 'date' }
+            propertySelection: { ...page.propertySelection, mode: PropertySelectionMode.ALL, sortBy: 'date' }
           })}
           className="w-full px-4 py-2 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors text-sm text-left flex items-center gap-2"
         >
@@ -135,7 +136,7 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
         <button
           onClick={() => onUpdatePage({
             ...page,
-            propertySelection: { ...page.propertySelection, mode: 'all', sortBy: 'price' }
+            propertySelection: { ...page.propertySelection, mode: PropertySelectionMode.ALL, sortBy: 'price' }
           })}
           className="w-full px-4 py-2 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors text-sm text-left flex items-center gap-2"
         >
@@ -146,7 +147,7 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
         <button
           onClick={() => onUpdatePage({
             ...page,
-            propertySelection: { ...page.propertySelection, mode: 'all', sortBy: 'area' }
+            propertySelection: { ...page.propertySelection, mode: PropertySelectionMode.ALL, sortBy: 'area' }
           })}
           className="w-full px-4 py-2 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors text-sm text-left flex items-center gap-2"
         >

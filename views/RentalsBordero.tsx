@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FileDown, Calendar, Search, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
+import { supabase } from '@/services/supabase';
 
 export function RentalsBordero() {
   const { user } = useAuth();
@@ -19,8 +20,9 @@ export function RentalsBordero() {
 
   const fetchActiveLeases = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/locacao/leases?status=active', {
-        headers: { Authorization: `Bearer ${user?.token}` },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       const data = await res.json();
       if (data.success) {
@@ -34,8 +36,9 @@ export function RentalsBordero() {
   const generateBordero = async (leaseId: string) => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/locacao/bordero?lease_id=${leaseId}&year=${selectedYear}&month=${selectedMonth}`, {
-        headers: { Authorization: `Bearer ${user?.token}` },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       const data = await res.json();
       if (data.success) {

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Plus, FileSignature, DollarSign, Calendar, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
+import { supabase } from '@/services/supabase';
 
 // Interfaces Básicas
 interface Lease {
@@ -28,9 +29,10 @@ export function RentalsManagement() {
 
   const fetchLeases = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/locacao/leases', {
         headers: {
-          Authorization: `Bearer ${user?.token}`,
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
       const data = await res.json();

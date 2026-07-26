@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { getSupabaseServer } from '../../../lib/supabase-server.js';
-import { verifyAuth } from '../../../middleware/auth.js';
-import { requireTenant } from '../../../middleware/tenant.js';
-import { onrService } from '../../../services/onrService.js';
-import { isValidUUID } from '../../../lib/shared-utils.js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { verifyAuth } from '../../middleware/auth.js';
+import { requireTenant } from '../../middleware/tenant.js';
+import { onrService } from '../../services/onrService.js';
+import { isValidUUID } from '../../lib/shared-utils.js';
 
 const router = Router();
 

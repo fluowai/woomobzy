@@ -104,7 +104,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         return (
           <div className="p-8 bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg text-center">
             <p className="text-slate-500 font-medium">
-              Bloco "{block.type}" ainda não implementado
+              Bloco &quot;{block.type}&quot; ainda não implementado
             </p>
           </div>
         );

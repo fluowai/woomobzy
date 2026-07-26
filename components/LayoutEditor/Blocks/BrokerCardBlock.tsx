@@ -1,6 +1,6 @@
 import React from 'react';
 import { Block } from '../../../types';
-import { Phone, Mail, Instagram, MapPin } from 'lucide-react';
+import { Phone, Instagram } from 'lucide-react';
 import { useSettings } from '../../../context/SettingsContext';
 
 interface BrokerCardBlockProps {
@@ -10,7 +10,7 @@ interface BrokerCardBlockProps {
 
 export const BrokerCardBlock: React.FC<BrokerCardBlockProps> = ({
   block,
-  isEditing,
+  isEditing: _isEditing,
 }) => {
   const config = block.config as any;
   const { settings } = useSettings();

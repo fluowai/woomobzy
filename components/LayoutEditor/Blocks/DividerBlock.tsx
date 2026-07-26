@@ -8,7 +8,7 @@ interface DividerBlockProps {
 
 export const DividerBlock: React.FC<DividerBlockProps> = ({
   block,
-  isEditing,
+  isEditing: _isEditing,
 }) => {
   const config = block.config as any;
 

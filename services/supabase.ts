@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import { createClient } from '@supabase/supabase-js';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
+import type { Database } from '@/types/database.types';
 
 const supabaseUrl = getRuntimeEnv('VITE_SUPABASE_URL');
 const supabaseAnonKey = getRuntimeEnv('VITE_SUPABASE_ANON_KEY');
@@ -57,7 +58,7 @@ function getImpersonatedOrgId(): string | null {
   return null;
 }
 
-let activeClient = createClient(
+let activeClient = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
   {
@@ -68,7 +69,7 @@ let activeClient = createClient(
 );
 
 export const setTenantSupabase = (url: string, key: string) => {
-  activeClient = createClient(url, key, {
+  activeClient = createClient<Database>(url, key, {
     global: {
       headers: getHeaders(),
     },
@@ -76,7 +77,7 @@ export const setTenantSupabase = (url: string, key: string) => {
   logger.info(`🔌 BYOB: Cliente Supabase atualizado para locatário com URL: ${url}`);
 };
 
-export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>>, {
   get(target, prop) {
     if (!activeClient) {
       throw new Error("Supabase client not initialized");
@@ -84,9 +85,9 @@ export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
     const value = (activeClient as any)[prop];
     return typeof value === 'function' ? value.bind(activeClient) : value;
   }
-}) as ReturnType<typeof createClient>;
+}) as ReturnType<typeof createClient<Database>>;
 
-export const publicSupabase = createClient(
+export const publicSupabase = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
   {

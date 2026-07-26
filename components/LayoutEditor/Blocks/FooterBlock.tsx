@@ -1,6 +1,6 @@
 import React from 'react';
 import { Block } from '../../../types';
-import { Instagram, Facebook, Mail, Phone, MapPin } from 'lucide-react';
+import { Instagram, Facebook, Mail, Phone } from 'lucide-react';
 import { useSettings } from '../../../context/SettingsContext';
 
 interface FooterBlockProps {
@@ -10,7 +10,7 @@ interface FooterBlockProps {
 
 export const FooterBlock: React.FC<FooterBlockProps> = ({
   block,
-  isEditing,
+  isEditing: _isEditing,
 }) => {
   const config = block.config as any;
   const { settings } = useSettings();

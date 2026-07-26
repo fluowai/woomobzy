@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BlockType, BLOCK_METADATA } from '../../types/landingPage';
+import { BlockType } from '../../types/landingPage';
 import {
   Type,
   Image,

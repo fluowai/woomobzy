@@ -47,8 +47,7 @@ const UrbanDashboard = lazy(() => import('./views/UrbanDashboard'));
 const PropertyManagement = lazy(() => import('./views/PropertyManagement'));
 const PropertyEditor = lazy(() => import('./views/PropertyEditor'));
 const LandingPageEditor = lazy(() => import('./views/LandingPageEditor'));
-const VisualSiteEditor = lazy(() => import('./views/VisualSiteEditor'));
-const SiteSetupWizard = lazy(() => import('./views/SiteSetupWizard'));
+
 const AIAssistant = lazy(() => import('./views/AIAssistant'));
 const AIAgents = lazy(() => import('./views/AIAgents'));
 const WooTechAI = lazy(() => import('./views/WooTechAI'));

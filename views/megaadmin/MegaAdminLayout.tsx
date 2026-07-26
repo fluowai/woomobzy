@@ -66,6 +66,14 @@ const MegaAdminLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      {/* Mobile Menu Overlay & Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       <aside
         className={`
         fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-200 ease-in-out

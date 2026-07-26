@@ -324,41 +324,126 @@ const UserManagement: React.FC = () => {
             <Shield size={16} /> Usuários Ativos ({activeUsers.length})
           </h3>
 
-          <div className="bg-white border md:border-slate-200 rounded-xl overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 hidden md:table-header-group">
-                <tr>
-                  <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Usuário
-                  </th>
-                  <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Nível
-                  </th>
-                  <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {activeUsers.map((user) => (
-                  <tr key={user.id} className="group hover:bg-slate-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs">
-                          {user.full_name?.charAt(0).toUpperCase()}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Usuário
+                    </th>
+                    <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Nível
+                    </th>
+                    <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {activeUsers.map((user) => (
+                    <tr key={user.id} className="group hover:bg-slate-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs">
+                            {user.full_name?.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-700 text-sm">
+                              {user.full_name}
+                            </p>
+                            <p className="text-xs text-slate-400">{user.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-slate-700 text-sm">
-                            {user.full_name}
-                          </p>
-                          <p className="text-xs text-slate-400">{user.email}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={user.role}
+                          onChange={(e) =>
+                            updateUserStatus(user.id, {
+                              role: e.target.value as 'admin' | 'broker',
+                            })
+                          }
+                          disabled={
+                            !!processing ||
+                            (user.role === 'admin' &&
+                              activeUsers.filter((u) => u.role === 'admin')
+                                .length === 1)
+                          }
+                          className="text-xs font-bold uppercase tracking-wider bg-transparent border-none focus:ring-0 cursor-pointer text-slate-600"
+                        >
+                          <option value="admin">Administrador</option>
+                          <option value="broker">Corretor</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-600">
+                          Ativo
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-all">
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowPasswordModal(true);
+                              setNewPassword('');
+                            }}
+                            title="Alterar Senha"
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          >
+                            <Key size={16} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              updateUserStatus(user.id, { approved: false })
+                            }
+                            title="Desativar Acesso"
+                            className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                          >
+                            <AlertTriangle size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            title="Excluir Usuário"
+                            disabled={
+                              user.role === 'admin' &&
+                              activeUsers.filter((u) => u.role === 'admin')
+                                .length === 1
+                            }
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="md:hidden flex flex-col p-4 bg-slate-50 space-y-4">
+              {activeUsers.map((user) => (
+                <div key={user.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                  <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+                      {user.full_name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-800 truncate">{user.full_name}</h4>
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-slate-50/50 flex flex-col gap-3 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nível de Acesso</span>
                       <select
                         value={user.role}
                         onChange={(e) =>
@@ -371,58 +456,54 @@ const UserManagement: React.FC = () => {
                           (user.role === 'admin' &&
                             activeUsers.filter((u) => u.role === 'admin')
                               .length === 1)
-                        } // Prevent removing last admin
-                        className="text-xs font-bold uppercase tracking-wider bg-transparent border-none focus:ring-0 cursor-pointer text-slate-600"
+                        }
+                        className="text-xs font-bold uppercase tracking-wider bg-white border border-slate-200 rounded-lg focus:ring-0 cursor-pointer text-slate-600 py-1 pl-2 pr-6"
                       >
                         <option value="admin">Administrador</option>
                         <option value="broker">Corretor</option>
                       </select>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-600">
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-600">
                         Ativo
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-all">
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setShowPasswordModal(true);
-                            setNewPassword('');
-                          }}
-                          title="Alterar Senha"
-                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        >
-                          <Key size={16} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            updateUserStatus(user.id, { approved: false })
-                          }
-                          title="Desativar Acesso"
-                          className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                        >
-                          <AlertTriangle size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user)}
-                          title="Excluir Usuário"
-                          disabled={
-                            user.role === 'admin' &&
-                            activeUsers.filter((u) => u.role === 'admin')
-                              .length === 1
-                          }
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 border-t border-slate-100 bg-white grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowPasswordModal(true);
+                        setNewPassword('');
+                      }}
+                      className="flex justify-center items-center py-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                    >
+                      <Key size={18} />
+                    </button>
+                    <button
+                      onClick={() =>
+                        updateUserStatus(user.id, { approved: false })
+                      }
+                      className="flex justify-center items-center py-2 text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                    >
+                      <AlertTriangle size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user)}
+                      disabled={
+                        user.role === 'admin' &&
+                        activeUsers.filter((u) => u.role === 'admin').length === 1
+                      }
+                      className="flex justify-center items-center py-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

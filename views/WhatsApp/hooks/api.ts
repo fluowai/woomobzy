@@ -77,7 +77,20 @@ function buildSameOriginWsUrl(path: string): string {
   return `${wsProtocol}//${window.location.host}${cleanPath}`;
 }
 
-async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
+const instanceProviderCache = new Map<string, string>();
+
+export function setInstanceProviderCache(id: string, provider?: string) {
+  instanceProviderCache.set(id, provider || 'whatsmeow');
+}
+
+export function getInstanceProviderCache(id?: string) {
+  return id ? instanceProviderCache.get(id) || 'whatsmeow' : 'whatsmeow';
+}
+
+async function apiRequest<T>(
+  path: string,
+  options?: RequestInit & { instanceId?: string; provider?: string }
+): Promise<T> {
   let session = await getApiSession();
   const impersonatedOrgId = USE_DIRECT_WHATSAPP_API
     ? await getValidImpersonatedOrgId(session?.user?.id)
@@ -89,8 +102,11 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
     ? impersonatedOrgId || activeOrgId || (await getTenantId(session?.user?.id))
     : null;
 
+  const provider = options?.provider || getInstanceProviderCache(options?.instanceId);
+  const prefix = provider === 'waha' ? '/waha' : '';
+
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const url = buildApiUrl(cleanPath, tenantId);
+  const url = buildApiUrl(`${prefix}${cleanPath}`, tenantId);
 
   const body = withTenantBody(options?.body, tenantId);
 
@@ -587,34 +603,46 @@ export interface WhatsAppMessageReceiptEvent {
 
 // ---- Instance API ----
 export const instanceApi = {
-  create: (name: string) =>
+  create: (name: string, provider: 'whatsmeow' | 'waha' = 'whatsmeow') =>
     apiRequest<Instance>('/instances', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, provider }),
+      provider
+    }).then(inst => {
+      setInstanceProviderCache(inst.id, inst.provider);
+      return inst;
     }),
 
-  list: () => apiRequest<Instance[]>('/instances'),
+  list: () => apiRequest<Instance[]>('/instances').then(instances => {
+    instances.forEach(inst => setInstanceProviderCache(inst.id, inst.provider));
+    return instances;
+  }),
 
-  get: (id: string) => apiRequest<Instance>(`/instances/${id}`),
+  get: (id: string) => apiRequest<Instance>(`/instances/${id}`, { instanceId: id }).then(inst => {
+    setInstanceProviderCache(inst.id, inst.provider);
+    return inst;
+  }),
 
-  delete: (id: string) => apiRequest(`/instances/${id}`, { method: 'DELETE' }),
+  delete: (id: string) => apiRequest(`/instances/${id}`, { method: 'DELETE', instanceId: id }),
 
   getQRCode: (id: string) =>
     apiRequest<{ qr_code?: string; status: string; expires_at?: string }>(
-      `/instances/${id}/qrcode`
+      `/instances/${id}/qrcode`,
+      { instanceId: id }
     ),
 
   requestPairingCode: (id: string, phone: string) =>
     apiRequest<PairCodeResponse>(`/instances/${id}/pair-code`, {
       method: 'POST',
       body: JSON.stringify({ phone }),
+      instanceId: id
     }),
 
   connect: (id: string) =>
-    apiRequest(`/instances/${id}/connect`, { method: 'POST' }),
+    apiRequest(`/instances/${id}/connect`, { method: 'POST', instanceId: id }),
 
   logout: (id: string) =>
-    apiRequest(`/instances/${id}/logout`, { method: 'POST' }),
+    apiRequest(`/instances/${id}/logout`, { method: 'POST', instanceId: id }),
 
   importHistory: (
     id: string,
@@ -627,13 +655,14 @@ export const instanceApi = {
     apiRequest<HistoryImportResponse>(`/instances/${id}/import-history`, {
       method: 'POST',
       body: JSON.stringify(options),
+      instanceId: id
     }),
 };
 
 // ---- Chat API ----
 export const chatApi = {
   list: (instanceId: string) =>
-    apiRequest<Chat[]>(`/chats?instance_id=${instanceId}`),
+    apiRequest<Chat[]>(`/chats?instance_id=${instanceId}`, { instanceId }),
 
   ensureDirect: (
     instanceId: string,
@@ -642,16 +671,19 @@ export const chatApi = {
     apiRequest<Chat>(`/chats/ensure?instance_id=${instanceId}`, {
       method: 'POST',
       body: JSON.stringify(payload),
+      instanceId
     }),
 
   deleteAll: (instanceId: string) =>
     apiRequest<DeleteChatsResponse>(`/chats?instance_id=${instanceId}`, {
       method: 'DELETE',
+      instanceId
     }),
 
   markRead: (chatId: string, instanceId: string) =>
     apiRequest(`/chats/${chatId}/read?instance_id=${instanceId}`, {
       method: 'POST',
+      instanceId
     }),
 
   updateContactName: (
@@ -662,6 +694,7 @@ export const chatApi = {
     apiRequest<Chat>(`/chats/${chatId}/contact?instance_id=${instanceId}`, {
       method: 'PATCH',
       body: JSON.stringify({ display_name: displayName }),
+      instanceId
     }),
 };
 
@@ -750,7 +783,8 @@ export const crmContactApi = {
 export const messageApi = {
   list: (chatId: string, instanceId: string, limit = 50, offset = 0) =>
     apiRequest<MessageListResponse>(
-      `/messages/${chatId}?instance_id=${instanceId}&limit=${limit}&offset=${offset}`
+      `/messages/${chatId}?instance_id=${instanceId}&limit=${limit}&offset=${offset}`,
+      { instanceId }
     ),
 
   send: (
@@ -762,6 +796,7 @@ export const messageApi = {
     apiRequest(`/messages/${chatId}/send?instance_id=${instanceId}`, {
       method: 'POST',
       body: JSON.stringify({ content, type }),
+      instanceId
     }),
 
   sendMedia: async (
@@ -787,9 +822,13 @@ export const messageApi = {
     formData.append('content', content);
     formData.append('type', mediaTypeFromFile(file));
 
+    const provider = getInstanceProviderCache(instanceId);
+    const prefix = provider === 'waha' ? '/waha' : '';
+    const cleanPath = `/messages/${chatId}/send-media?instance_id=${instanceId}`;
+    
     const res = await fetch(
       buildApiUrl(
-        `/messages/${chatId}/send-media?instance_id=${instanceId}`,
+        `${prefix}${cleanPath}`,
         tenantId
       ),
       {

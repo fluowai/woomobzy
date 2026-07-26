@@ -134,7 +134,7 @@ const TeamManager: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 text-left">
               <tr>
@@ -217,6 +217,52 @@ const TeamManager: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="md:hidden flex flex-col p-4 bg-gray-50 space-y-4">
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">Carregando membros...</div>
+          ) : filteredStaff.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">Nenhum membro da equipe encontrado.</div>
+          ) : (
+            filteredStaff.map((member) => (
+              <div key={member.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-gray-50 flex items-center gap-3">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold text-lg shrink-0">
+                    {member.full_name[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 truncate">{member.full_name}</h4>
+                    <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-gray-50/50 flex flex-col gap-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nível</span>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-md">
+                      <Shield size={12} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Admin</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Início</span>
+                    <span className="font-medium text-gray-700">{new Date(member.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                
+                <div className="p-3 border-t border-gray-50 bg-white">
+                  <button
+                    onClick={() => removeStaff(member.id)}
+                    className="w-full flex justify-center items-center gap-2 py-2 text-red-500 bg-red-50 hover:bg-red-100 font-bold rounded-lg transition-colors"
+                  >
+                    <Trash2 size={18} /> Remover Acesso
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

@@ -12,7 +12,9 @@ import {
   X,
   Save,
   Trash2,
+  Key,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface DirectClient {
   id: string;
@@ -27,6 +29,7 @@ interface DirectClient {
 }
 
 const DirectClientsManager: React.FC = () => {
+  const { impersonateOrganization } = useAuth();
   const [directClients, setdirectClients] = useState<DirectClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -350,6 +353,27 @@ const DirectClientsManager: React.FC = () => {
                       title="Editar"
                     >
                       <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const reason = prompt(
+                          `Motivo do acesso à conta de "${DirectClient.name}"?`,
+                          'Suporte Técnico'
+                        );
+                        if (!reason) return;
+
+                        try {
+                          await impersonateOrganization(DirectClient.id);
+                          window.location.href = '/admin';
+                        } catch (err: any) {
+                          logger.error(err);
+                          alert(`Erro: ${err.message}`);
+                        }
+                      }}
+                      className="p-1.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded mr-2"
+                      title="Acessar Como (Modo Suporte)"
+                    >
+                      <Key size={18} />
                     </button>
                     <button
                       onClick={() => deleteDirectClient(DirectClient.id, DirectClient.name)}

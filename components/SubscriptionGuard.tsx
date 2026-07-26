@@ -45,7 +45,7 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   const selectPlan = async (planId: string) => {
     setSaving(true);
     await supabase
-      .from('organizations')
+      .from('organizations' as never)
       .update({
         plan_id: planId,
         subscription_status: 'active',

@@ -10,7 +10,6 @@ interface BrokerCardBlockProps {
 
 export const BrokerCardBlock: React.FC<BrokerCardBlockProps> = ({
   block,
-  isEditing: _isEditing,
 }) => {
   const config = block.config as any;
   const { settings } = useSettings();

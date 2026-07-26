@@ -10,7 +10,7 @@ interface FooterBlockProps {
 
 export const FooterBlock: React.FC<FooterBlockProps> = ({
   block,
-  isEditing: _isEditing,
+  isEditing,
 }) => {
   const config = block.config as any;
   const { settings } = useSettings();

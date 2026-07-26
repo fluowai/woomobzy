@@ -18,10 +18,10 @@ import {
   HelpCircle,
   Activity,
   Shield,
-  Copy,
   Link,
   Building2,
   Mail,
+  Copy,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';

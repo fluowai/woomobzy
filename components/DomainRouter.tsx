@@ -159,7 +159,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
           try {
             const { data, error } = await supabase
-              .rpc('get_tenant_by_any_domain', { domain_input: currentHost })
+              .rpc('get_tenant_by_any_domain' as never, { domain_input: currentHost } as never)
               .maybeSingle();
 
             if (data && !error) {
@@ -224,7 +224,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
             try {
               const { data, error } = await supabase
-                .rpc('get_tenant_public', { slug_input: potentialSlug })
+                .rpc('get_tenant_public' as never, { slug_input: potentialSlug } as never)
                 .maybeSingle();
 
               if (data && !error) {

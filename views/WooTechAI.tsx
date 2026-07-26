@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Loader2, User, Sparkles, PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -66,7 +67,7 @@ const WooTechAI: React.FC = () => {
         toast.error('Resposta vazia da IA.');
       }
     } catch (error) {
-      console.error('WooTech AI Error:', error);
+      logger.error('WooTech AI Error:', error);
       toast.error('Ocorreu um erro ao conectar com o WooTech AI. Tente novamente.');
     } finally {
       setLoading(false);

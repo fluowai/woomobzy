@@ -143,7 +143,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('support_tickets' as never).insert([
+      const { error } = await supabase.from('support_tickets').insert([
         {
           organization_id: profile.organization_id,
           user_id: profile.id,
@@ -177,7 +177,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
 
     setSendingMessage(true);
     try {
-      const { error } = await supabase.from('support_messages' as never).insert([
+      const { error } = await supabase.from('support_messages').insert([
         {
           ticket_id: selectedTicket.id,
           user_id: profile.id,

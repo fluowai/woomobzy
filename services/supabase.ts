@@ -76,7 +76,7 @@ export const setTenantSupabase = (url: string, key: string) => {
   logger.info(`🔌 BYOB: Cliente Supabase atualizado para locatário com URL: ${url}`);
 };
 
-export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+export const supabase = new Proxy({} as any, {
   get(target, prop) {
     if (!activeClient) {
       throw new Error("Supabase client not initialized");
@@ -84,7 +84,7 @@ export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
     const value = (activeClient as any)[prop];
     return typeof value === 'function' ? value.bind(activeClient) : value;
   }
-}) as ReturnType<typeof createClient>;
+});
 
 export const publicSupabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',

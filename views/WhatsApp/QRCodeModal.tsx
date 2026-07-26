@@ -103,6 +103,16 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         return;
       }
 
+      if (freshInstance.qr_code && !qrCode) {
+        setQrCode(freshInstance.qr_code);
+        setLoading(false);
+      }
+
+      if (freshInstance.status !== 'qr_pending' && !freshInstance.qr_code) {
+        setLoading(true);
+        return;
+      }
+
       const shouldRefreshQR = Date.now() - lastQRFetchRef.current > 2500;
 
       if (shouldRefreshQR) {
@@ -122,7 +132,6 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         setPairingError(error.message || 'Não foi possível gerar o QR Code.');
         setLoading(false);
       }
-      // QR not ready yet, keep polling
     }
   };
 

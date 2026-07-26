@@ -6,10 +6,9 @@ import {
   formatPhoneDisplay,
   getChatDisplayName,
   isValidBrazilianPhone,
-  type Chat,
   type CrmAssignee,
-  type Message,
 } from './hooks/api';
+import type { UnifiedChat, UnifiedMessage } from './hooks/unifiedInbox';
 import MessageBubble from './MessageBubble';
 import {
   Send,
@@ -43,13 +42,13 @@ function isWhatsAppCdnUrl(url?: string): boolean {
 }
 
 interface ChatWindowProps {
-  chat: Chat;
-  messages: Message[];
+  chat: UnifiedChat;
+  messages: UnifiedMessage[];
   onSendMessage: (content: string, file?: File) => Promise<void> | void;
   loading: boolean;
   instanceName: string;
   instanceId: string;
-  onChatUpdated: (chat: Chat) => void;
+  onChatUpdated: (chat: UnifiedChat) => void;
   onBack?: () => void;
 }
 
@@ -84,9 +83,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const chatPhone = chat.phone_display || formatPhoneDisplay(chat.chat_jid);
-  const rawPhone = chat.phone || getPhoneFromJid(chat.chat_jid);
-  const chatName = chat.is_group ? chat.name || 'Grupo sem nome' : getChatDisplayName(chat);
+  const chatPhone = chat.platform === 'instagram'
+    ? (chat.instagram_contact_username ? `@${chat.instagram_contact_username}` : 'Instagram')
+    : (chat.phone_display || formatPhoneDisplay(chat.chat_jid));
+  const rawPhone = chat.platform === 'instagram' ? '' : (chat.phone || getPhoneFromJid(chat.chat_jid));
+  const chatName = chat.platform === 'instagram'
+    ? (chat.instagram_contact_full_name || (chat.instagram_contact_username ? `@${chat.instagram_contact_username}` : 'Contato Instagram'))
+    : (chat.is_group ? chat.name || 'Grupo sem nome' : getChatDisplayName(chat));
 
   useEffect(() => {
     setContactNameDraft(chatName);
@@ -98,7 +101,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }, [chat.id, chatName]);
 
   useEffect(() => {
-    if (!showContactPanel || chat.is_group || !rawPhone) return;
+    if (!showContactPanel || chat.is_group || !rawPhone || chat.platform === 'instagram') return;
     let active = true;
     Promise.all([crmContactApi.get(rawPhone), crmContactApi.assignees()])
       .then(([result, assigneeResult]) => {
@@ -168,13 +171,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
     setSavingContact(true);
     try {
-      const updated = await chatApi.updateContactName(chat.id, instanceId, nextName);
-      if (!chat.is_group && rawPhone) {
-        const result = await crmContactApi.update({ ...crmPayload(), name: nextName });
-        setCrmLead(result.lead || null);
-        setCrmTags(result.tags || []);
+      if (chat.platform === 'whatsapp' && instanceId) {
+        const updated = await chatApi.updateContactName(chat.id, instanceId, nextName);
+        onChatUpdated({ ...updated, platform: 'whatsapp' });
+      } else {
+        onChatUpdated({ ...chat, name: nextName, display_name: nextName });
       }
-      onChatUpdated(updated);
       setEditingName(false);
     } finally {
       setSavingContact(false);
@@ -293,7 +295,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Group messages by date
   const visibleMessages = messages.filter(isRenderableMessage);
-  const groupedMessages = visibleMessages.reduce((acc: { date: string; msgs: Message[] }[], msg) => {
+  const groupedMessages = visibleMessages.reduce((acc: { date: string; msgs: UnifiedMessage[] }[], msg) => {
     const date = new Date(msg.timestamp).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',
@@ -330,9 +332,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             )}
           </div>
           <div>
-            <h2 className="wa-chat-header-name">{chatName}</h2>
+            <h2 className="wa-chat-header-name">
+              {chatName}
+              {chat.platform === 'instagram' && (
+                <span className="wa-platform-badge wa-platform-instagram">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                  </svg>
+                  Instagram
+                </span>
+              )}
+              {chat.platform === 'whatsapp' && (
+                <span className="wa-platform-badge wa-platform-whatsapp">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                  </svg>
+                  WhatsApp
+                </span>
+              )}
+            </h2>
             <span className="wa-chat-header-sub">
-              {chat.is_group ? 'Grupo' : chatPhone || 'Telefone nao identificado'}
+              {chat.platform === 'instagram'
+                ? (chat.instagram_account_username ? `via @${chat.instagram_account_username}` : 'Instagram')
+                : (chat.is_group ? 'Grupo' : chatPhone || 'Telefone nao identificado')
+              }
             </span>
           </div>
         </button>
@@ -407,17 +432,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
             )}
             <div>
-              <span>WhatsApp</span>
-              <strong>{chatPhone || 'Telefone nao identificado'}</strong>
+              <span>{chat.platform === 'instagram' ? 'Instagram' : 'WhatsApp'}</span>
+              <strong>{chatPhone || (chat.platform === 'instagram' ? 'Instagram' : 'Telefone nao identificado')}</strong>
+            </div>
+            <div>
+              <span>Plataforma</span>
+              <strong className={`wa-platform-text-${chat.platform}`}>
+                {chat.platform === 'instagram' ? 'Instagram' : 'WhatsApp'}
+              </strong>
             </div>
             <div>
               <span>Origem</span>
-              <strong>{chat.is_group ? 'Grupo' : 'Conversa individual'}</strong>
+              <strong>{chat.is_group ? 'Grupo' : chat.platform === 'instagram' ? 'Direct Message' : 'Conversa individual'}</strong>
             </div>
-            {instanceName && (
+            {chat.platform === 'whatsapp' && instanceName && (
               <div>
                 <span>Instancia</span>
                 <strong>{instanceName}</strong>
+              </div>
+            )}
+            {chat.platform === 'instagram' && chat.instagram_account_username && (
+              <div>
+                <span>Conta</span>
+                <strong>@{chat.instagram_account_username}</strong>
               </div>
             )}
           </div>
@@ -430,7 +467,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 className="wa-contact-select"
                 value={selectedAssignee}
                 onChange={(event) => setSelectedAssignee(event.target.value)}
-                disabled={crmActionLoading || chat.is_group || !rawPhone}
+                disabled={crmActionLoading || chat.is_group || !rawPhone || chat.platform === 'instagram'}
               >
                 <option value="">Selecionar responsavel</option>
                 {assignees.map((assignee) => (
@@ -444,14 +481,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action primary"
               onClick={transferAttendance}
-              disabled={crmActionLoading || chat.is_group || !rawPhone || !selectedAssignee}
+              disabled={crmActionLoading || chat.is_group || !rawPhone || !selectedAssignee || chat.platform === 'instagram'}
             >
               <ArrowRightLeft size={16} />
               Transferir atendimento
             </button>
           </div>
 
-          {!chat.is_group && rawPhone && (
+          {!chat.is_group && rawPhone && chat.platform === 'whatsapp' && (
             <div className="wa-contact-tag-editor">
               <input
                 value={tagDraft}
@@ -476,7 +513,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={linkContactToCrm}
-              disabled={crmActionLoading || chat.is_group || !rawPhone}
+              disabled={crmActionLoading || chat.is_group || !rawPhone || chat.platform === 'instagram'}
             >
               <UserRound size={16} />
               {crmLead ? 'Atualizar CRM' : 'Vincular ao CRM'}
@@ -485,7 +522,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={addCrmTag}
-              disabled={crmActionLoading || chat.is_group || !rawPhone || !tagDraft.trim()}
+              disabled={crmActionLoading || chat.is_group || !rawPhone || !tagDraft.trim() || chat.platform === 'instagram'}
             >
               <Tag size={16} />
               Adicionar tag
@@ -494,7 +531,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={createCrmTask}
-              disabled={crmActionLoading || chat.is_group || !rawPhone}
+              disabled={crmActionLoading || chat.is_group || !rawPhone || chat.platform === 'instagram'}
             >
               <Clock3 size={16} />
               Criar tarefa
@@ -503,7 +540,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={markCrmPriority}
-              disabled={crmActionLoading || chat.is_group || !rawPhone}
+              disabled={crmActionLoading || chat.is_group || !rawPhone || chat.platform === 'instagram'}
             >
               <ShieldCheck size={16} />
               Marcar prioridade
@@ -613,7 +650,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
 export default ChatWindow;
 
-function isRenderableMessage(message: Message) {
+function isRenderableMessage(message: UnifiedMessage) {
   const content = (message.content || '').trim();
   const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
   return message.type !== 'text' || content || hasMedia;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { formatPhoneDisplay, getChatDisplayName, type Chat } from './hooks/api';
+import { formatPhoneDisplay, getChatDisplayName } from './hooks/api';
+import type { UnifiedChat } from './hooks/unifiedInbox';
 import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2, Clock3 } from 'lucide-react';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
@@ -9,9 +10,9 @@ function isWhatsAppCdnUrl(url?: string): boolean {
 }
 
 interface ChatSidebarProps {
-  chats: Chat[];
-  selectedChat: Chat | null;
-  onSelectChat: (chat: Chat) => void;
+  chats: UnifiedChat[];
+  selectedChat: UnifiedChat | null;
+  onSelectChat: (chat: UnifiedChat) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onImportHistory: () => void;
@@ -53,8 +54,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   canDeleteChats,
 }) => {
   const [activeType, setActiveType] = React.useState<'direct' | 'group'>('direct');
+  const [activePlatform, setActivePlatform] = React.useState<'all' | 'whatsapp' | 'instagram'>('all');
   const [erroredAvatars, setErroredAvatars] = useState<Set<string>>(new Set());
-  const visibleChats = chats.filter((chat) => (activeType === 'group' ? chat.is_group : !chat.is_group));
+  const visibleChats = chats.filter((chat) => {
+    const typeMatch = activeType === 'group' ? chat.is_group : !chat.is_group;
+    const platformMatch = activePlatform === 'all' || chat.platform === activePlatform;
+    return typeMatch && platformMatch;
+  });
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -97,7 +103,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const getChatName = (chat: Chat) => {
+  const getChatName = (chat: UnifiedChat) => {
+    if (chat.platform === 'instagram') {
+      return (
+        chat.instagram_contact_full_name ||
+        (chat.instagram_contact_username
+          ? `@${chat.instagram_contact_username}`
+          : 'Contato Instagram')
+      );
+    }
     return getChatDisplayName(chat) || formatPhoneDisplay(chat.chat_jid) || 'Contato sem telefone';
   };
 
@@ -132,6 +146,38 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           onClick={() => setActiveType('group')}
         >
           Grupos
+        </button>
+      </div>
+
+      <div className="wa-platform-tabs">
+        <button
+          type="button"
+          className={`wa-platform-tab ${activePlatform === 'all' ? 'active' : ''}`}
+          onClick={() => setActivePlatform('all')}
+        >
+          Todos
+        </button>
+        <button
+          type="button"
+          className={`wa-platform-tab ${activePlatform === 'whatsapp' ? 'active' : ''}`}
+          onClick={() => setActivePlatform('whatsapp')}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          WhatsApp
+        </button>
+        <button
+          type="button"
+          className={`wa-platform-tab ${activePlatform === 'instagram' ? 'active' : ''}`}
+          onClick={() => setActivePlatform('instagram')}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+          </svg>
+          Instagram
         </button>
       </div>
 
@@ -232,13 +278,22 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   <span className="wa-chat-name">
                     {chat.is_group && <Users size={12} className="wa-group-icon" />}
                     {getChatName(chat)}
+                    {chat.platform === 'instagram' && (
+                      <span className="wa-platform-badge-sm wa-platform-instagram-sm" title="Instagram">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                          <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                        </svg>
+                      </span>
+                    )}
                   </span>
                   <span className="wa-chat-time">{formatTime(chat.last_message_at)}</span>
                 </div>
                 <div className="wa-chat-bottom">
-                  <p className="wa-chat-preview">{formatChatPreview(chat.last_message) || formatPhoneDisplay(chat.chat_jid) || '...'}</p>
+                  <p className="wa-chat-preview">{formatChatPreview(chat.last_message) || (chat.platform === 'instagram' ? (chat.instagram_contact_username ? `@${chat.instagram_contact_username}` : 'Instagram') : formatPhoneDisplay(chat.chat_jid)) || '...'}</p>
                   {chat.unread_count > 0 && (
-                    <span className="wa-unread-badge">{chat.unread_count > 99 ? '99+' : chat.unread_count}</span>
+                    <span className={`wa-unread-badge ${chat.platform === 'instagram' ? 'wa-unread-ig' : ''}`}>{chat.unread_count > 99 ? '99+' : chat.unread_count}</span>
                   )}
                 </div>
               </div>

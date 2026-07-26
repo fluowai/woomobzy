@@ -118,7 +118,7 @@ export default function FinanceiroUrbano() {
         ))}
       </div>
 
-      <div className="flex gap-2 border-b border-slate-200">
+      <div className="flex gap-2 border-b border-slate-200 overflow-x-auto">
         {[
           { id: 'cobranca', label: 'Cobrancas / Boletos', icon: CreditCard },
           { id: 'fluxo', label: 'Fluxo de Caixa', icon: BarChart2 },
@@ -151,6 +151,7 @@ export default function FinanceiroUrbano() {
               </button>
             </div>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50">
@@ -233,6 +234,7 @@ export default function FinanceiroUrbano() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

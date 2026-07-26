@@ -230,6 +230,95 @@
   background: var(--color-primary-alpha-10);
   color: var(--color-primary);
 }
+
+/* Platform Tabs */
+.wa-platform-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.wa-platform-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-md);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.wa-platform-tab:hover {
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+}
+.wa-platform-tab.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-alpha-10);
+  color: var(--color-primary);
+}
+.wa-platform-tab svg {
+  flex-shrink: 0;
+}
+
+/* Platform Badges */
+.wa-platform-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 8px;
+  vertical-align: middle;
+  line-height: 1;
+}
+.wa-platform-badge svg {
+  flex-shrink: 0;
+}
+.wa-platform-whatsapp {
+  background: rgba(37, 211, 102, 0.12);
+  color: #25D366;
+  border: 1px solid rgba(37, 211, 102, 0.25);
+}
+.wa-platform-instagram {
+  background: linear-gradient(135deg, rgba(131, 58, 180, 0.12), rgba(253, 29, 29, 0.08), rgba(252, 176, 69, 0.08));
+  color: #E1306C;
+  border: 1px solid rgba(225, 48, 108, 0.25);
+}
+.wa-platform-badge-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.wa-platform-instagram-sm {
+  background: linear-gradient(135deg, #833AB4, #FD1D1D, #FCB045);
+  color: white;
+}
+.wa-platform-text-whatsapp {
+  color: #25D366;
+}
+.wa-platform-text-instagram {
+  color: #E1306C;
+}
+.wa-unread-ig {
+  background: linear-gradient(135deg, #833AB4, #FD1D1D) !important;
+}
+
 .wa-sidebar-actions {
   display: grid;
   gap: 8px;

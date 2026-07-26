@@ -279,7 +279,7 @@ const KanbanBoard: React.FC = () => {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 to-white">
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm gap-3">
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search
@@ -289,7 +289,7 @@ const KanbanBoard: React.FC = () => {
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 w-56 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-bold text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+              className="h-9 w-full sm:w-56 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-bold text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
               placeholder="Buscar leads..."
             />
           </div>
@@ -305,7 +305,7 @@ const KanbanBoard: React.FC = () => {
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {selectedLeadIds.length > 0 && (
             <button
               onClick={handleBulkDelete}

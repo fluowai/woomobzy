@@ -122,3 +122,68 @@ Implementação completa do módulo de integração Instagram para o Imobzy, seg
 3. Testar login QR code via `/api/instagram/accounts/connect`
 4. Implementar ContactDrawer e TemplateManager completos (parcialmente feito no Dashboard)
 5. Adicionar sidebar navigation para Instagram nos layouts RuralLayout e UrbanLayout
+
+---
+
+## [2026-07-26] Unified Inbox: Instagram + WhatsApp
+
+### Contexto
+Mesclar as conversas do Instagram no mesmo aba de mensagens do WhatsApp, diferenciadas por badge de plataforma. Antes, o Instagram tinha uma rota separada (`/instagram`), agora é integrado ao inbox principal.
+
+### Arquivos Criados
+
+#### `views/WhatsApp/hooks/unifiedInbox.ts`
+Tipos e adaptadores unificados:
+- `UnifiedChat` — estende `Chat` com `platform: 'whatsapp' | 'instagram'` + campos Instagram opcionais
+- `UnifiedMessage` — estende `Message` com `platform` + `instagram_conversation_id`
+- `whatsappChatToUnified()` — converte WhatsApp Chat para UnifiedChat
+- `instagramConversationToUnified()` — converte InstagramConversation para UnifiedChat
+- `instagramMessageToUnified()` — converte InstagramMessage para UnifiedMessage
+- `sortUnifiedChats()` — ordena por last_message_at DESC
+
+### Arquivos Modificados
+
+#### `views/WhatsApp/WhatsAppDashboard.tsx`
+- Importa `instagramApi` e adaptadores unificados
+- Estados `chats`, `selectedChat`, `messages` agora usam tipos `Unified*`
+- `loadChats()` mescla WhatsApp chats + Instagram conversations com `sortUnifiedChats()`
+- `loadInstagramConversations()` busca conversas Instagram na montagem
+- `loadMessages()` roteia para API correta baseado no `platform`
+- `handleSendMessage()` roteia envio para WhatsApp ou Instagram API
+- `handleSelectChat()` aceita `UnifiedChat`
+- WebSocket handler `new_message` normaliza para `UnifiedChat`/`UnifiedMessage`
+- Busca (`filteredChats`) inclui campos Instagram (`instagram_contact_username`, `instagram_contact_full_name`)
+
+#### `views/WhatsApp/ChatSidebar.tsx`
+- Importa `UnifiedChat`
+- Props usam `UnifiedChat` em vez de `Chat`
+- Nova aba de filtro de plataforma: Todos / WhatsApp / Instagram
+- Badge de plataforma (ícone Instagram) ao lado do nome em conversas Instagram
+- Badge de unread com gradiente Instagram (`wa-unread-ig`)
+- Preview de conversa Instagram mostra `@username`
+
+#### `views/WhatsApp/ChatWindow.tsx`
+- Props usam `UnifiedChat`/`UnifiedMessage`
+- Header mostra badge de plataforma (WhatsApp/Instagram com ícone SVG)
+- Subtitle mostra `@username` ou `via @account_username` para Instagram
+- Contato panel mostra plataforma, conta Instagram
+- CRM actions desabilitadas para conversas Instagram
+- `saveContactName()` funciona para ambas plataformas
+
+#### `views/WhatsApp/whatsapp.css`
+- `.wa-platform-tabs` — aba de filtro com 3 colunas
+- `.wa-platform-tab` — botões de filtro com hover/active states
+- `.wa-platform-badge` — badge no header do chat (WhatsApp verde, Instagram gradiente)
+- `.wa-platform-badge-sm` — badge pequeno no sidebar
+- `.wa-unread-ig` — badge de unread com gradiente Instagram
+- `.wa-platform-text-whatsapp` / `.wa-platform-text-instagram` — cores de texto
+
+### Verificação
+- `type-check` passou: 0 erros novos (2 pré-existentes em SupportManager e PortalProprietarioUrbano)
+- `lint` nos arquivos modificados: 0 erros, warnings pré-existentes de React Hooks deps
+- Commit: `c941adf` pushado para `origin/codex/main-whatsapp-media-hotfix`
+
+### Próximos Passos
+1. Testar fluxo completo: inbox mostra WhatsApp + Instagram, filtro funciona, envio funciona
+2. Considerar remover rota `/instagram` separada (ou manter como atalho)
+3. WebSocket real-time para Instagram (polling por enquanto)

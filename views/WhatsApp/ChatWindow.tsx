@@ -295,7 +295,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Group messages by date
   const visibleMessages = messages.filter(isRenderableMessage);
-  const groupedMessages = visibleMessages.reduce((acc: { date: string; msgs: Message[] }[], msg) => {
+  const groupedMessages = visibleMessages.reduce((acc: { date: string; msgs: UnifiedMessage[] }[], msg) => {
     const date = new Date(msg.timestamp).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',
@@ -650,7 +650,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
 export default ChatWindow;
 
-function isRenderableMessage(message: Message) {
+function isRenderableMessage(message: UnifiedMessage) {
   const content = (message.content || '').trim();
   const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
   return message.type !== 'text' || content || hasMedia;

@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: null,
+        injectRegister: 'auto',
         includeAssets: [
           'logo-wootech-imob.svg',
           'icons/icon-192x192.png',
@@ -105,8 +105,12 @@ export default defineConfig(({ mode }) => {
             '**/templates/**',
             '**/images/fazendas-brasil/**',
             '**/WhatsApp*.jpeg',
+            '**/sw.js',
+            '**/workbox-*.js',
           ],
           maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//, /^\/whatsapp-api\//],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -137,6 +141,29 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'supabase-cache',
                 expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
                 networkTimeoutSeconds: 10,
+              },
+            },
+            {
+              urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'supabase-storage-cache',
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 7,
+                },
+              },
+            },
+            {
+              urlPattern: /\/api\/.*/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'api-cache',
+                expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 },
+                networkTimeoutSeconds: 8,
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
               },
             },
           ],

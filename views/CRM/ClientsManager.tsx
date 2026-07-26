@@ -222,108 +222,185 @@ export default function ClientsManager() {
             </span>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="workspace-table-head border-b border-slate-200">
-                  <th className="p-4 md:p-5">Cliente</th>
-                  <th className="p-4 md:p-5 hidden md:table-cell">Contato</th>
-                  <th className="p-4 md:p-5">Papel</th>
-                  <th className="p-4 md:p-5 hidden lg:table-cell">
-                    Localidade
-                  </th>
-                  <th className="p-4 md:p-5 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map((client) => (
-                  <tr
-                    key={client.id}
-                    className="hover:bg-slate-50/50 transition-colors group"
-                  >
-                    <td className="p-4 md:p-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                          {client.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 group-hover:text-primary transition-colors">
-                            {client.name}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {client.document_number || 'Sem documento'}
-                          </p>
-                        </div>
+          <>
+            {/* Mobile card list */}
+            <div className="divide-y divide-slate-100 md:hidden">
+              {filtered.map((client) => (
+                <article key={client.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                        {client.name.charAt(0).toUpperCase()}
                       </div>
-                    </td>
-                    <td className="p-4 md:p-5 hidden md:table-cell">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Mail size={14} className="text-slate-400" />{' '}
-                          {client.email || '-'}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Phone size={14} className="text-slate-400" />{' '}
-                          {client.phone || '-'}
-                        </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-950 truncate">
+                          {client.name}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {client.document_number || 'Sem documento'}
+                        </p>
                       </div>
-                    </td>
-                    <td className="p-4 md:p-5">
-                      <div className="flex flex-wrap gap-1.5">
-                        {(client.roles || ['Cliente']).map((role) => (
-                          <span
-                            key={role}
-                            className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200"
-                          >
-                            {role}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="p-4 md:p-5 hidden lg:table-cell">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <MapPin size={14} className="text-slate-400" />
-                        {[client.city, client.state]
-                          .filter(Boolean)
-                          .join(', ') || '-'}
-                      </div>
-                    </td>
-                    <td className="p-4 md:p-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEdit(client)}
-                          className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(client.id, client.name)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                          <MoreVertical size={18} />
-                        </button>
-                      </div>
-                    </td>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => openEdit(client)}
+                        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(client.id, client.name)}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {(client.roles || ['Cliente']).map((role) => (
+                      <span
+                        key={role}
+                        className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200"
+                      >
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 space-y-1.5 text-sm font-semibold text-slate-600">
+                    {client.phone && (
+                      <span className="flex items-center gap-2">
+                        <Phone size={14} /> {client.phone}
+                      </span>
+                    )}
+                    {client.email && (
+                      <span className="flex items-center gap-2 break-all">
+                        <Mail size={14} /> {client.email}
+                      </span>
+                    )}
+                    {(client.city || client.state) && (
+                      <span className="flex items-center gap-2 text-xs text-slate-400">
+                        <MapPin size={14} />
+                        {[client.city, client.state].filter(Boolean).join(', ')}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              ))}
+              {filtered.length === 0 && (
+                <div className="px-5 py-12 text-center text-slate-400 font-semibold">
+                  {searchTerm || roleFilter !== 'Todos'
+                    ? 'Nenhum cliente encontrado com esses filtros.'
+                    : 'Nenhum cliente cadastrado. Clique em "Novo Cliente" para adicionar.'}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="workspace-table-head border-b border-slate-200">
+                    <th className="p-4 md:p-5">Cliente</th>
+                    <th className="p-4 md:p-5">Contato</th>
+                    <th className="p-4 md:p-5">Papel</th>
+                    <th className="p-4 md:p-5 hidden lg:table-cell">
+                      Localidade
+                    </th>
+                    <th className="p-4 md:p-5 text-right">Ações</th>
                   </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="p-12 text-center text-slate-400 font-semibold"
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.map((client) => (
+                    <tr
+                      key={client.id}
+                      className="hover:bg-slate-50/50 transition-colors group"
                     >
-                      {searchTerm || roleFilter !== 'Todos'
-                        ? 'Nenhum cliente encontrado com esses filtros.'
-                        : 'Nenhum cliente cadastrado. Clique em "Novo Cliente" para adicionar.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      <td className="p-4 md:p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            {client.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 group-hover:text-primary transition-colors">
+                              {client.name}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {client.document_number || 'Sem documento'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 md:p-5">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <Mail size={14} className="text-slate-400" />{' '}
+                            {client.email || '-'}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <Phone size={14} className="text-slate-400" />{' '}
+                            {client.phone || '-'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 md:p-5">
+                        <div className="flex flex-wrap gap-1.5">
+                          {(client.roles || ['Cliente']).map((role) => (
+                            <span
+                              key={role}
+                              className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200"
+                            >
+                              {role}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-4 md:p-5 hidden lg:table-cell">
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <MapPin size={14} className="text-slate-400" />
+                          {[client.city, client.state]
+                            .filter(Boolean)
+                            .join(', ') || '-'}
+                        </div>
+                      </td>
+                      <td className="p-4 md:p-5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEdit(client)}
+                            className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(client.id, client.name)}
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                          <button className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                            <MoreVertical size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="p-12 text-center text-slate-400 font-semibold"
+                      >
+                        {searchTerm || roleFilter !== 'Todos'
+                          ? 'Nenhum cliente encontrado com esses filtros.'
+                          : 'Nenhum cliente cadastrado. Clique em "Novo Cliente" para adicionar.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

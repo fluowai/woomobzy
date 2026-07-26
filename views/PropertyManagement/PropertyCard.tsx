@@ -10,6 +10,7 @@ import {
   Megaphone,
   Check,
   Globe,
+  Instagram,
 } from 'lucide-react';
 import { Property } from '../../types';
 
@@ -24,6 +25,7 @@ interface PropertyCardProps {
   onDelete: (id: string) => void;
   onPortalPublish: (id: string, portal: string) => void;
   onPortalUnpublish: (id: string, portal: string) => void;
+  onInstagram?: (property: Property) => void;
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -37,6 +39,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   onDelete,
   onPortalPublish,
   onPortalUnpublish,
+  onInstagram,
 }) => {
   const navigate = useNavigate();
   const acp = (property.features as any)?.acp;
@@ -186,6 +189,15 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                 >
                   <Eye size={18} />
                 </button>
+                {onInstagram && (
+                  <button
+                    onClick={() => onInstagram(property)}
+                    className="p-2 text-text-tertiary hover:text-pink-600 transition-colors bg-bg-hover rounded-lg"
+                    title="Gerar arte Instagram"
+                  >
+                    <Instagram size={18} />
+                  </button>
+                )}
                 <button
                   onClick={() => onDelete(property.id!)}
                   className="p-2 text-text-tertiary hover:text-red-500 transition-colors bg-bg-hover rounded-lg"

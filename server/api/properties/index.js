@@ -3,6 +3,7 @@ import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { enrichPropertyWithAcp } from '../../services/acpPropertyAgent.js';
+import instagramPostRouter from './instagram-post.js';
 import {
   applyRuralFilter,
   applyUrbanFilter,
@@ -12,6 +13,7 @@ import {
 } from '../../utils/propertyNiche.js';
 
 const router = Router();
+router.use(instagramPostRouter);
 
 const supabase = new Proxy(
   {},

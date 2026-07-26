@@ -148,6 +148,18 @@ services:
     networks:
       - imobfluow_internal
 
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - imobfluow_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     hostname: rabbitmq
@@ -170,6 +182,44 @@ services:
     networks:
       - imobfluow_internal
 
+  instagram-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.instagram-service
+    environment:
+      NODE_ENV: production
+      PORT: "3200"
+      SUPABASE_URL: "https://epgaftsjmqmpczvzsrcc.supabase.co"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo"
+      SUPABASE_JWT_SECRET: "73DeEki4cY5JF5Rc07BwngLMiBc41yjQoDvuNGnC526kSmeJaIlgV0mArtRGJ4268vzu0/svBebqwAu0onL1mA=="
+      REDIS_URL: "redis://redis:6379"
+      INSTAGRAM_WORKER_URL: "http://instagram-worker:8000"
+      INSTAGRAM_INTERNAL_TOKEN: "ig-internal-token-change-in-production"
+      ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br"
+    depends_on:
+      - redis
+    networks:
+      - imobfluow_internal
+
+  instagram-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.instagram-worker
+    environment:
+      SUPABASE_URL: "https://epgaftsjmqmpczvzsrcc.supabase.co"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo"
+      REDIS_URL: "redis://redis:6379"
+      INSTAGRAM_INTERNAL_TOKEN: "ig-internal-token-change-in-production"
+      NODE_SERVICE_URL: "http://instagram-service:3200"
+      INSTAGRAM_ENCRYPTION_SECRET: "change-in-production"
+    volumes:
+      - instagram_devices:/data/devices
+      - instagram_sessions:/data/sessions
+    depends_on:
+      - redis
+    networks:
+      - imobfluow_internal
+
   omniroute:
     image: diegosouzapw/omniroute:latest
     container_name: imobzy-omniroute
@@ -188,6 +238,9 @@ volumes:
   whatsapp_sessions:
   waha_sessions:
   rabbitmq_data:
+  instagram_devices:
+  instagram_sessions:
+  redis_data:
   imobzy_traefik_dynamic:
     external: true
 

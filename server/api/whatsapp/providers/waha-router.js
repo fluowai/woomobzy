@@ -149,34 +149,25 @@ export function createWahaRouter({
 
     if (error) return res.status(500).json({ error: error.message });
 
-    try {
-      await client.ensureSession(instance);
-      await updateInstance(instance.id, req.orgId, { status: 'qr_pending' });
-      return res
-        .status(201)
-        .json({ ...normalizeInstanceRow(instance), status: 'qr_pending' });
-    } catch (providerError) {
-      await updateInstance(instance.id, req.orgId, { status: 'disconnected' });
-      return res.status(502).json({
-        error: 'Motor WAHA indisponivel',
-        code: 'WHATSAPP_PROVIDER_UNREACHABLE',
-        message: providerError.message,
-        instance: normalizeInstanceRow({ ...instance, status: 'disconnected' }),
-      });
-    }
+    client.ensureSession(instance).catch((providerError) => {
+      console.error(
+        '[WAHA] ensureSession failed for',
+        instance.id,
+        providerError.message
+      );
+      updateInstance(instance.id, req.orgId, { status: 'disconnected' }).catch(
+        () => {}
+      );
+    });
+
+    return res
+      .status(201)
+      .json(normalizeInstanceRow(instance));
   });
 
   router.get('/instances/:id', verifyAuth, requireTenant, async (req, res) => {
     const instance = await getInstance(req.params.id, req.orgId);
     if (!instance) return res.status(404).json({ error: 'Instance not found' });
-
-    const status = await client.getSessionStatus(instance).catch(() => null);
-    if (status?.me) {
-      await updateInstance(instance.id, req.orgId, {
-        phone: status.me.id ? status.me.id.split('@')[0] : instance.phone,
-        jid: status.me.id || instance.jid,
-      });
-    }
 
     res.json(normalizeInstanceRow(instance));
   });

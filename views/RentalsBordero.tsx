@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
-import { FileDown, Calendar, Search, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
+import { FileDown, Search, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { supabase } from '@/services/supabase';
+import { logger } from '@/utils/logger';
 
 export function RentalsBordero() {
   const { user } = useAuth();
@@ -29,7 +30,7 @@ export function RentalsBordero() {
         setLeases(data.data);
       }
     } catch (error) {
-      console.error('Erro ao buscar locações ativas', error);
+      logger.error('Erro ao buscar locações ativas:', error);
     }
   };
 
@@ -48,7 +49,7 @@ export function RentalsBordero() {
         alert('Nenhuma fatura paga encontrada para este período');
       }
     } catch (error) {
-      console.error('Erro ao gerar bordero', error);
+      logger.error('Erro ao gerar bordero:', error);
       alert('Erro ao gerar borderô');
     } finally {
       setLoading(false);

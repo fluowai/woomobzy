@@ -23,6 +23,7 @@ import OruloFiltersPanel from './PropertyManagement/OruloFiltersPanel';
 import PropertyCard from './PropertyManagement/PropertyCard';
 import PropertyMobileCard from './PropertyManagement/PropertyMobileCard';
 import PropertyTableRow from './PropertyManagement/PropertyTableRow';
+import InstagramPostGenerator from './PropertyManagement/InstagramPostGenerator';
 
 const INITIAL_ORULO_FILTERS = {
   state: '',
@@ -45,6 +46,7 @@ const PropertyManagement: React.FC = () => {
   const [oruloSyncing, setOruloSyncing] = useState(false);
   const [showOruloFilters, setShowOruloFilters] = useState(false);
   const [oruloFilters, setOruloFilters] = useState(INITIAL_ORULO_FILTERS);
+  const [instagramProperty, setInstagramProperty] = useState<Property | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const isRural = location.pathname.startsWith('/rural');
@@ -391,6 +393,7 @@ const PropertyManagement: React.FC = () => {
                   onDelete={handleDelete}
                   onPortalPublish={handlePortalPublish}
                   onPortalUnpublish={handlePortalUnpublish}
+                  onInstagram={setInstagramProperty}
                 />
               ))}
             </div>
@@ -446,6 +449,12 @@ const PropertyManagement: React.FC = () => {
           )}
         </>
       )}
+
+      <InstagramPostGenerator
+        property={instagramProperty as any}
+        isOpen={!!instagramProperty}
+        onClose={() => setInstagramProperty(null)}
+      />
     </div>
   );
 };

@@ -191,6 +191,70 @@ services:
     logging: *default-logging
     restart: unless-stopped
 
+  instagram-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.instagram-service
+    environment:
+      NODE_ENV: development
+      PORT: "3200"
+      REDIS_URL: "redis://redis:6379"
+      INSTAGRAM_WORKER_URL: "http://instagram-worker:8000"
+      INSTAGRAM_INTERNAL_TOKEN: "ig-internal-token-local"
+      ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
+    env_file:
+      - .env.production
+    expose:
+      - '3200'
+    depends_on:
+      - redis
+    networks:
+      - imobzy
+    cpus: '0.50'
+    mem_limit: 256m
+    logging: *default-logging
+    restart: unless-stopped
+
+  instagram-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.instagram-worker
+    environment:
+      REDIS_URL: "redis://redis:6379"
+      INSTAGRAM_INTERNAL_TOKEN: "ig-internal-token-local"
+      NODE_SERVICE_URL: "http://instagram-service:3200"
+    env_file:
+      - .env.production
+    volumes:
+      - instagram_devices:/data/devices
+      - instagram_sessions:/data/sessions
+    expose:
+      - '8000'
+    depends_on:
+      - redis
+    networks:
+      - imobzy
+    cpus: '1.00'
+    mem_limit: 512m
+    logging: *default-logging
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    expose:
+      - '6379'
+    networks:
+      - imobzy
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+    restart: unless-stopped
+
   omniroute:
     image: diegosouzapw/omniroute:latest
     container_name: imobzy-omniroute
@@ -208,6 +272,9 @@ services:
 volumes:
   whatsapp_sessions:
   waha_sessions:
+  instagram_devices:
+  instagram_sessions:
+  redis_data:
 
 networks:
   imobzy:

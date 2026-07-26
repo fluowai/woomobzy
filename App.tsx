@@ -171,7 +171,14 @@ const PublicSite = lazy(() => import('./views/PublicSite'));
 const WhatsAppDashboard = lazy(
   () => import('./views/WhatsApp/WhatsAppDashboard')
 );
+const CampaignManager = lazy(() => import('./views/WhatsApp/CampaignManager'));
+const CampaignEditor = lazy(() => import('./views/WhatsApp/CampaignEditor'));
 const EmailCenter = lazy(() => import('./views/EmailCenter'));
+
+// Instagram
+const InstagramDashboard = lazy(
+  () => import('./views/Instagram/InstagramDashboard')
+);
 
 // ==========================================
 // MAIN APP CONTENT
@@ -307,6 +314,9 @@ const AppContent: React.FC = () => {
             <Route path="financial" element={<FinanceiroRural />} />
             <Route path="financeiro-advanced" element={<Locacao />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
+            <Route path="whatsapp/campaigns" element={<CampaignManager />} />
+            <Route path="whatsapp/campaigns/:id" element={<CampaignEditor />} />
+            <Route path="instagram" element={<InstagramDashboard />} />
             <Route path="email" element={<EmailCenter />} />
             <Route path="connections" element={<ConexoesRural />} />
             <Route path="integrations" element={<SystemSettings />} />
@@ -374,6 +384,9 @@ const AppContent: React.FC = () => {
             <Route path="wootech-ai" element={<WooTechAI />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
+            <Route path="whatsapp/campaigns" element={<CampaignManager />} />
+            <Route path="whatsapp/campaigns/:id" element={<CampaignEditor />} />
+            <Route path="instagram" element={<InstagramDashboard />} />
             <Route path="email" element={<EmailCenter />} />
             <Route path="connections" element={<ConexoesUrbano />} />
             <Route path="integrations" element={<SystemSettings />} />

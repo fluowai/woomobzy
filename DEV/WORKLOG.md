@@ -58,3 +58,67 @@ Migration criando as tabelas:
 ### Próximas Fases (Planejamento)
 - **Fase 2**: Empacotar PWA com Capacitor para App Store / Google Play
 - **Fase 3**: Auditoria corporativa estrita (logs imutáveis) + módulo de Repasse de Financiamento de lançamentos
+
+---
+
+## [2026-07-26] Instagram Integration Module
+
+### Contexto
+Implementação completa do módulo de integração Instagram para o Imobzy, seguindo a arquitetura two-service (Node.js + Python worker) conforme especificação do maestro.
+
+### Arquivos Criados
+
+#### DB Migration
+- `migrations/20260726_instagram_integration_module.sql` — 9 tabelas: `instagram_accounts`, `instagram_sessions`, `instagram_contacts`, `instagram_conversations`, `instagram_messages`, `instagram_templates`, `instagram_templates_variables`, `instagram_broadcast_groups`, `instagram_broadcast_recipients`. Todas com RLS por `company_id`, triggers `updated_at`, e índices de performance.
+
+#### Node.js Service (`instagram-service/`)
+- `package.json` — Dependências: Express, BullMQ, WebSocket, Supabase, Helmet, CORS
+- `src/index.js` — Express server na porta 3200 com WebSocket para real-time, rotas `/api/instagram/*`
+- `src/middleware/auth.js` — JWT auth via Supabase + company isolation via `x-company-id`
+- `src/lib/worker-client.js` — HTTP client para comunicação com Python worker
+- `src/lib/encryption.js` — AES-256-GCM encryption/decryption para credenciais
+- `src/lib/queue.js` — BullMQ queue `instagram-worker-tasks`
+- `src/routes/accounts.js` — CRUD contas Instagram + connect via QR code
+- `src/routes/contacts.js` — Listagem, busca, update de contatos
+- `src/routes/conversations.js` — Listagem de conversas com filtros
+- `src/routes/messages.js` — Envio/recebimento de mensagens com WebSocket broadcast
+- `src/routes/templates.js` — CRUD templates de mensagem com variáveis
+- `src/routes/broadcasts.js` — Campanhas de broadcast com envio via BullMQ
+- `src/routes/webhooks.js` — Webhooks para receber mensagens/status do worker Python
+
+#### Python Worker (`instagram-worker/`)
+- `requirements.txt` — instagrapi, fastapi, uvicorn, bullmq, redis, httpx
+- `app/__init__.py`
+- `app/config.py` — Configuração via env vars
+- `app/models.py` — Pydantic models para requests
+- `app/instagram_client.py` — Wrapper instagrapi com login QR, sessões, envio
+- `app/worker.py` — BullMQ worker para processar tarefas da fila
+- `app/main.py` — FastAPI server na porta 8000 com endpoints internos
+
+#### Docker
+- `Dockerfile.instagram-service` — Node.js 20 Alpine
+- `Dockerfile.instagram-worker` — Python 3.12 slim
+- `docker-compose.yml` — Adicionados services `instagram-service`, `instagram-worker`, `redis` + volumes
+- `docker-compose.local.yml` — Adicionados services locais com healthchecks
+
+#### Frontend
+- `views/Instagram/InstagramDashboard.tsx` — Dashboard completo com inbox, contacts, templates, broadcasts, settings
+- `views/Instagram/hooks/api.ts` — API client tipado para todas as rotas
+- `views/Instagram/hooks/useWebSocket.ts` — Hook WebSocket para real-time
+
+### Arquivos Modificados
+- `App.tsx` — Lazy import `InstagramDashboard` + rotas `/instagram` no rural e urban panels
+
+### Verificação
+- Migration SQL válido (9 tabelas + RLS + triggers + indexes)
+- Node.js service com 7 route files seguindo padrões existentes
+- Python worker com FastAPI + BullMQ processing
+- Docker compose atualizado para ambos ambientes
+- Frontend com TypeScript types completos
+
+### Próximos Passos
+1. Executar migration `20260726_instagram_integration_module.sql` no Supabase SQL Editor
+2. Subir serviços via `docker-compose up instagram-service instagram-worker redis`
+3. Testar login QR code via `/api/instagram/accounts/connect`
+4. Implementar ContactDrawer e TemplateManager completos (parcialmente feito no Dashboard)
+5. Adicionar sidebar navigation para Instagram nos layouts RuralLayout e UrbanLayout

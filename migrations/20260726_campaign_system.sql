@@ -77,10 +77,16 @@ CREATE TABLE IF NOT EXISTS public.campaign_serper_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   query TEXT NOT NULL,
-  gl TEXT DEFAULT 'br',
-  search_type TEXT DEFAULT 'places',
-  results JSONB DEFAULT '[]'::jsonb,
-  result_count INT DEFAULT 0,
+  result_type TEXT DEFAULT 'places',
+  name TEXT,
+  phone TEXT,
+  address TEXT,
+  website TEXT,
+  cid TEXT,
+  rating NUMERIC,
+  reviews INT,
+  category TEXT,
+  raw_data JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

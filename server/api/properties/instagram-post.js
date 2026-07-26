@@ -181,6 +181,29 @@ async function fetchImageBuffer(url) {
   return Buffer.from(arrayBuffer);
 }
 
+const MEDIA_POSTS_BUCKET = 'media-posts';
+
+async function composeInstagramImage(property, settings, template, format, imageIndex) {
+  const images = property.images || [];
+  const imageUrl = images[Math.min(imageIndex, images.length - 1)];
+  const [w, h] = format === '1080x1350' ? [1080, 1350] : [1080, 1080];
+
+  const photoBuffer = await fetchImageBuffer(imageUrl);
+
+  const resizedPhoto = await sharp(photoBuffer)
+    .resize(w, h, { fit: 'cover', position: 'centre' })
+    .toBuffer();
+
+  const svgOverlay = getTemplateSVG(template, property, settings, w, h);
+
+  const finalImage = await sharp(resizedPhoto)
+    .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
+    .png({ quality: 95 })
+    .toBuffer();
+
+  return { finalImage, w, h };
+}
+
 router.post(
   '/:id/instagram-post',
   verifyAuth,
@@ -188,7 +211,7 @@ router.post(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { template = 'padrao', format = '1080x1080', imageIndex = 0 } = req.body;
+      const { template = 'padrao', format = '1080x1080', imageIndex = 0, save = false } = req.body;
 
       const { data: property, error: propError } = await supabase
         .from('properties')
@@ -206,41 +229,66 @@ router.post(
         return res.status(400).json({ error: 'Imóvel não possui imagens' });
       }
 
-      const imageUrl = images[Math.min(imageIndex, images.length - 1)];
-
       const { data: settings } = await supabase
         .from('site_settings')
         .select('logo_url, agency_name, primary_color, secondary_color')
         .eq('organization_id', req.orgId)
         .maybeSingle();
 
-      const [w, h] = format === '1080x1350' ? [1080, 1350] : [1080, 1080];
+      const { finalImage } = await composeInstagramImage(property, settings, template, format, imageIndex);
 
-      let photoBuffer;
-      try {
-        photoBuffer = await fetchImageBuffer(imageUrl);
-      } catch {
-        return res.status(400).json({ error: 'Não foi possível baixar a imagem do imóvel' });
+      if (!save) {
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Length', finalImage.length);
+        res.setHeader(
+          'Content-Disposition',
+          `inline; filename="instagram-${property.title?.replace(/\s+/g, '-').toLowerCase() || 'post'}.png"`
+        );
+        return res.send(finalImage);
       }
 
-      const resizedPhoto = await sharp(photoBuffer)
-        .resize(w, h, { fit: 'cover', position: 'centre' })
-        .toBuffer();
+      const slug = (property.title || 'post').replace(/[^a-zA-Z0-9\u00C0-\u00FF]+/g, '-').toLowerCase().slice(0, 60);
+      const storagePath = `${req.orgId}/${id}/${slug}-${template}-${format}-${Date.now()}.png`;
 
-      const svgOverlay = getTemplateSVG(template, property, settings, w, h);
+      const { error: uploadError } = await supabase.storage
+        .from(MEDIA_POSTS_BUCKET)
+        .upload(storagePath, finalImage, { contentType: 'image/png', upsert: false });
 
-      const finalImage = await sharp(resizedPhoto)
-        .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
-        .png({ quality: 95 })
-        .toBuffer();
+      if (uploadError) {
+        console.error('[InstagramPost] Upload error:', uploadError.message);
+        return res.status(500).json({ error: 'Erro ao salvar imagem no storage' });
+      }
 
-      res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Content-Length', finalImage.length);
-      res.setHeader(
-        'Content-Disposition',
-        `inline; filename="instagram-${property.title?.replace(/\s+/g, '-').toLowerCase() || 'post'}.png"`
-      );
-      res.send(finalImage);
+      const { data: urlData } = supabase.storage
+        .from(MEDIA_POSTS_BUCKET)
+        .getPublicUrl(storagePath);
+
+      const { data: mediaPost, error: dbError } = await supabase
+        .from('media_posts')
+        .insert({
+          company_id: req.orgId,
+          property_id: id,
+          template,
+          format,
+          image_index: imageIndex,
+          storage_path: storagePath,
+          public_url: urlData.publicUrl,
+          file_size_bytes: finalImage.length,
+          status: 'draft',
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('[InstagramPost] DB insert error:', dbError.message);
+        return res.status(500).json({ error: 'Erro ao registrar post' });
+      }
+
+      res.status(201).json({
+        success: true,
+        mediaPost,
+        url: urlData.publicUrl,
+      });
     } catch (err) {
       console.error('[InstagramPost] Error:', err.message);
       res.status(500).json({ error: 'Erro ao gerar arte' });
@@ -299,6 +347,79 @@ router.get(
     } catch (err) {
       console.error('[InstagramPost Preview] Error:', err.message);
       res.status(500).json({ error: 'Erro ao gerar preview' });
+    }
+  }
+);
+
+router.get(
+  '/:id/instagram-post/list',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { page = 1, limit = 20 } = req.query;
+      const offset = (page - 1) * limit;
+
+      const { data, error, count } = await supabase
+        .from('media_posts')
+        .select('*', { count: 'exact' })
+        .eq('property_id', id)
+        .eq('company_id', req.orgId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        posts: data || [],
+        pagination: {
+          total: count,
+          page: Number(page),
+          limit: Number(limit),
+        },
+      });
+    } catch (err) {
+      console.error('[InstagramPost List] Error:', err.message);
+      res.status(500).json({ error: 'Erro ao listar posts salvos' });
+    }
+  }
+);
+
+router.delete(
+  '/:id/instagram-post/:postId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { postId } = req.params;
+
+      const { data: post, error: fetchError } = await supabase
+        .from('media_posts')
+        .select('storage_path')
+        .eq('id', postId)
+        .eq('company_id', req.orgId)
+        .single();
+
+      if (fetchError || !post) {
+        return res.status(404).json({ error: 'Post não encontrado' });
+      }
+
+      await supabase.storage.from(MEDIA_POSTS_BUCKET).remove([post.storage_path]);
+
+      const { error: dbError } = await supabase
+        .from('media_posts')
+        .delete()
+        .eq('id', postId)
+        .eq('company_id', req.orgId);
+
+      if (dbError) throw dbError;
+
+      res.json({ success: true, message: 'Post excluído' });
+    } catch (err) {
+      console.error('[InstagramPost Delete] Error:', err.message);
+      res.status(500).json({ error: 'Erro ao excluir post' });
     }
   }
 );

@@ -10,14 +10,24 @@ import {
   Sparkles,
   LayoutGrid,
   RectangleVertical,
+  Save,
+  Trash2,
+  Clock,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   generateInstagramPost,
+  saveInstagramPost,
+  listMediaPosts,
+  deleteMediaPost,
   getPreviewUrl,
   TEMPLATE_LABELS,
   FORMAT_LABELS,
   type InstagramTemplate,
   type InstagramFormat,
+  type MediaPost,
 } from '../../services/propertyInstagram';
 import type { Property } from '../../types';
 
@@ -62,10 +72,34 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
   const [format, setFormat] = useState<InstagramFormat>('1080x1080');
   const [imageIndex, setImageIndex] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const previewImgRef = useRef<HTMLImageElement>(null);
 
+  const [savedPosts, setSavedPosts] = useState<MediaPost[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+
   const images = property.images || [];
+
+  const loadSavedPosts = useCallback(async () => {
+    if (!property.id) return;
+    setLoadingSaved(true);
+    try {
+      const { posts } = await listMediaPosts(property.id);
+      setSavedPosts(posts);
+    } catch {
+      // silent
+    } finally {
+      setLoadingSaved(false);
+    }
+  }, [property.id]);
+
+  useEffect(() => {
+    if (isOpen && showSaved) {
+      loadSavedPosts();
+    }
+  }, [isOpen, showSaved, loadSavedPosts]);
 
   const refreshPreview = useCallback(() => {
     if (!property.id) return;
@@ -101,6 +135,30 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
       alert(err.message || 'Erro ao gerar arte');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!property.id) return;
+    setSaving(true);
+    try {
+      await saveInstagramPost(property.id, template, format, imageIndex);
+      loadSavedPosts();
+      setShowSaved(true);
+    } catch (err: any) {
+      alert(err.message || 'Erro ao salvar arte');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (postId: string) => {
+    if (!property.id || !window.confirm('Excluir este post salvo?')) return;
+    try {
+      await deleteMediaPost(property.id, postId);
+      setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+    } catch (err: any) {
+      alert(err.message || 'Erro ao excluir');
     }
   };
 
@@ -249,23 +307,45 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
               </div>
             )}
 
-            {/* Download Button */}
-            <button
-              onClick={handleDownload}
-              disabled={generating}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25"
-            >
-              {generating ? (
-                <>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleDownload}
+                disabled={generating}
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Download size={18} />
+                    Baixar
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="py-3 px-4 rounded-xl border-2 border-emerald-500 text-emerald-600 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-emerald-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
                   <Loader2 size={18} className="animate-spin" />
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <Download size={18} />
-                  Baixar PNG
-                </>
-              )}
+                ) : (
+                  <Save size={18} />
+                )}
+              </button>
+            </div>
+
+            {/* Saved posts toggle */}
+            <button
+              onClick={() => { setShowSaved(!showSaved); }}
+              className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
+            >
+              <Clock size={15} />
+              {showSaved ? 'Voltar ao Editor' : `Posts Salvos (${savedPosts.length})`}
             </button>
 
             <p className="text-[11px] text-slate-400 text-center leading-relaxed">
@@ -274,23 +354,88 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
             </p>
           </div>
 
-          {/* Right: Preview */}
+          {/* Right: Preview or Saved Gallery */}
           <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
-            <div className="relative max-h-full">
-              {previewUrl ? (
-                <img
-                  ref={previewImgRef}
-                  src={previewUrl}
-                  alt="Preview da arte"
-                  className="max-h-[65vh] max-w-full rounded-lg shadow-xl object-contain"
-                  key={previewUrl}
-                />
-              ) : (
-                <div className="w-80 h-80 rounded-lg bg-slate-200 flex items-center justify-center">
-                  <Loader2 size={32} className="animate-spin text-slate-400" />
+            {showSaved ? (
+              <div className="w-full h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-slate-700">
+                    Posts Salvos
+                  </h3>
+                  {loadingSaved && <Loader2 size={16} className="animate-spin text-slate-400" />}
                 </div>
-              )}
-            </div>
+                {savedPosts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                    <ImageIcon size={40} className="mb-3 opacity-40" />
+                    <p className="text-sm">Nenhum post salvo ainda</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {savedPosts.map((post) => (
+                      <div
+                        key={post.id}
+                        className="relative group rounded-xl overflow-hidden border border-slate-200 bg-white"
+                      >
+                        <img
+                          src={post.public_url}
+                          alt={`Post ${post.template}`}
+                          className="w-full aspect-square object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-end justify-between p-2 opacity-0 group-hover:opacity-100">
+                          <div className="flex gap-1.5">
+                            <a
+                              href={post.public_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-8 h-8 rounded-lg bg-white/90 flex items-center justify-center text-slate-700 hover:bg-white transition-colors"
+                              download
+                            >
+                              <Download size={14} />
+                            </a>
+                          </div>
+                          <button
+                            onClick={() => handleDelete(post.id)}
+                            className="w-8 h-8 rounded-lg bg-red-500/90 flex items-center justify-center text-white hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <div className="p-2 border-t border-slate-100">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-medium text-slate-500 uppercase">
+                              {TEMPLATE_LABELS[post.template]}
+                            </span>
+                            <span className="text-[10px] text-slate-300">•</span>
+                            <span className="text-[10px] text-slate-400">
+                              {post.format === '1080x1080' ? '1:1' : '4:5'}
+                            </span>
+                            {post.status === 'posted' && (
+                              <CheckCircle2 size={12} className="text-emerald-500 ml-auto" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="relative max-h-full">
+                {previewUrl ? (
+                  <img
+                    ref={previewImgRef}
+                    src={previewUrl}
+                    alt="Preview da arte"
+                    className="max-h-[65vh] max-w-full rounded-lg shadow-xl object-contain"
+                    key={previewUrl}
+                  />
+                ) : (
+                  <div className="w-80 h-80 rounded-lg bg-slate-200 flex items-center justify-center">
+                    <Loader2 size={32} className="animate-spin text-slate-400" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

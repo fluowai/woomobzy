@@ -10,11 +10,18 @@ import {
   isSupportedChat,
   normalizeMessagePreview,
   type Instance,
-  type Chat,
-  type Message,
   type WhatsAppMediaStatusEvent,
   type WhatsAppMessageReceiptEvent,
 } from './hooks/api';
+import {
+  type UnifiedChat,
+  type UnifiedMessage,
+  whatsappChatToUnified,
+  instagramConversationToUnified,
+  instagramMessageToUnified,
+  sortUnifiedChats,
+} from './hooks/unifiedInbox';
+import { instagramApi } from '@/views/Instagram/hooks/api';
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import InstanceManager from './InstanceManager';
@@ -59,9 +66,9 @@ const WhatsAppDashboard: React.FC = () => {
   const [selectedInstance, setSelectedInstance] = useState<Instance | null>(
     null
   );
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [chats, setChats] = useState<UnifiedChat[]>([]);
+  const [selectedChat, setSelectedChat] = useState<UnifiedChat | null>(null);
+  const [messages, setMessages] = useState<UnifiedMessage[]>([]);
   const [showInstanceManager, setShowInstanceManager] = useState(false);
   const [showQueuesManager, setShowQueuesManager] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -161,9 +168,14 @@ const WhatsAppDashboard: React.FC = () => {
     if (selectedInstance) {
       loadChats(selectedInstance.id);
     } else {
-      setChats([]);
+      setChats((prev) => prev.filter((c) => c.platform === 'instagram'));
     }
   }, [selectedInstance]);
+
+  // Load Instagram conversations on mount
+  useEffect(() => {
+    loadInstagramConversations();
+  }, []);
 
   useEffect(() => {
     const shouldTrackImport =
@@ -190,11 +202,15 @@ const WhatsAppDashboard: React.FC = () => {
 
   // Load messages when chat changes
   useEffect(() => {
-    if (selectedChat && selectedInstance) {
+    if (selectedChat) {
       setMessages([]);
-      loadMessages(selectedChat.id, selectedInstance.id);
-      // Mark as read
-      chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
+      if (selectedChat.platform === 'instagram') {
+        loadMessages(selectedChat.id, '', 'instagram');
+        instagramApi.messages.markRead(selectedChat.instagram_conversation_id!).catch(() => {});
+      } else if (selectedInstance) {
+        loadMessages(selectedChat.id, selectedInstance.id, 'whatsapp');
+        chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
+      }
     } else {
       setMessages([]);
     }
@@ -213,42 +229,40 @@ const WhatsAppDashboard: React.FC = () => {
       )
         return;
 
+      const unifiedChat = whatsappChatToUnified({
+        ...chat,
+        last_message: normalizeMessagePreview(chat.last_message),
+      });
+      const unifiedMsg: UnifiedMessage = { ...message, platform: 'whatsapp' };
+
       // Update chat list
       setChats((prev) => {
         const existing = prev.find((c) => c.id === chat.id);
         const unreadCount =
           selectedChat?.id === chat.id ? 0 : chat.unread_count;
         if (existing) {
-          return prev
-            .map((c) =>
+          return sortUnifiedChats(
+            prev.map((c) =>
               c.id === chat.id
                 ? {
                     ...c,
-                    ...chat,
+                    ...unifiedChat,
                     last_message: normalizeMessagePreview(chat.last_message),
                     last_message_at: chat.last_message_at,
                     unread_count: unreadCount,
                   }
                 : c
             )
-            .sort((a, b) => {
-              const dateA = a.last_message_at
-                ? new Date(a.last_message_at).getTime()
-                : 0;
-              const dateB = b.last_message_at
-                ? new Date(b.last_message_at).getTime()
-                : 0;
-              return dateB - dateA;
-            });
+          );
         } else {
-          return [
+          return sortUnifiedChats([
             {
-              ...chat,
+              ...unifiedChat,
               unread_count: unreadCount,
               last_message: normalizeMessagePreview(chat.last_message),
             },
             ...prev,
-          ];
+          ]);
         }
       });
 
@@ -258,11 +272,13 @@ const WhatsAppDashboard: React.FC = () => {
           // Avoid duplicates
           if (prev.find((m) => m.message_id === message.message_id))
             return prev;
-          return [...prev, message];
+          return [...prev, unifiedMsg];
         });
 
         // Mark as read since chat is open
-        chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
+        if (selectedInstance) {
+          chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
+        }
       }
     });
 
@@ -307,13 +323,13 @@ const WhatsAppDashboard: React.FC = () => {
         importedMessages: prev.importedMessages + Number(data.messages || 0),
         importedChats: prev.importedChats + Number(data.chats || 0),
       }));
-      loadChats(selectedInstance.id);
-      if (selectedChat?.instance_id === selectedInstance.id) {
-        loadMessages(selectedChat.id, selectedInstance.id);
-      }
       toast.success(
         `Histórico importado: ${data.messages || 0} mensagens em ${data.chats || 0} conversas.`
       );
+      if (selectedInstance) loadChats(selectedInstance.id);
+      if (selectedChat?.instance_id === selectedInstance?.id) {
+        loadMessages(selectedChat.id, selectedInstance!.id, 'whatsapp');
+      }
     });
 
     const unsubMediaReady = on(
@@ -453,11 +469,16 @@ const WhatsAppDashboard: React.FC = () => {
       const data = await chatApi.list(instanceId);
       const normalizedChats = (data || [])
         .filter(isSupportedChat)
-        .map((chat) => ({
-          ...chat,
-          last_message: normalizeMessagePreview(chat.last_message),
-        }));
-      setChats(normalizedChats);
+        .map((chat) =>
+          whatsappChatToUnified({
+            ...chat,
+            last_message: normalizeMessagePreview(chat.last_message),
+          })
+        );
+      setChats((prev) => {
+        const igChats = prev.filter((c) => c.platform === 'instagram');
+        return sortUnifiedChats([...normalizedChats, ...igChats]);
+      });
       const linkedChat = normalizedChats.find(
         (chat) =>
           (deepLinkChatId && chat.id === deepLinkChatId) ||
@@ -468,15 +489,36 @@ const WhatsAppDashboard: React.FC = () => {
       if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         logger.error('Failed to load chats:', err);
       }
-      setChats([]);
+      setChats((prev) => prev.filter((c) => c.platform === 'instagram'));
     }
   };
 
-  const loadMessages = async (chatId: string, instanceId: string) => {
+  const loadInstagramConversations = async () => {
+    try {
+      const result = await instagramApi.conversations.list();
+      const igChats = (result.data || []).map(instagramConversationToUnified);
+      setChats((prev) => {
+        const waChats = prev.filter((c) => c.platform === 'whatsapp');
+        return sortUnifiedChats([...waChats, ...igChats]);
+      });
+    } catch (err: any) {
+      logger.error('Failed to load Instagram conversations:', err);
+    }
+  };
+
+  const loadMessages = async (chatId: string, instanceId: string, platform: 'whatsapp' | 'instagram' = 'whatsapp') => {
     setLoadingMessages(true);
     try {
-      const data = await messageApi.list(chatId, instanceId, 100);
-      setMessages(data.messages || []);
+      if (platform === 'instagram' && selectedChat?.instagram_conversation_id) {
+        const result = await instagramApi.messages.list(selectedChat.instagram_conversation_id, { limit: 100 });
+        const unifiedMessages = (result.data || []).map((msg) =>
+          instagramMessageToUnified(msg, selectedChat.instagram_conversation_id!)
+        );
+        setMessages(unifiedMessages);
+      } else {
+        const data = await messageApi.list(chatId, instanceId, 100);
+        setMessages((data.messages || []).map((m) => ({ ...m, platform: 'whatsapp' as const })));
+      }
     } catch (err: any) {
       if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         logger.error('Failed to load messages:', err);
@@ -489,36 +531,56 @@ const WhatsAppDashboard: React.FC = () => {
 
   const handleSendMessage = useCallback(
     async (content: string, file?: File) => {
-      if (!selectedChat || !selectedInstance) return;
+      if (!selectedChat) return;
+
       try {
-        if (file) {
-          const result: any = await messageApi.sendMedia(
-            selectedChat.id,
-            selectedInstance.id,
-            file,
-            content
-          );
-          appendSentMessage(result?.data || result);
-          updateChatPreview(
-            selectedChat.id,
-            content || `[${resultTypeFromFile(file)}]`
-          );
-          if (result?.data?.media_status === 'failed') {
-            toast.error(
-              result?.data?.media_error ||
-                'Midia enviada, mas nao foi salva no MinIO.'
-            );
-          } else {
-            toast.success('Midia enviada.');
+        if (selectedChat.platform === 'instagram') {
+          const convId = selectedChat.instagram_conversation_id;
+          if (!convId) return;
+          const result: any = await instagramApi.messages.send({
+            conversation_id: convId,
+            content,
+            message_type: file ? 'image' : 'text',
+            media_url: undefined,
+          });
+          if (result?.data) {
+            const unifiedMsg = instagramMessageToUnified(result.data, convId);
+            appendSentMessage(unifiedMsg);
           }
-        } else {
-          const result: any = await messageApi.send(
-            selectedChat.id,
-            selectedInstance.id,
-            content
-          );
-          appendSentMessage(result?.data || result);
           updateChatPreview(selectedChat.id, content);
+          toast.success('Mensagem enviada.');
+        } else if (selectedInstance) {
+          if (file) {
+            const result: any = await messageApi.sendMedia(
+              selectedChat.id,
+              selectedInstance.id,
+              file,
+              content
+            );
+            const unifiedMsg: UnifiedMessage = { ...(result?.data || result), platform: 'whatsapp' };
+            appendSentMessage(unifiedMsg);
+            updateChatPreview(
+              selectedChat.id,
+              content || `[${resultTypeFromFile(file)}]`
+            );
+            if (result?.data?.media_status === 'failed') {
+              toast.error(
+                result?.data?.media_error ||
+                  'Midia enviada, mas nao foi salva no MinIO.'
+              );
+            } else {
+              toast.success('Midia enviada.');
+            }
+          } else {
+            const result: any = await messageApi.send(
+              selectedChat.id,
+              selectedInstance.id,
+              content
+            );
+            const unifiedMsg: UnifiedMessage = { ...(result?.data || result), platform: 'whatsapp' };
+            appendSentMessage(unifiedMsg);
+            updateChatPreview(selectedChat.id, content);
+          }
         }
       } catch (err: any) {
         logger.error('Failed to send message:', err);
@@ -529,8 +591,8 @@ const WhatsAppDashboard: React.FC = () => {
     [selectedChat, selectedInstance]
   );
 
-  const handleSelectChat = (chat: Chat) => {
-    if (selectedInstance && chat.instance_id !== selectedInstance.id) return;
+  const handleSelectChat = (chat: UnifiedChat) => {
+    if (chat.platform === 'whatsapp' && selectedInstance && chat.instance_id !== selectedInstance.id) return;
     setSelectedChat(chat);
     // Clear unread on selection
     setChats((prev) =>
@@ -538,7 +600,7 @@ const WhatsAppDashboard: React.FC = () => {
     );
   };
 
-  const handleChatUpdated = (chat: Chat) => {
+  const handleChatUpdated = (chat: UnifiedChat) => {
     setSelectedChat(chat);
     setChats((prev) =>
       prev.map((c) => (c.id === chat.id ? { ...c, ...chat } : c))
@@ -574,6 +636,7 @@ const WhatsAppDashboard: React.FC = () => {
       }));
       toast.success(result.message || 'Importação e análise iniciadas.');
       await loadChats(selectedInstance.id);
+      await loadInstagramConversations();
     } catch (err: any) {
       logger.error('Failed to import WhatsApp history:', err);
       toast.error(err?.message || 'Erro ao importar conversas.');
@@ -637,11 +700,17 @@ const WhatsAppDashboard: React.FC = () => {
             .includes(searchQuery.toLowerCase()) ||
           normalizeMessagePreview(c.last_message)
             .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          (c.instagram_contact_username || '')
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          (c.instagram_contact_full_name || '')
+            .toLowerCase()
             .includes(searchQuery.toLowerCase())
       )
     : chats;
 
-  const appendSentMessage = (message?: Message) => {
+  const appendSentMessage = (message?: UnifiedMessage) => {
     if (!message) return;
     setMessages((prev) =>
       prev.some((item) => item.message_id === message.message_id)

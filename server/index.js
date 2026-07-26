@@ -56,6 +56,10 @@ import wootechAiRoutes from './routes/wootechAi.js';
 import cvcrmBiaRoutes from './routes/cvcrmBia.js';
 import megaAdminRoutes from './routes/mega-admin.js';
 import zapRoutes from './routes/zap.js';
+import campaignRoutes from './api/campaigns/index.js';
+import campaignContactsRoutes from './api/campaigns/contacts.js';
+import campaignSerperRoutes from './api/campaigns/serper.js';
+import campaignBlacklistRoutes from './api/campaigns/blacklist.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -333,6 +337,10 @@ app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
 app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
 app.use('/api/mega', megaAdminRoutes);
 app.use('/api/public/zap', zapRoutes);
+app.use('/api/campaigns/serper', verifyAuth, requireTenant, campaignSerperRoutes);
+app.use('/api/campaigns/blacklist', verifyAuth, requireTenant, campaignBlacklistRoutes);
+app.use('/api/campaigns/:campaignId/contacts', verifyAuth, requireTenant, campaignContactsRoutes);
+app.use('/api/campaigns', verifyAuth, requireTenant, campaignRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
 

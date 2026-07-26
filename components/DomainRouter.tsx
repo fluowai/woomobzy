@@ -254,7 +254,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         if (potentialSlug) {
           try {
             const { data, error } = await supabase
-              .rpc('get_tenant_public', { slug_input: potentialSlug })
+              .rpc('get_tenant_public' as never, { slug_input: potentialSlug } as never)
               .maybeSingle();
 
             if (data && !error) {
@@ -263,11 +263,11 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
               if (!customDomain) {
                 const { data: orgDomain } = await supabase
-                  .from('organizations')
+                  .from('organizations' as never)
                   .select('custom_domain')
                   .eq('slug', tenant.slug)
                   .maybeSingle();
-                customDomain = orgDomain?.custom_domain;
+                customDomain = (orgDomain as any)?.custom_domain;
               }
 
               if (

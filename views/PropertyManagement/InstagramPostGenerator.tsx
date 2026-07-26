@@ -80,10 +80,10 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
 
-  const images = property.images || [];
+  const images = property?.images || [];
 
   const loadSavedPosts = useCallback(async () => {
-    if (!property.id) return;
+    if (!property?.id) return;
     setLoadingSaved(true);
     try {
       const { posts } = await listMediaPosts(property.id);
@@ -93,7 +93,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
     } finally {
       setLoadingSaved(false);
     }
-  }, [property.id]);
+  }, [property?.id]);
 
   useEffect(() => {
     if (isOpen && showSaved) {
@@ -102,10 +102,10 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
   }, [isOpen, showSaved, loadSavedPosts]);
 
   const refreshPreview = useCallback(() => {
-    if (!property.id) return;
+    if (!property?.id) return;
     const url = getPreviewUrl(property.id, template, format, imageIndex);
     setPreviewUrl(`${url}&t=${Date.now()}`);
-  }, [property.id, template, format, imageIndex]);
+  }, [property?.id, template, format, imageIndex]);
 
   useEffect(() => {
     if (isOpen) {
@@ -114,7 +114,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
   }, [isOpen, refreshPreview]);
 
   const handleDownload = async () => {
-    if (!property.id) return;
+    if (!property?.id) return;
     setGenerating(true);
     try {
       const blob = await generateInstagramPost(
@@ -126,7 +126,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = objectUrl;
-      anchor.download = `${property.title?.replace(/\s+/g, '-').toLowerCase() || 'post'}-${template}.png`;
+      anchor.download = `${property?.title?.replace(/\s+/g, '-').toLowerCase() || 'post'}-${template}.png`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -139,7 +139,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
   };
 
   const handleSave = async () => {
-    if (!property.id) return;
+    if (!property?.id) return;
     setSaving(true);
     try {
       await saveInstagramPost(property.id, template, format, imageIndex);
@@ -153,7 +153,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
   };
 
   const handleDelete = async (postId: string) => {
-    if (!property.id || !window.confirm('Excluir este post salvo?')) return;
+    if (!property?.id || !window.confirm('Excluir este post salvo?')) return;
     try {
       await deleteMediaPost(property.id, postId);
       setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
@@ -162,7 +162,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !property) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

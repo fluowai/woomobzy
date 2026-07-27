@@ -38,8 +38,11 @@ const WooTechAI: React.FC = () => {
     setLoading(true);
 
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL === 'same-origin' ? '' : import.meta.env.VITE_API_URL) + '/api/wootech-ai/chat';
-      
+      const apiUrl =
+        (import.meta.env.VITE_API_URL === 'same-origin'
+          ? ''
+          : import.meta.env.VITE_API_URL) + '/api/wootech-ai/chat';
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -57,7 +60,7 @@ const WooTechAI: React.FC = () => {
       }
 
       const data = await response.json();
-      
+
       if (data.choices && data.choices.length > 0) {
         setMessages((prev) => [
           ...prev,
@@ -68,7 +71,9 @@ const WooTechAI: React.FC = () => {
       }
     } catch (error) {
       logger.error('WooTech AI Error:', error);
-      toast.error('Ocorreu um erro ao conectar com o WooTech AI. Tente novamente.');
+      toast.error(
+        'Ocorreu um erro ao conectar com o WooTech AI. Tente novamente.'
+      );
     } finally {
       setLoading(false);
     }
@@ -94,7 +99,9 @@ const WooTechAI: React.FC = () => {
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight">WooTech AI</h1>
-            <p className="text-xs text-slate-300 font-medium">Assistente Inteligente Avançado</p>
+            <p className="text-xs text-slate-300 font-medium">
+              Assistente Inteligente Avançado
+            </p>
           </div>
         </div>
         <button
@@ -178,11 +185,16 @@ const WooTechAI: React.FC = () => {
             disabled={!input.trim() || loading}
             className="absolute right-2 p-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors shadow-sm flex items-center justify-center"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="ml-0.5" />}
+            {loading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Send size={18} className="ml-0.5" />
+            )}
           </button>
         </form>
         <p className="text-center text-[11px] text-slate-400 mt-3">
-          WooTech AI utiliza roteamento inteligente gratuito via OmniRoute. O conteúdo gerado deve ser revisado.
+          WooTech AI utiliza roteamento inteligente gratuito via OmniRoute. O
+          conteúdo gerado deve ser revisado.
         </p>
       </div>
     </div>

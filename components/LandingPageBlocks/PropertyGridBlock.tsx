@@ -35,14 +35,17 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
           {displayProperties.length === 0 && (
             <>
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-xl shadow-lg overflow-hidden group border border-slate-100">
+                <div
+                  key={i}
+                  className="bg-white rounded-xl shadow-lg overflow-hidden group border border-slate-100"
+                >
                   <div className="relative h-48 bg-slate-200 overflow-hidden">
-                    <img 
+                    <img
                       src={`https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800&sig=${i}`}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                       alt="Casa Exemplo"
                     />
-                    <div 
+                    <div
                       className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm"
                       style={{ backgroundColor: theme.primaryColor }}
                     >
@@ -54,7 +57,7 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
                     <div className="h-4 bg-slate-100 rounded w-1/2 mb-4"></div>
                     <div className="flex justify-between items-center pt-4 border-t border-slate-100">
                       <div className="h-6 bg-slate-200 rounded w-1/3"></div>
-                      <div 
+                      <div
                         className="px-4 py-2 rounded-lg font-medium text-white opacity-80 text-sm"
                         style={{ backgroundColor: theme.primaryColor }}
                       >

@@ -111,10 +111,10 @@ const SupportManager: React.FC = () => {
     return ticketRows.map((ticket) => ({
       ...ticket,
       organization: ticket.organization_id
-        ? organizationsById.get(ticket.organization_id) ?? { name: null }
+        ? (organizationsById.get(ticket.organization_id) ?? { name: null })
         : undefined,
       user_profile: ticket.user_id
-        ? profilesById.get(ticket.user_id) ?? { name: null }
+        ? (profilesById.get(ticket.user_id) ?? { name: null })
         : undefined,
     })) as Ticket[];
   };

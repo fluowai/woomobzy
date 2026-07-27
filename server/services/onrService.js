@@ -3,7 +3,8 @@
  * Documentação Swagger: https://www.registrodeimoveis.org.br/swagger/index.html
  */
 
-const ONR_BASE_URL = process.env.ONR_API_URL || 'https://api.registrodeimoveis.org.br/v1';
+const ONR_BASE_URL =
+  process.env.ONR_API_URL || 'https://api.registrodeimoveis.org.br/v1';
 
 class ONRService {
   constructor() {
@@ -28,7 +29,7 @@ class ONRService {
         body: JSON.stringify({
           client_id: clientId,
           client_secret: clientSecret,
-          grant_type: 'client_credentials'
+          grant_type: 'client_credentials',
         }),
       });
 
@@ -38,11 +39,13 @@ class ONRService {
 
       const data = await response.json();
       this.token = data.access_token;
-      
+
       // Armazena a validade com 5 minutos de folga para renovação preventiva
       const expiresIn = data.expires_in || 3600;
-      this.tokenExpiresAt = new Date(new Date().getTime() + (expiresIn - 300) * 1000);
-      
+      this.tokenExpiresAt = new Date(
+        new Date().getTime() + (expiresIn - 300) * 1000
+      );
+
       return this.token;
     } catch (error) {
       console.error('[ONR Service] Erro ao autenticar:', error.message);
@@ -53,12 +56,14 @@ class ONRService {
   async getHeaders(orgConfig) {
     const { onr_client_id, onr_client_secret } = orgConfig;
     if (!onr_client_id || !onr_client_secret) {
-      throw new Error('Credenciais do ONR não configuradas para esta organização.');
+      throw new Error(
+        'Credenciais do ONR não configuradas para esta organização.'
+      );
     }
     const token = await this.authenticate(onr_client_id, onr_client_secret);
     return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     };
   }
 
@@ -68,7 +73,7 @@ class ONRService {
   async requestCertificate(orgConfig, propertyData) {
     try {
       const headers = await this.getHeaders(orgConfig);
-      
+
       const payload = {
         matricula: propertyData.registrationNumber,
         cns_cartorio: propertyData.cns, // Código Nacional de Serventias
@@ -84,7 +89,9 @@ class ONRService {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(`Erro ONR (${response.status}): ${errData.mensagem || response.statusText}`);
+        throw new Error(
+          `Erro ONR (${response.status}): ${errData.mensagem || response.statusText}`
+        );
       }
 
       return await response.json(); // Retorna o Protocolo
@@ -100,19 +107,27 @@ class ONRService {
   async checkProtocolStatus(orgConfig, protocolId) {
     try {
       const headers = await this.getHeaders(orgConfig);
-      
-      const response = await fetch(`${ONR_BASE_URL}/certidoes/protocolos/${protocolId}`, {
-        method: 'GET',
-        headers,
-      });
+
+      const response = await fetch(
+        `${ONR_BASE_URL}/certidoes/protocolos/${protocolId}`,
+        {
+          method: 'GET',
+          headers,
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(`Erro ONR ao consultar protocolo: ${response.statusText}`);
+        throw new Error(
+          `Erro ONR ao consultar protocolo: ${response.statusText}`
+        );
       }
 
       return await response.json(); // { status: "CONCLUIDO", url_download: "..." }
     } catch (error) {
-      console.error('[ONR Service] Erro ao consultar protocolo:', error.message);
+      console.error(
+        '[ONR Service] Erro ao consultar protocolo:',
+        error.message
+      );
       throw error;
     }
   }

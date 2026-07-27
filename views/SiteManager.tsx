@@ -3,10 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { siteService } from '../services/sites';
 import { Site, SitePage, SiteTemplate } from '../types/site';
-import {
-  SITE_TEMPLATES,
-  applySiteTemplate,
-} from '../constants/siteTemplates';
+import { SITE_TEMPLATES, applySiteTemplate } from '../constants/siteTemplates';
 import GlobalSettings from '../components/SiteEditor/GlobalSettings';
 import {
   Plus,
@@ -67,9 +64,7 @@ const SiteManager: React.FC = () => {
 
       let siteData: Site | null = null;
       try {
-        siteData = await siteService.getByOrganization(
-          profile.organization_id
-        );
+        siteData = await siteService.getByOrganization(profile.organization_id);
       } catch (fetchError: any) {
         if (
           fetchError?.code === '42P01' ||
@@ -413,9 +408,7 @@ const SiteManager: React.FC = () => {
   // ============================================
   // DASHBOARD: Site exists - manage pages, settings, templates
   // ============================================
-  const siteUrl = orgSlug
-    ? `${window.location.origin}/site/${orgSlug}`
-    : '#';
+  const siteUrl = orgSlug ? `${window.location.origin}/site/${orgSlug}` : '#';
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

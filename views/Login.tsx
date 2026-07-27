@@ -47,7 +47,7 @@ const Login: React.FC = () => {
 
   const { signIn, user, profile, loading: authLoading } = useAuth();
   const { settings } = useSettings();
-  
+
   const displayProductName = settings?.agencyName || COMMERCIAL_PRODUCT_NAME;
   const displayLogo = settings?.logoUrl || '/logo-wootech-imob.svg';
 

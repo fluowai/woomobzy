@@ -73,17 +73,19 @@ export const setTenantSupabase = (url: string, key: string) => {
       headers: getHeaders(),
     },
   });
-  logger.info(`🔌 BYOB: Cliente Supabase atualizado para locatário com URL: ${url}`);
+  logger.info(
+    `🔌 BYOB: Cliente Supabase atualizado para locatário com URL: ${url}`
+  );
 };
 
 export const supabase = new Proxy({} as any, {
   get(target, prop) {
     if (!activeClient) {
-      throw new Error("Supabase client not initialized");
+      throw new Error('Supabase client not initialized');
     }
     const value = (activeClient as any)[prop];
     return typeof value === 'function' ? value.bind(activeClient) : value;
-  }
+  },
 });
 
 export const publicSupabase = createClient(

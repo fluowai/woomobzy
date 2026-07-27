@@ -54,10 +54,14 @@ function getTemplateSVG(template, property, settings, w, h) {
   if (purpose) badges.push(purpose);
 
   if (features.dormitorios) {
-    badges.push(`${features.dormitorios} ${features.dormitorios === 1 ? 'quarto' : 'quartos'}`);
+    badges.push(
+      `${features.dormitorios} ${features.dormitorios === 1 ? 'quarto' : 'quartos'}`
+    );
   }
   if (features.banheiros) {
-    badges.push(`${features.banheiros} ${features.banheiros === 1 ? 'banheiro' : 'banheiros'}`);
+    badges.push(
+      `${features.banheiros} ${features.banheiros === 1 ? 'banheiro' : 'banheiros'}`
+    );
   }
   if (features.vagas) {
     badges.push(`${features.vagas} ${features.vagas === 1 ? 'vaga' : 'vagas'}`);
@@ -70,7 +74,8 @@ function getTemplateSVG(template, property, settings, w, h) {
     property.total_area_ha ||
     null;
   if (area) {
-    const unit = features.preferredUnit === 'ha' || features.areaHectares ? 'ha' : 'm²';
+    const unit =
+      features.preferredUnit === 'ha' || features.areaHectares ? 'ha' : 'm²';
     const formatted = Number(area).toLocaleString('pt-BR');
     badges.push(`${formatted} ${unit}`);
   }
@@ -183,7 +188,13 @@ async function fetchImageBuffer(url) {
 
 const MEDIA_POSTS_BUCKET = 'media-posts';
 
-async function composeInstagramImage(property, settings, template, format, imageIndex) {
+async function composeInstagramImage(
+  property,
+  settings,
+  template,
+  format,
+  imageIndex
+) {
   const images = property.images || [];
   const imageUrl = images[Math.min(imageIndex, images.length - 1)];
   const [w, h] = format === '1080x1350' ? [1080, 1350] : [1080, 1080];
@@ -211,7 +222,12 @@ router.post(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { template = 'padrao', format = '1080x1080', imageIndex = 0, save = false } = req.body;
+      const {
+        template = 'padrao',
+        format = '1080x1080',
+        imageIndex = 0,
+        save = false,
+      } = req.body;
 
       const { data: property, error: propError } = await supabase
         .from('properties')
@@ -235,7 +251,13 @@ router.post(
         .eq('organization_id', req.orgId)
         .maybeSingle();
 
-      const { finalImage } = await composeInstagramImage(property, settings, template, format, imageIndex);
+      const { finalImage } = await composeInstagramImage(
+        property,
+        settings,
+        template,
+        format,
+        imageIndex
+      );
 
       if (!save) {
         res.setHeader('Content-Type', 'image/png');
@@ -247,16 +269,24 @@ router.post(
         return res.send(finalImage);
       }
 
-      const slug = (property.title || 'post').replace(/[^a-zA-Z0-9\u00C0-\u00FF]+/g, '-').toLowerCase().slice(0, 60);
+      const slug = (property.title || 'post')
+        .replace(/[^a-zA-Z0-9\u00C0-\u00FF]+/g, '-')
+        .toLowerCase()
+        .slice(0, 60);
       const storagePath = `${req.orgId}/${id}/${slug}-${template}-${format}-${Date.now()}.png`;
 
       const { error: uploadError } = await supabase.storage
         .from(MEDIA_POSTS_BUCKET)
-        .upload(storagePath, finalImage, { contentType: 'image/png', upsert: false });
+        .upload(storagePath, finalImage, {
+          contentType: 'image/png',
+          upsert: false,
+        });
 
       if (uploadError) {
         console.error('[InstagramPost] Upload error:', uploadError.message);
-        return res.status(500).json({ error: 'Erro ao salvar imagem no storage' });
+        return res
+          .status(500)
+          .json({ error: 'Erro ao salvar imagem no storage' });
       }
 
       const { data: urlData } = supabase.storage
@@ -309,7 +339,9 @@ router.get(
 
       const { data: property, error: propError } = await supabase
         .from('properties')
-        .select('id, title, price, property_type, purpose, city, state, neighborhood, features, images, total_area_ha, organization_id')
+        .select(
+          'id, title, price, property_type, purpose, city, state, neighborhood, features, images, total_area_ha, organization_id'
+        )
         .eq('id', id)
         .eq('organization_id', req.orgId)
         .single();
@@ -335,7 +367,12 @@ router.get(
       const svgOverlay = getTemplateSVG(template, property, settings, w, h);
 
       const placeholder = await sharp({
-        create: { width: w, height: h, channels: 4, background: { r: 30, g: 30, b: 30, alpha: 1 } },
+        create: {
+          width: w,
+          height: h,
+          channels: 4,
+          background: { r: 30, g: 30, b: 30, alpha: 1 },
+        },
       })
         .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
         .png()
@@ -406,7 +443,9 @@ router.delete(
         return res.status(404).json({ error: 'Post não encontrado' });
       }
 
-      await supabase.storage.from(MEDIA_POSTS_BUCKET).remove([post.storage_path]);
+      await supabase.storage
+        .from(MEDIA_POSTS_BUCKET)
+        .remove([post.storage_path]);
 
       const { error: dbError } = await supabase
         .from('media_posts')

@@ -35,7 +35,10 @@ const ResellerManager: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [setupInfo, setSetupInfo] = useState<{ email: string; password?: string } | null>(null);
+  const [setupInfo, setSetupInfo] = useState<{
+    email: string;
+    password?: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -73,7 +76,12 @@ const ResellerManager: React.FC = () => {
         owner_name: reseller.owner_name || '',
         owner_email: reseller.owner_email || '',
         password: '',
-        niche: reseller.niche === 'rural' ? 'rural' : reseller.niche === 'both' ? 'both' : 'traditional',
+        niche:
+          reseller.niche === 'rural'
+            ? 'rural'
+            : reseller.niche === 'both'
+              ? 'both'
+              : 'traditional',
       });
     } else {
       setEditingId(null);
@@ -123,9 +131,7 @@ const ResellerManager: React.FC = () => {
       await fetchResellers();
     } catch (error: any) {
       logger.error('Error saving reseller:', error);
-      alert(
-        `Erro ao salvar reseller: ${error.message || 'Erro desconhecido'}`
-      );
+      alert(`Erro ao salvar reseller: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setFormLoading(false);
     }
@@ -238,19 +244,13 @@ const ResellerManager: React.FC = () => {
           <tbody className="divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td
-                  colSpan={7}
-                  className="px-6 py-8 text-center text-gray-500"
-                >
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   Carregando...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td
-                  colSpan={7}
-                  className="px-6 py-8 text-center text-gray-500"
-                >
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   Nenhum reseller encontrado.
                 </td>
               </tr>
@@ -301,11 +301,13 @@ const ResellerManager: React.FC = () => {
                         reseller.niche === 'rural'
                           ? 'bg-green-100 text-green-700'
                           : reseller.niche === 'both'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-blue-100 text-blue-700'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
                       }`}
                     >
-                      {reseller.niche === 'both' ? 'Ambos (Híbrido)' : reseller.niche || 'traditional'}
+                      {reseller.niche === 'both'
+                        ? 'Ambos (Híbrido)'
+                        : reseller.niche || 'traditional'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -326,9 +328,7 @@ const ResellerManager: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <button
-                      onClick={() =>
-                        toggleStatus(reseller.id, reseller.status)
-                      }
+                      onClick={() => toggleStatus(reseller.id, reseller.status)}
                       className={`p-1.5 rounded hover:bg-gray-100 mr-2 ${
                         reseller.status === 'active'
                           ? 'text-red-500'
@@ -372,7 +372,11 @@ const ResellerManager: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-800">
-                {setupInfo ? 'Whitelabel Criado com Sucesso!' : editingId ? 'Editar Reseller' : 'Novo Whitelabel'}
+                {setupInfo
+                  ? 'Whitelabel Criado com Sucesso!'
+                  : editingId
+                    ? 'Editar Reseller'
+                    : 'Novo Whitelabel'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -392,22 +396,31 @@ const ResellerManager: React.FC = () => {
                     Tudo pronto! Plataforma liberada.
                   </h3>
                   <p className="text-sm text-slate-500 mt-2">
-                    O Whitelabel foi criado no plano <strong className="text-purple-600">Enterprise</strong> com todas as funções ativas.
+                    O Whitelabel foi criado no plano{' '}
+                    <strong className="text-purple-600">Enterprise</strong> com
+                    todas as funções ativas.
                   </p>
                 </div>
-                
+
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left space-y-3">
-                  <p className="text-xs font-bold text-slate-500 uppercase">Link de Setup Guiado</p>
-                  <p className="text-sm text-slate-600 mb-2">Envie este link para o dono do Whitelabel. Ele mesmo configurará a senha, logo e cores:</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase">
+                    Link de Setup Guiado
+                  </p>
+                  <p className="text-sm text-slate-600 mb-2">
+                    Envie este link para o dono do Whitelabel. Ele mesmo
+                    configurará a senha, logo e cores:
+                  </p>
                   <div className="flex items-center gap-2">
-                    <input 
-                      readOnly 
+                    <input
+                      readOnly
                       value={`${window.location.origin}/setup-whitelabel?email=${encodeURIComponent(setupInfo.email)}&t=${setupInfo.password}`}
                       className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 outline-none"
                     />
-                    <button 
+                    <button
                       onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/setup-whitelabel?email=${encodeURIComponent(setupInfo.email)}&t=${setupInfo.password}`);
+                        navigator.clipboard.writeText(
+                          `${window.location.origin}/setup-whitelabel?email=${encodeURIComponent(setupInfo.email)}&t=${setupInfo.password}`
+                        );
                         alert('Link copiado!');
                       }}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-bold shrink-0"
@@ -425,130 +438,149 @@ const ResellerManager: React.FC = () => {
                 </button>
               </div>
             ) : (
-            <form onSubmit={handleSave} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome da Empresa *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                  placeholder="Ex: Imobiliária Central"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Slug (URL)
-                </label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  onChange={(e) =>
-                    setFormData({ ...formData, slug: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                  placeholder="ex: imob-central"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome do Responsável
-                </label>
-                <input
-                  type="text"
-                  value={formData.owner_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, owner_name: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email do Responsável *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.owner_email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, owner_email: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                />
-              </div>
-
-              {!editingId && (
+              <form onSubmit={handleSave} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Senha Provisória (Opcional)
+                    Nome da Empresa *
                   </label>
                   <input
                     type="text"
-                    value={formData.password}
+                    required
+                    value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
+                      setFormData({ ...formData, name: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                    placeholder="Se vazio, será gerada automaticamente"
+                    placeholder="Ex: Imobiliária Central"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Essa senha não precisa ser enviada. Usaremos um Link de Ativação Guiado.</p>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nicho Padrão
-                </label>
-                <select
-                  value={formData.niche}
-                  onChange={(e) =>
-                    setFormData({ ...formData, niche: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                >
-                  <option value="both">Ambos (Urbano e Rural) - Completo</option>
-                  <option value="traditional">Apenas Urbano / Tradicional</option>
-                  <option value="rural">Apenas Rural</option>
-                </select>
-              </div>
-              
-              {!editingId && (
-                <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 flex gap-3 items-start">
-                  <CheckCircle size={20} className="text-purple-600 shrink-0 mt-0.5" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Slug (URL)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) =>
+                      setFormData({ ...formData, slug: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    placeholder="ex: imob-central"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome do Responsável
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.owner_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, owner_name: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email do Responsável *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.owner_email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, owner_email: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                {!editingId && (
                   <div>
-                    <h4 className="text-sm font-bold text-purple-900">Plano Enterprise Ativo</h4>
-                    <p className="text-xs text-purple-700 mt-1">Ao criar, esta plataforma já nascerá com todas as funcionalidades liberadas e sem restrições.</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Senha Provisória (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                      placeholder="Se vazio, será gerada automaticamente"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Essa senha não precisa ser enviada. Usaremos um Link de
+                      Ativação Guiado.
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={formLoading}
-                  className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-60"
-                >
-                  <Save size={18} />
-                  {formLoading ? 'Processando...' : editingId ? 'Salvar' : 'Criar & Gerar Link'}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nicho Padrão
+                  </label>
+                  <select
+                    value={formData.niche}
+                    onChange={(e) =>
+                      setFormData({ ...formData, niche: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  >
+                    <option value="both">
+                      Ambos (Urbano e Rural) - Completo
+                    </option>
+                    <option value="traditional">
+                      Apenas Urbano / Tradicional
+                    </option>
+                    <option value="rural">Apenas Rural</option>
+                  </select>
+                </div>
+
+                {!editingId && (
+                  <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 flex gap-3 items-start">
+                    <CheckCircle
+                      size={20}
+                      className="text-purple-600 shrink-0 mt-0.5"
+                    />
+                    <div>
+                      <h4 className="text-sm font-bold text-purple-900">
+                        Plano Enterprise Ativo
+                      </h4>
+                      <p className="text-xs text-purple-700 mt-1">
+                        Ao criar, esta plataforma já nascerá com todas as
+                        funcionalidades liberadas e sem restrições.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={formLoading}
+                    className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-60"
+                  >
+                    <Save size={18} />
+                    {formLoading
+                      ? 'Processando...'
+                      : editingId
+                        ? 'Salvar'
+                        : 'Criar & Gerar Link'}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>

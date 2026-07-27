@@ -1,14 +1,15 @@
 import pg from 'pg';
 
 const pool = new pg.Pool({
-  connectionString: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
-  ssl: { rejectUnauthorized: false }
+  connectionString:
+    'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
+  ssl: { rejectUnauthorized: false },
 });
 
 async function run() {
   try {
     const client = await pool.connect();
-    
+
     // Create the security definer function
     await client.query(`
       CREATE OR REPLACE FUNCTION public.get_auth_organization_id()
@@ -25,7 +26,7 @@ async function run() {
     await client.query(`
       DROP POLICY IF EXISTS "Reseller view sub-organization users" ON public.profiles;
     `);
-    
+
     // Recreate it using the non-recursive function
     await client.query(`
       CREATE POLICY "Reseller view sub-organization users" ON public.profiles
@@ -37,7 +38,7 @@ async function run() {
         )
       );
     `);
-    
+
     console.log('Fixed RLS infinite recursion successfully!');
     client.release();
   } catch (err) {

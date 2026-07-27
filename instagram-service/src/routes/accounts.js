@@ -36,7 +36,8 @@ router.get('/:id', async (req, res) => {
 router.post('/connect', async (req, res) => {
   try {
     const { username, is_business_account } = req.body;
-    if (!username) return res.status(400).json({ error: 'username is required' });
+    if (!username)
+      return res.status(400).json({ error: 'username is required' });
 
     const { data: existing } = await supabase
       .from('instagram_accounts')
@@ -45,7 +46,8 @@ router.post('/connect', async (req, res) => {
       .eq('username', username)
       .maybeSingle();
 
-    if (existing) return res.status(409).json({ error: 'Account already connected' });
+    if (existing)
+      return res.status(409).json({ error: 'Account already connected' });
 
     const { data: account, error: insertError } = await supabase
       .from('instagram_accounts')

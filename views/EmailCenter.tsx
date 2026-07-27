@@ -430,7 +430,7 @@ const EmailCenter: React.FC = () => {
           />
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <button 
+          <button
             onClick={() => toast.info('Seletor de status em breve')}
             className="hidden h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 xl:flex"
           >
@@ -447,7 +447,7 @@ const EmailCenter: React.FC = () => {
               <Icon size={21} />
             </button>
           ))}
-          <button 
+          <button
             onClick={() => toast.info('Central de notificações em breve')}
             className="relative hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex"
           >
@@ -613,7 +613,13 @@ const EmailCenter: React.FC = () => {
                       label="Responder a todos"
                       onClick={() => setReplyOpen(true)}
                     />
-                    <ActionButton icon={Undo2} label="Encaminhar" onClick={() => toast.info('Encaminhamento de email em breve')} />
+                    <ActionButton
+                      icon={Undo2}
+                      label="Encaminhar"
+                      onClick={() =>
+                        toast.info('Encaminhamento de email em breve')
+                      }
+                    />
                   </div>
                 </div>
 
@@ -1203,7 +1209,7 @@ const SideAction: React.FC<{ icon: React.ElementType; label: string }> = ({
   icon: Icon,
   label,
 }) => (
-  <button 
+  <button
     onClick={() => toast.info(`${label} em breve`)}
     className="flex h-11 w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
   >

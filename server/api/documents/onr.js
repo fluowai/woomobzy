@@ -33,9 +33,13 @@ async function getOrgOnrConfig(supabase, orgId) {
 router.post('/request', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { propertyId, registrationNumber, cns, certificateType } = req.body;
-    
+
     if (!registrationNumber || !cns) {
-      return res.status(400).json({ error: 'Número de matrícula e CNS do cartório são obrigatórios.' });
+      return res
+        .status(400)
+        .json({
+          error: 'Número de matrícula e CNS do cartório são obrigatórios.',
+        });
     }
 
     const supabase = getSupabaseServer();
@@ -43,9 +47,9 @@ router.post('/request', verifyAuth, requireTenant, async (req, res) => {
 
     // Valida se o cliente já configurou as credenciais ONR
     if (!orgConfig.onr_client_id || !orgConfig.onr_client_secret) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Credenciais do ONR não configuradas.',
-        code: 'ONR_NOT_CONFIGURED' 
+        code: 'ONR_NOT_CONFIGURED',
       });
     }
 
@@ -68,12 +72,11 @@ router.post('/request', verifyAuth, requireTenant, async (req, res) => {
     }]);
     */
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Certidão solicitada com sucesso.',
-      protocol: onrResponse.protocolo || onrResponse.id || onrResponse
+      protocol: onrResponse.protocolo || onrResponse.id || onrResponse,
     });
-
   } catch (error) {
     console.error('[ONR Route] Erro ao solicitar certidao:', error.message);
     res.status(500).json({ error: error.message });
@@ -84,24 +87,34 @@ router.post('/request', verifyAuth, requireTenant, async (req, res) => {
  * GET /api/documents/onr/status/:protocolId
  * Consulta o status de uma certidão previamente solicitada
  */
-router.get('/status/:protocolId', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { protocolId } = req.params;
-    
-    if (!protocolId) {
-      return res.status(400).json({ error: 'ID do Protocolo é obrigatório.' });
+router.get(
+  '/status/:protocolId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { protocolId } = req.params;
+
+      if (!protocolId) {
+        return res
+          .status(400)
+          .json({ error: 'ID do Protocolo é obrigatório.' });
+      }
+
+      const supabase = getSupabaseServer();
+      const orgConfig = await getOrgOnrConfig(supabase, req.orgId);
+
+      const statusResponse = await onrService.checkProtocolStatus(
+        orgConfig,
+        protocolId
+      );
+
+      res.json({ success: true, data: statusResponse });
+    } catch (error) {
+      console.error('[ONR Route] Erro ao consultar protocolo:', error.message);
+      res.status(500).json({ error: error.message });
     }
-
-    const supabase = getSupabaseServer();
-    const orgConfig = await getOrgOnrConfig(supabase, req.orgId);
-
-    const statusResponse = await onrService.checkProtocolStatus(orgConfig, protocolId);
-
-    res.json({ success: true, data: statusResponse });
-  } catch (error) {
-    console.error('[ONR Route] Erro ao consultar protocolo:', error.message);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 export default router;

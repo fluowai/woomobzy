@@ -20,14 +20,20 @@ function normalizeNiche(niche, ...signals) {
   const normalized = String(niche || '')
     .toLowerCase()
     .trim();
-  if (normalized === 'both' || normalized === 'ambos' || normalized === 'hibrido' || normalized === 'hybrid') return 'both';
+  if (
+    normalized === 'both' ||
+    normalized === 'ambos' ||
+    normalized === 'hibrido' ||
+    normalized === 'hybrid'
+  )
+    return 'both';
   if (normalized === 'rural') return 'rural';
   if (['traditional', 'urban', 'urbano'].includes(normalized))
     return 'traditional';
 
   const text = signals.filter(Boolean).join(' ').toLowerCase();
   if (/\b(ambos|híbrido|hibrido)\b/.test(text)) return 'both';
-  
+
   return /\b(rural|fazenda|fazendas|sitio|sítio|chacara|chácara|agro|haras)\b/.test(
     text
   )
@@ -46,7 +52,10 @@ async function findAuthUserByEmail(email) {
   if (error) throw error;
   return (
     users.find(
-      (u) => String(u.email || '').toLowerCase().trim() === email
+      (u) =>
+        String(u.email || '')
+          .toLowerCase()
+          .trim() === email
     ) || null
   );
 }
@@ -137,8 +146,8 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
     );
 
     if (!authUser) {
-      const { data, error: createError } =
-        await supabase.auth.admin.createUser({
+      const { data, error: createError } = await supabase.auth.admin.createUser(
+        {
           email: String(owner_email).toLowerCase().trim(),
           password: finalPassword,
           email_confirm: true,
@@ -149,7 +158,8 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
           app_metadata: {
             role: 'superadmin',
           },
-        });
+        }
+      );
       if (createError) throw createError;
       authUser = data.user;
     } else {
@@ -303,8 +313,9 @@ router.post('/direct-clients', verifyMegaAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Nome e email são obrigatórios' });
     }
 
-    const finalPassword = password || Math.random().toString(36).slice(-10) + 'A!';
-    
+    const finalPassword =
+      password || Math.random().toString(36).slice(-10) + 'A!';
+
     // Check slug uniqueness if provided
     let finalSlug = slug || name.toLowerCase().replace(/\s+/g, '-');
     const { data: existingSlug } = await supabase
@@ -337,21 +348,25 @@ router.post('/direct-clients', verifyMegaAdmin, async (req, res) => {
 
     if (orgError) throw orgError;
 
-    let authUser = await findAuthUserByEmail(String(owner_email).toLowerCase().trim());
+    let authUser = await findAuthUserByEmail(
+      String(owner_email).toLowerCase().trim()
+    );
 
     if (!authUser) {
-      const { data, error: createError } = await supabase.auth.admin.createUser({
-        email: String(owner_email).toLowerCase().trim(),
-        password: finalPassword,
-        email_confirm: true,
-        user_metadata: {
-          name: owner_name || name,
-          role: 'admin',
-        },
-        app_metadata: {
-          role: 'admin',
-        },
-      });
+      const { data, error: createError } = await supabase.auth.admin.createUser(
+        {
+          email: String(owner_email).toLowerCase().trim(),
+          password: finalPassword,
+          email_confirm: true,
+          user_metadata: {
+            name: owner_name || name,
+            role: 'admin',
+          },
+          app_metadata: {
+            role: 'admin',
+          },
+        }
+      );
       if (createError) throw createError;
       authUser = data.user;
     } else {
@@ -361,7 +376,11 @@ router.post('/direct-clients', verifyMegaAdmin, async (req, res) => {
           password: finalPassword,
           email_confirm: true,
           app_metadata: { ...(authUser.app_metadata || {}), role: 'admin' },
-          user_metadata: { ...(authUser.user_metadata || {}), name: owner_name || name, role: 'admin' },
+          user_metadata: {
+            ...(authUser.user_metadata || {}),
+            name: owner_name || name,
+            role: 'admin',
+          },
         }
       );
       if (updateError) throw updateError;
@@ -436,7 +455,7 @@ router.put('/direct-clients/:id', verifyMegaAdmin, async (req, res) => {
 router.delete('/direct-clients/:id', verifyMegaAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const { data: org } = await supabase
       .from('organizations')
       .select('id, name')
@@ -447,7 +466,10 @@ router.delete('/direct-clients/:id', verifyMegaAdmin, async (req, res) => {
 
     if (!org) return res.status(404).json({ error: 'Cliente não encontrado' });
 
-    const { error: deleteOrgError } = await supabase.from('organizations').delete().eq('id', id);
+    const { error: deleteOrgError } = await supabase
+      .from('organizations')
+      .delete()
+      .eq('id', id);
     if (deleteOrgError) throw deleteOrgError;
 
     res.json({ success: true, message: 'Cliente excluído com sucesso' });

@@ -1,25 +1,26 @@
 import pg from 'pg';
 
 const pool = new pg.Pool({
-  connectionString: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
-  ssl: { rejectUnauthorized: false }
+  connectionString:
+    'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
+  ssl: { rejectUnauthorized: false },
 });
 
 async function run() {
   try {
     const client = await pool.connect();
-    
+
     // Drop the recursive policy
     await client.query(`
       DROP POLICY IF EXISTS "Reseller view sub-organization users" ON public.profiles;
     `);
-    
+
     // Create basic policies
     await client.query(`
       CREATE POLICY "Users can view own profile" ON public.profiles
       FOR SELECT USING (auth.uid() = id);
     `);
-    
+
     await client.query(`
       CREATE POLICY "Mega admins can view all profiles" ON public.profiles
       FOR SELECT USING (

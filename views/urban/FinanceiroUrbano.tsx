@@ -144,13 +144,13 @@ export default function FinanceiroUrbano() {
           <div className="flex items-center justify-between border-b border-slate-100 p-5">
             <h2 className="font-bold text-slate-900">Cobrancas do periodo</h2>
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={() => toast.info('Envio em lote em breve')}
                 className="btn bg-slate-100 text-sm text-slate-700"
               >
                 <Send size={15} /> Enviar Boletos
               </button>
-              <button 
+              <button
                 onClick={() => toast.info('Geração manual em breve')}
                 className="btn btn-primary text-sm"
               >
@@ -159,91 +159,95 @@ export default function FinanceiroUrbano() {
             </div>
           </div>
           <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50">
-                {[
-                  'Cliente',
-                  'Imovel',
-                  'Vencimento',
-                  'Valor',
-                  'Status',
-                  'Acao',
-                ].map((header) => (
-                  <th
-                    key={header}
-                    className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500"
-                  >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="p-10 text-center text-sm text-slate-400"
-                  >
-                    Carregando financeiro...
-                  </td>
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  {[
+                    'Cliente',
+                    'Imovel',
+                    'Vencimento',
+                    'Valor',
+                    'Status',
+                    'Acao',
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500"
+                    >
+                      {header}
+                    </th>
+                  ))}
                 </tr>
-              ) : billings.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="p-10 text-center text-sm text-slate-400"
-                  >
-                    Nenhuma cobranca encontrada.
-                  </td>
-                </tr>
-              ) : (
-                billings.slice(0, 20).map((billing) => (
-                  <tr
-                    key={billing.id}
-                    className="transition-colors hover:bg-slate-50/50"
-                  >
-                    <td className="p-4 text-sm font-bold text-slate-900">
-                      {billing.contract?.tenant_name || 'Cliente'}
-                    </td>
-                    <td className="p-4 text-sm text-slate-600">
-                      {billing.contract?.property?.title || '-'}
-                    </td>
-                    <td className="p-4 text-sm text-slate-600">
-                      {billing.due_date
-                        ? new Date(billing.due_date).toLocaleDateString('pt-BR')
-                        : '-'}
-                    </td>
-                    <td className="p-4 font-bold text-slate-900">
-                      {cobrancaService.formatCurrency(billing.amount || 0)}
-                    </td>
-                    <td className="p-4">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusColors[billing.status || 'aberto'] || 'bg-slate-100 text-slate-600'}`}
-                      >
-                        {billing.status || 'aberto'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      {billing.status === 'pago' ? (
-                        <span className="flex items-center gap-1 text-xs font-bold text-green-600">
-                          <CheckCircle size={14} /> Quitado
-                        </span>
-                      ) : (
-                        <button 
-                          onClick={() => toast.info('Visualização de boleto em breve')}
-                          className="text-xs font-bold text-primary hover:underline"
-                        >
-                          Ver Boleto
-                        </button>
-                      )}
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-10 text-center text-sm text-slate-400"
+                    >
+                      Carregando financeiro...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : billings.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-10 text-center text-sm text-slate-400"
+                    >
+                      Nenhuma cobranca encontrada.
+                    </td>
+                  </tr>
+                ) : (
+                  billings.slice(0, 20).map((billing) => (
+                    <tr
+                      key={billing.id}
+                      className="transition-colors hover:bg-slate-50/50"
+                    >
+                      <td className="p-4 text-sm font-bold text-slate-900">
+                        {billing.contract?.tenant_name || 'Cliente'}
+                      </td>
+                      <td className="p-4 text-sm text-slate-600">
+                        {billing.contract?.property?.title || '-'}
+                      </td>
+                      <td className="p-4 text-sm text-slate-600">
+                        {billing.due_date
+                          ? new Date(billing.due_date).toLocaleDateString(
+                              'pt-BR'
+                            )
+                          : '-'}
+                      </td>
+                      <td className="p-4 font-bold text-slate-900">
+                        {cobrancaService.formatCurrency(billing.amount || 0)}
+                      </td>
+                      <td className="p-4">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusColors[billing.status || 'aberto'] || 'bg-slate-100 text-slate-600'}`}
+                        >
+                          {billing.status || 'aberto'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        {billing.status === 'pago' ? (
+                          <span className="flex items-center gap-1 text-xs font-bold text-green-600">
+                            <CheckCircle size={14} /> Quitado
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              toast.info('Visualização de boleto em breve')
+                            }
+                            className="text-xs font-bold text-primary hover:underline"
+                          >
+                            Ver Boleto
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

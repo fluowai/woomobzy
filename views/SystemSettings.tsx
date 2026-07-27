@@ -43,7 +43,9 @@ const SystemSettings: React.FC = () => {
   const [zapsignKey, setZapsignKey] = useState('');
   const [cvcrmKey, setCvcrmKey] = useState('');
   const [cvcrmEmail, setCvcrmEmail] = useState('');
-  const [cvcrmBaseUrl, setCvcrmBaseUrl] = useState('https://<seu-dominio>.cvcrm.com.br');
+  const [cvcrmBaseUrl, setCvcrmBaseUrl] = useState(
+    'https://<seu-dominio>.cvcrm.com.br'
+  );
   const [biaKey, setBiaKey] = useState('');
   const [oruloBrokerConnected, setOruloBrokerConnected] = useState(false);
   const [oruloBrokerConnecting, setOruloBrokerConnecting] = useState(false);
@@ -536,7 +538,9 @@ const SystemSettings: React.FC = () => {
                           className="w-full bg-white/50 text-emerald-900 border border-emerald-200 rounded-lg px-3 py-2 text-sm font-mono cursor-copy"
                           onClick={(e) => {
                             (e.target as HTMLInputElement).select();
-                            navigator.clipboard.writeText((e.target as HTMLInputElement).value);
+                            navigator.clipboard.writeText(
+                              (e.target as HTMLInputElement).value
+                            );
                             alert('URL copiada para a área de transferência!');
                           }}
                         />
@@ -553,12 +557,34 @@ const SystemSettings: React.FC = () => {
                         </button>
                       </div>
                       <div className="text-xs text-emerald-700 mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                        <p className="font-bold mb-2">Como ativar a integração ZAP para a {settings?.agencyName || 'sua imobiliária'}:</p>
+                        <p className="font-bold mb-2">
+                          Como ativar a integração ZAP para a{' '}
+                          {settings?.agencyName || 'sua imobiliária'}:
+                        </p>
                         <ol className="list-decimal list-inside space-y-1.5 ml-1">
-                           <li>Acesse sua conta corporativa no <strong>Canal Pro</strong> (Grupo ZAP).</li>
-                           <li>Vá no menu <strong>Configurações &gt; Integração de Anúncios</strong>.</li>
-                           <li>Cole a URL acima no campo de <strong>Feed XML</strong>.</li>
-                           <li>O ZAP passará a consultar a <strong>{settings?.agencyName || 'nossa plataforma'}</strong> automaticamente todos os dias para atualizar sua vitrine!</li>
+                          <li>
+                            Acesse sua conta corporativa no{' '}
+                            <strong>Canal Pro</strong> (Grupo ZAP).
+                          </li>
+                          <li>
+                            Vá no menu{' '}
+                            <strong>
+                              Configurações &gt; Integração de Anúncios
+                            </strong>
+                            .
+                          </li>
+                          <li>
+                            Cole a URL acima no campo de{' '}
+                            <strong>Feed XML</strong>.
+                          </li>
+                          <li>
+                            O ZAP passará a consultar a{' '}
+                            <strong>
+                              {settings?.agencyName || 'nossa plataforma'}
+                            </strong>{' '}
+                            automaticamente todos os dias para atualizar sua
+                            vitrine!
+                          </li>
                         </ol>
                       </div>
                     </div>

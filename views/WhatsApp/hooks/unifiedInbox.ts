@@ -33,9 +33,7 @@ export function instagramConversationToUnified(
   const contact = conv.contact;
   const account = conv.account;
   const contactName =
-    contact?.full_name ||
-    contact?.username ||
-    'Contato Instagram';
+    contact?.full_name || contact?.username || 'Contato Instagram';
   const jid = `instagram:${conv.id}`;
 
   return {
@@ -120,12 +118,8 @@ export function instagramMessageToUnified(
 
 export function sortUnifiedChats(chats: UnifiedChat[]): UnifiedChat[] {
   return [...chats].sort((a, b) => {
-    const dateA = a.last_message_at
-      ? new Date(a.last_message_at).getTime()
-      : 0;
-    const dateB = b.last_message_at
-      ? new Date(b.last_message_at).getTime()
-      : 0;
+    const dateA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+    const dateB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
     return dateB - dateA;
   });
 }

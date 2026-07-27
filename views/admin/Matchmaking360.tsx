@@ -226,8 +226,10 @@ const Matchmaking360: React.FC = () => {
                   </div>
 
                   {/* Action */}
-                  <button 
-                    onClick={() => toast.info('Funcionalidade de contato em breve')}
+                  <button
+                    onClick={() =>
+                      toast.info('Funcionalidade de contato em breve')
+                    }
                     className="p-4 bg-black text-white rounded-2xl hover:scale-110 transition-all"
                   >
                     <MessageSquare size={20} />
@@ -288,8 +290,10 @@ const Matchmaking360: React.FC = () => {
                 ))}
               </div>
 
-              <button 
-                onClick={() => toast.info('Exportação estará disponível em breve')}
+              <button
+                onClick={() =>
+                  toast.info('Exportação estará disponível em breve')
+                }
                 className="w-full py-4 bg-indigo-600 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:brightness-110 transition-all flex items-center justify-center gap-3"
               >
                 Exportar Sugestões <ArrowRight size={14} />

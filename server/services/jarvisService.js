@@ -18,14 +18,17 @@ ${JSON.stringify(context || {}, null, 2)}`;
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
+        { role: 'user', content: prompt },
       ],
-      model: 'llama3-70b-8192', 
+      model: 'llama3-70b-8192',
       temperature: 0.5,
       max_tokens: 1024,
     });
 
-    return chatCompletion.choices[0]?.message?.content || 'Não consegui processar a requisição.';
+    return (
+      chatCompletion.choices[0]?.message?.content ||
+      'Não consegui processar a requisição.'
+    );
   } catch (error) {
     console.error('[JarvisService] Error processing task:', error);
     throw new Error('Falha ao processar tarefa com a IA externa.');

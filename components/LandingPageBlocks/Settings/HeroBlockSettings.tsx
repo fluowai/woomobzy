@@ -1,7 +1,6 @@
 import React from 'react';
 import { HeroBlockConfig } from '../../../types/landingPage';
 
-
 interface HeroBlockSettingsProps {
   config: HeroBlockConfig;
   onUpdate: (config: HeroBlockConfig) => void;

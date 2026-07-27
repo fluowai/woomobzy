@@ -356,7 +356,9 @@ const UserManagement: React.FC = () => {
                             <p className="font-medium text-slate-700 text-sm">
                               {user.full_name}
                             </p>
-                            <p className="text-xs text-slate-400">{user.email}</p>
+                            <p className="text-xs text-slate-400">
+                              {user.email}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -430,20 +432,29 @@ const UserManagement: React.FC = () => {
             {/* Mobile Cards View */}
             <div className="md:hidden flex flex-col p-4 bg-slate-50 space-y-4">
               {activeUsers.map((user) => (
-                <div key={user.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div
+                  key={user.id}
+                  className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+                >
                   <div className="p-4 border-b border-slate-100 flex items-center gap-3">
                     <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
                       {user.full_name?.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-800 truncate">{user.full_name}</h4>
-                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                      <h4 className="font-bold text-slate-800 truncate">
+                        {user.full_name}
+                      </h4>
+                      <p className="text-xs text-slate-500 truncate">
+                        {user.email}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="p-4 bg-slate-50/50 flex flex-col gap-3 text-sm">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nível de Acesso</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Nível de Acesso
+                      </span>
                       <select
                         value={user.role}
                         onChange={(e) =>
@@ -464,13 +475,15 @@ const UserManagement: React.FC = () => {
                       </select>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Status
+                      </span>
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-600">
                         Ativo
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="p-3 border-t border-slate-100 bg-white grid grid-cols-3 gap-2">
                     <button
                       onClick={() => {
@@ -494,7 +507,8 @@ const UserManagement: React.FC = () => {
                       onClick={() => handleDeleteUser(user)}
                       disabled={
                         user.role === 'admin' &&
-                        activeUsers.filter((u) => u.role === 'admin').length === 1
+                        activeUsers.filter((u) => u.role === 'admin').length ===
+                          1
                       }
                       className="flex justify-center items-center py-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >

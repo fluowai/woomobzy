@@ -5,7 +5,10 @@ interface WSEvent {
   [key: string]: unknown;
 }
 
-export function useInstagramWebSocket(companyId: string | null, onEvent: (event: WSEvent) => void) {
+export function useInstagramWebSocket(
+  companyId: string | null,
+  onEvent: (event: WSEvent) => void
+) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -29,7 +32,9 @@ export function useInstagramWebSocket(companyId: string | null, onEvent: (event:
         const data = JSON.parse(event.data);
         if (data.type === 'auth_ok') return;
         onEvent(data);
-      } catch { /* ignore malformed */ }
+      } catch {
+        /* ignore malformed */
+      }
     };
 
     ws.onclose = () => {

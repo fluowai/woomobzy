@@ -29,6 +29,9 @@ const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
   const [activeTab, setActiveTab] = React.useState<'content' | 'style'>(
     'content'
   );
+  const [styleMode, setStyleMode] = React.useState<'desktop' | 'mobile'>(
+    'desktop'
+  );
 
   return (
     <div className="w-96 bg-white border-l border-gray-200 flex flex-col h-full">
@@ -74,10 +77,49 @@ const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
             {renderBlockSettings(block, onUpdate, page, onUpdatePage)}
           </div>
         ) : (
-          <BlockStylesEditor
-            styles={block.styles}
-            onUpdate={(styles) => onUpdate({ styles })}
-          />
+          <div className="space-y-4">
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setStyleMode('desktop')}
+                className={`flex-1 py-1 text-xs font-medium rounded-md transition-colors ${
+                  styleMode === 'desktop'
+                    ? 'bg-white shadow-sm text-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Desktop
+              </button>
+              <button
+                onClick={() => setStyleMode('mobile')}
+                className={`flex-1 py-1 text-xs font-medium rounded-md transition-colors ${
+                  styleMode === 'mobile'
+                    ? 'bg-white shadow-sm text-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Mobile
+              </button>
+            </div>
+            <BlockStylesEditor
+              styles={
+                styleMode === 'desktop'
+                  ? block.styles
+                  : block.responsive?.mobile || {}
+              }
+              onUpdate={(styles) => {
+                if (styleMode === 'desktop') {
+                  onUpdate({ styles });
+                } else {
+                  onUpdate({
+                    responsive: {
+                      ...block.responsive,
+                      mobile: styles,
+                    },
+                  });
+                }
+              }}
+            />
+          </div>
         )}
       </div>
     </div>

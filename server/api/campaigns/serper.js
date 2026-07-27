@@ -7,7 +7,10 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
-import { searchSerper, resolveSerperApiKey } from '../../services/serper-client.js';
+import {
+  searchSerper,
+  resolveSerperApiKey,
+} from '../../services/serper-client.js';
 
 const router = Router();
 
@@ -25,7 +28,9 @@ router.post('/search', verifyAuth, requireTenant, async (req, res) => {
   try {
     const parsed = serperSearchSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: parsed.error.flatten() });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: parsed.error.flatten() });
     }
 
     const supabase = getSupabaseServer();
@@ -103,7 +108,9 @@ router.get('/cache', verifyAuth, requireTenant, async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (query) {
-      dbQuery = dbQuery.or(`name.ilike.%${query}%,phone.ilike.%${query}%,address.ilike.%${query}%`);
+      dbQuery = dbQuery.or(
+        `name.ilike.%${query}%,phone.ilike.%${query}%,address.ilike.%${query}%`
+      );
     }
 
     const offset = (Number(page) - 1) * Number(limit);

@@ -29,10 +29,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     let query = supabase
       .from('billing')
-      .select(
-        '*',
-        { count: 'exact' }
-      )
+      .select('*', { count: 'exact' })
       .eq('organization_id', req.orgId)
       .order('due_date', { ascending: false })
       .range(offset, offset + Number(limit) - 1);
@@ -52,7 +49,9 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     const billingList = data || [];
 
-    const contractIds = [...new Set(billingList.map((b) => b.contract_id).filter(Boolean))];
+    const contractIds = [
+      ...new Set(billingList.map((b) => b.contract_id).filter(Boolean)),
+    ];
     let contractMap = {};
     if (contractIds.length > 0) {
       const { data: contracts } = await supabase
@@ -65,7 +64,13 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       }
     }
 
-    const propertyIds = [...new Set(billingList.map((b) => contractMap[b.contract_id]?.property_id).filter(Boolean))];
+    const propertyIds = [
+      ...new Set(
+        billingList
+          .map((b) => contractMap[b.contract_id]?.property_id)
+          .filter(Boolean)
+      ),
+    ];
     let propertyMap = {};
     if (propertyIds.length > 0) {
       const { data: properties } = await supabase
@@ -79,8 +84,12 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     }
 
     const enriched = billingList.map((b) => {
-      const contract = b.contract_id ? contractMap[b.contract_id] || null : null;
-      const property = contract?.property_id ? propertyMap[contract.property_id] || null : null;
+      const contract = b.contract_id
+        ? contractMap[b.contract_id] || null
+        : null;
+      const property = contract?.property_id
+        ? propertyMap[contract.property_id] || null
+        : null;
       return { ...b, contract: contract ? { ...contract, property } : null };
     });
 
@@ -476,7 +485,9 @@ router.get(
       if (error) throw error;
 
       const billingList = rawBilling || [];
-      const contractIds = [...new Set(billingList.map((b) => b.contract_id).filter(Boolean))];
+      const contractIds = [
+        ...new Set(billingList.map((b) => b.contract_id).filter(Boolean)),
+      ];
       let contractMap = {};
       if (contractIds.length > 0) {
         const { data: contracts } = await supabase
@@ -484,7 +495,8 @@ router.get(
           .select('id, tenant_name, tenant_cpf')
           .in('id', contractIds)
           .eq('organization_id', req.orgId);
-        if (contracts) contractMap = Object.fromEntries(contracts.map((c) => [c.id, c]));
+        if (contracts)
+          contractMap = Object.fromEntries(contracts.map((c) => [c.id, c]));
       }
       const data = billingList.map((b) => ({
         ...b,
@@ -589,7 +601,9 @@ router.get(
         }
       }
 
-      const propertyIds = [...new Set((contracts || []).map((c) => c.property_id).filter(Boolean))];
+      const propertyIds = [
+        ...new Set((contracts || []).map((c) => c.property_id).filter(Boolean)),
+      ];
       let propertyMap = {};
       if (propertyIds.length > 0) {
         const { data: properties } = await supabase
@@ -597,13 +611,16 @@ router.get(
           .select('id, title, address')
           .in('id', propertyIds)
           .eq('organization_id', req.orgId);
-        if (properties) propertyMap = Object.fromEntries(properties.map((p) => [p.id, p]));
+        if (properties)
+          propertyMap = Object.fromEntries(properties.map((p) => [p.id, p]));
       }
 
       const inadimplentes = (contracts || [])
         .map((c) => {
           const contractBillings = billingMap[c.id] || [];
-          const property = c.property_id ? propertyMap[c.property_id] || null : null;
+          const property = c.property_id
+            ? propertyMap[c.property_id] || null
+            : null;
           const totalDebito = contractBillings
             .filter((b) => b.status !== 'pago')
             .reduce((sum, b) => sum + (b.amount || 0), 0);
@@ -612,7 +629,9 @@ router.get(
             0,
             Math.ceil(
               (new Date().getTime() -
-                new Date(contractBillings[0]?.due_date || c.updated_at).getTime()) /
+                new Date(
+                  contractBillings[0]?.due_date || c.updated_at
+                ).getTime()) /
                 (1000 * 60 * 60 * 24)
             )
           );

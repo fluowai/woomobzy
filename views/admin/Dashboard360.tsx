@@ -247,8 +247,10 @@ const Dashboard360: React.FC = () => {
                 </div>
               </div>
 
-              <button 
-                onClick={() => toast.info('Módulo financeiro estará disponível em breve')}
+              <button
+                onClick={() =>
+                  toast.info('Módulo financeiro estará disponível em breve')
+                }
                 className="btn-primary w-full mt-6 text-xs"
               >
                 Ir para Financeiro

@@ -259,7 +259,9 @@ const Onboarding: React.FC = () => {
             <Home
               size={24}
               className={
-                formData.niche === 'urban' ? 'text-[var(--color-primary)]' : 'text-slate-400'
+                formData.niche === 'urban'
+                  ? 'text-[var(--color-primary)]'
+                  : 'text-slate-400'
               }
             />
             <span

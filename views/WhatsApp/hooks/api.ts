@@ -102,7 +102,8 @@ async function apiRequest<T>(
     ? impersonatedOrgId || activeOrgId || (await getTenantId(session?.user?.id))
     : null;
 
-  const provider = options?.provider || getInstanceProviderCache(options?.instanceId);
+  const provider =
+    options?.provider || getInstanceProviderCache(options?.instanceId);
   const prefix = provider === 'waha' ? '/waha' : '';
 
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -608,23 +609,30 @@ export const instanceApi = {
     apiRequest<Instance>('/instances', {
       method: 'POST',
       body: JSON.stringify({ name, provider }),
-      provider
-    }).then(inst => {
+      provider,
+    }).then((inst) => {
       setInstanceProviderCache(inst.id, inst.provider);
       return inst;
     }),
 
-  list: () => apiRequest<Instance[]>('/instances').then(instances => {
-    instances.forEach(inst => setInstanceProviderCache(inst.id, inst.provider));
-    return instances;
-  }),
+  list: () =>
+    apiRequest<Instance[]>('/instances').then((instances) => {
+      instances.forEach((inst) =>
+        setInstanceProviderCache(inst.id, inst.provider)
+      );
+      return instances;
+    }),
 
-  get: (id: string) => apiRequest<Instance>(`/instances/${id}`, { instanceId: id }).then(inst => {
-    setInstanceProviderCache(inst.id, inst.provider);
-    return inst;
-  }),
+  get: (id: string) =>
+    apiRequest<Instance>(`/instances/${id}`, { instanceId: id }).then(
+      (inst) => {
+        setInstanceProviderCache(inst.id, inst.provider);
+        return inst;
+      }
+    ),
 
-  delete: (id: string) => apiRequest(`/instances/${id}`, { method: 'DELETE', instanceId: id }),
+  delete: (id: string) =>
+    apiRequest(`/instances/${id}`, { method: 'DELETE', instanceId: id }),
 
   getQRCode: (id: string) =>
     apiRequest<{ qr_code?: string; status: string; expires_at?: string }>(
@@ -636,7 +644,7 @@ export const instanceApi = {
     apiRequest<PairCodeResponse>(`/instances/${id}/pair-code`, {
       method: 'POST',
       body: JSON.stringify({ phone }),
-      instanceId: id
+      instanceId: id,
     }),
 
   connect: (id: string) =>
@@ -656,7 +664,7 @@ export const instanceApi = {
     apiRequest<HistoryImportResponse>(`/instances/${id}/import-history`, {
       method: 'POST',
       body: JSON.stringify(options),
-      instanceId: id
+      instanceId: id,
     }),
 };
 
@@ -672,19 +680,19 @@ export const chatApi = {
     apiRequest<Chat>(`/chats/ensure?instance_id=${instanceId}`, {
       method: 'POST',
       body: JSON.stringify(payload),
-      instanceId
+      instanceId,
     }),
 
   deleteAll: (instanceId: string) =>
     apiRequest<DeleteChatsResponse>(`/chats?instance_id=${instanceId}`, {
       method: 'DELETE',
-      instanceId
+      instanceId,
     }),
 
   markRead: (chatId: string, instanceId: string) =>
     apiRequest(`/chats/${chatId}/read?instance_id=${instanceId}`, {
       method: 'POST',
-      instanceId
+      instanceId,
     }),
 
   updateContactName: (
@@ -695,7 +703,7 @@ export const chatApi = {
     apiRequest<Chat>(`/chats/${chatId}/contact?instance_id=${instanceId}`, {
       method: 'PATCH',
       body: JSON.stringify({ display_name: displayName }),
-      instanceId
+      instanceId,
     }),
 };
 
@@ -797,7 +805,7 @@ export const messageApi = {
     apiRequest(`/messages/${chatId}/send?instance_id=${instanceId}`, {
       method: 'POST',
       body: JSON.stringify({ content, type }),
-      instanceId
+      instanceId,
     }),
 
   sendMedia: async (
@@ -826,26 +834,20 @@ export const messageApi = {
     const provider = getInstanceProviderCache(instanceId);
     const prefix = provider === 'waha' ? '/waha' : '';
     const cleanPath = `/messages/${chatId}/send-media?instance_id=${instanceId}`;
-    
-    const res = await fetch(
-      buildApiUrl(
-        `${prefix}${cleanPath}`,
-        tenantId
-      ),
-      {
-        method: 'POST',
-        headers: {
-          Authorization: session ? `Bearer ${session.access_token}` : '',
-          ...(impersonatedOrgId
-            ? { 'x-impersonate-org-id': impersonatedOrgId }
-            : {}),
-          ...(!impersonatedOrgId && activeOrgId
-            ? { 'x-organization-id': activeOrgId }
-            : {}),
-        },
-        body: formData,
-      }
-    );
+
+    const res = await fetch(buildApiUrl(`${prefix}${cleanPath}`, tenantId), {
+      method: 'POST',
+      headers: {
+        Authorization: session ? `Bearer ${session.access_token}` : '',
+        ...(impersonatedOrgId
+          ? { 'x-impersonate-org-id': impersonatedOrgId }
+          : {}),
+        ...(!impersonatedOrgId && activeOrgId
+          ? { 'x-organization-id': activeOrgId }
+          : {}),
+      },
+      body: formData,
+    });
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: res.statusText }));

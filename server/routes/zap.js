@@ -47,7 +47,11 @@ router.get('/feed/:domain.xml', async (req, res) => {
     }
 
     if (!organizationId) {
-      return res.status(404).send('<Erro>Organização não encontrada para o domínio informado.</Erro>');
+      return res
+        .status(404)
+        .send(
+          '<Erro>Organização não encontrada para o domínio informado.</Erro>'
+        );
     }
 
     // 2. Buscar imóveis disponíveis
@@ -97,16 +101,16 @@ router.get('/feed/:domain.xml', async (req, res) => {
       xml += `      <TipoImovel>${escapeXml(propertyType)}</TipoImovel>\n`;
       xml += `      <SubTipoImovel>${escapeXml(prop.property_type)}</SubTipoImovel>\n`;
       xml += `      <CategoriaImovel>Padrão</CategoriaImovel>\n`;
-      
+
       // Localização
       xml += `      <Bairro>${escapeXml(prop.neighborhood || features.bairro)}</Bairro>\n`;
       xml += `      <Cidade>${escapeXml(prop.city || features.cidade)}</Cidade>\n`;
       xml += `      <Estado>${escapeXml(prop.state || features.estado)}</Estado>\n`;
       xml += `      <CEP>${escapeXml(features.cep)}</CEP>\n`;
-      
+
       // Valores
-      xml += `      <PrecoVenda>${transaction === 'Venda' ? (prop.price || 0) : 0}</PrecoVenda>\n`;
-      xml += `      <PrecoLocacao>${transaction === 'Locação' ? (prop.price || 0) : 0}</PrecoLocacao>\n`;
+      xml += `      <PrecoVenda>${transaction === 'Venda' ? prop.price || 0 : 0}</PrecoVenda>\n`;
+      xml += `      <PrecoLocacao>${transaction === 'Locação' ? prop.price || 0 : 0}</PrecoLocacao>\n`;
       xml += `      <ValorCondominio>${features.condominio || 0}</ValorCondominio>\n`;
       xml += `      <ValorIPTU>${features.iptu || 0}</ValorIPTU>\n`;
 
@@ -119,7 +123,7 @@ router.get('/feed/:domain.xml', async (req, res) => {
       xml += `      <QtdVagas>${features.vagas || 0}</QtdVagas>\n`;
 
       xml += `      <Observacao><![CDATA[${prop.description || prop.title || ''}]]></Observacao>\n`;
-      
+
       // Título do Anúncio
       xml += `      <TituloImovel><![CDATA[${prop.title || ''}]]></TituloImovel>\n`;
 
@@ -158,29 +162,31 @@ router.get('/feed/:domain.xml', async (req, res) => {
 router.post('/leads', async (req, res) => {
   try {
     const payload = req.body;
-    
-    // O Zap envia os dados num formato específico. 
+
+    // O Zap envia os dados num formato específico.
     // Ex: { leadOrigin: "Zap", clientListingId: "ID_DO_IMOVEL", name: "Fulano", email: "...", ddd: "11", phone: "999999999", message: "..." }
-    const { 
-      name, 
-      email, 
+    const {
+      name,
+      email,
       ddd,
-      phone, 
-      message, 
-      clientListingId, 
+      phone,
+      message,
+      clientListingId,
       leadOrigin,
-      organizationId // Pode vir customizado no header ou querystring dependendo da configuração do webhook
+      organizationId, // Pode vir customizado no header ou querystring dependendo da configuração do webhook
     } = payload;
 
     // Se o organizationId não vier no payload, ele precisa vir pela querystring (Ex: /leads?org_id=UUID)
     const orgId = organizationId || req.query.org_id;
 
     if (!orgId) {
-      return res.status(400).json({ error: 'organizationId ou org_id não fornecido' });
+      return res
+        .status(400)
+        .json({ error: 'organizationId ou org_id não fornecido' });
     }
 
     // Formata telefone
-    const fullPhone = ddd && phone ? `${ddd}${phone}` : (phone || '');
+    const fullPhone = ddd && phone ? `${ddd}${phone}` : phone || '';
 
     const supabase = getSupabaseServer();
 
@@ -196,7 +202,7 @@ router.post('/leads', async (req, res) => {
     const assignedAgentId = sdrs && sdrs.length > 0 ? sdrs[0].id : null;
 
     // Insere o Lead na tabela
-    // O usuário requisitou que o status seja para qualificação do SDR, 
+    // O usuário requisitou que o status seja para qualificação do SDR,
     // então usaremos status: 'NEW' (Novo) e deixaremos a automação 'send-welcome' desabilitada para esse lead.
     const leadData = {
       organization_id: orgId,
@@ -204,24 +210,27 @@ router.post('/leads', async (req, res) => {
       email: email || null,
       phone: fullPhone,
       source: 'PORTAL',
-      notes: message ? `Mensagem do Portal: ${message}\nOrigem: ${leadOrigin || 'ZAP'}` : `Origem: ${leadOrigin || 'ZAP'}`,
+      notes: message
+        ? `Mensagem do Portal: ${message}\nOrigem: ${leadOrigin || 'ZAP'}`
+        : `Origem: ${leadOrigin || 'ZAP'}`,
       property_id: clientListingId || null,
       status: 'NEW', // Para que o SDR qualifique manualmente
       assigned_to: assignedAgentId, // Vincula ao agente encontrado
     };
 
-    const { error } = await supabase
-      .from('leads')
-      .insert([leadData]);
+    const { error } = await supabase.from('leads').insert([leadData]);
 
     if (error) {
       console.error('[Zap Webhook] Erro ao inserir lead:', error.message);
-      return res.status(500).json({ error: 'Erro ao processar o lead no banco de dados' });
+      return res
+        .status(500)
+        .json({ error: 'Erro ao processar o lead no banco de dados' });
     }
 
     // Retorna 200 OK para o Zap parar de enviar tentativas
-    res.status(200).json({ success: true, message: 'Lead recebido com sucesso' });
-
+    res
+      .status(200)
+      .json({ success: true, message: 'Lead recebido com sucesso' });
   } catch (error) {
     console.error('[Zap Webhook] Erro inesperado:', error);
     res.status(500).json({ error: 'Erro interno no servidor' });

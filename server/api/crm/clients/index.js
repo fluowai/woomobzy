@@ -10,7 +10,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const { search, roles } = req.query;
     const supabase = getSupabaseServer();
     let query = supabase
-      .from('profiles')
+      .from('clients')
       .select('*')
       .eq('organization_id', req.orgId)
       .order('name', { ascending: true });
@@ -23,21 +23,21 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    let clients = (data || []).map((profile) => ({
-      id: profile.id,
-      name: profile.name || profile.email?.split('@')[0] || 'Sem nome',
-      email: profile.email || '',
-      phone: profile.phone || '',
-      document_number: profile.document_number || '',
-      document_type: profile.document_type || 'CPF',
-      roles: profile.roles || ['Cliente'],
-      city: profile.city || '',
-      state: profile.state || '',
-      address: profile.address || '',
-      neighborhood: profile.neighborhood || '',
-      zip_code: profile.zip_code || '',
-      notes: profile.notes || '',
-      created_at: profile.created_at,
+    let clients = (data || []).map((client) => ({
+      id: client.id,
+      name: client.name || client.email?.split('@')[0] || 'Sem nome',
+      email: client.email || '',
+      phone: client.phone || '',
+      document_number: client.document_number || '',
+      document_type: client.document_type || 'CPF',
+      roles: client.roles || ['Cliente'],
+      city: client.address_city || '',
+      state: client.address_state || '',
+      address: client.address_street || '',
+      neighborhood: client.address_neighborhood || '',
+      zip_code: client.address_zip || '',
+      notes: client.notes || '',
+      created_at: client.created_at,
     }));
 
     if (roles) {
@@ -61,7 +61,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
-      .from('profiles')
+      .from('clients')
       .insert({
         organization_id: req.orgId,
         name,
@@ -70,11 +70,11 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
         document_number,
         document_type: document_type || 'CPF',
         roles: roles || ['Cliente'],
-        city,
-        state,
-        address,
-        neighborhood,
-        zip_code,
+        address_city: city,
+        address_state: state,
+        address_street: address,
+        address_neighborhood: neighborhood,
+        address_zip: zip_code,
         notes,
       })
       .select()
@@ -91,14 +91,22 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 router.patch('/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
-    delete updates.id;
-    delete updates.organization_id;
+    const { city, state, address, neighborhood, zip_code, ...restUpdates } = req.body;
+    
+    const dbUpdates = { ...restUpdates };
+    if (city !== undefined) dbUpdates.address_city = city;
+    if (state !== undefined) dbUpdates.address_state = state;
+    if (address !== undefined) dbUpdates.address_street = address;
+    if (neighborhood !== undefined) dbUpdates.address_neighborhood = neighborhood;
+    if (zip_code !== undefined) dbUpdates.address_zip = zip_code;
+
+    delete dbUpdates.id;
+    delete dbUpdates.organization_id;
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
+      .from('clients')
+      .update(dbUpdates)
       .eq('id', id)
       .eq('organization_id', req.orgId)
       .select()
@@ -118,7 +126,7 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
     const { id } = req.params;
     const supabase = getSupabaseServer();
     const { error } = await supabase
-      .from('profiles')
+      .from('clients')
       .delete()
       .eq('id', id)
       .eq('organization_id', req.orgId);

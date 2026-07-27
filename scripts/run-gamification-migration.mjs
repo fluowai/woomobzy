@@ -15,8 +15,7 @@ if (!DATABASE_URL) {
 }
 
 // Remove sslmode from URL to let pg handle it via the ssl option
-const connStr = DATABASE_URL
-  .replace(/[?&]sslmode=[^&]*/g, '')
+const connStr = DATABASE_URL.replace(/[?&]sslmode=[^&]*/g, '')
   .replace(/[?&]default_query_exec_mode=[^&]*/g, '')
   .replace(/\?$/, '');
 
@@ -30,11 +29,16 @@ async function run() {
   await client.connect();
   console.log('✅ Conectado!');
 
-  const sqlPath = resolve(__dirname, '../migrations/20260725_gamification_and_fintech.sql');
+  const sqlPath = resolve(
+    __dirname,
+    '../migrations/20260725_gamification_and_fintech.sql'
+  );
   const sql = readFileSync(sqlPath, 'utf-8');
 
   console.log('🚀 Executando migration: 20260725_gamification_and_fintech.sql');
-  console.log('📦 Tabelas: gamification_profiles, gamification_transactions, gamification_redemptions, fianca_requests');
+  console.log(
+    '📦 Tabelas: gamification_profiles, gamification_transactions, gamification_redemptions, fianca_requests'
+  );
   console.log('');
 
   try {

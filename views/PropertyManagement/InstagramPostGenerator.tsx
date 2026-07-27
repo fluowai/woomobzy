@@ -220,15 +220,17 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
                     }`}
                     style={
                       template === key
-                        ? { borderColor: config.color, background: `${config.color}08` }
+                        ? {
+                            borderColor: config.color,
+                            background: `${config.color}08`,
+                          }
                         : undefined
                     }
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center mb-2"
                       style={{
-                        background:
-                          template === key ? config.color : '#e2e8f0',
+                        background: template === key ? config.color : '#e2e8f0',
                         color: template === key ? 'white' : '#64748b',
                       }}
                     >
@@ -252,10 +254,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
               </label>
               <div className="flex gap-2">
                 {(
-                  Object.entries(FORMAT_LABELS) as [
-                    InstagramFormat,
-                    string,
-                  ][]
+                  Object.entries(FORMAT_LABELS) as [InstagramFormat, string][]
                 ).map(([key, label]) => (
                   <button
                     key={key}
@@ -341,11 +340,15 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
 
             {/* Saved posts toggle */}
             <button
-              onClick={() => { setShowSaved(!showSaved); }}
+              onClick={() => {
+                setShowSaved(!showSaved);
+              }}
               className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
             >
               <Clock size={15} />
-              {showSaved ? 'Voltar ao Editor' : `Posts Salvos (${savedPosts.length})`}
+              {showSaved
+                ? 'Voltar ao Editor'
+                : `Posts Salvos (${savedPosts.length})`}
             </button>
 
             <p className="text-[11px] text-slate-400 text-center leading-relaxed">
@@ -362,7 +365,12 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
                   <h3 className="text-sm font-semibold text-slate-700">
                     Posts Salvos
                   </h3>
-                  {loadingSaved && <Loader2 size={16} className="animate-spin text-slate-400" />}
+                  {loadingSaved && (
+                    <Loader2
+                      size={16}
+                      className="animate-spin text-slate-400"
+                    />
+                  )}
                 </div>
                 {savedPosts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-slate-400">
@@ -405,12 +413,17 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
                             <span className="text-[10px] font-medium text-slate-500 uppercase">
                               {TEMPLATE_LABELS[post.template]}
                             </span>
-                            <span className="text-[10px] text-slate-300">•</span>
+                            <span className="text-[10px] text-slate-300">
+                              •
+                            </span>
                             <span className="text-[10px] text-slate-400">
                               {post.format === '1080x1080' ? '1:1' : '4:5'}
                             </span>
                             {post.status === 'posted' && (
-                              <CheckCircle2 size={12} className="text-emerald-500 ml-auto" />
+                              <CheckCircle2
+                                size={12}
+                                className="text-emerald-500 ml-auto"
+                              />
                             )}
                           </div>
                         </div>
@@ -431,7 +444,10 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
                   />
                 ) : (
                   <div className="w-80 h-80 rounded-lg bg-slate-200 flex items-center justify-center">
-                    <Loader2 size={32} className="animate-spin text-slate-400" />
+                    <Loader2
+                      size={32}
+                      className="animate-spin text-slate-400"
+                    />
                   </div>
                 )}
               </div>

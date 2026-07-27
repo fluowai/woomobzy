@@ -50,21 +50,24 @@ const UrbanLayout: React.FC = () => {
   const { settings, loading: settingsLoading } = useSettings();
   const loading = authLoading || settingsLoading;
   const subtype = settings?.urbanSubtype || 'imobiliaria';
-  
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
   const isWorkspaceRoute =
     pathname.startsWith('/urban/whatsapp') ||
     pathname.startsWith('/urban/email');
-  const isLandingPageEditor = pathname.includes('/landing-pages/') && pathname.split('/').length > 3;
+  const isLandingPageEditor =
+    (pathname.includes('/landing-pages/') ||
+      pathname.includes('/site/pages/')) &&
+    pathname.split('/').length > 3;
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
     logger.info(
       '[UrbanLayout] Guard triggered. Redirecting Super Admin to their panel'
     );
     const isMegaAdmin = !profile?.organization?.is_reseller;
-    return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
+    return <Navigate to={isMegaAdmin ? '/megaadmin' : '/superadmin'} replace />;
   }
 
   const handleLogout = async () => {
@@ -86,7 +89,7 @@ const UrbanLayout: React.FC = () => {
   ];
 
   let assetItems: MenuItem[] = [];
-  
+
   if (subtype === 'loteadora') {
     assetItems = [
       { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
@@ -102,7 +105,11 @@ const UrbanLayout: React.FC = () => {
       { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
       { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
       { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
-      { icon: Building2, label: 'Adm. Condomínios', path: '/urban/condominios' },
+      {
+        icon: Building2,
+        label: 'Adm. Condomínios',
+        path: '/urban/condominios',
+      },
       { icon: Key, label: 'Controle de Chaves', path: '/urban/chaves' },
     ];
   }
@@ -317,7 +324,11 @@ const UrbanLayout: React.FC = () => {
         </button>
         <div
           className={`flex-1 overflow-y-auto ${
-            isLandingPageEditor ? 'p-0' : isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isLandingPageEditor
+              ? 'p-0'
+              : isWorkspaceRoute
+                ? 'p-2 sm:p-3 md:p-4'
+                : 'p-3 sm:p-4 md:p-6'
           }`}
         >
           <Outlet />

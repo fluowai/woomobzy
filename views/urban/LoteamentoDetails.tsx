@@ -195,7 +195,7 @@ const LoteamentoDetails: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => toast.info('Exportação de mapa em breve')}
             className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-900/10"
           >
@@ -356,13 +356,13 @@ const LoteamentoDetails: React.FC = () => {
               </section>
 
               <section className="space-y-4 pt-4 border-t border-slate-100">
-                <button 
+                <button
                   onClick={() => toast.info('Geração de reserva em breve')}
                   className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
                   <FileText size={18} /> Gerar Reserva / Simulação
                 </button>
-                <button 
+                <button
                   onClick={() => toast.info('Envio por WhatsApp em breve')}
                   className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                 >

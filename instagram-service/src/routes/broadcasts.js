@@ -27,7 +27,9 @@ router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('instagram_broadcast_groups')
-      .select('*, template:instagram_templates(*), recipients:instagram_broadcast_recipients(count)')
+      .select(
+        '*, template:instagram_templates(*), recipients:instagram_broadcast_recipients(count)'
+      )
       .eq('id', req.params.id)
       .eq('company_id', req.companyId)
       .single();
@@ -40,9 +42,18 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { name, description, account_id, template_id, filter_criteria, scheduled_at } = req.body;
+    const {
+      name,
+      description,
+      account_id,
+      template_id,
+      filter_criteria,
+      scheduled_at,
+    } = req.body;
     if (!name || !account_id) {
-      return res.status(400).json({ error: 'name and account_id are required' });
+      return res
+        .status(400)
+        .json({ error: 'name and account_id are required' });
     }
 
     const { data: broadcast, error: bcError } = await supabase
@@ -100,7 +111,11 @@ router.post('/:id/send', async (req, res) => {
     if (bcError) throw bcError;
 
     if (broadcast.status !== 'draft' && broadcast.status !== 'scheduled') {
-      return res.status(400).json({ error: `Cannot send broadcast in '${broadcast.status}' status` });
+      return res
+        .status(400)
+        .json({
+          error: `Cannot send broadcast in '${broadcast.status}' status`,
+        });
     }
 
     await supabase

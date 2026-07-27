@@ -20,7 +20,11 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const { lease_id, year, month } = req.query;
 
     if (!lease_id || !year || !month) {
-      return res.status(400).json({ error: 'Faltam parâmetros obrigatórios (lease_id, year, month)' });
+      return res
+        .status(400)
+        .json({
+          error: 'Faltam parâmetros obrigatórios (lease_id, year, month)',
+        });
     }
 
     if (!isValidUUID(lease_id)) {
@@ -32,10 +36,12 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     // Buscar contrato e proprietário
     const { data: lease, error: leaseError } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:property_id(title, owner_id)
-      `)
+      `
+      )
       .eq('id', lease_id)
       .eq('organization_id', req.orgId)
       .single();
@@ -64,7 +70,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const items = (invoices || []).map((inv) => {
       const amount = inv.paid_amount || inv.amount;
       const adminFeePerc = lease.administration_fee_percentage || 10;
-      
+
       const adminFee = amount * (adminFeePerc / 100);
       // Aqui pode-se adicionar IPTU e Condomínio caso sejam repassados integralmente
       const repassValue = amount - adminFee;
@@ -93,7 +99,9 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       total_to_repass: totalToRepass,
       items,
       // Se usar o Asaas, o repasse já foi pro ownerWalletId, este borderô serve como extrato
-      split_status: lease.property?.owner_id ? 'AUTOMATICO_ASAAS' : 'REPASSE_MANUAL'
+      split_status: lease.property?.owner_id
+        ? 'AUTOMATICO_ASAAS'
+        : 'REPASSE_MANUAL',
     };
 
     res.json({ success: true, data: bordero });

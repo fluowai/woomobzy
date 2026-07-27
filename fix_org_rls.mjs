@@ -1,14 +1,15 @@
 import pg from 'pg';
 
 const pool = new pg.Pool({
-  connectionString: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
-  ssl: { rejectUnauthorized: false }
+  connectionString:
+    'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
+  ssl: { rejectUnauthorized: false },
 });
 
 async function run() {
   try {
     const client = await pool.connect();
-    
+
     // Drop all the potentially recursive reseller policies on organizations
     await client.query(`
       DROP POLICY IF EXISTS "Reseller can see sub-organizations" ON public.organizations;
@@ -17,9 +18,9 @@ async function run() {
       DROP POLICY IF EXISTS "Reseller insert sub-organizations" ON public.organizations;
       DROP POLICY IF EXISTS "Users can view own organization" ON public.organizations;
     `);
-    
+
     // Create clean policies for organizations
-    
+
     // 1. Users can view their own organization
     await client.query(`
       CREATE POLICY "Users can view own organization" ON public.organizations
@@ -27,7 +28,7 @@ async function run() {
         id = public.get_auth_organization_id()
       );
     `);
-    
+
     // 2. Resellers can view their sub-organizations
     await client.query(`
       CREATE POLICY "Reseller view sub-organizations" ON public.organizations
@@ -63,7 +64,7 @@ async function run() {
         )
       );
     `);
-    
+
     console.log('Fixed organizations RLS policies successfully!');
     client.release();
   } catch (err) {

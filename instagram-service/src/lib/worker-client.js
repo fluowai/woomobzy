@@ -1,9 +1,13 @@
-const WORKER_BASE_URL = process.env.INSTAGRAM_WORKER_URL || 'http://instagram-worker:8000';
+const WORKER_BASE_URL =
+  process.env.INSTAGRAM_WORKER_URL || 'http://instagram-worker:8000';
 
 export async function workerPost(path, body) {
   const res = await fetch(`${WORKER_BASE_URL}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-internal-token': process.env.INSTAGRAM_INTERNAL_TOKEN || '' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-internal-token': process.env.INSTAGRAM_INTERNAL_TOKEN || '',
+    },
     body: JSON.stringify(body),
   });
   if (!res.ok) {

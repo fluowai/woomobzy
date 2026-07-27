@@ -81,7 +81,10 @@ export async function startDispatch(campaignId) {
 
   // Run dispatch in background (non-blocking)
   runDispatchLoop(state).catch((err) => {
-    console.error(`[CampaignDispatcher] Fatal error for ${campaignId}:`, err.message);
+    console.error(
+      `[CampaignDispatcher] Fatal error for ${campaignId}:`,
+      err.message
+    );
     finalizeCampaign(state, 'paused');
   });
 
@@ -110,8 +113,15 @@ async function runDispatchLoop(state) {
 
   while (!state.abortController.signal.aborted) {
     // 1. Check working hours
-    if (!isWithinWorkingHours(campaign.working_hours_start, campaign.working_hours_end)) {
-      console.log(`[CampaignDispatcher] Fora do horário. Dormindo até próximo horário.`);
+    if (
+      !isWithinWorkingHours(
+        campaign.working_hours_start,
+        campaign.working_hours_end
+      )
+    ) {
+      console.log(
+        `[CampaignDispatcher] Fora do horário. Dormindo até próximo horário.`
+      );
       await sleepUntilNextWorkingHour(campaign.working_hours_start);
       if (state.abortController.signal.aborted) break;
     }
@@ -168,9 +178,15 @@ async function runDispatchLoop(state) {
     }
 
     // 6. Check daily limit
-    const dailyCheck = await checkDailyLimit(supabase, instance, campaign.daily_limit_per_instance);
+    const dailyCheck = await checkDailyLimit(
+      supabase,
+      instance,
+      campaign.daily_limit_per_instance
+    );
     if (dailyCheck.exceeded) {
-      console.log(`[CampaignDispatcher] Limite diário atingido para instância ${instance.whatsapp_instances.name}`);
+      console.log(
+        `[CampaignDispatcher] Limite diário atingido para instância ${instance.whatsapp_instances.name}`
+      );
       // Try next instance
       state.currentIndex = (state.currentIndex + 1) % state.instances.length;
       continue;
@@ -181,8 +197,15 @@ async function runDispatchLoop(state) {
     try {
       messageText = await generateMessage(campaign, contact);
     } catch (err) {
-      console.error(`[CampaignDispatcher] IA falhou, usando template:`, err.message);
-      messageText = interpolateTemplate(campaign.message_template, contact, campaign.message_variables);
+      console.error(
+        `[CampaignDispatcher] IA falhou, usando template:`,
+        err.message
+      );
+      messageText = interpolateTemplate(
+        campaign.message_template,
+        contact,
+        campaign.message_variables
+      );
     }
 
     // 8. Send message
@@ -218,7 +241,10 @@ async function runDispatchLoop(state) {
         contact_id: contact.id,
         instance_id: waInstance.id,
         action: 'sent',
-        detail: { phone: contact.phone, message_preview: messageText.slice(0, 100) },
+        detail: {
+          phone: contact.phone,
+          message_preview: messageText.slice(0, 100),
+        },
       });
 
       // Update campaign counters
@@ -228,9 +254,14 @@ async function runDispatchLoop(state) {
         .update({ sent_count: state.totalSent })
         .eq('id', state.campaignId);
 
-      console.log(`[CampaignDispatcher] ✅ Enviado para ${contact.phone} via ${waInstance.name}`);
+      console.log(
+        `[CampaignDispatcher] ✅ Enviado para ${contact.phone} via ${waInstance.name}`
+      );
     } catch (err) {
-      console.error(`[CampaignDispatcher] ❌ Falha para ${contact.phone}:`, err.message);
+      console.error(
+        `[CampaignDispatcher] ❌ Falha para ${contact.phone}:`,
+        err.message
+      );
 
       await supabase
         .from('campaign_contacts')
@@ -253,8 +284,13 @@ async function runDispatchLoop(state) {
     }
 
     // 9. Random delay (anti-ban)
-    const delay = randomDelay(campaign.min_delay_seconds, campaign.max_delay_seconds);
-    console.log(`[CampaignDispatcher] Aguardando ${delay}s antes do próximo envio...`);
+    const delay = randomDelay(
+      campaign.min_delay_seconds,
+      campaign.max_delay_seconds
+    );
+    console.log(
+      `[CampaignDispatcher] Aguardando ${delay}s antes do próximo envio...`
+    );
     await sleep(delay * 1000);
   }
 }
@@ -294,18 +330,28 @@ async function checkDailyLimit(supabase, instance, limit) {
 
 async function generateMessage(campaign, contact) {
   if (!campaign.ai_prompt) {
-    return interpolateTemplate(campaign.message_template, contact, campaign.message_variables);
+    return interpolateTemplate(
+      campaign.message_template,
+      contact,
+      campaign.message_variables
+    );
   }
 
-  const { getAIClient } = await import('../api/ai/helpers.js').catch(() => ({}));
+  const { getAIClient } = await import('../api/ai/helpers.js').catch(
+    () => ({})
+  );
   const aiClient = getAIClient?.(campaign.ai_provider || 'gemini');
 
   if (!aiClient) {
-    return interpolateTemplate(campaign.message_template, contact, campaign.message_variables);
+    return interpolateTemplate(
+      campaign.message_template,
+      contact,
+      campaign.message_variables
+    );
   }
 
   const vars = {};
-  for (const v of (campaign.message_variables || [])) {
+  for (const v of campaign.message_variables || []) {
     vars[v.name] = contact.metadata?.[v.source] || contact[v.source] || '';
   }
 
@@ -320,7 +366,14 @@ Variáveis: ${JSON.stringify(vars)}
 Gere UMA mensagem de WhatsApp personalizada e natural. Responda APENAS com o texto da mensagem, sem aspas, sem formatação adicional.`;
 
   const result = await aiClient.generate(prompt, { maxTokens: 300 });
-  return result?.text || interpolateTemplate(campaign.message_template, contact, campaign.message_variables);
+  return (
+    result?.text ||
+    interpolateTemplate(
+      campaign.message_template,
+      contact,
+      campaign.message_variables
+    )
+  );
 }
 
 function interpolateTemplate(template, contact, variables = []) {
@@ -388,7 +441,9 @@ function sleepUntilNextWorkingHour(startHour) {
     target.setDate(target.getDate() + 1);
   }
   const ms = target.getTime() - Date.now();
-  console.log(`[CampaignDispatcher] Dormindo ${Math.round(ms / 60000)}min até ${startHour}h`);
+  console.log(
+    `[CampaignDispatcher] Dormindo ${Math.round(ms / 60000)}min até ${startHour}h`
+  );
   return sleep(ms);
 }
 
@@ -398,7 +453,8 @@ async function finalizeCampaign(state, finalStatus) {
     .from('campaigns')
     .update({
       status: finalStatus,
-      completed_at: finalStatus === 'completed' ? new Date().toISOString() : null,
+      completed_at:
+        finalStatus === 'completed' ? new Date().toISOString() : null,
       sent_count: state.totalSent,
       failed_count: state.totalFailed,
     })

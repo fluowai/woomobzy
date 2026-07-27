@@ -3,7 +3,9 @@ import { supabase } from '@/services/supabase';
 const INSTAGRAM_API = '/api/instagram';
 
 async function getCompanyId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
   const { data: profile } = await supabase
     .from('profiles')
@@ -17,11 +19,13 @@ async function apiFetch(path: string, options: RequestInit = {}) {
   const companyId = await getCompanyId();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
+    ...((options.headers as Record<string, string>) || {}),
   };
   if (companyId) headers['x-company-id'] = companyId;
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
@@ -45,7 +49,14 @@ export interface InstagramAccount {
   following_count: number;
   media_count: number;
   is_business_account: boolean;
-  status: 'pending' | 'connecting' | 'active' | 'challenge_required' | 'login_required' | 'error' | 'disabled';
+  status:
+    | 'pending'
+    | 'connecting'
+    | 'active'
+    | 'challenge_required'
+    | 'login_required'
+    | 'error'
+    | 'disabled';
   last_login_at: string | null;
   last_activity_at: string | null;
   created_at: string;
@@ -93,7 +104,16 @@ export interface InstagramMessage {
   contact_id: string;
   instagram_message_id: string | null;
   direction: 'inbound' | 'outbound';
-  message_type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'carousel' | 'reaction' | 'system';
+  message_type:
+    | 'text'
+    | 'image'
+    | 'video'
+    | 'audio'
+    | 'document'
+    | 'sticker'
+    | 'carousel'
+    | 'reaction'
+    | 'system';
   content: string | null;
   media_url: string | null;
   is_read: boolean;
@@ -110,7 +130,12 @@ export interface InstagramTemplate {
   body: string;
   media_url: string | null;
   buttons: Array<{ label: string; url?: string }>;
-  variables: Array<{ variable_name: string; variable_type: string; default_value: string | null; is_required: boolean }>;
+  variables: Array<{
+    variable_name: string;
+    variable_type: string;
+    default_value: string | null;
+    is_required: boolean;
+  }>;
   usage_count: number;
   created_at: string;
 }
@@ -120,7 +145,14 @@ export interface InstagramBroadcast {
   company_id: string;
   account_id: string;
   name: string;
-  status: 'draft' | 'scheduled' | 'sending' | 'completed' | 'paused' | 'failed' | 'cancelled';
+  status:
+    | 'draft'
+    | 'scheduled'
+    | 'sending'
+    | 'completed'
+    | 'paused'
+    | 'failed'
+    | 'cancelled';
   recipient_count: number;
   sent_count: number;
   failed_count: number;
@@ -131,7 +163,8 @@ export interface InstagramBroadcast {
 export const instagramApi = {
   accounts: {
     list: () => apiFetch('/accounts') as Promise<{ data: InstagramAccount[] }>,
-    get: (id: string) => apiFetch(`/accounts/${id}`) as Promise<{ data: InstagramAccount }>,
+    get: (id: string) =>
+      apiFetch(`/accounts/${id}`) as Promise<{ data: InstagramAccount }>,
     connect: (username: string, is_business_account?: boolean) =>
       apiFetch('/accounts/connect', {
         method: 'POST',
@@ -145,59 +178,130 @@ export const instagramApi = {
       if (params?.search) qs.set('search', params.search);
       if (params?.limit) qs.set('limit', String(params.limit));
       if (params?.offset) qs.set('offset', String(params.offset));
-      return apiFetch(`/contacts?${qs}`) as Promise<{ data: InstagramContact[] }>;
+      return apiFetch(`/contacts?${qs}`) as Promise<{
+        data: InstagramContact[];
+      }>;
     },
-    get: (id: string) => apiFetch(`/contacts/${id}`) as Promise<{ data: InstagramContact }>,
-    update: (id: string, patch: Partial<Pick<InstagramContact, 'lead_score' | 'tags' | 'custom_fields'>>) =>
-      apiFetch(`/contacts/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    get: (id: string) =>
+      apiFetch(`/contacts/${id}`) as Promise<{ data: InstagramContact }>,
+    update: (
+      id: string,
+      patch: Partial<
+        Pick<InstagramContact, 'lead_score' | 'tags' | 'custom_fields'>
+      >
+    ) =>
+      apiFetch(`/contacts/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      }),
   },
   conversations: {
     list: (params?: { status?: string; assigned_to?: string }) => {
       const qs = new URLSearchParams();
       if (params?.status) qs.set('status', params.status);
       if (params?.assigned_to) qs.set('assigned_to', params.assigned_to);
-      return apiFetch(`/conversations?${qs}`) as Promise<{ data: InstagramConversation[] }>;
+      return apiFetch(`/conversations?${qs}`) as Promise<{
+        data: InstagramConversation[];
+      }>;
     },
-    get: (id: string) => apiFetch(`/conversations/${id}`) as Promise<{ data: InstagramConversation }>,
-    update: (id: string, patch: Partial<Pick<InstagramConversation, 'status' | 'assigned_to' | 'priority' | 'tags'>>) =>
-      apiFetch(`/conversations/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    get: (id: string) =>
+      apiFetch(`/conversations/${id}`) as Promise<{
+        data: InstagramConversation;
+      }>,
+    update: (
+      id: string,
+      patch: Partial<
+        Pick<
+          InstagramConversation,
+          'status' | 'assigned_to' | 'priority' | 'tags'
+        >
+      >
+    ) =>
+      apiFetch(`/conversations/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      }),
   },
   messages: {
-    list: (conversationId: string, params?: { limit?: number; before?: string }) => {
+    list: (
+      conversationId: string,
+      params?: { limit?: number; before?: string }
+    ) => {
       const qs = new URLSearchParams();
       if (params?.limit) qs.set('limit', String(params.limit));
       if (params?.before) qs.set('before', params.before);
-      return apiFetch(`/messages/${conversationId}?${qs}`) as Promise<{ data: InstagramMessage[] }>;
+      return apiFetch(`/messages/${conversationId}?${qs}`) as Promise<{
+        data: InstagramMessage[];
+      }>;
     },
-    send: (payload: { conversation_id: string; content: string; message_type?: string; media_url?: string; template_id?: string; variables?: Record<string, string> }) =>
+    send: (payload: {
+      conversation_id: string;
+      content: string;
+      message_type?: string;
+      media_url?: string;
+      template_id?: string;
+      variables?: Record<string, string>;
+    }) =>
       apiFetch('/messages', { method: 'POST', body: JSON.stringify(payload) }),
     markRead: (conversation_id: string) =>
-      apiFetch('/messages/mark-read', { method: 'POST', body: JSON.stringify({ conversation_id }) }),
+      apiFetch('/messages/mark-read', {
+        method: 'POST',
+        body: JSON.stringify({ conversation_id }),
+      }),
   },
   templates: {
     list: (params?: { category?: string; account_id?: string }) => {
       const qs = new URLSearchParams();
       if (params?.category) qs.set('category', params.category);
       if (params?.account_id) qs.set('account_id', params.account_id);
-      return apiFetch(`/templates?${qs}`) as Promise<{ data: InstagramTemplate[] }>;
+      return apiFetch(`/templates?${qs}`) as Promise<{
+        data: InstagramTemplate[];
+      }>;
     },
-    get: (id: string) => apiFetch(`/templates/${id}`) as Promise<{ data: InstagramTemplate }>,
-    create: (payload: Omit<InstagramTemplate, 'id' | 'company_id' | 'usage_count' | 'created_at'>) =>
+    get: (id: string) =>
+      apiFetch(`/templates/${id}`) as Promise<{ data: InstagramTemplate }>,
+    create: (
+      payload: Omit<
+        InstagramTemplate,
+        'id' | 'company_id' | 'usage_count' | 'created_at'
+      >
+    ) =>
       apiFetch('/templates', { method: 'POST', body: JSON.stringify(payload) }),
-    update: (id: string, patch: Partial<Omit<InstagramTemplate, 'id' | 'company_id'>>) =>
-      apiFetch(`/templates/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    update: (
+      id: string,
+      patch: Partial<Omit<InstagramTemplate, 'id' | 'company_id'>>
+    ) =>
+      apiFetch(`/templates/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      }),
     delete: (id: string) => apiFetch(`/templates/${id}`, { method: 'DELETE' }),
   },
   broadcasts: {
     list: (params?: { status?: string }) => {
       const qs = new URLSearchParams();
       if (params?.status) qs.set('status', params.status);
-      return apiFetch(`/broadcasts?${qs}`) as Promise<{ data: InstagramBroadcast[] }>;
+      return apiFetch(`/broadcasts?${qs}`) as Promise<{
+        data: InstagramBroadcast[];
+      }>;
     },
-    get: (id: string) => apiFetch(`/broadcasts/${id}`) as Promise<{ data: InstagramBroadcast }>,
-    create: (payload: { name: string; account_id: string; template_id?: string; description?: string; filter_criteria?: Record<string, unknown>; scheduled_at?: string }) =>
-      apiFetch('/broadcasts', { method: 'POST', body: JSON.stringify(payload) }),
-    send: (id: string) => apiFetch(`/broadcasts/${id}/send`, { method: 'POST' }),
-    cancel: (id: string) => apiFetch(`/broadcasts/${id}/cancel`, { method: 'POST' }),
+    get: (id: string) =>
+      apiFetch(`/broadcasts/${id}`) as Promise<{ data: InstagramBroadcast }>,
+    create: (payload: {
+      name: string;
+      account_id: string;
+      template_id?: string;
+      description?: string;
+      filter_criteria?: Record<string, unknown>;
+      scheduled_at?: string;
+    }) =>
+      apiFetch('/broadcasts', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    send: (id: string) =>
+      apiFetch(`/broadcasts/${id}/send`, { method: 'POST' }),
+    cancel: (id: string) =>
+      apiFetch(`/broadcasts/${id}/cancel`, { method: 'POST' }),
   },
 };

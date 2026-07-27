@@ -28,10 +28,7 @@ const GalleryBlock: React.FC<GalleryBlockProps> = ({ config }) => {
           : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
 
   return (
-    <div
-      className={`grid ${responsiveCols}`}
-      style={{ gap: `${spacing}px` }}
-    >
+    <div className={`grid ${responsiveCols}`} style={{ gap: `${spacing}px` }}>
       {images.map((img: any, idx: number) => (
         <div
           key={idx}

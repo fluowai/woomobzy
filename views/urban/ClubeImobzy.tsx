@@ -61,11 +61,51 @@ interface Achievement {
 // LEVEL SYSTEM
 // ──────────────────────────────────────────────────────────────
 const LEVELS = [
-  { name: 'Bronze', min: 0, max: 499, color: 'from-amber-700 to-amber-600', textColor: 'text-amber-700', bgColor: 'bg-amber-100', icon: '🥉' },
-  { name: 'Prata', min: 500, max: 1499, color: 'from-slate-500 to-slate-400', textColor: 'text-slate-500', bgColor: 'bg-slate-100', icon: '🥈' },
-  { name: 'Ouro', min: 1500, max: 3999, color: 'from-yellow-500 to-yellow-400', textColor: 'text-yellow-600', bgColor: 'bg-yellow-100', icon: '🥇' },
-  { name: 'Diamante', min: 4000, max: 9999, color: 'from-blue-500 to-cyan-400', textColor: 'text-blue-600', bgColor: 'bg-blue-100', icon: '💎' },
-  { name: 'Titânio', min: 10000, max: Infinity, color: 'from-purple-600 to-purple-400', textColor: 'text-purple-600', bgColor: 'bg-purple-100', icon: '👑' },
+  {
+    name: 'Bronze',
+    min: 0,
+    max: 499,
+    color: 'from-amber-700 to-amber-600',
+    textColor: 'text-amber-700',
+    bgColor: 'bg-amber-100',
+    icon: '🥉',
+  },
+  {
+    name: 'Prata',
+    min: 500,
+    max: 1499,
+    color: 'from-slate-500 to-slate-400',
+    textColor: 'text-slate-500',
+    bgColor: 'bg-slate-100',
+    icon: '🥈',
+  },
+  {
+    name: 'Ouro',
+    min: 1500,
+    max: 3999,
+    color: 'from-yellow-500 to-yellow-400',
+    textColor: 'text-yellow-600',
+    bgColor: 'bg-yellow-100',
+    icon: '🥇',
+  },
+  {
+    name: 'Diamante',
+    min: 4000,
+    max: 9999,
+    color: 'from-blue-500 to-cyan-400',
+    textColor: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+    icon: '💎',
+  },
+  {
+    name: 'Titânio',
+    min: 10000,
+    max: Infinity,
+    color: 'from-purple-600 to-purple-400',
+    textColor: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+    icon: '👑',
+  },
 ];
 
 const getLevel = (points: number) =>
@@ -79,29 +119,104 @@ const getNextLevel = (points: number) => {
 const getLevelProgress = (points: number) => {
   const current = getLevel(points);
   if (current.max === Infinity) return 100;
-  return Math.min(100, ((points - current.min) / (current.max - current.min)) * 100);
+  return Math.min(
+    100,
+    ((points - current.min) / (current.max - current.min)) * 100
+  );
 };
 
 // ──────────────────────────────────────────────────────────────
 // MOCK ACHIEVEMENTS (will be dynamic later)
 // ──────────────────────────────────────────────────────────────
 const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_sale', name: 'Primeira Venda', description: 'Feche seu primeiro negócio na plataforma', icon: '🎯', unlocked: true },
-  { id: 'streak_7', name: 'Semana Perfeita', description: 'Acesse o sistema por 7 dias consecutivos', icon: '🔥', unlocked: true, progress: 7, target: 7 },
-  { id: 'leads_10', name: 'Caçador de Leads', description: 'Converta 10 leads em clientes', icon: '⚡', unlocked: false, progress: 4, target: 10 },
-  { id: 'rentals_5', name: 'Rei do Aluguel', description: 'Feche 5 contratos de locação', icon: '🏠', unlocked: false, progress: 2, target: 5 },
-  { id: 'site_visits', name: 'Digital First', description: 'Seu site recebeu 100 visitas', icon: '🌐', unlocked: false, progress: 68, target: 100 },
-  { id: 'top3_rank', name: 'Pódio', description: 'Seja top 3 no ranking mensal', icon: '🏆', unlocked: false },
+  {
+    id: 'first_sale',
+    name: 'Primeira Venda',
+    description: 'Feche seu primeiro negócio na plataforma',
+    icon: '🎯',
+    unlocked: true,
+  },
+  {
+    id: 'streak_7',
+    name: 'Semana Perfeita',
+    description: 'Acesse o sistema por 7 dias consecutivos',
+    icon: '🔥',
+    unlocked: true,
+    progress: 7,
+    target: 7,
+  },
+  {
+    id: 'leads_10',
+    name: 'Caçador de Leads',
+    description: 'Converta 10 leads em clientes',
+    icon: '⚡',
+    unlocked: false,
+    progress: 4,
+    target: 10,
+  },
+  {
+    id: 'rentals_5',
+    name: 'Rei do Aluguel',
+    description: 'Feche 5 contratos de locação',
+    icon: '🏠',
+    unlocked: false,
+    progress: 2,
+    target: 5,
+  },
+  {
+    id: 'site_visits',
+    name: 'Digital First',
+    description: 'Seu site recebeu 100 visitas',
+    icon: '🌐',
+    unlocked: false,
+    progress: 68,
+    target: 100,
+  },
+  {
+    id: 'top3_rank',
+    name: 'Pódio',
+    description: 'Seja top 3 no ranking mensal',
+    icon: '🏆',
+    unlocked: false,
+  },
 ];
 
 // ──────────────────────────────────────────────────────────────
 // MOCK REWARDS (will be configurable by admin later)
 // ──────────────────────────────────────────────────────────────
 const DEFAULT_REWARDS: Reward[] = [
-  { id: 'r1', name: 'Destaque no Portal', description: 'Seus imóveis ficam em destaque por 7 dias', points_required: 200, category: 'visibility', is_active: true },
-  { id: 'r2', name: 'Curso Online', description: 'Acesso a um curso de técnicas de venda', points_required: 500, category: 'training', is_active: true },
-  { id: 'r3', name: 'Voucher R$100', description: 'Vale-presente para uso em serviços parceiros', points_required: 1000, category: 'financial', is_active: true },
-  { id: 'r4', name: 'Troféu Anual', description: 'Corretor do Ano — troféu físico + certificado', points_required: 5000, category: 'trophy', is_active: true },
+  {
+    id: 'r1',
+    name: 'Destaque no Portal',
+    description: 'Seus imóveis ficam em destaque por 7 dias',
+    points_required: 200,
+    category: 'visibility',
+    is_active: true,
+  },
+  {
+    id: 'r2',
+    name: 'Curso Online',
+    description: 'Acesso a um curso de técnicas de venda',
+    points_required: 500,
+    category: 'training',
+    is_active: true,
+  },
+  {
+    id: 'r3',
+    name: 'Voucher R$100',
+    description: 'Vale-presente para uso em serviços parceiros',
+    points_required: 1000,
+    category: 'financial',
+    is_active: true,
+  },
+  {
+    id: 'r4',
+    name: 'Troféu Anual',
+    description: 'Corretor do Ano — troféu físico + certificado',
+    points_required: 5000,
+    category: 'trophy',
+    is_active: true,
+  },
 ];
 
 const categoryIcon: Record<string, string> = {
@@ -115,12 +230,42 @@ const categoryIcon: Record<string, string> = {
 // POINT ACTIONS INFO
 // ──────────────────────────────────────────────────────────────
 const POINT_ACTIONS = [
-  { action: 'Converter lead em cliente', points: '+20 pts', icon: Users, color: 'text-blue-500' },
-  { action: 'Fechar venda', points: '+100 pts', icon: Trophy, color: 'text-yellow-500' },
-  { action: 'Fechar locação', points: '+50 pts', icon: Award, color: 'text-emerald-500' },
-  { action: 'Cadastrar imóvel completo', points: '+10 pts', icon: CheckCircle, color: 'text-primary' },
-  { action: 'Acesso diário ao sistema', points: '+5 pts', icon: Flame, color: 'text-orange-500' },
-  { action: 'Publicar em portais', points: '+15 pts', icon: Zap, color: 'text-purple-500' },
+  {
+    action: 'Converter lead em cliente',
+    points: '+20 pts',
+    icon: Users,
+    color: 'text-blue-500',
+  },
+  {
+    action: 'Fechar venda',
+    points: '+100 pts',
+    icon: Trophy,
+    color: 'text-yellow-500',
+  },
+  {
+    action: 'Fechar locação',
+    points: '+50 pts',
+    icon: Award,
+    color: 'text-emerald-500',
+  },
+  {
+    action: 'Cadastrar imóvel completo',
+    points: '+10 pts',
+    icon: CheckCircle,
+    color: 'text-primary',
+  },
+  {
+    action: 'Acesso diário ao sistema',
+    points: '+5 pts',
+    icon: Flame,
+    color: 'text-orange-500',
+  },
+  {
+    action: 'Publicar em portais',
+    points: '+15 pts',
+    icon: Zap,
+    color: 'text-purple-500',
+  },
 ];
 
 // ──────────────────────────────────────────────────────────────
@@ -128,7 +273,9 @@ const POINT_ACTIONS = [
 // ──────────────────────────────────────────────────────────────
 const ClubeImobzy: React.FC = () => {
   const { profile } = useAuth();
-  const [tab, setTab] = useState<'meu-perfil' | 'ranking' | 'resgatar' | 'conquistas'>('meu-perfil');
+  const [tab, setTab] = useState<
+    'meu-perfil' | 'ranking' | 'resgatar' | 'conquistas'
+  >('meu-perfil');
   const [myProfile, setMyProfile] = useState<GamificationProfile | null>(null);
   const [ranking, setRanking] = useState<GamificationProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,8 +299,13 @@ const ClubeImobzy: React.FC = () => {
         const gpAny = gp as any;
         setMyProfile({
           ...gpAny,
-          full_name: gpAny.profiles?.full_name || profile?.full_name || 'Corretor',
-          avatar_letter: (gpAny.profiles?.full_name || profile?.full_name || 'C').charAt(0),
+          full_name:
+            gpAny.profiles?.full_name || profile?.full_name || 'Corretor',
+          avatar_letter: (
+            gpAny.profiles?.full_name ||
+            profile?.full_name ||
+            'C'
+          ).charAt(0),
         });
       } else {
         // Create profile if it doesn't exist
@@ -261,7 +413,10 @@ const ClubeImobzy: React.FC = () => {
             Ganhe pontos, suba de nível e resgate recompensas exclusivas.
           </p>
         </div>
-        <button onClick={loadData} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-primary transition-colors">
+        <button
+          onClick={loadData}
+          className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-primary transition-colors"
+        >
           <RefreshCw size={18} />
         </button>
       </div>
@@ -272,7 +427,9 @@ const ClubeImobzy: React.FC = () => {
           <Loader2 size={32} className="animate-spin text-primary mx-auto" />
         </div>
       ) : (
-        <div className={`rounded-3xl bg-gradient-to-br ${currentLevel.color} p-6 md:p-8 text-white shadow-xl`}>
+        <div
+          className={`rounded-3xl bg-gradient-to-br ${currentLevel.color} p-6 md:p-8 text-white shadow-xl`}
+        >
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             {/* Avatar */}
             <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur border-4 border-white/30 flex items-center justify-center text-3xl font-bold shadow-lg shrink-0">
@@ -287,16 +444,25 @@ const ClubeImobzy: React.FC = () => {
                   {currentLevel.name}
                 </span>
               </div>
-              <h2 className="text-2xl font-bold truncate">{myProfile?.full_name || 'Corretor'}</h2>
+              <h2 className="text-2xl font-bold truncate">
+                {myProfile?.full_name || 'Corretor'}
+              </h2>
               <p className="text-white/70 text-sm mt-0.5">
-                {myProfile?.points?.toLocaleString('pt-BR') || 0} pontos acumulados
+                {myProfile?.points?.toLocaleString('pt-BR') || 0} pontos
+                acumulados
               </p>
 
               {/* Progress bar */}
               <div className="mt-4 space-y-1">
                 <div className="flex justify-between text-xs text-white/60">
                   <span>{currentLevel.name}</span>
-                  {nextLevel && <span>{nextLevel.name} — faltam {Math.max(0, nextLevel.min - (myProfile?.points || 0))} pts</span>}
+                  {nextLevel && (
+                    <span>
+                      {nextLevel.name} — faltam{' '}
+                      {Math.max(0, nextLevel.min - (myProfile?.points || 0))}{' '}
+                      pts
+                    </span>
+                  )}
                 </div>
                 <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
                   <div
@@ -310,14 +476,31 @@ const ClubeImobzy: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 shrink-0">
               {[
-                { label: 'Vendas', value: myProfile?.total_sales || 0, icon: '🏠' },
-                { label: 'Locações', value: myProfile?.total_rentals || 0, icon: '🔑' },
-                { label: 'Sequência', value: `${myProfile?.streak_days || 0}d`, icon: '🔥' },
+                {
+                  label: 'Vendas',
+                  value: myProfile?.total_sales || 0,
+                  icon: '🏠',
+                },
+                {
+                  label: 'Locações',
+                  value: myProfile?.total_rentals || 0,
+                  icon: '🔑',
+                },
+                {
+                  label: 'Sequência',
+                  value: `${myProfile?.streak_days || 0}d`,
+                  icon: '🔥',
+                },
               ].map((s) => (
-                <div key={s.label} className="bg-white/10 backdrop-blur rounded-2xl p-3 text-center border border-white/20">
+                <div
+                  key={s.label}
+                  className="bg-white/10 backdrop-blur rounded-2xl p-3 text-center border border-white/20"
+                >
                   <div className="text-xl">{s.icon}</div>
                   <div className="text-lg font-bold mt-1">{s.value}</div>
-                  <div className="text-[10px] text-white/60 uppercase tracking-wide">{s.label}</div>
+                  <div className="text-[10px] text-white/60 uppercase tracking-wide">
+                    {s.label}
+                  </div>
                 </div>
               ))}
             </div>
@@ -354,10 +537,15 @@ const ClubeImobzy: React.FC = () => {
             </h3>
             <div className="space-y-3">
               {POINT_ACTIONS.map((a) => (
-                <div key={a.action} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors">
+                <div
+                  key={a.action}
+                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors"
+                >
                   <div className="flex items-center gap-3">
                     <a.icon size={16} className={a.color} />
-                    <span className="text-sm font-medium text-slate-700">{a.action}</span>
+                    <span className="text-sm font-medium text-slate-700">
+                      {a.action}
+                    </span>
                   </div>
                   <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
                     {a.points}
@@ -388,9 +576,13 @@ const ClubeImobzy: React.FC = () => {
                   >
                     <span className="text-2xl">{level.icon}</span>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-slate-900">{level.name}</p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {level.name}
+                      </p>
                       <p className="text-[10px] text-slate-400">
-                        {level.max === Infinity ? `${level.min.toLocaleString()}+ pts` : `${level.min.toLocaleString()} – ${level.max.toLocaleString()} pts`}
+                        {level.max === Infinity
+                          ? `${level.min.toLocaleString()}+ pts`
+                          : `${level.min.toLocaleString()} – ${level.max.toLocaleString()} pts`}
                       </p>
                     </div>
                     {isCurrent && (
@@ -398,8 +590,12 @@ const ClubeImobzy: React.FC = () => {
                         Seu nível
                       </span>
                     )}
-                    {!isCurrent && isPast && <CheckCircle size={16} className="text-emerald-500" />}
-                    {!isCurrent && !isPast && <Lock size={14} className="text-slate-300" />}
+                    {!isCurrent && isPast && (
+                      <CheckCircle size={16} className="text-emerald-500" />
+                    )}
+                    {!isCurrent && !isPast && (
+                      <Lock size={14} className="text-slate-300" />
+                    )}
                   </div>
                 );
               })}
@@ -416,22 +612,43 @@ const ClubeImobzy: React.FC = () => {
               <BarChart2 size={16} className="text-primary" />
               Ranking do Mês
             </h3>
-            <span className="text-xs text-slate-400 font-medium">{new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+            <span className="text-xs text-slate-400 font-medium">
+              {new Date().toLocaleDateString('pt-BR', {
+                month: 'long',
+                year: 'numeric',
+              })}
+            </span>
           </div>
           {loading ? (
-            <div className="p-16 text-center"><Loader2 size={24} className="animate-spin text-primary mx-auto" /></div>
+            <div className="p-16 text-center">
+              <Loader2
+                size={24}
+                className="animate-spin text-primary mx-auto"
+              />
+            </div>
           ) : ranking.length === 0 ? (
             <div className="p-16 text-center">
               <Trophy size={40} className="text-slate-200 mx-auto mb-3" />
-              <p className="text-slate-400 font-medium">Nenhum corretor com pontos ainda.</p>
-              <p className="text-sm text-slate-400 mt-1">Seja o primeiro do ranking!</p>
+              <p className="text-slate-400 font-medium">
+                Nenhum corretor com pontos ainda.
+              </p>
+              <p className="text-sm text-slate-400 mt-1">
+                Seja o primeiro do ranking!
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-50">
               {ranking.map((r) => {
                 const lv = getLevel(r.points);
                 const isMe = r.user_id === userId;
-                const medalEmoji = r.rank_position === 1 ? '🥇' : r.rank_position === 2 ? '🥈' : r.rank_position === 3 ? '🥉' : null;
+                const medalEmoji =
+                  r.rank_position === 1
+                    ? '🥇'
+                    : r.rank_position === 2
+                      ? '🥈'
+                      : r.rank_position === 3
+                        ? '🥉'
+                        : null;
                 return (
                   <div
                     key={r.id}
@@ -441,20 +658,35 @@ const ClubeImobzy: React.FC = () => {
                       {medalEmoji ? (
                         <span className="text-xl">{medalEmoji}</span>
                       ) : (
-                        <span className="text-sm font-bold text-slate-400">#{r.rank_position}</span>
+                        <span className="text-sm font-bold text-slate-400">
+                          #{r.rank_position}
+                        </span>
                       )}
                     </div>
-                    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${lv.color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+                    <div
+                      className={`w-9 h-9 rounded-full bg-gradient-to-br ${lv.color} flex items-center justify-center text-white font-bold text-sm shrink-0`}
+                    >
                       {r.avatar_letter}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-bold truncate ${isMe ? 'text-primary' : 'text-slate-900'}`}>
-                        {r.full_name} {isMe && <span className="text-[10px] font-bold text-primary/70">(você)</span>}
+                      <p
+                        className={`text-sm font-bold truncate ${isMe ? 'text-primary' : 'text-slate-900'}`}
+                      >
+                        {r.full_name}{' '}
+                        {isMe && (
+                          <span className="text-[10px] font-bold text-primary/70">
+                            (você)
+                          </span>
+                        )}
                       </p>
-                      <p className="text-[10px] text-slate-400">{lv.icon} {lv.name}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {lv.icon} {lv.name}
+                      </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-slate-900">{r.points.toLocaleString('pt-BR')}</p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {r.points.toLocaleString('pt-BR')}
+                      </p>
                       <p className="text-[10px] text-slate-400">pontos</p>
                     </div>
                     {isMe && r.rank_position && r.rank_position <= 3 && (
@@ -474,12 +706,17 @@ const ClubeImobzy: React.FC = () => {
           <div className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl">
             <Star size={18} className="text-yellow-500 shrink-0" />
             <p className="text-sm text-yellow-800 font-semibold">
-              Você tem <strong>{myProfile?.points?.toLocaleString('pt-BR') || 0} pontos</strong> disponíveis para resgatar.
+              Você tem{' '}
+              <strong>
+                {myProfile?.points?.toLocaleString('pt-BR') || 0} pontos
+              </strong>{' '}
+              disponíveis para resgatar.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {DEFAULT_REWARDS.map((reward) => {
-              const canRedeem = (myProfile?.points || 0) >= reward.points_required;
+              const canRedeem =
+                (myProfile?.points || 0) >= reward.points_required;
               const isRedeeming = redeeming === reward.id;
               return (
                 <div
@@ -487,14 +724,22 @@ const ClubeImobzy: React.FC = () => {
                   className={`card-premium p-5 flex flex-col gap-4 transition-all ${canRedeem ? 'hover:shadow-lg hover:border-primary/20' : 'opacity-70'}`}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="text-3xl">{categoryIcon[reward.category]}</div>
-                    <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${canRedeem ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                    <div className="text-3xl">
+                      {categoryIcon[reward.category]}
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${canRedeem ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+                    >
                       {canRedeem ? 'Disponível' : 'Bloqueado'}
                     </span>
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900 text-sm">{reward.name}</p>
-                    <p className="text-xs text-slate-500 mt-1">{reward.description}</p>
+                    <p className="font-bold text-slate-900 text-sm">
+                      {reward.name}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {reward.description}
+                    </p>
                   </div>
                   <div className="mt-auto space-y-2">
                     <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -510,8 +755,18 @@ const ClubeImobzy: React.FC = () => {
                           : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                       } disabled:opacity-60`}
                     >
-                      {isRedeeming ? <Loader2 size={13} className="animate-spin" /> : canRedeem ? <Gift size={13} /> : <Lock size={13} />}
-                      {isRedeeming ? 'Resgatando...' : canRedeem ? 'Resgatar' : `Faltam ${(reward.points_required - (myProfile?.points || 0)).toLocaleString()} pts`}
+                      {isRedeeming ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : canRedeem ? (
+                        <Gift size={13} />
+                      ) : (
+                        <Lock size={13} />
+                      )}
+                      {isRedeeming
+                        ? 'Resgatando...'
+                        : canRedeem
+                          ? 'Resgatar'
+                          : `Faltam ${(reward.points_required - (myProfile?.points || 0)).toLocaleString()} pts`}
                     </button>
                   </div>
                 </div>
@@ -529,30 +784,45 @@ const ClubeImobzy: React.FC = () => {
               key={a.id}
               className={`card-premium p-5 flex gap-4 transition-all ${a.unlocked ? 'hover:shadow-md hover:border-primary/20' : 'opacity-60 grayscale'}`}
             >
-              <div className={`text-4xl w-14 h-14 flex items-center justify-center rounded-2xl shrink-0 ${a.unlocked ? 'bg-yellow-50' : 'bg-slate-100'}`}>
+              <div
+                className={`text-4xl w-14 h-14 flex items-center justify-center rounded-2xl shrink-0 ${a.unlocked ? 'bg-yellow-50' : 'bg-slate-100'}`}
+              >
                 {a.icon}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-2">
-                  <p className="font-bold text-sm text-slate-900 flex-1">{a.name}</p>
-                  {a.unlocked && <CheckCircle size={16} className="text-emerald-500 shrink-0" />}
-                  {!a.unlocked && <Lock size={14} className="text-slate-300 shrink-0" />}
+                  <p className="font-bold text-sm text-slate-900 flex-1">
+                    {a.name}
+                  </p>
+                  {a.unlocked && (
+                    <CheckCircle
+                      size={16}
+                      className="text-emerald-500 shrink-0"
+                    />
+                  )}
+                  {!a.unlocked && (
+                    <Lock size={14} className="text-slate-300 shrink-0" />
+                  )}
                 </div>
                 <p className="text-xs text-slate-500 mt-1">{a.description}</p>
-                {!a.unlocked && a.progress !== undefined && a.target !== undefined && (
-                  <div className="mt-3 space-y-1">
-                    <div className="flex justify-between text-[10px] text-slate-400">
-                      <span>Progresso</span>
-                      <span>{a.progress}/{a.target}</span>
+                {!a.unlocked &&
+                  a.progress !== undefined &&
+                  a.target !== undefined && (
+                    <div className="mt-3 space-y-1">
+                      <div className="flex justify-between text-[10px] text-slate-400">
+                        <span>Progresso</span>
+                        <span>
+                          {a.progress}/{a.target}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ width: `${(a.progress / a.target) * 100}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all"
-                        style={{ width: `${(a.progress / a.target) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           ))}

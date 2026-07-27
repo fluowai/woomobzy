@@ -9,9 +9,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function check() {
   console.log('Checking Supabase connection and core tables...');
-  
+
   const tablesToCheck = ['saas_settings', 'users', 'organizations', 'tenants'];
-  
+
   for (const table of tablesToCheck) {
     const { data, error } = await supabase.from(table).select('*').limit(1);
     if (error) {

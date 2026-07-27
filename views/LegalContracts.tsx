@@ -447,8 +447,10 @@ const LegalContracts: React.FC = () => {
                       >
                         <Eye size={18} />
                       </button>
-                      <button 
-                        onClick={() => toast.info('Download de documento em breve')}
+                      <button
+                        onClick={() =>
+                          toast.info('Download de documento em breve')
+                        }
                         className="p-3 text-black/30 hover:text-black transition-colors"
                       >
                         <Download size={18} />
@@ -718,7 +720,7 @@ const LegalContracts: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button 
+                <button
                   onClick={() => toast.info('Impressão em breve')}
                   className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-black/60 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all"
                 >

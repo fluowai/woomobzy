@@ -61,7 +61,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     const parsed = bulkBlacklistSchema.safeParse(payload);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: parsed.error.flatten() });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: parsed.error.flatten() });
     }
 
     const rows = parsed.data.phones.map((phone) => ({

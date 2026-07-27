@@ -4,7 +4,10 @@ import { verifyAdmin, verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { encryptEmailSecret } from '../../services/email/crypto.js';
-import { testEmailConnection, normalizeEmailConnectionConfig } from '../../services/email/emailService.js';
+import {
+  testEmailConnection,
+  normalizeEmailConnectionConfig,
+} from '../../services/email/emailService.js';
 
 const router = Router();
 const supabase = new Proxy(
@@ -194,9 +197,11 @@ router.post('/smtp', verifyAdmin, requireTenant, async (req, res) => {
     if (existingError) throw existingError;
 
     // Use existing password if a new one is not provided
-    const password = smtp_config.password || (existing?.smtp_config?.password_encrypted ? null : '');
-    const password_encrypted = smtp_config.password 
-      ? encryptEmailSecret(smtp_config.password) 
+    const password =
+      smtp_config.password ||
+      (existing?.smtp_config?.password_encrypted ? null : '');
+    const password_encrypted = smtp_config.password
+      ? encryptEmailSecret(smtp_config.password)
       : existing?.smtp_config?.password_encrypted;
 
     const newSmtpConfig = {

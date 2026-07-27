@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CustomHTMLBlockConfig } from '../../../types/landingPage';
 

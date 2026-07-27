@@ -83,25 +83,46 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const chatPhone = chat.platform === 'instagram'
-    ? (chat.instagram_contact_username ? `@${chat.instagram_contact_username}` : 'Instagram')
-    : (chat.phone_display || formatPhoneDisplay(chat.chat_jid));
-  const rawPhone = chat.platform === 'instagram' ? '' : (chat.phone || getPhoneFromJid(chat.chat_jid));
-  const chatName = chat.platform === 'instagram'
-    ? (chat.instagram_contact_full_name || (chat.instagram_contact_username ? `@${chat.instagram_contact_username}` : 'Contato Instagram'))
-    : (chat.is_group ? chat.name || 'Grupo sem nome' : getChatDisplayName(chat));
+  const chatPhone =
+    chat.platform === 'instagram'
+      ? chat.instagram_contact_username
+        ? `@${chat.instagram_contact_username}`
+        : 'Instagram'
+      : chat.phone_display || formatPhoneDisplay(chat.chat_jid);
+  const rawPhone =
+    chat.platform === 'instagram'
+      ? ''
+      : chat.phone || getPhoneFromJid(chat.chat_jid);
+  const chatName =
+    chat.platform === 'instagram'
+      ? chat.instagram_contact_full_name ||
+        (chat.instagram_contact_username
+          ? `@${chat.instagram_contact_username}`
+          : 'Contato Instagram')
+      : chat.is_group
+        ? chat.name || 'Grupo sem nome'
+        : getChatDisplayName(chat);
 
   useEffect(() => {
     setContactNameDraft(chatName);
     setEditingName(false);
     setAvatarError(false);
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(min-width: 1024px)').matches
+    ) {
       setShowContactPanel(true);
     }
   }, [chat.id, chatName]);
 
   useEffect(() => {
-    if (!showContactPanel || chat.is_group || !rawPhone || chat.platform === 'instagram') return;
+    if (
+      !showContactPanel ||
+      chat.is_group ||
+      !rawPhone ||
+      chat.platform === 'instagram'
+    )
+      return;
     let active = true;
     Promise.all([crmContactApi.get(rawPhone), crmContactApi.assignees()])
       .then(([result, assigneeResult]) => {
@@ -134,7 +155,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
     setShowScrollDown(scrollHeight - scrollTop - clientHeight > 200);
   };
 
@@ -172,7 +194,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setSavingContact(true);
     try {
       if (chat.platform === 'whatsapp' && instanceId) {
-        const updated = await chatApi.updateContactName(chat.id, instanceId, nextName);
+        const updated = await chatApi.updateContactName(
+          chat.id,
+          instanceId,
+          nextName
+        );
         onChatUpdated({ ...updated, platform: 'whatsapp' });
       } else {
         onChatUpdated({ ...chat, name: nextName, display_name: nextName });
@@ -212,7 +238,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
     setCrmActionLoading(true);
     try {
-      const result = await crmContactApi.addTags({ ...crmPayload(), tags: [tag] });
+      const result = await crmContactApi.addTags({
+        ...crmPayload(),
+        tags: [tag],
+      });
       setCrmLead(result.lead || null);
       setCrmTags(result.tags || []);
       setTagDraft('');
@@ -228,10 +257,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if (!rawPhone || chat.is_group || !selectedAssignee) return;
     setCrmActionLoading(true);
     try {
-      const result = await crmContactApi.transfer({ ...crmPayload(), assigned_to: selectedAssignee });
+      const result = await crmContactApi.transfer({
+        ...crmPayload(),
+        assigned_to: selectedAssignee,
+      });
       setCrmLead(result.lead || null);
       setCrmTags(result.tags || []);
-      toast.success(result.assignee?.name ? `Atendimento transferido para ${result.assignee.name}.` : 'Atendimento transferido.');
+      toast.success(
+        result.assignee?.name
+          ? `Atendimento transferido para ${result.assignee.name}.`
+          : 'Atendimento transferido.'
+      );
     } catch (err: any) {
       toast.error(err?.message || 'Erro ao transferir atendimento.');
     } finally {
@@ -295,26 +331,37 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Group messages by date
   const visibleMessages = messages.filter(isRenderableMessage);
-  const groupedMessages = visibleMessages.reduce((acc: { date: string; msgs: UnifiedMessage[] }[], msg) => {
-    const date = new Date(msg.timestamp).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    });
-    const lastGroup = acc[acc.length - 1];
-    if (lastGroup && lastGroup.date === date) {
-      lastGroup.msgs.push(msg);
-    } else {
-      acc.push({ date, msgs: [msg] });
-    }
-    return acc;
-  }, []);
+  const groupedMessages = visibleMessages.reduce(
+    (acc: { date: string; msgs: UnifiedMessage[] }[], msg) => {
+      const date = new Date(msg.timestamp).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+      const lastGroup = acc[acc.length - 1];
+      if (lastGroup && lastGroup.date === date) {
+        lastGroup.msgs.push(msg);
+      } else {
+        acc.push({ date, msgs: [msg] });
+      }
+      return acc;
+    },
+    []
+  );
 
   return (
-    <main className={`wa-chat-window ${showContactPanel ? 'details-open' : ''}`} id="chat-window">
+    <main
+      className={`wa-chat-window ${showContactPanel ? 'details-open' : ''}`}
+      id="chat-window"
+    >
       {/* Chat Header */}
       <header className="wa-chat-header">
-        <button type="button" className="wa-mobile-back" onClick={onBack} title="Voltar">
+        <button
+          type="button"
+          className="wa-mobile-back"
+          onClick={onBack}
+          title="Voltar"
+        >
           <ArrowLeft size={20} />
         </button>
         <button
@@ -323,8 +370,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           onClick={() => setShowContactPanel(true)}
         >
           <div className="wa-chat-header-avatar">
-            {chat.avatar_url && !isWhatsAppCdnUrl(chat.avatar_url) && !avatarError ? (
-              <img src={chat.avatar_url} alt="" className="wa-avatar-img" onError={() => setAvatarError(true)} />
+            {chat.avatar_url &&
+            !isWhatsAppCdnUrl(chat.avatar_url) &&
+            !avatarError ? (
+              <img
+                src={chat.avatar_url}
+                alt=""
+                className="wa-avatar-img"
+                onError={() => setAvatarError(true)}
+              />
             ) : chat.is_group ? (
               <Users size={20} />
             ) : (
@@ -336,18 +390,36 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               {chatName}
               {chat.platform === 'instagram' && (
                 <span className="wa-platform-badge wa-platform-instagram">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
                   </svg>
                   Instagram
                 </span>
               )}
               {chat.platform === 'whatsapp' && (
                 <span className="wa-platform-badge wa-platform-whatsapp">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                   </svg>
                   WhatsApp
                 </span>
@@ -355,19 +427,34 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </h2>
             <span className="wa-chat-header-sub">
               {chat.platform === 'instagram'
-                ? (chat.instagram_account_username ? `via @${chat.instagram_account_username}` : 'Instagram')
-                : (chat.is_group ? 'Grupo' : chatPhone || 'Telefone nao identificado')
-              }
+                ? chat.instagram_account_username
+                  ? `via @${chat.instagram_account_username}`
+                  : 'Instagram'
+                : chat.is_group
+                  ? 'Grupo'
+                  : chatPhone || 'Telefone nao identificado'}
             </span>
           </div>
         </button>
         <div className="wa-chat-header-actions">
           {chat.platform === 'whatsapp' && (
             <>
-              <button className="wa-icon-btn" title="Ligar" onClick={() => toast.info('Chamada de voz será liberada em breve')}>
+              <button
+                className="wa-icon-btn"
+                title="Ligar"
+                onClick={() =>
+                  toast.info('Chamada de voz será liberada em breve')
+                }
+              >
                 <Phone size={18} />
               </button>
-              <button className="wa-icon-btn" title="Videochamada" onClick={() => toast.info('Videochamada será liberada em breve')}>
+              <button
+                className="wa-icon-btn"
+                title="Videochamada"
+                onClick={() =>
+                  toast.info('Videochamada será liberada em breve')
+                }
+              >
                 <Video size={18} />
               </button>
             </>
@@ -382,15 +469,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <aside className="wa-contact-panel">
           <div className="wa-contact-panel-head">
             <span>Dados do contato</span>
-            <button type="button" className="wa-icon-btn" onClick={() => setShowContactPanel(false)} title="Fechar">
+            <button
+              type="button"
+              className="wa-icon-btn"
+              onClick={() => setShowContactPanel(false)}
+              title="Fechar"
+            >
               <X size={18} />
             </button>
           </div>
 
           <div className="wa-contact-profile">
             <div className="wa-contact-avatar">
-              {chat.avatar_url && !isWhatsAppCdnUrl(chat.avatar_url) && !avatarError ? (
-                <img src={chat.avatar_url} alt="" className="wa-avatar-img" onError={() => setAvatarError(true)} />
+              {chat.avatar_url &&
+              !isWhatsAppCdnUrl(chat.avatar_url) &&
+              !avatarError ? (
+                <img
+                  src={chat.avatar_url}
+                  alt=""
+                  className="wa-avatar-img"
+                  onError={() => setAvatarError(true)}
+                />
               ) : chat.is_group ? (
                 <Users size={30} />
               ) : (
@@ -405,15 +504,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   className="wa-contact-input"
                   autoFocus
                 />
-                <button type="button" className="wa-contact-save" onClick={saveContactName} disabled={savingContact}>
-                  {savingContact ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                <button
+                  type="button"
+                  className="wa-contact-save"
+                  onClick={saveContactName}
+                  disabled={savingContact}
+                >
+                  {savingContact ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}
                   Salvar
                 </button>
               </div>
             ) : (
               <>
                 <h3>{chatName}</h3>
-                <button type="button" className="wa-contact-edit-btn" onClick={() => setEditingName(true)}>
+                <button
+                  type="button"
+                  className="wa-contact-edit-btn"
+                  onClick={() => setEditingName(true)}
+                >
                   Editar nome do lead
                 </button>
               </>
@@ -423,7 +535,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="wa-contact-fields">
             <div>
               <span>CRM</span>
-              <strong>{crmLead ? `Vinculado: ${crmLead.name || crmLead.phone}` : 'Nao vinculado'}</strong>
+              <strong>
+                {crmLead
+                  ? `Vinculado: ${crmLead.name || crmLead.phone}`
+                  : 'Nao vinculado'}
+              </strong>
             </div>
             {crmTags.length > 0 && (
               <div>
@@ -436,8 +552,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
             )}
             <div>
-              <span>{chat.platform === 'instagram' ? 'Instagram' : 'WhatsApp'}</span>
-              <strong>{chatPhone || (chat.platform === 'instagram' ? 'Instagram' : 'Telefone nao identificado')}</strong>
+              <span>
+                {chat.platform === 'instagram' ? 'Instagram' : 'WhatsApp'}
+              </span>
+              <strong>
+                {chatPhone ||
+                  (chat.platform === 'instagram'
+                    ? 'Instagram'
+                    : 'Telefone nao identificado')}
+              </strong>
             </div>
             <div>
               <span>Plataforma</span>
@@ -447,7 +570,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
             <div>
               <span>Origem</span>
-              <strong>{chat.is_group ? 'Grupo' : chat.platform === 'instagram' ? 'Direct Message' : 'Conversa individual'}</strong>
+              <strong>
+                {chat.is_group
+                  ? 'Grupo'
+                  : chat.platform === 'instagram'
+                    ? 'Direct Message'
+                    : 'Conversa individual'}
+              </strong>
             </div>
             {chat.platform === 'whatsapp' && instanceName && (
               <div>
@@ -455,12 +584,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 <strong>{instanceName}</strong>
               </div>
             )}
-            {chat.platform === 'instagram' && chat.instagram_account_username && (
-              <div>
-                <span>Conta</span>
-                <strong>@{chat.instagram_account_username}</strong>
-              </div>
-            )}
+            {chat.platform === 'instagram' &&
+              chat.instagram_account_username && (
+                <div>
+                  <span>Conta</span>
+                  <strong>@{chat.instagram_account_username}</strong>
+                </div>
+              )}
           </div>
 
           <div className="wa-contact-section">
@@ -471,7 +601,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 className="wa-contact-select"
                 value={selectedAssignee}
                 onChange={(event) => setSelectedAssignee(event.target.value)}
-                disabled={crmActionLoading || chat.is_group || !rawPhone || chat.platform === 'instagram'}
+                disabled={
+                  crmActionLoading ||
+                  chat.is_group ||
+                  !rawPhone ||
+                  chat.platform === 'instagram'
+                }
               >
                 <option value="">Selecionar responsavel</option>
                 {assignees.map((assignee) => (
@@ -485,7 +620,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action primary"
               onClick={transferAttendance}
-              disabled={crmActionLoading || chat.is_group || !rawPhone || !selectedAssignee || chat.platform === 'instagram'}
+              disabled={
+                crmActionLoading ||
+                chat.is_group ||
+                !rawPhone ||
+                !selectedAssignee ||
+                chat.platform === 'instagram'
+              }
             >
               <ArrowRightLeft size={16} />
               Transferir atendimento
@@ -506,7 +647,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 placeholder="Nova tag"
                 disabled={crmActionLoading}
               />
-              <button type="button" className="wa-icon-btn" onClick={addCrmTag} disabled={crmActionLoading || !tagDraft.trim()} title="Adicionar tag">
+              <button
+                type="button"
+                className="wa-icon-btn"
+                onClick={addCrmTag}
+                disabled={crmActionLoading || !tagDraft.trim()}
+                title="Adicionar tag"
+              >
                 <Tag size={16} />
               </button>
             </div>
@@ -517,7 +664,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={linkContactToCrm}
-              disabled={crmActionLoading || chat.is_group || !rawPhone || chat.platform === 'instagram'}
+              disabled={
+                crmActionLoading ||
+                chat.is_group ||
+                !rawPhone ||
+                chat.platform === 'instagram'
+              }
             >
               <UserRound size={16} />
               {crmLead ? 'Atualizar CRM' : 'Vincular ao CRM'}
@@ -526,7 +678,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={addCrmTag}
-              disabled={crmActionLoading || chat.is_group || !rawPhone || !tagDraft.trim() || chat.platform === 'instagram'}
+              disabled={
+                crmActionLoading ||
+                chat.is_group ||
+                !rawPhone ||
+                !tagDraft.trim() ||
+                chat.platform === 'instagram'
+              }
             >
               <Tag size={16} />
               Adicionar tag
@@ -535,7 +693,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={createCrmTask}
-              disabled={crmActionLoading || chat.is_group || !rawPhone || chat.platform === 'instagram'}
+              disabled={
+                crmActionLoading ||
+                chat.is_group ||
+                !rawPhone ||
+                chat.platform === 'instagram'
+              }
             >
               <Clock3 size={16} />
               Criar tarefa
@@ -544,7 +707,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               className="wa-contact-action"
               onClick={markCrmPriority}
-              disabled={crmActionLoading || chat.is_group || !rawPhone || chat.platform === 'instagram'}
+              disabled={
+                crmActionLoading ||
+                chat.is_group ||
+                !rawPhone ||
+                chat.platform === 'instagram'
+              }
             >
               <ShieldCheck size={16} />
               Marcar prioridade
@@ -601,11 +769,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* Input Area */}
-      <form className="wa-input-area" onSubmit={handleSubmit} id="message-input-form">
-        <button type="button" className="wa-icon-btn" title="Emoji" onClick={() => toast.info('Seletor de Emojis em breve')}>
+      <form
+        className="wa-input-area"
+        onSubmit={handleSubmit}
+        id="message-input-form"
+      >
+        <button
+          type="button"
+          className="wa-icon-btn"
+          title="Emoji"
+          onClick={() => toast.info('Seletor de Emojis em breve')}
+        >
           <Smile size={22} />
         </button>
-        <button type="button" className="wa-icon-btn" title="Anexar" onClick={() => fileInputRef.current?.click()}>
+        <button
+          type="button"
+          className="wa-icon-btn"
+          title="Anexar"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <Paperclip size={22} />
         </button>
         <input
@@ -623,14 +805,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 <strong>{pendingFile.name}</strong>
                 <small>{formatFileSize(pendingFile.size)}</small>
               </span>
-              <button type="button" onClick={clearPendingFile} title="Remover arquivo" disabled={sendingMessage}>
+              <button
+                type="button"
+                onClick={clearPendingFile}
+                title="Remover arquivo"
+                disabled={sendingMessage}
+              >
                 <X size={14} />
               </button>
             </div>
           )}
           <textarea
             className="wa-message-input"
-            placeholder={pendingFile ? 'Legenda opcional...' : 'Digite uma mensagem...'}
+            placeholder={
+              pendingFile ? 'Legenda opcional...' : 'Digite uma mensagem...'
+            }
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -645,7 +834,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           disabled={sendingMessage || (!inputText.trim() && !pendingFile)}
           title="Enviar"
         >
-          {sendingMessage ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+          {sendingMessage ? (
+            <Loader2 size={20} className="animate-spin" />
+          ) : (
+            <Send size={20} />
+          )}
         </button>
       </form>
     </main>
@@ -656,7 +849,12 @@ export default ChatWindow;
 
 function isRenderableMessage(message: UnifiedMessage) {
   const content = (message.content || '').trim();
-  const hasMedia = Boolean(message.media_url || message.media_id || message.media_filename || message.media_status === 'pending');
+  const hasMedia = Boolean(
+    message.media_url ||
+    message.media_id ||
+    message.media_filename ||
+    message.media_status === 'pending'
+  );
   return message.type !== 'text' || content || hasMedia;
 }
 
@@ -673,7 +871,10 @@ function formatFileSize(size: number) {
 }
 
 function getPhoneFromJid(jid: string) {
-  if (String(jid || '').includes('@g.us') || String(jid || '').includes('@lid')) return '';
-  const raw = String(jid || '').split('@')[0].replace(/\D/g, '');
+  if (String(jid || '').includes('@g.us') || String(jid || '').includes('@lid'))
+    return '';
+  const raw = String(jid || '')
+    .split('@')[0]
+    .replace(/\D/g, '');
   return isValidBrazilianPhone(raw) ? formatPhone(raw) : '';
 }

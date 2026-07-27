@@ -44,7 +44,7 @@ const rewriteWhatsAppPath = (path) => {
 
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const providerConfig = getWhatsAppProviderConfig();
-  const target = resolveWhatsAppTarget(providerConfig.whatsmeowUrl);
+  const target = resolveWhatsAppTarget(providerConfig.targetUrl);
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const isProduction = process.env.NODE_ENV === 'production';
   const envAllowedOrigins = process.env.ALLOWED_ORIGINS
@@ -151,10 +151,9 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
   const proxy = createProxyMiddleware({
     target,
     changeOrigin: true,
-    // WebSocket upgrades are authenticated and forwarded explicitly in
-    // server.on('upgrade') below. Keeping the HTTP proxy from auto-subscribing
-    // to upgrade events avoids bypassing prepareWsProxyRequest().
     ws: false,
+    proxyTimeout: 5000,
+    timeout: 5000,
     pathRewrite: rewriteWhatsAppPath,
     on: {
       proxyReq: (proxyReq, req) => {

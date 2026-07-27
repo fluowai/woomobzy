@@ -22,7 +22,6 @@ import SubscriptionGuard from './components/SubscriptionGuard';
 import PanelGuard from './components/PanelGuard';
 import { Toaster } from 'sonner';
 
-
 // Context
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { AuthProvider } from './context/AuthContext';
@@ -88,9 +87,19 @@ const Matchmaking360 = lazy(() => import('./views/admin/Matchmaking360'));
 const Empreendimentos = lazy(() => import('./views/urban/Empreendimentos'));
 const LoteamentoDetails = lazy(() => import('./views/urban/LoteamentoDetails'));
 const Locacao = lazy(() => import('./views/urban/Locacao')); // legacy
-const RentalsManagement = lazy(() => import('./views/RentalsManagement').then(m => ({ default: m.RentalsManagement })));
-const RentalsContractEditor = lazy(() => import('./views/RentalsContractEditor').then(m => ({ default: m.RentalsContractEditor })));
-const RentalsBordero = lazy(() => import('./views/RentalsBordero').then(m => ({ default: m.RentalsBordero })));
+const RentalsManagement = lazy(() =>
+  import('./views/RentalsManagement').then((m) => ({
+    default: m.RentalsManagement,
+  }))
+);
+const RentalsContractEditor = lazy(() =>
+  import('./views/RentalsContractEditor').then((m) => ({
+    default: m.RentalsContractEditor,
+  }))
+);
+const RentalsBordero = lazy(() =>
+  import('./views/RentalsBordero').then((m) => ({ default: m.RentalsBordero }))
+);
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
 const Simulator360 = lazy(() => import('./views/urban/Simulator360'));
@@ -144,20 +153,16 @@ const StorageIntelligence = lazy(
 const MarketingManager = lazy(
   () => import('./views/superadmin/MarketingManager')
 );
-const MegaGlobalSettings = lazy(() => import('./views/megaadmin/GlobalSettings'));
+const MegaGlobalSettings = lazy(
+  () => import('./views/megaadmin/GlobalSettings')
+);
 const BillingOverview = lazy(() => import('./views/megaadmin/BillingOverview'));
 const MegaAuditLog = lazy(() => import('./views/megaadmin/AuditLog'));
 
 // Mega Admin
-const MegaAdminLayout = lazy(
-  () => import('./views/megaadmin/MegaAdminLayout')
-);
-const MegaAdminDashboard = lazy(
-  () => import('./views/megaadmin/Dashboard')
-);
-const ResellerManager = lazy(
-  () => import('./views/megaadmin/ResellerManager')
-);
+const MegaAdminLayout = lazy(() => import('./views/megaadmin/MegaAdminLayout'));
+const MegaAdminDashboard = lazy(() => import('./views/megaadmin/Dashboard'));
+const ResellerManager = lazy(() => import('./views/megaadmin/ResellerManager'));
 const DirectClientsManager = lazy(
   () => import('./views/megaadmin/DirectClientsManager')
 );
@@ -305,8 +310,14 @@ const AppContent: React.FC = () => {
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
-            <Route path="site-setup" element={<Navigate to="/rural/site" replace />} />
-            <Route path="visual-editor" element={<Navigate to="/rural/site" replace />} />
+            <Route
+              path="site-setup"
+              element={<Navigate to="/rural/site" replace />}
+            />
+            <Route
+              path="visual-editor"
+              element={<Navigate to="/rural/site" replace />}
+            />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai-agents" element={<AIAgents />} />
             <Route path="wootech-ai" element={<WooTechAI />} />
@@ -344,12 +355,15 @@ const AppContent: React.FC = () => {
             <Route path="empreendimentos" element={<Empreendimentos />} />
             <Route path="loteamentos" element={<Empreendimentos />} />
             <Route path="loteamentos/:id" element={<LoteamentoDetails />} />
-            
+
             {/* Novo módulo de Aluguéis (Rentals) */}
             <Route path="locacao" element={<RentalsManagement />} />
-            <Route path="locacao/contrato" element={<RentalsContractEditor />} />
+            <Route
+              path="locacao/contrato"
+              element={<RentalsContractEditor />}
+            />
             <Route path="locacao/bordero" element={<RentalsBordero />} />
-            
+
             <Route path="compliance" element={<ComplianceUrbano />} />
             <Route path="cobranca" element={<Cobranca />} />
             <Route path="simulador" element={<Simulator360 />} />
@@ -377,8 +391,14 @@ const AppContent: React.FC = () => {
             <Route path="site" element={<SiteManager />} />
             <Route path="site/pages/:id" element={<SitePageEditor />} />
             <Route path="waitlist" element={<WaitlistLeads />} />
-            <Route path="site-setup" element={<Navigate to="/urban/site" replace />} />
-            <Route path="visual-editor" element={<Navigate to="/urban/site" replace />} />
+            <Route
+              path="site-setup"
+              element={<Navigate to="/urban/site" replace />}
+            />
+            <Route
+              path="visual-editor"
+              element={<Navigate to="/urban/site" replace />}
+            />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai-agents" element={<AIAgents />} />
             <Route path="wootech-ai" element={<WooTechAI />} />

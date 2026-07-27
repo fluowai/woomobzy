@@ -429,7 +429,9 @@ const Cobranca: React.FC = () => {
                           )}
                           {b.status === 'vencido' && (
                             <button
-                              onClick={() => toast.info('Renegociação em breve')}
+                              onClick={() =>
+                                toast.info('Renegociação em breve')
+                              }
                               className="p-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100"
                               title="Renegociar"
                             >

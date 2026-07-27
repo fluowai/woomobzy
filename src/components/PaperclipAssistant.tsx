@@ -5,8 +5,13 @@ import { useLocation } from 'react-router-dom';
 
 export const PaperclipAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([
-    { role: 'assistant', content: 'Olá! Sou o assistente de IA do Imob CRM. Como posso ajudar?' }
+  const [messages, setMessages] = useState<
+    { role: 'user' | 'assistant'; content: string }[]
+  >([
+    {
+      role: 'assistant',
+      content: 'Olá! Sou o assistente de IA do Imob CRM. Como posso ajudar?',
+    },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -16,7 +21,7 @@ export const PaperclipAssistant = () => {
     if (!input.trim()) return;
 
     const userMessage = input;
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setInput('');
     setIsLoading(true);
 
@@ -26,32 +31,41 @@ export const PaperclipAssistant = () => {
         pageTitle: document.title,
       };
 
-      const supabaseAuth = localStorage.getItem('sb-imobisaas-auth-token'); 
+      const supabaseAuth = localStorage.getItem('sb-imobisaas-auth-token');
       let token = '';
       if (supabaseAuth) {
         try {
-            token = JSON.parse(supabaseAuth)?.access_token || '';
-        } catch(e) {}
+          token = JSON.parse(supabaseAuth)?.access_token || '';
+        } catch (e) {}
       }
 
       const response = await fetch('/api/jarvis/ask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ prompt: userMessage, context })
+        body: JSON.stringify({ prompt: userMessage, context }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.data.reply }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: data.data.reply },
+        ]);
       } else {
         throw new Error(data.error);
       }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `Desculpe, ocorreu um erro: ${error.message}` }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `Desculpe, ocorreu um erro: ${error.message}`,
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -72,15 +86,23 @@ export const PaperclipAssistant = () => {
                 <Bot className="w-5 h-5" />
                 <span className="font-semibold">Imobtech Copilot</span>
               </div>
-              <button onClick={() => setIsOpen(false)} className="hover:bg-indigo-700 p-1 rounded-full transition-colors">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="hover:bg-indigo-700 p-1 rounded-full transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="flex-1 p-4 overflow-y-auto max-h-96 min-h-[300px] space-y-4 bg-gray-50 dark:bg-gray-900/50">
               {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl p-3 text-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-700 rounded-bl-none'}`}>
+                <div
+                  key={i}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl p-3 text-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-700 rounded-bl-none'}`}
+                  >
                     {msg.content}
                   </div>
                 </div>
@@ -88,24 +110,44 @@ export const PaperclipAssistant = () => {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 rounded-2xl rounded-bl-none p-3 flex gap-1 items-center">
-                    <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.6 }} className="w-2 h-2 bg-indigo-400 rounded-full" />
-                    <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} className="w-2 h-2 bg-indigo-400 rounded-full" />
-                    <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} className="w-2 h-2 bg-indigo-400 rounded-full" />
+                    <motion.div
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ repeat: Infinity, duration: 0.6 }}
+                      className="w-2 h-2 bg-indigo-400 rounded-full"
+                    />
+                    <motion.div
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.6,
+                        delay: 0.2,
+                      }}
+                      className="w-2 h-2 bg-indigo-400 rounded-full"
+                    />
+                    <motion.div
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.6,
+                        delay: 0.4,
+                      }}
+                      className="w-2 h-2 bg-indigo-400 rounded-full"
+                    />
                   </div>
                 </div>
               )}
             </div>
 
             <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex gap-2">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Pergunte ao assistente Imobtech..."
                 className="flex-1 bg-gray-100 dark:bg-gray-800 border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-900 rounded-full px-4 py-2 text-sm outline-none transition-all"
               />
-              <button 
+              <button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
                 className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white p-2 rounded-full transition-colors flex items-center justify-center"

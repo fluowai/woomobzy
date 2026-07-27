@@ -11,20 +11,26 @@ const GalleryBlock: React.FC<GalleryBlockProps> = ({ config }) => {
 
   if (!images || images.length === 0) {
     return (
-      <div className="p-12 bg-gray-50 border-2 border-dashed border-gray-300 text-center rounded-lg">
+      <div className="p-6 sm:p-12 bg-gray-50 border-2 border-dashed border-gray-300 text-center rounded-lg">
         <p className="text-gray-500">Galeria de Fotos</p>
         <p className="text-xs text-gray-400 mt-2">Nenhuma imagem adicionada</p>
       </div>
     );
   }
 
+  const responsiveCols =
+    columns <= 1
+      ? 'grid-cols-1'
+      : columns === 2
+        ? 'grid-cols-1 sm:grid-cols-2'
+        : columns === 3
+          ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+
   return (
     <div
-      className="grid gap-4"
-      style={{
-        gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        gap: `${spacing}px`,
-      }}
+      className={`grid ${responsiveCols}`}
+      style={{ gap: `${spacing}px` }}
     >
       {images.map((img: any, idx: number) => (
         <div

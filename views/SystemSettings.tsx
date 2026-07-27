@@ -42,6 +42,8 @@ const SystemSettings: React.FC = () => {
   const [asaasKey, setAsaasKey] = useState('');
   const [zapsignKey, setZapsignKey] = useState('');
   const [cvcrmKey, setCvcrmKey] = useState('');
+  const [cvcrmEmail, setCvcrmEmail] = useState('');
+  const [cvcrmBaseUrl, setCvcrmBaseUrl] = useState('https://<seu-dominio>.cvcrm.com.br');
   const [biaKey, setBiaKey] = useState('');
   const [oruloBrokerConnected, setOruloBrokerConnected] = useState(false);
   const [oruloBrokerConnecting, setOruloBrokerConnecting] = useState(false);
@@ -89,6 +91,10 @@ const SystemSettings: React.FC = () => {
       setZapsignKey(settings.integrations.zapsign.apiKey);
     if (settings?.integrations?.cvcrm?.apiKey)
       setCvcrmKey(settings.integrations.cvcrm.apiKey);
+    if (settings?.integrations?.cvcrm?.email)
+      setCvcrmEmail(settings.integrations.cvcrm.email);
+    if (settings?.integrations?.cvcrm?.baseUrl)
+      setCvcrmBaseUrl(settings.integrations.cvcrm.baseUrl);
     if (settings?.integrations?.bia?.apiKey)
       setBiaKey(settings.integrations.bia.apiKey);
     loadPortalConfigs();
@@ -167,7 +173,7 @@ const SystemSettings: React.FC = () => {
           namoBana: { apiKey: namoBanaKey },
           asaas: { apiKey: asaasKey, environment: 'production' },
           zapsign: { apiKey: zapsignKey },
-          cvcrm: { apiKey: cvcrmKey },
+          cvcrm: { apiKey: cvcrmKey, baseUrl: cvcrmBaseUrl, email: cvcrmEmail },
           bia: { apiKey: biaKey },
         },
       });
@@ -659,6 +665,20 @@ const SystemSettings: React.FC = () => {
                       setter: setCvcrmKey,
                       placeholder: 'Token do CVcrm',
                       desc: 'Para registrar histórico de atendimentos.',
+                    },
+                    {
+                      label: 'CVcrm E-mail de Integração',
+                      value: cvcrmEmail,
+                      setter: setCvcrmEmail,
+                      placeholder: 'email@imobiliaria.com.br',
+                      desc: 'E-mail do usuário que gerou o token (Obrigatório).',
+                    },
+                    {
+                      label: 'CVcrm URL Base',
+                      value: cvcrmBaseUrl,
+                      setter: setCvcrmBaseUrl,
+                      placeholder: 'https://suaimobiliaria.cvcrm.com.br',
+                      desc: 'URL de acesso ao seu CVcrm (inclua o https://).',
                     },
                     {
                       label: 'BIA API Key (Xano)',

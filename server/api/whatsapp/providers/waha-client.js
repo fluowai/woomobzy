@@ -23,7 +23,7 @@ export class WahaClient {
       method: init.method || 'GET',
       headers,
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
-      signal: AbortSignal.timeout(init.timeoutMs || 5000),
+      signal: AbortSignal.timeout(init.timeoutMs || 15000),
     });
 
     const contentType = response.headers.get('content-type') || '';
@@ -62,6 +62,7 @@ export class WahaClient {
     const result = await this.request('/api/sessions', {
       method: 'POST',
       body,
+      timeoutMs: 10000,
     });
     if (!result.ok && result.status === 409) return { name };
     if (!result.ok)
@@ -84,7 +85,7 @@ export class WahaClient {
     const name = this.sessionName(instance);
     const result = await this.request(
       `/api/${encodeURIComponent(name)}/auth/qr?format=raw`,
-      { method: 'GET', rawText: true }
+      { method: 'GET', rawText: true, timeoutMs: 20000 }
     ).catch(() => null);
     if (!result?.ok) return '';
     return typeof result.data === 'string' ? result.data : '';

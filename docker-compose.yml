@@ -38,7 +38,7 @@ services:
       PORT: "3002"
       WHATSAPP_PROVIDER: "waha"
       WAHA_ENGINE: "noweb"
-      WAHA_API_URL: "http://waha:3000"
+      WAHA_API_URL: "http://wootech-2:3000"
       WAHA_API_KEY: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
       WHATSAPP_WEBHOOK_URL: "http://api:3002"
       ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com,https://fazendasbrasil.com.br,https://www.fazendasbrasil.com.br"
@@ -50,8 +50,8 @@ services:
       DATABASE_URL: "postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       SUPABASE_DB_URL: "postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
       PGSSLMODE: "require"
-      WHATSAPP_API_URL: "http://whatsapp-service:3100"
-      WHATSMEOW_URL: "http://whatsapp-service:3100"
+      WHATSAPP_API_URL: "http://wootech-1:3100"
+      WHATSMEOW_URL: "http://wootech-1:3100"
       NODE_URL: "http://api:3002"
       AGRO_INTEL_URL: "http://agro-intelligence:8000"
       OPENAI_API_KEY: ""
@@ -107,20 +107,22 @@ services:
       - "traefik.http.routers.fazendasbrasil_api.service=wootech_imob_api"
       - "traefik.http.services.wootech_imob_api.loadbalancer.server.port=3002"
 
-  waha:
+  wootech-2:
     image: devlikeapro/waha:latest
+    container_name: wootech-2
     environment:
       WHATSAPP_API_KEY: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
       WAHA_ENGINE: "noweb"
       WAHA_PRINT_QR: "false"
       WAHA_LOG_FORMAT: "JSON"
     volumes:
-      - waha_sessions:/app/.sessions
+      - wootech2_sessions:/app/.sessions
     networks:
       - imobfluow_internal
 
-  whatsapp-service:
+  wootech-1:
     image: ghcr.io/fluowai/woomobzy-whatsapp:latest
+    container_name: wootech-1
     environment:
       NODE_ENV: production
       PORT: "3100"
@@ -144,7 +146,7 @@ services:
       MINIO_REGION: "us-east-1"
       MINIO_WHATSAPP_BUCKET: "imobzywhatsapp"
     volumes:
-      - whatsapp_sessions:/app/.sessions
+      - wootech1_sessions:/app/.sessions
     networks:
       - imobfluow_internal
 
@@ -235,8 +237,8 @@ services:
       - imobfluow_internal
 
 volumes:
-  whatsapp_sessions:
-  waha_sessions:
+  wootech1_sessions:
+  wootech2_sessions:
   rabbitmq_data:
   instagram_devices:
   instagram_sessions:

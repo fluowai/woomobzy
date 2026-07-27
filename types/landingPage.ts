@@ -123,6 +123,10 @@ export interface BlockStyles {
   backgroundColor?: string;
   backgroundImage?: string;
   textColor?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
   borderRadius?: string;
   borderWidth?: string;
   borderStyle?: string;

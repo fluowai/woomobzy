@@ -91,6 +91,101 @@ const BlockStylesEditor: React.FC<BlockStylesEditorProps> = ({
         </div>
       </div>
 
+      {/* Font Size */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Tamanho da Fonte
+        </label>
+        <div className="flex gap-2 items-center">
+          <input
+            type="range"
+            min="10"
+            max="72"
+            value={parseInt(styles.fontSize || '16')}
+            onChange={(e) => updateStyle('fontSize', `${e.target.value}px`)}
+            className="flex-1"
+          />
+          <input
+            type="text"
+            value={styles.fontSize || ''}
+            onChange={(e) => updateStyle('fontSize', e.target.value)}
+            placeholder="Ex: 16px"
+            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Font Weight */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Peso da Fonte
+        </label>
+        <select
+          value={styles.fontWeight || ''}
+          onChange={(e) => updateStyle('fontWeight', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">Padrão</option>
+          <option value="300">Fino (300)</option>
+          <option value="400">Normal (400)</option>
+          <option value="500">Médio (500)</option>
+          <option value="600">Semi Bold (600)</option>
+          <option value="700">Bold (700)</option>
+          <option value="800">Extra Bold (800)</option>
+          <option value="900">Black (900)</option>
+        </select>
+      </div>
+
+      {/* Line Height */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Altura da Linha
+        </label>
+        <div className="flex gap-2 items-center">
+          <input
+            type="range"
+            min="1"
+            max="3"
+            step="0.1"
+            value={parseFloat(styles.lineHeight || '1.5')}
+            onChange={(e) => updateStyle('lineHeight', e.target.value)}
+            className="flex-1"
+          />
+          <input
+            type="text"
+            value={styles.lineHeight || ''}
+            onChange={(e) => updateStyle('lineHeight', e.target.value)}
+            placeholder="1.5"
+            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Letter Spacing */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Espaçamento das Letras
+        </label>
+        <div className="flex gap-2 items-center">
+          <input
+            type="range"
+            min="-2"
+            max="10"
+            step="0.5"
+            value={parseFloat(styles.letterSpacing || '0')}
+            onChange={(e) => updateStyle('letterSpacing', `${e.target.value}px`)}
+            className="flex-1"
+          />
+          <input
+            type="text"
+            value={styles.letterSpacing || ''}
+            onChange={(e) => updateStyle('letterSpacing', e.target.value)}
+            placeholder="0px"
+            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+          />
+        </div>
+      </div>
+
       {/* Border Radius */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">

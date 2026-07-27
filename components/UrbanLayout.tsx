@@ -284,7 +284,7 @@ const UrbanLayout: React.FC = () => {
   return (
     <div className="workspace-shell flex h-screen h-dvh overflow-hidden selection:bg-primary/20 selection:text-primary">
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-[110] md:hidden">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
@@ -310,7 +310,7 @@ const UrbanLayout: React.FC = () => {
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <button
           onClick={() => setIsMobileMenuOpen(true)}
-          className="fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md md:hidden"
+          className="fixed left-3 top-3 z-[110] flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md md:hidden"
           aria-label="Abrir menu"
         >
           <Menu size={21} />

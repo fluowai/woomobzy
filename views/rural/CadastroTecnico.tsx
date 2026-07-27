@@ -538,10 +538,16 @@ const CadastroTecnico: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          <button className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all">
+                          <button 
+                            onClick={() => toast.info('Visualização de detalhes em breve')}
+                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
+                          >
                             <Eye size={16} />
                           </button>
-                          <button className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all">
+                          <button 
+                            onClick={() => toast.error('Exclusão não implementada')}
+                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all"
+                          >
                             <Trash2 size={16} />
                           </button>
                         </div>

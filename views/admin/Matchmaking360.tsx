@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   Zap,
   Search,
@@ -225,7 +226,10 @@ const Matchmaking360: React.FC = () => {
                   </div>
 
                   {/* Action */}
-                  <button className="p-4 bg-black text-white rounded-2xl hover:scale-110 transition-all">
+                  <button 
+                    onClick={() => toast.info('Funcionalidade de contato em breve')}
+                    className="p-4 bg-black text-white rounded-2xl hover:scale-110 transition-all"
+                  >
                     <MessageSquare size={20} />
                   </button>
                 </div>
@@ -284,7 +288,10 @@ const Matchmaking360: React.FC = () => {
                 ))}
               </div>
 
-              <button className="w-full py-4 bg-indigo-600 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:brightness-110 transition-all flex items-center justify-center gap-3">
+              <button 
+                onClick={() => toast.info('Exportação estará disponível em breve')}
+                className="w-full py-4 bg-indigo-600 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:brightness-110 transition-all flex items-center justify-center gap-3"
+              >
                 Exportar Sugestões <ArrowRight size={14} />
               </button>
             </div>

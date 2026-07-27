@@ -378,7 +378,10 @@ export default function ClientsManager() {
                           >
                             <Trash2 size={18} />
                           </button>
-                          <button className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                          <button 
+                            onClick={() => toast.info('Menu de opções do cliente em breve')}
+                            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                          >
                             <MoreVertical size={18} />
                           </button>
                         </div>

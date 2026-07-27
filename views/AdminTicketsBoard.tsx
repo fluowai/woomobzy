@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 export const AdminTicketsBoard = ({ initialTickets = [] }) => {
   const [tickets, setTickets] = useState(initialTickets);
@@ -46,7 +47,10 @@ export const AdminTicketsBoard = ({ initialTickets = [] }) => {
               </td>
               <td style={{ padding: '12px' }}>{ticket.status}</td>
               <td style={{ padding: '12px' }}>
-                <button style={{ padding: '6px 12px', background: '#2196f3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                <button 
+                  onClick={() => toast.info('Visualização de ticket em breve')}
+                  style={{ padding: '6px 12px', background: '#2196f3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
                   Visualizar
                 </button>
               </td>

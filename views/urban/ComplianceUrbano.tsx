@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import {
   ClipboardCheck,
   CheckCircle,
@@ -373,7 +374,10 @@ const ComplianceUrbano: React.FC = () => {
                   >
                     {cfg.label}
                   </span>
-                  <button className="invisible group-hover:visible p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
+                  <button 
+                    onClick={() => toast.info('Funcionalidade de upload específica em breve')}
+                    className="invisible group-hover:visible p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+                  >
                     <Upload size={14} />
                   </button>
                 </div>

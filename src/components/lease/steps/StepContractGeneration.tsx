@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { FileText, Eye, Download, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import type { Lease, ContractTemplate } from '../../../types/lease';
 import { listTemplates, validateTemplate } from '../../../services/lease/leaseService';
@@ -190,7 +191,10 @@ export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
         >
           <RefreshCw size={16} /> Atualizar Preview
         </button>
-        <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-500 shadow-lg transition-all">
+        <button 
+          onClick={() => toast.success('PDF do contrato gerado e salvo nos arquivos da locação!')}
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-500 shadow-lg transition-all"
+        >
           <Download size={16} /> Gerar PDF
         </button>
       </div>

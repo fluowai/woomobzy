@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 import { FileDown, Search, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -96,7 +97,7 @@ export function RentalsBordero() {
           </select>
         </div>
         <div className="flex-none">
-          <button className="w-full md:w-auto px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2">
+          <button onClick={() => toast.info('Filtragem em breve')} className="w-full md:w-auto px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2">
             <Search className="w-4 h-4" />
             Filtrar
           </button>

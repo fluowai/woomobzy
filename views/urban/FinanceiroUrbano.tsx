@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import {
   AlertCircle,
   BarChart2,
@@ -143,10 +144,16 @@ export default function FinanceiroUrbano() {
           <div className="flex items-center justify-between border-b border-slate-100 p-5">
             <h2 className="font-bold text-slate-900">Cobrancas do periodo</h2>
             <div className="flex gap-2">
-              <button className="btn bg-slate-100 text-sm text-slate-700">
+              <button 
+                onClick={() => toast.info('Envio em lote em breve')}
+                className="btn bg-slate-100 text-sm text-slate-700"
+              >
                 <Send size={15} /> Enviar Boletos
               </button>
-              <button className="btn btn-primary text-sm">
+              <button 
+                onClick={() => toast.info('Geração manual em breve')}
+                className="btn btn-primary text-sm"
+              >
                 + Gerar Cobranca
               </button>
             </div>
@@ -224,7 +231,10 @@ export default function FinanceiroUrbano() {
                           <CheckCircle size={14} /> Quitado
                         </span>
                       ) : (
-                        <button className="text-xs font-bold text-primary hover:underline">
+                        <button 
+                          onClick={() => toast.info('Visualização de boleto em breve')}
+                          className="text-xs font-bold text-primary hover:underline"
+                        >
                           Ver Boleto
                         </button>
                       )}

@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -164,7 +165,7 @@ export const TemplateList: React.FC = () => {
                 >
                   <Edit size={12} /> Editar
                 </button>
-                <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-all">
+                <button onClick={() => toast.info('Duplicação de template em breve')} className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-all">
                   <Copy size={12} /> Duplicar
                 </button>
                 {template.is_active && (

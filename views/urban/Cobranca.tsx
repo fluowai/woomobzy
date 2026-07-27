@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import {
   DollarSign,
   FileText,
@@ -428,6 +429,7 @@ const Cobranca: React.FC = () => {
                           )}
                           {b.status === 'vencido' && (
                             <button
+                              onClick={() => toast.info('Renegociação em breve')}
                               className="p-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100"
                               title="Renegociar"
                             >

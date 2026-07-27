@@ -353,13 +353,13 @@ const PropertyManagement: React.FC = () => {
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto">
-          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+          <button onClick={() => toast.info('Filtro por tipo em breve!')} className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
             Tipo <ChevronDown size={14} />
           </button>
-          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+          <button onClick={() => toast.info('Filtro por status em breve!')} className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
             Status <ChevronDown size={14} />
           </button>
-          <button className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
+          <button onClick={() => toast.info('Filtros adicionais em breve!')} className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold">
             <Filter size={14} /> Filtros
           </button>
         </div>

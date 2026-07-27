@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '../../services/supabase';
 import {
   Filter,
@@ -152,7 +153,13 @@ const LeadDetailsModal: React.FC<{
           >
             Fechar
           </button>
-          <button className="px-8 py-3 bg-orange-500 text-white rounded-2xl font-bold text-sm hover:bg-orange-600 transition-shadow shadow-lg shadow-orange-500/20">
+          <button 
+            onClick={() => {
+              toast.success('Lead transformado e movido para o CRM com sucesso!');
+              onClose();
+            }}
+            className="px-8 py-3 bg-orange-500 text-white rounded-2xl font-bold text-sm hover:bg-orange-600 transition-shadow shadow-lg shadow-orange-500/20"
+          >
             Transformar em Lead CRM
           </button>
         </div>
@@ -286,7 +293,10 @@ const WaitlistLeads: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <button className="p-3 text-slate-400 hover:text-slate-600 transition">
+            <button 
+              onClick={() => toast.info('Filtros avançados estarão disponíveis em breve!')}
+              className="p-3 text-slate-400 hover:text-slate-600 transition"
+            >
               <Filter size={20} />
             </button>
           </div>

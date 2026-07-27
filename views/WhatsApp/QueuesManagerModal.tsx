@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { X, GitMerge, Plus, Trash2, Edit2, Users } from 'lucide-react';
 
 interface QueuesManagerModalProps {
@@ -36,7 +37,10 @@ export const QueuesManagerModal: React.FC<QueuesManagerModalProps> = ({ onClose 
         <div className="p-6 overflow-y-auto flex-1">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-sm font-bold text-slate-700">Filas Cadastradas</h3>
-            <button className="h-9 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-2">
+            <button 
+              onClick={() => toast.info('Criação de novas filas estará disponível em breve')}
+              className="h-9 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-2"
+            >
               <Plus size={16} /> Nova Fila
             </button>
           </div>
@@ -54,10 +58,16 @@ export const QueuesManagerModal: React.FC<QueuesManagerModalProps> = ({ onClose 
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition">
+                  <button 
+                    onClick={() => toast.info('Edição de fila estará disponível em breve')}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                  >
                     <Edit2 size={16} />
                   </button>
-                  <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-600 transition">
+                  <button 
+                    onClick={() => toast.info('Exclusão de fila estará disponível em breve')}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>

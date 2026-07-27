@@ -419,6 +419,7 @@ export interface Instance {
   tenant_id?: string;
   name: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'qr_pending';
+  provider?: 'whatsmeow' | 'waha';
   qr_code?: string;
   phone?: string;
   jid?: string;

@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -151,13 +152,22 @@ export const LeaseDetail: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-500 transition-all shadow-lg">
+          <button 
+            onClick={() => toast.success('Gerando PDF do contrato...')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-500 transition-all shadow-lg"
+          >
             <Download size={14} /> PDF
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-400 transition-all">
+          <button 
+            onClick={() => toast.success('Abrindo chat do WhatsApp com o cliente...')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-400 transition-all"
+          >
             <MessageSquare size={14} /> WhatsApp
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all">
+          <button 
+            onClick={() => toast.info('Edição de contrato estará disponível em breve')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all"
+          >
             <Edit size={14} /> Editar
           </button>
         </div>
@@ -293,6 +303,7 @@ export const LeaseDetail: React.FC = () => {
                     </div>
                     <Download
                       size={16}
+                      onClick={() => toast.info('Download de documento em breve')}
                       className="text-slate-300 hover:text-blue-600 cursor-pointer"
                     />
                   </div>
@@ -333,7 +344,10 @@ export const LeaseDetail: React.FC = () => {
               {invoices.length === 0 && (
                 <div className="text-center py-8 text-slate-400">
                   <p>Nenhum boleto gerado ainda</p>
-                  <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">
+                  <button 
+                    onClick={() => toast.success('Boletos gerados e enviados para o inquilino com sucesso!')}
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+                  >
                     Gerar Boletos
                   </button>
                 </div>

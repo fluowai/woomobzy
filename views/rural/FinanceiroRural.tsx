@@ -395,7 +395,10 @@ const FinanceiroRural: React.FC = () => {
           <h4 className="text-xl font-bold uppercase italic tracking-tighter text-slate-900">
             Últimos Negócios Fechados
           </h4>
-          <button className="text-xs font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors">
+          <button 
+            onClick={() => toast.info('Relatório completo em desenvolvimento')}
+            className="text-xs font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors"
+          >
             Ver Relatório Completo
           </button>
         </div>

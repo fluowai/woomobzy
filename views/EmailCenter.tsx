@@ -399,6 +399,7 @@ const EmailCenter: React.FC = () => {
     <div className="h-full min-h-[720px] overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-800 shadow-sm">
       <header className="flex h-[72px] items-center gap-4 border-b border-slate-200 bg-white px-5">
         <button
+          onClick={() => toast.info('Menu lateral será liberado em breve')}
           className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100"
           title="Menu"
         >
@@ -429,7 +430,10 @@ const EmailCenter: React.FC = () => {
           />
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <button className="hidden h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 xl:flex">
+          <button 
+            onClick={() => toast.info('Seletor de status em breve')}
+            className="hidden h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 xl:flex"
+          >
             <span className="h-3 w-3 rounded-full bg-emerald-500" />
             Disponivel
             <ChevronDown size={16} />
@@ -437,12 +441,16 @@ const EmailCenter: React.FC = () => {
           {[HelpCircle, Settings, Grid3X3].map((Icon, index) => (
             <button
               key={index}
+              onClick={() => toast.info('Funcionalidade em desenvolvimento')}
               className="hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex"
             >
               <Icon size={21} />
             </button>
           ))}
-          <button className="relative hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex">
+          <button 
+            onClick={() => toast.info('Central de notificações em breve')}
+            className="relative hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex"
+          >
             <Bell size={21} />
             <span className="absolute right-1 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
               3
@@ -605,7 +613,7 @@ const EmailCenter: React.FC = () => {
                       label="Responder a todos"
                       onClick={() => setReplyOpen(true)}
                     />
-                    <ActionButton icon={Undo2} label="Encaminhar" />
+                    <ActionButton icon={Undo2} label="Encaminhar" onClick={() => toast.info('Encaminhamento de email em breve')} />
                   </div>
                 </div>
 
@@ -1195,7 +1203,10 @@ const SideAction: React.FC<{ icon: React.ElementType; label: string }> = ({
   icon: Icon,
   label,
 }) => (
-  <button className="flex h-11 w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+  <button 
+    onClick={() => toast.info(`${label} em breve`)}
+    className="flex h-11 w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+  >
     <Icon size={17} />
     {label}
   </button>

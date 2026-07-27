@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import { supabase } from '../services/supabase';
+import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -1404,11 +1405,11 @@ const PropertyEditor: React.FC = () => {
                         type="button"
                         onClick={() => {
                           if (!formData.features?.legal?.matricula) {
-                            alert('Preencha a matrícula primeiro para solicitar a certidão.');
+                            toast.error('Preencha a matrícula primeiro para solicitar a certidão.');
                             return;
                           }
                           // Em uma implementação completa, abriria um modal para confirmar o CNS
-                          alert('Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' + formData.features.legal.matricula);
+                          toast.info('Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' + formData.features.legal.matricula);
                         }}
                         className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
                       >
@@ -1663,10 +1664,10 @@ const PropertyEditor: React.FC = () => {
                         type="button"
                         onClick={() => {
                           if (!formData.features?.legal?.matricula) {
-                            alert('Preencha a matrícula primeiro para solicitar a certidão.');
+                            toast.error('Preencha a matrícula primeiro para solicitar a certidão.');
                             return;
                           }
-                          alert('Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' + formData.features.legal.matricula);
+                          toast.info('Em breve: Integração ONR para certidões automáticas será liberada na próxima versão.');
                         }}
                         className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
                       >

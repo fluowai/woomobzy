@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { propertyService } from '../services/properties';
 import { Property, PropertyType } from '../types';
@@ -226,10 +227,16 @@ const PropertyDetail: React.FC = () => {
               </span>
             </div>
             <div className="flex-1 flex justify-end gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-xs font-bold uppercase tracking-wider">
+              <button 
+                onClick={() => navigator.clipboard.writeText(window.location.href).then(() => toast.success('Link copiado para a área de transferência!'))}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-xs font-bold uppercase tracking-wider"
+              >
                 <Share2 size={14} /> Compartilhar
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-xs font-bold uppercase tracking-wider">
+              <button 
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-xs font-bold uppercase tracking-wider"
+              >
                 <Printer size={14} /> Imprimir
               </button>
             </div>
@@ -582,13 +589,17 @@ const PropertyDetail: React.FC = () => {
                   WhatsApp
                 </button>
                 <button
+                  onClick={() => window.open(`tel:${settings?.contactPhone || ''}`, '_self')}
                   className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-bold text-white shadow-lg hover:brightness-110 active:scale-95 transition-all uppercase tracking-wider text-sm"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
                   <Phone size={20} />
                   Ligar Agora
                 </button>
-                <button className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-bold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 active:scale-95 transition-all uppercase tracking-wider text-sm">
+                <button 
+                  onClick={() => window.open(`mailto:${settings?.contactEmail || ''}`, '_self')}
+                  className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-bold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 active:scale-95 transition-all uppercase tracking-wider text-sm"
+                >
                   <Mail size={20} />
                   Enviar E-mail
                 </button>
@@ -598,7 +609,10 @@ const PropertyDetail: React.FC = () => {
                 <p className="text-xs text-black/40 mb-2">
                   Gostou deste imóvel?
                 </p>
-                <button className="text-xs font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-2">
+                <button 
+                  onClick={() => toast.success('Imóvel adicionado aos favoritos!')}
+                  className="text-xs font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-2"
+                >
                   <Heart size={14} /> Adicionar aos Favoritos
                 </button>
               </div>

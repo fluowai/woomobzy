@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'sonner';
 import { Briefcase, DollarSign, Upload, FileCheck } from 'lucide-react';
 import type { Lease } from '../../../types/lease';
 
@@ -105,7 +106,7 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
                 <FileCheck size={18} className="text-slate-400" />
                 <span className="text-sm font-bold text-slate-700">{doc.label}</span>
               </div>
-              <button className="text-xs font-bold text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all">
+              <button onClick={() => toast.info('Upload de documentos em breve')} className="text-xs font-bold text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all">
                 Anexar
               </button>
             </div>

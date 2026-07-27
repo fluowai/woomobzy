@@ -219,15 +219,15 @@ const EmailCenter: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (view === 'mail') loadEmails();
-  }, [folder, view]);
+    if (view === 'mail' && accounts.length > 0) loadEmails();
+  }, [folder, view, accounts.length]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      if (view === 'mail') loadEmails();
+      if (view === 'mail' && accounts.length > 0) loadEmails();
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [search, view]);
+  }, [search, view, accounts.length]);
 
   const loadInitialData = async () => {
     try {
@@ -241,7 +241,9 @@ const EmailCenter: React.FC = () => {
       setSelectedAccountId(accountData[0]?.id || '');
       setLeads(leadData as Lead[]);
       setAgenda(agendaData);
-      await loadEmails();
+      if (accountData.length > 0) {
+        await loadEmails();
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar emails.');
     } finally {
@@ -391,6 +393,152 @@ const EmailCenter: React.FC = () => {
     return (
       <div className="flex h-full min-h-[720px] items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-500">
         Carregando email profissional...
+      </div>
+    );
+  }
+
+  if (!accounts.length) {
+    return (
+      <div className="flex h-full min-h-[720px] flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-8 text-center">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50">
+          <Mail size={36} className="text-emerald-600" />
+        </div>
+        <h2 className="mb-2 text-xl font-bold text-slate-950">
+          Conecte seu email profissional
+        </h2>
+        <p className="mb-8 max-w-md text-sm font-medium text-slate-500">
+          Para usar a Central de Email, conecte uma conta IMAP/SMTP. Seus emails
+          serao sincronizados e vinculados automaticamente aos leads.
+        </p>
+        <button
+          onClick={() => setConnectOpen(true)}
+          className="flex h-12 items-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-md shadow-emerald-200 transition hover:bg-emerald-700 hover:shadow-lg"
+        >
+          <Plus size={20} />
+          Conectar conta de email
+        </button>
+
+        {connectOpen && (
+          <Modal
+            title="Conectar conta de email"
+            onClose={() => setConnectOpen(false)}
+          >
+            <form onSubmit={saveAccount} className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-2">
+                <input
+                  className="input-field md:col-span-2"
+                  type="email"
+                  placeholder="email@dominio.com"
+                  value={accountForm.email}
+                  onChange={(e) =>
+                    setAccountForm({ ...accountForm, email: e.target.value })
+                  }
+                />
+                <input
+                  className="input-field md:col-span-2"
+                  type="password"
+                  placeholder="Senha do email"
+                  value={accountForm.password}
+                  onChange={(e) =>
+                    setAccountForm({ ...accountForm, password: e.target.value })
+                  }
+                />
+                <input
+                  className="input-field"
+                  placeholder="Servidor IMAP"
+                  value={accountForm.imap_host}
+                  onChange={(e) =>
+                    setAccountForm({
+                      ...accountForm,
+                      imap_host: e.target.value,
+                    })
+                  }
+                />
+                <input
+                  className="input-field"
+                  type="number"
+                  placeholder="Porta IMAP"
+                  value={accountForm.imap_port}
+                  onChange={(e) => {
+                    const port = Number(e.target.value);
+                    setAccountForm({
+                      ...accountForm,
+                      imap_port: port,
+                      imap_secure: isImplicitTlsPort(port, 993),
+                    });
+                  }}
+                />
+                <input
+                  className="input-field"
+                  placeholder="Servidor SMTP"
+                  value={accountForm.smtp_host}
+                  onChange={(e) =>
+                    setAccountForm({
+                      ...accountForm,
+                      smtp_host: e.target.value,
+                    })
+                  }
+                />
+                <input
+                  className="input-field"
+                  type="number"
+                  placeholder="Porta SMTP"
+                  value={accountForm.smtp_port}
+                  onChange={(e) => {
+                    const port = Number(e.target.value);
+                    setAccountForm({
+                      ...accountForm,
+                      smtp_port: port,
+                      smtp_secure: isImplicitTlsPort(port, 465),
+                    });
+                  }}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={accountForm.imap_secure}
+                  onChange={(e) =>
+                    setAccountForm({
+                      ...accountForm,
+                      imap_secure: e.target.checked,
+                    })
+                  }
+                />
+                IMAP SSL/TLS direto
+              </label>
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={accountForm.smtp_secure}
+                  onChange={(e) =>
+                    setAccountForm({
+                      ...accountForm,
+                      smtp_secure: e.target.checked,
+                    })
+                  }
+                />
+                SMTP SSL/TLS direto
+              </label>
+              <div className="rounded-lg bg-slate-50 p-3 text-xs font-semibold text-slate-500">
+                Use 465 para SMTP SSL direto ou 587 para STARTTLS. Use 993 para
+                IMAP SSL direto.
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConnectOpen(false)}
+                  className="btn btn-secondary"
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  <Check size={16} /> Testar e salvar
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
       </div>
     );
   }

@@ -104,10 +104,10 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
   }
 
   return (
-    <div className="py-12 px-4">
+    <div className="py-8 sm:py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <h2
-          className="text-3xl font-bold text-center mb-8"
+          className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8"
           style={{
             color: theme.textColor,
             fontFamily: theme.headingFontFamily || theme.fontFamily,
@@ -116,8 +116,8 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
           {config.title}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {config.fields.map((field) => (
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          {(config.fields || []).map((field) => (
             <div key={field.name}>
               <label
                 className="block text-sm font-medium mb-2"

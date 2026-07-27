@@ -23,6 +23,8 @@ async function bootstrapApp() {
     // Default domains that should definitely use the Master DB
     const isMasterDomain = hostname.includes('localhost') || 
                            hostname.includes('imobzy.com.br') || 
+                           hostname.includes('wootech.com.br') || 
+                           hostname.includes('consultio.com.br') ||
                            hostname.includes('vercel.app');
                            
     if (!isMasterDomain) {

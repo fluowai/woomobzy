@@ -42,7 +42,7 @@ const MapBlock: React.FC<MapBlockProps> = ({ config, theme }) => {
       ></iframe>
 
       {config.showCard && (
-        <div className="absolute top-4 left-4 bg-white p-4 rounded-lg shadow-lg max-w-xs z-10">
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-white p-3 sm:p-4 rounded-lg shadow-lg max-w-[calc(100%-1rem)] sm:max-w-xs z-10">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-indigo-100 text-indigo-600 rounded-full">
               <MapPin size={20} />

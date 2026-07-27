@@ -7,33 +7,29 @@ interface StatsBlockProps {
 }
 
 const StatsBlock: React.FC<StatsBlockProps> = ({ config, theme }) => {
-  const { stats = [], columns = 3 } = config;
+  const { stats = [] } = config;
 
   return (
-    <div
-      className="grid gap-8"
-      style={{
-        gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        backgroundColor: theme.backgroundColor || '#f9fafb',
-      }}
-    >
-      {stats.map((stat: any, idx: number) => (
-        <div key={idx} className="text-center p-6">
-          {stat.icon && <div className="text-4xl mb-3">{stat.icon}</div>}
-          <div
-            className="text-4xl font-bold mb-2"
-            style={{ color: theme.primaryColor || '#3b82f6' }}
-          >
-            {stat.value}
+    <div className="py-8 sm:py-12 px-4">
+      <div className="grid gap-4 sm:gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+        {(stats || []).map((stat: any, idx: number) => (
+          <div key={idx} className="text-center p-6">
+            {stat.icon && <div className="text-4xl mb-3">{stat.icon}</div>}
+            <div
+              className="text-4xl font-bold mb-2"
+              style={{ color: theme.primaryColor || '#3b82f6' }}
+            >
+              {stat.value}
+            </div>
+            <div
+              className="text-sm font-medium uppercase tracking-wide"
+              style={{ color: theme.textColor || '#6b7280' }}
+            >
+              {stat.label}
+            </div>
           </div>
-          <div
-            className="text-sm font-medium uppercase tracking-wide"
-            style={{ color: theme.textColor || '#6b7280' }}
-          >
-            {stat.label}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

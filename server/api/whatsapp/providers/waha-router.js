@@ -138,10 +138,11 @@ export function createWahaRouter({
 
   router.post('/instances', verifyAuth, requireTenant, async (req, res) => {
     const name = String(req.body?.name || 'WhatsApp').trim() || 'WhatsApp';
+    const provider = req.body?.provider === 'whatsmeow' ? 'whatsmeow' : 'waha';
     const supabase = getSupabaseServer();
     const { data: instance, error } = await supabase
       .from('whatsapp_instances')
-      .insert({ tenant_id: req.orgId, name, status: 'connecting', provider: 'waha' })
+      .insert({ tenant_id: req.orgId, name, status: 'connecting', provider })
       .select(
         'id, tenant_id, name, status, qr_code, phone, jid, provider, created_at, updated_at'
       )
@@ -203,11 +204,22 @@ export function createWahaRouter({
         return res.status(404).json({ error: 'Instance not found' });
 
       try {
+        if (instance.status === 'connecting') {
+          const sessionStatus = await client.getSessionStatus(instance);
+          if (sessionStatus?.status) {
+            const mappedStatus = mapWahaStatus(sessionStatus.status);
+            if (mappedStatus && mappedStatus !== instance.status) {
+              await updateInstance(instance.id, req.orgId, { status: mappedStatus });
+              instance.status = mappedStatus;
+            }
+          }
+        }
+
         const qrCode = await client.getQRCode(instance);
         if (!qrCode) {
           return res
             .status(202)
-            .json({ message: 'QR code generating', status: 'pending' });
+            .json({ message: 'QR code generating', status: instance.status || 'pending' });
         }
         await updateInstance(instance.id, req.orgId, {
           status: 'qr_pending',

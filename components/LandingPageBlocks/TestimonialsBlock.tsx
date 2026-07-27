@@ -37,7 +37,7 @@ const TestimonialsBlock: React.FC<TestimonialsBlockProps> = ({
             : 'grid-cols-1 md:grid-cols-2' // Carousel layout fallback to grid for now simpler implementation
         }`}
       >
-        {config.testimonials.map((item, index) => (
+        {(config.testimonials || []).map((item, index) => (
           <div
             key={index}
             className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full relative"

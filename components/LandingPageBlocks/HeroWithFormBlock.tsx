@@ -77,7 +77,7 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
     <div className="relative overflow-hidden bg-[#f5f2eb]">
       {/* Hero Background Section */}
       <div
-        className="relative min-h-[500px] flex flex-col items-center justify-start pt-16 px-4"
+        className="relative min-h-[400px] sm:min-h-[500px] flex flex-col items-center justify-start pt-10 sm:pt-16 px-4"
         style={{
           backgroundImage: config.backgroundImage
             ? `url(${config.backgroundImage})`
@@ -98,7 +98,7 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
             Encontre sua
           </h2>
           <h1
-            className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg"
+            className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg"
             style={{
               color: '#ffffff',
               fontFamily:
@@ -123,7 +123,7 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {config.fields.map((field) => (
+              {(config.fields || []).map((field) => (
                 <div key={field.name}>
                   <div className="relative">
                     {field.type === 'select' ? (

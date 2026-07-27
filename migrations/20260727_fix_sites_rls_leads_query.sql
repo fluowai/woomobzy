@@ -1,21 +1,16 @@
 -- ============================================
--- FIX: 403 on sites INSERT + 400 on leads query
+-- FIX v2: 403 on sites INSERT (impersonation)
 -- Applied: 2026-07-27
 --
 -- Error 1: 403 Forbidden on sites INSERT/SELECT
---   Cause: RLS policy "Usuarios veem apenas seu proprio site"
---          uses organization_id = auth.uid()::text::uuid
---          which compares org_id to user_auth_id (WRONG)
---   Fix: Use get_my_org_id() to look up the user's organization
+--   Cause: RLS uses get_my_org_id() but during superadmin
+--          impersonation auth.uid() returns superadmin's user,
+--          not the impersonated tenant. get_my_org_id() resolves
+--          to the superadmin's own org, not the target org.
+--   Fix: Add superadmin bypass to sites and site_pages policies
 --
--- Error 2: 400 Bad Request on leads query with match_profile
---   Cause: match_profile column may not exist if prior migration
---          20260725_fix_reseller_missing_pieces.sql wasn't applied
---   Fix: Ensure column exists + fix the OR filter syntax
---
--- Error 3: 406 Not Acceptable on public_tenant_discovery
---   Cause: View may need GRANTs or RLS policy refresh
---   Fix: Re-apply grants and policies
+-- Error 2: 406 Not Acceptable on public_tenant_discovery
+--   Fix: Refresh view, policies and grants
 -- ============================================
 
 -- =============================================
@@ -29,43 +24,64 @@ AS $$
 $$;
 
 -- =============================================
--- 2. Fix sites RLS (403 Forbidden on INSERT)
+-- 2. Fix sites RLS with superadmin bypass
 -- =============================================
 
--- Drop the broken policies
+DROP POLICY IF EXISTS "Tenant isolation sites" ON public.sites;
 DROP POLICY IF EXISTS "Usuarios veem apenas seu proprio site" ON public.sites;
+DROP POLICY IF EXISTS "Tenant isolation site_pages" ON public.site_pages;
 DROP POLICY IF EXISTS "Usuarios veem apenas paginas do seu site" ON public.site_pages;
 
--- Sites: tenant isolation using get_my_org_id()
+-- Sites: tenant match OR superadmin bypass
 CREATE POLICY "Tenant isolation sites"
   ON public.sites FOR ALL
-  USING (organization_id = get_my_org_id())
-  WITH CHECK (organization_id = get_my_org_id());
+  USING (
+    organization_id = get_my_org_id()
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'superadmin'
+    )
+  )
+  WITH CHECK (
+    organization_id = get_my_org_id()
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'superadmin'
+    )
+  );
 
--- Site pages: tenant isolation through sites
+-- Site pages: tenant match through sites OR superadmin bypass
 CREATE POLICY "Tenant isolation site_pages"
   ON public.site_pages FOR ALL
   USING (
     site_id IN (
-      SELECT id FROM public.sites WHERE organization_id = get_my_org_id()
+      SELECT id FROM public.sites
+      WHERE organization_id = get_my_org_id()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'superadmin'
     )
   )
   WITH CHECK (
     site_id IN (
-      SELECT id FROM public.sites WHERE organization_id = get_my_org_id()
+      SELECT id FROM public.sites
+      WHERE organization_id = get_my_org_id()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'superadmin'
     )
   );
 
 -- =============================================
--- 3. Ensure leads.match_profile column exists (400 fix)
--- =============================================
-ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS match_profile TEXT;
-
--- =============================================
--- 4. Fix public_tenant_discovery (406 fix refresh)
+-- 3. Fix public_tenant_discovery (406 refresh)
 -- =============================================
 
--- Recreate view
 CREATE OR REPLACE VIEW public.public_tenant_discovery AS
 SELECT
     domain,
@@ -76,24 +92,22 @@ FROM
 WHERE
     is_active = true;
 
--- Drop and recreate the anon read policy
 DROP POLICY IF EXISTS "Anonymous read active reseller_infrastructure" ON public.reseller_infrastructure;
 CREATE POLICY "Anonymous read active reseller_infrastructure"
     ON public.reseller_infrastructure FOR SELECT
     USING (is_active = true);
 
--- Ensure GRANTs
 GRANT SELECT ON public.public_tenant_discovery TO anon;
 GRANT SELECT ON public.public_tenant_discovery TO authenticated;
 GRANT SELECT ON public.reseller_infrastructure TO anon;
 GRANT SELECT ON public.reseller_infrastructure TO authenticated;
 
 -- =============================================
--- 5. Ensure site_pages RLS is enabled
+-- 4. Ensure leads.match_profile column exists
 -- =============================================
-ALTER TABLE public.site_pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS match_profile TEXT;
 
 -- =============================================
--- 6. Notify PostgREST to reload schema
+-- 5. Reload PostgREST schema cache
 -- =============================================
 NOTIFY pgrst, 'reload schema';

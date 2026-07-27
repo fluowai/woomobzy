@@ -95,13 +95,13 @@ const SupportManager: React.FC = () => {
       logger.warn('Error fetching ticket users:', profilesResult.error);
     }
 
-    const organizationsById = new Map(
+    const organizationsById = new Map<string, { name: string | null }>(
       (organizationsResult.data || []).map((organization: any) => [
         organization.id,
         { name: organization.name },
       ])
     );
-    const profilesById = new Map(
+    const profilesById = new Map<string, { name: string | null }>(
       (profilesResult.data || []).map((profile: any) => [
         profile.id,
         { name: profile.name },
@@ -111,12 +111,12 @@ const SupportManager: React.FC = () => {
     return ticketRows.map((ticket) => ({
       ...ticket,
       organization: ticket.organization_id
-        ? organizationsById.get(ticket.organization_id)
+        ? organizationsById.get(ticket.organization_id) ?? { name: null }
         : undefined,
       user_profile: ticket.user_id
-        ? profilesById.get(ticket.user_id)
+        ? profilesById.get(ticket.user_id) ?? { name: null }
         : undefined,
-    }));
+    })) as Ticket[];
   };
 
   const fetchTickets = async () => {

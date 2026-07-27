@@ -122,7 +122,7 @@ export default function PortalProprietarioUrbano() {
           .in('property_id', propertyIds),
       ]);
 
-      const leadCounts = (leadRows || []).reduce<Record<string, number>>(
+      const leadCounts = ((leadRows || []) as Array<{ property_id: string | null }>).reduce<Record<string, number>>(
         (counts, lead) => {
           if (lead.property_id)
             counts[lead.property_id] = (counts[lead.property_id] || 0) + 1;

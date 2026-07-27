@@ -589,7 +589,7 @@ const PropertyDetail: React.FC = () => {
                   WhatsApp
                 </button>
                 <button
-                  onClick={() => window.open(`tel:${settings?.whatsapp || ''}`, '_self')}
+                  onClick={() => window.open(`tel:${settings?.contactPhone || ''}`, '_self')}
                   className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-bold text-white shadow-lg hover:brightness-110 active:scale-95 transition-all uppercase tracking-wider text-sm"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
@@ -597,7 +597,7 @@ const PropertyDetail: React.FC = () => {
                   Ligar Agora
                 </button>
                 <button 
-                  onClick={() => window.open(`mailto:${settings?.email || ''}`, '_self')}
+                  onClick={() => window.open(`mailto:${settings?.contactEmail || ''}`, '_self')}
                   className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-bold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 active:scale-95 transition-all uppercase tracking-wider text-sm"
                 >
                   <Mail size={20} />

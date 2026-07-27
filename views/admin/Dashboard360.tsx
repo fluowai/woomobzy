@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   LayoutDashboard,
   Users,
@@ -246,7 +247,10 @@ const Dashboard360: React.FC = () => {
                 </div>
               </div>
 
-              <button className="btn-primary w-full mt-6 text-xs">
+              <button 
+                onClick={() => toast.info('Módulo financeiro estará disponível em breve')}
+                className="btn-primary w-full mt-6 text-xs"
+              >
                 Ir para Financeiro
               </button>
             </div>
@@ -262,22 +266,26 @@ const Dashboard360: React.FC = () => {
           icon={Briefcase}
           label="Dossiês de Venda"
           desc="Organize documentos do imóvel"
+          onClick={() => toast.info('Funcionalidade de Dossiês em breve')}
         />
         <ActionCard
           icon={AlertCircle}
           label="Vistorias Pendentes"
           desc="Checklists e fotos de check-in"
           accent
+          onClick={() => toast.info('Módulo de vistorias em breve')}
         />
         <ActionCard
           icon={TrendingUp}
           label="Marketing & Portais"
           desc="Exportar para Zap/VivaReal"
+          onClick={() => toast.info('Integração com portais em breve')}
         />
         <ActionCard
           icon={CheckCircle2}
           label="Garantias Locatícias"
           desc="Análise de crédito CredPago"
+          onClick={() => toast.info('Análise de crédito CredPago em breve')}
         />
       </div>
     </div>
@@ -310,8 +318,8 @@ const StatCard = ({ icon: Icon, label, value, change, variant }: any) => {
   );
 };
 
-const ActionCard = ({ icon: Icon, label, desc, accent }: any) => (
-  <div className="card card-hover cursor-pointer group">
+const ActionCard = ({ icon: Icon, label, desc, accent, onClick }: any) => (
+  <div onClick={onClick} className="card card-hover cursor-pointer group">
     <div
       className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${
         accent ? 'bg-accent-alpha-10 text-accent' : 'bg-brand/10 text-brand'

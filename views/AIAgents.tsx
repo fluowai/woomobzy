@@ -2082,6 +2082,7 @@ const SidebarItem: React.FC<{
   active?: boolean;
 }> = ({ icon: Icon, label, count, active }) => (
   <button
+    onClick={() => toast.info('Funcionalidade em breve')}
     className={`h-10 min-w-max rounded-lg border px-3 flex items-center justify-between gap-3 text-left transition ${
       active
         ? 'border-emerald-200 bg-emerald-50 text-emerald-800'

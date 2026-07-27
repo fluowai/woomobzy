@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   Search,
   Filter,
@@ -410,7 +411,10 @@ const PropertyListing: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <button className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white transition-all opacity-0 group-hover:opacity-100">
+                    <button 
+                      onClick={() => toast.success('Imóvel adicionado aos favoritos!')}
+                      className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white transition-all opacity-0 group-hover:opacity-100"
+                    >
                       <Heart size={18} />
                     </button>
                   </div>

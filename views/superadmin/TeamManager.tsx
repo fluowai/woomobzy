@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '../../services/supabase';
 import {
   Users,
@@ -61,14 +62,14 @@ const TeamManager: React.FC = () => {
       // For now, we manually create a profile or suggest the user registers and then you promote them.
       // But for simplicity in this demo, we'll "simulate" an invite or direct role assignment if the user exists.
 
-      alert(
+      toast.success(
         `Funcionalidade de convite enviada para ${inviteEmail}. O usuário receberá um link para configurar a senha.`
       );
       setIsInviteModalOpen(false);
       setInviteEmail('');
       setInviteName('');
     } catch (err) {
-      alert('Erro ao enviar convite.');
+      toast.error('Erro ao enviar convite.');
     }
   };
 
@@ -85,8 +86,9 @@ const TeamManager: React.FC = () => {
 
       if (error) throw error;
       fetchStaff();
+      toast.success('Acesso removido com sucesso.');
     } catch (err) {
-      alert('Erro ao remover acesso.');
+      toast.error('Erro ao remover acesso.');
     }
   };
 

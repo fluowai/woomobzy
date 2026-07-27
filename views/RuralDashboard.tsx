@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
   TrendingUp,
   Users as UsersIcon,
@@ -315,6 +316,7 @@ const RuralDashboard: React.FC = () => {
               {quickActions.map((action, idx) => (
                 <button
                   key={idx}
+                  onClick={() => toast.info(`Ação "${action.label}" em breve`)}
                   className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-bg-hover transition-all group text-left border border-transparent hover:border-border-subtle"
                 >
                   <div

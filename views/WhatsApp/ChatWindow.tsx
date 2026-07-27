@@ -364,10 +364,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="wa-chat-header-actions">
           {chat.platform === 'whatsapp' && (
             <>
-              <button className="wa-icon-btn" title="Ligar">
+              <button className="wa-icon-btn" title="Ligar" onClick={() => toast.info('Chamada de voz será liberada em breve')}>
                 <Phone size={18} />
               </button>
-              <button className="wa-icon-btn" title="Videochamada">
+              <button className="wa-icon-btn" title="Videochamada" onClick={() => toast.info('Videochamada será liberada em breve')}>
                 <Video size={18} />
               </button>
             </>
@@ -602,7 +602,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* Input Area */}
       <form className="wa-input-area" onSubmit={handleSubmit} id="message-input-form">
-        <button type="button" className="wa-icon-btn" title="Emoji">
+        <button type="button" className="wa-icon-btn" title="Emoji" onClick={() => toast.info('Seletor de Emojis em breve')}>
           <Smile size={22} />
         </button>
         <button type="button" className="wa-icon-btn" title="Anexar" onClick={() => fileInputRef.current?.click()}>

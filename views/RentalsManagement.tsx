@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 
 import { FileText, Plus, FileSignature, DollarSign, Calendar, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -101,11 +102,11 @@ export function RentalsManagement() {
           <p className="text-gray-500">Controle completo de contratos, faturas e repasses ({settings.agencyName})</p>
         </div>
         <div className="mt-4 md:mt-0 flex space-x-3">
-          <button className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button onClick={() => toast.info('Borderô / Repasses em breve!')} className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
             <DollarSign className="w-4 h-4" />
             Borderô / Repasses
           </button>
-          <button className="flex items-center gap-2 rounded-md px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium">
+          <button onClick={() => toast.info('Novo Contrato em breve!')} className="flex items-center gap-2 rounded-md px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium">
             <Plus className="w-4 h-4" />
             Novo Contrato
           </button>
@@ -221,7 +222,7 @@ export function RentalsManagement() {
                       {getStatusBadge(lease.status)}
                     </td>
                     <td className="px-4 py-3">
-                      <button className="text-sm font-medium rounded-md px-3 py-1 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                      <button onClick={() => toast.info('Gerenciamento de contrato em breve!')} className="text-sm font-medium rounded-md px-3 py-1 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                         Gerenciar
                       </button>
                     </td>

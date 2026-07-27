@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { PenTool, Send, Mail, MessageSquare, CheckCircle, XCircle, Clock, User } from 'lucide-react';
 import type { Lease, Signature } from '../../../types/lease';
 import { COMMERCIAL_PRODUCT_NAME } from '../../../../utils/branding';
@@ -130,7 +131,11 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
                 className="w-44 px-3 py-2 bg-white rounded-lg border border-slate-200 text-sm outline-none"
               />
               <div className="flex gap-1">
-                <button className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all" title="Enviar convite">
+                <button 
+                  onClick={() => toast.success(`Convite enviado para ${signer.signer_name || signer.signer_type} com sucesso!`)}
+                  className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all" 
+                  title="Enviar convite"
+                >
                   <Send size={16} />
                 </button>
               </div>

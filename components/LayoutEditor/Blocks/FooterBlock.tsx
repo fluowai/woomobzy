@@ -8,9 +8,7 @@ interface FooterBlockProps {
   isEditing?: boolean;
 }
 
-export const FooterBlock: React.FC<FooterBlockProps> = ({
-  block,
-}) => {
+export const FooterBlock: React.FC<FooterBlockProps> = ({ block }) => {
   const config = block.config as any;
   const { settings } = useSettings();
 

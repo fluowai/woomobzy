@@ -36,9 +36,15 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .maybeSingle();
 
-    if (!campaign) return res.status(404).json({ error: 'Campanha não encontrada' });
+    if (!campaign)
+      return res.status(404).json({ error: 'Campanha não encontrada' });
     if (!['draft', 'paused'].includes(campaign.status)) {
-      return res.status(400).json({ error: 'Só é possível adicionar contatos em campanhas draft ou pausadas' });
+      return res
+        .status(400)
+        .json({
+          error:
+            'Só é possível adicionar contatos em campanhas draft ou pausadas',
+        });
     }
 
     // Accept single or bulk
@@ -48,7 +54,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     const parsed = bulkContactsSchema.safeParse(payload);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: parsed.error.flatten() });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: parsed.error.flatten() });
     }
 
     // Normalize phones: strip non-digits, ensure +55 prefix
@@ -72,7 +80,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
     const uniqueContacts = contacts.filter((c) => !existingPhones.has(c.phone));
 
     if (uniqueContacts.length === 0) {
-      return res.status(409).json({ error: 'Todos os contatos já existem na campanha', added: 0 });
+      return res
+        .status(409)
+        .json({ error: 'Todos os contatos já existem na campanha', added: 0 });
     }
 
     // Batch insert (Supabase handles large inserts well up to ~1000 rows at a time)
@@ -90,7 +100,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       inserted += data?.length || 0;
     }
 
-    res.status(201).json({ added: inserted, skipped: contacts.length - inserted });
+    res
+      .status(201)
+      .json({ added: inserted, skipped: contacts.length - inserted });
   } catch (err) {
     console.error('[CampaignContacts] Error adding:', err.message);
     res.status(500).json({ error: err.message });
@@ -112,7 +124,9 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     if (status) query = query.eq('status', status);
     if (search) {
-      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,company.ilike.%${search}%`);
+      query = query.or(
+        `name.ilike.%${search}%,phone.ilike.%${search}%,company.ilike.%${search}%`
+      );
     }
 
     const offset = (Number(page) - 1) * Number(limit);
@@ -142,9 +156,12 @@ router.delete('/:contactId', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .maybeSingle();
 
-    if (!campaign) return res.status(404).json({ error: 'Campanha não encontrada' });
+    if (!campaign)
+      return res.status(404).json({ error: 'Campanha não encontrada' });
     if (campaign.status === 'running') {
-      return res.status(400).json({ error: 'Pare a campanha antes de remover contatos' });
+      return res
+        .status(400)
+        .json({ error: 'Pare a campanha antes de remover contatos' });
     }
 
     const { error } = await supabase
@@ -167,8 +184,15 @@ router.delete('/bulk', verifyAuth, requireTenant, async (req, res) => {
     const { campaignId } = req.params;
     const { status } = req.body;
 
-    if (!status || !['pending', 'failed', 'sent', 'blacklisted'].includes(status)) {
-      return res.status(400).json({ error: 'status inválido. Use: pending, failed, sent, blacklisted' });
+    if (
+      !status ||
+      !['pending', 'failed', 'sent', 'blacklisted'].includes(status)
+    ) {
+      return res
+        .status(400)
+        .json({
+          error: 'status inválido. Use: pending, failed, sent, blacklisted',
+        });
     }
 
     const supabase = getSupabaseServer();
@@ -180,9 +204,12 @@ router.delete('/bulk', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .maybeSingle();
 
-    if (!campaign) return res.status(404).json({ error: 'Campanha não encontrada' });
+    if (!campaign)
+      return res.status(404).json({ error: 'Campanha não encontrada' });
     if (campaign.status === 'running') {
-      return res.status(400).json({ error: 'Pare a campanha antes de remover contatos' });
+      return res
+        .status(400)
+        .json({ error: 'Pare a campanha antes de remover contatos' });
     }
 
     const { count, error } = await supabase
@@ -218,9 +245,14 @@ router.post('/import-serper', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .maybeSingle();
 
-    if (!campaign) return res.status(404).json({ error: 'Campanha não encontrada' });
+    if (!campaign)
+      return res.status(404).json({ error: 'Campanha não encontrada' });
     if (!['draft', 'paused'].includes(campaign.status)) {
-      return res.status(400).json({ error: 'Só é possível importar em campanhas draft ou pausadas' });
+      return res
+        .status(400)
+        .json({
+          error: 'Só é possível importar em campanhas draft ou pausadas',
+        });
     }
 
     // Fetch cached Serper results
@@ -231,14 +263,20 @@ router.post('/import-serper', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId);
 
     if (!cached?.length) {
-      return res.status(404).json({ error: 'Nenhum resultado cacheado encontrado' });
+      return res
+        .status(404)
+        .json({ error: 'Nenhum resultado cacheado encontrado' });
     }
 
     // Filter only those with valid phones
-    const contactsWithPhone = cached.filter((c) => c.phone && c.phone.length >= 10);
+    const contactsWithPhone = cached.filter(
+      (c) => c.phone && c.phone.length >= 10
+    );
 
     if (contactsWithPhone.length === 0) {
-      return res.status(400).json({ error: 'Nenhum resultado possui telefone válido' });
+      return res
+        .status(400)
+        .json({ error: 'Nenhum resultado possui telefone válido' });
     }
 
     // Check existing phones
@@ -270,7 +308,9 @@ router.post('/import-serper', verifyAuth, requireTenant, async (req, res) => {
       }));
 
     if (newContacts.length === 0) {
-      return res.status(409).json({ error: 'Todos os contatos já existem na campanha', added: 0 });
+      return res
+        .status(409)
+        .json({ error: 'Todos os contatos já existem na campanha', added: 0 });
     }
 
     const BATCH_SIZE = 500;
@@ -287,7 +327,9 @@ router.post('/import-serper', verifyAuth, requireTenant, async (req, res) => {
       inserted += data?.length || 0;
     }
 
-    res.status(201).json({ added: inserted, skipped: contactsWithPhone.length - inserted });
+    res
+      .status(201)
+      .json({ added: inserted, skipped: contactsWithPhone.length - inserted });
   } catch (err) {
     console.error('[CampaignContacts] Error importing serper:', err.message);
     res.status(500).json({ error: err.message });

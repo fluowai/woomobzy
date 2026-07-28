@@ -30,17 +30,28 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
       // Capturar dados de tracking
       const trackingData = getTrackingData();
 
+      // Collect any custom fields into notes
+      const customNotes = (config.fields || [])
+        .filter((f) => !['name', 'email', 'phone', 'message'].includes(f.name))
+        .map((f) => `${f.label}: ${formData[f.name] || 'Não informado'}`)
+        .join('\n');
+
+      const baseNotes = formData.message || formData.mensagem || '';
+      const finalNotes = [baseNotes, customNotes].filter(Boolean).join('\n\n');
+
       // Preparar dados do formulário
       const leadData = {
         name: formData.name || '',
         email: formData.email || '',
         phone: formData.phone || formData.telefone || '',
-        message: formData.message || formData.mensagem || '',
+        notes: finalNotes || 'Contato via Landing Page Form',
+        source: 'Landing Page Form',
         ...trackingData,
+        referrer_url: window.location.href,
       };
 
       // Enviar para API
-      const response = await fetch(getApiUrl('/api/contact'), {
+      const response = await fetch(getApiUrl('/api/public/leads'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,10 +118,11 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
     <div className="py-8 sm:py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <h2
-          className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8"
+          className="font-bold text-center mb-6 sm:mb-8"
           style={{
             color: theme.textColor,
             fontFamily: theme.headingFontFamily || theme.fontFamily,
+            fontSize: '2.5em',
           }}
         >
           {config.title}
@@ -178,9 +190,10 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-semibold text-lg text-white transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-semibold transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: theme.primaryColor,
+              fontSize: '1em',
             }}
           >
             {submitting ? (

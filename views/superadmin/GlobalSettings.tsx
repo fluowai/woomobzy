@@ -80,12 +80,18 @@ const GlobalSettings: React.FC = () => {
       // Save BYOB settings
       if (byobSettings.domain && byobSettings.supabase_url) {
         // Obter organization_id do superadmin atual
-        const { data: userProfile } = await supabase.from('profiles').select('organization_id').single();
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .single();
         if (userProfile?.organization_id) {
-            const { error: byobError } = await supabase
-              .from('reseller_infrastructure')
-              .upsert({ ...byobSettings, organization_id: userProfile.organization_id }, { onConflict: 'organization_id' });
-            if (byobError) throw byobError;
+          const { error: byobError } = await supabase
+            .from('reseller_infrastructure')
+            .upsert(
+              { ...byobSettings, organization_id: userProfile.organization_id },
+              { onConflict: 'organization_id' }
+            );
+          if (byobError) throw byobError;
         }
       }
 
@@ -281,10 +287,12 @@ const GlobalSettings: React.FC = () => {
         {/* BYOB (Bring Your Own Backend) */}
         <div className="pt-6 border-t border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Server size={20} className="text-blue-600" /> Infraestrutura Customizada (BYOB)
+            <Server size={20} className="text-blue-600" /> Infraestrutura
+            Customizada (BYOB)
           </h3>
           <p className="text-sm text-gray-500 mb-4">
-            Se preenchido, os acessos neste domínio serão roteados para o seu próprio Supabase e MinIO em vez do banco de dados central (Master).
+            Se preenchido, os acessos neste domínio serão roteados para o seu
+            próprio Supabase e MinIO em vez do banco de dados central (Master).
           </p>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
@@ -309,7 +317,10 @@ const GlobalSettings: React.FC = () => {
                 type="text"
                 value={byobSettings?.supabase_url || ''}
                 onChange={(e) =>
-                  setByobSettings({ ...byobSettings, supabase_url: e.target.value })
+                  setByobSettings({
+                    ...byobSettings,
+                    supabase_url: e.target.value,
+                  })
                 }
                 className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
                 placeholder="https://sua-instancia.supabase.co"
@@ -323,7 +334,10 @@ const GlobalSettings: React.FC = () => {
                 type="password"
                 value={byobSettings?.supabase_anon_key || ''}
                 onChange={(e) =>
-                  setByobSettings({ ...byobSettings, supabase_anon_key: e.target.value })
+                  setByobSettings({
+                    ...byobSettings,
+                    supabase_anon_key: e.target.value,
+                  })
                 }
                 className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
                 placeholder="eyJhbG..."
@@ -337,7 +351,10 @@ const GlobalSettings: React.FC = () => {
                 type="password"
                 value={byobSettings?.supabase_service_role_key || ''}
                 onChange={(e) =>
-                  setByobSettings({ ...byobSettings, supabase_service_role_key: e.target.value })
+                  setByobSettings({
+                    ...byobSettings,
+                    supabase_service_role_key: e.target.value,
+                  })
                 }
                 className="w-full rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-red-500 focus:border-red-500"
                 placeholder="Chave para permissões administrativas (Backend)"

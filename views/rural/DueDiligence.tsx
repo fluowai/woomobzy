@@ -494,8 +494,10 @@ const DueDiligence: React.FC = () => {
                   >
                     {cfg.label}
                   </span>
-                  <button 
-                    onClick={() => toast.info('Funcionalidade de upload específica em breve')}
+                  <button
+                    onClick={() =>
+                      toast.info('Funcionalidade de upload específica em breve')
+                    }
                     className="invisible group-hover:visible p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
                   >
                     <Upload size={14} />

@@ -12,13 +12,16 @@ import {
 } from '../../services/portalService.js';
 
 const router = Router();
-const supabase = new Proxy({}, {
-  get: (_, prop) => {
-    const client = getSupabaseServer();
-    const value = client[prop];
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 router.get('/', verifyAuth, requireTenant, async (req, res) => {
   try {
@@ -30,7 +33,10 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     const configMap = {};
     for (const c of configs || []) {
-      configMap[c.portal] = { enabled: c.enabled, configured: isPortalConfigured(c.config) };
+      configMap[c.portal] = {
+        enabled: c.enabled,
+        configured: isPortalConfigured(c.config),
+      };
     }
 
     const result = portals.map((name) => ({
@@ -58,7 +64,9 @@ router.get('/:portal/config', verifyAdmin, requireTenant, async (req, res) => {
 
     res.json({
       success: true,
-      config: data ? { enabled: data.enabled, ...maskSensitive(data.config) } : null,
+      config: data
+        ? { enabled: data.enabled, ...maskSensitive(data.config) }
+        : null,
     });
   } catch (err) {
     console.error('[Portals] Config get error:', err.message);
@@ -90,77 +98,99 @@ router.put('/:portal/config', verifyAdmin, requireTenant, async (req, res) => {
         .update(payload)
         .eq('id', existing.data.id);
     } else {
-      await supabase
-        .from('portal_integrations')
-        .insert(payload);
+      await supabase.from('portal_integrations').insert(payload);
     }
 
-    res.json({ success: true, message: `Configuração do portal ${req.params.portal} salva.` });
+    res.json({
+      success: true,
+      message: `Configuração do portal ${req.params.portal} salva.`,
+    });
   } catch (err) {
     console.error('[Portals] Config save error:', err.message);
     res.status(500).json({ error: 'Erro ao salvar configuracao do portal' });
   }
 });
 
-router.post('/:portal/publish/:propertyId', verifyAdmin, requireTenant, async (req, res) => {
-  try {
-    const { portal, propertyId } = req.params;
-    const { data: property, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('id', propertyId)
-      .eq('organization_id', req.orgId)
-      .single();
+router.post(
+  '/:portal/publish/:propertyId',
+  verifyAdmin,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { portal, propertyId } = req.params;
+      const { data: property, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', propertyId)
+        .eq('organization_id', req.orgId)
+        .single();
 
-    if (error || !property) {
-      return res.status(404).json({ error: 'Imóvel não encontrado.' });
+      if (error || !property) {
+        return res.status(404).json({ error: 'Imóvel não encontrado.' });
+      }
+
+      const result = await publishToPortal({
+        supabase,
+        organizationId: req.orgId,
+        property,
+        portal,
+      });
+
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error('[Portals] Publish error:', err.message);
+      res
+        .status(err.statusCode || 500)
+        .json({ error: 'Erro ao publicar no portal' });
     }
-
-    const result = await publishToPortal({
-      supabase,
-      organizationId: req.orgId,
-      property,
-      portal,
-    });
-
-    res.json({ success: true, ...result });
-  } catch (err) {
-    console.error('[Portals] Publish error:', err.message);
-    res.status(err.statusCode || 500).json({ error: 'Erro ao publicar no portal' });
   }
-});
+);
 
-router.delete('/:portal/publish/:propertyId', verifyAdmin, requireTenant, async (req, res) => {
-  try {
-    const result = await unpublishFromPortal({
-      supabase,
-      organizationId: req.orgId,
-      propertyId: req.params.propertyId,
-      portal: req.params.portal,
-    });
+router.delete(
+  '/:portal/publish/:propertyId',
+  verifyAdmin,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const result = await unpublishFromPortal({
+        supabase,
+        organizationId: req.orgId,
+        propertyId: req.params.propertyId,
+        portal: req.params.portal,
+      });
 
-    res.json({ success: true, ...result });
-  } catch (err) {
-    console.error('[Portals] Unpublish error:', err.message);
-    res.status(err.statusCode || 500).json({ error: 'Erro ao despublicar do portal' });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error('[Portals] Unpublish error:', err.message);
+      res
+        .status(err.statusCode || 500)
+        .json({ error: 'Erro ao despublicar do portal' });
+    }
   }
-});
+);
 
-router.get('/:portal/publish/:propertyId', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const status = await getPortalPublishStatus({
-      supabase,
-      organizationId: req.orgId,
-      propertyId: req.params.propertyId,
-      portal: req.params.portal,
-    });
+router.get(
+  '/:portal/publish/:propertyId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const status = await getPortalPublishStatus({
+        supabase,
+        organizationId: req.orgId,
+        propertyId: req.params.propertyId,
+        portal: req.params.portal,
+      });
 
-    res.json({ success: true, status });
-  } catch (err) {
-    console.error('[Portals] Status error:', err.message);
-    res.status(err.statusCode || 500).json({ error: 'Erro ao verificar status do portal' });
+      res.json({ success: true, status });
+    } catch (err) {
+      console.error('[Portals] Status error:', err.message);
+      res
+        .status(err.statusCode || 500)
+        .json({ error: 'Erro ao verificar status do portal' });
+    }
   }
-});
+);
 
 function getPortalLabel(name) {
   const labels = {

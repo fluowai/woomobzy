@@ -40,8 +40,19 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { name, category, body, media_url, media_type, buttons, variables, tags, account_id } = req.body;
-    if (!name || !body) return res.status(400).json({ error: 'name and body are required' });
+    const {
+      name,
+      category,
+      body,
+      media_url,
+      media_type,
+      buttons,
+      variables,
+      tags,
+      account_id,
+    } = req.body;
+    if (!name || !body)
+      return res.status(400).json({ error: 'name and body are required' });
 
     const { data: template, error: tplError } = await supabase
       .from('instagram_templates')
@@ -90,7 +101,8 @@ router.post('/', async (req, res) => {
 
 router.patch('/:id', async (req, res) => {
   try {
-    const { name, category, body, media_url, media_type, buttons, tags } = req.body;
+    const { name, category, body, media_url, media_type, buttons, tags } =
+      req.body;
     const update = {};
     if (name) update.name = name;
     if (category) update.category = category;

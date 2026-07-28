@@ -1,9 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  ArrowLeft, Save, Loader2, Users, Search, Settings, Smartphone,
-  Plus, Trash2, UploadCloud, Download, Phone, Building2, Mail,
-  MessageSquare, Zap, Clock, Shield, Play, Pause, CheckCircle2,
-  AlertCircle, ExternalLink, Eye, X, FileDown
+  ArrowLeft,
+  Save,
+  Loader2,
+  Users,
+  Search,
+  Settings,
+  Smartphone,
+  Plus,
+  Trash2,
+  UploadCloud,
+  Download,
+  Phone,
+  Building2,
+  Mail,
+  MessageSquare,
+  Zap,
+  Clock,
+  Shield,
+  Play,
+  Pause,
+  CheckCircle2,
+  AlertCircle,
+  ExternalLink,
+  Eye,
+  X,
+  FileDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -28,7 +50,12 @@ interface Campaign {
   status: string;
   sent_count: number;
   failed_count: number;
-  contacts_summary: { pending: number; sent: number; failed: number; blacklisted: number };
+  contacts_summary: {
+    pending: number;
+    sent: number;
+    failed: number;
+    blacklisted: number;
+  };
   instances: any[];
   dispatcher: { running: boolean; sent?: number; failed?: number };
 }
@@ -65,7 +92,9 @@ interface BlacklistItem {
 }
 
 const authHeaders = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return { Authorization: `Bearer ${session?.access_token}` };
 };
 
@@ -147,7 +176,9 @@ export default function CampaignEditor() {
     const headers = await authHeaders();
     const params = new URLSearchParams({ limit: '200' });
     if (contactSearch) params.set('search', contactSearch);
-    const res = await fetch(`/api/campaigns/${id}/contacts?${params}`, { headers });
+    const res = await fetch(`/api/campaigns/${id}/contacts?${params}`, {
+      headers,
+    });
     if (res.ok) {
       const data = await res.json();
       setContacts(data.contacts || []);
@@ -164,9 +195,15 @@ export default function CampaignEditor() {
     }
   }, []);
 
-  useEffect(() => { fetchCampaign(); }, [fetchCampaign]);
-  useEffect(() => { if (tab === 'contacts') fetchContacts(); }, [tab, fetchContacts]);
-  useEffect(() => { if (tab === 'instances') fetchInstances(); }, [tab, fetchInstances]);
+  useEffect(() => {
+    fetchCampaign();
+  }, [fetchCampaign]);
+  useEffect(() => {
+    if (tab === 'contacts') fetchContacts();
+  }, [tab, fetchContacts]);
+  useEffect(() => {
+    if (tab === 'instances') fetchInstances();
+  }, [tab, fetchInstances]);
 
   // ─── Contact Actions ───
   const handleAddContact = async () => {
@@ -176,14 +213,20 @@ export default function CampaignEditor() {
       const res = await fetch(`/api/campaigns/${id}/contacts`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: addPhone, name: addName || undefined, company: addCompany || undefined }),
+        body: JSON.stringify({
+          phone: addPhone,
+          name: addName || undefined,
+          company: addCompany || undefined,
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error);
       }
       toast.success('Contato adicionado');
-      setAddPhone(''); setAddName(''); setAddCompany('');
+      setAddPhone('');
+      setAddName('');
+      setAddCompany('');
       setShowAddContact(false);
       fetchContacts();
     } catch (err: any) {
@@ -195,7 +238,8 @@ export default function CampaignEditor() {
     try {
       const headers = await authHeaders();
       await fetch(`/api/campaigns/${id}/contacts/${contactId}`, {
-        method: 'DELETE', headers,
+        method: 'DELETE',
+        headers,
       });
       setContacts((prev) => prev.filter((c) => c.id !== contactId));
       setContactsTotal((prev) => prev - 1);
@@ -211,12 +255,20 @@ export default function CampaignEditor() {
     try {
       const text = await file.text();
       const lines = text.split('\n').filter((l) => l.trim());
-      const contactsPayload = lines.slice(1).map((line) => {
-        const [phone, name, company] = line.split(',').map((s) => s.trim());
-        return { phone, name: name || undefined, company: company || undefined };
-      }).filter((c) => c.phone);
+      const contactsPayload = lines
+        .slice(1)
+        .map((line) => {
+          const [phone, name, company] = line.split(',').map((s) => s.trim());
+          return {
+            phone,
+            name: name || undefined,
+            company: company || undefined,
+          };
+        })
+        .filter((c) => c.phone);
 
-      if (contactsPayload.length === 0) return toast.error('Nenhum contato válido no CSV');
+      if (contactsPayload.length === 0)
+        return toast.error('Nenhum contato válido no CSV');
 
       const headers = await authHeaders();
       const res = await fetch(`/api/campaigns/${id}/contacts`, {
@@ -245,7 +297,11 @@ export default function CampaignEditor() {
       const res = await fetch('/api/campaigns/serper/search', {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: serperQuery, type: 'places', cache_results: true }),
+        body: JSON.stringify({
+          query: serperQuery,
+          type: 'places',
+          cache_results: true,
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -334,7 +390,8 @@ export default function CampaignEditor() {
     try {
       const headers = await authHeaders();
       await fetch(`/api/campaigns/${id}/instances/${instanceId}`, {
-        method: 'DELETE', headers,
+        method: 'DELETE',
+        headers,
       });
       toast.success('Instância removida');
       fetchCampaign();
@@ -351,12 +408,25 @@ export default function CampaignEditor() {
     );
   }
 
-  const isEditable = campaign?.status === 'draft' || campaign?.status === 'paused';
+  const isEditable =
+    campaign?.status === 'draft' || campaign?.status === 'paused';
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'contacts', label: 'Contatos', icon: <Users className="w-4 h-4" /> },
-    { key: 'serper', label: 'Buscar Leads', icon: <Search className="w-4 h-4" /> },
-    { key: 'instances', label: 'Instâncias', icon: <Smartphone className="w-4 h-4" /> },
-    { key: 'settings', label: 'Configurações', icon: <Settings className="w-4 h-4" /> },
+    {
+      key: 'serper',
+      label: 'Buscar Leads',
+      icon: <Search className="w-4 h-4" />,
+    },
+    {
+      key: 'instances',
+      label: 'Instâncias',
+      icon: <Smartphone className="w-4 h-4" />,
+    },
+    {
+      key: 'settings',
+      label: 'Configurações',
+      icon: <Settings className="w-4 h-4" />,
+    },
     { key: 'dispatch', label: 'Disparo', icon: <Zap className="w-4 h-4" /> },
   ];
 
@@ -365,7 +435,10 @@ export default function CampaignEditor() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <button onClick={() => navigate('/whatsapp/campaigns')} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition">
+          <button
+            onClick={() => navigate('/whatsapp/campaigns')}
+            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition"
+          >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
@@ -404,7 +477,6 @@ export default function CampaignEditor() {
 
         {/* Tab Content */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-
           {/* ═══ CONTACTS TAB ═══ */}
           {tab === 'contacts' && (
             <div>
@@ -414,7 +486,13 @@ export default function CampaignEditor() {
                   <label className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg cursor-pointer transition text-sm">
                     <UploadCloud className="w-4 h-4" />
                     {importingCsv ? 'Importando...' : 'CSV'}
-                    <input type="file" accept=".csv" className="hidden" onChange={handleCsvImport} disabled={importingCsv} />
+                    <input
+                      type="file"
+                      accept=".csv"
+                      className="hidden"
+                      onChange={handleCsvImport}
+                      disabled={importingCsv}
+                    />
                   </label>
                   {isEditable && (
                     <button
@@ -455,10 +533,16 @@ export default function CampaignEditor() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={handleAddContact} className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm transition">
+                    <button
+                      onClick={handleAddContact}
+                      className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm transition"
+                    >
                       Salvar
                     </button>
-                    <button onClick={() => setShowAddContact(false)} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition">
+                    <button
+                      onClick={() => setShowAddContact(false)}
+                      className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition"
+                    >
                       Cancelar
                     </button>
                   </div>
@@ -467,38 +551,57 @@ export default function CampaignEditor() {
 
               {/* CSV Format Hint */}
               <p className="text-xs text-gray-500 mb-3">
-                Formato CSV: <code className="text-gray-400">telefone,nome,empresa</code> (cabeçalho na primeira linha)
+                Formato CSV:{' '}
+                <code className="text-gray-400">telefone,nome,empresa</code>{' '}
+                (cabeçalho na primeira linha)
               </p>
 
               {/* Contact List */}
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
                 {contacts.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">Nenhum contato adicionado</p>
-                ) : contacts.map((c) => (
-                  <div key={c.id} className="flex items-center gap-3 bg-gray-800 rounded-lg px-4 py-3 border border-gray-700">
-                    <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold shrink-0">
-                      {c.name?.[0] || c.phone?.slice(-2)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm truncate">{c.name || 'Sem nome'}</span>
-                        <StatusBadge status={c.status} />
+                  <p className="text-center text-gray-500 py-8">
+                    Nenhum contato adicionado
+                  </p>
+                ) : (
+                  contacts.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center gap-3 bg-gray-800 rounded-lg px-4 py-3 border border-gray-700"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold shrink-0">
+                        {c.name?.[0] || c.phone?.slice(-2)}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
-                        <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{c.phone}</span>
-                        {c.company && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{c.company}</span>}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm truncate">
+                            {c.name || 'Sem nome'}
+                          </span>
+                          <StatusBadge status={c.status} />
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {c.phone}
+                          </span>
+                          {c.company && (
+                            <span className="flex items-center gap-1">
+                              <Building2 className="w-3 h-3" />
+                              {c.company}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {isEditable && (
+                        <button
+                          onClick={() => handleDeleteContact(c.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400 transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
-                    {isEditable && (
-                      <button
-                        onClick={() => handleDeleteContact(c.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400 transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -512,7 +615,7 @@ export default function CampaignEditor() {
                   type="text"
                   value={serperQuery}
                   onChange={(e) => setSerperQuery(e.target.value)}
-                  placeholder='Ex: imobiliárias em Curitiba, construtoras no Paraná'
+                  placeholder="Ex: imobiliárias em Curitiba, construtoras no Paraná"
                   className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-green-500"
                   onKeyDown={(e) => e.key === 'Enter' && handleSerperSearch()}
                 />
@@ -521,7 +624,11 @@ export default function CampaignEditor() {
                   disabled={serperLoading}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg transition text-sm shrink-0"
                 >
-                  {serperLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  {serperLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
                   Buscar
                 </button>
               </div>
@@ -530,7 +637,8 @@ export default function CampaignEditor() {
                 <>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-gray-400">
-                      {serperResults.length} resultados · {selectedSerper.size} selecionados
+                      {serperResults.length} resultados · {selectedSerper.size}{' '}
+                      selecionados
                     </p>
                     <button
                       onClick={handleImportSerper}
@@ -563,15 +671,26 @@ export default function CampaignEditor() {
                           readOnly
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{r.name}</div>
+                          <div className="font-medium text-sm truncate">
+                            {r.name}
+                          </div>
                           <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
-                            {r.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{r.phone}</span>}
-                            {r.address && <span className="truncate">{r.address}</span>}
+                            {r.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {r.phone}
+                              </span>
+                            )}
+                            {r.address && (
+                              <span className="truncate">{r.address}</span>
+                            )}
                             {r.rating ? <span>⭐ {r.rating}</span> : null}
                           </div>
                         </div>
                         {!r.phone && (
-                          <span className="text-xs text-gray-500 shrink-0">Sem telefone</span>
+                          <span className="text-xs text-gray-500 shrink-0">
+                            Sem telefone
+                          </span>
                         )}
                       </div>
                     ))}
@@ -584,35 +703,55 @@ export default function CampaignEditor() {
           {/* ═══ INSTANCES TAB ═══ */}
           {tab === 'instances' && (
             <div>
-              <h2 className="font-semibold mb-4">Instâncias WhatsApp Atribuídas</h2>
+              <h2 className="font-semibold mb-4">
+                Instâncias WhatsApp Atribuídas
+              </h2>
               <p className="text-sm text-gray-400 mb-4">
-                Selecione as instâncias que participarão do disparo. O sistema fará rotação entre elas automaticamente.
+                Selecione as instâncias que participarão do disparo. O sistema
+                fará rotação entre elas automaticamente.
               </p>
 
               {/* Assigned */}
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-300 mb-2">Atribuídas ({assignedInstances.length})</h3>
+                <h3 className="text-sm font-medium text-gray-300 mb-2">
+                  Atribuídas ({assignedInstances.length})
+                </h3>
                 {assignedInstances.length === 0 ? (
-                  <p className="text-sm text-gray-500">Nenhuma instância atribuída</p>
+                  <p className="text-sm text-gray-500">
+                    Nenhuma instância atribuída
+                  </p>
                 ) : (
                   <div className="space-y-2">
                     {assignedInstances.map((inst: any) => {
                       const wi = inst.whatsapp_instances;
                       return (
-                        <div key={inst.id} className="flex items-center gap-3 bg-gray-800 rounded-lg px-4 py-3 border border-gray-700">
+                        <div
+                          key={inst.id}
+                          className="flex items-center gap-3 bg-gray-800 rounded-lg px-4 py-3 border border-gray-700"
+                        >
                           <Smartphone className="w-5 h-5 text-gray-400" />
                           <div className="flex-1">
-                            <span className="font-medium text-sm">{wi?.name || inst.instance_id}</span>
-                            <span className="text-xs text-gray-400 ml-2">{wi?.phone}</span>
+                            <span className="font-medium text-sm">
+                              {wi?.name || inst.instance_id}
+                            </span>
+                            <span className="text-xs text-gray-400 ml-2">
+                              {wi?.phone}
+                            </span>
                           </div>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            wi?.status === 'connected' ? 'bg-green-900/30 text-green-400' : 'bg-gray-700 text-gray-400'
-                          }`}>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              wi?.status === 'connected'
+                                ? 'bg-green-900/30 text-green-400'
+                                : 'bg-gray-700 text-gray-400'
+                            }`}
+                          >
                             {wi?.status || 'desconhecido'}
                           </span>
                           {isEditable && (
                             <button
-                              onClick={() => handleRemoveInstance(inst.instance_id)}
+                              onClick={() =>
+                                handleRemoveInstance(inst.instance_id)
+                              }
                               className="p-1.5 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400 transition"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -627,16 +766,26 @@ export default function CampaignEditor() {
 
               {/* Available */}
               <div>
-                <h3 className="text-sm font-medium text-gray-300 mb-2">Disponíveis</h3>
+                <h3 className="text-sm font-medium text-gray-300 mb-2">
+                  Disponíveis
+                </h3>
                 <div className="space-y-2">
                   {availableInstances
-                    .filter((wi) => !assignedInstances.some((a) => a.instance_id === wi.id))
+                    .filter(
+                      (wi) =>
+                        !assignedInstances.some((a) => a.instance_id === wi.id)
+                    )
                     .map((wi) => (
-                      <div key={wi.id} className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-4 py-3 border border-gray-800">
+                      <div
+                        key={wi.id}
+                        className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-4 py-3 border border-gray-800"
+                      >
                         <Smartphone className="w-5 h-5 text-gray-500" />
                         <div className="flex-1">
                           <span className="font-medium text-sm">{wi.name}</span>
-                          <span className="text-xs text-gray-400 ml-2">{wi.phone}</span>
+                          <span className="text-xs text-gray-400 ml-2">
+                            {wi.phone}
+                          </span>
                         </div>
                         {isEditable && (
                           <button
@@ -664,54 +813,87 @@ export default function CampaignEditor() {
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-gray-300">Básico</h3>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Nome</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Nome
+                    </label>
                     <input
                       type="text"
                       value={editForm.name}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Descrição</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Descrição
+                    </label>
                     <input
                       type="text"
                       value={editForm.description}
-                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          description: e.target.value,
+                        })
+                      }
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Mensagem (template)</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Mensagem (template)
+                    </label>
                     <textarea
                       value={editForm.message_template}
-                      onChange={(e) => setEditForm({ ...editForm, message_template: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          message_template: e.target.value,
+                        })
+                      }
                       rows={4}
                       placeholder="Olá {{nome}}, tudo bem? ..."
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500 resize-none"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Use {'{{nome}}'}, {'{{empresa}}'} para variáveis</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Use {'{{nome}}'}, {'{{empresa}}'} para variáveis
+                    </p>
                   </div>
                 </div>
 
                 {/* AI */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-gray-300">IA (geração de mensagens)</h3>
+                  <h3 className="text-sm font-medium text-gray-300">
+                    IA (geração de mensagens)
+                  </h3>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Prompt da IA</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Prompt da IA
+                    </label>
                     <textarea
                       value={editForm.ai_prompt}
-                      onChange={(e) => setEditForm({ ...editForm, ai_prompt: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, ai_prompt: e.target.value })
+                      }
                       rows={4}
                       placeholder="Gere uma mensagem personalizada para um lead de imobiliária..."
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500 resize-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Provider IA</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Provider IA
+                    </label>
                     <select
                       value={editForm.ai_provider}
-                      onChange={(e) => setEditForm({ ...editForm, ai_provider: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          ai_provider: e.target.value,
+                        })
+                      }
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
                     >
                       <option value="gemini">Gemini</option>
@@ -727,43 +909,73 @@ export default function CampaignEditor() {
                     <Shield className="w-4 h-4" /> Anti-Ban
                   </h3>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Modo de distribuição</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Modo de distribuição
+                    </label>
                     <select
                       value={editForm.dispatch_mode}
-                      onChange={(e) => setEditForm({ ...editForm, dispatch_mode: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          dispatch_mode: e.target.value,
+                        })
+                      }
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
                     >
-                      <option value="round_robin">Round Robin (alternado)</option>
+                      <option value="round_robin">
+                        Round Robin (alternado)
+                      </option>
                       <option value="random">Aleatório</option>
                       <option value="sequential">Sequencial</option>
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Delay mínimo (s)</label>
+                      <label className="block text-xs text-gray-400 mb-1">
+                        Delay mínimo (s)
+                      </label>
                       <input
                         type="number"
                         value={editForm.min_delay_seconds}
-                        onChange={(e) => setEditForm({ ...editForm, min_delay_seconds: Number(e.target.value) })}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            min_delay_seconds: Number(e.target.value),
+                          })
+                        }
                         className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Delay máximo (s)</label>
+                      <label className="block text-xs text-gray-400 mb-1">
+                        Delay máximo (s)
+                      </label>
                       <input
                         type="number"
                         value={editForm.max_delay_seconds}
-                        onChange={(e) => setEditForm({ ...editForm, max_delay_seconds: Number(e.target.value) })}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            max_delay_seconds: Number(e.target.value),
+                          })
+                        }
                         className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Limite diário por instância</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Limite diário por instância
+                    </label>
                     <input
                       type="number"
                       value={editForm.daily_limit_per_instance}
-                      onChange={(e) => setEditForm({ ...editForm, daily_limit_per_instance: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          daily_limit_per_instance: Number(e.target.value),
+                        })
+                      }
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
                     />
                   </div>
@@ -776,30 +988,45 @@ export default function CampaignEditor() {
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Início (hora)</label>
+                      <label className="block text-xs text-gray-400 mb-1">
+                        Início (hora)
+                      </label>
                       <input
                         type="number"
                         min={0}
                         max={23}
                         value={editForm.working_hours_start}
-                        onChange={(e) => setEditForm({ ...editForm, working_hours_start: Number(e.target.value) })}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            working_hours_start: Number(e.target.value),
+                          })
+                        }
                         className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Fim (hora)</label>
+                      <label className="block text-xs text-gray-400 mb-1">
+                        Fim (hora)
+                      </label>
                       <input
                         type="number"
                         min={0}
                         max={23}
                         value={editForm.working_hours_end}
-                        onChange={(e) => setEditForm({ ...editForm, working_hours_end: Number(e.target.value) })}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            working_hours_end: Number(e.target.value),
+                          })
+                        }
                         className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
                       />
                     </div>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Envios só acontecem neste intervalo. Fora dele, o disparo entra em pausa automática.
+                    Envios só acontecem neste intervalo. Fora dele, o disparo
+                    entra em pausa automática.
                   </p>
                 </div>
               </div>
@@ -810,7 +1037,11 @@ export default function CampaignEditor() {
                   disabled={saving || !isEditable}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 px-5 py-2.5 rounded-lg transition text-sm"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
                   Salvar configurações
                 </button>
               </div>
@@ -832,7 +1063,10 @@ function StatusBadge({ status }: { status: string }) {
     pending: { label: 'Pendente', cls: 'bg-gray-700 text-gray-300' },
     sent: { label: 'Enviado', cls: 'bg-green-900/40 text-green-400' },
     failed: { label: 'Falhou', cls: 'bg-red-900/40 text-red-400' },
-    blacklisted: { label: 'Blacklist', cls: 'bg-yellow-900/40 text-yellow-400' },
+    blacklisted: {
+      label: 'Blacklist',
+      cls: 'bg-yellow-900/40 text-yellow-400',
+    },
   };
   const c = config[status] || config.pending;
   return (

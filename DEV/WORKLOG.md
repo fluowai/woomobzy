@@ -3,6 +3,7 @@
 ## [2026-07-25] Fase 1: Financial Hub + Clube Imobzy
 
 ### Contexto
+
 Após análise competitiva das plataformas CV CRM, MSYS Imob e Loft, identificamos os principais gaps do Imobzy. A Fase 1 implementa os dois gaps de maior impacto imediato.
 
 ---
@@ -10,14 +11,18 @@ Após análise competitiva das plataformas CV CRM, MSYS Imob e Loft, identificam
 ### Arquivos Criados
 
 #### `views/urban/FinancialHub.tsx`
+
 Módulo de serviços financeiros integrados ao CRM com duas abas:
+
 - **Crédito Imobiliário**: simulador com tabelas SAC e PRICE, seleção de 5 bancos (taxas indicativas), integração com `urban_financing_simulations`, export PDF e salvar no CRM.
 - **Fiança Aluguel Digital**: fluxo em 2 passos para solicitar garantia locatícia, análise de comprometimento de renda (mín. 3x o encargo), listagem de solicitações por status, preparado para integração futura com CredPago, Porto Seguro e Tokio Marine.
 
 Rota: `/urban/fintech`
 
 #### `views/urban/ClubeImobzy.tsx`
+
 Sistema de gamificação completo com 4 abas:
+
 - **Meu Perfil**: hero card com nível (Bronze/Prata/Ouro/Diamante/Titânio), progress bar, stats e tabela de como ganhar pontos.
 - **Ranking**: leaderboard da organização ordenado por pontos.
 - **Resgatar**: catálogo de recompensas (Destaque no Portal, Curso Online, Voucher, Troféu) com lógica de resgate e deduação de pontos.
@@ -26,7 +31,9 @@ Sistema de gamificação completo com 4 abas:
 Rota: `/urban/clube`
 
 #### `migrations/20260725_gamification_and_fintech.sql`
+
 Migration criando as tabelas:
+
 - `gamification_profiles` — perfil de pontos por user+org com UNIQUE constraint
 - `gamification_transactions` — log de pontos ganhos/gastos
 - `gamification_redemptions` — registro de resgates
@@ -40,22 +47,26 @@ Migration criando as tabelas:
 ### Arquivos Modificados
 
 #### `App.tsx`
+
 - Lazy imports adicionados: `FinancialHub` e `ClubeImobzy`
 - Rotas adicionadas no Urban Panel: `/urban/fintech` e `/urban/clube`
 
 #### `components/UrbanLayout.tsx`
+
 - Imports de ícones adicionados: `Landmark` e `Trophy`
 - Itens adicionados em `managementItems`: Financial Hub e Clube Imobzy
 
 ---
 
 ### Verificação
+
 - Type-check executado: **zero erros nos arquivos novos**. Os erros existentes são todos pré-existentes em outros arquivos do projeto (DomainRouter, AuthContext, SettingsContext, etc.).
 - **Próximo passo obrigatório**: Executar a migration `20260725_gamification_and_fintech.sql` no Supabase via Dashboard > SQL Editor.
 
 ---
 
 ### Próximas Fases (Planejamento)
+
 - **Fase 2**: Empacotar PWA com Capacitor para App Store / Google Play
 - **Fase 3**: Auditoria corporativa estrita (logs imutáveis) + módulo de Repasse de Financiamento de lançamentos
 
@@ -64,14 +75,17 @@ Migration criando as tabelas:
 ## [2026-07-26] Instagram Integration Module
 
 ### Contexto
+
 Implementação completa do módulo de integração Instagram para o Imobzy, seguindo a arquitetura two-service (Node.js + Python worker) conforme especificação do maestro.
 
 ### Arquivos Criados
 
 #### DB Migration
+
 - `migrations/20260726_instagram_integration_module.sql` — 9 tabelas: `instagram_accounts`, `instagram_sessions`, `instagram_contacts`, `instagram_conversations`, `instagram_messages`, `instagram_templates`, `instagram_templates_variables`, `instagram_broadcast_groups`, `instagram_broadcast_recipients`. Todas com RLS por `company_id`, triggers `updated_at`, e índices de performance.
 
 #### Node.js Service (`instagram-service/`)
+
 - `package.json` — Dependências: Express, BullMQ, WebSocket, Supabase, Helmet, CORS
 - `src/index.js` — Express server na porta 3200 com WebSocket para real-time, rotas `/api/instagram/*`
 - `src/middleware/auth.js` — JWT auth via Supabase + company isolation via `x-company-id`
@@ -87,6 +101,7 @@ Implementação completa do módulo de integração Instagram para o Imobzy, seg
 - `src/routes/webhooks.js` — Webhooks para receber mensagens/status do worker Python
 
 #### Python Worker (`instagram-worker/`)
+
 - `requirements.txt` — instagrapi, fastapi, uvicorn, bullmq, redis, httpx
 - `app/__init__.py`
 - `app/config.py` — Configuração via env vars
@@ -96,20 +111,24 @@ Implementação completa do módulo de integração Instagram para o Imobzy, seg
 - `app/main.py` — FastAPI server na porta 8000 com endpoints internos
 
 #### Docker
+
 - `Dockerfile.instagram-service` — Node.js 20 Alpine
 - `Dockerfile.instagram-worker` — Python 3.12 slim
 - `docker-compose.yml` — Adicionados services `instagram-service`, `instagram-worker`, `redis` + volumes
 - `docker-compose.local.yml` — Adicionados services locais com healthchecks
 
 #### Frontend
+
 - `views/Instagram/InstagramDashboard.tsx` — Dashboard completo com inbox, contacts, templates, broadcasts, settings
 - `views/Instagram/hooks/api.ts` — API client tipado para todas as rotas
 - `views/Instagram/hooks/useWebSocket.ts` — Hook WebSocket para real-time
 
 ### Arquivos Modificados
+
 - `App.tsx` — Lazy import `InstagramDashboard` + rotas `/instagram` no rural e urban panels
 
 ### Verificação
+
 - Migration SQL válido (9 tabelas + RLS + triggers + indexes)
 - Node.js service com 7 route files seguindo padrões existentes
 - Python worker com FastAPI + BullMQ processing
@@ -117,6 +136,7 @@ Implementação completa do módulo de integração Instagram para o Imobzy, seg
 - Frontend com TypeScript types completos
 
 ### Próximos Passos
+
 1. Executar migration `20260726_instagram_integration_module.sql` no Supabase SQL Editor
 2. Subir serviços via `docker-compose up instagram-service instagram-worker redis`
 3. Testar login QR code via `/api/instagram/accounts/connect`
@@ -128,12 +148,15 @@ Implementação completa do módulo de integração Instagram para o Imobzy, seg
 ## [2026-07-26] Unified Inbox: Instagram + WhatsApp
 
 ### Contexto
+
 Mesclar as conversas do Instagram no mesmo aba de mensagens do WhatsApp, diferenciadas por badge de plataforma. Antes, o Instagram tinha uma rota separada (`/instagram`), agora é integrado ao inbox principal.
 
 ### Arquivos Criados
 
 #### `views/WhatsApp/hooks/unifiedInbox.ts`
+
 Tipos e adaptadores unificados:
+
 - `UnifiedChat` — estende `Chat` com `platform: 'whatsapp' | 'instagram'` + campos Instagram opcionais
 - `UnifiedMessage` — estende `Message` com `platform` + `instagram_conversation_id`
 - `whatsappChatToUnified()` — converte WhatsApp Chat para UnifiedChat
@@ -144,6 +167,7 @@ Tipos e adaptadores unificados:
 ### Arquivos Modificados
 
 #### `views/WhatsApp/WhatsAppDashboard.tsx`
+
 - Importa `instagramApi` e adaptadores unificados
 - Estados `chats`, `selectedChat`, `messages` agora usam tipos `Unified*`
 - `loadChats()` mescla WhatsApp chats + Instagram conversations com `sortUnifiedChats()`
@@ -155,6 +179,7 @@ Tipos e adaptadores unificados:
 - Busca (`filteredChats`) inclui campos Instagram (`instagram_contact_username`, `instagram_contact_full_name`)
 
 #### `views/WhatsApp/ChatSidebar.tsx`
+
 - Importa `UnifiedChat`
 - Props usam `UnifiedChat` em vez de `Chat`
 - Nova aba de filtro de plataforma: Todos / WhatsApp / Instagram
@@ -163,6 +188,7 @@ Tipos e adaptadores unificados:
 - Preview de conversa Instagram mostra `@username`
 
 #### `views/WhatsApp/ChatWindow.tsx`
+
 - Props usam `UnifiedChat`/`UnifiedMessage`
 - Header mostra badge de plataforma (WhatsApp/Instagram com ícone SVG)
 - Subtitle mostra `@username` ou `via @account_username` para Instagram
@@ -171,6 +197,7 @@ Tipos e adaptadores unificados:
 - `saveContactName()` funciona para ambas plataformas
 
 #### `views/WhatsApp/whatsapp.css`
+
 - `.wa-platform-tabs` — aba de filtro com 3 colunas
 - `.wa-platform-tab` — botões de filtro com hover/active states
 - `.wa-platform-badge` — badge no header do chat (WhatsApp verde, Instagram gradiente)
@@ -179,11 +206,65 @@ Tipos e adaptadores unificados:
 - `.wa-platform-text-whatsapp` / `.wa-platform-text-instagram` — cores de texto
 
 ### Verificação
+
 - `type-check` passou: 0 erros novos (2 pré-existentes em SupportManager e PortalProprietarioUrbano)
 - `lint` nos arquivos modificados: 0 erros, warnings pré-existentes de React Hooks deps
 - Commit: `c941adf` pushado para `origin/codex/main-whatsapp-media-hotfix`
 
 ### Próximos Passos
+
 1. Testar fluxo completo: inbox mostra WhatsApp + Instagram, filtro funciona, envio funciona
 2. Considerar remover rota `/instagram` separada (ou manter como atalho)
 3. WebSocket real-time para Instagram (polling por enquanto)
+
+---
+
+## [2026-07-28] Fix Backend Errors: 5 Rotas com Erro
+
+### Contexto
+
+Cinco endpoints estavam falhando no console:
+1. `match_properties_to_lead` RPC 404 — função não existia no banco
+2. `/api/crm/clients` POST 500 — tabela `clients` não existia
+3. `/api/orulo/sync` 400 — credenciais vazias retornavam sem erro
+4. `/api/ai/chat` 500 — sem chaves de API Gemini/Groq, mensagem genérica
+5. `/api/storage/upload` 500 — MinIO inacessível + fallback Supabase falhava sem feedback
+
+### Arquivos Criados
+
+#### `migrations/20260728_fix_backend_errors.sql`
+
+- Função RPC `match_properties_to_lead(p_lead_id, ...)` — faz matching de imóveis ao lead por tipo, preço, quartos e área com score de 0-100
+- Tabela `clients` com colunas alinhadas ao route handler (`document_number`, `document_type`, `roles`, `address_*`), RLS por `organization_id`, trigger `updated_at`
+- Grants para `authenticated`
+
+### Arquivos Modificados
+
+#### `server/api/crm/clients/index.js`
+
+- GET e POST: detectam tabela ausente (`42P01`/`PGRST205`) e retornam `migration_required: true` em vez de 500 genérico
+
+#### `server/api/orulo/index.js`
+
+- `getMasterOruloCredentials()`: valida `clientId` e `clientSecret` antes de retornar — lança 400 com mensagem clara quando as variáveis `ORULO_CLIENT_ID`/`ORULO_CLIENT_SECRET` não estão configuradas
+
+#### `server/api/ai/chat.routes.js`
+
+- `/chat`: status code 503 (Service Unavailable) em vez de 500 quando não há provedores IA
+- Mensagem de erro descreve quais chaves estão faltando
+- Resposta inclui `details` com status de cada provedor
+
+#### `server/api/storage/index.js`
+
+- `uploadToConfiguredStorage()`: catch no MinIO com fallback automático para Supabase quando `ALLOW_SUPABASE_STORAGE_FALLBACK=true`
+- Handler de rota `/upload`: detecta erros de storage (MinIO/fetch failed) e retorna 503 com hint de configuração
+
+### Verificação
+
+- `type-check`: 0 erros novos (2 pré-existentes em WhatsApp module)
+
+### Próximos Passos
+
+1. Executar migration `20260728_fix_backend_errors.sql` no Supabase SQL Editor
+2. Configurar chaves de IA (`GEMINI_API_KEY` ou `GROQ_API_KEY`) no `.env` do servidor
+3. Configurar MinIO ou definir `MEDIA_STORAGE_PROVIDER=supabase` no `.env`

@@ -127,7 +127,7 @@ const RuralLayout: React.FC = () => {
 
   if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
     const isMegaAdmin = !profile?.organization?.is_reseller;
-    return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
+    return <Navigate to={isMegaAdmin ? '/megaadmin' : '/superadmin'} replace />;
   }
 
   const isMenuItemActive = (path: string, isActive: boolean) => {
@@ -143,7 +143,10 @@ const RuralLayout: React.FC = () => {
   const isWorkspaceRoute =
     pathname.startsWith('/rural/whatsapp') ||
     pathname.startsWith('/rural/email');
-  const isLandingPageEditor = pathname.includes('/landing-pages/') && pathname.split('/').length > 3;
+  const isLandingPageEditor =
+    (pathname.includes('/landing-pages/') ||
+      pathname.includes('/site/pages/')) &&
+    pathname.split('/').length > 3;
 
   const renderMenuItem = (item: MenuItem) => (
     <NavLink
@@ -304,7 +307,11 @@ const RuralLayout: React.FC = () => {
         </button>
         <div
           className={`flex-1 overflow-y-auto ${
-            isLandingPageEditor ? 'p-0' : isWorkspaceRoute ? 'p-2 sm:p-3 md:p-4' : 'p-3 sm:p-4 md:p-6'
+            isLandingPageEditor
+              ? 'p-0'
+              : isWorkspaceRoute
+                ? 'p-2 sm:p-3 md:p-4'
+                : 'p-3 sm:p-4 md:p-6'
           }`}
         >
           <div

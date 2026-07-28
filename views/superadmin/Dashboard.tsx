@@ -2,7 +2,14 @@ import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Users, Building2, Activity, TreePine, Building, DollarSign } from 'lucide-react';
+import {
+  Users,
+  Building2,
+  Activity,
+  TreePine,
+  Building,
+  DollarSign,
+} from 'lucide-react';
 
 const SuperAdminDashboard: React.FC = () => {
   logger.info('📊 [SuperAdminDashboard] Rendering...');
@@ -40,16 +47,27 @@ const SuperAdminDashboard: React.FC = () => {
         { count: rural },
       ] = await Promise.all([
         baseFilter(
-          supabase.from('organizations').select('*', { count: 'exact', head: true })
+          supabase
+            .from('organizations')
+            .select('*', { count: 'exact', head: true })
         ),
         baseFilter(
-          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('status', 'active')
+          supabase
+            .from('organizations')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'active')
         ),
         baseFilter(
-          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('niche', 'traditional')
+          supabase
+            .from('organizations')
+            .select('*', { count: 'exact', head: true })
+            .eq('niche', 'traditional')
         ),
         baseFilter(
-          supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('niche', 'rural')
+          supabase
+            .from('organizations')
+            .select('*', { count: 'exact', head: true })
+            .eq('niche', 'rural')
         ),
       ]);
 
@@ -70,8 +88,10 @@ const SuperAdminDashboard: React.FC = () => {
       let mrr = 0;
       if (orgsData && plansData) {
         const prices: Record<string, number> = {};
-        plansData.forEach(p => { prices[p.id] = p.price_monthly || 0; });
-        orgsData.forEach(org => {
+        plansData.forEach((p) => {
+          prices[p.id] = p.price_monthly || 0;
+        });
+        orgsData.forEach((org) => {
           if (org.plan_id && prices[org.plan_id]) {
             mrr += prices[org.plan_id];
           }
@@ -120,10 +140,13 @@ const SuperAdminDashboard: React.FC = () => {
     },
     {
       title: 'MRR Total',
-      value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.mrr),
+      value: new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(stats.mrr),
       icon: DollarSign,
       color: 'bg-amber-500',
-    }
+    },
   ];
 
   if (loading) return <div>Carregando dashboard...</div>;

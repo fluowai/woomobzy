@@ -128,9 +128,9 @@ const BillingManager: React.FC = () => {
               0
             );
             const fallbackPrices: Record<string, number> = {
-              'essencial': 97,
-              'profissional': 197,
-              'enterprise': 397,
+              essencial: 97,
+              profissional: 197,
+              enterprise: 397,
             };
             const price =
               planTenants[0]?.plans?.price_monthly ||

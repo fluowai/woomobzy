@@ -5,21 +5,50 @@ export const AdminTicketsBoard = ({ initialTickets = [] }) => {
   const [tickets, setTickets] = useState(initialTickets);
   const [filter, setFilter] = useState('open');
 
-  const filteredTickets = tickets.filter(t => t.status === filter || filter === 'all');
+  const filteredTickets = tickets.filter(
+    (t) => t.status === filter || filter === 'all'
+  );
 
   return (
     <div style={{ padding: '20px' }}>
       <h2>Painel de Assistência Técnica (Pós-Obra)</h2>
-      
+
       <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-        <button onClick={() => setFilter('all')} style={btnStyle(filter === 'all')}>Todos</button>
-        <button onClick={() => setFilter('open')} style={btnStyle(filter === 'open')}>Abertos</button>
-        <button onClick={() => setFilter('inspection')} style={btnStyle(filter === 'inspection')}>Vistoria Agendada</button>
-        <button onClick={() => setFilter('repairing')} style={btnStyle(filter === 'repairing')}>Em Reparo</button>
-        <button onClick={() => setFilter('done')} style={btnStyle(filter === 'done')}>Concluídos</button>
+        <button
+          onClick={() => setFilter('all')}
+          style={btnStyle(filter === 'all')}
+        >
+          Todos
+        </button>
+        <button
+          onClick={() => setFilter('open')}
+          style={btnStyle(filter === 'open')}
+        >
+          Abertos
+        </button>
+        <button
+          onClick={() => setFilter('inspection')}
+          style={btnStyle(filter === 'inspection')}
+        >
+          Vistoria Agendada
+        </button>
+        <button
+          onClick={() => setFilter('repairing')}
+          style={btnStyle(filter === 'repairing')}
+        >
+          Em Reparo
+        </button>
+        <button
+          onClick={() => setFilter('done')}
+          style={btnStyle(filter === 'done')}
+        >
+          Concluídos
+        </button>
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <table
+        style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}
+      >
         <thead>
           <tr style={{ borderBottom: '2px solid #ddd' }}>
             <th style={{ padding: '12px' }}>ID</th>
@@ -32,24 +61,38 @@ export const AdminTicketsBoard = ({ initialTickets = [] }) => {
           </tr>
         </thead>
         <tbody>
-          {filteredTickets.map(ticket => (
+          {filteredTickets.map((ticket) => (
             <tr key={ticket.id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '12px' }}>#{ticket.id.substring(0,6)}</td>
+              <td style={{ padding: '12px' }}>#{ticket.id.substring(0, 6)}</td>
               <td style={{ padding: '12px' }}>{ticket.subject}</td>
               <td style={{ padding: '12px' }}>{ticket.client_name}</td>
               <td style={{ padding: '12px' }}>{ticket.unit_label}</td>
               <td style={{ padding: '12px' }}>
-                <span style={{ 
-                  color: ticket.priority === 'high' ? 'red' : ticket.priority === 'medium' ? 'orange' : 'green' 
-                }}>
+                <span
+                  style={{
+                    color:
+                      ticket.priority === 'high'
+                        ? 'red'
+                        : ticket.priority === 'medium'
+                          ? 'orange'
+                          : 'green',
+                  }}
+                >
                   {ticket.priority.toUpperCase()}
                 </span>
               </td>
               <td style={{ padding: '12px' }}>{ticket.status}</td>
               <td style={{ padding: '12px' }}>
-                <button 
+                <button
                   onClick={() => toast.info('Visualização de ticket em breve')}
-                  style={{ padding: '6px 12px', background: '#2196f3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#2196f3',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                  }}
                 >
                   Visualizar
                 </button>
@@ -58,7 +101,10 @@ export const AdminTicketsBoard = ({ initialTickets = [] }) => {
           ))}
           {filteredTickets.length === 0 && (
             <tr>
-              <td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+              <td
+                colSpan={7}
+                style={{ padding: '20px', textAlign: 'center', color: '#999' }}
+              >
                 Nenhum chamado encontrado.
               </td>
             </tr>
@@ -75,5 +121,5 @@ const btnStyle = (isActive) => ({
   color: isActive ? '#fff' : '#333',
   border: 'none',
   borderRadius: '4px',
-  cursor: 'pointer'
+  cursor: 'pointer',
 });

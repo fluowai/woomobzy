@@ -241,12 +241,12 @@ const tenantConfigCache = new Map();
 
 app.use(async (req, res, next) => {
   const tenantDomain = req.headers['x-tenant-domain'] || req.hostname;
-  
+
   // Se for o domínio master, ou rotas internas, não precisa de BYOB
   if (
-    !tenantDomain || 
-    tenantDomain.includes('localhost') || 
-    tenantDomain.includes('imobzy.com.br') || 
+    !tenantDomain ||
+    tenantDomain.includes('localhost') ||
+    tenantDomain.includes('imobzy.com.br') ||
     tenantDomain.includes('vercel.app')
   ) {
     return next();
@@ -264,14 +264,14 @@ app.use(async (req, res, next) => {
         .select('supabase_url, supabase_anon_key')
         .eq('domain', tenantDomain)
         .single();
-        
+
       if (!error && data && data.supabase_url && data.supabase_anon_key) {
-        // Criamos um client para o tenant (aqui deveríamos usar a service_role para o backend, 
-        // mas para fins de discovery seguro, a anon_key foi exposta. O ideal é que a master db 
-        // retorne a service_role key em uma RPC protegida, mas como o plano é BYOB, 
+        // Criamos um client para o tenant (aqui deveríamos usar a service_role para o backend,
+        // mas para fins de discovery seguro, a anon_key foi exposta. O ideal é que a master db
+        // retorne a service_role key em uma RPC protegida, mas como o plano é BYOB,
         // vamos inicializar com o que temos ou fazer um fallback. Se não tivermos a service_role_key,
-        // muitas APIs admin falharão. Na tabela criamos a supabase_service_role_key. 
-        // A VIEW public_tenant_discovery NÃO TEM a service_role_key. 
+        // muitas APIs admin falharão. Na tabela criamos a supabase_service_role_key.
+        // A VIEW public_tenant_discovery NÃO TEM a service_role_key.
         // Vamos buscar a tabela usando admin/service_role direto!
         const { data: adminData } = await masterClient
           .from('reseller_infrastructure')
@@ -279,9 +279,12 @@ app.use(async (req, res, next) => {
           .eq('domain', tenantDomain)
           .eq('is_active', true)
           .single();
-          
+
         if (adminData && adminData.supabase_service_role_key) {
-          tenantClient = createClient(adminData.supabase_url, adminData.supabase_service_role_key);
+          tenantClient = createClient(
+            adminData.supabase_url,
+            adminData.supabase_service_role_key
+          );
           tenantConfigCache.set(tenantDomain, tenantClient);
           console.log(`🔌 BYOB: Server client resolved for ${tenantDomain}`);
         }
@@ -337,9 +340,24 @@ app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
 app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
 app.use('/api/mega', megaAdminRoutes);
 app.use('/api/public/zap', zapRoutes);
-app.use('/api/campaigns/serper', verifyAuth, requireTenant, campaignSerperRoutes);
-app.use('/api/campaigns/blacklist', verifyAuth, requireTenant, campaignBlacklistRoutes);
-app.use('/api/campaigns/:campaignId/contacts', verifyAuth, requireTenant, campaignContactsRoutes);
+app.use(
+  '/api/campaigns/serper',
+  verifyAuth,
+  requireTenant,
+  campaignSerperRoutes
+);
+app.use(
+  '/api/campaigns/blacklist',
+  verifyAuth,
+  requireTenant,
+  campaignBlacklistRoutes
+);
+app.use(
+  '/api/campaigns/:campaignId/contacts',
+  verifyAuth,
+  requireTenant,
+  campaignContactsRoutes
+);
 app.use('/api/campaigns', verifyAuth, requireTenant, campaignRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 // app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo

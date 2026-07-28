@@ -381,13 +381,19 @@ const TenantManager: React.FC = () => {
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={8}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Carregando...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={8}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Nenhuma empresa encontrada.
                   </td>
                 </tr>
@@ -532,10 +538,15 @@ const TenantManager: React.FC = () => {
           {loading ? (
             <div className="p-8 text-center text-gray-500">Carregando...</div>
           ) : filtered.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">Nenhuma empresa encontrada.</div>
+            <div className="p-8 text-center text-gray-500">
+              Nenhuma empresa encontrada.
+            </div>
           ) : (
             filtered.map((tenant) => (
-              <div key={tenant.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+              <div
+                key={tenant.id}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col"
+              >
                 <div className="p-4 border-b border-gray-100 flex items-start gap-3">
                   <div className="pt-1">
                     <input
@@ -550,8 +561,12 @@ const TenantManager: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1 gap-2">
-                      <h4 className="font-bold text-gray-900 truncate">{tenant.name}</h4>
-                      <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${tenant.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <h4 className="font-bold text-gray-900 truncate">
+                        {tenant.name}
+                      </h4>
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${tenant.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                      >
                         {tenant.status === 'active' ? 'Ativo' : 'Suspenso'}
                       </span>
                     </div>
@@ -563,19 +578,28 @@ const TenantManager: React.FC = () => {
 
                 <div className="p-4 bg-gray-50/50 grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Responsável</span>
+                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
+                      Responsável
+                    </span>
                     <span className="font-semibold text-gray-700 truncate block">
-                      {tenant.owner_name || (tenant.owner_email ? tenant.owner_email.split('@')[0] : '—')}
+                      {tenant.owner_name ||
+                        (tenant.owner_email
+                          ? tenant.owner_email.split('@')[0]
+                          : '—')}
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Plano</span>
+                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
+                      Plano
+                    </span>
                     <span className="font-semibold text-indigo-600 truncate block">
                       {tenant.plans?.name || 'Sem plano'}
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Nicho</span>
+                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
+                      Nicho
+                    </span>
                     <span className="font-semibold text-gray-600 capitalize">
                       {tenant.niche === 'rural' ? 'Rural' : 'Urbano'}
                     </span>
@@ -585,7 +609,10 @@ const TenantManager: React.FC = () => {
                 <div className="p-3 border-t border-gray-100 flex items-center justify-between bg-white">
                   <button
                     onClick={async () => {
-                      const reason = prompt(`Motivo do acesso à conta de "${tenant.name}"?`, 'Suporte Técnico');
+                      const reason = prompt(
+                        `Motivo do acesso à conta de "${tenant.name}"?`,
+                        'Suporte Técnico'
+                      );
                       if (!reason) return;
                       try {
                         await impersonateOrganization(tenant.id);
@@ -604,9 +631,15 @@ const TenantManager: React.FC = () => {
                     <button
                       onClick={() => toggleStatus(tenant.id, tenant.status)}
                       className={`p-2 rounded-lg transition-colors ${tenant.status === 'active' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}`}
-                      title={tenant.status === 'active' ? 'Suspender' : 'Ativar'}
+                      title={
+                        tenant.status === 'active' ? 'Suspender' : 'Ativar'
+                      }
                     >
-                      {tenant.status === 'active' ? <Ban size={16} /> : <CheckCircle size={16} />}
+                      {tenant.status === 'active' ? (
+                        <Ban size={16} />
+                      ) : (
+                        <CheckCircle size={16} />
+                      )}
                     </button>
                     <button
                       onClick={() => handleOpenModal(tenant)}

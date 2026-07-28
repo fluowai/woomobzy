@@ -128,6 +128,16 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
     onDelete();
   };
 
+  const toCssString = (styles: Record<string, any> = {}) => {
+    return Object.entries(styles)
+      .filter(([key]) => key !== 'customCss')
+      .map(([key, value]) => {
+        const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        return `${cssKey}: ${value} !important;`;
+      })
+      .join(' ');
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -192,10 +202,16 @@ const SortableBlock: React.FC<SortableBlockProps> = ({
 
         {/* Block Content */}
         <div style={block.styles as any}>
-          {block.styles.customCss && (
-            <style>{`.block-${block.id} { ${block.styles.customCss} }`}</style>
-          )}
-          <div className={`block-${block.id}`}>
+          <style>{`
+            .block-wrapper-${block.id} {
+              ${toCssString(block.styles)}
+              ${viewMode === 'mobile' ? toCssString(block.responsive?.mobile) : ''}
+              ${viewMode === 'tablet' ? toCssString(block.responsive?.tablet) : ''}
+            }
+            ${block.styles.customCss ? `.block-wrapper-${block.id} { ${block.styles.customCss} }` : ''}
+            ${viewMode === 'mobile' && block.responsive?.mobile?.customCss ? `.block-wrapper-${block.id} { ${block.responsive.mobile.customCss} }` : ''}
+          `}</style>
+          <div className={`block-wrapper-${block.id} block-${block.id}`}>
             {renderBlock(block, themeConfig, viewMode, settings)}
           </div>
         </div>

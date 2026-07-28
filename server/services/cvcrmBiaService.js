@@ -10,7 +10,7 @@ const DEFAULT_CVCRM_API_BASE_URL = 'https://api.cvcrm.com.br';
  */
 async function getTenantIntegrationConfigs(tenantId) {
   if (!tenantId) throw new Error('Tenant ID is required to fetch credentials');
-  
+
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('site_settings')
@@ -19,14 +19,18 @@ async function getTenantIntegrationConfigs(tenantId) {
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to fetch settings for tenant ${tenantId}: ${error.message}`);
+    throw new Error(
+      `Failed to fetch settings for tenant ${tenantId}: ${error.message}`
+    );
   }
 
   const cvcrmKey = data?.integrations?.cvcrm?.apiKey;
   const cvcrmEmail = data?.integrations?.cvcrm?.email;
-  const cvcrmBaseUrl = data?.integrations?.cvcrm?.baseUrl || DEFAULT_CVCRM_API_BASE_URL;
+  const cvcrmBaseUrl =
+    data?.integrations?.cvcrm?.baseUrl || DEFAULT_CVCRM_API_BASE_URL;
   const biaKey = data?.integrations?.bia?.apiKey;
-  const biaBaseUrl = data?.integrations?.bia?.baseUrl || DEFAULT_BIA_API_BASE_URL;
+  const biaBaseUrl =
+    data?.integrations?.bia?.baseUrl || DEFAULT_BIA_API_BASE_URL;
 
   return { cvcrmKey, cvcrmEmail, cvcrmBaseUrl, biaKey, biaBaseUrl };
 }
@@ -45,7 +49,7 @@ function mapCvcrmLeadToBia(cvcrmLead) {
     metadata: {
       empreendimento: cvcrmLead.empreendimento,
       origem: cvcrmLead.origem,
-    }
+    },
   };
 }
 
@@ -54,33 +58,41 @@ function mapCvcrmLeadToBia(cvcrmLead) {
  */
 export async function sendLeadToBia(cvcrmLead, biaKey, biaBaseUrl) {
   if (!biaKey) {
-    logger.warn('[BIA Integration] BIA API Key is missing. Aborting sendLeadToBia.');
+    logger.warn(
+      '[BIA Integration] BIA API Key is missing. Aborting sendLeadToBia.'
+    );
     return null;
   }
 
   try {
     const payload = mapCvcrmLeadToBia(cvcrmLead);
-    
+
     const response = await fetch(`${biaBaseUrl}/api:5ONttZdQ/contatos`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${biaKey}`
+        Authorization: `Bearer ${biaKey}`,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`[BIA Integration] Error sending lead to BIA. Status: ${response.status} - ${errorText}`);
+      logger.error(
+        `[BIA Integration] Error sending lead to BIA. Status: ${response.status} - ${errorText}`
+      );
       throw new Error(`BIA API error: ${response.status}`);
     }
 
     const data = await response.json();
-    logger.info(`[BIA Integration] Lead sent successfully. BIA response ID: ${data.id}`);
+    logger.info(
+      `[BIA Integration] Lead sent successfully. BIA response ID: ${data.id}`
+    );
     return data;
   } catch (error) {
-    logger.error(`[BIA Integration] Failed to send lead to BIA: ${error.message}`);
+    logger.error(
+      `[BIA Integration] Failed to send lead to BIA: ${error.message}`
+    );
     throw error;
   }
 }
@@ -88,44 +100,58 @@ export async function sendLeadToBia(cvcrmLead, biaKey, biaBaseUrl) {
 /**
  * Registra o resumo do atendimento na timeline do lead no CVcrm.
  */
-export async function registerInteractionOnCvcrm(cvcrmLeadId, summaryText, cvcrmKey, cvcrmEmail, cvcrmBaseUrl) {
+export async function registerInteractionOnCvcrm(
+  cvcrmLeadId,
+  summaryText,
+  cvcrmKey,
+  cvcrmEmail,
+  cvcrmBaseUrl
+) {
   if (!cvcrmKey || !cvcrmEmail) {
-    logger.warn('[CVCrm Integration] CVcrm API Token or Email is missing. Aborting registerInteractionOnCvcrm.');
+    logger.warn(
+      '[CVCrm Integration] CVcrm API Token or Email is missing. Aborting registerInteractionOnCvcrm.'
+    );
     return null;
   }
 
   try {
-    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/cv/v1/interacoes`; 
-    
+    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/cv/v1/interacoes`;
+
     const payload = {
       id_lead: cvcrmLeadId,
       descricao: summaryText,
-      tipo: 'Atendimento BIA (IA)', 
-      data_hora: new Date().toISOString()
+      tipo: 'Atendimento BIA (IA)',
+      data_hora: new Date().toISOString(),
     };
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'email': cvcrmEmail,
-        'token': cvcrmKey,
+        email: cvcrmEmail,
+        token: cvcrmKey,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`[CVCrm Integration] Error registering interaction. Status: ${response.status} - ${errorText}`);
+      logger.error(
+        `[CVCrm Integration] Error registering interaction. Status: ${response.status} - ${errorText}`
+      );
       throw new Error(`CVcrm API error: ${response.status}`);
     }
 
     const textData = await response.text();
     const data = textData ? JSON.parse(textData) : {};
-    logger.info(`[CVCrm Integration] Interaction registered for lead ${cvcrmLeadId}`);
+    logger.info(
+      `[CVCrm Integration] Interaction registered for lead ${cvcrmLeadId}`
+    );
     return data;
   } catch (error) {
-    logger.error(`[CVCrm Integration] Failed to register interaction on CVcrm: ${error.message}`);
+    logger.error(
+      `[CVCrm Integration] Failed to register interaction on CVcrm: ${error.message}`
+    );
     throw error;
   }
 }
@@ -134,49 +160,66 @@ export async function registerInteractionOnCvcrm(cvcrmLeadId, summaryText, cvcrm
  * Cria um lead novo no CVcrm.
  * Útil para o Cenário 2 (Lead nasceu no WhatsApp da BIA e não existe no CVcrm ainda).
  */
-export async function createLeadOnCvcrm(biaPayload, cvcrmKey, cvcrmEmail, cvcrmBaseUrl) {
+export async function createLeadOnCvcrm(
+  biaPayload,
+  cvcrmKey,
+  cvcrmEmail,
+  cvcrmBaseUrl
+) {
   if (!cvcrmKey || !cvcrmEmail) {
-    logger.warn('[CVCrm Integration] CVcrm API Token or Email is missing. Aborting createLeadOnCvcrm.');
+    logger.warn(
+      '[CVCrm Integration] CVcrm API Token or Email is missing. Aborting createLeadOnCvcrm.'
+    );
     return null;
   }
 
   try {
-    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/v1/cvbot/lead`; 
-    
+    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/v1/cvbot/lead`;
+
     const payload = {
       nome: biaPayload.name || 'Lead via WhatsApp (BIA)',
       telefone: biaPayload.phoneNumber || biaPayload.phone || '',
       email: biaPayload.email || '',
       origem: 'WhatsApp BIA',
-      empreendimento: biaPayload.metadata?.empreendimento || 'Bosque dos Pássaros',
-      permitir_atualizacao: true
+      empreendimento:
+        biaPayload.metadata?.empreendimento || 'Bosque dos Pássaros',
+      permitir_atualizacao: true,
     };
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'email': cvcrmEmail,
-        'token': cvcrmKey, 
+        email: cvcrmEmail,
+        token: cvcrmKey,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`[CVCrm Integration] Error creating lead. Status: ${response.status} - ${errorText}`);
+      logger.error(
+        `[CVCrm Integration] Error creating lead. Status: ${response.status} - ${errorText}`
+      );
       throw new Error(`CVcrm API error (Create Lead): ${response.status}`);
     }
 
     const textData = await response.text();
     const data = textData ? JSON.parse(textData) : {};
-    
+
     // CVcrm v1/cvbot retorna { idlead: X }
-    const newLeadId = data.idlead || data.id_lead || data.id || data?.lead?.id || 'lead_simulado_' + Date.now();
+    const newLeadId =
+      data.idlead ||
+      data.id_lead ||
+      data.id ||
+      data?.lead?.id ||
+      'lead_simulado_' + Date.now();
     logger.info(`[CVCrm Integration] Lead created on CVcrm. ID: ${newLeadId}`);
     return newLeadId;
   } catch (error) {
-    logger.error(`[CVCrm Integration] Failed to create lead on CVcrm: ${error.message}`);
+    logger.error(
+      `[CVCrm Integration] Failed to create lead on CVcrm: ${error.message}`
+    );
     throw error;
   }
 }
@@ -185,10 +228,12 @@ export async function createLeadOnCvcrm(biaPayload, cvcrmKey, cvcrmEmail, cvcrmB
  * Lida com o webhook recebido do CVcrm (Novo Lead)
  */
 export async function handleCvcrmWebhook(tenantId, payload) {
-  logger.info(`[CVCrm Webhook] Received new lead payload for tenant ${tenantId}`);
-  
+  logger.info(
+    `[CVCrm Webhook] Received new lead payload for tenant ${tenantId}`
+  );
+
   const { biaKey, biaBaseUrl } = await getTenantIntegrationConfigs(tenantId);
-  
+
   // Dispara assincronamente
   return sendLeadToBia(payload, biaKey, biaBaseUrl);
 }
@@ -198,23 +243,37 @@ export async function handleCvcrmWebhook(tenantId, payload) {
  */
 export async function handleBiaWebhook(tenantId, payload) {
   logger.info(`[BIA Webhook] Received chat summary for tenant ${tenantId}`);
-  
-  const { cvcrmKey, cvcrmEmail, cvcrmBaseUrl } = await getTenantIntegrationConfigs(tenantId);
 
-  let cvcrmLeadId = payload.externalId || payload.metadata?.cvcrmLeadId; 
+  const { cvcrmKey, cvcrmEmail, cvcrmBaseUrl } =
+    await getTenantIntegrationConfigs(tenantId);
+
+  let cvcrmLeadId = payload.externalId || payload.metadata?.cvcrmLeadId;
   const summaryText = payload.summary || payload.message;
 
   // Se não tem ID do CVcrm, significa que o lead nasceu no WhatsApp (Cenário 2).
   // Vamos criá-lo no CVcrm primeiro.
   if (!cvcrmLeadId) {
-    logger.info(`[BIA Webhook] Lead has no CVcrm ID. Creating lead in CVcrm first...`);
-    cvcrmLeadId = await createLeadOnCvcrm(payload, cvcrmKey, cvcrmEmail, cvcrmBaseUrl);
-    
+    logger.info(
+      `[BIA Webhook] Lead has no CVcrm ID. Creating lead in CVcrm first...`
+    );
+    cvcrmLeadId = await createLeadOnCvcrm(
+      payload,
+      cvcrmKey,
+      cvcrmEmail,
+      cvcrmBaseUrl
+    );
+
     if (!cvcrmLeadId) {
       throw new Error('Failed to create Lead in CVcrm for WhatsApp origin');
     }
   }
 
   // Com o ID garantido (seja da origem ou recém-criado), envia o histórico.
-  return registerInteractionOnCvcrm(cvcrmLeadId, summaryText, cvcrmKey, cvcrmEmail, cvcrmBaseUrl);
+  return registerInteractionOnCvcrm(
+    cvcrmLeadId,
+    summaryText,
+    cvcrmKey,
+    cvcrmEmail,
+    cvcrmBaseUrl
+  );
 }

@@ -161,9 +161,7 @@ export function createWahaRouter({
       );
     });
 
-    return res
-      .status(201)
-      .json(normalizeInstanceRow(instance));
+    return res.status(201).json(normalizeInstanceRow(instance));
   });
 
   router.get('/instances/:id', verifyAuth, requireTenant, async (req, res) => {
@@ -209,7 +207,9 @@ export function createWahaRouter({
           if (sessionStatus?.status) {
             const mappedStatus = mapWahaStatus(sessionStatus.status);
             if (mappedStatus && mappedStatus !== instance.status) {
-              await updateInstance(instance.id, req.orgId, { status: mappedStatus });
+              await updateInstance(instance.id, req.orgId, {
+                status: mappedStatus,
+              });
               instance.status = mappedStatus;
             }
           }
@@ -219,7 +219,10 @@ export function createWahaRouter({
         if (!qrCode) {
           return res
             .status(202)
-            .json({ message: 'QR code generating', status: instance.status || 'pending' });
+            .json({
+              message: 'QR code generating',
+              status: instance.status || 'pending',
+            });
         }
         await updateInstance(instance.id, req.orgId, {
           status: 'qr_pending',

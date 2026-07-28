@@ -65,7 +65,9 @@ export class AIAutomationEngine {
     const finalKey = dbKey || globalKey || this.defaultApiKey;
 
     if (!finalKey)
-      throw new Error('Nenhuma chave de IA configurada para esta organizacao ou plataforma.');
+      throw new Error(
+        'Nenhuma chave de IA configurada para esta organizacao ou plataforma.'
+      );
 
     const genAI = new GoogleGenerativeAI(finalKey);
     return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -283,39 +285,52 @@ Formato:
     );
     const audioData =
       message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
-      
+
     // Step 1: Executar Agente Autonomo (ReAct/Function Calling) caso existam ferramentas ativas
     let autonomousReply = null;
     if (agent && agent.tools && agent.tools.length > 0) {
       try {
         const orchestrator = new AgentOrchestrator(this.defaultApiKey);
-        const history = await this._getConversationMemory(organizationId, normalizedPhone, 8);
-        
+        const history = await this._getConversationMemory(
+          organizationId,
+          normalizedPhone,
+          8
+        );
+
         // Determina o lead id (se ja existe na base)
-        const existingLeadForTools = await this._findLeadByNormalizedPhone(supabase, organizationId, normalizedPhone);
-        
+        const existingLeadForTools = await this._findLeadByNormalizedPhone(
+          supabase,
+          organizationId,
+          normalizedPhone
+        );
+
         autonomousReply = await orchestrator.processAgentConversation({
           content,
           organizationId,
           agent,
           history,
-          leadId: existingLeadForTools?.id || null
+          leadId: existingLeadForTools?.id || null,
         });
       } catch (err) {
-        console.error('[AIAutomation] Erro ao executar orquestrador de ferramentas:', err.message);
+        console.error(
+          '[AIAutomation] Erro ao executar orquestrador de ferramentas:',
+          err.message
+        );
       }
     }
 
     // Step 2: Extrair JSON estruturado para o CRM
     const aiResult = await this.processIntent({
-      content: autonomousReply ? `${content}\n\n[RESPOSTA AUTONOMA GERADA: ${autonomousReply}]` : content,
+      content: autonomousReply
+        ? `${content}\n\n[RESPOSTA AUTONOMA GERADA: ${autonomousReply}]`
+        : content,
       audioData,
       organizationId,
       mimeType: message.media_mimetype,
       agent,
       phone: normalizedPhone,
     });
-    
+
     // Se a IA autonoma gerou resposta, forcar o CRM a utiliza-la
     if (aiResult && autonomousReply) {
       aiResult.reply = autonomousReply;

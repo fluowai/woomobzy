@@ -11,10 +11,13 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Messages array is required' });
     }
 
-    const gatewayUrl = process.env.AI_GATEWAY_URL || 'http://omniroute:20128/v1';
+    const gatewayUrl =
+      process.env.AI_GATEWAY_URL || 'http://omniroute:20128/v1';
     const apiKey = process.env.OMNIROUTE_API_KEY || 'dummy';
 
-    logger.info(`[WooTechAI] Forwarding request to ${gatewayUrl}/chat/completions`);
+    logger.info(
+      `[WooTechAI] Forwarding request to ${gatewayUrl}/chat/completions`
+    );
 
     const response = await fetch(`${gatewayUrl}/chat/completions`, {
       method: 'POST',
@@ -31,7 +34,9 @@ router.post('/chat', async (req, res) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`[WooTechAI] Gateway Error: ${response.status} ${errorText}`);
+      logger.error(
+        `[WooTechAI] Gateway Error: ${response.status} ${errorText}`
+      );
       return res.status(response.status).json({ error: errorText });
     }
 

@@ -33,16 +33,23 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
         await import('../../utils/tracking');
       const trackingData = getTrackingData();
 
+      // Collect any custom fields into notes
+      const customNotes = (config.fields || [])
+        .filter((f) => !['name', 'email', 'phone'].includes(f.name))
+        .map((f) => `${f.label}: ${formData[f.name] || 'Não informado'}`)
+        .join('\n');
+
       const leadData = {
         name: formData.name || '',
         email: formData.email || '',
         phone: formData.phone || '',
-        message: `Interesse na região: ${formData.region || 'Não informada'}`,
+        notes: customNotes || 'Contato via Hero Form',
         source: 'Landing Page: ' + config.title,
         ...trackingData,
+        referrer_url: window.location.href,
       };
 
-      const response = await fetch(getApiUrl('/api/contact'), {
+      const response = await fetch(getApiUrl('/api/public/leads'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(leadData),
@@ -98,17 +105,21 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
             Encontre sua
           </h2>
           <h1
-            className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg"
+            className="font-bold mb-4 drop-shadow-lg"
             style={{
               color: '#ffffff',
               fontFamily:
                 theme.headingFontFamily || "'Playfair Display', serif",
+              fontSize: '3em',
             }}
           >
             {config.title}
           </h1>
           {config.subtitle && (
-            <p className="text-lg md:text-xl text-white drop-shadow-md max-w-2xl mx-auto">
+            <p
+              className="text-white drop-shadow-md max-w-2xl mx-auto"
+              style={{ fontSize: '1.25em' }}
+            >
               {config.subtitle}
             </p>
           )}

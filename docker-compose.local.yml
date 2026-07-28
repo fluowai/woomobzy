@@ -48,14 +48,9 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3002
-      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-whatsmeow}
-      WAHA_ENGINE: ${WAHA_ENGINE:-noweb}
+      WHATSAPP_PROVIDER: whatsmeow
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100
-      WAHA_API_URL: http://waha:3000
-      WAHA_API_KEY: ${WAHA_API_KEY:-${ARRAPHA_API_KEY:-}}
-      ARRAPHA_API_URL: http://waha:3000
-      ARRAPHA_API_KEY: ${ARRAPHA_API_KEY:-}
       WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:-local-whatsapp-service-token}
       WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:-local-whatsapp-internal-token}
       WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:-local-whatsapp-ws-secret-change-me}
@@ -86,28 +81,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-    networks:
-      - imobzy
-    cpus: '1.00'
-    mem_limit: 768m
-    logging: *default-logging
-    restart: unless-stopped
-
-  waha:
-    image: devlikeapro/waha:latest
-    profiles:
-      - waha
-    environment:
-      WHATSAPP_API_KEY: ${WAHA_API_KEY:-${ARRAPHA_API_KEY:-local-waha-api-key}}
-      WAHA_ENGINE: ${WAHA_ENGINE:-noweb}
-      WAHA_PRINT_QR: 'false'
-      WAHA_LOG_FORMAT: JSON
-    volumes:
-      - waha_sessions:/app/.sessions
-    expose:
-      - '3000'
-    ports:
-      - '3007:3000'
     networks:
       - imobzy
     cpus: '1.00'
@@ -197,10 +170,10 @@ services:
       dockerfile: Dockerfile.instagram-service
     environment:
       NODE_ENV: development
-      PORT: "3200"
-      REDIS_URL: "redis://redis:6379"
-      INSTAGRAM_WORKER_URL: "http://instagram-worker:8000"
-      INSTAGRAM_INTERNAL_TOKEN: "ig-internal-token-local"
+      PORT: '3200'
+      REDIS_URL: 'redis://redis:6379'
+      INSTAGRAM_WORKER_URL: 'http://instagram-worker:8000'
+      INSTAGRAM_INTERNAL_TOKEN: 'ig-internal-token-local'
       ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
     env_file:
       - .env.production
@@ -220,9 +193,9 @@ services:
       context: .
       dockerfile: Dockerfile.instagram-worker
     environment:
-      REDIS_URL: "redis://redis:6379"
-      INSTAGRAM_INTERNAL_TOKEN: "ig-internal-token-local"
-      NODE_SERVICE_URL: "http://instagram-service:3200"
+      REDIS_URL: 'redis://redis:6379'
+      INSTAGRAM_INTERNAL_TOKEN: 'ig-internal-token-local'
+      NODE_SERVICE_URL: 'http://instagram-service:3200'
     env_file:
       - .env.production
     volumes:
@@ -248,7 +221,7 @@ services:
     networks:
       - imobzy
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -271,7 +244,7 @@ services:
 
 volumes:
   whatsapp_sessions:
-  waha_sessions:
+
   instagram_devices:
   instagram_sessions:
   redis_data:

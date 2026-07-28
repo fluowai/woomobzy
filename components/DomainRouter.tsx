@@ -1,11 +1,20 @@
 import { logger } from '@/utils/logger';
-import React, { Suspense, lazy, useEffect, useState, createContext } from 'react';
+import React, {
+  Suspense,
+  lazy,
+  useEffect,
+  useState,
+  createContext,
+} from 'react';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
 import { getAllPlatformHosts, PANEL_HOST } from '@/utils/branding';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 
-export const PlatformTenantContext = createContext<{ id: string; slug: string } | null>(null);
+export const PlatformTenantContext = createContext<{
+  id: string;
+  slug: string;
+} | null>(null);
 
 const PublicLandingPage = lazy(() => import('../views/PublicLandingPage'));
 
@@ -95,7 +104,10 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const [isPublicSite, setIsPublicSite] = useState(false);
   const [loading, setLoading] = useState(!initialSystemPath);
   const [resolvedSlug, setResolvedSlug] = useState<string | null>(null);
-  const [platformTenant, setPlatformTenant] = useState<{ id: string; slug: string } | null>(null);
+  const [platformTenant, setPlatformTenant] = useState<{
+    id: string;
+    slug: string;
+  } | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const lastCheckedPath = React.useRef<string | null>(null);
 
@@ -164,7 +176,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
             if (data && !error) {
               const tenant = data as any;
-              
+
               if (tenant.domain_type === 'platform') {
                 log(
                   `[Router] Platform Tenant found via domain: ${tenant.name} (${tenant.slug})`

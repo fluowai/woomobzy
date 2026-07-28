@@ -18,8 +18,7 @@ const InlineEditable: React.FC<InlineEditableProps> = ({
   as: Component = 'span',
   onClick,
 }) => {
-  const { isVisualMode, texts, updateText, setActiveKey } =
-    useTexts();
+  const { isVisualMode, texts, updateText, setActiveKey } = useTexts();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');

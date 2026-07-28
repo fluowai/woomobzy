@@ -173,7 +173,9 @@ const BlockStylesEditor: React.FC<BlockStylesEditorProps> = ({
             max="10"
             step="0.5"
             value={parseFloat(styles.letterSpacing || '0')}
-            onChange={(e) => updateStyle('letterSpacing', `${e.target.value}px`)}
+            onChange={(e) =>
+              updateStyle('letterSpacing', `${e.target.value}px`)
+            }
             className="flex-1"
           />
           <input

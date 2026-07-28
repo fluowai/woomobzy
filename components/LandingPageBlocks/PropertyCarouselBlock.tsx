@@ -13,11 +13,7 @@ const PropertyCarouselBlock: React.FC<PropertyCarouselBlockProps> = ({
   theme: _theme,
   properties: _properties = [],
 }) => {
-  const {
-    images = [],
-    showThumbnails = true,
-    showDots = true,
-  } = config;
+  const { images = [], showThumbnails = true, showDots = true } = config;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);

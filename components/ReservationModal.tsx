@@ -8,24 +8,37 @@ export const ReservationModal = ({ unit, onClose, onConfirm }: any) => {
       <div className="modal-content" style={contentStyle}>
         <h3>Reservar Unidade {unit.label}</h3>
         <p>A unidade ficará bloqueada para outros corretores por 24 horas.</p>
-        
+
         <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>ID do Lead (Cliente):</label>
-          <input 
-            type="text" 
-            value={leadId} 
+          <label style={{ display: 'block', marginBottom: '5px' }}>
+            ID do Lead (Cliente):
+          </label>
+          <input
+            type="text"
+            value={leadId}
             onChange={(e) => setLeadId(e.target.value)}
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+            style={{
+              width: '100%',
+              padding: '8px',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+            }}
             placeholder="Ex: UUID-do-cliente"
           />
         </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-          <button onClick={onClose} style={btnCancelStyle}>Cancelar</button>
-          <button 
-            onClick={() => onConfirm(leadId)} 
+
+        <div
+          style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}
+        >
+          <button onClick={onClose} style={btnCancelStyle}>
+            Cancelar
+          </button>
+          <button
+            onClick={() => onConfirm(leadId)}
             disabled={!leadId}
-            style={leadId ? btnConfirmStyle : { ...btnConfirmStyle, opacity: 0.5 }}
+            style={
+              leadId ? btnConfirmStyle : { ...btnConfirmStyle, opacity: 0.5 }
+            }
           >
             Confirmar Reserva
           </button>
@@ -45,7 +58,7 @@ const overlayStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  zIndex: 1000
+  zIndex: 1000,
 };
 
 const contentStyle: React.CSSProperties = {
@@ -53,7 +66,7 @@ const contentStyle: React.CSSProperties = {
   padding: '20px',
   borderRadius: '8px',
   width: '400px',
-  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
 };
 
 const btnCancelStyle: React.CSSProperties = {
@@ -61,7 +74,7 @@ const btnCancelStyle: React.CSSProperties = {
   background: '#e0e0e0',
   border: 'none',
   borderRadius: '4px',
-  cursor: 'pointer'
+  cursor: 'pointer',
 };
 
 const btnConfirmStyle: React.CSSProperties = {
@@ -70,5 +83,5 @@ const btnConfirmStyle: React.CSSProperties = {
   color: '#fff',
   border: 'none',
   borderRadius: '4px',
-  cursor: 'pointer'
+  cursor: 'pointer',
 };

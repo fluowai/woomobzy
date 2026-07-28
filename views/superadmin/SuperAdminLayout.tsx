@@ -42,7 +42,11 @@ const SuperAdminLayout: React.FC = () => {
     { icon: Layout, label: 'Templates', path: '/superadmin/templates' },
     { icon: Globe, label: 'Domínios', path: '/superadmin/domains' },
     { icon: Calendar, label: 'Consultoria', path: '/superadmin/consulting' },
-    { icon: Megaphone, label: 'Marketing & SEO', path: '/superadmin/marketing' },
+    {
+      icon: Megaphone,
+      label: 'Marketing & SEO',
+      path: '/superadmin/marketing',
+    },
     { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
   ];
 
@@ -66,7 +70,7 @@ const SuperAdminLayout: React.FC = () => {
     <div className="flex h-screen bg-gray-100">
       {/* Mobile Menu Overlay & Backdrop */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileMenuOpen(false)}
         />

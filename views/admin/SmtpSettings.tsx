@@ -11,11 +11,14 @@ const SmtpSettings: React.FC = () => {
   const [smtpSecure, setSmtpSecure] = useState(true);
   const [smtpEmail, setSmtpEmail] = useState('');
   const [smtpPassword, setSmtpPassword] = useState('');
-  
+
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{success: boolean, message: string} | null>(null);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     if (settings?.smtp_config) {
@@ -31,29 +34,32 @@ const SmtpSettings: React.FC = () => {
     try {
       setSaving(true);
       setTestResult(null);
-      
+
       const payload = {
         smtp_config: {
           host: smtpHost.trim(),
           port: Number(smtpPort),
           secure: smtpSecure,
           email: smtpEmail.trim(),
-          ...(smtpPassword ? { password: smtpPassword } : {})
-        }
+          ...(smtpPassword ? { password: smtpPassword } : {}),
+        },
       };
-      
+
       await callApi('/api/settings/smtp', {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-      
+
       await refreshSettings();
-      
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error: any) {
       logger.error('Error saving SMTP settings:', error);
-      setTestResult({ success: false, message: error.message || 'Erro ao salvar configurações de SMTP' });
+      setTestResult({
+        success: false,
+        message: error.message || 'Erro ao salvar configurações de SMTP',
+      });
     } finally {
       setSaving(false);
     }
@@ -63,23 +69,29 @@ const SmtpSettings: React.FC = () => {
     try {
       setTesting(true);
       setTestResult(null);
-      
+
       const payload = {
         host: smtpHost.trim(),
         port: Number(smtpPort),
         secure: smtpSecure,
         email: smtpEmail.trim(),
-        password: smtpPassword
+        password: smtpPassword,
       };
-      
+
       const res = await callApi('/api/settings/smtp/test', {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-      
-      setTestResult({ success: true, message: res.message || 'Conexão estabelecida com sucesso!' });
+
+      setTestResult({
+        success: true,
+        message: res.message || 'Conexão estabelecida com sucesso!',
+      });
     } catch (error: any) {
-      setTestResult({ success: false, message: error.message || 'Falha ao testar conexão SMTP' });
+      setTestResult({
+        success: false,
+        message: error.message || 'Falha ao testar conexão SMTP',
+      });
     } finally {
       setTesting(false);
     }
@@ -97,7 +109,9 @@ const SmtpSettings: React.FC = () => {
               Servidor SMTP Personalizado
             </h3>
             <p className="text-sm text-text-secondary mt-0.5">
-              Configure seu servidor de e-mail para que os e-mails transacionais (como convites e recuperação de senha) sejam enviados com sua própria marca.
+              Configure seu servidor de e-mail para que os e-mails transacionais
+              (como convites e recuperação de senha) sejam enviados com sua
+              própria marca.
             </p>
           </div>
         </div>
@@ -115,7 +129,7 @@ const SmtpSettings: React.FC = () => {
               className="input-premium font-mono"
             />
           </div>
-          
+
           <div className="space-y-2">
             <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
               Porta
@@ -134,7 +148,10 @@ const SmtpSettings: React.FC = () => {
               E-mail de Envio (Remetente)
             </label>
             <div className="relative">
-              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <Mail
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary"
+              />
               <input
                 type="email"
                 value={smtpEmail}
@@ -150,12 +167,19 @@ const SmtpSettings: React.FC = () => {
               Senha do E-mail
             </label>
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <Lock
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary"
+              />
               <input
                 type="password"
                 value={smtpPassword}
                 onChange={(e) => setSmtpPassword(e.target.value)}
-                placeholder={settings?.smtp_config ? "Deixe em branco para não alterar" : "Sua senha segura"}
+                placeholder={
+                  settings?.smtp_config
+                    ? 'Deixe em branco para não alterar'
+                    : 'Sua senha segura'
+                }
                 className="input-premium pl-10"
               />
             </div>
@@ -184,8 +208,12 @@ const SmtpSettings: React.FC = () => {
         </div>
 
         {testResult && (
-          <div className={`mt-6 p-4 rounded-xl text-sm font-semibold border flex items-center gap-2 ${testResult.success ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
-            <div className={`w-2 h-2 rounded-full ${testResult.success ? 'bg-emerald-500' : 'bg-red-500'}`} />
+          <div
+            className={`mt-6 p-4 rounded-xl text-sm font-semibold border flex items-center gap-2 ${testResult.success ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${testResult.success ? 'bg-emerald-500' : 'bg-red-500'}`}
+            />
             {testResult.message}
           </div>
         )}
@@ -198,7 +226,7 @@ const SmtpSettings: React.FC = () => {
           >
             {testing ? 'Testando...' : 'Testar Conexão'}
           </button>
-          
+
           <button
             onClick={handleSave}
             disabled={saving || !smtpHost || !smtpEmail}

@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import { formatPhoneDisplay, getChatDisplayName } from './hooks/api';
 import type { UnifiedChat } from './hooks/unifiedInbox';
-import { Search, Users, MessageCircle, DownloadCloud, Loader2, Trash2, Clock3 } from 'lucide-react';
+import {
+  Search,
+  Users,
+  MessageCircle,
+  DownloadCloud,
+  Loader2,
+  Trash2,
+  Clock3,
+} from 'lucide-react';
 
 /** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
 function isWhatsAppCdnUrl(url?: string): boolean {
@@ -53,12 +61,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   deletingChats,
   canDeleteChats,
 }) => {
-  const [activeType, setActiveType] = React.useState<'direct' | 'group'>('direct');
-  const [activePlatform, setActivePlatform] = React.useState<'all' | 'whatsapp' | 'instagram'>('all');
+  const [activeType, setActiveType] = React.useState<'direct' | 'group'>(
+    'direct'
+  );
+  const [activePlatform, setActivePlatform] = React.useState<
+    'all' | 'whatsapp' | 'instagram'
+  >('all');
   const [erroredAvatars, setErroredAvatars] = useState<Set<string>>(new Set());
   const visibleChats = chats.filter((chat) => {
     const typeMatch = activeType === 'group' ? chat.is_group : !chat.is_group;
-    const platformMatch = activePlatform === 'all' || chat.platform === activePlatform;
+    const platformMatch =
+      activePlatform === 'all' || chat.platform === activePlatform;
     return typeMatch && platformMatch;
   });
 
@@ -69,7 +82,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const isToday = date.toDateString() === now.toDateString();
 
     if (isToday) {
-      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
 
     const yesterday = new Date(now);
@@ -78,7 +94,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       return 'Ontem';
     }
 
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+    });
   };
 
   const getInitials = (name: string) => {
@@ -92,9 +111,18 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      '#25D366', '#128C7E', '#075E54', '#34B7F1',
-      '#00A884', '#D97706', '#7C3AED', '#DC2626',
-      '#059669', '#0284C7', '#9333EA', '#E11D48',
+      '#25D366',
+      '#128C7E',
+      '#075E54',
+      '#34B7F1',
+      '#00A884',
+      '#D97706',
+      '#7C3AED',
+      '#DC2626',
+      '#059669',
+      '#0284C7',
+      '#9333EA',
+      '#E11D48',
     ];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -112,7 +140,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           : 'Contato Instagram')
       );
     }
-    return getChatDisplayName(chat) || formatPhoneDisplay(chat.chat_jid) || 'Contato sem telefone';
+    return (
+      getChatDisplayName(chat) ||
+      formatPhoneDisplay(chat.chat_jid) ||
+      'Contato sem telefone'
+    );
   };
 
   return (
@@ -162,8 +194,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           className={`wa-platform-tab ${activePlatform === 'whatsapp' ? 'active' : ''}`}
           onClick={() => setActivePlatform('whatsapp')}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
           </svg>
           WhatsApp
         </button>
@@ -172,10 +213,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           className={`wa-platform-tab ${activePlatform === 'instagram' ? 'active' : ''}`}
           onClick={() => setActivePlatform('instagram')}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
           </svg>
           Instagram
         </button>
@@ -183,7 +233,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
       <div className="wa-sidebar-actions">
         <div className="wa-history-controls">
-          <label className="wa-history-period-label" htmlFor="wa-history-period">
+          <label
+            className="wa-history-period-label"
+            htmlFor="wa-history-period"
+          >
             <Clock3 size={14} />
             <span>Periodo</span>
           </label>
@@ -191,7 +244,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             id="wa-history-period"
             className="wa-history-period-select"
             value={historyPeriodDays}
-            onChange={(event) => onHistoryPeriodChange(Number(event.target.value))}
+            onChange={(event) =>
+              onHistoryPeriodChange(Number(event.target.value))
+            }
             disabled={importingHistory}
           >
             {historyPeriodOptions.map((option) => (
@@ -204,7 +259,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         <div className="wa-history-progress">
           <div>
             <span>Tempo</span>
-            <strong>{formatImportElapsed(historyImportStats.elapsedSeconds)}</strong>
+            <strong>
+              {formatImportElapsed(historyImportStats.elapsedSeconds)}
+            </strong>
           </div>
           <div>
             <span>Mensagens</span>
@@ -212,7 +269,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
           <div>
             <span>Chats</span>
-            <strong>{historyImportStats.importedChats}/{historyImportStats.requestedChats || '-'}</strong>
+            <strong>
+              {historyImportStats.importedChats}/
+              {historyImportStats.requestedChats || '-'}
+            </strong>
           </div>
         </div>
         <button
@@ -222,8 +282,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           disabled={!canImportHistory || importingHistory}
           title="Importar conversas do WhatsApp e organizar no CRM com IA"
         >
-          {importingHistory ? <Loader2 size={16} className="animate-spin" /> : <DownloadCloud size={16} />}
-          <span>{importingHistory ? `Importando ${historyPeriodLabel}...` : `Importar ${historyPeriodLabel}`}</span>
+          {importingHistory ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <DownloadCloud size={16} />
+          )}
+          <span>
+            {importingHistory
+              ? `Importando ${historyPeriodLabel}...`
+              : `Importar ${historyPeriodLabel}`}
+          </span>
         </button>
         <button
           type="button"
@@ -232,8 +300,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           disabled={!canDeleteChats || deletingChats}
           title="Excluir todas as conversas individuais, grupos e mensagens desta instancia"
         >
-          {deletingChats ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-          <span>{deletingChats ? 'Excluindo...' : 'Excluir todos os chats'}</span>
+          {deletingChats ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Trash2 size={16} />
+          )}
+          <span>
+            {deletingChats ? 'Excluindo...' : 'Excluir todos os chats'}
+          </span>
         </button>
       </div>
 
@@ -242,7 +316,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         {visibleChats.length === 0 ? (
           <div className="wa-no-chats">
             <MessageCircle size={32} strokeWidth={1} />
-            <p>Nenhuma {activeType === 'group' ? 'conversa em grupo' : 'conversa individual'}</p>
+            <p>
+              Nenhuma{' '}
+              {activeType === 'group'
+                ? 'conversa em grupo'
+                : 'conversa individual'}
+            </p>
             <span>As mensagens aparecerão aqui</span>
           </div>
         ) : (
@@ -258,17 +337,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 className="wa-avatar"
                 style={{ backgroundColor: getAvatarColor(getChatName(chat)) }}
               >
-                {chat.avatar_url && !isWhatsAppCdnUrl(chat.avatar_url) && !erroredAvatars.has(chat.id) ? (
+                {chat.avatar_url &&
+                !isWhatsAppCdnUrl(chat.avatar_url) &&
+                !erroredAvatars.has(chat.id) ? (
                   <img
                     src={chat.avatar_url}
                     alt=""
                     className="wa-avatar-img"
-                    onError={() => setErroredAvatars(prev => new Set(prev).add(chat.id))}
+                    onError={() =>
+                      setErroredAvatars((prev) => new Set(prev).add(chat.id))
+                    }
                   />
                 ) : chat.is_group ? (
                   <Users size={18} color="white" />
                 ) : (
-                  <span className="wa-avatar-text">{getInitials(getChatName(chat))}</span>
+                  <span className="wa-avatar-text">
+                    {getInitials(getChatName(chat))}
+                  </span>
                 )}
               </div>
 
@@ -276,24 +361,59 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               <div className="wa-chat-info">
                 <div className="wa-chat-top">
                   <span className="wa-chat-name">
-                    {chat.is_group && <Users size={12} className="wa-group-icon" />}
+                    {chat.is_group && (
+                      <Users size={12} className="wa-group-icon" />
+                    )}
                     {getChatName(chat)}
                     {chat.platform === 'instagram' && (
-                      <span className="wa-platform-badge-sm wa-platform-instagram-sm" title="Instagram">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-                          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                          <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                      <span
+                        className="wa-platform-badge-sm wa-platform-instagram-sm"
+                        title="Instagram"
+                      >
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            width="20"
+                            height="20"
+                            x="2"
+                            y="2"
+                            rx="5"
+                            ry="5"
+                          />
+                          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                          <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
                         </svg>
                       </span>
                     )}
                   </span>
-                  <span className="wa-chat-time">{formatTime(chat.last_message_at)}</span>
+                  <span className="wa-chat-time">
+                    {formatTime(chat.last_message_at)}
+                  </span>
                 </div>
                 <div className="wa-chat-bottom">
-                  <p className="wa-chat-preview">{formatChatPreview(chat.last_message) || (chat.platform === 'instagram' ? (chat.instagram_contact_username ? `@${chat.instagram_contact_username}` : 'Instagram') : formatPhoneDisplay(chat.chat_jid)) || '...'}</p>
+                  <p className="wa-chat-preview">
+                    {formatChatPreview(chat.last_message) ||
+                      (chat.platform === 'instagram'
+                        ? chat.instagram_contact_username
+                          ? `@${chat.instagram_contact_username}`
+                          : 'Instagram'
+                        : formatPhoneDisplay(chat.chat_jid)) ||
+                      '...'}
+                  </p>
                   {chat.unread_count > 0 && (
-                    <span className={`wa-unread-badge ${chat.platform === 'instagram' ? 'wa-unread-ig' : ''}`}>{chat.unread_count > 99 ? '99+' : chat.unread_count}</span>
+                    <span
+                      className={`wa-unread-badge ${chat.platform === 'instagram' ? 'wa-unread-ig' : ''}`}
+                    >
+                      {chat.unread_count > 99 ? '99+' : chat.unread_count}
+                    </span>
                   )}
                 </div>
               </div>
@@ -311,6 +431,7 @@ function formatChatPreview(value?: string) {
   const clean = String(value || '').trim();
   if (!clean) return '';
   if (/^\[(image|audio|video|document|sticker)\]$/i.test(clean)) return '';
-  if (/^(imagem|audio|áudio|video|vídeo|pdf|documento)$/i.test(clean)) return '';
+  if (/^(imagem|audio|áudio|video|vídeo|pdf|documento)$/i.test(clean))
+    return '';
   return clean;
 }

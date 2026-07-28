@@ -219,6 +219,16 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     return width === 'full' ? 'w-full' : 'max-w-7xl mx-auto px-4';
   };
 
+  const toCssString = (styles: Record<string, any> = {}) => {
+    return Object.entries(styles)
+      .filter(([key]) => key !== 'customCss')
+      .map(([key, value]) => {
+        const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        return `${cssKey}: ${value} !important;`;
+      })
+      .join(' ');
+  };
+
   const renderBlock = (block: any) => {
     const theme = page?.themeConfig;
     if (!theme) return null;
@@ -371,7 +381,21 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             key={block.id}
             className={getContainerClass(block.containerWidth)}
           >
-            {renderBlock(block)}
+            <style>{`
+              .block-wrapper-${block.id} {
+                ${toCssString(block.styles)}
+              }
+              ${block.styles?.customCss ? `.block-wrapper-${block.id} { ${block.styles.customCss} }` : ''}
+              @media (max-width: 768px) {
+                .block-wrapper-${block.id} {
+                  ${toCssString(block.responsive?.mobile)}
+                }
+                ${block.responsive?.mobile?.customCss ? `.block-wrapper-${block.id} { ${block.responsive.mobile.customCss} }` : ''}
+              }
+            `}</style>
+            <div className={`block-wrapper-${block.id}`}>
+              {renderBlock(block)}
+            </div>
           </div>
         ))}
       </div>

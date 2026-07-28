@@ -4,7 +4,7 @@
 http:
   routers:
     oka-imoveis_consultio_com_br_api:
-      rule: "Host(`oka-imoveis.consultio.com.br`) && PathPrefix(`/api`)"
+      rule: 'Host(`oka-imoveis.consultio.com.br`) && PathPrefix(`/api`)'
       entryPoints:
         - websecure
       priority: 1000
@@ -13,7 +13,7 @@ http:
       service: imobzy_api@file
 
     oka-imoveis_consultio_com_br_frontend:
-      rule: "Host(`oka-imoveis.consultio.com.br`)"
+      rule: 'Host(`oka-imoveis.consultio.com.br`)'
       entryPoints:
         - websecure
       priority: 100

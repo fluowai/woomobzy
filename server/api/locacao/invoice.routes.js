@@ -63,13 +63,15 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
     // Busca o Lease e os dados do proprietário
     const { data: lease } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:property_id (
           title,
           owner_id
         )
-      `)
+      `
+      )
       .eq('id', lease_id)
       .eq('organization_id', req.orgId)
       .single();
@@ -91,7 +93,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
         .select('asaas_wallet_id')
         .eq('id', lease.property.owner_id)
         .single();
-      
+
       if (owner?.asaas_wallet_id) {
         ownerWalletId = owner.asaas_wallet_id;
       }
@@ -116,7 +118,10 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
             .eq('id', lease.id);
         }
       } catch (err) {
-        console.warn('[InvoiceRoutes] Falha ao criar cliente Asaas, faturas serão locais:', err.message);
+        console.warn(
+          '[InvoiceRoutes] Falha ao criar cliente Asaas, faturas serão locais:',
+          err.message
+        );
       }
     }
 
@@ -153,10 +158,13 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
             dueDate: dueDate.toISOString().split('T')[0],
             description,
             ownerWalletId,
-            imobzyFeePercentage
+            imobzyFeePercentage,
           });
         } catch (err) {
-          console.error('[InvoiceRoutes] Erro ao criar fatura no Asaas:', err.message);
+          console.error(
+            '[InvoiceRoutes] Erro ao criar fatura no Asaas:',
+            err.message
+          );
         }
       }
 
@@ -246,7 +254,7 @@ router.post('/webhook/asaas', async (req, res) => {
 
     if (updateData && updateData.status && updateData.asaasChargeId) {
       const supabase = getSupabaseServer();
-      
+
       const updates = { status: updateData.status };
       if (updateData.status === 'pago') {
         updates.payment_date = updateData.paymentDate;

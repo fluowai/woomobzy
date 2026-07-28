@@ -1390,9 +1390,15 @@ const PropertyEditor: React.FC = () => {
                   <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex gap-3 text-xs text-indigo-800 mb-4">
                     <Info size={16} className="shrink-0 mt-0.5" />
                     <div>
-                      <p><strong>Integração ONR (Cartórios do Brasil)</strong></p>
+                      <p>
+                        <strong>Integração ONR (Cartórios do Brasil)</strong>
+                      </p>
                       <p className="mt-1">
-                        A <strong>{settings?.agencyName || 'plataforma'}</strong> permite emitir certidões de Inteiro Teor diretamente pelo sistema. Preencha a Matrícula abaixo e clique em <strong>ONR: Solicitar Certidão</strong>.
+                        A{' '}
+                        <strong>{settings?.agencyName || 'plataforma'}</strong>{' '}
+                        permite emitir certidões de Inteiro Teor diretamente
+                        pelo sistema. Preencha a Matrícula abaixo e clique em{' '}
+                        <strong>ONR: Solicitar Certidão</strong>.
                       </p>
                     </div>
                   </div>
@@ -1401,15 +1407,20 @@ const PropertyEditor: React.FC = () => {
                       <label className="block text-sm font-semibold text-slate-700">
                         Matrícula (Nº)
                       </label>
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           if (!formData.features?.legal?.matricula) {
-                            toast.error('Preencha a matrícula primeiro para solicitar a certidão.');
+                            toast.error(
+                              'Preencha a matrícula primeiro para solicitar a certidão.'
+                            );
                             return;
                           }
                           // Em uma implementação completa, abriria um modal para confirmar o CNS
-                          toast.info('Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' + formData.features.legal.matricula);
+                          toast.info(
+                            'Integração ONR conectada! Redirecionando para o módulo de solicitação com a matrícula ' +
+                              formData.features.legal.matricula
+                          );
                         }}
                         className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
                       >
@@ -1648,9 +1659,14 @@ const PropertyEditor: React.FC = () => {
                 <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex gap-3 text-xs text-indigo-800 mb-4">
                   <Info size={16} className="shrink-0 mt-0.5" />
                   <div>
-                    <p><strong>Integração ONR (Cartórios do Brasil)</strong></p>
+                    <p>
+                      <strong>Integração ONR (Cartórios do Brasil)</strong>
+                    </p>
                     <p className="mt-1">
-                      A <strong>{settings?.agencyName || 'plataforma'}</strong> permite emitir certidões de Inteiro Teor diretamente pelo sistema. Preencha a Matrícula abaixo e clique em <strong>ONR: Obter Certidão</strong>.
+                      A <strong>{settings?.agencyName || 'plataforma'}</strong>{' '}
+                      permite emitir certidões de Inteiro Teor diretamente pelo
+                      sistema. Preencha a Matrícula abaixo e clique em{' '}
+                      <strong>ONR: Obter Certidão</strong>.
                     </p>
                   </div>
                 </div>
@@ -1660,14 +1676,18 @@ const PropertyEditor: React.FC = () => {
                       <label className="block text-xs font-bold text-slate-500 uppercase">
                         Número da Matrícula
                       </label>
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           if (!formData.features?.legal?.matricula) {
-                            toast.error('Preencha a matrícula primeiro para solicitar a certidão.');
+                            toast.error(
+                              'Preencha a matrícula primeiro para solicitar a certidão.'
+                            );
                             return;
                           }
-                          toast.info('Em breve: Integração ONR para certidões automáticas será liberada na próxima versão.');
+                          toast.info(
+                            'Em breve: Integração ONR para certidões automáticas será liberada na próxima versão.'
+                          );
                         }}
                         className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
                       >

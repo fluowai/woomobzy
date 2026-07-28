@@ -30,11 +30,15 @@ type View = 'inbox' | 'contacts' | 'templates' | 'broadcasts' | 'settings';
 
 const InstagramDashboard: React.FC = () => {
   const [accounts, setAccounts] = useState<InstagramAccount[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<InstagramAccount | null>(null);
+  const [selectedAccount, setSelectedAccount] =
+    useState<InstagramAccount | null>(null);
   const [activeView, setActiveView] = useState<View>('inbox');
   const [loading, setLoading] = useState(true);
-  const [conversations, setConversations] = useState<InstagramConversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<InstagramConversation | null>(null);
+  const [conversations, setConversations] = useState<InstagramConversation[]>(
+    []
+  );
+  const [selectedConversation, setSelectedConversation] =
+    useState<InstagramConversation | null>(null);
   const [messages, setMessages] = useState<InstagramMessage[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -44,33 +48,42 @@ const InstagramDashboard: React.FC = () => {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [connectUsername, setConnectUsername] = useState('');
 
-  const handleWSEvent = useCallback((event: { type: string; [key: string]: unknown }) => {
-    switch (event.type) {
-      case 'message:incoming':
-      case 'message:new':
-        if (event.conversationId === selectedConversation?.id) {
-          setMessages((prev) => [...prev, event.message as InstagramMessage]);
-        }
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === event.conversationId
-              ? { ...c, unread_count: c.unread_count + 1, last_message_at: new Date().toISOString() }
-              : c
-          )
-        );
-        break;
-      case 'account:status':
-        setAccounts((prev) =>
-          prev.map((a) =>
-            a.id === event.accountId ? { ...a, status: event.status as InstagramAccount['status'] } : a
-          )
-        );
-        break;
-      case 'account:session_expired':
-        toast.error('Instagram session expired. Please reconnect.');
-        break;
-    }
-  }, [selectedConversation?.id]);
+  const handleWSEvent = useCallback(
+    (event: { type: string; [key: string]: unknown }) => {
+      switch (event.type) {
+        case 'message:incoming':
+        case 'message:new':
+          if (event.conversationId === selectedConversation?.id) {
+            setMessages((prev) => [...prev, event.message as InstagramMessage]);
+          }
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === event.conversationId
+                ? {
+                    ...c,
+                    unread_count: c.unread_count + 1,
+                    last_message_at: new Date().toISOString(),
+                  }
+                : c
+            )
+          );
+          break;
+        case 'account:status':
+          setAccounts((prev) =>
+            prev.map((a) =>
+              a.id === event.accountId
+                ? { ...a, status: event.status as InstagramAccount['status'] }
+                : a
+            )
+          );
+          break;
+        case 'account:session_expired':
+          toast.error('Instagram session expired. Please reconnect.');
+          break;
+      }
+    },
+    [selectedConversation?.id]
+  );
 
   useInstagramWebSocket(companyId, handleWSEvent);
 
@@ -100,7 +113,9 @@ const InstagramDashboard: React.FC = () => {
 
   const loadConversations = async (accountId: string) => {
     try {
-      const { data } = await instagramApi.conversations.list({ status: 'open' });
+      const { data } = await instagramApi.conversations.list({
+        status: 'open',
+      });
       setConversations(data);
     } catch (err) {
       logger.error('Failed to load conversations', err);
@@ -142,7 +157,9 @@ const InstagramDashboard: React.FC = () => {
   const handleConnectAccount = async () => {
     if (!connectUsername.trim()) return;
     try {
-      const { qr } = await instagramApi.accounts.connect(connectUsername.trim());
+      const { qr } = await instagramApi.accounts.connect(
+        connectUsername.trim()
+      );
       toast.success('QR code generated. Scan with Instagram app.');
       setShowConnectModal(false);
       setConnectUsername('');
@@ -202,14 +219,21 @@ const InstagramDashboard: React.FC = () => {
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {selectedAccount?.username || 'No account'}
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    selectedAccount?.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                  }`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      selectedAccount?.status === 'active'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}
+                  >
                     {selectedAccount?.status}
                   </span>
                 </div>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={16}
+                  />
                   <input
                     type="text"
                     placeholder="Search conversations..."
@@ -221,23 +245,33 @@ const InstagramDashboard: React.FC = () => {
               </div>
               <div className="flex-1 overflow-y-auto">
                 {conversations
-                  .filter((c) =>
-                    !searchQuery ||
-                    c.contact?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    c.contact?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+                  .filter(
+                    (c) =>
+                      !searchQuery ||
+                      c.contact?.username
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                      c.contact?.full_name
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase())
                   )
                   .map((conv) => (
                     <button
                       key={conv.id}
                       onClick={() => handleConversationClick(conv)}
                       className={`w-full text-left p-3 border-b hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                        selectedConversation?.id === conv.id ? 'bg-orange-50 dark:bg-orange-900/20' : ''
+                        selectedConversation?.id === conv.id
+                          ? 'bg-orange-50 dark:bg-orange-900/20'
+                          : ''
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden flex-shrink-0">
                           {conv.contact?.profile_picture_url ? (
-                            <img src={conv.contact.profile_picture_url} className="w-full h-full object-cover" />
+                            <img
+                              src={conv.contact.profile_picture_url}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-400">
                               <UserCheck size={18} />
@@ -247,10 +281,14 @@ const InstagramDashboard: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                              {conv.contact?.full_name || conv.contact?.username || 'Unknown'}
+                              {conv.contact?.full_name ||
+                                conv.contact?.username ||
+                                'Unknown'}
                             </span>
                             <span className="text-xs text-gray-400 flex-shrink-0">
-                              {conv.last_message_at ? formatTime(conv.last_message_at) : ''}
+                              {conv.last_message_at
+                                ? formatTime(conv.last_message_at)
+                                : ''}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 truncate mt-0.5">
@@ -274,12 +312,18 @@ const InstagramDashboard: React.FC = () => {
                 <>
                   {/* Chat Header */}
                   <div className="p-3 border-b bg-white dark:bg-gray-800 flex items-center gap-3">
-                    <button onClick={() => setSelectedConversation(null)} className="text-gray-400 hover:text-gray-600 md:hidden">
+                    <button
+                      onClick={() => setSelectedConversation(null)}
+                      className="text-gray-400 hover:text-gray-600 md:hidden"
+                    >
                       <ArrowLeft size={20} />
                     </button>
                     <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden">
                       {selectedConversation.contact?.profile_picture_url ? (
-                        <img src={selectedConversation.contact.profile_picture_url} className="w-full h-full object-cover" />
+                        <img
+                          src={selectedConversation.contact.profile_picture_url}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                           <UserCheck size={16} />
@@ -288,9 +332,12 @@ const InstagramDashboard: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium text-sm text-gray-900 dark:text-white">
-                        {selectedConversation.contact?.full_name || selectedConversation.contact?.username}
+                        {selectedConversation.contact?.full_name ||
+                          selectedConversation.contact?.username}
                       </p>
-                      <p className="text-xs text-gray-500">@{selectedConversation.contact?.username}</p>
+                      <p className="text-xs text-gray-500">
+                        @{selectedConversation.contact?.username}
+                      </p>
                     </div>
                   </div>
 
@@ -309,7 +356,9 @@ const InstagramDashboard: React.FC = () => {
                           }`}
                         >
                           {msg.content}
-                          <p className={`text-xs mt-1 ${msg.direction === 'outbound' ? 'text-orange-100' : 'text-gray-400'}`}>
+                          <p
+                            className={`text-xs mt-1 ${msg.direction === 'outbound' ? 'text-orange-100' : 'text-gray-400'}`}
+                          >
                             {formatTime(msg.created_at)}
                           </p>
                         </div>
@@ -324,7 +373,11 @@ const InstagramDashboard: React.FC = () => {
                         type="text"
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                        onKeyDown={(e) =>
+                          e.key === 'Enter' &&
+                          !e.shiftKey &&
+                          handleSendMessage()
+                        }
                         placeholder="Type a message..."
                         className="flex-1 px-4 py-2 text-sm border rounded-full bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                         disabled={sending}
@@ -334,7 +387,11 @@ const InstagramDashboard: React.FC = () => {
                         disabled={sending || !messageInput.trim()}
                         className="p-2 bg-orange-500 text-white rounded-full hover:bg-orange-600 disabled:opacity-50 transition-colors"
                       >
-                        {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                        {sending ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <Send size={18} />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -342,8 +399,13 @@ const InstagramDashboard: React.FC = () => {
               ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-400">
                   <div className="text-center">
-                    <MessageSquare size={48} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Select a conversation to start chatting</p>
+                    <MessageSquare
+                      size={48}
+                      className="mx-auto mb-3 opacity-30"
+                    />
+                    <p className="text-sm">
+                      Select a conversation to start chatting
+                    </p>
                   </div>
                 </div>
               )}
@@ -353,7 +415,9 @@ const InstagramDashboard: React.FC = () => {
 
         {activeView === 'contacts' && (
           <div className="flex-1 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Instagram Contacts</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Instagram Contacts
+            </h2>
             {/* Contacts list placeholder - full implementation would go here */}
             <p className="text-gray-500">Contact management view</p>
           </div>
@@ -361,29 +425,41 @@ const InstagramDashboard: React.FC = () => {
 
         {activeView === 'templates' && (
           <div className="flex-1 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Message Templates</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Message Templates
+            </h2>
             <p className="text-gray-500">Template management view</p>
           </div>
         )}
 
         {activeView === 'broadcasts' && (
           <div className="flex-1 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Broadcast Campaigns</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Broadcast Campaigns
+            </h2>
             <p className="text-gray-500">Broadcast management view</p>
           </div>
         )}
 
         {activeView === 'settings' && (
           <div className="flex-1 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Instagram Settings</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Instagram Settings
+            </h2>
             <div className="space-y-4">
               {accounts.map((account) => (
-                <div key={account.id} className="p-4 bg-white dark:bg-gray-800 rounded-lg border">
+                <div
+                  key={account.id}
+                  className="p-4 bg-white dark:bg-gray-800 rounded-lg border"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
                         {account.profile_picture_url ? (
-                          <img src={account.profile_picture_url} className="w-full h-full object-cover" />
+                          <img
+                            src={account.profile_picture_url}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400">
                             <Instagram size={18} />
@@ -391,15 +467,23 @@ const InstagramDashboard: React.FC = () => {
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-sm text-gray-900 dark:text-white">@{account.username}</p>
-                        <p className="text-xs text-gray-500">{account.followers_count} followers</p>
+                        <p className="font-medium text-sm text-gray-900 dark:text-white">
+                          @{account.username}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {account.followers_count} followers
+                        </p>
                       </div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      account.status === 'active' ? 'bg-green-100 text-green-700' :
-                      account.status === 'login_required' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        account.status === 'active'
+                          ? 'bg-green-100 text-green-700'
+                          : account.status === 'login_required'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                      }`}
+                    >
                       {account.status}
                     </span>
                   </div>
@@ -421,7 +505,9 @@ const InstagramDashboard: React.FC = () => {
       {showConnectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Connect Instagram Account</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Connect Instagram Account
+            </h3>
             <input
               type="text"
               value={connectUsername}

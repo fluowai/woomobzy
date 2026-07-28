@@ -14,7 +14,9 @@ const campaignCreateSchema = z.object({
   name: z.string().min(2).max(200),
   description: z.string().optional(),
   message_template: z.string().optional(),
-  message_variables: z.array(z.object({ name: z.string(), source: z.string() })).optional(),
+  message_variables: z
+    .array(z.object({ name: z.string(), source: z.string() }))
+    .optional(),
   ai_prompt: z.string().optional(),
   ai_provider: z.enum(['gemini', 'groq', 'openai']).optional(),
   dispatch_mode: z.enum(['sequential', 'round_robin', 'random']).optional(),
@@ -60,7 +62,9 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
     const parsed = campaignCreateSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: parsed.error.flatten() });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: parsed.error.flatten() });
     }
 
     const supabase = getSupabaseServer();
@@ -115,7 +119,8 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
       .eq('campaign_id', campaign.id);
 
     // Check if dispatcher is running
-    const { isCampaignRunning, getCampaignProgress } = await import('../../services/campaign-dispatcher.js');
+    const { isCampaignRunning, getCampaignProgress } =
+      await import('../../services/campaign-dispatcher.js');
     const running = isCampaignRunning(campaign.id);
     const progress = getCampaignProgress(campaign.id);
 
@@ -123,7 +128,13 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
       ...campaign,
       contacts_summary: contactSummary,
       instances: instances || [],
-      dispatcher: running ? { running: true, sent: progress?.totalSent || 0, failed: progress?.totalFailed || 0 } : { running: false },
+      dispatcher: running
+        ? {
+            running: true,
+            sent: progress?.totalSent || 0,
+            failed: progress?.totalFailed || 0,
+          }
+        : { running: false },
     });
   } catch (err) {
     console.error('[Campaigns] Error fetching:', err.message);
@@ -136,7 +147,9 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const parsed = campaignUpdateSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'Dados inválidos', details: parsed.error.flatten() });
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: parsed.error.flatten() });
     }
 
     const supabase = getSupabaseServer();
@@ -149,9 +162,14 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
       .eq('organization_id', req.orgId)
       .single();
 
-    if (!existing) return res.status(404).json({ error: 'Campanha não encontrada' });
+    if (!existing)
+      return res.status(404).json({ error: 'Campanha não encontrada' });
     if (!['draft', 'paused'].includes(existing.status)) {
-      return res.status(400).json({ error: 'Só é possível editar campanhas em rascunho ou pausadas' });
+      return res
+        .status(400)
+        .json({
+          error: 'Só é possível editar campanhas em rascunho ou pausadas',
+        });
     }
 
     const { data, error } = await supabase
@@ -172,9 +190,12 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
 // ─── DELETE /api/campaigns/:id ─── Deletar campanha
 router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { isCampaignRunning } = await import('../../services/campaign-dispatcher.js');
+    const { isCampaignRunning } =
+      await import('../../services/campaign-dispatcher.js');
     if (isCampaignRunning(req.params.id)) {
-      return res.status(400).json({ error: 'Pare a campanha antes de excluir' });
+      return res
+        .status(400)
+        .json({ error: 'Pare a campanha antes de excluir' });
     }
 
     const supabase = getSupabaseServer();
@@ -196,7 +217,8 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
 router.post('/:id/instances', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { instance_id } = req.body;
-    if (!instance_id) return res.status(400).json({ error: 'instance_id obrigatório' });
+    if (!instance_id)
+      return res.status(400).json({ error: 'instance_id obrigatório' });
 
     const supabase = getSupabaseServer();
 
@@ -208,7 +230,8 @@ router.post('/:id/instances', verifyAuth, requireTenant, async (req, res) => {
       .eq('tenant_id', req.orgId)
       .maybeSingle();
 
-    if (!instance) return res.status(404).json({ error: 'Instância não encontrada' });
+    if (!instance)
+      return res.status(404).json({ error: 'Instância não encontrada' });
 
     const { data, error } = await supabase
       .from('campaign_instances')
@@ -228,62 +251,85 @@ router.post('/:id/instances', verifyAuth, requireTenant, async (req, res) => {
 });
 
 // ─── DELETE /api/campaigns/:id/instances/:instanceId ─── Remover instância
-router.delete('/:id/instances/:instanceId', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const supabase = getSupabaseServer();
-    const { error } = await supabase
-      .from('campaign_instances')
-      .delete()
-      .eq('campaign_id', req.params.id)
-      .eq('instance_id', req.params.instanceId);
+router.delete(
+  '/:id/instances/:instanceId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const supabase = getSupabaseServer();
+      const { error } = await supabase
+        .from('campaign_instances')
+        .delete()
+        .eq('campaign_id', req.params.id)
+        .eq('instance_id', req.params.instanceId);
 
-    if (error) throw error;
-    res.json({ deleted: true });
-  } catch (err) {
-    console.error('[Campaigns] Error removing instance:', err.message);
-    res.status(500).json({ error: err.message });
+      if (error) throw error;
+      res.json({ deleted: true });
+    } catch (err) {
+      console.error('[Campaigns] Error removing instance:', err.message);
+      res.status(500).json({ error: err.message });
+    }
   }
-});
+);
 
 // ─── POST /api/campaigns/:id/dispatch/start ─── Iniciar disparo
-router.post('/:id/dispatch/start', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { startDispatch } = await import('../../services/campaign-dispatcher.js');
-    const result = await startDispatch(req.params.id);
-    res.json(result);
-  } catch (err) {
-    console.error('[Campaigns] Error starting dispatch:', err.message);
-    res.status(400).json({ error: err.message });
+router.post(
+  '/:id/dispatch/start',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { startDispatch } =
+        await import('../../services/campaign-dispatcher.js');
+      const result = await startDispatch(req.params.id);
+      res.json(result);
+    } catch (err) {
+      console.error('[Campaigns] Error starting dispatch:', err.message);
+      res.status(400).json({ error: err.message });
+    }
   }
-});
+);
 
 // ─── POST /api/campaigns/:id/dispatch/pause ─── Pausar disparo
-router.post('/:id/dispatch/pause', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { pauseDispatch } = await import('../../services/campaign-dispatcher.js');
-    const result = await pauseDispatch(req.params.id);
-    res.json(result);
-  } catch (err) {
-    console.error('[Campaigns] Error pausing dispatch:', err.message);
-    res.status(400).json({ error: err.message });
+router.post(
+  '/:id/dispatch/pause',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { pauseDispatch } =
+        await import('../../services/campaign-dispatcher.js');
+      const result = await pauseDispatch(req.params.id);
+      res.json(result);
+    } catch (err) {
+      console.error('[Campaigns] Error pausing dispatch:', err.message);
+      res.status(400).json({ error: err.message });
+    }
   }
-});
+);
 
 // ─── GET /api/campaigns/:id/dispatch/progress ─── Status do disparo
-router.get('/:id/dispatch/progress', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { isCampaignRunning, getCampaignProgress } = await import('../../services/campaign-dispatcher.js');
-    const running = isCampaignRunning(req.params.id);
-    const progress = getCampaignProgress(req.params.id);
+router.get(
+  '/:id/dispatch/progress',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { isCampaignRunning, getCampaignProgress } =
+        await import('../../services/campaign-dispatcher.js');
+      const running = isCampaignRunning(req.params.id);
+      const progress = getCampaignProgress(req.params.id);
 
-    res.json({
-      running,
-      sent: progress?.totalSent || 0,
-      failed: progress?.totalFailed || 0,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+      res.json({
+        running,
+        sent: progress?.totalSent || 0,
+        failed: progress?.totalFailed || 0,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
-});
+);
 
 export default router;

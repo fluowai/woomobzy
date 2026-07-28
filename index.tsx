@@ -19,28 +19,35 @@ const root = ReactDOM.createRoot(rootElement);
 async function bootstrapApp() {
   try {
     const hostname = window.location.hostname;
-    
+
     // Default domains that should definitely use the Master DB
-    const isMasterDomain = hostname.includes('localhost') || 
-                           hostname.includes('imobzy.com.br') || 
-                           hostname.includes('wootech.com.br') || 
-                           hostname.includes('consultio.com.br') ||
-                           hostname.includes('vercel.app');
-                           
+    const isMasterDomain =
+      hostname.includes('localhost') ||
+      hostname.includes('imobzy.com.br') ||
+      hostname.includes('wootech.com.br') ||
+      hostname.includes('consultio.com.br') ||
+      hostname.includes('vercel.app');
+
     if (!isMasterDomain) {
-      logger.info(`🔍 BYOB: Verificando infraestrutura para o domínio ${hostname}`);
-      
+      logger.info(
+        `🔍 BYOB: Verificando infraestrutura para o domínio ${hostname}`
+      );
+
       const { data, error } = await supabase
         .from('public_tenant_discovery')
         .select('supabase_url, supabase_anon_key')
         .eq('domain', hostname)
         .single();
-        
+
       if (!error && data && data.supabase_url && data.supabase_anon_key) {
-        logger.info(`✨ BYOB: Infraestrutura customizada encontrada! Redirecionando backend...`);
+        logger.info(
+          `✨ BYOB: Infraestrutura customizada encontrada! Redirecionando backend...`
+        );
         setTenantSupabase(data.supabase_url, data.supabase_anon_key);
       } else {
-        logger.info(`ℹ️ BYOB: Nenhuma infraestrutura customizada encontrada. Usando Master DB.`);
+        logger.info(
+          `ℹ️ BYOB: Nenhuma infraestrutura customizada encontrada. Usando Master DB.`
+        );
       }
     }
   } catch (err) {

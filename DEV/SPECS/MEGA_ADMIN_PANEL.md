@@ -33,16 +33,16 @@ PROPOSTO (hierárquico):
 
 ### O que já existe
 
-| Componente | Status | Observação |
-|---|---|---|
-| Role `superadmin` no AuthContext | ✅ | `role: 'admin' \| 'broker' \| 'superadmin'` |
-| `organizations.is_reseller` | ✅ | Boolean no banco, já usado em queries |
-| `organizations.parent_id` | ✅ | UUID FK, já usado em RLS policies |
-| `isMegaAdmin` no SuperAdminLayout | ⚠️ | Só muda o título, não filtra nada |
-| `isMegaAdmin` nos Layouts (Rural/Urban) | ⚠️ | Só muda label do link "Super Admin" |
-| `verifySuperAdmin` no backend | ✅ | Checa `role === 'superadmin'` |
-| Rotas `/superadmin/*` | ✅ | 18 sub-rotas em App.tsx |
-| `SuperAdminGuard` | ✅ | Redireciona superadmins para `/superadmin` |
+| Componente                              | Status | Observação                                  |
+| --------------------------------------- | ------ | ------------------------------------------- |
+| Role `superadmin` no AuthContext        | ✅     | `role: 'admin' \| 'broker' \| 'superadmin'` |
+| `organizations.is_reseller`             | ✅     | Boolean no banco, já usado em queries       |
+| `organizations.parent_id`               | ✅     | UUID FK, já usado em RLS policies           |
+| `isMegaAdmin` no SuperAdminLayout       | ⚠️     | Só muda o título, não filtra nada           |
+| `isMegaAdmin` nos Layouts (Rural/Urban) | ⚠️     | Só muda label do link "Super Admin"         |
+| `verifySuperAdmin` no backend           | ✅     | Checa `role === 'superadmin'`               |
+| Rotas `/superadmin/*`                   | ✅     | 18 sub-rotas em App.tsx                     |
+| `SuperAdminGuard`                       | ✅     | Redireciona superadmins para `/superadmin`  |
 
 ### O que falta
 
@@ -61,10 +61,12 @@ PROPOSTO (hierárquico):
 ### Decisão: Não criar role separada
 
 Usar a mesma role `superadmin` para ambos, diferenciando por:
+
 - **Mega Admin**: `role === 'superadmin' && (!organization_id || !organization?.is_reseller)`
 - **Super Admin (Reseller)**: `role === 'superadmin' && organization?.is_reseller === true`
 
 **Por quê?**
+
 - Evita migração de dados (não precisa atualizar profiles existentes)
 - Compatível com o sistema de impersonation atual
 - Mais simples de manter no backend
@@ -115,7 +117,11 @@ const megaNavItems = [
   { icon: BarChart3, label: 'Analytics', path: '/megaadmin/analytics' },
   { icon: Activity, label: 'Monitoring', path: '/megaadmin/monitoring' },
   { icon: DollarSign, label: 'Billing', path: '/megaadmin/billing' },
-  { icon: ToggleRight, label: 'Feature Flags', path: '/megaadmin/feature-flags' },
+  {
+    icon: ToggleRight,
+    label: 'Feature Flags',
+    path: '/megaadmin/feature-flags',
+  },
   { icon: ScrollText, label: 'Audit Log', path: '/megaadmin/audit-log' },
   { icon: Settings, label: 'Configurações', path: '/megaadmin/settings' },
 ];
@@ -141,6 +147,7 @@ const superNavItems = [
 ```
 
 **Removidos do Super Admin (movidos para Mega):**
+
 - Analytics (agora é global)
 - Monitoring (agora é global)
 - Feature Flags (agora é global)
@@ -154,31 +161,31 @@ const superNavItems = [
 
 ### 5.1 Frontend
 
-| Arquivo | Descrição | Prioridade |
-|---|---|---|
-| `views/megaadmin/MegaAdminLayout.tsx` | Layout com sidebar mega admin | ALTA |
-| `views/megaadmin/Dashboard.tsx` | Dashboard global (resellers, tenants, MRR) | ALTA |
-| `views/megaadmin/ResellerManager.tsx` | CRUD de resellers/whitelabels | ALTA |
-| `views/megaadmin/PlatformAnalytics.tsx` | Analytics global | MÉDIA |
-| `views/megaadmin/PlatformMonitoring.tsx` | Health check global | MÉDIA |
-| `views/megaadmin/BillingOverview.tsx` | Billing global | MÉDIA |
-| `views/megaadmin/FeatureFlags.tsx` | Feature flags da plataforma | MÉDIA |
-| `views/megaadmin/AuditLog.tsx` | Audit log global | MÉDIA |
-| `views/megaadmin/GlobalSettings.tsx` | Configurações globais | MÉDIA |
-| `components/MegaAdminGuard.tsx` | Guard para mega admin | ALTA |
+| Arquivo                                  | Descrição                                  | Prioridade |
+| ---------------------------------------- | ------------------------------------------ | ---------- |
+| `views/megaadmin/MegaAdminLayout.tsx`    | Layout com sidebar mega admin              | ALTA       |
+| `views/megaadmin/Dashboard.tsx`          | Dashboard global (resellers, tenants, MRR) | ALTA       |
+| `views/megaadmin/ResellerManager.tsx`    | CRUD de resellers/whitelabels              | ALTA       |
+| `views/megaadmin/PlatformAnalytics.tsx`  | Analytics global                           | MÉDIA      |
+| `views/megaadmin/PlatformMonitoring.tsx` | Health check global                        | MÉDIA      |
+| `views/megaadmin/BillingOverview.tsx`    | Billing global                             | MÉDIA      |
+| `views/megaadmin/FeatureFlags.tsx`       | Feature flags da plataforma                | MÉDIA      |
+| `views/megaadmin/AuditLog.tsx`           | Audit log global                           | MÉDIA      |
+| `views/megaadmin/GlobalSettings.tsx`     | Configurações globais                      | MÉDIA      |
+| `components/MegaAdminGuard.tsx`          | Guard para mega admin                      | ALTA       |
 
 ### 5.2 Backend
 
-| Arquivo | Descrição | Prioridade |
-|---|---|---|
-| `server/middleware/auth.js` | Adicionar `verifyMegaAdmin` | ALTA |
-| `server/routes/mega-admin.js` | Rotas CRUD para resellers | ALTA |
+| Arquivo                       | Descrição                   | Prioridade |
+| ----------------------------- | --------------------------- | ---------- |
+| `server/middleware/auth.js`   | Adicionar `verifyMegaAdmin` | ALTA       |
+| `server/routes/mega-admin.js` | Rotas CRUD para resellers   | ALTA       |
 
 ### 5.3 Migrações
 
-| Arquivo | Descrição | Prioridade |
-|---|---|---|
-| `migrations/XX_add_indexes_reseller.sql` | Índices em `parent_id` e `is_reseller` | ALTA |
+| Arquivo                                  | Descrição                              | Prioridade |
+| ---------------------------------------- | -------------------------------------- | ---------- |
+| `migrations/XX_add_indexes_reseller.sql` | Índices em `parent_id` e `is_reseller` | ALTA       |
 
 ---
 
@@ -252,7 +259,8 @@ if (profile?.role === 'superadmin' && !isImpersonating) {
 
 ```tsx
 // ATUAL: tem isMegaAdmin mas só muda título
-const isMegaAdmin = profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
+const isMegaAdmin =
+  profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
 const panelTitle = isMegaAdmin ? 'Mega Admin' : 'Super Admin';
 
 // PROPOSTO: SuperAdminLayout só mostra navegação de super admin
@@ -285,7 +293,14 @@ if (profile?.organization?.is_reseller) {
 
 ```tsx
 // ADICIONAR: rotas do mega admin
-<Route path="/megaadmin" element={<ProtectedRoute><MegaAdminLayout /></ProtectedRoute>}>
+<Route
+  path="/megaadmin"
+  element={
+    <ProtectedRoute>
+      <MegaAdminLayout />
+    </ProtectedRoute>
+  }
+>
   <Route index element={<MegaAdminDashboard />} />
   <Route path="resellers" element={<ResellerManager />} />
   <Route path="analytics" element={<PlatformAnalytics />} />
@@ -308,8 +323,10 @@ if (profile?.organization?.is_reseller) {
 
 ```tsx
 // ADICIONAR: helper para distinguir mega vs super
-const isMegaAdmin = profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
-const isSuperAdmin = profile?.role === 'superadmin' && profile?.organization?.is_reseller;
+const isMegaAdmin =
+  profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
+const isSuperAdmin =
+  profile?.role === 'superadmin' && profile?.organization?.is_reseller;
 ```
 
 ### 7.8 Backend: `server/middleware/auth.js`
@@ -320,11 +337,15 @@ export const verifyMegaAdmin = (req, res, next) => {
   verifyAuth(req, res, (err) => {
     if (err) return next(err);
     if (req.userRole !== 'superadmin') {
-      return res.status(403).json({ error: 'Acesso negado: Requer Mega Admin' });
+      return res
+        .status(403)
+        .json({ error: 'Acesso negado: Requer Mega Admin' });
     }
     // Mega admin = superadmin SEM organization ou com org NÃO-reseller
     if (req.realOrgId && req.isReseller) {
-      return res.status(403).json({ error: 'Acesso negado: Requer Mega Admin' });
+      return res
+        .status(403)
+        .json({ error: 'Acesso negado: Requer Mega Admin' });
     }
     next();
   });
@@ -370,6 +391,7 @@ PanelGuard: role=admin/broker → /urban ou /rural
 ## 9. Ordem de Implementação
 
 ### Fase 1: Fundação (ALTA)
+
 1. Criar `DEV/SPECS/MEGA_ADMIN_PANEL.md` (este documento)
 2. Criar `MegaAdminGuard.tsx`
 3. Criar `views/megaadmin/MegaAdminLayout.tsx`
@@ -379,17 +401,20 @@ PanelGuard: role=admin/broker → /urban ou /rural
 7. Adicionar `verifyMegaAdmin` no backend
 
 ### Fase 2: Resellers (ALTA)
+
 8. Criar `views/megaadmin/ResellerManager.tsx`
 9. Criar `server/routes/mega-admin.js`
 10. Adicionar rotas no `server/index.js`
 
 ### Fase 3: Super Admin Reduzido (MÉDIA)
+
 11. Modificar `SuperAdminLayout.tsx` (remover nav items do mega)
 12. Modificar `TenantManager.tsx` (filtrar por parent_id)
 13. Modificar `Dashboard.tsx` (filtrar por parent_id)
 14. Remover FeatureFlags e GlobalSettings do SuperAdmin (agora são mega)
 
 ### Fase 4: Polish (BAIXA)
+
 15. Criar `PlatformAnalytics.tsx`
 16. Criar `PlatformMonitoring.tsx`
 17. Criar `BillingOverview.tsx`
@@ -403,13 +428,13 @@ PanelGuard: role=admin/broker → /urban ou /rural
 
 ## 10. Riscos e Mitigações
 
-| Risco | Impacto | Mitigação |
-|---|---|---|
-| Quebrar acesso de super admins existentes | ALTO | Testar login com reseller ANTES de deploy |
-| Confusão de roles | MÉDIO | Usar helpers `isMegaAdmin`/`isSuperAdmin` em vez de checks inline |
-| RLS não filtra corretamente | ALTO | Testar queries com service role vs user role |
-| Backend não diferencia mega vs super | ALTO | `verifyMegaAdmin` deve verificar `!org.is_reseller` |
-| Layout quebrado em mobile | BAIXO | Seguir padrão existente do SuperAdminLayout |
+| Risco                                     | Impacto | Mitigação                                                         |
+| ----------------------------------------- | ------- | ----------------------------------------------------------------- |
+| Quebrar acesso de super admins existentes | ALTO    | Testar login com reseller ANTES de deploy                         |
+| Confusão de roles                         | MÉDIO   | Usar helpers `isMegaAdmin`/`isSuperAdmin` em vez de checks inline |
+| RLS não filtra corretamente               | ALTO    | Testar queries com service role vs user role                      |
+| Backend não diferencia mega vs super      | ALTO    | `verifyMegaAdmin` deve verificar `!org.is_reseller`               |
+| Layout quebrado em mobile                 | BAIXO   | Seguir padrão existente do SuperAdminLayout                       |
 
 ---
 

@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { CheckCircle2, ArrowRight, Lock, Palette, Loader2, Key } from 'lucide-react';
+import {
+  CheckCircle2,
+  ArrowRight,
+  Lock,
+  Palette,
+  Loader2,
+  Key,
+} from 'lucide-react';
 
 const SetupWhitelabel: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -16,7 +23,7 @@ const SetupWhitelabel: React.FC = () => {
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const [primaryColor, setPrimaryColor] = useState('#064e3b');
   const [secondaryColor, setSecondaryColor] = useState('#d4af37');
 
@@ -32,13 +39,17 @@ const SetupWhitelabel: React.FC = () => {
   const authenticateWithTempPassword = async () => {
     setLoading(true);
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email as string,
-        password: tempPassword as string,
-      });
+      const { data, error: authError } = await supabase.auth.signInWithPassword(
+        {
+          email: email as string,
+          password: tempPassword as string,
+        }
+      );
 
       if (authError) {
-        throw new Error('Acesso negado ou link expirado. Se você já configurou, faça login normalmente.');
+        throw new Error(
+          'Acesso negado ou link expirado. Se você já configurou, faça login normalmente.'
+        );
       }
 
       // Fetch org id to update colors later
@@ -47,7 +58,7 @@ const SetupWhitelabel: React.FC = () => {
         .select('organization_id')
         .eq('id', data.user.id)
         .single();
-        
+
       if (profile?.organization_id) {
         setOrgId(profile.organization_id);
       }
@@ -75,11 +86,11 @@ const SetupWhitelabel: React.FC = () => {
     setError('');
     try {
       const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
+        password: newPassword,
       });
 
       if (updateError) throw updateError;
-      
+
       setStep(2);
     } catch (err: any) {
       setError(err.message || 'Erro ao atualizar senha.');
@@ -116,7 +127,9 @@ const SetupWhitelabel: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
         <Loader2 size={48} className="animate-spin text-purple-600 mb-4" />
-        <h2 className="text-xl font-bold text-slate-800">Validando acesso...</h2>
+        <h2 className="text-xl font-bold text-slate-800">
+          Validando acesso...
+        </h2>
       </div>
     );
   }
@@ -144,7 +157,6 @@ const SetupWhitelabel: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
-        
         {/* Header Progress */}
         {step < 3 && (
           <div className="mb-8">
@@ -179,7 +191,9 @@ const SetupWhitelabel: React.FC = () => {
                 <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Key size={32} className="text-blue-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900">Sua Nova Senha</h2>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Sua Nova Senha
+                </h2>
                 <p className="text-slate-500 mt-2 text-sm">
                   Crie uma senha forte e segura para o seu usuário Super Admin.
                 </p>
@@ -217,7 +231,11 @@ const SetupWhitelabel: React.FC = () => {
                 disabled={loading}
                 className="w-full mt-6 bg-purple-600 text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-purple-700 transition-all disabled:opacity-70 shadow-lg shadow-purple-600/20"
               >
-                {loading ? <Loader2 size={18} className="animate-spin" /> : 'Salvar Senha'}
+                {loading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  'Salvar Senha'
+                )}
                 {!loading && <ArrowRight size={18} />}
               </button>
             </div>
@@ -230,7 +248,9 @@ const SetupWhitelabel: React.FC = () => {
                 <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Palette size={32} className="text-purple-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900">Identidade da Marca</h2>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Identidade da Marca
+                </h2>
                 <p className="text-slate-500 mt-2 text-sm">
                   Quais são as cores principais da sua nova plataforma?
                 </p>
@@ -256,7 +276,7 @@ const SetupWhitelabel: React.FC = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
                     Cor Secundária
@@ -283,7 +303,11 @@ const SetupWhitelabel: React.FC = () => {
                 disabled={loading}
                 className="w-full mt-6 bg-purple-600 text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-purple-700 transition-all disabled:opacity-70 shadow-lg shadow-purple-600/20"
               >
-                {loading ? <Loader2 size={18} className="animate-spin" /> : 'Finalizar Setup'}
+                {loading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  'Finalizar Setup'
+                )}
                 {!loading && <CheckCircle2 size={18} />}
               </button>
             </div>
@@ -313,7 +337,6 @@ const SetupWhitelabel: React.FC = () => {
               </button>
             </div>
           )}
-          
         </div>
       </div>
     </div>

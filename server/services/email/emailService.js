@@ -34,13 +34,18 @@ export function sanitizeEmailHtml(html = '') {
     allowedAttributes: allowedHtmlAttributes,
     allowedSchemes: ['http', 'https', 'mailto', 'cid', 'data'],
     transformTags: {
-      a: sanitizeHtml.simpleTransform('a', { target: '_blank', rel: 'noopener noreferrer' }),
+      a: sanitizeHtml.simpleTransform('a', {
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      }),
     },
   });
 }
 
 export function normalizeEmailAddress(value = '') {
-  return String(value || '').trim().toLowerCase();
+  return String(value || '')
+    .trim()
+    .toLowerCase();
 }
 
 function isImplicitTlsPort(port, implicitTlsPort) {
@@ -82,9 +87,19 @@ function firstAddress(addresses) {
   };
 }
 
-function createThreadId({ messageId, inReplyTo, references = [], subject = '', fromEmail = '' }) {
-  const root = references?.[0] || inReplyTo || messageId || `${subject}:${fromEmail}`;
-  return crypto.createHash('sha256').update(String(root || crypto.randomUUID())).digest('hex');
+function createThreadId({
+  messageId,
+  inReplyTo,
+  references = [],
+  subject = '',
+  fromEmail = '',
+}) {
+  const root =
+    references?.[0] || inReplyTo || messageId || `${subject}:${fromEmail}`;
+  return crypto
+    .createHash('sha256')
+    .update(String(root || crypto.randomUUID()))
+    .digest('hex');
 }
 
 function normalizeTextForIntent(value = '') {
@@ -95,7 +110,9 @@ function normalizeTextForIntent(value = '') {
 }
 
 function detectEmailAction({ subject = '', text = '', fromEmail = '' }) {
-  const content = normalizeTextForIntent(`${subject}\n${text}`).replace(/\s+/g, ' ').trim();
+  const content = normalizeTextForIntent(`${subject}\n${text}`)
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!content) return null;
 
   const rules = [
@@ -103,31 +120,36 @@ function detectEmailAction({ subject = '', text = '', fromEmail = '' }) {
       type: 'Visita',
       priority: 'high',
       title: 'Agendar visita',
-      match: /\b(visita|visitar|conhecer o imovel|agenda|agendar|horario|reuniao)\b/,
+      match:
+        /\b(visita|visitar|conhecer o imovel|agenda|agendar|horario|reuniao)\b/,
     },
     {
       type: 'Proposta',
       priority: 'high',
       title: 'Responder proposta',
-      match: /\b(proposta|oferta|negociar|contraproposta|entrada|parcelamento)\b/,
+      match:
+        /\b(proposta|oferta|negociar|contraproposta|entrada|parcelamento)\b/,
     },
     {
       type: 'Documento',
       priority: 'medium',
       title: 'Enviar documentos',
-      match: /\b(documento|contrato|matricula|escritura|certidao|comprovante|assinatura)\b/,
+      match:
+        /\b(documento|contrato|matricula|escritura|certidao|comprovante|assinatura)\b/,
     },
     {
       type: 'Email',
       priority: 'medium',
       title: 'Responder duvida comercial',
-      match: /\b(preco|valor|condominio|iptu|metragem|area|localizacao|endereco|disponivel|informacao|duvida)\b/,
+      match:
+        /\b(preco|valor|condominio|iptu|metragem|area|localizacao|endereco|disponivel|informacao|duvida)\b/,
     },
     {
       type: 'Retorno',
       priority: 'high',
       title: 'Retornar cliente',
-      match: /\b(urgente|preciso|pode me ligar|me retorna|retorno|responder|aguardo|manda|envia|quero)\b/,
+      match:
+        /\b(urgente|preciso|pode me ligar|me retorna|retorno|responder|aguardo|manda|envia|quero)\b/,
     },
   ];
 
@@ -143,7 +165,16 @@ function detectEmailAction({ subject = '', text = '', fromEmail = '' }) {
   };
 }
 
-async function createEmailActivity({ supabase, organizationId, userId, emailId, leadId, subject, bodyText, fromEmail }) {
+async function createEmailActivity({
+  supabase,
+  organizationId,
+  userId,
+  emailId,
+  leadId,
+  subject,
+  bodyText,
+  fromEmail,
+}) {
   if (!leadId) return null;
 
   const action = detectEmailAction({ subject, text: bodyText, fromEmail });
@@ -159,7 +190,10 @@ async function createEmailActivity({ supabase, organizationId, userId, emailId, 
     .maybeSingle();
 
   if (findError) {
-    console.warn('[EmailAgent] Falha ao verificar atividade existente:', findError.message);
+    console.warn(
+      '[EmailAgent] Falha ao verificar atividade existente:',
+      findError.message
+    );
     return null;
   }
 
@@ -199,7 +233,11 @@ function headersToJson(headers) {
   for (const [key, value] of headers || []) {
     if (value == null) {
       result[key] = null;
-    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    } else if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
       result[key] = value;
     } else if (value instanceof Date) {
       result[key] = value.toISOString();
@@ -269,7 +307,9 @@ export async function testEmailConnection(accountConfig) {
     await smtpTransport.verify();
   } catch (error) {
     if (String(error?.message || '').includes('wrong version number')) {
-      const friendly = new Error('Falha SSL/TLS: use porta 465 para SMTP SSL direto ou porta 587 com STARTTLS. Para IMAP, use 993 com SSL direto ou 143 sem SSL direto.');
+      const friendly = new Error(
+        'Falha SSL/TLS: use porta 465 para SMTP SSL direto ou porta 587 com STARTTLS. Para IMAP, use 993 com SSL direto ou 143 sem SSL direto.'
+      );
       friendly.statusCode = 400;
       throw friendly;
     }
@@ -277,7 +317,12 @@ export async function testEmailConnection(accountConfig) {
   }
 }
 
-export async function syncEmailAccount({ accountId, organizationId, userId, limit = 50 }) {
+export async function syncEmailAccount({
+  accountId,
+  organizationId,
+  userId,
+  limit = 50,
+}) {
   const syncKey = `${organizationId}:${accountId}`;
   if (activeSyncs.has(syncKey)) {
     const error = new Error('Sincronizacao ja em andamento para esta conta.');
@@ -303,9 +348,15 @@ export async function syncEmailAccount({ accountId, organizationId, userId, limi
       throw error;
     }
 
-    await supabase.from('email_accounts').update({ sync_status: 'syncing', sync_error: null }).eq('id', accountId);
+    await supabase
+      .from('email_accounts')
+      .update({ sync_status: 'syncing', sync_error: null })
+      .eq('id', accountId);
 
-    const client = createImapClient(account, decryptEmailSecret(account.encrypted_password));
+    const client = createImapClient(
+      account,
+      decryptEmailSecret(account.encrypted_password)
+    );
     await client.connect();
 
     let maxUid = Number(account.last_inbox_uid || 0);
@@ -314,13 +365,17 @@ export async function syncEmailAccount({ accountId, organizationId, userId, limi
 
     const lock = await client.getMailboxLock('INBOX');
     try {
-      for await (const message of client.fetch(range, {
-        uid: true,
-        flags: true,
-        source: true,
-        envelope: true,
-        internalDate: true,
-      }, { uid: true })) {
+      for await (const message of client.fetch(
+        range,
+        {
+          uid: true,
+          flags: true,
+          source: true,
+          envelope: true,
+          internalDate: true,
+        },
+        { uid: true }
+      )) {
         if (synced >= Number(limit)) break;
 
         const parsed = await simpleParser(message.source);
@@ -330,9 +385,13 @@ export async function syncEmailAccount({ accountId, organizationId, userId, limi
         const cc = addressesToArray(parsed.cc);
         const references = Array.isArray(parsed.references)
           ? parsed.references
-          : String(parsed.references || '').split(/\s+/).filter(Boolean);
-        const messageId = parsed.messageId || message.envelope?.messageId || null;
-        const inReplyTo = parsed.inReplyTo || message.envelope?.inReplyTo || null;
+          : String(parsed.references || '')
+              .split(/\s+/)
+              .filter(Boolean);
+        const messageId =
+          parsed.messageId || message.envelope?.messageId || null;
+        const inReplyTo =
+          parsed.inReplyTo || message.envelope?.inReplyTo || null;
         const threadId = createThreadId({
           messageId,
           inReplyTo,
@@ -340,7 +399,11 @@ export async function syncEmailAccount({ accountId, organizationId, userId, limi
           subject: parsed.subject,
           fromEmail: from.email,
         });
-        const lead = await findLeadByEmail(supabase, organizationId, from.email);
+        const lead = await findLeadByEmail(
+          supabase,
+          organizationId,
+          from.email
+        );
 
         const row = {
           organization_id: organizationId,
@@ -355,7 +418,11 @@ export async function syncEmailAccount({ accountId, organizationId, userId, limi
           body_html: sanitizeEmailHtml(parsedHtml),
           body_text: parsed.text || '',
           preview: textPreview(parsedHtml, parsed.text),
-          date: (parsed.date || message.internalDate || new Date()).toISOString(),
+          date: (
+            parsed.date ||
+            message.internalDate ||
+            new Date()
+          ).toISOString(),
           is_read: Boolean(message.flags?.has('\\Seen')),
           is_archived: false,
           message_id: messageId,
@@ -392,7 +459,11 @@ export async function syncEmailAccount({ accountId, organizationId, userId, limi
           accountId: account.id,
           emailId: saved.id,
           eventType: 'email_received',
-          payload: { from_email: saved.from_email, subject: saved.subject, lead_id: saved.lead_id },
+          payload: {
+            from_email: saved.from_email,
+            subject: saved.subject,
+            lead_id: saved.lead_id,
+          },
         });
 
         maxUid = Math.max(maxUid, Number(message.uid || 0));
@@ -426,7 +497,17 @@ export async function syncEmailAccount({ accountId, organizationId, userId, limi
   }
 }
 
-export async function sendEmail({ organizationId, userId, accountId, to, subject, html, inReplyTo = null, references = [], leadId = null }) {
+export async function sendEmail({
+  organizationId,
+  userId,
+  accountId,
+  to,
+  subject,
+  html,
+  inReplyTo = null,
+  references = [],
+  leadId = null,
+}) {
   const supabase = getSupabaseServer();
   const query = supabase
     .from('email_accounts')
@@ -436,7 +517,11 @@ export async function sendEmail({ organizationId, userId, accountId, to, subject
 
   const { data: account, error: accountError } = accountId
     ? await query.eq('id', accountId).single()
-    : await query.eq('user_id', userId).order('created_at', { ascending: true }).limit(1).single();
+    : await query
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
 
   if (accountError || !account) {
     const error = new Error('Conta de email nao encontrada para envio.');
@@ -446,7 +531,10 @@ export async function sendEmail({ organizationId, userId, accountId, to, subject
 
   const cleanTo = Array.isArray(to)
     ? to.map(normalizeEmailAddress).filter(Boolean)
-    : String(to || '').split(',').map(normalizeEmailAddress).filter(Boolean);
+    : String(to || '')
+        .split(',')
+        .map(normalizeEmailAddress)
+        .filter(Boolean);
   if (!cleanTo.length) {
     const error = new Error('Informe ao menos um destinatario.');
     error.statusCode = 400;
@@ -454,7 +542,10 @@ export async function sendEmail({ organizationId, userId, accountId, to, subject
   }
 
   const cleanHtml = sanitizeEmailHtml(html);
-  const transport = createSmtpTransport(account, decryptEmailSecret(account.encrypted_password));
+  const transport = createSmtpTransport(
+    account,
+    decryptEmailSecret(account.encrypted_password)
+  );
   const info = await transport.sendMail({
     from: account.email,
     to: cleanTo,
@@ -464,7 +555,8 @@ export async function sendEmail({ organizationId, userId, accountId, to, subject
     references: references?.length ? references : undefined,
   });
 
-  const messageId = info.messageId || `<${crypto.randomUUID()}@imobfluow.local>`;
+  const messageId =
+    info.messageId || `<${crypto.randomUUID()}@imobfluow.local>`;
   const threadId = createThreadId({
     messageId,
     inReplyTo,
@@ -485,7 +577,10 @@ export async function sendEmail({ organizationId, userId, accountId, to, subject
       from_email: normalizeEmailAddress(account.email),
       to_email: cleanTo,
       body_html: cleanHtml,
-      body_text: cleanHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+      body_text: cleanHtml
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
       preview: textPreview(cleanHtml),
       date: new Date().toISOString(),
       is_read: true,
@@ -513,7 +608,13 @@ export async function sendEmail({ organizationId, userId, accountId, to, subject
   return saved;
 }
 
-export async function sendSystemEmail({ organizationId, to, subject, html, replyTo = null }) {
+export async function sendSystemEmail({
+  organizationId,
+  to,
+  subject,
+  html,
+  replyTo = null,
+}) {
   const supabase = getSupabaseServer();
   let smtpConfig = null;
   let fromEmail = process.env.SMTP_FROM_EMAIL || 'no-reply@imobfluow.com';
@@ -526,7 +627,10 @@ export async function sendSystemEmail({ organizationId, to, subject, html, reply
       .eq('id', organizationId)
       .maybeSingle();
 
-    if (orgData?.site_settings?.smtp_config?.host && orgData?.site_settings?.smtp_config?.password_encrypted) {
+    if (
+      orgData?.site_settings?.smtp_config?.host &&
+      orgData?.site_settings?.smtp_config?.password_encrypted
+    ) {
       smtpConfig = orgData.site_settings.smtp_config;
       fromName = orgData.name;
     } else if (orgData?.parent_id) {
@@ -535,15 +639,23 @@ export async function sendSystemEmail({ organizationId, to, subject, html, reply
         .select('name, site_settings!inner(smtp_config)')
         .eq('id', orgData.parent_id)
         .maybeSingle();
-      
-      if (parentData?.site_settings?.smtp_config?.host && parentData?.site_settings?.smtp_config?.password_encrypted) {
+
+      if (
+        parentData?.site_settings?.smtp_config?.host &&
+        parentData?.site_settings?.smtp_config?.password_encrypted
+      ) {
         smtpConfig = parentData.site_settings.smtp_config;
         fromName = parentData.name;
       }
     }
   }
 
-  const cleanTo = Array.isArray(to) ? to.map(normalizeEmailAddress).filter(Boolean) : String(to || '').split(',').map(normalizeEmailAddress).filter(Boolean);
+  const cleanTo = Array.isArray(to)
+    ? to.map(normalizeEmailAddress).filter(Boolean)
+    : String(to || '')
+        .split(',')
+        .map(normalizeEmailAddress)
+        .filter(Boolean);
   if (!cleanTo.length) throw new Error('Informe ao menos um destinatario.');
 
   const cleanHtml = sanitizeEmailHtml(html);
@@ -562,7 +674,9 @@ export async function sendSystemEmail({ organizationId, to, subject, html, reply
     senderEmail = smtpConfig.email;
   } else {
     if (!process.env.SMTP_HOST || !process.env.SMTP_PASS) {
-      console.warn('[EmailService] SMTP da plataforma nao configurado. Ignorando envio de e-mail.');
+      console.warn(
+        '[EmailService] SMTP da plataforma nao configurado. Ignorando envio de e-mail.'
+      );
       return null;
     }
     transport = nodemailer.createTransport({
@@ -582,4 +696,3 @@ export async function sendSystemEmail({ organizationId, to, subject, html, reply
     replyTo: replyTo || undefined,
   });
 }
-

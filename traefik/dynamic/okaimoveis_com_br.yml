@@ -4,7 +4,7 @@
 http:
   routers:
     okaimoveis_com_br_api:
-      rule: "Host(`okaimoveis.com.br`) && PathPrefix(`/api`)"
+      rule: 'Host(`okaimoveis.com.br`) && PathPrefix(`/api`)'
       entryPoints:
         - websecure
       priority: 1000
@@ -13,7 +13,7 @@ http:
       service: imobzy_api@file
 
     okaimoveis_com_br_frontend:
-      rule: "Host(`okaimoveis.com.br`)"
+      rule: 'Host(`okaimoveis.com.br`)'
       entryPoints:
         - websecure
       priority: 100

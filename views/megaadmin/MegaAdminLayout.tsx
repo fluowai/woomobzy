@@ -32,7 +32,11 @@ const MegaAdminLayout: React.FC = () => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/megaadmin' },
     { icon: Building2, label: 'Resellers', path: '/megaadmin/resellers' },
-    { icon: Building2, label: 'Clientes Diretos', path: '/megaadmin/direct-clients' },
+    {
+      icon: Building2,
+      label: 'Clientes Diretos',
+      path: '/megaadmin/direct-clients',
+    },
     { icon: BarChart3, label: 'Analytics', path: '/megaadmin/analytics' },
     { icon: Activity, label: 'Monitoring', path: '/megaadmin/monitoring' },
     { icon: DollarSign, label: 'Billing', path: '/megaadmin/billing' },
@@ -43,8 +47,16 @@ const MegaAdminLayout: React.FC = () => {
     },
     { icon: ScrollText, label: 'Audit Log', path: '/megaadmin/audit-log' },
     { icon: UploadCloud, label: 'Importador', path: '/megaadmin/importer' },
-    { icon: Database, label: 'Migração FluowAI', path: '/megaadmin/fluowai-migration' },
-    { icon: HardDrive, label: 'Storage', path: '/megaadmin/storage-intelligence' },
+    {
+      icon: Database,
+      label: 'Migração FluowAI',
+      path: '/megaadmin/fluowai-migration',
+    },
+    {
+      icon: HardDrive,
+      label: 'Storage',
+      path: '/megaadmin/storage-intelligence',
+    },
     { icon: Settings, label: 'Configurações', path: '/megaadmin/settings' },
   ];
 
@@ -68,7 +80,7 @@ const MegaAdminLayout: React.FC = () => {
     <div className="flex h-screen bg-gray-100">
       {/* Mobile Menu Overlay & Backdrop */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileMenuOpen(false)}
         />

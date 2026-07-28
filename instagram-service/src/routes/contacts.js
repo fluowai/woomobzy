@@ -14,7 +14,9 @@ router.get('/', async (req, res) => {
       .range(Number(offset), Number(offset) + Number(limit) - 1);
 
     if (search) {
-      query = query.or(`username.ilike.%${search}%,full_name.ilike.%${search}%`);
+      query = query.or(
+        `username.ilike.%${search}%,full_name.ilike.%${search}%`
+      );
     }
 
     const { data, error } = await query;

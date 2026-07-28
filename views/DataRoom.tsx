@@ -316,7 +316,10 @@ const DataRoom: React.FC = () => {
                         >
                           <Brain size={18} />
                         </button>
-                        <button onClick={() => toast.info('Menu de opções em breve')} className="p-3 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-indigo-600 transition-all">
+                        <button
+                          onClick={() => toast.info('Menu de opções em breve')}
+                          className="p-3 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                        >
                           <MoreVertical size={18} />
                         </button>
                       </div>
@@ -399,7 +402,10 @@ const DataRoom: React.FC = () => {
                 </div>
               </div>
 
-              <button onClick={() => toast.info('Geração de PDF do dossiê em breve')} className="w-full mt-8 py-4 bg-white text-slate-900 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-lg">
+              <button
+                onClick={() => toast.info('Geração de PDF do dossiê em breve')}
+                className="w-full mt-8 py-4 bg-white text-slate-900 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-lg"
+              >
                 Gerar Dossiê Completo (PDF)
               </button>
             </div>

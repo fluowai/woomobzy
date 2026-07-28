@@ -6,9 +6,7 @@ interface DividerBlockProps {
   isEditing?: boolean;
 }
 
-export const DividerBlock: React.FC<DividerBlockProps> = ({
-  block,
-}) => {
+export const DividerBlock: React.FC<DividerBlockProps> = ({ block }) => {
   const config = block.config as any;
 
   return (

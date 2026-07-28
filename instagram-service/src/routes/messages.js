@@ -28,9 +28,18 @@ router.get('/:conversationId', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { conversation_id, content, message_type = 'text', media_url, template_id, variables } = req.body;
+    const {
+      conversation_id,
+      content,
+      message_type = 'text',
+      media_url,
+      template_id,
+      variables,
+    } = req.body;
     if (!conversation_id || !content) {
-      return res.status(400).json({ error: 'conversation_id and content are required' });
+      return res
+        .status(400)
+        .json({ error: 'conversation_id and content are required' });
     }
 
     const { data: conversation, error: convError } = await supabase
@@ -84,7 +93,8 @@ router.post('/', async (req, res) => {
 router.post('/mark-read', async (req, res) => {
   try {
     const { conversation_id } = req.body;
-    if (!conversation_id) return res.status(400).json({ error: 'conversation_id is required' });
+    if (!conversation_id)
+      return res.status(400).json({ error: 'conversation_id is required' });
 
     const { error } = await supabase
       .from('instagram_messages')

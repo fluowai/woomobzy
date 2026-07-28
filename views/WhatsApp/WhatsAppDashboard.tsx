@@ -207,7 +207,9 @@ const WhatsAppDashboard: React.FC = () => {
       setMessages([]);
       if (selectedChat.platform === 'instagram') {
         loadMessages(selectedChat.id, '', 'instagram');
-        instagramApi.messages.markRead(selectedChat.instagram_conversation_id!).catch(() => {});
+        instagramApi.messages
+          .markRead(selectedChat.instagram_conversation_id!)
+          .catch(() => {});
       } else if (selectedInstance) {
         loadMessages(selectedChat.id, selectedInstance.id, 'whatsapp');
         chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
@@ -278,7 +280,9 @@ const WhatsAppDashboard: React.FC = () => {
 
         // Mark as read since chat is open
         if (selectedInstance) {
-          chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
+          chatApi
+            .markRead(selectedChat.id, selectedInstance.id)
+            .catch(() => {});
         }
       }
     });
@@ -468,14 +472,12 @@ const WhatsAppDashboard: React.FC = () => {
   const loadChats = async (instanceId: string) => {
     try {
       const data = await chatApi.list(instanceId);
-      const normalizedChats = (data || [])
-        .filter(isSupportedChat)
-        .map((chat) =>
-          whatsappChatToUnified({
-            ...chat,
-            last_message: normalizeMessagePreview(chat.last_message),
-          })
-        );
+      const normalizedChats = (data || []).filter(isSupportedChat).map((chat) =>
+        whatsappChatToUnified({
+          ...chat,
+          last_message: normalizeMessagePreview(chat.last_message),
+        })
+      );
       setChats((prev) => {
         const igChats = prev.filter((c) => c.platform === 'instagram');
         return sortUnifiedChats([...normalizedChats, ...igChats]);
@@ -507,18 +509,33 @@ const WhatsAppDashboard: React.FC = () => {
     }
   };
 
-  const loadMessages = async (chatId: string, instanceId: string, platform: 'whatsapp' | 'instagram' = 'whatsapp') => {
+  const loadMessages = async (
+    chatId: string,
+    instanceId: string,
+    platform: 'whatsapp' | 'instagram' = 'whatsapp'
+  ) => {
     setLoadingMessages(true);
     try {
       if (platform === 'instagram' && selectedChat?.instagram_conversation_id) {
-        const result = await instagramApi.messages.list(selectedChat.instagram_conversation_id, { limit: 100 });
+        const result = await instagramApi.messages.list(
+          selectedChat.instagram_conversation_id,
+          { limit: 100 }
+        );
         const unifiedMessages = (result.data || []).map((msg) =>
-          instagramMessageToUnified(msg, selectedChat.instagram_conversation_id!)
+          instagramMessageToUnified(
+            msg,
+            selectedChat.instagram_conversation_id!
+          )
         );
         setMessages(unifiedMessages);
       } else {
         const data = await messageApi.list(chatId, instanceId, 100);
-        setMessages((data.messages || []).map((m) => ({ ...m, platform: 'whatsapp' as const })));
+        setMessages(
+          (data.messages || []).map((m) => ({
+            ...m,
+            platform: 'whatsapp' as const,
+          }))
+        );
       }
     } catch (err: any) {
       if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
@@ -540,7 +557,11 @@ const WhatsAppDashboard: React.FC = () => {
           if (!convId) return;
           let mediaUrl: string | undefined;
           if (file) {
-            const uploadedUrl = await uploadFile(file, 'imobzymsg', 'instagram');
+            const uploadedUrl = await uploadFile(
+              file,
+              'imobzymsg',
+              'instagram'
+            );
             if (!uploadedUrl) {
               toast.error('Falha ao enviar midia para Instagram.');
               return;
@@ -567,7 +588,10 @@ const WhatsAppDashboard: React.FC = () => {
               file,
               content
             );
-            const unifiedMsg: UnifiedMessage = { ...(result?.data || result), platform: 'whatsapp' };
+            const unifiedMsg: UnifiedMessage = {
+              ...(result?.data || result),
+              platform: 'whatsapp',
+            };
             appendSentMessage(unifiedMsg);
             updateChatPreview(
               selectedChat.id,
@@ -587,7 +611,10 @@ const WhatsAppDashboard: React.FC = () => {
               selectedInstance.id,
               content
             );
-            const unifiedMsg: UnifiedMessage = { ...(result?.data || result), platform: 'whatsapp' };
+            const unifiedMsg: UnifiedMessage = {
+              ...(result?.data || result),
+              platform: 'whatsapp',
+            };
             appendSentMessage(unifiedMsg);
             updateChatPreview(selectedChat.id, content);
           }
@@ -602,7 +629,12 @@ const WhatsAppDashboard: React.FC = () => {
   );
 
   const handleSelectChat = (chat: UnifiedChat) => {
-    if (chat.platform === 'whatsapp' && selectedInstance && chat.instance_id !== selectedInstance.id) return;
+    if (
+      chat.platform === 'whatsapp' &&
+      selectedInstance &&
+      chat.instance_id !== selectedInstance.id
+    )
+      return;
     setSelectedChat(chat);
     // Clear unread on selection
     setChats((prev) =>

@@ -4,7 +4,7 @@
 http:
   routers:
     fazendasbrasil_com_api:
-      rule: "Host(`fazendasbrasil.com`) && PathPrefix(`/api`)"
+      rule: 'Host(`fazendasbrasil.com`) && PathPrefix(`/api`)'
       entryPoints:
         - websecure
       priority: 1000
@@ -13,7 +13,7 @@ http:
       service: imobzy_api@file
 
     fazendasbrasil_com_frontend:
-      rule: "Host(`fazendasbrasil.com`)"
+      rule: 'Host(`fazendasbrasil.com`)'
       entryPoints:
         - websecure
       priority: 100

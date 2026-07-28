@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 
-import { Send, UserCheck, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  Send,
+  UserCheck,
+  X,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react';
 import { CONTRACT_TEMPLATES } from '@/constants/ContractTemplates';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/services/supabase';
@@ -21,11 +28,15 @@ interface Props {
 
 export function RentalsContractEditor({ leaseId, onClose }: Props) {
   const { user } = useAuth();
-  
+
   const [selectedTemplate, setSelectedTemplate] = useState('locacao-urbana');
-  const [content, setContent] = useState(CONTRACT_TEMPLATES.find(t => t.id === 'locacao-urbana')?.content || '');
+  const [content, setContent] = useState(
+    CONTRACT_TEMPLATES.find((t) => t.id === 'locacao-urbana')?.content || ''
+  );
   const [saving, setSaving] = useState(false);
-  const [sendStatus, setSendStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [sendStatus, setSendStatus] = useState<'idle' | 'success' | 'error'>(
+    'idle'
+  );
 
   const [variables, setVariables] = useState({
     client_name: 'João da Silva',
@@ -36,7 +47,7 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
     duration: '30',
     start_date: '01/08/2026',
     warranty_type: 'Seguro Fiança',
-    current_date: new Date().toLocaleDateString('pt-BR')
+    current_date: new Date().toLocaleDateString('pt-BR'),
   });
 
   const [locador, setLocador] = useState<SignerInfo>({
@@ -66,7 +77,7 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
 
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId);
-    const template = CONTRACT_TEMPLATES.find(t => t.id === templateId);
+    const template = CONTRACT_TEMPLATES.find((t) => t.id === templateId);
     if (template) setContent(template.content);
   };
 
@@ -81,7 +92,9 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
     setSendStatus('idle');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session?.access_token}`,
@@ -90,7 +103,7 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
       const signers = [
         { ...locador, lease_id: leaseId, signer_type: locador.type },
         { ...locatario, lease_id: leaseId, signer_type: locatario.type },
-      ].filter(s => s.name && s.email);
+      ].filter((s) => s.name && s.email);
 
       if (signers.length === 0) {
         logger.error('Adicione pelo menos um signatário com nome e email');
@@ -113,18 +126,23 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
             }),
           });
           const data = await res.json();
-          if (!data.success) throw new Error(data.error || 'Erro ao criar signatário');
+          if (!data.success)
+            throw new Error(data.error || 'Erro ao criar signatário');
           return data.data;
         })
       );
 
       if (createdSignatures.length > 0) {
-        const inviteRes = await fetch(`/api/locacao/signatures/invite/bulk/${leaseId}`, {
-          method: 'POST',
-          headers,
-        });
+        const inviteRes = await fetch(
+          `/api/locacao/signatures/invite/bulk/${leaseId}`,
+          {
+            method: 'POST',
+            headers,
+          }
+        );
         const inviteData = await inviteRes.json();
-        if (!inviteData.success) throw new Error(inviteData.error || 'Erro ao enviar convites');
+        if (!inviteData.success)
+          throw new Error(inviteData.error || 'Erro ao enviar convites');
       }
 
       setSendStatus('success');
@@ -137,34 +155,45 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
   };
 
   const updateLocador = (field: keyof SignerInfo, value: string) =>
-    setLocador(prev => ({ ...prev, [field]: value }));
+    setLocador((prev) => ({ ...prev, [field]: value }));
 
   const updateLocatario = (field: keyof SignerInfo, value: string) =>
-    setLocatario(prev => ({ ...prev, [field]: value }));
+    setLocatario((prev) => ({ ...prev, [field]: value }));
 
   return (
     <div className="p-6 h-[calc(100vh-64px)] flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gerador de Contrato (ZapSign)</h1>
-          <p className="text-gray-500">Edite as variáveis e envie direto para assinatura eletrônica</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Gerador de Contrato (ZapSign)
+          </h1>
+          <p className="text-gray-500">
+            Edite as variáveis e envie direto para assinatura eletrônica
+          </p>
         </div>
         <div className="flex gap-3">
           {onClose && (
-            <button onClick={onClose} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
+            >
               <X className="w-4 h-4 mr-2" />
               Fechar
             </button>
           )}
-          <button 
+          <button
             className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2 disabled:opacity-50"
             onClick={handleSendToZapSign}
             disabled={saving || !leaseId}
           >
             {saving ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Enviando...
+              </>
             ) : (
-              <><Send className="w-4 h-4" /> Enviar para Assinar</>
+              <>
+                <Send className="w-4 h-4" /> Enviar para Assinar
+              </>
             )}
           </button>
         </div>
@@ -173,7 +202,8 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
       {sendStatus === 'success' && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700 text-sm">
           <CheckCircle className="w-4 h-4" />
-          Contrato enviado com sucesso para o ZapSign! Os signatários receberão convite por email/WhatsApp.
+          Contrato enviado com sucesso para o ZapSign! Os signatários receberão
+          convite por email/WhatsApp.
         </div>
       )}
       {sendStatus === 'error' && (
@@ -186,7 +216,8 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
       {!leaseId && (
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700 text-sm">
           <AlertCircle className="w-4 h-4" />
-          Selecione um contrato de locação para habilitar o envio para assinatura.
+          Selecione um contrato de locação para habilitar o envio para
+          assinatura.
         </div>
       )}
 
@@ -195,28 +226,38 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
         <div className="rounded-lg p-4 bg-white dark:bg-gray-800 border border-gray-100 overflow-y-auto space-y-6">
           {/* Template Selection */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Modelo de Contrato</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Modelo de Contrato
+            </label>
             <select
               value={selectedTemplate}
               onChange={(e) => handleTemplateChange(e.target.value)}
               className="w-full p-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
             >
-              {CONTRACT_TEMPLATES.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+              {CONTRACT_TEMPLATES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-            <h3 className="font-semibold mb-4 text-gray-900 dark:text-white">Variáveis do Contrato</h3>
+            <h3 className="font-semibold mb-4 text-gray-900 dark:text-white">
+              Variáveis do Contrato
+            </h3>
             <div className="space-y-4">
               {Object.entries(variables).map(([key, value]) => (
                 <div key={key}>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{key}</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    {key}
+                  </label>
                   <input
                     type="text"
                     value={value}
-                    onChange={(e) => setVariables({...variables, [key]: e.target.value})}
+                    onChange={(e) =>
+                      setVariables({ ...variables, [key]: e.target.value })
+                    }
                     className="w-full p-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
@@ -226,7 +267,7 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
 
           <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
             <h4 className="font-medium text-sm mb-3">Signatários</h4>
-            
+
             <div className="space-y-3">
               <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-md">
                 <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 text-sm mb-2">

@@ -8,7 +8,9 @@ router.get('/', async (req, res) => {
     const { status, assigned_to, limit = 50, offset = 0 } = req.query;
     let query = supabase
       .from('instagram_conversations')
-      .select('*, contact:instagram_contacts(id, username, full_name, profile_picture_url), account:instagram_accounts(id, username)')
+      .select(
+        '*, contact:instagram_contacts(id, username, full_name, profile_picture_url), account:instagram_accounts(id, username)'
+      )
       .eq('company_id', req.companyId)
       .order('last_message_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
@@ -28,7 +30,9 @@ router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('instagram_conversations')
-      .select('*, contact:instagram_contacts(*), account:instagram_accounts(id, username)')
+      .select(
+        '*, contact:instagram_contacts(*), account:instagram_accounts(id, username)'
+      )
       .eq('id', req.params.id)
       .eq('company_id', req.companyId)
       .single();

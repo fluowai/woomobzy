@@ -6,10 +6,20 @@ const router = Router();
 
 router.post('/instagram/message', async (req, res) => {
   try {
-    const { account_id, instagram_message_id, sender_username, text, media_url, media_type, timestamp } = req.body;
+    const {
+      account_id,
+      instagram_message_id,
+      sender_username,
+      text,
+      media_url,
+      media_type,
+      timestamp,
+    } = req.body;
 
     if (!account_id || !instagram_message_id) {
-      return res.status(400).json({ error: 'account_id and instagram_message_id are required' });
+      return res
+        .status(400)
+        .json({ error: 'account_id and instagram_message_id are required' });
     }
 
     const { data: account } = await supabase
@@ -113,9 +123,16 @@ router.post('/instagram/message', async (req, res) => {
 
 router.post('/instagram/status', async (req, res) => {
   try {
-    const { account_id, status, instagram_user_id, profile_picture_url, followers_count } = req.body;
+    const {
+      account_id,
+      status,
+      instagram_user_id,
+      profile_picture_url,
+      followers_count,
+    } = req.body;
 
-    if (!account_id) return res.status(400).json({ error: 'account_id is required' });
+    if (!account_id)
+      return res.status(400).json({ error: 'account_id is required' });
 
     const update = { status };
     if (instagram_user_id) update.instagram_user_id = instagram_user_id;
@@ -153,7 +170,8 @@ router.post('/instagram/status', async (req, res) => {
 router.post('/instagram/session-expired', async (req, res) => {
   try {
     const { account_id, reason } = req.body;
-    if (!account_id) return res.status(400).json({ error: 'account_id is required' });
+    if (!account_id)
+      return res.status(400).json({ error: 'account_id is required' });
 
     await supabase
       .from('instagram_sessions')
@@ -170,7 +188,10 @@ router.post('/instagram/session-expired', async (req, res) => {
     if (account) {
       await supabase
         .from('instagram_accounts')
-        .update({ status: 'login_required', last_activity_at: new Date().toISOString() })
+        .update({
+          status: 'login_required',
+          last_activity_at: new Date().toISOString(),
+        })
         .eq('id', account_id);
 
       broadcastToCompany(account.company_id, {

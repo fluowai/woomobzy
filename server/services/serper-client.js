@@ -5,7 +5,10 @@
 
 const SERPER_BASE = 'https://google.serper.dev';
 
-export async function searchSerper(apiKey, { query, gl = 'br', hl = 'pt-br', num = 20, type = 'places' }) {
+export async function searchSerper(
+  apiKey,
+  { query, gl = 'br', hl = 'pt-br', num = 20, type = 'places' }
+) {
   if (!apiKey) throw new Error('Serper API key não configurada');
 
   const endpoint = type === 'places' ? '/places' : '/search';
@@ -67,7 +70,8 @@ function normalizeOrganic(o) {
 function extractPhone(raw) {
   if (!raw) return '';
   const digits = raw.replace(/\D/g, '');
-  if (digits.length >= 10) return `+${digits.startsWith('55') ? '' : '55'}${digits}`;
+  if (digits.length >= 10)
+    return `+${digits.startsWith('55') ? '' : '55'}${digits}`;
   return raw;
 }
 

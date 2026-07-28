@@ -99,8 +99,13 @@ export async function listMediaPosts(
   propertyId: string,
   page: number = 1,
   limit: number = 20
-): Promise<{ posts: MediaPost[]; pagination: { total: number; page: number; limit: number } }> {
-  const url = getApiUrl(`/api/properties/${propertyId}/instagram-post/list?page=${page}&limit=${limit}`);
+): Promise<{
+  posts: MediaPost[];
+  pagination: { total: number; page: number; limit: number };
+}> {
+  const url = getApiUrl(
+    `/api/properties/${propertyId}/instagram-post/list?page=${page}&limit=${limit}`
+  );
   const headers = await authHeaders();
 
   const res = await fetch(url, { method: 'GET', headers });
@@ -117,7 +122,9 @@ export async function deleteMediaPost(
   propertyId: string,
   postId: string
 ): Promise<void> {
-  const url = getApiUrl(`/api/properties/${propertyId}/instagram-post/${postId}`);
+  const url = getApiUrl(
+    `/api/properties/${propertyId}/instagram-post/${postId}`
+  );
   const headers = await authHeaders();
 
   const res = await fetch(url, { method: 'DELETE', headers });

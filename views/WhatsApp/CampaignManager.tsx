@@ -1,7 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Megaphone, Plus, Trash2, Play, Pause, Clock, CheckCircle2,
-  AlertCircle, Loader2, Search, MoreVertical, Users, Zap, Eye
+  Megaphone,
+  Plus,
+  Trash2,
+  Play,
+  Pause,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Search,
+  MoreVertical,
+  Users,
+  Zap,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -19,11 +31,26 @@ interface Campaign {
   completed_at?: string;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; color: string; bg: string }
+> = {
   draft: { label: 'Rascunho', color: 'text-gray-400', bg: 'bg-gray-800/50' },
-  running: { label: 'Em execução', color: 'text-green-400', bg: 'bg-green-900/30' },
-  paused: { label: 'Pausada', color: 'text-yellow-400', bg: 'bg-yellow-900/30' },
-  completed: { label: 'Concluída', color: 'text-blue-400', bg: 'bg-blue-900/30' },
+  running: {
+    label: 'Em execução',
+    color: 'text-green-400',
+    bg: 'bg-green-900/30',
+  },
+  paused: {
+    label: 'Pausada',
+    color: 'text-yellow-400',
+    bg: 'bg-yellow-900/30',
+  },
+  completed: {
+    label: 'Concluída',
+    color: 'text-blue-400',
+    bg: 'bg-blue-900/30',
+  },
   cancelled: { label: 'Cancelada', color: 'text-red-400', bg: 'bg-red-900/30' },
 };
 
@@ -44,7 +71,9 @@ export default function CampaignManager() {
       if (filterStatus) params.set('status', filterStatus);
       params.set('limit', '100');
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch(`/api/campaigns?${params}`, {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
@@ -59,13 +88,17 @@ export default function CampaignManager() {
     }
   }, [filterStatus]);
 
-  useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
 
   const handleCreate = async () => {
     if (!newName.trim()) return toast.error('Nome é obrigatório');
     setCreating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch('/api/campaigns', {
         method: 'POST',
         headers: {
@@ -91,7 +124,9 @@ export default function CampaignManager() {
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir esta campanha?')) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch(`/api/campaigns/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -106,7 +141,9 @@ export default function CampaignManager() {
 
   const handleStartDispatch = async (id: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch(`/api/campaigns/${id}/dispatch/start`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -124,7 +161,9 @@ export default function CampaignManager() {
 
   const handlePauseDispatch = async (id: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch(`/api/campaigns/${id}/dispatch/pause`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -175,7 +214,10 @@ export default function CampaignManager() {
               />
               <div className="flex gap-3 justify-end">
                 <button
-                  onClick={() => { setShowCreate(false); setNewName(''); }}
+                  onClick={() => {
+                    setShowCreate(false);
+                    setNewName('');
+                  }}
                   className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition"
                 >
                   Cancelar
@@ -239,13 +281,19 @@ export default function CampaignManager() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-semibold truncate">{campaign.name}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${st.bg} ${st.color}`}>
+                      <h3 className="font-semibold truncate">
+                        {campaign.name}
+                      </h3>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${st.bg} ${st.color}`}
+                      >
                         {st.label}
                       </span>
                     </div>
                     {campaign.description && (
-                      <p className="text-sm text-gray-400 truncate">{campaign.description}</p>
+                      <p className="text-sm text-gray-400 truncate">
+                        {campaign.description}
+                      </p>
                     )}
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
@@ -260,21 +308,26 @@ export default function CampaignManager() {
                       )}
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
+                        {new Date(campaign.created_at).toLocaleDateString(
+                          'pt-BR'
+                        )}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={() => navigate(`/whatsapp/campaigns/${campaign.id}`)}
+                      onClick={() =>
+                        navigate(`/whatsapp/campaigns/${campaign.id}`)
+                      }
                       className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition"
                       title="Editar"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
 
-                    {campaign.status === 'draft' || campaign.status === 'paused' ? (
+                    {campaign.status === 'draft' ||
+                    campaign.status === 'paused' ? (
                       <button
                         onClick={() => handleStartDispatch(campaign.id)}
                         className="p-2 rounded-lg bg-green-800/50 hover:bg-green-700/50 text-green-400 transition"

@@ -194,7 +194,11 @@ const toolOptions = [
   },
   { id: 'criar-tarefa', label: 'Criar tarefa', icon: ClipboardCheck },
   { id: 'mover-etapa-funil', label: 'Mover etapa do funil', icon: MoveRight },
-  { id: 'simulador-financiamento', label: 'Simulador Financeiro', icon: Calculator },
+  {
+    id: 'simulador-financiamento',
+    label: 'Simulador Financeiro',
+    icon: Calculator,
+  },
   { id: 'neural-sales', label: 'Neural Sales (Scoring)', icon: Brain },
   { id: 'voice-ai', label: 'Voice AI (Áudios)', icon: Mic },
 ];
@@ -274,7 +278,8 @@ const presets: TemplatePreset[] = [
   {
     name: 'Zya',
     role: 'Atendimento e Qualificação',
-    description: 'A porta de entrada do funil. Atende 24/7 no WhatsApp, qualifica leads, simula financiamentos e agenda visitas.',
+    description:
+      'A porta de entrada do funil. Atende 24/7 no WhatsApp, qualifica leads, simula financiamentos e agenda visitas.',
     tags: ['Atendimento', 'WhatsApp', 'Qualificação'],
     accent: 'from-blue-600 to-indigo-600',
     avatar: 'Z',
@@ -282,10 +287,25 @@ const presets: TemplatePreset[] = [
       ...emptyAgent,
       name: 'Zya',
       role: 'Atendente 24/7',
-      personality: 'Consultiva, objetiva e acolhedora. Faz perguntas curtas, humanas e orientadas à conversão.',
-      instructions: 'Descubra objetivo, cidade, faixa de valor, prazo, forma de pagamento e tipo de imóvel. Atualize o lead sem parecer robótico e acione corretor quando houver intenção forte.',
-      capabilities: ['Atendimento inicial', 'Kanban comercial', 'Match de imóveis', 'Agenda'],
-      tools: ['whatsapp', 'kanban', 'crm', 'matchmaking', 'notificar-corretor', 'agenda', 'simulador-financiamento'],
+      personality:
+        'Consultiva, objetiva e acolhedora. Faz perguntas curtas, humanas e orientadas à conversão.',
+      instructions:
+        'Descubra objetivo, cidade, faixa de valor, prazo, forma de pagamento e tipo de imóvel. Atualize o lead sem parecer robótico e acione corretor quando houver intenção forte.',
+      capabilities: [
+        'Atendimento inicial',
+        'Kanban comercial',
+        'Match de imóveis',
+        'Agenda',
+      ],
+      tools: [
+        'whatsapp',
+        'kanban',
+        'crm',
+        'matchmaking',
+        'notificar-corretor',
+        'agenda',
+        'simulador-financiamento',
+      ],
       autonomy_level: 3,
       operation_mode: 'Autônomo',
     },
@@ -293,7 +313,8 @@ const presets: TemplatePreset[] = [
   {
     name: 'Otto',
     role: 'Copiloto do Corretor',
-    description: 'Fica dentro do CRM. Lê o histórico do cliente, sugere a próxima mensagem de follow-up e ajuda o corretor a não esquecer de retornar.',
+    description:
+      'Fica dentro do CRM. Lê o histórico do cliente, sugere a próxima mensagem de follow-up e ajuda o corretor a não esquecer de retornar.',
     tags: ['Follow-up', 'Copiloto', 'CRM'],
     accent: 'from-emerald-500 to-teal-500',
     avatar: 'O',
@@ -302,10 +323,18 @@ const presets: TemplatePreset[] = [
       name: 'Otto',
       role: 'Copiloto de Vendas',
       response_style: 'curto',
-      personality: 'Persistente, organizado e direto. Focado em manter a esteira de vendas girando.',
-      instructions: 'Detecte promessas de retorno, visitas e horários. Crie follow-ups e sugira mensagens curtas para retomar contato.',
+      personality:
+        'Persistente, organizado e direto. Focado em manter a esteira de vendas girando.',
+      instructions:
+        'Detecte promessas de retorno, visitas e horários. Crie follow-ups e sugira mensagens curtas para retomar contato.',
       capabilities: ['Follow-up', 'Agenda', 'Kanban comercial'],
-      tools: ['crm', 'follow-up', 'agenda', 'criar-tarefa', 'notificar-corretor'],
+      tools: [
+        'crm',
+        'follow-up',
+        'agenda',
+        'criar-tarefa',
+        'notificar-corretor',
+      ],
       autonomy_level: 2,
       operation_mode: 'Semiautônomo',
     },
@@ -313,7 +342,8 @@ const presets: TemplatePreset[] = [
   {
     name: 'Nexus',
     role: 'Especialista em Integrações',
-    description: 'O Hub invisível que conecta e importa automaticamente os leads de portais (ZAP, VivaReal, OLX) e Meta Ads direto para o CRM.',
+    description:
+      'O Hub invisível que conecta e importa automaticamente os leads de portais (ZAP, VivaReal, OLX) e Meta Ads direto para o CRM.',
     tags: ['Integração', 'Portais', 'Ads'],
     accent: 'from-violet-600 to-purple-700',
     avatar: 'N',
@@ -321,8 +351,10 @@ const presets: TemplatePreset[] = [
       ...emptyAgent,
       name: 'Nexus',
       role: 'Hub de Dados',
-      personality: 'Técnico, silencioso e preciso. Move dados entre plataformas de forma impecável.',
-      instructions: 'Monitore as origens de leads (Meta Ads, ZAP, VivaReal) e crie os cards no Kanban imediatamente. Atribua o lead ao corretor correto baseado na roleta.',
+      personality:
+        'Técnico, silencioso e preciso. Move dados entre plataformas de forma impecável.',
+      instructions:
+        'Monitore as origens de leads (Meta Ads, ZAP, VivaReal) e crie os cards no Kanban imediatamente. Atribua o lead ao corretor correto baseado na roleta.',
       capabilities: ['Kanban comercial', 'Atendimento inicial'],
       tools: ['crm', 'kanban', 'notificar-corretor', 'mover-etapa-funil'],
       autonomy_level: 3,
@@ -332,7 +364,8 @@ const presets: TemplatePreset[] = [
   {
     name: 'Max',
     role: 'Gestor de Tráfego',
-    description: 'Ferramenta que otimiza campanhas de Meta Ads baseado na conversão real capturada no CRM (Storage Intelligence).',
+    description:
+      'Ferramenta que otimiza campanhas de Meta Ads baseado na conversão real capturada no CRM (Storage Intelligence).',
     tags: ['Ads', 'Tráfego', 'Performance'],
     accent: 'from-amber-500 to-orange-500',
     avatar: 'M',
@@ -340,8 +373,10 @@ const presets: TemplatePreset[] = [
       ...emptyAgent,
       name: 'Max',
       role: 'Otimizador de Ads',
-      personality: 'Analítico e focado em ROI. Busca sempre o menor custo de aquisição possível.',
-      instructions: 'Analise os leads marcados como "Venda Perdida" ou "Venda Ganha" no CRM e envie o feedback de conversão para as campanhas do Meta Ads.',
+      personality:
+        'Analítico e focado em ROI. Busca sempre o menor custo de aquisição possível.',
+      instructions:
+        'Analise os leads marcados como "Venda Perdida" ou "Venda Ganha" no CRM e envie o feedback de conversão para as campanhas do Meta Ads.',
       capabilities: ['Documentação', 'Match de imóveis'],
       tools: ['crm', 'neural-sales'],
       autonomy_level: 3,
@@ -351,7 +386,8 @@ const presets: TemplatePreset[] = [
   {
     name: 'Íris',
     role: 'Analista de Dados',
-    description: 'Dashboard inteligente. Calcula o ROI das campanhas, custo por lead (CPL) e compila relatórios gerenciais visualmente atrativos.',
+    description:
+      'Dashboard inteligente. Calcula o ROI das campanhas, custo por lead (CPL) e compila relatórios gerenciais visualmente atrativos.',
     tags: ['Dados', 'BI', 'Relatórios'],
     accent: 'from-pink-500 to-rose-500',
     avatar: 'Í',
@@ -359,8 +395,10 @@ const presets: TemplatePreset[] = [
       ...emptyAgent,
       name: 'Íris',
       role: 'Business Intelligence',
-      personality: 'Clara, visual e estratégica. Traduz números complexos em insights acionáveis.',
-      instructions: 'Cruze o investimento em marketing com as vendas do mês. Destaque os corretores mais produtivos e os canais com maior ROI.',
+      personality:
+        'Clara, visual e estratégica. Traduz números complexos em insights acionáveis.',
+      instructions:
+        'Cruze o investimento em marketing com as vendas do mês. Destaque os corretores mais produtivos e os canais com maior ROI.',
       capabilities: ['Documentação', 'Follow-up'],
       tools: ['crm'],
       autonomy_level: 2,
@@ -370,7 +408,8 @@ const presets: TemplatePreset[] = [
   {
     name: 'Eco',
     role: 'Especialista em Retenção',
-    description: 'Dispara cadências de e-mail e mensagens automáticas para a base de leads frios para tentar reativá-los continuamente.',
+    description:
+      'Dispara cadências de e-mail e mensagens automáticas para a base de leads frios para tentar reativá-los continuamente.',
     tags: ['Reengajamento', 'E-mail', 'Retenção'],
     accent: 'from-slate-700 to-slate-950',
     avatar: 'E',
@@ -378,8 +417,10 @@ const presets: TemplatePreset[] = [
       ...emptyAgent,
       name: 'Eco',
       role: 'Recuperação de Leads',
-      personality: 'Persistente, empático e focado em trazer o lead de volta para o momento de compra.',
-      instructions: 'Se um lead não responde há 30 dias, dispare uma campanha de nutrição perguntando se ele ainda tem interesse na região.',
+      personality:
+        'Persistente, empático e focado em trazer o lead de volta para o momento de compra.',
+      instructions:
+        'Se um lead não responde há 30 dias, dispare uma campanha de nutrição perguntando se ele ainda tem interesse na região.',
       capabilities: ['Follow-up', 'Kanban comercial'],
       tools: ['crm', 'follow-up', 'whatsapp', 'notificar-corretor'],
       autonomy_level: 3,
@@ -1130,9 +1171,15 @@ const AIAgents: React.FC = () => {
                   onToggleStatus={async () => {
                     const nextStatus = !selectedAgent.is_active;
                     try {
-                      await aiAgentService.update(selectedAgent.id, { is_active: nextStatus });
+                      await aiAgentService.update(selectedAgent.id, {
+                        is_active: nextStatus,
+                      });
                       await loadAgents();
-                      toast.success(nextStatus ? 'Assistente ativado!' : 'Assistente pausado.');
+                      toast.success(
+                        nextStatus
+                          ? 'Assistente ativado!'
+                          : 'Assistente pausado.'
+                      );
                     } catch (e: any) {
                       toast.error('Erro ao atualizar status: ' + e.message);
                     }
@@ -1143,896 +1190,912 @@ const AIAgents: React.FC = () => {
                 />
               </main>
             ) : (
-            <main className="min-w-0 space-y-5">
-              <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
-                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="max-w-3xl">
-                    <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-700">
-                      <Sparkles size={15} />
-                      IA e automação
-                    </div>
-                    <h1 className="mt-4 text-3xl lg:text-4xl font-bold tracking-tight text-slate-950 mb-0">
-                      Construtor de Agente Autônomo
-                    </h1>
-                    <p className="mt-3 max-w-3xl text-sm lg:text-base font-medium leading-relaxed text-slate-600 mb-0">
-                      Configure agentes que atendem, qualificam, analisam
-                      documentos, movimentam leads no Kanban e executam
-                      follow-ups automaticamente.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <StatusPill
-                      status={
-                        draft.status || (draft.is_active ? 'Ativo' : 'Pausado')
-                      }
-                    />
-                    {selectedAgent && (
-                      <button
-                        onClick={removeAgent}
-                        className="h-10 px-3 rounded-lg border border-red-100 bg-red-50 text-red-600 font-bold text-xs flex items-center gap-2 hover:bg-red-100"
-                      >
-                        <Trash2 size={15} />
-                        Excluir
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-                <div className="grid grid-cols-1 gap-2 lg:grid-cols-7">
-                  {flowSteps.map((step, index) => (
-                    <div
-                      key={step.title}
-                      className="relative rounded-lg border border-slate-100 bg-slate-50 px-3 py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-                          <step.icon size={17} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-950 mb-0 truncate">
-                            {step.title}
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-500 mb-0 truncate">
-                            {step.subtitle}
-                          </p>
-                        </div>
+              <main className="min-w-0 space-y-5">
+                <section className="rounded-lg border border-slate-200 bg-white p-5 lg:p-7 shadow-sm">
+                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="max-w-3xl">
+                      <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-700">
+                        <Sparkles size={15} />
+                        IA e automação
                       </div>
-                      {index < flowSteps.length - 1 && (
-                        <ArrowRight
-                          className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 text-slate-300 bg-white rounded-full"
-                          size={18}
-                        />
+                      <h1 className="mt-4 text-3xl lg:text-4xl font-bold tracking-tight text-slate-950 mb-0">
+                        Construtor de Agente Autônomo
+                      </h1>
+                      <p className="mt-3 max-w-3xl text-sm lg:text-base font-medium leading-relaxed text-slate-600 mb-0">
+                        Configure agentes que atendem, qualificam, analisam
+                        documentos, movimentam leads no Kanban e executam
+                        follow-ups automaticamente.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <StatusPill
+                        status={
+                          draft.status ||
+                          (draft.is_active ? 'Ativo' : 'Pausado')
+                        }
+                      />
+                      {selectedAgent && (
+                        <button
+                          onClick={removeAgent}
+                          className="h-10 px-3 rounded-lg border border-red-100 bg-red-50 text-red-600 font-bold text-xs flex items-center gap-2 hover:bg-red-100"
+                        >
+                          <Trash2 size={15} />
+                          Excluir
+                        </button>
                       )}
                     </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="border-b border-slate-100 bg-white p-3">
-                  <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                        Etapa {activeStepIndex + 1} de {tabs.length}
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-950">
-                        <activeStep.icon size={16} />
-                        {activeStep.label}
-                      </div>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 lg:w-56">
-                      <div
-                        className="h-full rounded-full bg-emerald-600 transition-all"
-                        style={{
-                          width: `${((activeStepIndex + 1) / tabs.length) * 100}%`,
-                        }}
-                      />
-                    </div>
                   </div>
+                </section>
 
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => goToStep(tab.id)}
-                        aria-selected={activeTab === tab.id}
-                        className={`h-11 min-w-0 rounded-lg px-3 text-xs font-bold flex items-center justify-center gap-2 transition ${
-                          activeTab === tab.id
-                            ? 'bg-slate-100 text-slate-950'
-                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                        }`}
+                <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+                  <div className="grid grid-cols-1 gap-2 lg:grid-cols-7">
+                    {flowSteps.map((step, index) => (
+                      <div
+                        key={step.title}
+                        className="relative rounded-lg border border-slate-100 bg-slate-50 px-3 py-3"
                       >
-                        <tab.icon size={15} className="shrink-0" />
-                        <span className="truncate">{tab.label}</span>
-                      </button>
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                            <step.icon size={17} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-950 mb-0 truncate">
+                              {step.title}
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-500 mb-0 truncate">
+                              {step.subtitle}
+                            </p>
+                          </div>
+                        </div>
+                        {index < flowSteps.length - 1 && (
+                          <ArrowRight
+                            className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 text-slate-300 bg-white rounded-full"
+                            size={18}
+                          />
+                        )}
+                      </div>
                     ))}
                   </div>
-                </div>
+                </section>
 
-                <div className="p-5 lg:p-6 min-h-[520px]">
-                  <section
-                    id="agent-identity"
-                    className={activeTab === 'identity' ? 'block' : 'hidden'}
-                  >
-                    <SectionHeading
-                      eyebrow="Identidade"
-                      title="Perfil operacional do agente"
-                      description="Defina nome, função, estilo de atendimento, status e instruções operacionais."
-                    />
-                    <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <Field label="Nome do agente">
-                        <input
-                          value={draft.name || ''}
-                          onChange={(e) =>
-                            setDraft({ ...draft, name: e.target.value })
-                          }
-                          className="agent-input"
-                          placeholder="Ex.: Lia Qualificação"
-                        />
-                      </Field>
-                      <Field label="Função operacional">
-                        <input
-                          value={draft.role || ''}
-                          onChange={(e) =>
-                            setDraft({ ...draft, role: e.target.value })
-                          }
-                          className="agent-input"
-                          placeholder="Ex.: Atendimento e Qualificação de Leads"
-                        />
-                      </Field>
-                      <Field label="Estilo de atendimento">
-                        <select
-                          value={draft.response_style || 'consultivo'}
-                          onChange={(e) =>
-                            setDraft({
-                              ...draft,
-                              response_style: e.target.value,
-                            })
-                          }
-                          className="agent-input"
-                        >
-                          <option value="consultivo">Consultivo</option>
-                          <option value="curto">Curto e direto</option>
-                          <option value="tecnico">Técnico</option>
-                          <option value="premium">Premium</option>
-                        </select>
-                      </Field>
-                      <Field label="Status">
-                        <div className="relative">
-                          <select
-                            value={draft.status || 'Ativo'}
-                            onChange={(e) =>
-                              setDraft({
-                                ...draft,
-                                status: e.target.value,
-                                is_active:
-                                  e.target.value === 'Ativo' ||
-                                  e.target.value === 'Em teste',
-                              })
-                            }
-                            className="agent-input appearance-none pr-10"
-                          >
-                            <option value="Ativo">Ativo</option>
-                            <option value="Em teste">Em teste</option>
-                            <option value="Rascunho">Rascunho</option>
-                            <option value="Pausado">Pausado</option>
-                          </select>
-                          <ChevronDown
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                            size={16}
-                          />
+                <section className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+                  <div className="border-b border-slate-100 bg-white p-3">
+                    <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                          Etapa {activeStepIndex + 1} de {tabs.length}
                         </div>
-                      </Field>
-                      <Field label="Personalidade">
-                        <textarea
-                          value={draft.personality || ''}
-                          onChange={(e) =>
-                            setDraft({ ...draft, personality: e.target.value })
-                          }
-                          className="agent-input min-h-28 resize-none"
-                          placeholder="Como o agente deve se apresentar, tom de voz, empatia e postura comercial."
-                        />
-                      </Field>
-                      <Field label="Instruções operacionais">
-                        <textarea
-                          value={draft.instructions || ''}
-                          onChange={(e) =>
-                            setDraft({ ...draft, instructions: e.target.value })
-                          }
-                          className="agent-input min-h-28 resize-none"
-                          placeholder="Regras, boas práticas, limites e contexto da imobiliária."
-                        />
-                      </Field>
-                    </div>
-                  </section>
-
-                  <section
-                    id="agent-channels"
-                    className={activeTab === 'channels' ? 'block' : 'hidden'}
-                  >
-                    <SectionHeading
-                      eyebrow="Canais"
-                      title="Canais de atuação e WhatsApp conectado"
-                      description="Escolha onde o agente pode conversar e vincule a operação a uma instância real do WhatsApp."
-                    />
-                    <div className="mt-4 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4">
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                          {channels.map((channel) => (
-                            <button
-                              key={channel.id}
-                              onClick={() => toggleChannel(channel.id)}
-                              className={`h-12 rounded-lg border px-3 text-sm font-bold transition ${
-                                (draft.channels || []).includes(channel.id)
-                                  ? 'border-slate-300 bg-slate-100 text-slate-950'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                              }`}
-                            >
-                              {channel.label}
-                            </button>
-                          ))}
+                        <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-950">
+                          <activeStep.icon size={16} />
+                          {activeStep.label}
                         </div>
                       </div>
-                      <div className="rounded-lg border border-slate-200 bg-white p-4">
-                        <div className="mb-2 flex items-center justify-between gap-3">
-                          <label className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                            Instancia WhatsApp
-                          </label>
-                          <button
-                            type="button"
-                            onClick={loadWhatsAppInstances}
-                            disabled={instancesLoading}
-                            className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            {instancesLoading ? 'Atualizando...' : 'Atualizar'}
-                          </button>
-                        </div>
-                        <select
-                          value={draft.instances?.[0] || ''}
-                          onChange={(e) =>
-                            setDraft({
-                              ...draft,
-                              instances: e.target.value ? [e.target.value] : [],
-                            })
-                          }
-                          className="agent-input"
-                        >
-                          <option value="">
-                            Todas as instancias conectadas
-                          </option>
-                          {whatsAppInstances.map((instance) => (
-                            <option key={instance.id} value={instance.id}>
-                              {instance.name} -{' '}
-                              {instance.status === 'connected'
-                                ? 'conectada'
-                                : 'desconectada'}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                            <Smartphone
-                              size={15}
-                              className={
-                                connectedWhatsAppInstances
-                                  ? 'text-emerald-600'
-                                  : 'text-amber-600'
-                              }
-                            />
-                            {connectedWhatsAppInstances} de{' '}
-                            {whatsAppInstances.length} conectada(s)
-                          </div>
-                          <p className="mt-1 text-[11px] font-semibold leading-relaxed text-slate-500 mb-0">
-                            {selectedWhatsAppInstance
-                              ? `Este agente atende pela instancia ${selectedWhatsAppInstance.name}.`
-                              : 'Sem instancia fixa: o agente pode atender qualquer WhatsApp conectado da organizacao.'}
-                          </p>
-                        </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 lg:w-56">
+                        <div
+                          className="h-full rounded-full bg-emerald-600 transition-all"
+                          style={{
+                            width: `${((activeStepIndex + 1) / tabs.length) * 100}%`,
+                          }}
+                        />
                       </div>
                     </div>
-                  </section>
 
-                  <section
-                    id="agent-operation"
-                    className={activeTab === 'operation' ? 'block' : 'hidden'}
-                  >
-                    <SectionHeading
-                      eyebrow="Operação"
-                      title="Onde este agente atua?"
-                      description="Selecione os processos em que o agente poderá agir dentro da operação imobiliária."
-                    />
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                      {workspaces.map((workspace) => (
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+                      {tabs.map((tab) => (
                         <button
-                          key={workspace.id}
-                          onClick={() =>
-                            toggleListValue('capabilities', workspace.id)
-                          }
-                          className={`rounded-lg border p-4 text-left transition ${
-                            (draft.capabilities || []).includes(workspace.id)
-                              ? 'border-slate-300 bg-slate-50 shadow-sm'
-                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                          key={tab.id}
+                          onClick={() => goToStep(tab.id)}
+                          aria-selected={activeTab === tab.id}
+                          className={`h-11 min-w-0 rounded-lg px-3 text-xs font-bold flex items-center justify-center gap-2 transition ${
+                            activeTab === tab.id
+                              ? 'bg-slate-100 text-slate-950'
+                              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div
-                              className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                                (draft.capabilities || []).includes(
-                                  workspace.id
-                                )
-                                  ? 'bg-slate-950 text-white'
-                                  : 'bg-slate-100 text-slate-500'
-                              }`}
-                            >
-                              <workspace.icon size={18} />
-                            </div>
-                            {(draft.capabilities || []).includes(
-                              workspace.id
-                            ) && (
-                              <CheckCircle2
-                                size={18}
-                                className="text-slate-900"
-                              />
-                            )}
-                          </div>
-                          <h3 className="mt-3 text-sm font-bold text-slate-950 mb-0">
-                            {workspace.label}
-                          </h3>
-                          <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
-                            {workspace.description}
-                          </p>
+                          <tab.icon size={15} className="shrink-0" />
+                          <span className="truncate">{tab.label}</span>
                         </button>
                       ))}
                     </div>
+                  </div>
 
-                    <div className="mt-7">
+                  <div className="p-5 lg:p-6 min-h-[520px]">
+                    <section
+                      id="agent-identity"
+                      className={activeTab === 'identity' ? 'block' : 'hidden'}
+                    >
                       <SectionHeading
-                        eyebrow="Nível de autonomia"
-                        title="Defina até onde a IA pode executar"
-                        description="O nível controla se o agente apenas sugere, executa tarefas simples ou opera com autonomia."
+                        eyebrow="Identidade"
+                        title="Perfil operacional do agente"
+                        description="Defina nome, função, estilo de atendimento, status e instruções operacionais."
                       />
-                      <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
-                        {autonomyLevels.map((level) => (
-                          <button
-                            key={level.id}
-                            onClick={() =>
+                      <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <Field label="Nome do agente">
+                          <input
+                            value={draft.name || ''}
+                            onChange={(e) =>
+                              setDraft({ ...draft, name: e.target.value })
+                            }
+                            className="agent-input"
+                            placeholder="Ex.: Lia Qualificação"
+                          />
+                        </Field>
+                        <Field label="Função operacional">
+                          <input
+                            value={draft.role || ''}
+                            onChange={(e) =>
+                              setDraft({ ...draft, role: e.target.value })
+                            }
+                            className="agent-input"
+                            placeholder="Ex.: Atendimento e Qualificação de Leads"
+                          />
+                        </Field>
+                        <Field label="Estilo de atendimento">
+                          <select
+                            value={draft.response_style || 'consultivo'}
+                            onChange={(e) =>
                               setDraft({
                                 ...draft,
-                                autonomy_level: level.id,
-                                operation_mode: level.label,
+                                response_style: e.target.value,
                               })
                             }
+                            className="agent-input"
+                          >
+                            <option value="consultivo">Consultivo</option>
+                            <option value="curto">Curto e direto</option>
+                            <option value="tecnico">Técnico</option>
+                            <option value="premium">Premium</option>
+                          </select>
+                        </Field>
+                        <Field label="Status">
+                          <div className="relative">
+                            <select
+                              value={draft.status || 'Ativo'}
+                              onChange={(e) =>
+                                setDraft({
+                                  ...draft,
+                                  status: e.target.value,
+                                  is_active:
+                                    e.target.value === 'Ativo' ||
+                                    e.target.value === 'Em teste',
+                                })
+                              }
+                              className="agent-input appearance-none pr-10"
+                            >
+                              <option value="Ativo">Ativo</option>
+                              <option value="Em teste">Em teste</option>
+                              <option value="Rascunho">Rascunho</option>
+                              <option value="Pausado">Pausado</option>
+                            </select>
+                            <ChevronDown
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                              size={16}
+                            />
+                          </div>
+                        </Field>
+                        <Field label="Personalidade">
+                          <textarea
+                            value={draft.personality || ''}
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                personality: e.target.value,
+                              })
+                            }
+                            className="agent-input min-h-28 resize-none"
+                            placeholder="Como o agente deve se apresentar, tom de voz, empatia e postura comercial."
+                          />
+                        </Field>
+                        <Field label="Instruções operacionais">
+                          <textarea
+                            value={draft.instructions || ''}
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                instructions: e.target.value,
+                              })
+                            }
+                            className="agent-input min-h-28 resize-none"
+                            placeholder="Regras, boas práticas, limites e contexto da imobiliária."
+                          />
+                        </Field>
+                      </div>
+                    </section>
+
+                    <section
+                      id="agent-channels"
+                      className={activeTab === 'channels' ? 'block' : 'hidden'}
+                    >
+                      <SectionHeading
+                        eyebrow="Canais"
+                        title="Canais de atuação e WhatsApp conectado"
+                        description="Escolha onde o agente pode conversar e vincule a operação a uma instância real do WhatsApp."
+                      />
+                      <div className="mt-4 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4">
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            {channels.map((channel) => (
+                              <button
+                                key={channel.id}
+                                onClick={() => toggleChannel(channel.id)}
+                                className={`h-12 rounded-lg border px-3 text-sm font-bold transition ${
+                                  (draft.channels || []).includes(channel.id)
+                                    ? 'border-slate-300 bg-slate-100 text-slate-950'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                }`}
+                              >
+                                {channel.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                              Instancia WhatsApp
+                            </label>
+                            <button
+                              type="button"
+                              onClick={loadWhatsAppInstances}
+                              disabled={instancesLoading}
+                              className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              {instancesLoading
+                                ? 'Atualizando...'
+                                : 'Atualizar'}
+                            </button>
+                          </div>
+                          <select
+                            value={draft.instances?.[0] || ''}
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                instances: e.target.value
+                                  ? [e.target.value]
+                                  : [],
+                              })
+                            }
+                            className="agent-input"
+                          >
+                            <option value="">
+                              Todas as instancias conectadas
+                            </option>
+                            {whatsAppInstances.map((instance) => (
+                              <option key={instance.id} value={instance.id}>
+                                {instance.name} -{' '}
+                                {instance.status === 'connected'
+                                  ? 'conectada'
+                                  : 'desconectada'}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                              <Smartphone
+                                size={15}
+                                className={
+                                  connectedWhatsAppInstances
+                                    ? 'text-emerald-600'
+                                    : 'text-amber-600'
+                                }
+                              />
+                              {connectedWhatsAppInstances} de{' '}
+                              {whatsAppInstances.length} conectada(s)
+                            </div>
+                            <p className="mt-1 text-[11px] font-semibold leading-relaxed text-slate-500 mb-0">
+                              {selectedWhatsAppInstance
+                                ? `Este agente atende pela instancia ${selectedWhatsAppInstance.name}.`
+                                : 'Sem instancia fixa: o agente pode atender qualquer WhatsApp conectado da organizacao.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section
+                      id="agent-operation"
+                      className={activeTab === 'operation' ? 'block' : 'hidden'}
+                    >
+                      <SectionHeading
+                        eyebrow="Operação"
+                        title="Onde este agente atua?"
+                        description="Selecione os processos em que o agente poderá agir dentro da operação imobiliária."
+                      />
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                        {workspaces.map((workspace) => (
+                          <button
+                            key={workspace.id}
+                            onClick={() =>
+                              toggleListValue('capabilities', workspace.id)
+                            }
                             className={`rounded-lg border p-4 text-left transition ${
-                              Number(draft.autonomy_level || 2) === level.id
-                                ? 'border-emerald-300 bg-emerald-50'
-                                : 'border-slate-200 bg-white hover:bg-slate-50'
+                              (draft.capabilities || []).includes(workspace.id)
+                                ? 'border-slate-300 bg-slate-50 shadow-sm'
+                                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                             }`}
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-start justify-between gap-3">
                               <div
                                 className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                                  Number(draft.autonomy_level || 2) === level.id
-                                    ? 'bg-emerald-600 text-white'
+                                  (draft.capabilities || []).includes(
+                                    workspace.id
+                                  )
+                                    ? 'bg-slate-950 text-white'
                                     : 'bg-slate-100 text-slate-500'
                                 }`}
                               >
-                                <level.icon size={18} />
+                                <workspace.icon size={18} />
                               </div>
-                              <div>
-                                <h3 className="text-sm font-bold text-slate-950 mb-0">
-                                  {level.label}
-                                </h3>
-                                <p className="text-[11px] font-bold text-slate-500 mb-0">
-                                  Nível {level.id}
-                                </p>
-                              </div>
+                              {(draft.capabilities || []).includes(
+                                workspace.id
+                              ) && (
+                                <CheckCircle2
+                                  size={18}
+                                  className="text-slate-900"
+                                />
+                              )}
                             </div>
-                            <p className="mt-3 text-xs leading-relaxed text-slate-600 mb-0">
-                              {level.description}
+                            <h3 className="mt-3 text-sm font-bold text-slate-950 mb-0">
+                              {workspace.label}
+                            </h3>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
+                              {workspace.description}
                             </p>
                           </button>
                         ))}
                       </div>
-                    </div>
-                  </section>
 
-                  <section
-                    id="agent-tools"
-                    className={activeTab === 'tools' ? 'block' : 'hidden'}
-                  >
-                    <SectionHeading
-                      eyebrow="Ferramentas"
-                      title="Ferramentas permitidas"
-                      description="Ative os recursos que o agente pode consultar ou executar durante o atendimento."
-                    />
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {toolOptions.map((tool) => (
-                        <button
-                          key={tool.id}
-                          onClick={() => toggleListValue('tools', tool.id)}
-                          className={`h-10 rounded-lg border px-3 text-xs font-bold flex items-center gap-2 transition ${
-                            (draft.tools || []).includes(tool.id)
-                              ? 'border-slate-300 bg-slate-100 text-slate-950'
-                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          <tool.icon size={15} />
-                          {tool.label}
-                          {(draft.tools || []).includes(tool.id) && (
-                            <CheckCircle2 size={14} />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section
-                    id="agent-rules"
-                    className={activeTab === 'rules' ? 'block' : 'hidden'}
-                  >
-                    <SectionHeading
-                      eyebrow="Regras"
-                      title="Quando acionar humano?"
-                      description="Determine os sinais de risco, negociação ou alta intenção que devem transbordar para um corretor."
-                    />
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                      {handoffRules.map((rule) => (
-                        <label
-                          key={rule.id}
-                          className={`rounded-lg border p-4 flex items-center gap-3 cursor-pointer transition ${
-                            (draft.handoff_rules || {})[rule.id]
-                              ? 'border-amber-200 bg-amber-50 text-amber-900'
-                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-amber-500"
-                            checked={Boolean(
-                              (draft.handoff_rules || {})[rule.id]
-                            )}
-                            onChange={() => toggleHandoffRule(rule.id)}
-                          />
-                          <span className="text-sm font-bold">
-                            {rule.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section
-                    id="agent-brain"
-                    className={activeTab === 'brain' ? 'block' : 'hidden'}
-                  >
-                    <SectionHeading
-                      eyebrow="Cerebro Neural"
-                      title="Qualificação e aprendizado do agente"
-                      description="Acompanhe metricas, avalie respostas e treine o agente para melhorar continuamente."
-                    />
-
-                    {selectedAgent ? (
-                      <>
-                        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
-                          <div className="rounded-lg border border-slate-200 bg-white p-4">
-                            <Brain size={18} className="text-slate-700" />
-                            <div className="mt-2 text-2xl font-bold text-slate-950">
-                              {metricsLoading
-                                ? '-'
-                                : metrics?.total_conversations || 0}
-                            </div>
-                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                              Conversas
-                            </div>
-                          </div>
-                          <div className="rounded-lg border border-slate-200 bg-white p-4">
-                            <Star size={18} className="text-amber-500" />
-                            <div className="mt-2 text-2xl font-bold text-slate-950">
-                              {metricsLoading
-                                ? '-'
-                                : metrics?.average_rating
-                                  ? metrics.average_rating.toFixed(1)
-                                  : '-'}
-                            </div>
-                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                              Media avaliações
-                            </div>
-                          </div>
-                          <div className="rounded-lg border border-slate-200 bg-white p-4">
-                            <Target size={18} className="text-emerald-600" />
-                            <div className="mt-2 text-2xl font-bold text-slate-950">
-                              {metricsLoading
-                                ? '-'
-                                : metrics?.total_qualifications || 0}
-                            </div>
-                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                              Qualificações
-                            </div>
-                          </div>
-                          <div className="rounded-lg border border-slate-200 bg-white p-4">
-                            <TrendingUp size={18} className="text-blue-600" />
-                            <div className="mt-2 text-2xl font-bold text-slate-950">
-                              {metricsLoading
-                                ? '-'
-                                : metrics?.rating_distribution?.[5] || 0}
-                            </div>
-                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                              Notas 5
-                            </div>
-                          </div>
-                        </div>
-
-                        {metrics && metrics.total_qualifications > 0 && (
-                          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 mb-3">
-                              Distribuição de notas
-                            </div>
-                            <div className="space-y-2">
-                              {[1, 2, 3, 4, 5].map((star) => {
-                                const count =
-                                  metrics.rating_distribution?.[star] || 0;
-                                const total = metrics.total_qualifications || 1;
-                                const pct = (count / total) * 100;
-                                return (
-                                  <div
-                                    key={star}
-                                    className="flex items-center gap-3"
-                                  >
-                                    <span className="w-4 text-xs font-bold text-slate-600">
-                                      {star}
-                                    </span>
-                                    <div className="flex-1 h-3 rounded-full bg-slate-200 overflow-hidden">
-                                      <div
-                                        className="h-full rounded-full bg-amber-500 transition-all"
-                                        style={{ width: `${pct}%` }}
-                                      />
-                                    </div>
-                                    <span className="w-8 text-xs font-bold text-slate-500 text-right">
-                                      {count}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="mt-6 rounded-lg border border-amber-100 bg-amber-50 p-4">
-                          <div className="flex items-center gap-2 text-amber-800">
-                            <Star size={16} />
-                            <span className="text-xs font-bold uppercase tracking-[0.14em]">
-                              Qualificar este agente
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs text-amber-700">
-                            Sua avaliação ajuda o cerebro neural do agente a
-                            aprender e melhorar.
-                          </p>
-                          <div className="mt-3 flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                onClick={() => setRatingInput(star)}
-                                className={`h-10 w-10 rounded-lg border flex items-center justify-center transition ${
-                                  star <= ratingInput
-                                    ? 'border-amber-300 bg-amber-200 text-amber-800'
-                                    : 'border-slate-200 bg-white text-slate-400 hover:bg-amber-50'
-                                }`}
-                              >
-                                <Star
-                                  size={18}
-                                  fill={
-                                    star <= ratingInput
-                                      ? 'currentColor'
-                                      : 'none'
-                                  }
-                                />
-                              </button>
-                            ))}
-                          </div>
-                          <textarea
-                            value={feedbackInput}
-                            onChange={(e) => setFeedbackInput(e.target.value)}
-                            className="mt-3 w-full rounded-lg border border-amber-200 bg-white p-3 text-sm font-semibold text-slate-700 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100 resize-none"
-                            placeholder="Feedback opcional - o que o agente fez bem ou poderia melhorar?"
-                            rows={2}
-                          />
-                          <button
-                            onClick={handleQualify}
-                            disabled={ratingInput === 0}
-                            className="mt-3 h-10 rounded-lg bg-amber-600 px-4 text-sm font-bold text-white flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
-                          >
-                            <Star size={15} />
-                            Registrar qualificação
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
-                        <Brain size={32} className="mx-auto text-slate-400" />
-                        <p className="mt-3 text-sm font-bold text-slate-500">
-                          Selecione ou crie um agente para ver as metricas do
-                          cerebro neural.
-                        </p>
-                      </div>
-                    )}
-                  </section>
-
-                  <section
-                    id="agent-test"
-                    className={activeTab === 'test' ? 'block' : 'hidden'}
-                  >
-                    <SectionHeading
-                      eyebrow="Teste"
-                      title="Converse e valide o agente"
-                      description="Teste respostas reais do agente salvo ou simule o comportamento enquanto ele ainda esta em rascunho."
-                    />
-
-                    <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-                      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                        <div className="border-b border-slate-200 bg-white p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-                          <Avatar
-                            label={(draft.name || 'A').charAt(0)}
-                            gradient="from-slate-700 to-slate-950"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <h3 className="text-sm font-bold text-slate-950 mb-0 truncate">
-                              {draft.name || 'Agente em teste'}
-                            </h3>
-                            <p className="text-xs font-bold text-slate-500 mb-0 truncate">
-                              {draft.role || 'Atendimento e Qualificacao'}
-                            </p>
-                            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600">
-                              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                              {testMode === 'lead-simulator'
-                                ? 'Voce fala como corretor'
-                                : selectedAgent
-                                  ? 'Resposta real do agente'
-                                  : 'Simulacao de rascunho'}
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
-                              <button
-                                type="button"
-                                onClick={() => setTestMode('lead-simulator')}
-                                className={`h-8 rounded-md px-3 text-[11px] font-bold transition ${
-                                  testMode === 'lead-simulator'
-                                    ? 'bg-white text-emerald-700 shadow-sm'
-                                    : 'text-slate-500'
-                                }`}
-                              >
-                                Eu sou corretor
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setTestMode('agent-reply')}
-                                className={`h-8 rounded-md px-3 text-[11px] font-bold transition ${
-                                  testMode === 'agent-reply'
-                                    ? 'bg-white text-emerald-700 shadow-sm'
-                                    : 'text-slate-500'
-                                }`}
-                              >
-                                Eu sou lead
-                              </button>
-                            </div>
+                      <div className="mt-7">
+                        <SectionHeading
+                          eyebrow="Nível de autonomia"
+                          title="Defina até onde a IA pode executar"
+                          description="O nível controla se o agente apenas sugere, executa tarefas simples ou opera com autonomia."
+                        />
+                        <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+                          {autonomyLevels.map((level) => (
                             <button
-                              type="button"
-                              onClick={resetChat}
-                              className="h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center"
-                              title="Limpar conversa"
+                              key={level.id}
+                              onClick={() =>
+                                setDraft({
+                                  ...draft,
+                                  autonomy_level: level.id,
+                                  operation_mode: level.label,
+                                })
+                              }
+                              className={`rounded-lg border p-4 text-left transition ${
+                                Number(draft.autonomy_level || 2) === level.id
+                                  ? 'border-emerald-300 bg-emerald-50'
+                                  : 'border-slate-200 bg-white hover:bg-slate-50'
+                              }`}
                             >
-                              <Repeat2 size={15} />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="agent-whatsapp-bg p-4">
-                          <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-400 shadow-sm">
-                            Hoje
-                          </div>
-                          <div className="mt-3 max-h-[520px] min-h-[420px] space-y-3 overflow-y-auto pr-1">
-                            {chatMessages.length === 0 && (
-                              <div className="flex h-[320px] items-center justify-center text-center">
-                                <div className="max-w-sm rounded-lg border border-white/70 bg-white/80 px-5 py-4 shadow-sm">
-                                  <MessageCircle
-                                    className="mx-auto text-emerald-600"
-                                    size={22}
-                                  />
-                                  <p className="mt-2 text-sm font-bold text-slate-800 mb-0">
-                                    Escreva a primeira mensagem livre.
-                                  </p>
-                                  <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500 mb-0">
-                                    {testMode === 'lead-simulator'
-                                      ? 'Voce manda como corretor e o lead responde com comportamento realista.'
-                                      : 'Voce manda como lead e valida a resposta do agente.'}
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                                    Number(draft.autonomy_level || 2) ===
+                                    level.id
+                                      ? 'bg-emerald-600 text-white'
+                                      : 'bg-slate-100 text-slate-500'
+                                  }`}
+                                >
+                                  <level.icon size={18} />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-bold text-slate-950 mb-0">
+                                    {level.label}
+                                  </h3>
+                                  <p className="text-[11px] font-bold text-slate-500 mb-0">
+                                    Nível {level.id}
                                   </p>
                                 </div>
                               </div>
-                            )}
-                            {chatMessages.map((message) => (
-                              <ChatBubble key={message.id} side={message.side}>
-                                {message.content}
-                              </ChatBubble>
-                            ))}
-                            {chatLoading && (
-                              <div className="w-fit rounded-lg bg-white px-3 py-2 text-slate-400 shadow-sm">
-                                <span className="inline-flex gap-1">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                                </span>
-                              </div>
-                            )}
-                            <div ref={chatEndRef} />
-                          </div>
+                              <p className="mt-3 text-xs leading-relaxed text-slate-600 mb-0">
+                                {level.description}
+                              </p>
+                            </button>
+                          ))}
                         </div>
+                      </div>
+                    </section>
 
-                        <form
-                          className="border-t border-slate-200 bg-white p-3"
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            runTest(chatInput);
-                          }}
-                        >
-                          {testMode === 'lead-simulator' ? (
-                            <div className="mb-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">
-                              Modo livre: voce escreve como corretor e a IA
-                              responde como lead simulado.
-                            </div>
-                          ) : (
-                            !selectedAgent && (
-                              <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
-                                Salve ou publique o agente para testar a
-                                resposta real da IA.
+                    <section
+                      id="agent-tools"
+                      className={activeTab === 'tools' ? 'block' : 'hidden'}
+                    >
+                      <SectionHeading
+                        eyebrow="Ferramentas"
+                        title="Ferramentas permitidas"
+                        description="Ative os recursos que o agente pode consultar ou executar durante o atendimento."
+                      />
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {toolOptions.map((tool) => (
+                          <button
+                            key={tool.id}
+                            onClick={() => toggleListValue('tools', tool.id)}
+                            className={`h-10 rounded-lg border px-3 text-xs font-bold flex items-center gap-2 transition ${
+                              (draft.tools || []).includes(tool.id)
+                                ? 'border-slate-300 bg-slate-100 text-slate-950'
+                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            <tool.icon size={15} />
+                            {tool.label}
+                            {(draft.tools || []).includes(tool.id) && (
+                              <CheckCircle2 size={14} />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section
+                      id="agent-rules"
+                      className={activeTab === 'rules' ? 'block' : 'hidden'}
+                    >
+                      <SectionHeading
+                        eyebrow="Regras"
+                        title="Quando acionar humano?"
+                        description="Determine os sinais de risco, negociação ou alta intenção que devem transbordar para um corretor."
+                      />
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {handoffRules.map((rule) => (
+                          <label
+                            key={rule.id}
+                            className={`rounded-lg border p-4 flex items-center gap-3 cursor-pointer transition ${
+                              (draft.handoff_rules || {})[rule.id]
+                                ? 'border-amber-200 bg-amber-50 text-amber-900'
+                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 accent-amber-500"
+                              checked={Boolean(
+                                (draft.handoff_rules || {})[rule.id]
+                              )}
+                              onChange={() => toggleHandoffRule(rule.id)}
+                            />
+                            <span className="text-sm font-bold">
+                              {rule.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section
+                      id="agent-brain"
+                      className={activeTab === 'brain' ? 'block' : 'hidden'}
+                    >
+                      <SectionHeading
+                        eyebrow="Cerebro Neural"
+                        title="Qualificação e aprendizado do agente"
+                        description="Acompanhe metricas, avalie respostas e treine o agente para melhorar continuamente."
+                      />
+
+                      {selectedAgent ? (
+                        <>
+                          <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="rounded-lg border border-slate-200 bg-white p-4">
+                              <Brain size={18} className="text-slate-700" />
+                              <div className="mt-2 text-2xl font-bold text-slate-950">
+                                {metricsLoading
+                                  ? '-'
+                                  : metrics?.total_conversations || 0}
                               </div>
-                            )
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                                Conversas
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-4">
+                              <Star size={18} className="text-amber-500" />
+                              <div className="mt-2 text-2xl font-bold text-slate-950">
+                                {metricsLoading
+                                  ? '-'
+                                  : metrics?.average_rating
+                                    ? metrics.average_rating.toFixed(1)
+                                    : '-'}
+                              </div>
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                                Media avaliações
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-4">
+                              <Target size={18} className="text-emerald-600" />
+                              <div className="mt-2 text-2xl font-bold text-slate-950">
+                                {metricsLoading
+                                  ? '-'
+                                  : metrics?.total_qualifications || 0}
+                              </div>
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                                Qualificações
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-4">
+                              <TrendingUp size={18} className="text-blue-600" />
+                              <div className="mt-2 text-2xl font-bold text-slate-950">
+                                {metricsLoading
+                                  ? '-'
+                                  : metrics?.rating_distribution?.[5] || 0}
+                              </div>
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                                Notas 5
+                              </div>
+                            </div>
+                          </div>
+
+                          {metrics && metrics.total_qualifications > 0 && (
+                            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 mb-3">
+                                Distribuição de notas
+                              </div>
+                              <div className="space-y-2">
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const count =
+                                    metrics.rating_distribution?.[star] || 0;
+                                  const total =
+                                    metrics.total_qualifications || 1;
+                                  const pct = (count / total) * 100;
+                                  return (
+                                    <div
+                                      key={star}
+                                      className="flex items-center gap-3"
+                                    >
+                                      <span className="w-4 text-xs font-bold text-slate-600">
+                                        {star}
+                                      </span>
+                                      <div className="flex-1 h-3 rounded-full bg-slate-200 overflow-hidden">
+                                        <div
+                                          className="h-full rounded-full bg-amber-500 transition-all"
+                                          style={{ width: `${pct}%` }}
+                                        />
+                                      </div>
+                                      <span className="w-8 text-xs font-bold text-slate-500 text-right">
+                                        {count}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           )}
-                          <div className="flex items-end gap-2">
+
+                          <div className="mt-6 rounded-lg border border-amber-100 bg-amber-50 p-4">
+                            <div className="flex items-center gap-2 text-amber-800">
+                              <Star size={16} />
+                              <span className="text-xs font-bold uppercase tracking-[0.14em]">
+                                Qualificar este agente
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-amber-700">
+                              Sua avaliação ajuda o cerebro neural do agente a
+                              aprender e melhorar.
+                            </p>
+                            <div className="mt-3 flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  key={star}
+                                  onClick={() => setRatingInput(star)}
+                                  className={`h-10 w-10 rounded-lg border flex items-center justify-center transition ${
+                                    star <= ratingInput
+                                      ? 'border-amber-300 bg-amber-200 text-amber-800'
+                                      : 'border-slate-200 bg-white text-slate-400 hover:bg-amber-50'
+                                  }`}
+                                >
+                                  <Star
+                                    size={18}
+                                    fill={
+                                      star <= ratingInput
+                                        ? 'currentColor'
+                                        : 'none'
+                                    }
+                                  />
+                                </button>
+                              ))}
+                            </div>
                             <textarea
-                              value={chatInput}
-                              onChange={(e) => setChatInput(e.target.value)}
-                              className="min-h-11 flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                              placeholder={
-                                testMode === 'lead-simulator'
-                                  ? 'Digite sua mensagem para o lead...'
-                                  : 'Digite como se fosse o lead...'
-                              }
+                              value={feedbackInput}
+                              onChange={(e) => setFeedbackInput(e.target.value)}
+                              className="mt-3 w-full rounded-lg border border-amber-200 bg-white p-3 text-sm font-semibold text-slate-700 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100 resize-none"
+                              placeholder="Feedback opcional - o que o agente fez bem ou poderia melhorar?"
                               rows={2}
                             />
                             <button
-                              type="submit"
-                              disabled={chatLoading || !chatInput.trim()}
-                              className="h-11 w-11 shrink-0 rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
-                              title="Enviar mensagem"
+                              onClick={handleQualify}
+                              disabled={ratingInput === 0}
+                              className="mt-3 h-10 rounded-lg bg-amber-600 px-4 text-sm font-bold text-white flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
                             >
-                              {chatLoading ? (
-                                <Loader2 className="animate-spin" size={17} />
-                              ) : (
-                                <Send size={17} />
-                              )}
+                              <Star size={15} />
+                              Registrar qualificação
                             </button>
                           </div>
-                        </form>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                          <h3 className="text-sm font-bold text-slate-950 mb-0">
-                            Diagnostico do teste
-                          </h3>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <Diagnostic
-                              label="Intencao"
-                              value={previewDiagnostics.intent}
-                              tone="green"
-                            />
-                            <Diagnostic
-                              label="Orcamento"
-                              value={previewDiagnostics.budget}
-                              tone="slate"
-                            />
-                            <Diagnostic
-                              label="Cidade"
-                              value={previewDiagnostics.city}
-                              tone="slate"
-                            />
-                            <Diagnostic
-                              label="Temperatura"
-                              value={previewDiagnostics.temperature}
-                              tone="orange"
-                            />
-                          </div>
-                          <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                              Proxima acao
-                            </div>
-                            <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-950">
-                              <LayoutGrid size={16} />
-                              {previewDiagnostics.nextAction}
-                            </div>
-                          </div>
+                        </>
+                      ) : (
+                        <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
+                          <Brain size={32} className="mx-auto text-slate-400" />
+                          <p className="mt-3 text-sm font-bold text-slate-500">
+                            Selecione ou crie um agente para ver as metricas do
+                            cerebro neural.
+                          </p>
                         </div>
+                      )}
+                    </section>
 
-                        <div className="rounded-lg border border-slate-200 bg-white p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="h-9 w-9 rounded-lg bg-slate-950 text-slate-100 flex items-center justify-center">
-                              <Bot size={18} />
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-bold text-slate-950 mb-0">
-                                Resumo de publicacao
+                    <section
+                      id="agent-test"
+                      className={activeTab === 'test' ? 'block' : 'hidden'}
+                    >
+                      <SectionHeading
+                        eyebrow="Teste"
+                        title="Converse e valide o agente"
+                        description="Teste respostas reais do agente salvo ou simule o comportamento enquanto ele ainda esta em rascunho."
+                      />
+
+                      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+                        <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                          <div className="border-b border-slate-200 bg-white p-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+                            <Avatar
+                              label={(draft.name || 'A').charAt(0)}
+                              gradient="from-slate-700 to-slate-950"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-sm font-bold text-slate-950 mb-0 truncate">
+                                {draft.name || 'Agente em teste'}
                               </h3>
-                              <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
-                                {draft.channels?.length || 1} canal(is),{' '}
-                                {draft.tools?.length || 0} ferramenta(s) e
-                                autonomia nivel {draft.autonomy_level || 2}.
+                              <p className="text-xs font-bold text-slate-500 mb-0 truncate">
+                                {draft.role || 'Atendimento e Qualificacao'}
                               </p>
+                              <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600">
+                                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                {testMode === 'lead-simulator'
+                                  ? 'Voce fala como corretor'
+                                  : selectedAgent
+                                    ? 'Resposta real do agente'
+                                    : 'Simulacao de rascunho'}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setTestMode('lead-simulator')}
+                                  className={`h-8 rounded-md px-3 text-[11px] font-bold transition ${
+                                    testMode === 'lead-simulator'
+                                      ? 'bg-white text-emerald-700 shadow-sm'
+                                      : 'text-slate-500'
+                                  }`}
+                                >
+                                  Eu sou corretor
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setTestMode('agent-reply')}
+                                  className={`h-8 rounded-md px-3 text-[11px] font-bold transition ${
+                                    testMode === 'agent-reply'
+                                      ? 'bg-white text-emerald-700 shadow-sm'
+                                      : 'text-slate-500'
+                                  }`}
+                                >
+                                  Eu sou lead
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={resetChat}
+                                className="h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center"
+                                title="Limpar conversa"
+                              >
+                                <Repeat2 size={15} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="agent-whatsapp-bg p-4">
+                            <div className="mx-auto w-fit rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-400 shadow-sm">
+                              Hoje
+                            </div>
+                            <div className="mt-3 max-h-[520px] min-h-[420px] space-y-3 overflow-y-auto pr-1">
+                              {chatMessages.length === 0 && (
+                                <div className="flex h-[320px] items-center justify-center text-center">
+                                  <div className="max-w-sm rounded-lg border border-white/70 bg-white/80 px-5 py-4 shadow-sm">
+                                    <MessageCircle
+                                      className="mx-auto text-emerald-600"
+                                      size={22}
+                                    />
+                                    <p className="mt-2 text-sm font-bold text-slate-800 mb-0">
+                                      Escreva a primeira mensagem livre.
+                                    </p>
+                                    <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500 mb-0">
+                                      {testMode === 'lead-simulator'
+                                        ? 'Voce manda como corretor e o lead responde com comportamento realista.'
+                                        : 'Voce manda como lead e valida a resposta do agente.'}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                              {chatMessages.map((message) => (
+                                <ChatBubble
+                                  key={message.id}
+                                  side={message.side}
+                                >
+                                  {message.content}
+                                </ChatBubble>
+                              ))}
+                              {chatLoading && (
+                                <div className="w-fit rounded-lg bg-white px-3 py-2 text-slate-400 shadow-sm">
+                                  <span className="inline-flex gap-1">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                  </span>
+                                </div>
+                              )}
+                              <div ref={chatEndRef} />
+                            </div>
+                          </div>
+
+                          <form
+                            className="border-t border-slate-200 bg-white p-3"
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              runTest(chatInput);
+                            }}
+                          >
+                            {testMode === 'lead-simulator' ? (
+                              <div className="mb-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">
+                                Modo livre: voce escreve como corretor e a IA
+                                responde como lead simulado.
+                              </div>
+                            ) : (
+                              !selectedAgent && (
+                                <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
+                                  Salve ou publique o agente para testar a
+                                  resposta real da IA.
+                                </div>
+                              )
+                            )}
+                            <div className="flex items-end gap-2">
+                              <textarea
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                className="min-h-11 flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                                placeholder={
+                                  testMode === 'lead-simulator'
+                                    ? 'Digite sua mensagem para o lead...'
+                                    : 'Digite como se fosse o lead...'
+                                }
+                                rows={2}
+                              />
+                              <button
+                                type="submit"
+                                disabled={chatLoading || !chatInput.trim()}
+                                className="h-11 w-11 shrink-0 rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
+                                title="Enviar mensagem"
+                              >
+                                {chatLoading ? (
+                                  <Loader2 className="animate-spin" size={17} />
+                                ) : (
+                                  <Send size={17} />
+                                )}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                            <h3 className="text-sm font-bold text-slate-950 mb-0">
+                              Diagnostico do teste
+                            </h3>
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                              <Diagnostic
+                                label="Intencao"
+                                value={previewDiagnostics.intent}
+                                tone="green"
+                              />
+                              <Diagnostic
+                                label="Orcamento"
+                                value={previewDiagnostics.budget}
+                                tone="slate"
+                              />
+                              <Diagnostic
+                                label="Cidade"
+                                value={previewDiagnostics.city}
+                                tone="slate"
+                              />
+                              <Diagnostic
+                                label="Temperatura"
+                                value={previewDiagnostics.temperature}
+                                tone="orange"
+                              />
+                            </div>
+                            <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                                Proxima acao
+                              </div>
+                              <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-950">
+                                <LayoutGrid size={16} />
+                                {previewDiagnostics.nextAction}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-lg border border-slate-200 bg-white p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="h-9 w-9 rounded-lg bg-slate-950 text-slate-100 flex items-center justify-center">
+                                <Bot size={18} />
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-bold text-slate-950 mb-0">
+                                  Resumo de publicacao
+                                </h3>
+                                <p className="mt-1 text-xs leading-relaxed text-slate-500 mb-0">
+                                  {draft.channels?.length || 1} canal(is),{' '}
+                                  {draft.tools?.length || 0} ferramenta(s) e
+                                  autonomia nivel {draft.autonomy_level || 2}.
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </section>
-                </div>
-              </section>
-
-              <footer className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <button
-                    onClick={resetDraft}
-                    className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                  >
-                    Cancelar
-                  </button>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <button
-                      onClick={goToPreviousStep}
-                      disabled={isFirstStep}
-                      className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      <ChevronLeft size={17} />
-                      Voltar
-                    </button>
-                    {!isLastStep && (
-                      <button
-                        onClick={goToNextStep}
-                        className="h-11 rounded-lg bg-slate-950 px-5 text-sm font-bold text-white flex items-center justify-center gap-2 hover:bg-slate-800"
-                      >
-                        Próxima etapa
-                        <ArrowRight size={17} />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => saveAgent('Rascunho')}
-                      disabled={saving}
-                      className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:opacity-60"
-                    >
-                      {saving ? (
-                        <Loader2 className="animate-spin" size={17} />
-                      ) : (
-                        <Save size={17} />
-                      )}
-                      Salvar rascunho
-                    </button>
-                    <button
-                      onClick={() => saveAgent('Ativo')}
-                      disabled={saving}
-                      className="h-11 rounded-lg bg-emerald-600 px-5 text-sm font-bold text-white flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-60"
-                    >
-                      {saving ? (
-                        <Loader2 className="animate-spin" size={17} />
-                      ) : (
-                        <Rocket size={17} />
-                      )}
-                      Publicar agente
-                    </button>
+                    </section>
                   </div>
-                </div>
-              </footer>
-            </main>
+                </section>
+
+                <footer className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <button
+                      onClick={resetDraft}
+                      className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      Cancelar
+                    </button>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <button
+                        onClick={goToPreviousStep}
+                        disabled={isFirstStep}
+                        className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        <ChevronLeft size={17} />
+                        Voltar
+                      </button>
+                      {!isLastStep && (
+                        <button
+                          onClick={goToNextStep}
+                          className="h-11 rounded-lg bg-slate-950 px-5 text-sm font-bold text-white flex items-center justify-center gap-2 hover:bg-slate-800"
+                        >
+                          Próxima etapa
+                          <ArrowRight size={17} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => saveAgent('Rascunho')}
+                        disabled={saving}
+                        className="h-11 rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 disabled:opacity-60"
+                      >
+                        {saving ? (
+                          <Loader2 className="animate-spin" size={17} />
+                        ) : (
+                          <Save size={17} />
+                        )}
+                        Salvar rascunho
+                      </button>
+                      <button
+                        onClick={() => saveAgent('Ativo')}
+                        disabled={saving}
+                        className="h-11 rounded-lg bg-emerald-600 px-5 text-sm font-bold text-white flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-60"
+                      >
+                        {saving ? (
+                          <Loader2 className="animate-spin" size={17} />
+                        ) : (
+                          <Rocket size={17} />
+                        )}
+                        Publicar agente
+                      </button>
+                    </div>
+                  </div>
+                </footer>
+              </main>
             )}
           </div>
         </div>

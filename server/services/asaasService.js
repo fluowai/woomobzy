@@ -31,7 +31,9 @@ export class AsaasService {
       if (tenant_cpf) {
         // Busca se já existe
         const searchUrl = `${this.getBaseUrl()}/customers?cpfCnpj=${tenant_cpf}`;
-        const searchRes = await fetch(searchUrl, { headers: this.getHeaders() });
+        const searchRes = await fetch(searchUrl, {
+          headers: this.getHeaders(),
+        });
         const searchData = await searchRes.json();
 
         if (searchData.data && searchData.data.length > 0) {
@@ -53,7 +55,9 @@ export class AsaasService {
 
       const createData = await createRes.json();
       if (!createRes.ok) {
-        throw new Error(`Erro ao criar cliente no Asaas: ${JSON.stringify(createData)}`);
+        throw new Error(
+          `Erro ao criar cliente no Asaas: ${JSON.stringify(createData)}`
+        );
       }
 
       return createData.id;
@@ -93,15 +97,15 @@ export class AsaasService {
 
     // Aplica o Split se houver carteira do proprietário configurada
     if (ownerWalletId) {
-      const ownerAmount = value - (value * (imobzyFeePercentage / 100));
-      
+      const ownerAmount = value - value * (imobzyFeePercentage / 100);
+
       payload.split = [
         {
           walletId: ownerWalletId,
           fixedValue: ownerAmount,
           status: 'PENDING', // Repassa quando pago
-          refusalReason: null
-        }
+          refusalReason: null,
+        },
         // O valor residual (comissão) fica na carteira principal (da imobiliária)
       ];
     }
@@ -115,7 +119,9 @@ export class AsaasService {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(`Erro ao criar cobrança no Asaas: ${JSON.stringify(data)}`);
+        throw new Error(
+          `Erro ao criar cobrança no Asaas: ${JSON.stringify(data)}`
+        );
       }
 
       return {
@@ -135,7 +141,7 @@ export class AsaasService {
    */
   static async handleWebhook(payload) {
     const { event, payment } = payload;
-    
+
     // Status que nos importam: PAYMENT_RECEIVED, PAYMENT_CONFIRMED, PAYMENT_OVERDUE, PAYMENT_DELETED
     if (!payment || !payment.id) return null;
 

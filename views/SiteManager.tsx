@@ -434,9 +434,9 @@ const SiteManager: React.FC = () => {
             href={siteUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors shadow-lg shadow-emerald-600/20"
           >
-            <ExternalLink size={16} /> Ver Site
+            <Globe size={16} /> Ver Site em Produção
           </a>
         </div>
       </div>
@@ -536,6 +536,15 @@ const SiteManager: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <a
+                    href={page.isHome ? siteUrl : `${siteUrl}/${page.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-400/10 rounded-lg transition-colors"
+                    title="Ver página em produção"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
                   <button
                     onClick={() =>
                       handlePublishPage(page.id, page.status !== 'published')

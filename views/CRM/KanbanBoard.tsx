@@ -278,54 +278,54 @@ const KanbanBoard: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 to-white">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm gap-3">
-        <div className="flex items-center gap-3">
-          <div className="relative">
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
+      <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between border-b px-6 py-4 shadow-md gap-4 ${matchProfile === 'rural' ? 'bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 border-emerald-800' : 'bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 border-indigo-800'}`}>
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
             <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/50"
             />
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 w-full sm:w-56 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-bold text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10"
+              className="h-10 w-full sm:w-64 rounded-xl border border-white/20 bg-white/10 pl-10 pr-3 text-sm font-semibold text-white outline-none placeholder:text-white/50 focus:border-white/40 focus:bg-white/20 transition-all backdrop-blur-sm"
               placeholder="Buscar leads..."
             />
           </div>
-          <div className="hidden items-center gap-1 rounded-xl bg-slate-100 p-1 md:flex">
+          <div className="hidden items-center gap-1.5 rounded-xl bg-black/20 p-1.5 md:flex backdrop-blur-md border border-white/10">
             {INTENT_FILTERS.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setIntentFilter(f.id)}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase transition-all ${intentFilter === f.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all ${intentFilter === f.id ? 'bg-white text-gray-900 shadow-sm' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
               >
-                <f.icon size={12} /> {f.shortLabel}
+                <f.icon size={14} /> {f.shortLabel}
               </button>
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
           {selectedLeadIds.length > 0 && (
             <button
               onClick={handleBulkDelete}
               disabled={isBulkDeleting}
-              className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-[10px] font-bold text-red-600 hover:bg-red-100 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-red-500/20 px-4 py-2 text-xs font-bold text-red-200 hover:bg-red-500/40 hover:text-white border border-red-500/30 transition-all disabled:opacity-50"
             >
-              <Trash2 size={13} /> Excluir {selectedLeadIds.length}
+              <Trash2 size={14} /> Excluir ({selectedLeadIds.length})
             </button>
           )}
           <button
             onClick={() => setIsStageModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-600 hover:bg-slate-200"
+            className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-xs font-bold text-white hover:bg-white/20 border border-white/20 transition-all backdrop-blur-sm"
           >
-            <LayoutGrid size={13} /> Etapas
+            <LayoutGrid size={14} /> Etapas
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-slate-950 px-4 py-1.5 text-[10px] font-bold text-white hover:bg-indigo-700"
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white transition-all shadow-lg border border-transparent ${matchProfile === 'rural' ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/30' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/30'}`}
           >
-            <Plus size={14} /> Novo Lead
+            <Plus size={16} /> Novo Lead
           </button>
         </div>
       </div>

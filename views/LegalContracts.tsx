@@ -319,26 +319,35 @@ const LegalContracts: React.FC = () => {
   };
 
   return (
-    <div className="space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h1 className="text-4xl font-bold text-black uppercase italic tracking-tighter leading-none mb-3">
-            Gestão{' '}
-            <span style={{ color: settings.primaryColor }}>Jurídica</span>
+    <div className="w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
+      {/* Header Premium */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-black p-8 shadow-lg shadow-gray-900/20 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute left-0 bottom-0 w-48 h-48 bg-white/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-[10px] font-bold tracking-wider uppercase backdrop-blur-sm border border-white/10">
+              Operacional
+            </span>
+          </div>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <ShieldCheck size={28} className="text-gray-400" />
+            Gestão Jurídica
           </h1>
-          <p className="text-black/60 font-medium italic">
+          <p className="text-gray-400 mt-2 ml-1 text-sm">
             Monitoramento de contratos, escrituras e conformidade legal.
           </p>
         </div>
-
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-bold uppercase text-xs tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
-          style={{ backgroundColor: settings.primaryColor }}
-        >
-          <Plus size={18} /> Novo Contrato
-        </button>
+        
+        <div className="relative z-10">
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-indigo-600/20"
+          >
+            <Plus size={18} /> Novo Contrato
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}

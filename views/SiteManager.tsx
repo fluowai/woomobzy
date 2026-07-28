@@ -408,7 +408,7 @@ const SiteManager: React.FC = () => {
   // ============================================
   // DASHBOARD: Site exists - manage pages, settings, templates
   // ============================================
-  const siteUrl = orgSlug ? `${window.location.origin}/site/${orgSlug}` : '#';
+  const siteUrl = orgSlug ? `${window.location.origin}/sites/${orgSlug}` : '#';
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

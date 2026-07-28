@@ -159,32 +159,57 @@ const BIUrbano: React.FC = () => {
     }));
   }, [properties, leads]);
 
+  const tooltipStyle = {
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+    color: '#1e293b',
+    fontSize: '12px',
+    fontWeight: '500' as const
+  };
+
   if (loading) {
     return (
-      <div className="rounded-3xl bg-white p-16 text-center text-sm font-bold text-slate-400">
-        Carregando BI urbano...
+      <div className="flex justify-center items-center h-64 bg-white/50 rounded-3xl animate-pulse">
+        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Carregando BI Urbano...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-12">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold uppercase italic tracking-tighter text-slate-950">
-            BI Urbano
-          </h1>
-          <p className="mt-1 text-sm font-medium text-slate-500">
-            Indicadores de carteira, leads, vendas, locação e performance
-            comercial urbana.
-          </p>
+    <div className="w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
+      
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 p-8 shadow-lg shadow-blue-900/20">
+        <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute left-0 bottom-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold tracking-wider uppercase backdrop-blur-sm border border-white/10">
+                Inteligência
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight flex items-center gap-3">
+              <Activity className="text-blue-400" size={36} />
+              BI Urbano
+            </h1>
+            <p className="text-blue-100 mt-2 text-sm md:text-base max-w-xl">
+              Análise aprofundada de carteira, leads, vendas e performance comercial do portfólio urbano.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all flex items-center gap-2">
+              <Download size={18} /> Exportar PDF
+            </button>
+          </div>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-xs font-bold uppercase tracking-widest text-slate-600 shadow-sm ring-1 ring-slate-200">
-          <Download size={16} /> Exportar
-        </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {[
           {
             label: 'VGV Disponível',
@@ -201,7 +226,7 @@ const BIUrbano: React.FC = () => {
             bg: 'bg-emerald-50',
           },
           {
-            label: 'Leads Urbanos',
+            label: 'Leads Ativos',
             value: String(stats.activeLeads),
             icon: Users,
             color: 'text-purple-600',
@@ -217,17 +242,16 @@ const BIUrbano: React.FC = () => {
         ].map((item) => (
           <div
             key={item.label}
-            className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm"
+            className="group relative bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-default hover:-translate-y-1"
           >
-            <div
-              className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${item.bg}`}
-            >
+            <item.icon className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-[0.03] transform group-hover:scale-110 transition-transform duration-500 ${item.color}`} />
+            <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${item.bg}`}>
               <item.icon className={item.color} size={22} />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
               {item.label}
             </p>
-            <p className="mt-1 text-2xl font-bold text-slate-950">
+            <p className="mt-1 text-2xl font-extrabold text-gray-900 tracking-tight">
               {item.value}
             </p>
           </div>
@@ -235,47 +259,44 @@ const BIUrbano: React.FC = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm lg:col-span-2">
-          <h2 className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-900">
-            <Activity size={18} className="text-blue-600" /> Evolução mensal
-          </h2>
-          <div className="h-72">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Evolução Mensal</h2>
+              <p className="text-xs text-gray-500 mt-1">Comparativo Captações vs Novos Leads</p>
+            </div>
+            <div className="flex items-center gap-4">
+               <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase"><span className="w-3 h-3 rounded-full bg-blue-500"></span> Leads</div>
+               <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> Imóveis</div>
+            </div>
+          </div>
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#e2e8f0"
-                />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Area
-                  type="monotone"
-                  dataKey="leads"
-                  name="Leads"
-                  stroke="#2563eb"
-                  fill="#dbeafe"
-                  strokeWidth={3}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="imoveis"
-                  name="Imóveis"
-                  stroke="#10b981"
-                  fill="#dcfce7"
-                  strokeWidth={3}
-                />
+              <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorImoveis" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} dy={10} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                <Area type="monotone" dataKey="leads" name="Leads" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" activeDot={{ r: 6, strokeWidth: 0, fill: '#2563eb' }} />
+                <Area type="monotone" dataKey="imoveis" name="Imóveis" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorImoveis)" activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-900">
-            <Home size={18} className="text-blue-600" /> Mix de estoque
-          </h2>
-          <div className="h-72">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-6 text-lg font-bold text-gray-900">Mix de Estoque</h2>
+          <div className="h-[250px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -283,70 +304,79 @@ const BIUrbano: React.FC = () => {
                   dataKey="value"
                   cx="50%"
                   cy="50%"
-                  innerRadius={55}
+                  innerRadius={65}
                   outerRadius={90}
-                  paddingAngle={4}
+                  paddingAngle={5}
+                  stroke="none"
                 >
                   {typeData.map((_, index) => (
                     <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={tooltipStyle} />
               </PieChart>
             </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-bold text-gray-900">{stats.propertyCount}</span>
+              <span className="text-[10px] uppercase font-bold text-gray-400">Total</span>
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            {typeData.slice(0, 4).map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                  <span className="text-sm font-medium text-gray-700">{item.name}</span>
+                </div>
+                <span className="text-sm font-bold text-gray-900">{item.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-900">
-            <MapPin size={18} className="text-blue-600" /> VGV por cidade
-          </h2>
-          <div className="h-72">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-6 text-lg font-bold text-gray-900">VGV por Região</h2>
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cityData} layout="vertical">
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  horizontal={false}
-                  stroke="#e2e8f0"
-                />
+              <BarChart data={cityData} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" hide />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  width={110}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                <Bar dataKey="value" fill="#2563eb" radius={[0, 10, 10, 0]} />
+                <YAxis dataKey="name" type="category" width={110} tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: '#f8fafc' }} formatter={(value: number) => formatCurrency(value)} />
+                <Bar dataKey="value" fill="#3b82f6" radius={[0, 6, 6, 0]}>
+                  {cityData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-900">
-            <Users size={18} className="text-blue-600" /> Leads por origem
-          </h2>
-          <div className="space-y-4">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col">
+          <h2 className="mb-6 text-lg font-bold text-gray-900">Eficácia de Captação (Origem)</h2>
+          <div className="flex-1 space-y-5 flex flex-col justify-center">
             {leadSourceData.length === 0 ? (
-              <p className="rounded-2xl bg-slate-50 p-8 text-center text-sm font-medium text-slate-400">
+              <p className="rounded-2xl bg-gray-50 p-8 text-center text-sm font-medium text-gray-400">
                 Nenhum lead urbano encontrado.
               </p>
             ) : (
               leadSourceData.map((item, index) => (
-                <div key={item.name}>
-                  <div className="mb-1 flex justify-between text-xs font-bold uppercase tracking-widest text-slate-500">
-                    <span>{item.name}</span>
-                    <span>{item.value}</span>
+                <div key={item.name} className="group">
+                  <div className="mb-2 flex justify-between text-xs font-bold uppercase tracking-widest text-gray-500">
+                    <span className="flex items-center gap-2">
+                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                       {item.name}
+                    </span>
+                    <span className="text-gray-900">{item.value} <span className="text-gray-400 font-medium">({Math.round((item.value / leads.length) * 100)}%)</span></span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-3 overflow-hidden rounded-full bg-gray-100 relative">
                     <div
-                      className="h-full rounded-full"
+                      className="absolute left-0 top-0 bottom-0 rounded-full transition-all duration-1000"
                       style={{
-                        width: `${Math.max(8, (item.value / Math.max(1, leads.length)) * 100)}%`,
+                        width: `${Math.max(2, (item.value / Math.max(1, leads.length)) * 100)}%`,
                         backgroundColor: COLORS[index % COLORS.length],
                       }}
                     />

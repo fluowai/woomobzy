@@ -62,7 +62,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
 
     // Busca o Lease e os dados do proprietário
     const { data: lease } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select(
         `
         *,
@@ -113,7 +113,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
         // Salva o Customer ID no contrato para não criar duplicado
         if (asaasCustomerId) {
           await supabase
-            .from('leases')
+            .from('rental_contracts')
             .update({ asaas_customer_id: asaasCustomerId })
             .eq('id', lease.id);
         }

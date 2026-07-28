@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Building, TrendingDown, Users, Wrench } from 'lucide-react';
+import { Building, TrendingDown, Users, Wrench, Plus, X } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -52,6 +52,8 @@ export default function AdmCondominios() {
   const [condominiums, setCondominiums] = useState<Condominium[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCondoModal, setShowCondoModal] = useState(false);
+  const [condoForm, setCondoForm] = useState({ name: '', total_units: 0 });
 
   const load = useCallback(async () => {
     if (!profile?.organization_id) return;
@@ -119,6 +121,27 @@ export default function AdmCondominios() {
     load();
   };
 
+  const handleSaveCondo = async () => {
+    if (!profile?.organization_id) return;
+    if (!condoForm.name.trim()) return;
+
+    const { error } = await supabase.from('condominiums').insert({
+      organization_id: profile.organization_id,
+      name: condoForm.name.trim(),
+      total_units: condoForm.total_units || 0,
+      status: 'active',
+    });
+
+    if (error) {
+      window.alert('Erro ao salvar condominio: ' + error.message);
+      return;
+    }
+
+    setShowCondoModal(false);
+    setCondoForm({ name: '', total_units: 0 });
+    load();
+  };
+
   const stats = useMemo(() => {
     const openTickets = tickets.filter(
       (ticket) => ticket.status === 'open' || ticket.status === 'in_progress'
@@ -166,14 +189,22 @@ export default function AdmCondominios() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="h1 flex items-center gap-3 text-slate-900">
-          <Building className="text-primary" size={32} />
-          Administracao de Condominios
-        </h1>
-        <p className="body mt-1 text-slate-500">
-          Gerencie condominios, moradores, cobrancas e chamados de manutencao.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="h1 flex items-center gap-3 text-slate-900">
+            <Building className="text-primary" size={32} />
+            Administracao de Condominios
+          </h1>
+          <p className="body mt-1 text-slate-500">
+            Gerencie condominios, moradores, cobrancas e chamados de manutencao.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowCondoModal(true)}
+          className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
+        >
+          <Plus size={20} /> Novo Condominio
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -299,6 +330,81 @@ export default function AdmCondominios() {
           </table>
         </div>
       </div>
+
+      {/* Modal Novo Condomínio */}
+      {showCondoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-white/20 bg-white p-8 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="rounded-2xl bg-blue-600 p-3 text-white shadow-lg">
+                  <Building size={24} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold italic tracking-tighter text-slate-900 uppercase">
+                    Novo Condomínio
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCondoModal(false)}
+                className="rounded-full bg-slate-100 p-3 text-slate-400 transition-all hover:bg-slate-200 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Nome do Condomínio *
+                </label>
+                <input
+                  value={condoForm.name}
+                  onChange={(e) =>
+                    setCondoForm({ ...condoForm, name: e.target.value })
+                  }
+                  className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                  placeholder="Ex: Condomínio das Árvores"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Total de Unidades
+                </label>
+                <input
+                  type="number"
+                  value={condoForm.total_units || ''}
+                  onChange={(e) =>
+                    setCondoForm({
+                      ...condoForm,
+                      total_units: Number(e.target.value),
+                    })
+                  }
+                  className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                  placeholder="Ex: 50"
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-4">
+              <button
+                onClick={() => setShowCondoModal(false)}
+                className="flex-1 rounded-2xl bg-slate-100 py-4 font-bold uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveCondo}
+                className="flex-[2] rounded-2xl bg-blue-600 py-4 font-bold uppercase tracking-widest text-white shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] hover:bg-blue-700 active:scale-95"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

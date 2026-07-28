@@ -320,38 +320,44 @@ const SystemSettings: React.FC = () => {
   return (
     <div className="max-w-[1200px] mx-auto space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary flex items-center gap-3">
-            <span className="p-2 bg-primary/10 rounded-xl border border-primary/20">
-              <Settings size={22} className="text-primary" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-black p-8 shadow-lg shadow-gray-900/20 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute left-0 bottom-0 w-48 h-48 bg-white/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-[10px] font-bold tracking-wider uppercase backdrop-blur-sm border border-white/10">
+              Administração
             </span>
+          </div>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <Settings size={28} className="text-gray-400" />
             Configurações & Gestão
           </h1>
-          <p className="text-text-secondary mt-2 ml-1">
+          <p className="text-gray-400 mt-2 ml-1 text-sm">
             Controle completo do seu sistema imobiliário e integrações.
           </p>
         </div>
-        {(activeTab === 'ai' || activeTab === 'portals') && (
+        <div className="relative z-10">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="btn-primary"
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
           >
             {saving ? (
               'Salvando...'
             ) : saved ? (
               <>
-                <Check size={16} /> Salvo!
+                <Check size={18} /> Salvo!
               </>
             ) : (
               <>
-                <Save size={16} /> Salvar
+                <Save size={18} /> Salvar
                 {activeTab === 'portals' ? ' Portais' : ' Chaves'}
               </>
             )}
           </button>
-        )}
+        </div>
       </div>
 
       {/* Modern Tabs */}

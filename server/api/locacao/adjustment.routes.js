@@ -58,7 +58,7 @@ router.post('/calculate', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { data: lease } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('monthly_rent, adjustment_index')
       .eq('id', lease_id)
       .eq('organization_id', req.orgId)
@@ -104,7 +104,7 @@ router.post('/apply', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { data: lease } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('monthly_rent, adjustment_index')
       .eq('id', lease_id)
       .eq('organization_id', req.orgId)
@@ -144,7 +144,7 @@ router.post('/apply', verifyAuth, requireTenant, async (req, res) => {
     nextAdjustment.setFullYear(nextAdjustment.getFullYear() + 1);
 
     await supabase
-      .from('leases')
+      .from('rental_contracts')
       .update({
         monthly_rent: finalRent,
         last_rent_adjustment: new Date().toISOString().split('T')[0],

@@ -8,8 +8,7 @@ import {
 } from '../../lib/minio-storage.js';
 import { getPlatformOriginList } from '../../lib/platform-config.js';
 import jwt from 'jsonwebtoken';
-import { createWahaRouter } from './providers/waha-router.js';
-import { getWhatsAppProviderConfig } from './providers/provider-config.js';
+
 import { whatsappInternalLimiter } from '../../middleware/rateLimit.js';
 
 const router = Router();
@@ -43,8 +42,7 @@ const rewriteWhatsAppPath = (path) => {
 };
 
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
-  const providerConfig = getWhatsAppProviderConfig();
-  const target = resolveWhatsAppTarget(providerConfig.targetUrl);
+  const target = resolveWhatsAppTarget(process.env.WHATSMEOW_URL || 'http://127.0.0.1:3100');
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const isProduction = process.env.NODE_ENV === 'production';
   const envAllowedOrigins = process.env.ALLOWED_ORIGINS
@@ -128,19 +126,6 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
           .json({ error: 'Erro ao analisar conversas importadas' });
       }
     }
-  );
-
-  // WooAPI 2: WAHA provider montado em /api/whatsapp/waha
-  console.log(
-    '[WhatsApp] Montando WAHA provider (WooAPI 2) em /api/whatsapp/waha'
-  );
-  app.use(
-    '/api/whatsapp/waha',
-    createWahaRouter({
-      verifyAuth,
-      requireTenant,
-      applyCorsHeaders,
-    })
   );
 
   // WooAPI 1: whatsmeow provider padrao em /api/whatsapp

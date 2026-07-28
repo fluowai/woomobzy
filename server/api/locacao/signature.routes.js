@@ -176,7 +176,7 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
 
     if (totalSigners > 0 && signedCount === totalSigners) {
       await supabase
-        .from('leases')
+        .from('rental_contracts')
         .update({
           signature_status: 'signed',
           signed_at: new Date().toISOString(),
@@ -186,7 +186,7 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
         .eq('id', data.lease_id);
     } else if (signedCount > 0) {
       await supabase
-        .from('leases')
+        .from('rental_contracts')
         .update({ signature_status: 'partially_signed' })
         .eq('id', data.lease_id);
     }
@@ -234,7 +234,7 @@ router.post(
 
       // Update lease signature status
       await supabase
-        .from('leases')
+        .from('rental_contracts')
         .update({ signature_status: 'sent' })
         .eq('id', signature.lease_id)
         .eq('organization_id', req.orgId);

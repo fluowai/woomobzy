@@ -11,6 +11,8 @@ import {
   Loader2,
   DownloadCloud,
   RefreshCw,
+  Building2,
+  Trees
 } from 'lucide-react';
 import { propertyService } from '../services/properties';
 import { oruloService } from '../services/orulo';
@@ -229,73 +231,111 @@ const PropertyManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 animate-fade-in">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center gap-4">
+           <Loader2 className="animate-spin text-indigo-600" size={32} />
+           <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Carregando Inventário...</p>
+        </div>
       </div>
     );
   }
 
+  const HeaderIcon = isRural ? Trees : Building2;
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold mb-1">
-            Gerenciamento de Imóveis
-          </h1>
-          <p className="text-sm text-slate-500">
-            Gerencie todos os seus anúncios públicos e privados.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+    <div className="w-full max-w-[1600px] mx-auto space-y-6 pb-12 font-sans text-gray-900">
+      
+      {/* Header Premium */}
+      <div className={`relative overflow-hidden rounded-2xl p-8 shadow-lg ${isRural ? 'bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 shadow-emerald-900/20' : 'bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 shadow-indigo-900/20'}`}>
+        <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute left-0 bottom-0 w-48 h-48 bg-white/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold tracking-wider uppercase backdrop-blur-sm border border-white/10">
+                Inventário
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight flex items-center gap-3">
+              <HeaderIcon className={isRural ? 'text-emerald-400' : 'text-indigo-400'} size={36} />
+              Gestão de {isRural ? 'Fazendas' : 'Imóveis'}
+            </h1>
+            <p className="text-white/70 mt-2 text-sm md:text-base max-w-xl">
+              Gerencie todo o seu portfólio, anúncios públicos, privados e integrações com portais.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setViewType('grid')}
-              className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+              onClick={() => navigate('new')}
+              className={`px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition-all flex items-center gap-2 shadow-lg ${isRural ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/30' : 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30'}`}
             >
-              <Grid size={18} />
-            </button>
-            <button
-              onClick={() => setViewType('list')}
-              className={`p-2 rounded-lg transition-all ${viewType === 'list' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              <List size={18} />
+              <Plus size={18} /> Novo {isRural ? 'Ativo' : 'Imóvel'}
             </button>
           </div>
-          <button
-            onClick={() => navigate('new')}
-            className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition-all font-bold text-sm shadow-lg shadow-indigo-500/20"
-          >
-            <Plus size={18} />
-            <span className="hidden sm:inline">Cadastrar Imóvel</span>
-            <span className="sm:hidden">Novo</span>
-          </button>
-          {!isRural && (
-            <>
-              <button
-                onClick={() => setShowOruloFilters((v) => !v)}
-                className="bg-white text-slate-700 border border-slate-200 px-3 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-all font-bold text-sm shadow-sm"
-                title="Filtros Orulo"
-              >
-                <Filter size={18} />
-                <span className="hidden sm:inline">Filtros Orulo</span>
-              </button>
-              <button
-                onClick={handleOruloSync}
-                disabled={oruloSyncing}
-                className="bg-slate-900 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition-all font-bold text-sm shadow-lg disabled:opacity-60"
-                title="Importar catálogo urbano da Órulo para revisão"
-              >
-                {oruloSyncing ? (
-                  <RefreshCw size={18} className="animate-spin" />
-                ) : (
-                  <DownloadCloud size={18} />
-                )}
-                <span className="hidden sm:inline">Importar Órulo</span>
-                <span className="sm:hidden">Órulo</span>
-              </button>
-            </>
-          )}
         </div>
+      </div>
+
+      {/* Action Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+         <div className="flex items-center">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'all' ? (isRural ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700') : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+            >
+              Meus Imóveis
+            </button>
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`px-6 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === 'pending' ? (isRural ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700') : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+            >
+              Pendentes / Revisão
+              {properties.filter((p) => p.status === 'Pendente').length > 0 && (
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${activeTab === 'pending' ? 'bg-white shadow-sm' : 'bg-gray-200'}`}>
+                  {properties.filter((p) => p.status === 'Pendente').length}
+                </span>
+              )}
+            </button>
+         </div>
+
+         <div className="flex items-center gap-2 pr-2">
+            {!isRural && (
+               <>
+                 <button
+                  onClick={() => setShowOruloFilters((v) => !v)}
+                  className="px-3 py-2 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <Filter size={16} /> <span className="hidden sm:inline">Orulo</span>
+                </button>
+                <button
+                  onClick={handleOruloSync}
+                  disabled={oruloSyncing}
+                  className="px-3 py-2 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-800 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {oruloSyncing ? <RefreshCw size={16} className="animate-spin" /> : <DownloadCloud size={16} />}
+                  <span className="hidden sm:inline">Importar</span>
+                </button>
+               </>
+            )}
+
+            <div className="w-px h-6 bg-gray-200 mx-2"></div>
+
+            <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewType('grid')}
+                className={`p-1.5 rounded-md transition-all ${viewType === 'grid' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+              >
+                <Grid size={16} />
+              </button>
+              <button
+                onClick={() => setViewType('list')}
+                className={`p-1.5 rounded-md transition-all ${viewType === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+              >
+                <List size={16} />
+              </button>
+            </div>
+         </div>
       </div>
 
       {!isRural && showOruloFilters && (
@@ -308,89 +348,58 @@ const PropertyManagement: React.FC = () => {
         />
       )}
 
-      {/* Tabs */}
-      <div className="flex border-b border-border-subtle items-center justify-between">
-        <div className="flex">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`px-8 py-4 text-sm font-bold border-b-2 transition-all tracking-wide ${activeTab === 'all' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
-          >
-            Meus Imóveis
-          </button>
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`px-8 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-3 tracking-wide ${activeTab === 'pending' ? 'border-primary text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary'}`}
-          >
-            Solicitações Externas
-            {properties.filter((p) => p.status === 'Pendente').length > 0 && (
-              <span className="bg-accent text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-accent/20">
-                {properties.filter((p) => p.status === 'Pendente').length}
-              </span>
-            )}
-          </button>
+      {/* Warning message if all properties are in wrong niche */}
+      {properties.length > 0 && filteredProperties.length === 0 && (
+         <div className="px-6 py-4 bg-amber-50 border border-amber-200 rounded-2xl text-sm text-amber-800 font-medium flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></div>
+          Atenção: Você tem {properties.length} imóveis cadastrados, mas todos são do nicho {isRural ? 'Urbano' : 'Rural'}. Alterna o módulo para visualizá-los.
         </div>
-        {properties.length > 0 && filteredProperties.length === 0 && (
-          <div className="px-6 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 font-medium mr-4 flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-            </span>
-            Atenção: Você tem {properties.length} imóveis cadastrados, mas todos
-            são do nicho {isRural ? 'Urbano' : 'Rural'}.
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* Filters Bar */}
-      <div className="card p-4 flex flex-col lg:flex-row gap-4 items-center bg-bg-card/50 backdrop-blur-md">
-        <div className="flex-1 relative w-full group">
-          <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors"
-            size={18}
-          />
+      {/* Filters & Search Row */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
-            placeholder="Buscar por título, bairro ou ID..."
-            className="input-field pl-12"
+            placeholder="Buscar por título, ID ou localização..."
+            className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto">
-          <button
-            onClick={() => toast.info('Filtro por tipo em breve!')}
-            className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold"
-          >
-            Tipo <ChevronDown size={14} />
+          <button onClick={() => toast.info('Filtro por tipo em breve!')} className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors">
+            Tipo <ChevronDown size={16} className="text-gray-400" />
           </button>
-          <button
-            onClick={() => toast.info('Filtro por status em breve!')}
-            className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold"
-          >
-            Status <ChevronDown size={14} />
-          </button>
-          <button
-            onClick={() => toast.info('Filtros adicionais em breve!')}
-            className="btn btn-secondary flex-1 lg:flex-none h-11 px-4 text-xs uppercase tracking-widest font-bold"
-          >
-            <Filter size={14} /> Filtros
+          <button onClick={() => toast.info('Filtro por status em breve!')} className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors">
+            Status <ChevronDown size={16} className="text-gray-400" />
           </button>
         </div>
       </div>
 
       {filteredProperties.length === 0 ? (
-        <div className="text-center py-16 sm:py-24 border-2 border-dashed border-slate-200 rounded-2xl">
-          <h3 className="text-lg sm:text-xl font-bold text-slate-400 mb-2">
+        <div className="text-center py-24 bg-white border border-dashed border-gray-200 rounded-3xl shadow-sm">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Building2 size={32} className="text-gray-300" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
             Nenhum imóvel encontrado
           </h3>
-          <p className="text-sm text-slate-400 max-w-md mx-auto px-4">
+          <p className="text-sm text-gray-500 max-w-sm mx-auto px-4 mb-6">
             {activeTab === 'pending'
-              ? 'Não há solicitações pendentes no momento.'
-              : 'Comece cadastrando seu primeiro imóvel.'}
+              ? 'Você não possui imóveis aguardando revisão no momento.'
+              : 'Comece a montar seu portfólio cadastrando o primeiro imóvel.'}
           </p>
+          <button
+             onClick={() => navigate('new')}
+             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-indigo-600/20"
+          >
+             Cadastrar Imóvel
+          </button>
         </div>
       ) : (
         <>
           {viewType === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredProperties.map((property) => (
                 <PropertyCard
                   key={property.id}
@@ -409,8 +418,8 @@ const PropertyManagement: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-              <div className="divide-y divide-slate-100 md:hidden">
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+              <div className="divide-y divide-gray-100 md:hidden">
                 {filteredProperties.map((property) => (
                   <PropertyMobileCard
                     key={property.id}
@@ -420,8 +429,8 @@ const PropertyManagement: React.FC = () => {
                 ))}
               </div>
               <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto hidden md:block">
-                <table className="w-full text-left min-w-[640px]">
-                  <thead className="bg-slate-50 border-b border-slate-100">
+                <table className="w-full text-left min-w-[800px]">
+                  <thead className="bg-gray-50/80 border-b border-gray-100">
                     <tr>
                       {[
                         'Imóvel',
@@ -432,14 +441,14 @@ const PropertyManagement: React.FC = () => {
                       ].map((h) => (
                         <th
                           key={h}
-                          className="px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-wider"
+                          className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-widest"
                         >
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-gray-50">
                     {filteredProperties.map((property) => (
                       <PropertyTableRow
                         key={property.id}

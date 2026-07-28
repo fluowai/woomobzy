@@ -153,7 +153,9 @@ func (h *InstanceHandler) GetQRCode(c *gin.Context) {
 	}
 
 	client, exists := h.manager.GetClient(id)
-	shouldStart := !exists || (inst.Status == models.StatusDisconnected && (client == nil || !client.IsConnected()))
+	clientExists := exists && client != nil
+	clientConnected := clientExists && client.IsConnected()
+	shouldStart := shouldStartQRConnection(inst.Status, clientExists, clientConnected)
 
 	// Start/restart only when there is no active QR flow. This avoids resetting
 	// a valid QR while the user is scanning, but recovers after QR timeout.
@@ -181,6 +183,20 @@ func (h *InstanceHandler) GetQRCode(c *gin.Context) {
 		"qr_code": qrCode,
 		"status":  "ready",
 	})
+}
+
+// shouldStartQRConnection recovers sessions that stopped before WhatsMeow
+// emitted a QR code. In particular, a client can remain in "connecting" after
+// an interrupted handshake; treating only "disconnected" as restartable leaves
+// the QR endpoint pending forever.
+func shouldStartQRConnection(status models.InstanceStatus, clientExists, clientConnected bool) bool {
+	if status == models.StatusConnected || clientConnected {
+		return false
+	}
+	if !clientExists {
+		return true
+	}
+	return status != models.StatusQRPending
 }
 
 // RequestPairCode handles POST /api/instances/:id/pair-code

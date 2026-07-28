@@ -19,6 +19,10 @@ export const WS_URL = normalizeWhatsAppWsUrl(
   getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
 );
 
+const providerCache = new Map<string, string>();
+export const setInstanceProviderCache = (id: string, provider: string) => providerCache.set(id, provider);
+export const getInstanceProviderCache = (id: string) => providerCache.get(id);
+
 import { supabase } from '@/services/supabase';
 
 let tenantIdCache: string | null | undefined;
@@ -591,10 +595,10 @@ export interface WhatsAppMessageReceiptEvent {
 
 // ---- Instance API ----
 export const instanceApi = {
-  create: (name: string) =>
+  create: (name: string, provider?: string) =>
     apiRequest<Instance>('/instances', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, provider }),
     }),
 
   list: () => apiRequest<Instance[]>('/instances'),

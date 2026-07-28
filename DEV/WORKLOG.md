@@ -268,3 +268,27 @@ Cinco endpoints estavam falhando no console:
 1. Executar migration `20260728_fix_backend_errors.sql` no Supabase SQL Editor
 2. Configurar chaves de IA (`GEMINI_API_KEY` ou `GROQ_API_KEY`) no `.env` do servidor
 3. Configurar MinIO ou definir `MEDIA_STORAGE_PROVIDER=supabase` no `.env`
+
+---
+
+## [2026-07-28] Recuperação do QR Code do WhatsMeow
+
+### Causa raiz
+
+- A instância `22222` estava presa em `connecting` sem QR Code.
+- O endpoint reiniciava somente clientes em `disconnected`, mantendo `connecting` indefinidamente em `pending`.
+- O dashboard urbano consultava `leads.broker_id`, coluna inexistente em produção, causando HTTP 400 separado do fluxo do QR.
+
+### Correção
+
+- O endpoint de QR reinicia sessões presas em `connecting` e preserva sessões com QR ativo.
+- Adicionado teste de regressão para os estados de recuperação.
+- Removido `broker_id` da consulta e do agrupamento do dashboard urbano.
+- Instância real `22222` redefinida condicionalmente para `disconnected`, permitindo que o backend publicado reinicie o pareamento na próxima abertura do modal.
+
+### Verificação
+
+- Suíte Go completa e build do servidor: passaram.
+- Build Vite de produção: passou.
+- ESLint relacionado: 0 erros.
+- Deploy não executado; a implantação das novas imagens permanece pendente.

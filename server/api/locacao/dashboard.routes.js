@@ -17,7 +17,7 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
     const supabase = getSupabaseServer();
 
     const { data: leases } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('*')
       .eq('organization_id', req.orgId);
 
@@ -117,7 +117,7 @@ router.get('/timeline', verifyAuth, requireTenant, async (req, res) => {
     const supabase = getSupabaseServer();
 
     const { data: leases } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select(
         'id, contract_number, tenant_name, monthly_rent, due_day, end_date, next_rent_adjustment, status'
       )

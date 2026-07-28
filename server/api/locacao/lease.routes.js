@@ -57,7 +57,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     let query = supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('*', { count: 'exact' })
       .eq('organization_id', req.orgId)
       .order('created_at', { ascending: false })
@@ -102,7 +102,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .insert({
         organization_id: req.orgId,
         created_by: req.userId,
@@ -139,7 +139,7 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
-      .from('lease_overview')
+      .from('rental_contracts')
       .select('*')
       .eq('id', id)
       .eq('organization_id', req.orgId)
@@ -172,7 +172,7 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .update({ ...validation.data, updated_by: req.userId })
       .eq('id', id)
       .eq('organization_id', req.orgId)
@@ -200,7 +200,7 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { error } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .update({ status: 'archived', updated_by: req.userId })
       .eq('id', id)
       .eq('organization_id', req.orgId);
@@ -246,7 +246,7 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
       updates.terminated_at = new Date().toISOString();
 
     const { data, error } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .update(updates)
       .eq('id', id)
       .eq('organization_id', req.orgId)

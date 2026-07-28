@@ -77,19 +77,9 @@ function buildSameOriginWsUrl(path: string): string {
   return `${wsProtocol}//${window.location.host}${cleanPath}`;
 }
 
-const instanceProviderCache = new Map<string, string>();
-
-export function setInstanceProviderCache(id: string, provider?: string) {
-  instanceProviderCache.set(id, provider || 'whatsmeow');
-}
-
-export function getInstanceProviderCache(id?: string) {
-  return id ? instanceProviderCache.get(id) || 'whatsmeow' : 'whatsmeow';
-}
-
 async function apiRequest<T>(
   path: string,
-  options?: RequestInit & { instanceId?: string; provider?: string }
+  options?: RequestInit & { instanceId?: string }
 ): Promise<T> {
   let session = await getApiSession();
   const impersonatedOrgId = USE_DIRECT_WHATSAPP_API
@@ -102,12 +92,8 @@ async function apiRequest<T>(
     ? impersonatedOrgId || activeOrgId || (await getTenantId(session?.user?.id))
     : null;
 
-  const provider =
-    options?.provider || getInstanceProviderCache(options?.instanceId);
-  const prefix = provider === 'waha' ? '/waha' : '';
-
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const url = buildApiUrl(`${prefix}${cleanPath}`, tenantId);
+  const url = buildApiUrl(`${cleanPath}`, tenantId);
 
   const body = withTenantBody(options?.body, tenantId);
 
@@ -605,31 +591,15 @@ export interface WhatsAppMessageReceiptEvent {
 
 // ---- Instance API ----
 export const instanceApi = {
-  create: (name: string, provider: 'whatsmeow' | 'waha' = 'whatsmeow') =>
+  create: (name: string) =>
     apiRequest<Instance>('/instances', {
       method: 'POST',
-      body: JSON.stringify({ name, provider }),
-      provider,
-    }).then((inst) => {
-      setInstanceProviderCache(inst.id, inst.provider);
-      return inst;
+      body: JSON.stringify({ name }),
     }),
 
-  list: () =>
-    apiRequest<Instance[]>('/instances').then((instances) => {
-      instances.forEach((inst) =>
-        setInstanceProviderCache(inst.id, inst.provider)
-      );
-      return instances;
-    }),
+  list: () => apiRequest<Instance[]>('/instances'),
 
-  get: (id: string) =>
-    apiRequest<Instance>(`/instances/${id}`, { instanceId: id }).then(
-      (inst) => {
-        setInstanceProviderCache(inst.id, inst.provider);
-        return inst;
-      }
-    ),
+  get: (id: string) => apiRequest<Instance>(`/instances/${id}`, { instanceId: id }),
 
   delete: (id: string) =>
     apiRequest(`/instances/${id}`, { method: 'DELETE', instanceId: id }),

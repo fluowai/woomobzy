@@ -35,7 +35,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     // Buscar contrato e proprietário
     const { data: lease, error: leaseError } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select(
         `
         *,

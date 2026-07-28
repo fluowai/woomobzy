@@ -34,3 +34,8 @@ DEV/
 - Status pode ser: `PLANEJAMENTO`, `EM PROGRESSO`, `CONCLUÍDO`
 - Após conclusão, mover para `DEV/COMPLETED/` ou manter com status atualizado
 - Worklog é append-only, entries por data
+
+## Documentos Operacionais
+
+- `HANDOFF.md` — estado atual e próximos passos para continuidade.
+- `VERIFY.md` — evidências dos gates executados e riscos restantes.

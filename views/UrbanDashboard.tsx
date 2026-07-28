@@ -110,7 +110,7 @@ const UrbanDashboard: React.FC = () => {
 
       const { data: allLeads } = await supabase
         .from('leads')
-        .select('id,source,status,created_at,assigned_to,broker_id,match_profile')
+        .select('id,source,status,created_at,assigned_to,match_profile')
         .eq('organization_id', organizationId)
         .or('match_profile.eq.urbano,match_profile.is.null')
         .order('created_at', { ascending: false });
@@ -195,7 +195,7 @@ const UrbanDashboard: React.FC = () => {
   const conversionData = React.useMemo(() => {
     const grouped: Record<string, { name: string; leads: number; vendas: number }> = {};
     urbanLeads.forEach((lead) => {
-      const key = lead.assigned_to || lead.broker_id || 'Sem corretor';
+      const key = lead.assigned_to || 'Sem corretor';
       grouped[key] = grouped[key] || {
         name: key === 'Sem corretor' ? key : `Corretor ${String(key).slice(0, 4)}`,
         leads: 0,

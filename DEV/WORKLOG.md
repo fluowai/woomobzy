@@ -216,3 +216,55 @@ Tipos e adaptadores unificados:
 1. Testar fluxo completo: inbox mostra WhatsApp + Instagram, filtro funciona, envio funciona
 2. Considerar remover rota `/instagram` separada (ou manter como atalho)
 3. WebSocket real-time para Instagram (polling por enquanto)
+
+---
+
+## [2026-07-28] Fix Backend Errors: 5 Rotas com Erro
+
+### Contexto
+
+Cinco endpoints estavam falhando no console:
+1. `match_properties_to_lead` RPC 404 — função não existia no banco
+2. `/api/crm/clients` POST 500 — tabela `clients` não existia
+3. `/api/orulo/sync` 400 — credenciais vazias retornavam sem erro
+4. `/api/ai/chat` 500 — sem chaves de API Gemini/Groq, mensagem genérica
+5. `/api/storage/upload` 500 — MinIO inacessível + fallback Supabase falhava sem feedback
+
+### Arquivos Criados
+
+#### `migrations/20260728_fix_backend_errors.sql`
+
+- Função RPC `match_properties_to_lead(p_lead_id, ...)` — faz matching de imóveis ao lead por tipo, preço, quartos e área com score de 0-100
+- Tabela `clients` com colunas alinhadas ao route handler (`document_number`, `document_type`, `roles`, `address_*`), RLS por `organization_id`, trigger `updated_at`
+- Grants para `authenticated`
+
+### Arquivos Modificados
+
+#### `server/api/crm/clients/index.js`
+
+- GET e POST: detectam tabela ausente (`42P01`/`PGRST205`) e retornam `migration_required: true` em vez de 500 genérico
+
+#### `server/api/orulo/index.js`
+
+- `getMasterOruloCredentials()`: valida `clientId` e `clientSecret` antes de retornar — lança 400 com mensagem clara quando as variáveis `ORULO_CLIENT_ID`/`ORULO_CLIENT_SECRET` não estão configuradas
+
+#### `server/api/ai/chat.routes.js`
+
+- `/chat`: status code 503 (Service Unavailable) em vez de 500 quando não há provedores IA
+- Mensagem de erro descreve quais chaves estão faltando
+- Resposta inclui `details` com status de cada provedor
+
+#### `server/api/storage/index.js`
+
+- `uploadToConfiguredStorage()`: catch no MinIO com fallback automático para Supabase quando `ALLOW_SUPABASE_STORAGE_FALLBACK=true`
+- Handler de rota `/upload`: detecta erros de storage (MinIO/fetch failed) e retorna 503 com hint de configuração
+
+### Verificação
+
+- `type-check`: 0 erros novos (2 pré-existentes em WhatsApp module)
+
+### Próximos Passos
+
+1. Executar migration `20260728_fix_backend_errors.sql` no Supabase SQL Editor
+2. Configurar chaves de IA (`GEMINI_API_KEY` ou `GROQ_API_KEY`) no `.env` do servidor
+3. Configurar MinIO ou definir `MEDIA_STORAGE_PROVIDER=supabase` no `.env`

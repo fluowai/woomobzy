@@ -21,7 +21,12 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('does not exist')) {
+        return res.json({ success: true, clients: [], migration_required: true });
+      }
+      throw error;
+    }
 
     let clients = (data || []).map((client) => ({
       id: client.id,
@@ -80,7 +85,15 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('does not exist')) {
+        return res.status(503).json({
+          error: 'Tabela clients não existe. Execute a migration 20260728_fix_backend_errors.sql no Supabase.',
+          migration_required: true,
+        });
+      }
+      throw error;
+    }
     res.status(201).json({ success: true, client: data });
   } catch (error) {
     console.error('Create client error:', error);

@@ -153,6 +153,18 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     ) {
       return res.status(400).json({ error: error.message });
     }
+    if (
+      error.message?.includes('MinIO') ||
+      error.message?.includes('nenhum provedor') ||
+      error.message?.includes('Nenhum provedor') ||
+      error.message?.includes('fetch failed')
+    ) {
+      return res.status(503).json({
+        error: 'Servico de armazenamento indisponivel.',
+        details: error.message,
+        hint: 'Configure MINIO_ENDPOINT/MINIO_ACCESS_KEY/MINIO_SECRET_KEY ou defina MEDIA_STORAGE_PROVIDER=supabase no .env.',
+      });
+    }
     return res.status(500).json({ error: error.message || 'Erro interno ao enviar arquivo.' });
   }
 });
@@ -198,14 +210,22 @@ router.get('/signed-url', async (req, res) => {
 
 async function uploadToConfiguredStorage(bucket, filePath, file) {
   if (isMinioConfigured()) {
-    return uploadToMinio(bucket, filePath, file);
+    try {
+      return await uploadToMinio(bucket, filePath, file);
+    } catch (minioError) {
+      console.warn('[Storage] MinIO upload failed, trying Supabase fallback:', minioError.message);
+      if (allowSupabaseStorageFallback()) {
+        return uploadToSupabase(bucket, filePath, file);
+      }
+      throw new Error(`MinIO falhou: ${minioError.message}. Configure MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY, ou defina MEDIA_STORAGE_PROVIDER=supabase.`);
+    }
   }
 
   if (allowSupabaseStorageFallback()) {
     return uploadToSupabase(bucket, filePath, file);
   }
 
-  throw new Error('MinIO nao configurado para midias. Defina MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY.');
+  throw new Error('Nenhum provedor de storage configurado. Configure MINIO_ENDPOINT/MINIO_ACCESS_KEY/MINIO_SECRET_KEY ou defina MEDIA_STORAGE_PROVIDER=supabase no .env.');
 }
 
 async function uploadToMinio(bucket, filePath, file) {

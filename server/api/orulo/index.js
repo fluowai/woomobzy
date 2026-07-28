@@ -83,9 +83,20 @@ async function getMasterOruloCredentials() {
     };
   }
 
+  const clientId = String(process.env.ORULO_CLIENT_ID || '').trim();
+  const clientSecret = String(process.env.ORULO_CLIENT_SECRET || '').trim();
+
+  if (!clientId || !clientSecret) {
+    const missingError = new Error(
+      'Credenciais Órulo não configuradas. Configure ORULO_CLIENT_ID e ORULO_CLIENT_SECRET no .env ou insira via painel admin.'
+    );
+    missingError.statusCode = 400;
+    throw missingError;
+  }
+
   return {
-    clientId: String(process.env.ORULO_CLIENT_ID || '').trim(),
-    clientSecret: String(process.env.ORULO_CLIENT_SECRET || '').trim(),
+    clientId,
+    clientSecret,
     source: 'environment',
     updatedAt: null,
   };

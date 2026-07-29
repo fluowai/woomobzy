@@ -3,10 +3,9 @@ import { Block, StatsBlockConfig } from '../../../types';
 
 interface StatsBlockProps {
   block: Block;
-  isEditing?: boolean;
 }
 
-export const StatsBlock: React.FC<StatsBlockProps> = ({ block, isEditing }) => {
+export const StatsBlock: React.FC<StatsBlockProps> = ({ block }) => {
   const config = block.config as StatsBlockConfig;
 
   return (

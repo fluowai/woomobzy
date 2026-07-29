@@ -4342,8 +4342,6 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   }
 ];
 
-];
-
 export const getSiteTemplateById = (id: string): SiteTemplate | undefined => {
   return SITE_TEMPLATES.find((t) => t.id === id);
 };

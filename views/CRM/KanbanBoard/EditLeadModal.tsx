@@ -24,6 +24,7 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({
     notes: '',
     classification: '',
     tags: '',
+    budget: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -36,6 +37,7 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({
         notes: lead.notes || '',
         classification: lead.classification || '',
         tags: (lead.tags || []).join(', '),
+        budget: lead.budget ? lead.budget.toString() : '',
       });
   }, [lead]);
 
@@ -47,8 +49,9 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
-    await leadService.update(lead.id, { ...formData, tags } as any);
-    onSaved({ ...lead, ...formData, tags } as Lead);
+    const budget = formData.budget ? parseFloat(formData.budget.replace(/[^0-9.-]+/g,"")) : null;
+    await leadService.update(lead.id, { ...formData, tags, budget } as any);
+    onSaved({ ...lead, ...formData, tags, budget } as Lead);
     setSaving(false);
     onClose();
     toast.success('Lead atualizado');
@@ -100,6 +103,15 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({
             }
             className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold outline-none focus:border-indigo-400"
             placeholder="Classificação"
+          />
+          <input
+            type="number"
+            value={formData.budget}
+            onChange={(e) =>
+              setFormData((p) => ({ ...p, budget: e.target.value }))
+            }
+            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold outline-none focus:border-indigo-400"
+            placeholder="Orçamento Estimado (R$)"
           />
           <textarea
             value={formData.notes}

@@ -12,6 +12,7 @@ const TextBlock: React.FC<TextBlockProps> = ({ config, theme }) => {
     <div
       className="prose prose-lg max-w-none px-4 sm:px-6 lg:px-0 text-inherit"
       style={{
+        fontSize: config.fontSize,
         fontWeight: config.fontWeight,
         color: config.color || 'inherit',
         textAlign: config.alignment,

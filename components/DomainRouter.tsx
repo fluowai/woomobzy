@@ -237,11 +237,10 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
             try {
               const { data, error } = await supabase
-                .rpc('get_tenant_public', { slug_input: potentialSlug })
-                .maybeSingle();
+                .rpc('get_tenant_public', { slug_input: potentialSlug });
 
-              if (data && !error) {
-                const tenant = data as any;
+              const tenant = data?.[0];
+              if (tenant && !error) {
                 log(
                   `[Router] Tenant found via slug: ${tenant.name} (${tenant.slug})`
                 );
@@ -259,13 +258,13 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
             try {
               const { data: orgDirect } = await supabase
                 .from('organizations')
-                .select('id, name, slug, custom_domain, subdomain, primary_color, secondary_color, niche, logo_url')
-                .or(`slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`)
-                .maybeSingle();
+                .select('id, name, slug, custom_domain, subdomain, niche, logo_url')
+                .or(`slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`);
 
-              if (orgDirect) {
-                log(`[Router] Tenant found via fallback query: ${orgDirect.name}`);
-                setResolvedSlug(orgDirect.slug);
+              const org = orgDirect?.[0];
+              if (org) {
+                log(`[Router] Tenant found via fallback query: ${org.name}`);
+                setResolvedSlug(org.slug);
                 setIsPublicSite(true);
                 setLoading(false);
                 return;
@@ -287,11 +286,10 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         if (potentialSlug) {
           try {
             const { data, error } = await supabase
-              .rpc('get_tenant_public', { slug_input: potentialSlug })
-              .maybeSingle();
+              .rpc('get_tenant_public', { slug_input: potentialSlug });
 
-            if (data && !error) {
-              const tenant = data as any;
+            const tenant = data?.[0];
+            if (tenant && !error) {
               let customDomain = tenant.custom_domain;
 
               if (!customDomain) {
@@ -299,8 +297,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
                   .from('organizations')
                   .select('custom_domain')
                   .eq('slug', tenant.slug)
-                  .maybeSingle();
-                customDomain = (orgDomain as any)?.custom_domain;
+                  .limit(1);
+                const domainRow = orgDomain?.[0];
+                customDomain = (domainRow as any)?.custom_domain;
               }
 
               if (
@@ -332,13 +331,13 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           try {
             const { data: orgDirect } = await supabase
               .from('organizations')
-              .select('id, name, slug, custom_domain, subdomain, primary_color, secondary_color, niche, logo_url')
-              .or(`slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`)
-              .maybeSingle();
+              .select('id, name, slug, custom_domain, subdomain, niche, logo_url')
+              .or(`slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`);
 
-            if (orgDirect) {
-              log(`[Router] Tenant found via fallback query: ${orgDirect.name}`);
-              setResolvedSlug(orgDirect.slug);
+            const org = orgDirect?.[0];
+            if (org) {
+              log(`[Router] Tenant found via fallback query: ${org.name}`);
+              setResolvedSlug(org.slug);
               setIsPublicSite(true);
               setLoading(false);
               return;

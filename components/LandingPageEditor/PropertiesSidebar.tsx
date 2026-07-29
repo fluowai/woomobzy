@@ -9,6 +9,7 @@ import FormBlockSettings from '../LandingPageBlocks/Settings/FormBlockSettings';
 import CTABlockSettings from '../LandingPageBlocks/Settings/CTABlockSettings';
 import SpacerBlockSettings from '../LandingPageBlocks/Settings/SpacerBlockSettings';
 import CustomHTMLBlockSettings from '../LandingPageBlocks/Settings/CustomHTMLBlockSettings';
+import StatsBlockSettings from '../LandingPageBlocks/Settings/StatsBlockSettings';
 import BlockStylesEditor from './BlockStylesEditor';
 
 interface PropertiesSidebarProps {
@@ -168,6 +169,9 @@ function renderBlockSettings(
 
     case 'custom_html':
       return <CustomHTMLBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'stats':
+      return <StatsBlockSettings config={cfg} onUpdate={updateConfig} />;
 
     default:
       return (

@@ -24,6 +24,13 @@ interface Reseller {
   created_at: string;
   niche?: string;
   tenant_count?: number;
+  document?: string;
+  phone?: string;
+  creci?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
 }
 
 const ResellerManager: React.FC = () => {
@@ -46,6 +53,13 @@ const ResellerManager: React.FC = () => {
     owner_email: '',
     password: '',
     niche: 'both',
+    document: '',
+    phone: '',
+    creci: '',
+    address: '',
+    city: '',
+    state: '',
+    zip_code: '',
   });
 
   useEffect(() => {
@@ -82,6 +96,13 @@ const ResellerManager: React.FC = () => {
             : reseller.niche === 'both'
               ? 'both'
               : 'traditional',
+        document: reseller.document || '',
+        phone: reseller.phone || '',
+        creci: reseller.creci || '',
+        address: reseller.address || '',
+        city: reseller.city || '',
+        state: reseller.state || '',
+        zip_code: reseller.zip_code || '',
       });
     } else {
       setEditingId(null);
@@ -92,6 +113,13 @@ const ResellerManager: React.FC = () => {
         owner_email: '',
         password: '',
         niche: 'both',
+        document: '',
+        phone: '',
+        creci: '',
+        address: '',
+        city: '',
+        state: '',
+        zip_code: '',
       });
     }
     setIsModalOpen(true);
@@ -109,6 +137,13 @@ const ResellerManager: React.FC = () => {
         owner_email: formData.owner_email || null,
         password: formData.password || undefined,
         niche: formData.niche,
+        document: formData.document,
+        phone: formData.phone,
+        creci: formData.creci,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip_code: formData.zip_code,
       };
 
       if (editingId) {
@@ -455,6 +490,35 @@ const ResellerManager: React.FC = () => {
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      CNPJ / CPF
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.document}
+                      onChange={(e) =>
+                        setFormData({ ...formData, document: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Registro (CRECI)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.creci}
+                      onChange={(e) =>
+                        setFormData({ ...formData, creci: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Slug (URL)
@@ -497,6 +561,67 @@ const ResellerManager: React.FC = () => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Telefone / WhatsApp
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-800 mb-3">Endereço</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
+                      <input
+                        type="text"
+                        value={formData.zip_code}
+                        onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                      <input
+                        type="text"
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Endereço (Rua, Número, Bairro)</label>
+                      <input
+                        type="text"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Estado (UF)</label>
+                      <input
+                        type="text"
+                        maxLength={2}
+                        value={formData.state}
+                        onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none uppercase"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {!editingId && (

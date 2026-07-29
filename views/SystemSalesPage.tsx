@@ -297,6 +297,9 @@ const SystemSalesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsMenuOpen((value) => !value)}
+            aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={isMenuOpen}
+            aria-controls="menu-principal-mobile"
             className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-white transition hover:bg-white/10 lg:hidden"
           >
             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -306,6 +309,7 @@ const SystemSalesPage: React.FC = () => {
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div
+              id="menu-principal-mobile"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -669,7 +673,7 @@ const SystemSalesPage: React.FC = () => {
         {/* Highlights Section */}
         <section
           id="recursos"
-          className="relative border-t border-white/5 bg-[#0f172a]"
+          className="relative overflow-x-clip border-t border-white/5 bg-[#0f172a]"
         >
           <div className="mx-auto grid max-w-[1440px] gap-16 px-6 py-24 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-8 xl:py-32">
             <motion.div

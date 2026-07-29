@@ -10,16 +10,19 @@ interface PropertyGridBlockProps {
   config: PropertyGridBlockConfig;
   theme: LandingPageTheme;
   properties?: Property[];
+  showPlaceholders?: boolean;
 }
 
 const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
   config,
   theme,
   properties = [],
+  showPlaceholders = false,
 }) => {
   const displayProperties = properties.slice(0, config.maxItems);
 
   const gridColsMap: Record<number, string> = {
+    1: 'grid-cols-1',
     2: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2',
     3: 'grid-cols-1 md:grid-cols-3 lg:grid-cols-3',
     4: 'grid-cols-1 md:grid-cols-3 lg:grid-cols-4',
@@ -32,7 +35,7 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
           className={`grid ${gridColsMap[config.columns] || 'grid-cols-1 md:grid-cols-3 lg:grid-cols-3'}`}
           style={{ gap: `${config.gap}px` }}
         >
-          {displayProperties.length === 0 && (
+          {showPlaceholders && displayProperties.length === 0 && (
             <>
               {[1, 2, 3].map((i) => (
                 <div
@@ -68,6 +71,16 @@ const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
                 </div>
               ))}
             </>
+          )}
+          {!showPlaceholders && displayProperties.length === 0 && (
+            <div className="col-span-full rounded-2xl border border-dashed border-slate-300 px-6 py-12 text-center">
+              <p className="font-semibold text-slate-900">
+                Nenhum imóvel disponível
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                Novas oportunidades serão publicadas em breve.
+              </p>
+            </div>
           )}
           {displayProperties.map((property) => (
             <PropertyCard
@@ -113,8 +126,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       <div className="relative h-48 bg-gray-200">
         {property.images && property.images[0] ? (
           <img
-            src={property.images[0]}
-            alt={property.title}
+            src={
+              typeof property.images[0] === 'string'
+                ? property.images[0]
+                : (property.images[0] as { url?: string; src?: string }).url ||
+                  (property.images[0] as { url?: string; src?: string }).src
+            }
+            alt={property.title || 'Imóvel'}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -147,14 +165,20 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="flex items-center text-gray-600 text-sm mb-3">
           <MapPin size={16} className="mr-1" />
           <span>
-            {property.location.city}, {property.location.state}
+            {[property.location?.city, property.location?.state]
+              .filter(Boolean)
+              .join(', ') || 'Localização sob consulta'}
           </span>
         </div>
 
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center text-gray-600 text-sm">
             <Maximize2 size={16} className="mr-1" />
-            <span>{property.features.areaHectares} hectares</span>
+            <span>
+              {property.features?.areaHectares
+                ? `${property.features.areaHectares} hectares`
+                : 'Área sob consulta'}
+            </span>
           </div>
         </div>
 
@@ -165,7 +189,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               className="text-2xl font-bold"
               style={{ color: theme.primaryColor }}
             >
-              R$ {(property.price / 1000000).toFixed(2)}M
+              {typeof property.price === 'number'
+                ? new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                    maximumFractionDigits: 0,
+                  }).format(property.price)
+                : 'Sob consulta'}
             </p>
           </div>
 

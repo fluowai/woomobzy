@@ -9,7 +9,13 @@ import React, {
 import {
   setActiveOrganizationId,
   clearStaleOrganizationData,
+  getApiUrl,
 } from '../src/lib/api';
+import {
+  clearImpersonationSession,
+  getStoredImpersonationSession,
+  persistImpersonationSession,
+} from '../src/lib/impersonation';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -44,8 +50,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
-  impersonateOrganization: (orgId: string) => Promise<void>;
-  stopImpersonation: () => void;
+  impersonateOrganization: (orgId: string, reason: string) => Promise<void>;
+  stopImpersonation: () => Promise<void>;
   isImpersonating: boolean;
   enableDebugMode: () => Promise<void>;
 }
@@ -75,7 +81,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       // DEBOUNCE FIX: If SIGNED_IN fires before INITIAL_SESSION, skip it.
       if (_event === 'SIGNED_IN' && !initialSessionProcessed.current) {
         if (session?.user) setUser(session.user);
@@ -108,9 +114,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           retryCount.current = 0;
         }
 
-        await loadProfile(session.user.id);
+        scheduleAuthProfileLoad(loadProfile, session.user.id);
       } else {
         logger.info('🔄 [AuthContext] Auth Event: User is null');
+        clearImpersonationSession();
         setUser(null);
         setProfile(null);
         setIsImpersonating(false);
@@ -188,7 +195,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           full_name: profileData.full_name || profileData.name || '',
         };
 
-        const impOrgId = getImpersonatedOrgId();
+        const impOrgId =
+          getStoredImpersonationSession()?.organizationId || null;
 
         if (
           profileData.role === 'superadmin' &&
@@ -218,14 +226,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
               '⚠️ [AuthContext] Impersonation failed or org not found:',
               orgError
             );
-            clearImpersonationStorage();
+            clearImpersonationSession();
             setIsImpersonating(false);
           }
         } else {
           setIsImpersonating(false);
-          if (impOrgId === 'null' || impOrgId === 'undefined') {
-            clearImpersonationStorage();
-          }
 
           if (finalProfile.organization_id) {
             const { data: orgData, error: orgError } = await supabase
@@ -293,7 +298,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const signIn = async (email: string, password: string) => {
-    clearImpersonationStorage();
+    clearImpersonationSession();
     clearStaleOrganizationData();
     setIsImpersonating(false);
 
@@ -328,7 +333,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const signOut = async () => {
-    clearImpersonationStorage();
+    clearImpersonationSession();
     syncActiveOrganization(null);
     try {
       await supabase.auth.signOut({ scope: 'local' });
@@ -353,7 +358,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     await loadProfile(user.id);
   };
 
-  const impersonateOrganization = async (orgId: string) => {
+  const impersonateOrganization = async (orgId: string, reason: string) => {
     // Basic check for superadmin (will be enforced by RLS/Backend too)
     // We fetch current role again to be sure
     const { data: currentProfile } = await supabase
@@ -364,16 +369,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     if (currentProfile?.role !== 'superadmin') throw new Error('Unauthorized');
 
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      throw new Error('Informe o motivo do acesso em modo suporte.');
+    }
+
     logger.info('🚀 Starting impersonation of:', orgId);
-    sessionStorage.setItem('impersonated_org_id', orgId);
-    localStorage.removeItem('impersonatedOrgId');
+    const response = await setUpImpersonationSession(orgId, trimmedReason);
+    persistImpersonationSession(response);
+    setIsImpersonating(true);
     await loadProfile(user!.id);
   };
 
-  const stopImpersonation = () => {
+  const stopImpersonation = async () => {
     logger.info('🛑 Stopping impersonation');
-    clearImpersonationStorage();
-    if (user) loadProfile(user.id);
+    try {
+      if (getStoredImpersonationSession()) {
+        await setDownImpersonationSession();
+      }
+    } catch (error: any) {
+      logger.warn(
+        '[AuthContext] Falha ao revogar impersonação no servidor:',
+        error?.message || error
+      );
+    } finally {
+      clearImpersonationSession();
+      setIsImpersonating(false);
+      if (user) {
+        await loadProfile(user.id);
+      } else {
+        syncActiveOrganization(null);
+      }
+    }
   };
 
   const enableDebugMode = async () => {
@@ -423,6 +450,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   );
 };
 
+export function scheduleAuthProfileLoad(
+  loadProfile: (userId: string) => Promise<void>,
+  userId: string
+): void {
+  // Supabase holds its auth lock while notifying subscribers. Deferring the
+  // profile query prevents PostgREST from waiting on the same auth callback.
+  setTimeout(() => {
+    void loadProfile(userId);
+  }, 0);
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -430,30 +468,6 @@ export const useAuth = () => {
   }
   return context;
 };
-
-function getImpersonatedOrgId(): string | null {
-  if (typeof window === 'undefined') return null;
-
-  const current = sessionStorage.getItem('impersonated_org_id');
-  if (current && current !== 'null' && current !== 'undefined') return current;
-
-  const legacy = localStorage.getItem('impersonatedOrgId');
-  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
-    sessionStorage.setItem('impersonated_org_id', legacy);
-    return legacy;
-  }
-
-  return null;
-}
-
-function clearImpersonationStorage() {
-  if (typeof window === 'undefined') return;
-  sessionStorage.removeItem('impersonated_org_id');
-  sessionStorage.removeItem('active_organization_id');
-  sessionStorage.removeItem('active_organization_user_id');
-  localStorage.removeItem('impersonatedOrgId');
-  localStorage.removeItem('isImpersonating');
-}
 
 function syncActiveOrganization(
   organizationId: string | null,
@@ -471,5 +485,70 @@ function syncActiveOrganization(
   } else {
     sessionStorage.removeItem('active_organization_id');
     sessionStorage.removeItem('active_organization_user_id');
+  }
+}
+
+async function setUpImpersonationSession(orgId: string, reason: string) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const response = await fetch(getApiUrl('/api/admin/impersonations'), {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {}),
+    },
+    body: JSON.stringify({
+      organizationId: orgId,
+      reason,
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload?.session) {
+    throw new Error(payload?.error || 'Erro ao iniciar o modo suporte');
+  }
+
+  return payload.session as {
+    id: string;
+    secret: string;
+    expiresAt: string;
+    organizationId: string;
+  };
+}
+
+async function setDownImpersonationSession() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const activeSession = getStoredImpersonationSession();
+
+  const response = await fetch(
+    getApiUrl('/api/admin/impersonations/current'),
+    {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
+        ...(activeSession
+          ? {
+              'x-impersonation-session-id': activeSession.id,
+              'x-impersonation-session-secret': activeSession.secret,
+            }
+          : {}),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.error || 'Erro ao encerrar o modo suporte');
   }
 }

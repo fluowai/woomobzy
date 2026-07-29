@@ -1,5 +1,31 @@
 # Verificação
 
+## 2026-07-28 — Auditoria funcional, execução da Onda 0
+
+- `npm run audit:matrix`: 143 rotas; 49 Urbanas, 48 Rurais, 13 Super Admin, 13 Mega Admin e 20 públicas/compartilhadas.
+- Playwright público: 10/10 passaram em Chromium desktop e mobile.
+- Playwright anônimo dos painéis: 8/8 passaram.
+- Testes direcionados de autenticação, impersonação e assinatura: passaram.
+- `npx vitest run`: 25 arquivos e 123 testes passaram no estado final desta execução.
+- `npm run type-check`: passou após as correções da revisão independente.
+- `npm run build`: passou.
+- `npm run lint`: código zero, 0 erros e 598 avisos preexistentes/de dívida técnica.
+- `go test ./...`: passou em cópia temporária sem acentos no caminho; a execução direta falha por limitação da toolchain no caminho `Área de Trabalho`.
+- Revisão independente: cinco achados corrigidos; reteste aprovou o recorte.
+- A auditoria autenticada completa permanece bloqueada pela ausência das oito variáveis de credenciais E2E.
+- `npm run test:e2e:audit`: 8 casos anônimos passaram, 25 casos autenticados foram ignorados e o contrato falhou intencionalmente ao listar as oito credenciais ausentes.
+- A rotação de segredos e a validação da migration/RLS não foram executadas.
+
+## 2026-07-28 — Linha de base para auditoria funcional
+
+- `npm run type-check`: passou.
+- `npm run build`: passou.
+- `npm run test -- --run`: 18 arquivos e 90 testes aprovados.
+- `npm run lint`: terminou com código zero e muitos avisos.
+- `npx playwright test --list`: 5 cenários lógicos em 2 arquivos, executados nos projetos Chromium desktop e mobile, totalizando 10 execuções.
+- Inspeção de `App.tsx`: 48 tags de rota no bloco Rural, 47 no Urbano, 13 no Mega Admin e 12 no Super Admin.
+- O planejamento não comprova o funcionamento dos módulos autenticados; essa verificação pertence às ondas definidas em `DEV/SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md`.
+
 ## 2026-07-28 — WhatsMeow QR Code e consulta de leads
 
 - `go test ./...`: passou na toolchain Go 1.25.0, em workspace temporário sem acentos no caminho.

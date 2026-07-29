@@ -238,7 +238,7 @@ func proxyLegacyWsToken(c *gin.Context, nodeURL string) {
 		return
 	}
 
-	for _, header := range []string{"Authorization", "x-impersonate-org-id"} {
+	for _, header := range []string{"Authorization", "x-impersonation-session-id", "x-impersonation-session-secret"} {
 		if value := c.GetHeader(header); value != "" {
 			req.Header.Set(header, value)
 		}

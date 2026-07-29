@@ -1,5 +1,10 @@
 import { logger } from '@/utils/logger';
 import { getApiUrl } from '../src/lib/api';
+import {
+  clearImpersonationSession,
+  getImpersonationHeaders,
+  isImpersonationErrorCode,
+} from '../src/lib/impersonation';
 import { supabase } from './supabase';
 
 type StorageBucket =
@@ -31,9 +36,8 @@ export const uploadFile = async (
       headers.set('Authorization', `Bearer ${session.access_token}`);
     }
 
-    const impId = getImpersonatedOrgId();
-    if (impId && impId !== 'null') {
-      headers.set('x-impersonate-org-id', impId);
+    for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+      headers.set(key, value);
     }
 
     const response = await fetch(getApiUrl('/api/storage/upload'), {
@@ -46,6 +50,9 @@ export const uploadFile = async (
 
     if (!response.ok) {
       const message = data.error || `Erro no upload: ${response.statusText}`;
+      if (isImpersonationErrorCode(data.code)) {
+        clearImpersonationSession();
+      }
       logger.error('Erro detalhado no upload:', data);
       alert(`Erro no upload: ${message}`);
       throw new Error(message);
@@ -58,21 +65,6 @@ export const uploadFile = async (
     return null;
   }
 };
-
-function getImpersonatedOrgId(): string | null {
-  if (typeof window === 'undefined') return null;
-
-  const current = sessionStorage.getItem('impersonated_org_id');
-  if (current && current !== 'null' && current !== 'undefined') return current;
-
-  const legacy = localStorage.getItem('impersonatedOrgId');
-  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
-    sessionStorage.setItem('impersonated_org_id', legacy);
-    return legacy;
-  }
-
-  return null;
-}
 
 function resolveStorageBucket(bucket: StorageBucket): ResolvedStorageBucket {
   if (bucket === 'agency-assets' || bucket === 'property-images') {

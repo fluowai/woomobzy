@@ -34,6 +34,7 @@ const SYSTEM_ROUTES = [
   '/impersonate',
   '/lp/',
   '/site/',
+  '/sites/',
   '/embreve',
   '/vendas',
   '/consultoria',

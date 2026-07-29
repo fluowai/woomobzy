@@ -506,7 +506,7 @@ const TenantManager: React.FC = () => {
                           if (!reason) return;
 
                           try {
-                            await impersonateOrganization(tenant.id);
+                            await impersonateOrganization(tenant.id, reason);
                             window.location.href = '/admin';
                           } catch (err: any) {
                             logger.error(err);
@@ -615,7 +615,7 @@ const TenantManager: React.FC = () => {
                       );
                       if (!reason) return;
                       try {
-                        await impersonateOrganization(tenant.id);
+                        await impersonateOrganization(tenant.id, reason);
                         window.location.href = '/admin';
                       } catch (err: any) {
                         logger.error(err);

@@ -1,0 +1,33 @@
+{
+  "mode": "ralph",
+  "active": true,
+  "iteration": 3,
+  "max_iterations": 10,
+  "current_phase": "executing",
+  "started_at": "2026-07-28T17:46:32Z",
+  "context_snapshot_path": ".omx/context/auditoria-funcional-regressao-20260728T174632Z.md",
+  "plan_path": "DEV/SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md",
+  "completed": [
+    "inventario_mestre",
+    "matriz_acesso",
+    "infraestrutura_e2e_autenticada",
+    "smoke_anonimo_quatro_paineis",
+    "correcoes_locais_onda_0",
+    "verificacao_independente_recorte_onda_0"
+  ],
+  "pending": [
+    "execucao_onda_0",
+    "smoke_autenticado_quatro_paineis",
+    "auditoria_urbano",
+    "auditoria_rural",
+    "auditoria_super_admin",
+    "auditoria_mega_admin",
+    "regressao_permanente",
+    "verificacao_final"
+  ],
+  "blockers": [
+    "Credenciais E2E autenticadas ausentes para Urbano, Rural, Super Admin e Mega Admin",
+    "Rotação externa obrigatória dos segredos previamente expostos e invalidação de sessões/tokens antigos",
+    "Validação de RLS efetiva requer acesso controlado ao banco e tenants de teste por nicho"
+  ]
+}

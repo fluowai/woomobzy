@@ -1,7 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { callApi } from '@/src/lib/api';
-import { supabase } from '../../services/supabase';
 import {
   Building2,
   Search,
@@ -369,7 +368,7 @@ const DirectClientsManager: React.FC = () => {
                         if (!reason) return;
 
                         try {
-                          await impersonateOrganization(DirectClient.id);
+                          await impersonateOrganization(DirectClient.id, reason);
                           window.location.href = '/admin';
                         } catch (err: any) {
                           logger.error(err);

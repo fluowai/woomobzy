@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import { createClient } from '@supabase/supabase-js';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
+import { getImpersonationHeaders } from '@/src/lib/impersonation';
 
 const supabaseUrl = getRuntimeEnv('VITE_SUPABASE_URL');
 const supabaseAnonKey = getRuntimeEnv('VITE_SUPABASE_ANON_KEY');
@@ -25,44 +26,31 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-// No frontend, o organization_id deve ser derivado do Perfil ou do Impersonation
-// Usamos o global.headers para que o backend receba a intenção de impersonação para validação segura
-const getHeaders = () => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
-  if (typeof window !== 'undefined') {
-    const impId = getImpersonatedOrgId();
-    if (impId && impId !== 'null') {
-      headers['x-impersonate-org-id'] = impId;
-    }
+const buildSupabaseFetch = () => async (
+  input: RequestInfo | URL,
+  init?: RequestInit
+) => {
+  const headers = new Headers(init?.headers || {});
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
   }
 
-  return headers;
+  for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+    headers.set(key, value);
+  }
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
 };
-
-function getImpersonatedOrgId(): string | null {
-  if (typeof window === 'undefined') return null;
-
-  const current = sessionStorage.getItem('impersonated_org_id');
-  if (current && current !== 'null' && current !== 'undefined') return current;
-
-  const legacy = localStorage.getItem('impersonatedOrgId');
-  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
-    sessionStorage.setItem('impersonated_org_id', legacy);
-    return legacy;
-  }
-
-  return null;
-}
 
 let activeClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
   {
     global: {
-      headers: getHeaders(),
+      fetch: buildSupabaseFetch(),
     },
   }
 );
@@ -70,7 +58,7 @@ let activeClient = createClient(
 export const setTenantSupabase = (url: string, key: string) => {
   activeClient = createClient(url, key, {
     global: {
-      headers: getHeaders(),
+      fetch: buildSupabaseFetch(),
     },
   });
   logger.info(
@@ -106,13 +94,7 @@ export const publicSupabase = createClient(
   }
 );
 
-/**
- * Helper para forçar atualização de headers após mudança de impersonação
- * (Ex: logout de suporte)
- */
 export const refreshSupabaseHeaders = () => {
-  // Como o client do Supabase é um singleton, em alguns casos é necessário
-  // que o app recarregue ou que as chamadas individuais injetem os headers.
-  // Na WooTech Imob, o reload é o padrão após troca de tenant de suporte.
-  window.location.reload();
+  // Os headers de impersonação agora são resolvidos por requisição.
+  // Mantido por compatibilidade com chamadas existentes.
 };

@@ -4,9 +4,14 @@ import pg from 'pg';
 import {
   verifySuperAdmin,
   verifyAdmin,
-  verifyAuth,
   clearProfileCache,
 } from '../middleware/auth.js';
+import {
+  createImpersonationSession,
+  ImpersonationSessionError,
+  readImpersonationSessionHeaders,
+  revokeImpersonationSession,
+} from '../lib/impersonation-session.js';
 import { requireTenant } from '../middleware/tenant.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import {
@@ -514,44 +519,115 @@ router.post(
 
 // --- 🔓 IMPERSONATION (BLOCO 3) ---
 
-/**
- * POST /api/admin/impersonate
- * Inicia o modo suporte para uma organização específica.
- */
+router.post('/impersonations', verifySuperAdmin, async (req, res) => {
+  await handleCreateImpersonationSession(req, res);
+});
+
+// --- 🏢 Organizations Management ---
+
 router.post('/impersonate', verifySuperAdmin, async (req, res) => {
-  const { organizationId } = req.body;
-  if (!organizationId)
-    return res.status(400).json({ error: 'ID da organização é obrigatório' });
+  await handleCreateImpersonationSession(req, res, {
+    legacy: true,
+  });
+});
+
+router.delete('/impersonations/current', verifySuperAdmin, async (req, res) => {
+  try {
+    const { sessionId, sessionSecret } = readImpersonationSessionHeaders(
+      req.headers
+    );
+    const session = await revokeImpersonationSession(supabase, {
+      actorUserId: req.authUserId,
+      sessionId,
+      sessionSecret,
+      ipAddress: req.ip,
+    });
+
+    res.json({
+      success: true,
+      session: {
+        id: session.id,
+        organizationId: session.tenant_id,
+        revokedAt: session.revoked_at,
+      },
+    });
+  } catch (error) {
+    handleImpersonationError(res, error, 'Erro ao revogar modo suporte');
+  }
+});
+
+async function handleCreateImpersonationSession(
+  req,
+  res,
+  { legacy = false } = {}
+) {
+  const { organizationId, reason } = req.body || {};
+
+  if (!organizationId) {
+    return res.status(400).json({ error: 'ID da organizacao e obrigatorio' });
+  }
 
   try {
-    // Verificar se a organização existe
     const { data: org, error } = await supabase
       .from('organizations')
       .select('id, name')
       .eq('id', organizationId)
-      .single();
+      .maybeSingle();
 
-    if (error || !org)
-      return res.status(404).json({ error: 'Organização não encontrada' });
+    if (error) throw error;
+    if (!org) {
+      return res.status(404).json({ error: 'Organizacao nao encontrada' });
+    }
 
-    console.log(
-      `[Impersonation] 🛡️ SuperAdmin ${req.user.email} iniciando suporte para ${org.name}`
-    );
-
-    // Na arquitetura de API, o frontend apenas armazena esse ID e envia no header x-impersonate-org-id
-    // O backend já valida a role no middleware verifyAuth
-    res.json({
-      success: true,
-      message: `Modo suporte ativado para ${org.name}`,
-      orgId: org.id,
+    const session = await createImpersonationSession(supabase, {
+      actorUserId: req.authUserId,
+      organizationId: org.id,
+      reason,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent') || null,
     });
-  } catch (err) {
-    console.error('[Admin] Impersonation error:', err.message);
-    res.status(500).json({ error: 'Erro ao ativar modo suporte' });
-  }
-});
 
-// --- 🏢 Organizations Management ---
+    console.log('[Admin] SuperAdmin iniciou sessao curta de impersonacao', {
+      actorId: req.authUserId,
+      actorEmail: req.user?.email || null,
+      organizationId: org.id,
+      organizationName: org.name,
+      sessionId: session.id,
+      legacy,
+    });
+
+    return res.status(201).json({
+      ...(legacy
+        ? {
+            deprecated: true,
+            message:
+              'Endpoint legado /impersonate mantido por compatibilidade. Use /impersonations.',
+          }
+        : {}),
+      session,
+    });
+  } catch (error) {
+    return handleImpersonationError(
+      res,
+      error,
+      'Erro ao ativar modo suporte'
+    );
+  }
+}
+
+function handleImpersonationError(res, error, fallbackMessage) {
+  if (error instanceof ImpersonationSessionError) {
+    return res.status(error.status).json({
+      error: error.message,
+      code: error.code,
+    });
+  }
+
+  console.error('[Admin] Impersonation error:', error?.message || error);
+  return res.status(500).json({
+    error: fallbackMessage,
+  });
+}
 
 router.get('/organizations', verifySuperAdmin, async (req, res) => {
   try {

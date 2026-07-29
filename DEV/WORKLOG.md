@@ -1,5 +1,63 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-07-28] Execução da auditoria funcional — Onda 0
+
+### Inventário e infraestrutura
+
+- Criada matriz gerada por AST em `DEV/TESTS/FUNCTIONAL_AUDIT_MATRIX.md`, cobrindo 143 rotas.
+- Restauradas as rotas urbanas `/urban/fintech` e `/urban/clube`, que existiam no menu, mas não no roteador.
+- Criada suíte E2E autenticada para Urbano, Rural, Super Admin e Mega Admin.
+- O contrato E2E reprova explicitamente a execução sem credenciais, evitando falso resultado verde.
+
+### Regressões corrigidas
+
+- Corrigido overflow horizontal da página comercial e melhorada a acessibilidade do menu móvel.
+- Corrigido bootstrap de tenant em loopback e resposta vazia de domínio personalizado.
+- O papel persistido no banco passou a prevalecer sobre metadata de autenticação.
+- `user_metadata` deixou de poder elevar privilégio ou vincular organização.
+- A seleção de plano pago não ativa mais assinatura no navegador; registra `payment_required` no backend.
+- Impersonação por header bruto foi substituída por sessão de 15 minutos, com motivo, hash do segredo, auditoria e revogação.
+- O ID de `auth.users` passou a ser preservado separadamente do ID do perfil em cenários de drift.
+- Literais sensíveis foram removidos dos arquivos versionados de configuração e bootstrap.
+
+### Evidências
+
+- revisão independente encontrou cinco defeitos no primeiro passe; todos foram corrigidos e aprovados no reteste;
+- 10/10 testes públicos Playwright passaram em desktop e mobile;
+- 8/8 bloqueios anônimos dos quatro painéis passaram;
+- testes direcionados de autenticação, impersonação e assinatura passaram;
+- type-check, build, lint sem erros e suíte Go passaram;
+- nenhuma migration, rotação de segredo, commit, push ou deploy foi executado.
+
+### Bloqueios externos
+
+1. Rotacionar segredos previamente expostos e invalidar tokens/sessões antigos.
+2. Fornecer contas de homologação para os quatro perfis.
+3. Disponibilizar duas organizações por nicho e acesso controlado ao banco para validar RLS.
+4. Aplicar e testar a migration de impersonação em homologação.
+
+## [2026-07-28] Planejamento da auditoria funcional e de regressões
+
+### Diagnóstico
+
+- O sistema possui inventário funcional amplo e 120 tags de rota nos quatro painéis.
+- A suíte Vitest passou com 18 arquivos e 90 testes.
+- A suíte Playwright possui somente 5 cenários lógicos, voltados a superfícies públicas e roteamento básico.
+- Build, type-check e lint passaram; o lint ainda apresenta muitos avisos.
+
+### Planejamento
+
+- Criado `DEV/SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md`.
+- Definidas as ondas: fundação transversal, Urbano, Rural, Super Admin, Mega Admin, superfícies públicas e barreira permanente de regressão.
+- Definidos gates, severidades, evidências e critérios globais de aceite.
+
+### Escopo desta atividade
+
+- Nenhuma função do produto foi alterada.
+- Nenhuma correção, commit, push ou deploy foi executado.
+
+---
+
 ## [2026-07-25] Fase 1: Financial Hub + Clube Imobzy
 
 ### Contexto

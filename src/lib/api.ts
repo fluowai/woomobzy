@@ -1,6 +1,12 @@
+import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { supabase } from '../../services/supabase';
 import { getRuntimeEnv } from '../../utils/runtimeConfig';
+import {
+  clearImpersonationSession,
+  getImpersonationHeaders,
+  isImpersonationErrorCode,
+} from './impersonation';
 
 const DEFAULT_API_URL = 'same-origin';
 
@@ -58,7 +64,12 @@ export function clearStaleOrganizationData(userId?: string | null) {
   }
 }
 
-export const callApi = async (path: string, options: RequestInit = {}) => {
+export interface CallApiOptions extends RequestInit {
+  hideError?: boolean;
+}
+
+export const callApi = async (path: string, options: CallApiOptions = {}) => {
+  try {
   const url = getApiUrl(path);
 
   const {
@@ -69,14 +80,8 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     headers.set('Authorization', `Bearer ${initialSession.access_token}`);
   }
 
-  const impId = getImpersonatedOrgId();
-  if (impId && impId !== 'null') {
-    headers.set('x-impersonate-org-id', impId);
-  } else {
-    const activeOrgId = getActiveOrganizationId();
-    if (activeOrgId) {
-      headers.set('x-organization-id', activeOrgId);
-    }
+  for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+    headers.set(key, value);
   }
 
   // Inject BYOB tenant domain
@@ -135,6 +140,9 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
     }
 
     const errorData = await response.json().catch(() => ({}));
+    if (isImpersonationErrorCode(errorData.code)) {
+      clearImpersonationSession();
+    }
     throw new Error(errorData.error || `Erro na API: ${response.statusText}`);
   }
 
@@ -144,6 +152,15 @@ export const callApi = async (path: string, options: RequestInit = {}) => {
   }
 
   return response.json();
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw error;
+    }
+    if (!options.hideError) {
+      toast.error(error.message || 'Erro de comunicação com o servidor.');
+    }
+    throw error;
+  }
 };
 
 export const downloadApiFile = async (path: string, filename: string) => {
@@ -156,12 +173,8 @@ export const downloadApiFile = async (path: string, filename: string) => {
     headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
-  const impId = getImpersonatedOrgId();
-  if (impId && impId !== 'null') {
-    headers.set('x-impersonate-org-id', impId);
-  } else {
-    const activeOrgId = getActiveOrganizationId();
-    if (activeOrgId) headers.set('x-organization-id', activeOrgId);
+  for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+    headers.set(key, value);
   }
 
   // Inject BYOB tenant domain
@@ -172,6 +185,9 @@ export const downloadApiFile = async (path: string, filename: string) => {
   const response = await fetch(url, { headers });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    if (isImpersonationErrorCode(errorData.code)) {
+      clearImpersonationSession();
+    }
     throw new Error(
       errorData.error || `Erro ao baixar arquivo: ${response.statusText}`
     );
@@ -187,18 +203,3 @@ export const downloadApiFile = async (path: string, filename: string) => {
   anchor.remove();
   URL.revokeObjectURL(objectUrl);
 };
-
-function getImpersonatedOrgId(): string | null {
-  if (typeof window === 'undefined') return null;
-
-  const current = sessionStorage.getItem('impersonated_org_id');
-  if (current && current !== 'null' && current !== 'undefined') return current;
-
-  const legacy = localStorage.getItem('impersonatedOrgId');
-  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
-    sessionStorage.setItem('impersonated_org_id', legacy);
-    return legacy;
-  }
-
-  return null;
-}

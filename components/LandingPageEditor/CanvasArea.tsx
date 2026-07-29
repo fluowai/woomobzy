@@ -250,7 +250,9 @@ function renderBlock(
       return <HeroWithFormBlock config={cfg} theme={themeConfig} />;
 
     case BlockType.PROPERTY_GRID:
-      return <PropertyGridBlock config={cfg} theme={themeConfig} />;
+      return (
+        <PropertyGridBlock config={cfg} theme={themeConfig} showPlaceholders />
+      );
 
     case BlockType.TEXT:
       return <TextBlock config={cfg} theme={themeConfig} />;

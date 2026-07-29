@@ -89,7 +89,7 @@ router.post('/leads', contactLimiter, async (req, res) => {
     if (!validation.success) {
       return res
         .status(400)
-        .json({ error: 'Dados invalidos', details: validation.error.errors });
+        .json({ error: 'Dados inválidos', details: validation.error.errors });
     }
 
     const {
@@ -131,7 +131,7 @@ router.post('/leads', contactLimiter, async (req, res) => {
     if (!organization) {
       return res
         .status(404)
-        .json({ error: 'Organizacao nao encontrada ou indisponivel.' });
+        .json({ error: 'Organização não encontrada ou indisponível.' });
     }
 
     const leadPayload = {

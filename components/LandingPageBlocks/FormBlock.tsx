@@ -1,18 +1,28 @@
 import { logger } from '@/utils/logger';
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { FormBlockConfig, LandingPageTheme } from '../../types/landingPage';
 import { Send, CheckCircle } from 'lucide-react';
-import { getApiUrl } from '../../src/lib/api';
+import {
+  PublicLeadContext,
+  submitPublicLead,
+} from '../../services/publicLeadCapture';
 
 interface FormBlockProps {
   config: FormBlockConfig;
   theme: LandingPageTheme;
+  leadContext?: PublicLeadContext;
 }
 
-const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
+const FormBlock: React.FC<FormBlockProps> = ({
+  config,
+  theme,
+  leadContext = {},
+}) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const formId = useId();
 
   const handleChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -21,6 +31,7 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setSubmitError('');
 
     try {
       // Importar função de tracking
@@ -51,44 +62,34 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
       };
 
       // Enviar para API
-      const response = await fetch(getApiUrl('/api/public/leads'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(leadData),
+      await submitPublicLead(leadData, leadContext);
+      setSubmitted(true);
+
+      // Disparar eventos de conversão somente após confirmação da API
+      trackFacebookEvent('Lead', {
+        content_name: 'Landing Page Form',
+        content_category: 'Lead Generation',
+        value: 0,
+        currency: 'BRL',
       });
 
-      if (response.ok) {
-        setSubmitted(true);
+      trackGoogleEvent('generate_lead', {
+        event_category: 'Landing Page',
+        event_label: 'Form Submission',
+        value: 0,
+      });
 
-        // Disparar eventos de conversão
-        trackFacebookEvent('Lead', {
-          content_name: 'Landing Page Form',
-          content_category: 'Lead Generation',
-          value: 0,
-          currency: 'BRL',
-        });
-
-        trackGoogleEvent('generate_lead', {
-          event_category: 'Landing Page',
-          event_label: 'Form Submission',
-          value: 0,
-        });
-
-        logger.info('✅ Lead criado via landing page com tracking data');
-      }
+      logger.info('✅ Lead criado via landing page com dados de tracking');
     } catch (error) {
       logger.error('Error submitting form:', error);
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível enviar seus dados. Tente novamente.'
+      );
     } finally {
       setSubmitting(false);
     }
-
-    // Reset após 3 segundos
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({});
-    }, 3000);
   };
 
   if (submitted) {
@@ -128,69 +129,91 @@ const FormBlock: React.FC<FormBlockProps> = ({ config, theme }) => {
           {config.title}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-          {(config.fields || []).map((field) => (
-            <div key={field.name}>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: theme.textColor }}
-              >
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-
-              {field.type === 'textarea' ? (
-                <textarea
-                  name={field.name}
-                  value={formData[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                  required={field.required}
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                  style={{
-                    fontFamily: theme.fontFamily,
-                  }}
-                />
-              ) : field.type === 'select' && field.options ? (
-                <select
-                  name={field.name}
-                  value={formData[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  required={field.required}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                  style={{
-                    fontFamily: theme.fontFamily,
-                  }}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 sm:space-y-6"
+          aria-busy={submitting}
+        >
+          {(config.fields || []).map((field) => {
+            const fieldId = `${formId}-${field.name}`;
+            return (
+              <div key={field.name}>
+                <label
+                  htmlFor={fieldId}
+                  className="block text-sm font-medium mb-2"
+                  style={{ color: theme.textColor }}
                 >
-                  <option value="">Selecione...</option>
-                  {field.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={field.type}
-                  name={field.name}
-                  value={formData[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                  required={field.required}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                  style={{
-                    fontFamily: theme.fontFamily,
-                  }}
-                />
-              )}
-            </div>
-          ))}
+                  {field.label}
+                  {field.required && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
+                </label>
+
+                {field.type === 'textarea' ? (
+                  <textarea
+                    id={fieldId}
+                    name={field.name}
+                    value={formData[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    required={field.required}
+                    rows={4}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                    style={{
+                      fontFamily: theme.fontFamily,
+                    }}
+                  />
+                ) : field.type === 'select' && field.options ? (
+                  <select
+                    id={fieldId}
+                    name={field.name}
+                    value={formData[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    required={field.required}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                    style={{
+                      fontFamily: theme.fontFamily,
+                    }}
+                  >
+                    <option value="">Selecione...</option>
+                    {field.options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id={fieldId}
+                    type={field.type}
+                    name={field.name}
+                    value={formData[field.name] || ''}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    required={field.required}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                    style={{
+                      fontFamily: theme.fontFamily,
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+
+          {submitError && (
+            <p
+              role="alert"
+              className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
+              {submitError}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-semibold transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-semibold text-white transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: theme.primaryColor,
               fontSize: '1em',

@@ -35,19 +35,24 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const offset = (page - 1) * limit;
 
     // 1. Buscar o nicho da organização para saber o que filtrar
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('niche')
-      .eq('id', req.orgId)
-      .single();
-
-    const niche = normalizeNiche(org?.niche) || 'urbano';
+    let niche = 'urbano';
+    if (req.orgId) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('niche')
+        .eq('id', req.orgId)
+        .single();
+      niche = normalizeNiche(org?.niche) || 'urbano';
+    }
 
     // 2. Montar a query com o filtro de nicho
     let query = supabase
       .from('properties')
-      .select('*', { count: 'exact' })
-      .eq('organization_id', req.orgId);
+      .select('*', { count: 'exact' });
+
+    if (req.orgId) {
+      query = query.eq('organization_id', req.orgId);
+    }
 
     // Se o cliente pediu um nicho específico via query string, usamos ele
     // Caso contrário, usamos o nicho da organização

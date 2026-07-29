@@ -241,6 +241,11 @@ import { createClient } from '@supabase/supabase-js';
 const tenantConfigCache = new Map();
 
 app.use(async (req, res, next) => {
+  // Rotas de API sempre usam o client master — BYOB é apenas para páginas públicas
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+
   const tenantDomain = req.headers['x-tenant-domain'] || req.hostname;
 
   // Se for o domínio master, ou rotas internas, não precisa de BYOB

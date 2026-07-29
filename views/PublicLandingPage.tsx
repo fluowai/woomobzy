@@ -104,9 +104,9 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       if (!resolvedOrg) {
         try {
           const { data: org, error: orgError } = await supabase
-            .rpc('get_tenant_public', { slug_input: slugOrOrg })
-            .maybeSingle();
-          if (!orgError && org) resolvedOrg = org;
+            .rpc('get_tenant_public', { slug_input: slugOrOrg });
+          const orgRow = org?.[0];
+          if (!orgError && orgRow) resolvedOrg = orgRow;
         } catch (e) {
           logger.warn('RPC failed, trying direct query');
         }
@@ -117,9 +117,8 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             .select('id, name, slug, custom_domain')
             .or(
               `slug.eq.${slugOrOrg},custom_domain.eq.${slugOrOrg},subdomain.eq.${slugOrOrg}`
-            )
-            .maybeSingle();
-          resolvedOrg = orgDirect;
+            );
+          resolvedOrg = orgDirect?.[0];
         }
       }
 

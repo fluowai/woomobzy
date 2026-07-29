@@ -1,5 +1,4 @@
 import React from 'react';
-import { Block } from '../../types';
 import { useLayoutEditor } from '../../context/LayoutEditorContext';
 import {
   DragDropContext,

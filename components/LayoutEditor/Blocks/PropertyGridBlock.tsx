@@ -10,7 +10,6 @@ interface PropertyGridBlockProps {
 
 export const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
   block,
-  isEditing,
 }) => {
   const config = block.config as PropertyGridBlockConfig;
 

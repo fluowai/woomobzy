@@ -26,6 +26,15 @@ export const requireTenant = async (req, res, next) => {
   }
 
   if (!req.orgId) {
+    if (req.userRole === 'superadmin') {
+      console.warn(
+        `[TenantMiddleware] Superadmin bypass: sem orgId para ${req.method} ${req.path}`
+      );
+      req.orgId = req.realOrgId || null;
+      req.tenantValidated = true;
+      return next();
+    }
+
     console.error(
       `[TenantMiddleware] Bloqueio: requisicao sem OrganizationID para ${req.method} ${req.path}`,
       {

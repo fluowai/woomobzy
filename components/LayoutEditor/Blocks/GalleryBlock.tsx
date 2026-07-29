@@ -7,10 +7,7 @@ interface GalleryBlockProps {
   isEditing?: boolean;
 }
 
-export const GalleryBlock: React.FC<GalleryBlockProps> = ({
-  block,
-  isEditing,
-}) => {
+export const GalleryBlock: React.FC<GalleryBlockProps> = ({ block }) => {
   const config = block.config as any;
   const [currentIndex, setCurrentIndex] = useState(0);
 

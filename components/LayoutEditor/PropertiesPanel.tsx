@@ -6,7 +6,6 @@ import {
   TextBlockConfig,
   ImageBlockConfig,
   CTABlockConfig,
-  StatsBlockConfig,
   FormBlockConfig,
   PropertyGridBlockConfig,
   BlockType,

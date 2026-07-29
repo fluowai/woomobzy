@@ -109,11 +109,11 @@ export const PropertySelectorModal: React.FC<PropertySelectorModalProps> = ({
                   <div
                     key={property.id}
                     onClick={() => toggleSelection(property.id)}
-                    className={\`relative bg-white border-2 rounded-xl overflow-hidden cursor-pointer transition-all \${
+                    className={`relative bg-white border-2 rounded-xl overflow-hidden cursor-pointer transition-all ${
                       isSelected
                         ? 'border-indigo-600 shadow-md ring-2 ring-indigo-600 ring-opacity-20'
                         : 'border-transparent shadow-sm hover:shadow-md'
-                    }\`}
+                    }`}
                   >
                     <div className="h-32 bg-slate-200 relative">
                       {property.images?.[0] ? (

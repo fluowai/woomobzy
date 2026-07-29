@@ -16,7 +16,6 @@ interface Testimonial {
 
 export const TestimonialsBlock: React.FC<TestimonialsBlockProps> = ({
   block,
-  isEditing,
 }) => {
   const config = block.config as any;
 
@@ -58,24 +57,14 @@ export const TestimonialsBlock: React.FC<TestimonialsBlockProps> = ({
         }}
       >
         {testimonials.map((testimonial, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100"
-          >
-            {/* Rating */}
-            {testimonial.rating && (
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <span key={i} className="text-yellow-400">
-                    ★
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Content */}
-            <p className="text-slate-600 mb-6 italic">
-              "{testimonial.content}"
+          <div key={index} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+            <div className="flex text-amber-400 mb-6">
+              {[...Array(testimonial.rating || 5)].map((_, i) => (
+                <Star key={i} size={20} fill="currentColor" />
+              ))}
+            </div>
+            <p className="text-slate-600 mb-8 italic">
+              &quot;{testimonial.content}&quot;
             </p>
 
             {/* Author */}

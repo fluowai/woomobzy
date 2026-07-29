@@ -250,8 +250,28 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
                 setLoading(false);
                 return;
               }
+              if (error)
+                log(`[Router] RPC error (first site): ${error.message} (${error.code})`);
             } catch (error) {
               log(`[Router] Exception resolving tenant slug: ${error}`);
+            }
+
+            try {
+              const { data: orgDirect } = await supabase
+                .from('organizations')
+                .select('id, name, slug, custom_domain, subdomain, primary_color, secondary_color, niche, logo_url')
+                .or(`slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`)
+                .maybeSingle();
+
+              if (orgDirect) {
+                log(`[Router] Tenant found via fallback query: ${orgDirect.name}`);
+                setResolvedSlug(orgDirect.slug);
+                setIsPublicSite(true);
+                setLoading(false);
+                return;
+              }
+            } catch (e2) {
+              log(`[Router] Fallback query also failed: ${e2}`);
             }
           }
 
@@ -307,6 +327,24 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
               log(`[Router] RPC error: ${error.message} (${error.code})`);
           } catch (error) {
             log(`[Router] Exception resolving tenant slug: ${error}`);
+          }
+
+          try {
+            const { data: orgDirect } = await supabase
+              .from('organizations')
+              .select('id, name, slug, custom_domain, subdomain, primary_color, secondary_color, niche, logo_url')
+              .or(`slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`)
+              .maybeSingle();
+
+            if (orgDirect) {
+              log(`[Router] Tenant found via fallback query: ${orgDirect.name}`);
+              setResolvedSlug(orgDirect.slug);
+              setIsPublicSite(true);
+              setLoading(false);
+              return;
+            }
+          } catch (e2) {
+            log(`[Router] Fallback query also failed: ${e2}`);
           }
         }
 

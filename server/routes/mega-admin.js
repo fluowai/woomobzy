@@ -129,7 +129,6 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
           name,
           slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
           status: 'active',
-          plan: 'enterprise', // Liberar todas as funções
           is_reseller: true,
           niche: normalizeNiche(niche, name, slug),
           owner_name: owner_name || null,

@@ -117,11 +117,14 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
+    hostname: rabbitmq-server
     environment:
+      RABBITMQ_ERLANG_COOKIE: "${RABBITMQ_ERLANG_COOKIE:?cookie de 32+ caracteres obrigatorio}"
       RABBITMQ_DEFAULT_USER: "imobzy"
       RABBITMQ_DEFAULT_PASS: "${RABBITMQ_DEFAULT_PASS}"
+      RABBITMQ_NODENAME: "rabbit@rabbitmq-server"
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_data_v4:/var/lib/rabbitmq/mnesia
     networks:
       - imobfluow_internal
     healthcheck:
@@ -138,7 +141,7 @@ services:
 
 volumes:
   whatsapp_sessions:
-  rabbitmq_data:
+  rabbitmq_data_v4:
   imobzy_traefik_dynamic:
     external: true
 

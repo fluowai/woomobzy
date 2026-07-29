@@ -78,7 +78,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     );
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Origin,Accept,Content-Type,Authorization,X-Requested-With,x-tenant-id,x-impersonate-org-id,x-organization-id'
+      'Origin,Accept,Content-Type,Authorization,X-Requested-With,x-tenant-id,x-impersonation-session-id,x-impersonation-session-secret'
     );
   };
 

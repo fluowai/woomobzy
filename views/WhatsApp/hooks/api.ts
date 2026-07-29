@@ -1,6 +1,11 @@
 import { logger } from '@/utils/logger';
 import { getRuntimeEnv } from '@/utils/runtimeConfig';
 import { callApi } from '../../../src/lib/api';
+import {
+  clearImpersonationSession,
+  getImpersonationHeaders,
+  getStoredImpersonationSession,
+} from '../../../src/lib/impersonation';
 
 const DEFAULT_WHATSAPP_API_URL = '/api/whatsapp';
 const DEFAULT_WHATSAPP_WS_PATH = '/api/whatsapp/ws';
@@ -195,8 +200,11 @@ function buildApiHeaders(
   if (!headers.has('Content-Type'))
     headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  if (impersonatedOrgId) headers.set('x-impersonate-org-id', impersonatedOrgId);
-  else if (activeOrgId) headers.set('x-organization-id', activeOrgId);
+  if (impersonatedOrgId) {
+    for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+      headers.set(key, value);
+    }
+  }
   return headers;
 }
 
@@ -246,16 +254,7 @@ function decodeJwtPayload(token: string): { org_id?: string } | null {
 }
 
 function getImpersonatedOrgId(): string | null {
-  const value = sessionStorage.getItem('impersonated_org_id');
-  if (value && value !== 'null' && value !== 'undefined') return value;
-
-  const legacy = localStorage.getItem('impersonatedOrgId');
-  if (legacy && legacy !== 'null' && legacy !== 'undefined') {
-    sessionStorage.setItem('impersonated_org_id', legacy);
-    return legacy;
-  }
-
-  return null;
+  return getStoredImpersonationSession()?.organizationId || null;
 }
 
 function getActiveOrganizationId(userId?: string): string | null {
@@ -296,9 +295,8 @@ async function getValidImpersonatedOrgId(
 }
 
 function clearImpersonationStorage() {
-  sessionStorage.removeItem('impersonated_org_id');
-  localStorage.removeItem('impersonatedOrgId');
-  localStorage.removeItem('isImpersonating');
+  clearImpersonationSession();
+  tenantIdCache = undefined;
 }
 
 async function getTenantId(userId?: string): Promise<string | null> {
@@ -813,12 +811,7 @@ export const messageApi = {
       method: 'POST',
       headers: {
         Authorization: session ? `Bearer ${session.access_token}` : '',
-        ...(impersonatedOrgId
-          ? { 'x-impersonate-org-id': impersonatedOrgId }
-          : {}),
-        ...(!impersonatedOrgId && activeOrgId
-          ? { 'x-organization-id': activeOrgId }
-          : {}),
+        ...(impersonatedOrgId ? getImpersonationHeaders() : {}),
       },
       body: formData,
     });

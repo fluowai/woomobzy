@@ -246,7 +246,7 @@ const PropertyEditor: React.FC = () => {
 
     if (!formData.title?.trim()) {
       logger.warn('[PropertyEditor] Validacao falhou: titulo ausente');
-      alert('Por favor, informe o título do imóvel.');
+      toast.error('Por favor, informe o título do imóvel.');
       return;
     }
 
@@ -262,7 +262,7 @@ const PropertyEditor: React.FC = () => {
         session?.user?.user_metadata?.organization_id;
 
       if (!orgId) {
-        alert(
+        toast.error(
           'Erro: Organização não identificada. Aguarde o carregamento do perfil ou faça login novamente.'
         );
         setLoading(false);
@@ -284,11 +284,11 @@ const PropertyEditor: React.FC = () => {
       if (isNew) {
         const result = await propertyService.create(payload);
         logger.info('✅ Imóvel criado com sucesso:', result);
-        alert('Imóvel criado com sucesso!');
+        toast.success('Imóvel criado com sucesso!');
       } else if (id) {
         const result = await propertyService.update(id, payload);
         logger.info('✅ Imóvel atualizado com sucesso:', result);
-        alert('Imóvel atualizado com sucesso!');
+        toast.success('Imóvel atualizado com sucesso!');
       }
       navigate(`/${nichePath}/properties`);
     } catch (error: any) {
@@ -304,7 +304,7 @@ const PropertyEditor: React.FC = () => {
         errorDetails,
         errorCode,
       });
-      alert(`Erro ao salvar imóvel:\n\n${fullError}`);
+      toast.error(`Erro ao salvar imóvel:\n\n${fullError}`);
     } finally {
       setLoading(false);
     }
@@ -312,7 +312,7 @@ const PropertyEditor: React.FC = () => {
 
   const handleAiDescription = async () => {
     if (!formData.title || formData.price === 0) {
-      alert(
+      toast.error(
         'Por favor, preencha as características básicas antes de gerar a descrição.'
       );
       return;
@@ -331,7 +331,7 @@ const PropertyEditor: React.FC = () => {
       !formData.location?.state ||
       !formData.features?.areaHectares
     ) {
-      alert(
+      toast.error(
         'Preencha pelo menos a Cidade, Estado e Área total (Hectares) para realizar a análise.'
       );
       return;
@@ -349,7 +349,7 @@ const PropertyEditor: React.FC = () => {
       setFormData((prev) => ({ ...prev, analysis }));
     } catch (error) {
       logger.error('Erro na análise', error);
-      alert(
+      toast.error(
         'Erro ao realizar análise. Verifique se a cidade e estado estão corretos.'
       );
     } finally {
@@ -359,7 +359,7 @@ const PropertyEditor: React.FC = () => {
 
   const handleRegenerateAcp = async () => {
     if (!id || isNew) {
-      alert('Salve o imovel antes de gerar a estrategia ACP.');
+      toast.error('Salve o imovel antes de gerar a estrategia ACP.');
       return;
     }
 
@@ -367,10 +367,10 @@ const PropertyEditor: React.FC = () => {
       setAcpGenerating(true);
       const updated = await propertyService.regenerateAcp(id);
       setFormData(updated);
-      alert('Estrategia ACP atualizada com sucesso.');
+      toast.success('Estrategia ACP atualizada com sucesso.');
     } catch (error: any) {
       logger.error('Erro ao gerar ACP', error);
-      alert(`Erro ao gerar ACP: ${error.message || error}`);
+      toast.error(`Erro ao gerar ACP: ${error.message || error}`);
     } finally {
       setAcpGenerating(false);
     }
@@ -391,7 +391,7 @@ const PropertyEditor: React.FC = () => {
   const handleImportCAR = async () => {
     const carNumber = formData.features?.legal?.carNumber;
     if (!carNumber) {
-      alert('Por favor, insira o número do CAR primeiro.');
+      toast.error('Por favor, insira o número do CAR primeiro.');
       return;
     }
 
@@ -413,10 +413,10 @@ const PropertyEditor: React.FC = () => {
           },
         },
       }));
-      alert('Dados importados com sucesso do SICAR!');
+      toast.success('Dados importados com sucesso do SICAR!');
     } catch (error: any) {
       logger.error(error);
-      alert(
+      toast.error(
         error.message ||
           'Erro ao importar dados do CAR. O sistema pode estar instável ou o código é inválido.'
       );
@@ -448,11 +448,11 @@ const PropertyEditor: React.FC = () => {
               },
             },
           }));
-          alert('KML importado com sucesso!');
+          toast.success('KML importado com sucesso!');
         }
       } catch (error) {
         logger.error('Erro ao importar KML:', error);
-        alert('Erro ao processar arquivo KML.');
+        toast.error('Erro ao processar arquivo KML.');
       }
     };
     reader.readAsText(file);

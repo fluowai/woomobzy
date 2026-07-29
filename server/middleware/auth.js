@@ -2,7 +2,11 @@ import {
   getSupabaseAuthServer,
   getSupabaseServer,
 } from '../lib/supabase-server.js';
-import jwt from 'jsonwebtoken';
+import {
+  assertValidImpersonationSession,
+  ImpersonationSessionError,
+  readImpersonationSessionHeaders,
+} from '../lib/impersonation-session.js';
 import { createHash } from 'node:crypto';
 import { TtlCache } from '../lib/ttl-cache.js';
 
@@ -37,7 +41,6 @@ export const verifyAuth = async (req, res, next) => {
     const supabaseAuth = getSupabaseAuthServer();
     const { user, impersonation, authError } = await resolveAuthenticatedUser(
       supabaseAuth,
-      supabase,
       token
     );
 
@@ -79,26 +82,25 @@ export const verifyAuth = async (req, res, next) => {
       });
     }
 
-    const effectiveProfileEmail = String(profile.email || user.email || '')
-      .toLowerCase()
-      .trim();
-
-    // Nota: break-glass hardcoded removido por seguranca.
-    // O email 'fluowai@gmail.com' deve ter role='superadmin' definido no banco.
-
-    // Nota: break-glass hardcoded foi removido por seguranca.
-    // O role do usuario vem exclusivamente do banco de dados (profiles table).
-    // Se o dono do sistema precisar de superadmin, deve ser definido no banco.
+    // O papel do usuário vem exclusivamente da tabela profiles.
+    // Elevação de privilégio por metadata ou e-mail não é permitida.
 
     // Injetar dados no request
-    req.user = { ...user, id: profile.id || user.id };
+    const requestIdentity = getAuthenticatedRequestIdentity(user, profile);
+    req.user = requestIdentity.user;
+    req.authUserId = requestIdentity.authUserId;
     req.userRole = profile.role;
     req.realOrgId = profile.organization_id;
     req.impersonation = impersonation;
 
-    const impersonateId = req.headers['x-impersonate-org-id'];
-    const requestedOrgId = req.headers['x-organization-id'];
-    const tokenImpersonationOrgId = getImpersonationTenantId(impersonation);
+    const impersonateId = getRequestedHeaderValue(
+      req.headers['x-impersonate-org-id']
+    );
+    const requestedOrgId = getRequestedHeaderValue(
+      req.headers['x-organization-id']
+    );
+    const { sessionId: impersonationSessionId, sessionSecret } =
+      readImpersonationSessionHeaders(req.headers);
 
     authDebug('verifyAuth', {
       userId: profile.id,
@@ -107,58 +109,54 @@ export const verifyAuth = async (req, res, next) => {
       profileOrg: profile.organization_id,
       requestedOrg: requestedOrgId,
       impersonateId: impersonateId || null,
+      impersonationSessionId: impersonationSessionId || null,
       authorizationExists: !!req.headers.authorization,
     });
 
-    if (tokenImpersonationOrgId) {
-      req.orgId = tokenImpersonationOrgId;
-      req.isImpersonating = true;
-      authDebug('Token impersonation ativo', { orgId: req.orgId });
-    } else if (impersonateId && profile.role === 'superadmin') {
-      authDebug('Superadmin impersonando via header', { impersonateId });
-      const { data: impersonatedOrg, error: impersonatedOrgError } =
-        await supabase
-          .from('organizations')
-          .select('id')
-          .eq('id', impersonateId)
-          .maybeSingle();
-
-      if (impersonatedOrgError || !impersonatedOrg) {
-        console.warn(
-          `[Auth] Impersonation invalida bloqueada para ${user.email}: ${impersonateId}`
-        );
-        return res.status(403).json({
-          error: 'Organizacao impersonada nao encontrada.',
-          code: 'INVALID_IMPERSONATED_ORG',
-        });
-      }
-
-      console.log(
-        `[Auth] 🔐 SuperAdmin ${user.email} impersonando Org: ${impersonateId}`
-      );
-      req.orgId = impersonatedOrg.id;
-      req.isImpersonating = true;
-      req.tenantValidated = true;
-    } else if (profile.role === 'superadmin' && requestedOrgId) {
-      authDebug('Superadmin acessando org via header', { requestedOrgId });
+    if (profile.role === 'superadmin' && impersonationSessionId) {
+      authDebug('Superadmin impersonando via sessao curta', {
+        requestedOrgId: requestedOrgId || null,
+        impersonationSessionId: impersonationSessionId || null,
+      });
+      const session = await assertValidImpersonationSession(supabase, {
+        actorUserId: req.authUserId,
+        sessionId: impersonationSessionId,
+        sessionSecret,
+      });
       const requestedOrg = await resolveOrganizationById(
         supabase,
-        requestedOrgId
+        session.tenant_id
       );
       if (!requestedOrg) {
         console.warn('[Auth] Organizacao solicitada no header nao encontrada', {
           userId: user.id,
           email: maskEmail(user.email),
-          requestedOrgId,
+          requestedOrgId: session.tenant_id,
         });
         return res.status(403).json({
           error: 'Organizacao solicitada nao permitida para este usuario.',
           code: 'INVALID_REQUESTED_ORG',
         });
       }
+      if (requestedOrg.status && requestedOrg.status.toLowerCase() !== 'active') {
+        return res.status(403).json({
+          error: 'Organizacao solicitada esta inativa.',
+          code: 'REQUESTED_ORG_INACTIVE',
+        });
+      }
       req.orgId = requestedOrg.id;
       req.isImpersonating = true;
       req.tenantValidated = true;
+      req.impersonationSessionId = session.id;
+    } else if (
+      profile.role === 'superadmin' &&
+      (requestedOrgId || impersonateId)
+    ) {
+      return res.status(403).json({
+        error:
+          'Headers legados de impersonação não são mais aceitos. Inicie uma sessão curta de suporte.',
+        code: 'IMPERSONATION_SESSION_REQUIRED',
+      });
     } else if (profile.organization_id) {
       // Usuario comum/admin: usa APENAS a organizacao do perfil.
       // Ignora completamente o header x-organization-id para evitar erros com dados stale.
@@ -181,7 +179,7 @@ export const verifyAuth = async (req, res, next) => {
           code: 'PROFILE_ORG_NOT_FOUND',
         });
       }
-      if (org.status && org.status !== 'active') {
+      if (org.status && org.status.toLowerCase() !== 'active') {
         console.warn('[Auth] Organizacao do perfil esta inativa', {
           userId: user.id,
           email: maskEmail(user.email),
@@ -217,8 +215,7 @@ export const verifyAuth = async (req, res, next) => {
         const existingOrg = await findExistingOrganizationForUser(
           supabase,
           user,
-          normalizedEmail,
-          requestedOrgId
+          normalizedEmail
         );
 
         if (existingOrg?.id) {
@@ -300,10 +297,23 @@ export const verifyAuth = async (req, res, next) => {
 
     next();
   } catch (e) {
+    if (e instanceof ImpersonationSessionError) {
+      return res.status(e.status).json({
+        error: e.message,
+        code: e.code,
+      });
+    }
     console.error('❌ Erro Crítico no AuthMiddleware:', e);
     res.status(500).json({ error: 'Erro interno de segurança' });
   }
 };
+
+function getRequestedHeaderValue(value) {
+  if (Array.isArray(value)) return getRequestedHeaderValue(value[0]);
+
+  const normalized = String(value || '').trim();
+  return normalized || null;
+}
 
 function describeAuthFailure(authError, token) {
   const message = String(authError?.message || '').toLowerCase();
@@ -378,7 +388,7 @@ function maskEmail(email = '') {
   return `${user.slice(0, 2)}***@${domain}`;
 }
 
-async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
+async function resolveAuthenticatedUser(supabaseAuth, token) {
   const tokenKey = createHash('sha256').update(token).digest('hex');
   let authError = null;
   const authenticated = await authenticatedUserCache.getOrLoad(
@@ -397,29 +407,15 @@ async function resolveAuthenticatedUser(supabaseAuth, supabaseAdmin, token) {
 
   if (authenticated) return authenticated;
 
-  const impersonation = await verifyImpersonationToken(supabaseAdmin, token);
-  if (!impersonation) {
-    return { user: null, impersonation: null, authError };
-  }
-
-  return {
-    user: {
-      id: impersonation.sub,
-      email: impersonation.email,
-      app_metadata: impersonation.app_metadata || {},
-      user_metadata: impersonation.user_metadata || {},
-    },
-    impersonation,
-    authError: null,
-  };
+  return { user: null, impersonation: null, authError };
 }
 
-async function resolveProfileForUser(supabase, user) {
+export async function resolveProfileForUser(supabase, user) {
   const email = String(user.email || '')
     .toLowerCase()
     .trim();
 
-  let metadataRole = normalizeRole(
+  const metadataRole = normalizeRole(
     user.app_metadata?.role ||
       user.user_metadata?.role ||
       user.app_metadata?.user_role ||
@@ -436,21 +432,9 @@ async function resolveProfileForUser(supabase, user) {
     .maybeSingle();
 
   if (!profileByIdError && profileById) {
-    // FIX: Se o metadata diz que o usuario e superadmin, nos forcamos o role
-    // somente se o banco estiver inconsistente com o metadata do auth.
-    // Isso e necessario porque usuarios criados com role='superadmin' no auth
-    // podem ter sido rebaixados por bugs anteriores de auto-criacao.
-    if (metadataRole === 'superadmin' && profileById.role !== 'superadmin') {
-      console.warn(
-        '[Auth] Role do metadata (superadmin) difere do banco, atualizando',
-        {
-          userId: user.id,
-          bankRole: profileById.role,
-          metadataRole,
-        }
-      );
-      profileById.role = 'superadmin';
-    }
+    logMetadataPrivilegeMismatch(user, profileById.role, metadataRole, {
+      source: 'profile.id',
+    });
     return completeProfileOrganization(supabase, user, profileById, {
       email: String(profileById.email || user.email || '')
         .toLowerCase()
@@ -472,43 +456,18 @@ async function resolveProfileForUser(supabase, user) {
       authUserId: user.id,
       profileId: profileByEmail.id,
     });
-    if (metadataRole === 'superadmin' && profileByEmail.role !== 'superadmin') {
-      console.warn(
-        '[Auth] Role do metadata (superadmin) difere do banco (email lookup), atualizando',
-        {
-          userId: user.id,
-          email,
-          bankRole: profileByEmail.role,
-          metadataRole,
-        }
-      );
-      profileByEmail.role = 'superadmin';
-    }
+    logMetadataPrivilegeMismatch(user, profileByEmail.role, metadataRole, {
+      source: 'profile.email',
+      email,
+    });
     return completeProfileOrganization(supabase, user, profileByEmail, {
       email,
       source: 'profile.email',
     });
   }
 
-  const metadataOrgId = String(
-    user.app_metadata?.organization_id ||
-      user.user_metadata?.organization_id ||
-      user.app_metadata?.org_id ||
-      user.user_metadata?.org_id ||
-      ''
-  ).trim();
-
-  if (metadataRole === 'superadmin') {
-    const profile = await createProfileForUser(supabase, user, {
-      email,
-      organizationId: null,
-      name: user.user_metadata?.name || user.user_metadata?.full_name || email,
-      role: 'superadmin',
-      source: 'auth_metadata.role',
-    });
-
-    if (profile) return profile;
-  }
+  const bootstrapIdentity = getSafeProfileBootstrapIdentity(user);
+  const metadataOrgId = bootstrapIdentity.organizationId;
 
   if (metadataOrgId) {
     const { data: metadataOrg, error: metadataOrgError } = await supabase
@@ -522,7 +481,7 @@ async function resolveProfileForUser(supabase, user) {
         email,
         organizationId: metadataOrg.id,
         name: metadataOrg.owner_name || metadataOrg.name,
-        role: metadataRole || 'admin',
+        role: bootstrapIdentity.role,
         source: 'auth_metadata.organization_id',
       });
 
@@ -608,7 +567,14 @@ async function resolveProfileForUser(supabase, user) {
   };
 }
 
-async function completeProfileOrganization(
+export function getAuthenticatedRequestIdentity(user, profile) {
+  return {
+    user: { ...user, id: profile?.id || user.id },
+    authUserId: user.id,
+  };
+}
+
+export async function completeProfileOrganization(
   supabase,
   user,
   profile,
@@ -618,13 +584,7 @@ async function completeProfileOrganization(
     return profile;
   }
 
-  const metadataOrgId = String(
-    user.app_metadata?.organization_id ||
-      user.user_metadata?.organization_id ||
-      user.app_metadata?.org_id ||
-      user.user_metadata?.org_id ||
-      ''
-  ).trim();
+  const metadataOrgId = getSafeProfileBootstrapIdentity(user).organizationId;
 
   let organization = null;
 
@@ -718,20 +678,39 @@ function normalizeRole(role) {
   return null;
 }
 
-async function findExistingOrganizationForUser(
-  supabase,
-  user,
-  email,
-  requestedOrgId = null
-) {
-  const metadataOrgId = String(
-    requestedOrgId ||
-      user.app_metadata?.organization_id ||
-      user.user_metadata?.organization_id ||
-      user.app_metadata?.org_id ||
-      user.user_metadata?.org_id ||
-      ''
+export function getSafeProfileBootstrapIdentity(user) {
+  const organizationId = String(
+    user?.app_metadata?.organization_id || user?.app_metadata?.org_id || ''
   ).trim();
+
+  return {
+    organizationId,
+    role: 'user',
+  };
+}
+
+function logMetadataPrivilegeMismatch(user, databaseRole, metadataRole, extra = {}) {
+  if (
+    metadataRole === 'superadmin' &&
+    normalizeRole(databaseRole) !== 'superadmin'
+  ) {
+    console.warn(
+      '[Auth] Metadata tentou elevar privilegio acima do role persistido no banco; elevacao negada',
+      {
+        userId: user?.id || null,
+        email: String(user?.email || '')
+          .toLowerCase()
+          .trim(),
+        databaseRole: normalizeRole(databaseRole) || null,
+        metadataRole,
+        ...extra,
+      }
+    );
+  }
+}
+
+export async function findExistingOrganizationForUser(supabase, user, email) {
+  const metadataOrgId = getSafeProfileBootstrapIdentity(user).organizationId;
 
   if (metadataOrgId) {
     const { data: metadataOrg, error: metadataOrgError } = await supabase
@@ -804,55 +783,6 @@ async function createProfileForUser(
     source,
   });
   return createdProfile;
-}
-
-async function verifyImpersonationToken(supabase, token) {
-  const secret = process.env.SUPABASE_JWT_SECRET;
-  if (!secret) return null;
-
-  try {
-    const payload = jwt.verify(token, secret, {
-      audience: 'authenticated',
-    });
-
-    if (
-      payload?.role !== 'authenticated' ||
-      payload?.app_metadata?.provider !== 'impersonation' ||
-      !payload.sub ||
-      !payload.app_metadata?.impersonation_session
-    ) {
-      return null;
-    }
-
-    const { data: session, error } = await supabase
-      .from('impersonation_sessions')
-      .select('id, status, expires_at, tenant_id')
-      .eq('id', payload.app_metadata.impersonation_session)
-      .maybeSingle();
-
-    if (
-      error ||
-      !session ||
-      session.status !== 'active' ||
-      new Date(session.expires_at).getTime() <= Date.now()
-    ) {
-      return null;
-    }
-
-    const tokenTenantId = String(payload.app_metadata?.tenant_id || '').trim();
-    if (!tokenTenantId || session.tenant_id !== tokenTenantId) {
-      return null;
-    }
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function getImpersonationTenantId(impersonation) {
-  const tenantId = String(impersonation?.app_metadata?.tenant_id || '').trim();
-  return tenantId || null;
 }
 
 /**

@@ -8,11 +8,22 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-const supabaseUrl =
-  process.env.VITE_SUPABASE_URL || 'https://epgaftsjmqmpczvzsrcc.supabase.co';
-const supabaseKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo';
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const bootstrapAdminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL;
+const bootstrapAdminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'VITE_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórios para create_admin_user.mjs'
+  );
+}
+
+if (!bootstrapAdminEmail || !bootstrapAdminPassword) {
+  throw new Error(
+    'BOOTSTRAP_ADMIN_EMAIL e BOOTSTRAP_ADMIN_PASSWORD são obrigatórios para create_admin_user.mjs'
+  );
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -24,8 +35,8 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 async function createUser() {
   console.log('Creating user...');
   const { data, error } = await supabase.auth.admin.createUser({
-    email: 'fluowai@gmail.com',
-    password: 'Argo@15077399brsc',
+    email: bootstrapAdminEmail,
+    password: bootstrapAdminPassword,
     email_confirm: true,
   });
 

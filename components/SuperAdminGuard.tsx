@@ -12,11 +12,18 @@ const PUBLIC_PATHS = [
   '/ajuda/',
   '/lp/',
   '/site/',
+  '/sites/',
   '/embreve',
   '/login',
   '/register',
   '/impersonate',
 ];
+
+export function isPublicPath(path: string): boolean {
+  return PUBLIC_PATHS.some((publicPath) =>
+    publicPath === '/' ? path === '/' : path.startsWith(publicPath)
+  );
+}
 
 const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -26,17 +33,17 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
 
   if (loading) return <FullScreenSpinner />;
 
-  if (profile?.role === 'superadmin' && !isImpersonating) {
+  const role = profile?.role?.toLowerCase();
+  
+  if ((role === 'superadmin' || role === 'super_admin') && !isImpersonating) {
     const path = location.pathname;
-    const isPublicPath = PUBLIC_PATHS.some((publicPath) =>
-      publicPath === '/' ? path === '/' : path.startsWith(publicPath)
-    );
+    const isCurrentPathPublic = isPublicPath(path);
 
     const isMegaAdmin = !profile?.organization?.is_reseller;
 
     if (isMegaAdmin) {
       if (
-        !isPublicPath &&
+        !isCurrentPathPublic &&
         !path.startsWith('/megaadmin') &&
         path !== '/login' &&
         path !== '/impersonate'
@@ -45,7 +52,7 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
       }
     } else {
       if (
-        !isPublicPath &&
+        !isCurrentPathPublic &&
         !path.startsWith('/superadmin') &&
         path !== '/login' &&
         path !== '/impersonate'
@@ -53,10 +60,12 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
         return <Navigate to="/superadmin" replace />;
       }
     }
-  } else if (profile && profile.role !== 'superadmin' && !isImpersonating) {
+  } else if (profile && !['superadmin', 'super_admin'].includes(role || '') && !isImpersonating) {
     const path = location.pathname;
     if (path.startsWith('/megaadmin') || path.startsWith('/superadmin')) {
-      return <Navigate to="/" replace />;
+      const niche = profile?.organization?.niche;
+      const target = niche === 'rural' ? '/rural' : '/urban';
+      return <Navigate to={target} replace />;
     }
   }
 

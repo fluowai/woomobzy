@@ -55,6 +55,7 @@ import whatsappProxyRoutes from './routes/whatsapp-proxy.js';
 import wootechAiRoutes from './routes/wootechAi.js';
 import cvcrmBiaRoutes from './routes/cvcrmBia.js';
 import megaAdminRoutes from './routes/mega-admin.js';
+import subscriptionRoutes from './routes/subscription.js';
 import zapRoutes from './routes/zap.js';
 import campaignRoutes from './api/campaigns/index.js';
 import campaignContactsRoutes from './api/campaigns/contacts.js';
@@ -339,6 +340,7 @@ app.use('/api/account', accountRoutes);
 app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
 app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
 app.use('/api/mega', megaAdminRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/public/zap', zapRoutes);
 app.use(
   '/api/campaigns/serper',

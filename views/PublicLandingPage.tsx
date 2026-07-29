@@ -2,35 +2,15 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { landingPageService } from '../services/landingPages';
-import { LandingPage, BlockType } from '../types/landingPage';
+import { LandingPage } from '../types/landingPage';
 import { supabase } from '../services/supabase';
 import MainLandingPage from './LandingPage';
-import Login from './Login';
 import { SettingsProvider } from '../context/SettingsContext';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ComingSoon from '../components/ComingSoon';
 
-// Import public block components
-import HeaderBlock from '../components/LandingPageBlocks/HeaderBlock';
-import FooterBlock from '../components/LandingPageBlocks/FooterBlock';
-import HeroBlock from '../components/LandingPageBlocks/HeroBlock';
-import PropertyGridBlock from '../components/LandingPageBlocks/PropertyGridBlock';
-import TextBlock from '../components/LandingPageBlocks/TextBlock';
-import FormBlock from '../components/LandingPageBlocks/FormBlock';
-import CTABlock from '../components/LandingPageBlocks/CTABlock';
-import SpacerBlock from '../components/LandingPageBlocks/SpacerBlock';
-import { v4 as uuidv4 } from 'uuid';
-import GalleryBlock from '../components/LandingPageBlocks/GalleryBlock';
-import StatsBlock from '../components/LandingPageBlocks/StatsBlock';
-import ImageBlock from '../components/LandingPageBlocks/ImageBlock';
-import PropertyCarouselBlock from '../components/LandingPageBlocks/PropertyCarouselBlock';
-import MapBlock from '../components/LandingPageBlocks/MapBlock';
-import TimelineBlock from '../components/LandingPageBlocks/TimelineBlock';
-import VideoBlock from '../components/LandingPageBlocks/VideoBlock';
-import TestimonialsBlock from '../components/LandingPageBlocks/TestimonialsBlock';
-import BrokerCardBlock from '../components/LandingPageBlocks/BrokerCardBlock';
-import DividerBlock from '../components/LandingPageBlocks/DividerBlock';
+import PublicBlockRenderer from '../components/LandingPageBlocks/PublicBlockRenderer';
 import OkaPublicSite from './OkaPublicSite';
 import FazendasBrasilPublicSite from './FazendasBrasilPublicSite';
 
@@ -55,12 +35,11 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const { profile } = useAuth();
   const [organization, setOrganization] = useState<any>(null);
   const [showMainSite, setShowMainSite] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
   const isImmediateOkaSite = activeSlug === 'okaimoveis';
 
-  const isPreview = false;
   const page = landingPage;
+  const isDirectLandingPage = location.pathname.startsWith('/lp/');
 
   useEffect(() => {
     if (landingPage?.id) {
@@ -93,7 +72,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const loadLandingPage = async (slugOrOrg: string) => {
     try {
       setLoading(true);
-      const isDirectLPLink = location.pathname.startsWith('/lp/');
+      const isDirectLPLink = isDirectLandingPage;
       logger.info(
         '🔍 Loading Public Site. Mode:',
         isDirectLPLink ? 'Direct LP' : 'Org/Subdomain',
@@ -106,7 +85,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       if (isDirectLPLink) {
         // Mode A: Search by Landing Page Slug directly
-        const { data: lpData, error: lpError } = await supabase
+        const { data: lpData } = await supabase
           .from('landing_pages')
           .select('*, organization:organizations(*)')
           .eq('slug', slugOrOrg)
@@ -215,8 +194,33 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (!page) return;
+    document.title = page.metaTitle || page.title || page.name;
+    const description = page.metaDescription || page.description;
+    if (description) {
+      let meta = document.querySelector<HTMLMetaElement>(
+        'meta[name="description"]'
+      );
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'description';
+        document.head.appendChild(meta);
+      }
+      meta.content = description;
+    }
+  }, [page]);
+
   const getContainerClass = (width?: string) => {
-    return width === 'full' ? 'w-full' : 'max-w-7xl mx-auto px-4';
+    const widths: Record<string, string> = {
+      sm: 'max-w-3xl',
+      md: 'max-w-5xl',
+      lg: 'max-w-6xl',
+      xl: 'max-w-7xl',
+    };
+    return width === 'full'
+      ? 'w-full'
+      : `${widths[width || 'xl'] || widths.xl} mx-auto px-4`;
   };
 
   const toCssString = (styles: Record<string, any> = {}) => {
@@ -227,44 +231,6 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         return `${cssKey}: ${value} !important;`;
       })
       .join(' ');
-  };
-
-  const renderBlock = (block: any) => {
-    const theme = page?.themeConfig;
-    if (!theme) return null;
-
-    switch (block.type) {
-      case BlockType.HEADER:
-        return <HeaderBlock config={block.config} theme={theme} />;
-      case BlockType.FOOTER:
-        return <FooterBlock config={block.config} theme={theme} />;
-      case BlockType.HERO:
-        return <HeroBlock config={block.config} theme={theme} />;
-      case BlockType.PROPERTY_GRID:
-        return (
-          <PropertyGridBlock
-            config={block.config}
-            theme={theme}
-            properties={properties}
-          />
-        );
-      case BlockType.PROPERTY_CAROUSEL:
-        return (
-          <PropertyCarouselBlock
-            config={block.config}
-            theme={theme}
-            properties={properties}
-          />
-        );
-      case BlockType.TEXT:
-        return <TextBlock config={block.config} theme={theme} />;
-      case BlockType.FORM:
-        return <FormBlock config={block.config} theme={theme} />;
-      case BlockType.CTA:
-        return <CTABlock config={block.config} theme={theme} />;
-      default:
-        return null;
-    }
   };
 
   if (loading) {
@@ -310,7 +276,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     return <FazendasBrasilPublicSite organizationId={organization?.id} />;
   }
 
-  if ((forceComingSoon || !isLive) && !isSiteOwner) {
+  if ((forceComingSoon || (!isDirectLandingPage && !isLive)) && !isSiteOwner) {
     const agencyName =
       settings?.agency_name ||
       settings?.agencyName ||
@@ -324,12 +290,6 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     );
   }
 
-  if (showLogin && organization)
-    return (
-      <SettingsProvider organizationId={organization.id}>
-        <Login />
-      </SettingsProvider>
-    );
   if (showMainSite && organization)
     return (
       <SettingsProvider organizationId={organization.id}>
@@ -367,7 +327,6 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         flexDirection: 'column',
       }}
     >
-      <title>{page.title}</title>
       {!isLive && isSiteOwner && (
         <div className="bg-indigo-600 text-white px-4 py-2 text-center text-xs font-bold sticky top-0 z-[100] flex items-center justify-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
@@ -376,12 +335,14 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         </div>
       )}
       <div className="flex-1">
-        {page.blocks.map((block) => (
-          <div
-            key={block.id}
-            className={getContainerClass(block.containerWidth)}
-          >
-            <style>{`
+        {(page.blocks || [])
+          .filter((block) => block.visible)
+          .map((block) => (
+            <div
+              key={block.id}
+              className={getContainerClass(block.containerWidth)}
+            >
+              <style>{`
               .block-wrapper-${block.id} {
                 ${toCssString(block.styles)}
               }
@@ -393,11 +354,22 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
                 ${block.responsive?.mobile?.customCss ? `.block-wrapper-${block.id} { ${block.responsive.mobile.customCss} }` : ''}
               }
             `}</style>
-            <div className={`block-wrapper-${block.id}`}>
-              {renderBlock(block)}
+              <div className={`block-wrapper-${block.id}`}>
+                <PublicBlockRenderer
+                  block={block}
+                  theme={page.themeConfig}
+                  properties={properties}
+                  settings={settings}
+                  leadContext={{
+                    organizationId: organization?.id || page.organizationId,
+                    organizationSlug: organization?.slug,
+                    landingPageId: page.id,
+                    landingPageSlug: page.slug,
+                  }}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   );

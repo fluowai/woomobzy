@@ -114,6 +114,8 @@ const PortalCompradorUrbano = lazy(
 const AdmCondominios = lazy(() => import('./views/urban/AdmCondominios'));
 const ControleChaves = lazy(() => import('./views/urban/ControleChaves'));
 const FinanceiroUrbano = lazy(() => import('./views/urban/FinanceiroUrbano'));
+const FinancialHub = lazy(() => import('./views/urban/FinancialHub'));
+const ClubeImobzy = lazy(() => import('./views/urban/ClubeImobzy'));
 const GestaoDocumentos = lazy(() => import('./views/urban/GestaoDocumentos'));
 const ConexoesUrbano = lazy(() => import('./views/urban/ConexoesUrbano'));
 
@@ -375,6 +377,8 @@ const AppContent: React.FC = () => {
             <Route path="condominios" element={<AdmCondominios />} />
             <Route path="chaves" element={<ControleChaves />} />
             <Route path="financeiro" element={<FinanceiroUrbano />} />
+            <Route path="fintech" element={<FinancialHub />} />
+            <Route path="clube" element={<ClubeImobzy />} />
             <Route path="documentos" element={<GestaoDocumentos />} />
             <Route
               path="portal-proprietario"

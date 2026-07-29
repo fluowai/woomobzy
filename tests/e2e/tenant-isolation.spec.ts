@@ -1,8 +1,18 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Tenant Isolation & Domain Routing', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/public/texts**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ texts: {} }),
+      });
+    });
+  });
+
   // O teste assume que o backend local está servindo o tenant "Fazendas Brasil" ou similar
-  test('Acesso publico redireciona para tenant coreto ou fallback', async ({
+  test('Acesso público redireciona para o tenant correto ou fallback', async ({
     page,
   }) => {
     // Acessando a raiz local do frontend (porta 3006 configurada no env do teste)
@@ -22,14 +32,11 @@ test.describe('Tenant Isolation & Domain Routing', () => {
   test('Rota de Login não expõe dados incorretos', async ({ page }) => {
     await page.goto('/login');
 
-    // O formulário de login deve estar presente
-    const emailInput = page.getByPlaceholder(/email/i).first();
-    const passwordInput = page.getByPlaceholder(/senha/i).first();
+    // O formulário de login deve estar presente e acessível.
+    const emailInput = page.getByLabel(/e-mail corporativo/i).first();
+    const passwordInput = page.getByLabel(/^senha$/i).first();
 
-    // Validando montagem básica da tela de autenticação
-    if ((await emailInput.isVisible()) && (await passwordInput.isVisible())) {
-      await expect(emailInput).toBeVisible();
-      await expect(passwordInput).toBeVisible();
-    }
+    await expect(emailInput).toBeVisible();
+    await expect(passwordInput).toBeVisible();
   });
 });

@@ -3,13 +3,23 @@ import { AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import FullScreenSpinner from './FullScreenSpinner';
+import { callApi } from '@/src/lib/api';
+import { toast } from 'sonner';
+
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  slug?: string | null;
+  price_monthly?: number | null;
+}
 
 const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { profile, loading } = useAuth();
-  const [plans, setPlans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [saving, setSaving] = useState(false);
+  const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
   const plansCached = useRef(false);
 
   useEffect(() => {
@@ -21,14 +31,17 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
       .select('*')
       .eq('is_active', true)
       .order('price_monthly', { ascending: true })
-      .then(({ data }) => setPlans(data || []));
+      .then(({ data }) => setPlans((data || []) as SubscriptionPlan[]));
   }, []);
 
   if (loading) return <FullScreenSpinner />;
   if (!profile?.organization || profile.role === 'superadmin')
     return <>{children}</>;
 
-  const org: any = profile.organization;
+  const org = profile.organization;
+  const effectiveRequestedPlanId =
+    requestedPlanId ||
+    (org.subscription_status === 'payment_required' ? org.plan_id || null : null);
   const trialEndsAt = org.trial_ends_at ? new Date(org.trial_ends_at) : null;
   const expiredTrial =
     org.subscription_status === 'trial' &&
@@ -44,15 +57,25 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
 
   const selectPlan = async (planId: string) => {
     setSaving(true);
-    await supabase
-      .from('organizations')
-      .update({
-        plan_id: planId,
-        subscription_status: 'active',
-        selected_plan_at: new Date().toISOString(),
-      })
-      .eq('id', org.id);
-    window.location.reload();
+    try {
+      await callApi('/api/subscription/select-plan', {
+        method: 'POST',
+        body: JSON.stringify({ planId }),
+      });
+
+      setRequestedPlanId(planId);
+      toast.success(
+        'Plano selecionado. A ativação ocorrerá após a confirmação do pagamento.'
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível selecionar o plano.'
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -68,10 +91,17 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
             </h1>
             <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
               Para acessar o painel novamente, escolha um plano. O acesso fica
-              bloqueado ate a selecao do plano.
+              bloqueado até a confirmação do pagamento.
             </p>
           </div>
         </div>
+
+        {effectiveRequestedPlanId && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+            O plano escolhido está aguardando confirmação de pagamento. O
+            acesso será liberado somente depois da confirmação.
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-3">
           {plans
@@ -87,10 +117,12 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
                 <p className="text-lg font-bold text-slate-950">{plan.name}</p>
                 <p className="mt-1 text-3xl font-bold text-blue-600">
                   R$ {Number(plan.price_monthly || 0).toLocaleString('pt-BR')}
-                  <span className="text-xs font-bold text-slate-400">/mes</span>
+                  <span className="text-xs font-bold text-slate-400">/mês</span>
                 </p>
                 <p className="mt-3 text-sm font-semibold text-slate-500">
-                  Selecionar plano e continuar
+                  {effectiveRequestedPlanId === plan.id
+                    ? 'Aguardando confirmação'
+                    : 'Selecionar plano'}
                 </p>
               </button>
             ))}

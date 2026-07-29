@@ -5,20 +5,26 @@ import {
   LandingPageTheme,
 } from '../../types/landingPage';
 import { Shield, Star, Clock } from 'lucide-react';
-import { getApiUrl } from '../../src/lib/api';
+import {
+  PublicLeadContext,
+  submitPublicLead,
+} from '../../services/publicLeadCapture';
 
 interface HeroWithFormBlockProps {
   config: HeroWithFormBlockConfig;
   theme: LandingPageTheme;
+  leadContext?: PublicLeadContext;
 }
 
 const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
   config,
   theme,
+  leadContext = {},
 }) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -27,6 +33,7 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setSubmitError('');
 
     try {
       const { getTrackingData, trackFacebookEvent, trackGoogleEvent } =
@@ -49,19 +56,17 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
         referrer_url: window.location.href,
       };
 
-      const response = await fetch(getApiUrl('/api/public/leads'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadData),
-      });
-
-      if (response.ok) {
-        setSubmitted(true);
-        trackFacebookEvent('Lead', { content_name: 'Hero Form' });
-        trackGoogleEvent('generate_lead', { event_label: 'Hero Form' });
-      }
+      await submitPublicLead(leadData, leadContext);
+      setSubmitted(true);
+      trackFacebookEvent('Lead', { content_name: 'Hero Form' });
+      trackGoogleEvent('generate_lead', { event_label: 'Hero Form' });
     } catch (error) {
       logger.error('Error submitting form:', error);
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível enviar seus dados. Tente novamente.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -133,12 +138,17 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
               {config.formTitle}
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+              aria-busy={submitting}
+            >
               {(config.fields || []).map((field) => (
                 <div key={field.name}>
                   <div className="relative">
                     {field.type === 'select' ? (
                       <select
+                        aria-label={field.label}
                         name={field.name}
                         value={formData[field.name] || ''}
                         onChange={(e) =>
@@ -156,6 +166,7 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
                       </select>
                     ) : (
                       <input
+                        aria-label={field.label}
                         type={field.type}
                         name={field.name}
                         placeholder={field.label}
@@ -170,6 +181,15 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
                   </div>
                 </div>
               ))}
+
+              {submitError && (
+                <p
+                  role="alert"
+                  className="rounded bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
+                >
+                  {submitError}
+                </p>
+              )}
 
               <button
                 type="submit"

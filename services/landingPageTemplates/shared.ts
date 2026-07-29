@@ -109,7 +109,7 @@ export const premiumFormFields = [
     label: 'E-mail',
     type: 'email',
     required: false,
-    placeholder: 'voce@email.com',
+    placeholder: 'você@email.com',
   },
   {
     name: 'interest',
@@ -128,7 +128,7 @@ export const premiumFormFields = [
     label: 'Mensagem',
     type: 'textarea',
     required: false,
-    placeholder: 'Conte rapidamente o que voce procura',
+    placeholder: 'Conte rapidamente o que você procura',
   },
 ] as any;
 
@@ -150,8 +150,8 @@ export const buildPremiumTemplate = (
     },
     {
       src: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=1600&auto=format&fit=crop',
-      alt: 'Area externa',
-      caption: 'Area externa',
+      alt: 'Área externa',
+      caption: 'Área externa',
     },
   ];
 
@@ -226,7 +226,7 @@ export const buildPremiumTemplate = (
         BlockType.VIDEO,
         4,
         {
-          title: 'Tour virtual e video de apresentacao',
+          title: 'Tour virtual e vídeo de apresentação',
           url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           autoplay: false,
           loop: false,
@@ -241,9 +241,9 @@ export const buildPremiumTemplate = (
         5,
         {
           address: input.location,
-          title: 'Localizacao estrategica',
+          title: 'Localização estratégica',
           description:
-            'Mapa integrado para orientar visitas, proximidades e logistica.',
+            'Mapa integrado para orientar visitas, proximidades e logística.',
           zoom: 14,
           height: 460,
           showCard: true,
@@ -260,17 +260,17 @@ export const buildPremiumTemplate = (
           testimonials: [
             {
               name: 'Cliente comprador',
-              text: 'A pagina trouxe todas as informacoes que eu precisava antes de falar com o corretor.',
+              text: 'A página trouxe todas as informações que eu precisava antes de falar com o corretor.',
               rating: 5,
             },
             {
               name: 'Investidor',
-              text: 'O material tecnico e a agenda facilitaram a tomada de decisao.',
+              text: 'O material técnico e a agenda facilitaram a tomada de decisão.',
               rating: 5,
             },
             {
               name: 'Corretor responsavel',
-              text: 'Os leads chegam mais qualificados porque a landing ja filtra o interesse.',
+              text: 'Os leads chegam mais qualificados porque a landing já filtra o interesse.',
               rating: 5,
             },
           ],
@@ -285,7 +285,7 @@ export const buildPremiumTemplate = (
           fields: premiumFormFields,
           submitText: input.formSubmit,
           successMessage:
-            'Recebemos seus dados. Um especialista vai falar com voce.',
+            'Recebemos seus dados. Um especialista falará com você.',
         },
         { padding: '80px 20px', backgroundColor: '#ffffff' }
       ),
@@ -293,7 +293,7 @@ export const buildPremiumTemplate = (
         BlockType.CTA,
         8,
         {
-          title: 'Pronto para avancar?',
+          title: 'Pronto para avançar?',
           description:
             'Fale com o corretor, agende uma visita ou receba o material completo no WhatsApp.',
           buttonText: input.ctaText,
@@ -317,7 +317,7 @@ export const premiumBaseSections = [
   'Tour virtual',
   'Video',
   'Mapa',
-  'Dados tecnicos',
+  'Dados técnicos',
   'Diferenciais',
   'Prova social',
   'FAQ',
@@ -409,7 +409,7 @@ export const buildDesignedTemplate = (
     },
     {
       key: 'whatsappLabel',
-      label: 'Botao do topo',
+      label: 'Botão do topo',
       type: 'text' as const,
       value: 'Fale no WhatsApp',
     },
@@ -421,7 +421,7 @@ export const buildDesignedTemplate = (
     },
     {
       key: 'headline',
-      label: 'Titulo principal',
+      label: 'Título principal',
       type: 'textarea' as const,
       value: input.headline,
     },
@@ -433,97 +433,97 @@ export const buildDesignedTemplate = (
     },
     {
       key: 'subtitle',
-      label: 'Subtitulo',
+      label: 'Subtítulo',
       type: 'textarea' as const,
       value: input.subtitle,
     },
     {
       key: 'location',
-      label: 'Localizacao',
+      label: 'Localização',
       type: 'text' as const,
       value: input.location,
     },
     {
       key: 'price',
-      label: 'Preco / chamada de valor',
+      label: 'Preço / chamada de valor',
       type: 'text' as const,
       value: input.price || '',
     },
     {
       key: 'primaryCta',
-      label: 'Botao principal',
+      label: 'Botão principal',
       type: 'text' as const,
       value: input.primaryCta,
     },
     {
       key: 'secondaryCta',
-      label: 'Botao secundario',
+      label: 'Botão secundário',
       type: 'text' as const,
       value: input.secondaryCta,
     },
     {
       key: 'featuresTitle',
-      label: 'Titulo dos diferenciais',
+      label: 'Título dos diferenciais',
       type: 'textarea' as const,
-      value: 'Solucoes desenhadas para converter leads de verdade.',
+      value: 'Soluções desenhadas para converter leads de verdade.',
     },
     {
       key: 'galleryTitle',
-      label: 'Titulo da galeria',
+      label: 'Título da galeria',
       type: 'textarea' as const,
       value:
         input.group === 'Lancamentos'
           ? 'Ambientes, plantas e diferenciais.'
           : input.group === 'Rural'
-            ? 'Dados, imagens e materiais tecnicos.'
-            : 'Oportunidades selecionadas para voce.',
+            ? 'Dados, imagens e materiais técnicos.'
+            : 'Oportunidades selecionadas para você.',
     },
     {
       key: 'mapTitle',
-      label: 'Titulo da localizacao',
+      label: 'Título da localização',
       type: 'textarea' as const,
-      value: 'Perto do que importa, longe da duvida.',
+      value: 'Perto do que importa, longe da dúvida.',
     },
     {
       key: 'processTitle',
-      label: 'Titulo do processo',
+      label: 'Título do processo',
       type: 'textarea' as const,
       value: 'Fluxo simples, visual e pronto para atendimento.',
     },
     {
       key: 'testimonialTitle',
-      label: 'Titulo da prova social',
+      label: 'Título da prova social',
       type: 'textarea' as const,
-      value: 'Pagina feita para gerar confianca antes do primeiro contato.',
+      value: 'Página feita para gerar confiança antes do primeiro contato.',
     },
     {
       key: 'testimonialText',
       label: 'Texto do depoimento',
       type: 'textarea' as const,
       value:
-        'Informacoes completas, atendimento rapido e processo transparente do inicio ao fim.',
+        'Informações completas, atendimento rápido e processo transparente do início ao fim.',
     },
     {
       key: 'formTitle',
-      label: 'Titulo do formulario',
+      label: 'Título do formulário',
       type: 'text' as const,
       value: input.formTitle,
     },
     {
       key: 'formSubtitle',
-      label: 'Subtitulo do formulario',
+      label: 'Subtítulo do formulário',
       type: 'textarea' as const,
       value: input.formSubtitle,
     },
     {
       key: 'faqTitle',
-      label: 'Titulo do FAQ',
+      label: 'Título do FAQ',
       type: 'text' as const,
-      value: 'Duvidas frequentes',
+      value: 'Dúvidas frequentes',
     },
     {
       key: 'footerDescription',
-      label: 'Descricao do rodape',
+      label: 'Descrição do rodapé',
       type: 'textarea' as const,
       value:
         'Landing premium com WhatsApp, CRM, agenda, SEO, LGPD e funil integrado.',
@@ -643,11 +643,11 @@ export const buildDesignedTemplate = (
 
       <section class="lp-section lp-two-cols">
         <div class="lp-map-card">
-          <span>Localizacao estrategica</span>
+          <span>Localização estratégica</span>
           <h2>${fieldToken('mapTitle')}</h2>
           <p>${fieldToken('location')}. Regiao apresentada com contexto comercial, logistico e decisivo para o lead.</p>
           <ul>
-            <li>Acesso rapido aos principais pontos</li>
+            <li>Acesso rápido aos principais pontos</li>
             <li>Mapa preparado para trafego pago</li>
             <li>Registro de interesse no CRM</li>
           </ul>
@@ -689,13 +689,13 @@ export const buildDesignedTemplate = (
         <form id="contato" class="lp-form">
           <h2>${fieldToken('formTitle')}</h2>
           <p>${fieldToken('formSubtitle')}</p>
-          <input placeholder="Nome completo" />
-          <input placeholder="WhatsApp" />
-          <input placeholder="E-mail" />
-          <select>${formOptions.map((option) => `<option>${option}</option>`).join('')}</select>
-          <textarea placeholder="Mensagem"></textarea>
-          <label><input type="checkbox" checked /> Autorizo contato e aceito a politica de privacidade.</label>
-          <button type="button">${fieldToken('primaryCta')}</button>
+          <input name="name" autocomplete="name" placeholder="Nome completo" required />
+          <input name="phone" type="tel" autocomplete="tel" placeholder="WhatsApp" required />
+          <input name="email" type="email" autocomplete="email" placeholder="E-mail" />
+          <select name="interest">${formOptions.map((option) => `<option value="${option}">${option}</option>`).join('')}</select>
+          <textarea name="message" placeholder="Mensagem"></textarea>
+          <label><input name="consent" type="checkbox" required /> Autorizo o contato e aceito a política de privacidade.</label>
+          <button type="submit">${fieldToken('primaryCta')}</button>
         </form>
       </section>
 
@@ -763,7 +763,7 @@ export const designedSections = [
   'Hero cinematografico',
   'CTAs WhatsApp e agenda',
   'Barra tecnica',
-  'Solucoes e diferenciais',
+  'Soluções e diferenciais',
   'Galeria editorial',
   'Mapa/localizacao',
   'Fluxo de atendimento',
@@ -820,7 +820,7 @@ export const buildElementorReferenceTemplate = (
 ): LandingPageTemplate =>
   buildDesignedTemplate({
     ...input,
-    nav: ['Inicio', 'Detalhes', 'Fotos', 'Localizacao', 'FAQ', 'Contato'],
+    nav: ['Início', 'Detalhes', 'Fotos', 'Localização', 'FAQ', 'Contato'],
     resources: defaultElementorResources,
     pipeline: `${input.group} - ${input.objective}`,
     crmTags: [`Tema ${input.group}`, input.objective, input.category],

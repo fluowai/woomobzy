@@ -1,5 +1,6 @@
 import React from 'react';
 import { TextBlockConfig, LandingPageTheme } from '../../types/landingPage';
+import { sanitizeLandingHtml } from '../../utils/sanitizeLandingHtml';
 
 interface TextBlockProps {
   config: TextBlockConfig;
@@ -39,7 +40,11 @@ const TextBlock: React.FC<TextBlockProps> = ({ config, theme }) => {
           line-height: 1.7;
         }
       `}</style>
-      <div dangerouslySetInnerHTML={{ __html: config.content }} />
+      <div
+        dangerouslySetInnerHTML={{
+          __html: sanitizeLandingHtml(config.content),
+        }}
+      />
     </div>
   );
 };

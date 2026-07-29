@@ -86,8 +86,19 @@ const Login: React.FC = () => {
     );
   }
 
-  if (user && (profile?.organization_id || profile?.role === 'superadmin')) {
-    return <Navigate to="/admin" replace />;
+  if (user && profile) {
+    const role = profile.role?.toLowerCase();
+    
+    if (role === 'superadmin' || role === 'super_admin') {
+      const isMegaAdmin = !profile.organization?.is_reseller;
+      return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
+    }
+    
+    if (profile.organization?.niche === 'rural') {
+      return <Navigate to="/rural" replace />;
+    } else if (profile.organization_id) {
+      return <Navigate to="/urban" replace />;
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

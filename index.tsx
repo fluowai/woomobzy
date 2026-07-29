@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { supabase, setTenantSupabase } from '@/services/supabase';
+import { isMasterHostname } from '@/src/lib/tenantBootstrap';
 
 const rootElement = document.getElementById('root');
 logger.info('Index.tsx: Finding root element...', rootElement);
@@ -21,12 +22,7 @@ async function bootstrapApp() {
     const hostname = window.location.hostname;
 
     // Default domains that should definitely use the Master DB
-    const isMasterDomain =
-      hostname.includes('localhost') ||
-      hostname.includes('imobzy.com.br') ||
-      hostname.includes('wootech.com.br') ||
-      hostname.includes('consultio.com.br') ||
-      hostname.includes('vercel.app');
+    const isMasterDomain = isMasterHostname(hostname);
 
     if (!isMasterDomain) {
       logger.info(
@@ -37,7 +33,7 @@ async function bootstrapApp() {
         .from('public_tenant_discovery')
         .select('supabase_url, supabase_anon_key')
         .eq('domain', hostname)
-        .single();
+        .maybeSingle();
 
       if (!error && data && data.supabase_url && data.supabase_anon_key) {
         logger.info(

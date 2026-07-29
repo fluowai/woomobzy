@@ -4,6 +4,7 @@ import {
   LandingPage,
   PropertySelectionMode,
 } from '../../../types/landingPage';
+import { PropertySelectorModal } from '../../../LayoutEditor/PropertySelectorModal';
 
 interface PropertyGridBlockSettingsProps {
   config: PropertyGridBlockConfig;
@@ -18,7 +19,7 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
   page,
   onUpdatePage,
 }) => {
-  const [_showPropertySelector, _setShowPropertySelector] = useState(false);
+  const [showPropertySelector, setShowPropertySelector] = useState(false);
 
   const updateField = (field: keyof PropertyGridBlockConfig, value: any) => {
     onUpdate({ ...config, [field]: value });
@@ -181,7 +182,35 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
             )}
         </button>
+
+        <div className="pt-4 mt-4 border-t border-gray-200">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Seleção Manual
+          </label>
+          <button
+            onClick={() => setShowPropertySelector(true)}
+            className="w-full px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+          >
+            Selecionar Imóveis Manualmente
+          </button>
+        </div>
       </div>
+
+      <PropertySelectorModal
+        isOpen={showPropertySelector}
+        onClose={() => setShowPropertySelector(false)}
+        selectedIds={page.propertySelection?.mode === 'manual' ? page.propertySelection.selectedIds || [] : []}
+        onSave={(ids) => {
+          onUpdatePage({
+            ...page,
+            propertySelection: {
+              ...page.propertySelection,
+              mode: PropertySelectionMode.MANUAL,
+              selectedIds: ids,
+            },
+          });
+        }}
+      />
     </div>
   );
 };

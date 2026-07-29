@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLayoutEditor } from '../../context/LayoutEditorContext';
 import { X, Settings } from 'lucide-react';
 import {
@@ -11,9 +11,11 @@ import {
   PropertyGridBlockConfig,
   BlockType,
 } from '../../types';
+import { PropertySelectorModal } from './PropertySelectorModal';
 
 export const PropertiesPanel: React.FC = () => {
   const { selectedBlock, updateBlock, selectBlock } = useLayoutEditor();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!selectedBlock) {
     return (
@@ -321,6 +323,17 @@ export const PropertiesPanel: React.FC = () => {
                 </span>
               </label>
             </div>
+            <div className="pt-2 mt-4 border-t border-slate-100">
+              <label className="block text-xs font-bold text-slate-700 mb-2 mt-4">
+                Seleção Manual de Imóveis
+              </label>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors"
+              >
+                Selecionar Imóveis ({gridConfig.propertyIds?.length || 0})
+              </button>
+            </div>
           </>
         );
 
@@ -406,6 +419,17 @@ export const PropertiesPanel: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {selectedBlock?.type === BlockType.PROPERTY_GRID && (
+        <PropertySelectorModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          selectedIds={(selectedBlock.config as PropertyGridBlockConfig).propertyIds || []}
+          onSave={(ids) => {
+            updateConfig({ propertyIds: ids });
+          }}
+        />
+      )}
     </div>
   );
 };

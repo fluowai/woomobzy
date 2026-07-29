@@ -98,7 +98,7 @@ router.get('/resellers', verifyMegaAdmin, async (req, res) => {
 // POST /api/mega/resellers — Criar novo reseller
 router.post('/resellers', verifyMegaAdmin, async (req, res) => {
   try {
-    const { name, slug, owner_name, owner_email, password, niche } = req.body;
+    const { name, slug, owner_name, owner_email, password, niche, document, phone, creci, address, city, state, zip_code } = req.body;
 
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
     if (!owner_email) {
@@ -134,6 +134,13 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
           niche: normalizeNiche(niche, name, slug),
           owner_name: owner_name || null,
           owner_email: owner_email || null,
+          document: document || null,
+          phone: phone || null,
+          creci: creci || null,
+          address: address || null,
+          city: city || null,
+          state: state || null,
+          zip_code: zip_code || null,
         },
       ])
       .select()
@@ -212,7 +219,7 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
 router.put('/resellers/:id', verifyMegaAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, slug, owner_name, owner_email, status, niche } = req.body;
+    const { name, slug, owner_name, owner_email, status, niche, document, phone, creci, address, city, state, zip_code } = req.body;
 
     const updatePayload = {};
     if (name) updatePayload.name = name;
@@ -221,6 +228,13 @@ router.put('/resellers/:id', verifyMegaAdmin, async (req, res) => {
     if (niche) updatePayload.niche = normalizeNiche(niche, name, slug);
     if (owner_name !== undefined) updatePayload.owner_name = owner_name;
     if (owner_email !== undefined) updatePayload.owner_email = owner_email;
+    if (document !== undefined) updatePayload.document = document;
+    if (phone !== undefined) updatePayload.phone = phone;
+    if (creci !== undefined) updatePayload.creci = creci;
+    if (address !== undefined) updatePayload.address = address;
+    if (city !== undefined) updatePayload.city = city;
+    if (state !== undefined) updatePayload.state = state;
+    if (zip_code !== undefined) updatePayload.zip_code = zip_code;
 
     if (Object.keys(updatePayload).length === 0) {
       return res.status(400).json({ error: 'Nada para atualizar' });
@@ -335,7 +349,6 @@ router.post('/direct-clients', verifyMegaAdmin, async (req, res) => {
           name,
           slug: finalSlug,
           status: 'active',
-          plan: 'enterprise',
           is_reseller: false,
           parent_id: null,
           niche: normalizeNiche(niche, name, finalSlug),

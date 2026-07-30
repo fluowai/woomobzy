@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, Check } from 'lucide-react';
 import { useProperties } from '../../src/hooks/useProperties';
 import { useAuth } from '../../context/AuthContext';
-import { Property } from '../../types/property';
 
 interface PropertySelectorModalProps {
   isOpen: boolean;

@@ -53,7 +53,7 @@ export default function AdmCondominios() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCondoModal, setShowCondoModal] = useState(false);
-  const [condoForm, setCondoForm] = useState({ name: '', total_units: 0 });
+  const [condoForm, setCondoForm] = useState({ name: '', units_count: 0 });
 
   const load = useCallback(async () => {
     if (!profile?.organization_id) return;
@@ -128,8 +128,7 @@ export default function AdmCondominios() {
     const { error } = await supabase.from('condominiums').insert({
       organization_id: profile.organization_id,
       name: condoForm.name.trim(),
-      total_units: condoForm.total_units || 0,
-      status: 'active',
+      units_count: condoForm.units_count || 0,
     });
 
     if (error) {
@@ -138,7 +137,7 @@ export default function AdmCondominios() {
     }
 
     setShowCondoModal(false);
-    setCondoForm({ name: '', total_units: 0 });
+    setCondoForm({ name: '', units_count: 0 });
     load();
   };
 
@@ -375,11 +374,11 @@ export default function AdmCondominios() {
                 </label>
                 <input
                   type="number"
-                  value={condoForm.total_units || ''}
+                  value={condoForm.units_count || ''}
                   onChange={(e) =>
                     setCondoForm({
                       ...condoForm,
-                      total_units: Number(e.target.value),
+                      units_count: Number(e.target.value),
                     })
                   }
                   className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"

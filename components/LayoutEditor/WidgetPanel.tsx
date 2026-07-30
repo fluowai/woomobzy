@@ -1,5 +1,5 @@
 import React from 'react';
-import { Block, BlockType } from '../../types';
+import { BlockType } from '../../types';
 import { useLayoutEditor } from '../../context/LayoutEditorContext';
 import {
   Type,
@@ -12,7 +12,6 @@ import {
   Map,
   Code,
   Minus,
-  CreditCard,
   UserCircle,
   Megaphone,
   AlignJustify,

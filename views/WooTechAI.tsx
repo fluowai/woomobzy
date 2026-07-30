@@ -12,20 +12,26 @@ interface ApiKeys {
   groq: string;
   gemini: string;
   chatgpt: string;
+  omniroute: string;
+  pollinations: string;
+  openrouter: string;
 }
 
 const MODELS = [
-  { value: 'wootech-1', label: 'Groq', desc: 'Rápido e versátil (padrão)', provider: 'groq' },
-  { value: 'wootech-2', label: 'Gemini', desc: 'Criativo e analítico', provider: 'gemini' },
-  { value: 'wootech-3', label: 'ChatGPT', desc: 'Premium e robusto', provider: 'chatgpt' },
+  { value: 'groq', label: 'Groq', desc: 'Rápido e versátil (padrão)', provider: 'groq' },
+  { value: 'gemini', label: 'Gemini', desc: 'Criativo e analítico', provider: 'gemini' },
+  { value: 'chatgpt', label: 'ChatGPT', desc: 'Premium e robusto', provider: 'chatgpt' },
+  { value: 'wootech-1', label: 'WooTech AI 1', desc: 'Gateway interno OmniRoute', provider: 'omniroute' },
+  { value: 'wootech-2', label: 'WooTech AI 2', desc: 'API pública Pollinations', provider: 'pollinations' },
+  { value: 'wootech-3', label: 'WooTech AI 3', desc: 'Roteador OpenRouter', provider: 'openrouter' },
 ] as const;
 
 const STORAGE_KEY_MODEL = 'wootech_ai_model';
 const STORAGE_KEY_KEYS = 'wootech_ai_keys';
 
 function getStoredModel(): string {
-  try { return localStorage.getItem(STORAGE_KEY_MODEL) || 'wootech-1'; }
-  catch { return 'wootech-1'; }
+  try { return localStorage.getItem(STORAGE_KEY_MODEL) || 'groq'; }
+  catch { return 'groq'; }
 }
 
 function storeModel(value: string) {
@@ -42,12 +48,15 @@ function getStoredKeys(): ApiKeys {
         groq: parsed.groq || '',
         gemini: parsed.gemini || '',
         chatgpt: parsed.chatgpt || '',
+        omniroute: parsed.omniroute || '',
+        pollinations: parsed.pollinations || '',
+        openrouter: parsed.openrouter || '',
       };
     }
     } catch {
       logger.warn('[WooTechAI] Falha ao carregar chaves salvas');
     }
-  return { groq: '', gemini: '', chatgpt: '' };
+  return { groq: '', gemini: '', chatgpt: '', omniroute: '', pollinations: '', openrouter: '' };
 }
 
 function storeKeys(keys: ApiKeys) {
@@ -61,7 +70,8 @@ function maskKey(key: string): string {
 }
 
 function hasAnyKey(keys: ApiKeys): boolean {
-  return keys.groq.length > 0 || keys.gemini.length > 0 || keys.chatgpt.length > 0;
+  return keys.groq.length > 0 || keys.gemini.length > 0 || keys.chatgpt.length > 0
+    || keys.omniroute.length > 0 || keys.pollinations.length > 0 || keys.openrouter.length > 0;
 }
 
 const WooTechAI: React.FC = () => {

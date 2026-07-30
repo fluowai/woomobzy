@@ -8,6 +8,17 @@ import {
   Plus,
   Search,
   User,
+  Bell,
+  CheckCircle2,
+  Filter,
+  List,
+  LayoutGrid,
+  MoreVertical,
+  QrCode,
+  AlertCircle,
+  HelpCircle,
+  ChevronRight,
+  MoreHorizontal
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -56,6 +67,7 @@ const statusConfig: Record<
 export default function ControleChaves() {
   const { profile } = useAuth();
   const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('Todas');
   const [keys, setKeys] = useState<KeyRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -80,14 +92,25 @@ export default function ControleChaves() {
   }, [profile?.organization_id]);
 
   const filteredKeys = useMemo(() => {
+    let result = keys;
+    
+    if (filterStatus !== 'Todas') {
+      const statusMap: Record<string, string> = {
+        'Em uso': 'checked_out',
+        'Disponíveis': 'available',
+        'Atrasadas': 'overdue'
+      };
+      result = result.filter(item => item.status === statusMap[filterStatus]);
+    }
+
     const term = search.toLowerCase().trim();
-    if (!term) return keys;
-    return keys.filter((item) =>
+    if (!term) return result;
+    return result.filter((item) =>
       `${item.label} ${item.code} ${item.responsible_name || ''}`
         .toLowerCase()
         .includes(term)
     );
-  }, [keys, search]);
+  }, [keys, search, filterStatus]);
 
   const stats = useMemo(
     () => [
@@ -167,131 +190,296 @@ export default function ControleChaves() {
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <div className="w-full max-w-[1600px] mx-auto pb-12 font-sans text-slate-800">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="h1 flex items-center gap-3 text-slate-900">
-            <Key className="text-primary" size={32} />
-            Controle de Chaves
-          </h1>
-          <p className="body mt-1 text-slate-500">
-            Gerencie localizacao, retirada e devolucao das chaves dos imoveis.
-          </p>
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+            <span className="font-medium text-slate-400">Operações</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-emerald-600 font-semibold">Controle de chaves</span>
+          </div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Controle de chaves</h1>
+          <p className="text-sm text-slate-500 mt-1">Acompanhe retiradas, devoluções e responsáveis em tempo real.</p>
         </div>
-        <button
-          onClick={registerKey}
-          className="btn btn-primary shadow-lg shadow-primary/25"
-        >
-          <Plus size={20} /> Registrar Chave
-        </button>
+        
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => window.alert('Fluxo de registrar movimentação em breve')}
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm"
+          >
+            <Plus size={18} /> Registrar movimentação
+          </button>
+          <button
+            onClick={registerKey}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm"
+          >
+            <Key size={18} className="text-slate-500" /> Cadastrar chave
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="card-premium p-5 text-center">
-            <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
-            <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-500">
-              {stat.label}
-            </p>
+      {/* Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl"><Key size={28} /></div>
+            <div>
+              <p className="text-3xl font-bold text-slate-900">{keys.length}</p>
+              <p className="text-sm font-semibold text-slate-500">Chaves cadastradas</p>
+            </div>
           </div>
-        ))}
-      </div>
-
-      <div className="card-premium overflow-hidden">
-        <div className="border-b border-slate-100 p-5">
-          <div className="group relative max-w-sm">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Buscar por imovel ou codigo..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className="input-field bg-slate-50 pl-11"
-            />
+          <div className="h-12 w-px bg-slate-100 hidden sm:block"></div>
+        </div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl"><CheckCircle2 size={28} /></div>
+            <div>
+              <p className="text-3xl font-bold text-slate-900">{stats.find(s => s.label === 'Disponiveis')?.value || 0}</p>
+              <p className="text-sm font-semibold text-slate-500">Disponíveis</p>
+            </div>
+          </div>
+          <div className="h-12 w-px bg-slate-100 hidden sm:block"></div>
+        </div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl"><User size={28} /></div>
+          <div>
+            <p className="text-3xl font-bold text-slate-900">{stats.find(s => s.label === 'Retiradas')?.value || 0}</p>
+            <p className="text-sm font-semibold text-slate-500">Em uso</p>
           </div>
         </div>
-        <div className="divide-y divide-slate-100">
-          {loading ? (
-            <div className="p-10 text-center text-sm text-slate-400">
-              Carregando chaves...
-            </div>
-          ) : filteredKeys.length === 0 ? (
-            <div className="p-10 text-center text-sm text-slate-400">
-              Nenhuma chave cadastrada.
-            </div>
-          ) : (
-            filteredKeys.map((item) => {
-              const cfg = statusConfig[item.status];
-              const Icon = cfg.icon;
-              return (
-                <div
-                  key={item.id}
-                  className="flex flex-col justify-between gap-3 p-5 transition-colors hover:bg-slate-50/50 md:flex-row md:items-center"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-2xl ${cfg.bg}`}
-                    >
-                      <Icon size={22} className={cfg.color} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900">{item.label}</p>
-                      <p className="mt-0.5 font-mono text-xs text-slate-500">
-                        {item.code}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1.5 md:items-end">
-                    <span
-                      className={`self-start rounded-full px-3 py-1 text-[10px] font-bold uppercase md:self-auto ${cfg.bg} ${cfg.color}`}
-                    >
-                      {cfg.label}
-                    </span>
-                    {item.responsible_name && (
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <User size={12} /> {item.responsible_name}
-                      </div>
-                    )}
-                    {item.location && (
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <Home size={12} /> {item.location}
-                      </div>
-                    )}
-                    {item.expected_return_at && (
-                      <div
-                        className={`flex items-center gap-1.5 text-xs font-bold ${item.status === 'overdue' ? 'text-red-600' : 'text-slate-500'}`}
-                      >
-                        <Clock size={12} /> Dev. prevista:{' '}
-                        {new Date(item.expected_return_at).toLocaleString(
-                          'pt-BR'
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    {item.status === 'available' ? (
-                      <button
-                        onClick={() => checkoutKey(item.id)}
-                        className="btn h-9 border border-blue-200 bg-blue-50 px-3 text-xs text-blue-700 hover:bg-blue-100"
-                      >
-                        <ArrowUpRight size={14} /> Retirar
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => returnKey(item.id)}
-                        className="btn h-9 border border-green-200 bg-green-50 px-3 text-xs text-green-700 hover:bg-green-100"
-                      >
-                        <ArrowDownLeft size={14} /> Devolver
-                      </button>
-                    )}
-                  </div>
+      </div>
+
+      {/* Main Layout */}
+      <div className="flex flex-col xl:flex-row gap-6">
+        
+        {/* Left Column */}
+        <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-slate-100">
+            <h2 className="text-lg font-bold text-slate-900 mb-6">Movimentações de hoje</h2>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto bg-slate-50 p-1 rounded-lg">
+                {['Todas', 'Em uso', 'Disponíveis', 'Atrasadas'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setFilterStatus(tab)}
+                    className={`px-4 py-2 text-sm font-semibold rounded-md transition-all whitespace-nowrap ${filterStatus === tab ? 'bg-emerald-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar chave ou imóvel..."
+                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
                 </div>
-              );
-            })
-          )}
+                <button className="p-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                  <Filter size={18} />
+                </button>
+                <div className="flex p-1 border border-slate-200 rounded-lg bg-slate-50">
+                  <button className="p-1.5 rounded bg-emerald-700 text-white shadow-sm"><List size={16} /></button>
+                  <button className="p-1.5 rounded text-slate-500 hover:text-slate-700"><LayoutGrid size={16} /></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase text-slate-500">Código</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase text-slate-500">Imóvel</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase text-slate-500">Situação</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase text-slate-500">Retirada por</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase text-slate-500">Responsável</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase text-slate-500">Previsão</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase text-slate-500">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredKeys.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-sm text-slate-500">
+                      Nenhuma chave encontrada.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredKeys.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
+                          {item.code || 'CH-000'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-slate-700">{item.label}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                          item.status === 'available' ? 'bg-emerald-50 text-emerald-700' :
+                          item.status === 'checked_out' ? 'bg-slate-700 text-white' :
+                          item.status === 'overdue' ? 'bg-orange-100 text-orange-700' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {statusConfig[item.status]?.label || item.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {item.status !== 'available' && item.responsible_name ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold">
+                              {item.responsible_name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <span className="text-sm font-medium text-slate-700">{item.responsible_name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold">
+                            {item.responsible_name ? item.responsible_name.substring(0, 2).toUpperCase() : 'JG'}
+                          </div>
+                          <span className="text-sm font-medium text-slate-700">{item.responsible_name || 'Juliana Gomes'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {item.expected_return_at ? (
+                          <span className={`text-sm font-medium ${item.status === 'overdue' ? 'text-orange-500' : 'text-slate-700'}`}>
+                            {new Date(item.expected_return_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}, {new Date(item.expected_return_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button 
+                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                          onClick={() => {
+                            if (item.status === 'available') {
+                              checkoutKey(item.id);
+                            } else {
+                              returnKey(item.id);
+                            }
+                          }}
+                          title={item.status === 'available' ? 'Retirar chave' : 'Devolver chave'}
+                        >
+                          <MoreHorizontal size={20} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="w-full xl:w-96 space-y-6 shrink-0">
+          
+          {/* Attention needed */}
+          <div className="bg-white border-2 border-orange-100 rounded-2xl shadow-sm p-6 relative">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <AlertCircle size={18} className="text-orange-500" />
+                Atenção necessária
+              </h3>
+              <MoreHorizontal size={18} className="text-slate-400" />
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-orange-500 font-bold text-sm">CH-031</p>
+                <p className="text-slate-700 font-medium text-sm">Sunset Residence • Casa 12</p>
+              </div>
+              
+              <div className="flex items-center justify-between text-xs border-t border-slate-100 pt-3">
+                <div>
+                  <p className="text-slate-500">Retirada por</p>
+                  <p className="font-bold text-slate-700 mt-0.5">Rafael Lima</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-slate-500">Atrasada desde</p>
+                  <p className="font-bold text-orange-500 mt-0.5">Ontem, 18:00</p>
+                </div>
+              </div>
+              
+              <button className="w-full py-2.5 mt-2 border border-orange-200 text-orange-500 font-bold text-sm rounded-lg hover:bg-orange-50 transition-colors">
+                Cobrar devolução
+              </button>
+            </div>
+          </div>
+
+          {/* Next returns */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <Clock size={18} className="text-slate-500" />
+              Próximas devoluções
+            </h3>
+            
+            <div className="relative border-l-2 border-slate-100 ml-3 space-y-8">
+              
+              {/* Timeline Item 1 */}
+              <div className="relative pl-6">
+                <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-white"></div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-bold text-slate-900">Hoje, 17:30</p>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">CH-024</span>
+                </div>
+                <p className="text-xs font-medium text-slate-600">Residencial Aurora • Apto 401</p>
+                <p className="text-xs text-slate-500 mt-0.5">Carlos Mendes</p>
+              </div>
+
+              {/* Timeline Item 2 */}
+              <div className="relative pl-6">
+                <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-white"></div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-bold text-slate-900">Amanhã, 10:00</p>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">CH-012</span>
+                </div>
+                <p className="text-xs font-medium text-slate-600">Parque das Flores • Apto 203</p>
+                <p className="text-xs text-slate-500 mt-0.5">Lucas Almeida</p>
+              </div>
+
+              {/* Timeline Item 3 */}
+              <div className="relative pl-6">
+                <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-white"></div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-bold text-slate-900">22/05, 14:00</p>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">CH-015</span>
+                </div>
+                <p className="text-xs font-medium text-slate-600">Ed. Green Office • Sala 1201</p>
+                <p className="text-xs text-slate-500 mt-0.5">Patrícia Souza</p>
+              </div>
+
+            </div>
+          </div>
+
+          {/* QR Code Card */}
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl shadow-sm p-6 flex items-center gap-4 cursor-pointer hover:bg-emerald-100 transition-colors group">
+            <div className="p-3 bg-white text-emerald-600 rounded-xl shadow-sm">
+              <QrCode size={28} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-slate-900">Ler QR Code</h3>
+              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                Escaneie o QR Code da chave para registrar uma movimentação.
+              </p>
+            </div>
+            <ChevronRight size={20} className="text-slate-400 group-hover:text-emerald-600 transition-colors" />
+          </div>
+
         </div>
       </div>
     </div>

@@ -856,10 +856,11 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
         .replace(/^-+|-+$/g, '');
       const uniqueSlug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
 
-      // Create Page (without organizationId to avoid FK constraint)
+      // Create Page
       setGenerationStage('Salvando página...');
       const newPage = await landingPageService.create({
         userId: user.id,
+        organizationId: profile?.organization_id,
         name: aiData.name || property.title,
         title: aiData.title || property.title,
         description: aiData.description,
@@ -873,7 +874,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
           showBranding: true,
         },
         propertySelection: {
-          mode: 'manual',
+          mode: 'manual' as any,
           propertyIds: [property.id],
           filters: {},
           sortBy: 'price',
@@ -888,7 +889,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
           emailEnabled: true,
         },
         status: LandingPageStatus.DRAFT,
-      } as any);
+      });
 
       logger.info('Page created:', newPage);
 

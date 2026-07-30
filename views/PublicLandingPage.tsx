@@ -85,16 +85,27 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       if (isDirectLPLink) {
         // Mode A: Search by Landing Page Slug directly
+        // NOTE: We do NOT join organizations here because RLS on the
+        // organizations table blocks anonymous SELECT. Instead we fetch
+        // the landing page first, then resolve the org separately.
         const { data: lpData } = await supabase
           .from('landing_pages')
-          .select('*, organization:organizations(*)')
+          .select('*')
           .eq('slug', slugOrOrg)
           .eq('status', 'published')
           .maybeSingle();
 
         if (lpData) {
           targetPage = lpData;
-          resolvedOrg = lpData.organization;
+          if (lpData.organization_id) {
+            try {
+              const { data: org } = await supabase
+                .rpc('get_tenant_public', { slug_input: slugOrOrg });
+              resolvedOrg = org?.[0] || { id: lpData.organization_id };
+            } catch {
+              resolvedOrg = { id: lpData.organization_id };
+            }
+          }
         } else {
           logger.error('Landing page not found by slug:', slugOrOrg);
         }

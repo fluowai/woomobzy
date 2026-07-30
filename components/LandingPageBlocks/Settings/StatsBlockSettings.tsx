@@ -33,8 +33,40 @@ const StatsBlockSettings: React.FC<StatsBlockSettingsProps> = ({ config, onUpdat
   return (
     <div className="space-y-6">
       <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Colunas
+        </label>
+        <select
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={config.columns || 3}
+          onChange={(e) => onUpdate({ ...config, columns: parseInt(e.target.value) })}
+        >
+          <option value={1}>1 Coluna</option>
+          <option value={2}>2 Colunas</option>
+          <option value={3}>3 Colunas</option>
+          <option value={4}>4 Colunas</option>
+        </select>
+      </div>
+
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="stats-animated"
+          checked={config.animated !== false}
+          onChange={(e) => onUpdate({ ...config, animated: e.target.checked })}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label
+          htmlFor="stats-animated"
+          className="ml-2 text-sm text-gray-700"
+        >
+          Animação ao aparecer
+        </label>
+      </div>
+
+      <div>
         <div className="flex justify-between items-center mb-4">
-          <label className="block text-sm font-medium text-gray-300">
+          <label className="block text-sm font-medium text-gray-700">
             Itens de Estatística
           </label>
           <button

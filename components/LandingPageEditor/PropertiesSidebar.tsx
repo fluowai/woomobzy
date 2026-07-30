@@ -10,6 +10,20 @@ import CTABlockSettings from '../LandingPageBlocks/Settings/CTABlockSettings';
 import SpacerBlockSettings from '../LandingPageBlocks/Settings/SpacerBlockSettings';
 import CustomHTMLBlockSettings from '../LandingPageBlocks/Settings/CustomHTMLBlockSettings';
 import StatsBlockSettings from '../LandingPageBlocks/Settings/StatsBlockSettings';
+import FeaturesBlockSettings from '../LandingPageBlocks/Settings/FeaturesBlockSettings';
+import HeaderBlockSettings from '../LandingPageBlocks/Settings/HeaderBlockSettings';
+import FooterBlockSettings from '../LandingPageBlocks/Settings/FooterBlockSettings';
+import ImageBlockSettings from '../LandingPageBlocks/Settings/ImageBlockSettings';
+import GalleryBlockSettings from '../LandingPageBlocks/Settings/GalleryBlockSettings';
+import VideoBlockSettings from '../LandingPageBlocks/Settings/VideoBlockSettings';
+import PropertyCarouselBlockSettings from '../LandingPageBlocks/Settings/PropertyCarouselBlockSettings';
+import PropertyFeaturedBlockSettings from '../LandingPageBlocks/Settings/PropertyFeaturedBlockSettings';
+import PropertySearchBlockSettings from '../LandingPageBlocks/Settings/PropertySearchBlockSettings';
+import MapBlockSettings from '../LandingPageBlocks/Settings/MapBlockSettings';
+import TimelineBlockSettings from '../LandingPageBlocks/Settings/TimelineBlockSettings';
+import TestimonialsBlockSettings from '../LandingPageBlocks/Settings/TestimonialsBlockSettings';
+import BrokerCardBlockSettings from '../LandingPageBlocks/Settings/BrokerCardBlockSettings';
+import DividerBlockSettings from '../LandingPageBlocks/Settings/DividerBlockSettings';
 import BlockStylesEditor from './BlockStylesEditor';
 
 interface PropertiesSidebarProps {
@@ -139,6 +153,12 @@ function renderBlockSettings(
 
   const cfg = block.config as any;
   switch (block.type) {
+    case 'header':
+      return <HeaderBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'footer':
+      return <FooterBlockSettings config={cfg} onUpdate={updateConfig} />;
+
     case 'hero':
       return <HeroBlockSettings config={cfg} onUpdate={updateConfig} />;
 
@@ -172,6 +192,52 @@ function renderBlockSettings(
 
     case 'stats':
       return <StatsBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'features':
+      return <FeaturesBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'image':
+      return <ImageBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'gallery':
+      return <GalleryBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'video':
+      return <VideoBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'property_carousel':
+      return (
+        <PropertyCarouselBlockSettings config={cfg} onUpdate={updateConfig} />
+      );
+
+    case 'property_featured':
+      return (
+        <PropertyFeaturedBlockSettings config={cfg} onUpdate={updateConfig} />
+      );
+
+    case 'property_search':
+      return (
+        <PropertySearchBlockSettings config={cfg} onUpdate={updateConfig} />
+      );
+
+    case 'map':
+      return <MapBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'timeline':
+      return <TimelineBlockSettings config={cfg} onUpdate={updateConfig} />;
+
+    case 'testimonials':
+      return (
+        <TestimonialsBlockSettings config={cfg} onUpdate={updateConfig} />
+      );
+
+    case 'broker_card':
+      return (
+        <BrokerCardBlockSettings config={cfg} onUpdate={updateConfig} />
+      );
+
+    case 'divider':
+      return <DividerBlockSettings config={cfg} onUpdate={updateConfig} />;
 
     default:
       return (

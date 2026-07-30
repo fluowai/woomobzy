@@ -184,6 +184,7 @@ export const landingPageService = {
       .update({
         status: LandingPageStatus.PUBLISHED,
         published_at: new Date().toISOString(),
+        is_active: true,
       })
       .eq('id', id)
       .select()

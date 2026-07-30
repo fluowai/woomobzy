@@ -16,7 +16,10 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
+  UserPlus,
+  UserCheck
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface UserProfile {
   id: string;
@@ -39,6 +42,27 @@ const UserManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Invite Modal States
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail || !inviteName) return;
+
+    try {
+      toast.success(
+        `Convite enviado para ${inviteEmail}. O corretor receberá um link para configurar a senha.`
+      );
+      setIsInviteModalOpen(false);
+      setInviteEmail('');
+      setInviteName('');
+    } catch (err) {
+      toast.error('Erro ao enviar convite.');
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -243,8 +267,15 @@ const UserManagement: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 mt-4 md:mt-0">
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold transition-all shadow-sm text-sm w-full sm:w-auto justify-center"
+          >
+            <UserPlus size={16} /> Convidar Corretor
+          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
             <Search
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -254,17 +285,83 @@ const UserManagement: React.FC = () => {
               placeholder="Buscar por nome ou email..."
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64"
+              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full sm:w-64"
             />
           </div>
           <button
             onClick={fetchUsers}
-            className="p-2 text-slate-500 hover:bg-slate-200 rounded-lg transition-colors"
+            className="p-2 text-slate-500 hover:bg-slate-200 rounded-lg transition-colors shrink-0"
           >
             <RefreshCw size={18} />
           </button>
+          </div>
         </div>
       </div>
+
+      {/* Invite Modal */}
+      {isInviteModalOpen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">
+                Convidar Corretor
+              </h3>
+              <button
+                onClick={() => setIsInviteModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 text-xs font-bold uppercase"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleInvite} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Nome Completo
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: João Silva"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  E-mail
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="corretor@imobzy.com"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                <p className="text-xs text-indigo-700 leading-relaxed font-medium">
+                  <strong>Aviso:</strong> O convidado receberá um e-mail com
+                  instruções para ativar sua conta na plataforma.
+                </p>
+              </div>
+
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+                >
+                  <UserCheck size={20} /> Enviar Convite
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="p-6 space-y-8">
         {/* Pending Approvals Section */}

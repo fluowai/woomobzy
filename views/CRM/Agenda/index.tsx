@@ -1,12 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Clock, CheckCircle2, XCircle, Search, User } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, XCircle, Search, User, Users } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { toast } from 'sonner';
+import { useAuth } from '../../../context/AuthContext';
 
 const Agenda = () => {
+  const { profile } = useAuth();
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [brokers, setBrokers] = useState<any[]>([]);
+  const [selectedBrokerId, setSelectedBrokerId] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('pending'); // 'pending', 'completed', 'canceled', 'all'
+
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'superadmin';
+
+  useEffect(() => {
+    if (isAdmin && profile?.organization_id) {
+      fetchBrokers();
+    }
+  }, [isAdmin, profile?.organization_id]);
+
+  const fetchBrokers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name:name')
+        .eq('organization_id', profile?.organization_id)
+        .order('name');
+      if (error) throw error;
+      setBrokers(data || []);
+    } catch (err) {
+      console.error('Error fetching brokers', err);
+    }
+  };
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -18,6 +44,12 @@ const Agenda = () => {
 
       if (filterStatus !== 'all') {
         query = query.eq('status', filterStatus);
+      }
+
+      if (isAdmin && selectedBrokerId !== 'all') {
+        query = query.eq('user_id', selectedBrokerId);
+      } else if (!isAdmin && profile?.id) {
+        query = query.eq('user_id', profile.id);
       }
 
       const { data, error } = await query;
@@ -32,8 +64,10 @@ const Agenda = () => {
   };
 
   useEffect(() => {
-    fetchAppointments();
-  }, [filterStatus]);
+    if (profile?.id) {
+      fetchAppointments();
+    }
+  }, [filterStatus, selectedBrokerId, profile?.id]);
 
   const updateStatus = async (id: string, status: string) => {
     try {
@@ -54,7 +88,24 @@ const Agenda = () => {
           <p className="text-slate-500 mt-1">Gerencie suas reuniões e retornos agendados.</p>
         </div>
         
-        <div className="flex bg-slate-100 p-1 rounded-xl">
+        <div className="flex flex-col sm:flex-row gap-3">
+          {isAdmin && brokers.length > 0 && (
+            <div className="relative">
+              <select
+                value={selectedBrokerId}
+                onChange={(e) => setSelectedBrokerId(e.target.value)}
+                className="appearance-none pl-10 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto"
+              >
+                <option value="all">Todas as Agendas</option>
+                {brokers.map(b => (
+                  <option key={b.id} value={b.id}>{b.full_name || 'Usuário Sem Nome'}</option>
+                ))}
+              </select>
+              <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+          )}
+
+          <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
           {['pending', 'completed', 'canceled', 'all'].map(status => (
             <button
               key={status}
@@ -64,6 +115,7 @@ const Agenda = () => {
               {status === 'pending' ? 'Pendentes' : status === 'completed' ? 'Concluídos' : status === 'canceled' ? 'Cancelados' : 'Todos'}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

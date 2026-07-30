@@ -25,6 +25,8 @@ import { supabase } from '../../../services/supabase';
 import { Lead } from '../../../types';
 import { PipelineStage } from '../kanban/constants';
 import EditLeadModal from './EditLeadModal';
+import { buildMatchWhatsappMessage } from './whatsapp-match-message';
+import { useAuth } from '../../../context/AuthContext';
 import {
   getLeadDisplayName,
   getLeadInitials,
@@ -93,11 +95,32 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [showNewAppointmentForm, setShowNewAppointmentForm] = useState(false);
+  
+  const { profile } = useAuth();
+  const [brokers, setBrokers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isOpen && profile?.organization_id) {
+      const fetchBrokers = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('id, full_name:name')
+            .eq('organization_id', profile.organization_id)
+            .order('name');
+          if (data) setBrokers(data);
+        } catch (e) {}
+      };
+      fetchBrokers();
+    }
+  }, [isOpen, profile?.organization_id]);
+
   const [newAppointment, setNewAppointment] = useState({
     title: '',
     appointment_date: '',
     type: 'reuniao',
-    notes: ''
+    notes: '',
+    user_id: profile?.id || ''
   });
 
   const fetchAppointments = async () => {
@@ -133,10 +156,12 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
+      const assignedUserId = newAppointment.user_id || user.id;
+
       const { error } = await supabase.from('lead_appointments').insert({
         lead_id: lead.id,
         organization_id: lead.organization_id,
-        user_id: user.id,
+        user_id: assignedUserId,
         title: newAppointment.title,
         appointment_date: new Date(newAppointment.appointment_date).toISOString(),
         type: newAppointment.type,
@@ -147,7 +172,7 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
       
       toast.success('Agendamento criado com sucesso!');
       setShowNewAppointmentForm(false);
-      setNewAppointment({ title: '', appointment_date: '', type: 'reuniao', notes: '' });
+      setNewAppointment({ title: '', appointment_date: '', type: 'reuniao', notes: '', user_id: profile?.id || '' });
       fetchAppointments();
     } catch (err) {
       console.error(err);
@@ -666,6 +691,15 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
                           </select>
                         </div>
                         <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Corretor Responsável</label>
+                          <select value={newAppointment.user_id || profile?.id || ''} onChange={e => setNewAppointment({...newAppointment, user_id: e.target.value})} className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm">
+                            <option value={profile?.id || ''}>Eu mesmo</option>
+                            {brokers.filter(b => b.id !== profile?.id).map(b => (
+                              <option key={b.id} value={b.id}>{b.full_name || 'Usuário Sem Nome'}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-2">
                           <label className="block text-xs font-bold text-slate-500 mb-1">Observações (Opcional)</label>
                           <input type="text" value={newAppointment.notes} onChange={e => setNewAppointment({...newAppointment, notes: e.target.value})} className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm" placeholder="Ex: Cliente quer ver as chaves" />
                         </div>

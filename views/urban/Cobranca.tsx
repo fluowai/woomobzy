@@ -414,7 +414,7 @@ const Cobranca: React.FC = () => {
                               href={b.invoice_url}
                               target="_blank"
                               className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
-                              title="Ver Boleto/PIX"
+                              title="Ver Boleto/PIX" rel="noreferrer"
                             >
                               <QrCode size={16} />
                             </a>

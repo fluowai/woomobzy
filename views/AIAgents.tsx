@@ -574,7 +574,7 @@ const AIAgents: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('identity');
-  const [testMode, setTestMode] = useState<TestMode>('lead-simulator');
+  const [testMode, setTestMode] = useState<TestMode>('agent-reply');
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<TestMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);

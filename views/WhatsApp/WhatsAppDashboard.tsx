@@ -1,1042 +1,570 @@
-import { logger } from '@/utils/logger';
-import { uploadFile } from '@/services/storage';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import './whatsapp.css';
-import { useWebSocket } from './hooks/useWebSocket';
+import React, { useState } from 'react';
 import {
-  instanceApi,
-  chatApi,
-  messageApi,
-  accountApi,
-  isSupportedChat,
-  normalizeMessagePreview,
-  type Instance,
-  type WhatsAppMediaStatusEvent,
-  type WhatsAppMessageReceiptEvent,
-} from './hooks/api';
-import {
-  type UnifiedChat,
-  type UnifiedMessage,
-  whatsappChatToUnified,
-  instagramConversationToUnified,
-  instagramMessageToUnified,
-  sortUnifiedChats,
-} from './hooks/unifiedInbox';
-import { instagramApi } from '@/views/Instagram/hooks/api';
-import ChatSidebar from './ChatSidebar';
-import ChatWindow from './ChatWindow';
-import InstanceManager from './InstanceManager';
-import { QueuesManagerModal } from './QueuesManagerModal';
-import {
-  MessageSquare,
-  Settings,
-  WifiOff,
-  Smartphone,
-  DownloadCloud,
-  Loader2,
-  Clock3,
-  UserRound,
-  ArrowRightLeft,
-  Tag,
-  ShieldCheck,
-  GitMerge,
+  Search,
+  Settings2,
+  Phone,
+  MessageCircle,
+  Instagram,
+  Globe,
+  Bell,
+  Plus,
+  RefreshCw,
+  MoreVertical,
+  Star,
+  Edit2,
+  Paperclip,
+  Image as ImageIcon,
+  Mic,
+  FileText,
+  Type,
+  Sparkles,
+  Smile,
+  Send,
+  ChevronDown,
+  Mail,
+  MapPin,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  Flame
 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useSearchParams } from 'react-router-dom';
-import {
-  HISTORY_PERIOD_OPTIONS,
-  resultTypeFromFile,
-  isTenantContextError,
-  getLatestChatActivityAt,
-  hasRecentInstanceActivity,
-  withVisualInstanceStatus,
-  formatElapsed,
-} from './WhatsAppDashboard/constants';
-import {
-  ServiceUnavailableScreen,
-  TenantContextErrorScreen,
-} from './WhatsAppDashboard/ErrorScreens';
 
-const WhatsAppDashboard: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const deepLinkInstanceId = searchParams.get('instanceId');
-  const deepLinkChatId = searchParams.get('chatId');
-  const deepLinkChatJid = searchParams.get('chatJid');
-  // State
-  const [instances, setInstances] = useState<Instance[]>([]);
-  const [selectedInstance, setSelectedInstance] = useState<Instance | null>(
-    null
-  );
-  const [chats, setChats] = useState<UnifiedChat[]>([]);
-  const [selectedChat, setSelectedChat] = useState<UnifiedChat | null>(null);
-  const [messages, setMessages] = useState<UnifiedMessage[]>([]);
-  const [showInstanceManager, setShowInstanceManager] = useState(false);
-  const [showQueuesManager, setShowQueuesManager] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [serviceUnavailable, setServiceUnavailable] = useState(false);
-  const [serviceError, setServiceError] = useState('');
-  const [tenantContextError, setTenantContextError] = useState('');
-  const [webSocketEnabled, setWebSocketEnabled] = useState(false);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [importingHistory, setImportingHistory] = useState(false);
-  const [historyPeriodDays, setHistoryPeriodDays] = useState(60);
-  const [historyImportStats, setHistoryImportStats] = useState({
-    importedMessages: 0,
-    importedChats: 0,
-    requestedChats: 0,
-    elapsedSeconds: 0,
-    startedAt: 0,
-  });
-  const [deletingChats, setDeletingChats] = useState(false);
-  const [recovering, setRecovering] = useState(false);
-  const [instanceActivityAt, setInstanceActivityAt] = useState<
-    Record<string, number>
-  >({});
-
-  // WebSocket
-  const { isConnected, on } = useWebSocket(webSocketEnabled);
-
-  const noteInstanceActivity = useCallback(
-    (instanceId?: string, activityAt = Date.now()) => {
-      if (!instanceId) return;
-      setInstanceActivityAt((prev) => {
-        if ((prev[instanceId] || 0) >= activityAt) return prev;
-        return { ...prev, [instanceId]: activityAt };
-      });
-    },
-    []
-  );
-
-  const clearInstanceActivity = useCallback((instanceId?: string) => {
-    if (!instanceId) return;
-    setInstanceActivityAt((prev) => {
-      if (!prev[instanceId]) return prev;
-      const next = { ...prev };
-      delete next[instanceId];
-      return next;
-    });
-  }, []);
-
-  const latestSelectedChatActivityAt = useMemo(
-    () => getLatestChatActivityAt(chats, selectedInstance?.id),
-    [chats, selectedInstance?.id]
-  );
-
-  const visualInstances = useMemo(
-    () =>
-      instances.map((inst) =>
-        withVisualInstanceStatus(
-          inst,
-          Boolean(instanceActivityAt[inst.id]) ||
-            (inst.id === selectedInstance?.id &&
-              hasRecentInstanceActivity(latestSelectedChatActivityAt))
-        )
-      ),
-    [
-      instances,
-      instanceActivityAt,
-      latestSelectedChatActivityAt,
-      selectedInstance?.id,
-    ]
-  );
-
-  const selectedInstanceHasActivity = Boolean(
-    selectedInstance &&
-    (instanceActivityAt[selectedInstance.id] ||
-      hasRecentInstanceActivity(latestSelectedChatActivityAt))
-  );
-  const visualSelectedInstance = selectedInstance
-    ? withVisualInstanceStatus(selectedInstance, selectedInstanceHasActivity)
-    : null;
-
-  const instanceStatusOverrides = useMemo(() => {
-    const overrides: Record<string, Instance['status']> = {};
-    visualInstances.forEach((inst) => {
-      const raw = instances.find((item) => item.id === inst.id);
-      if (raw && raw.status !== inst.status) overrides[inst.id] = inst.status;
-    });
-    return overrides;
-  }, [instances, visualInstances]);
-
-  // Load instances on mount
-  useEffect(() => {
-    loadInstances();
-  }, []);
-
-  // Load chats when instance changes
-  useEffect(() => {
-    if (selectedInstance) {
-      loadChats(selectedInstance.id);
-    } else {
-      setChats((prev) => prev.filter((c) => c.platform === 'instagram'));
-    }
-  }, [selectedInstance]);
-
-  // Load Instagram conversations on mount
-  useEffect(() => {
-    loadInstagramConversations();
-  }, []);
-
-  useEffect(() => {
-    const shouldTrackImport =
-      historyImportStats.startedAt &&
-      (importingHistory || historyImportStats.requestedChats > 0);
-    if (!shouldTrackImport) return;
-
-    const timer = window.setInterval(() => {
-      setHistoryImportStats((prev) => ({
-        ...prev,
-        elapsedSeconds: Math.max(
-          0,
-          Math.floor((Date.now() - prev.startedAt) / 1000)
-        ),
-      }));
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [
-    importingHistory,
-    historyImportStats.requestedChats,
-    historyImportStats.startedAt,
-  ]);
-
-  // Load messages when chat changes
-  useEffect(() => {
-    if (selectedChat) {
-      setMessages([]);
-      if (selectedChat.platform === 'instagram') {
-        loadMessages(selectedChat.id, '', 'instagram');
-        instagramApi.messages
-          .markRead(selectedChat.instagram_conversation_id!)
-          .catch(() => {});
-      } else if (selectedInstance) {
-        loadMessages(selectedChat.id, selectedInstance.id, 'whatsapp');
-        chatApi.markRead(selectedChat.id, selectedInstance.id).catch(() => {});
-      }
-    } else {
-      setMessages([]);
-    }
-  }, [selectedChat, selectedInstance]);
-
-  // WebSocket event handlers
-  useEffect(() => {
-    const unsubMessage = on('new_message', (data: any) => {
-      const { message, chat } = data;
-      noteInstanceActivity(message?.instance_id || chat?.instance_id);
-      if (!isSupportedChat(chat)) return;
-      if (
-        !selectedInstance ||
-        chat.instance_id !== selectedInstance.id ||
-        message.instance_id !== selectedInstance.id
-      )
-        return;
-
-      const unifiedChat = whatsappChatToUnified({
-        ...chat,
-        last_message: normalizeMessagePreview(chat.last_message),
-      });
-      const unifiedMsg: UnifiedMessage = { ...message, platform: 'whatsapp' };
-
-      // Update chat list
-      setChats((prev) => {
-        const existing = prev.find((c) => c.id === chat.id);
-        const unreadCount =
-          selectedChat?.id === chat.id ? 0 : chat.unread_count;
-        if (existing) {
-          return sortUnifiedChats(
-            prev.map((c) =>
-              c.id === chat.id
-                ? {
-                    ...c,
-                    ...unifiedChat,
-                    last_message: normalizeMessagePreview(chat.last_message),
-                    last_message_at: chat.last_message_at,
-                    unread_count: unreadCount,
-                  }
-                : c
-            )
-          );
-        } else {
-          return sortUnifiedChats([
-            {
-              ...unifiedChat,
-              unread_count: unreadCount,
-              last_message: normalizeMessagePreview(chat.last_message),
-            },
-            ...prev,
-          ]);
-        }
-      });
-
-      // Add message to current conversation
-      if (selectedChat && message.chat_id === selectedChat.id) {
-        setMessages((prev) => {
-          // Avoid duplicates
-          if (prev.find((m) => m.message_id === message.message_id))
-            return prev;
-          return [...prev, unifiedMsg];
-        });
-
-        // Mark as read since chat is open
-        if (selectedInstance) {
-          chatApi
-            .markRead(selectedChat.id, selectedInstance.id)
-            .catch(() => {});
-        }
-      }
-    });
-
-    const unsubStatus = on('instance_status', (data: any) => {
-      if (data.status === 'connected') {
-        noteInstanceActivity(data.instance_id);
-      } else {
-        clearInstanceActivity(data.instance_id);
-      }
-      setInstances((prev) =>
-        prev.map((inst) =>
-          inst.id === data.instance_id
-            ? { ...inst, status: data.status, phone: data.phone || inst.phone }
-            : inst
-        )
-      );
-      // Update selected instance
-      if (selectedInstance?.id === data.instance_id) {
-        setSelectedInstance((prev) =>
-          prev
-            ? { ...prev, status: data.status, phone: data.phone || prev.phone }
-            : prev
-        );
-      }
-    });
-
-    const unsubQR = on('qr_code', (data: any) => {
-      setInstances((prev) =>
-        prev.map((inst) =>
-          inst.id === data.instance_id
-            ? { ...inst, qr_code: data.qr_code, status: 'qr_pending' }
-            : inst
-        )
-      );
-    });
-
-    const unsubHistoryImported = on('history_imported', (data: any) => {
-      if (!selectedInstance || data.instance_id !== selectedInstance.id) return;
-      noteInstanceActivity(data.instance_id);
-      setHistoryImportStats((prev) => ({
-        ...prev,
-        importedMessages: prev.importedMessages + Number(data.messages || 0),
-        importedChats: prev.importedChats + Number(data.chats || 0),
-      }));
-      toast.success(
-        `Histórico importado: ${data.messages || 0} mensagens em ${data.chats || 0} conversas.`
-      );
-      if (selectedInstance) loadChats(selectedInstance.id);
-      if (selectedChat?.instance_id === selectedInstance?.id) {
-        loadMessages(selectedChat.id, selectedInstance!.id, 'whatsapp');
-      }
-    });
-
-    const unsubMediaReady = on(
-      'media_ready',
-      (data: WhatsAppMediaStatusEvent) => {
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === data.message_id
-              ? {
-                  ...message,
-                  media_id: data.media_id || message.media_id,
-                  media_status: 'ready',
-                  media_url: data.url || message.media_url,
-                  media_error: undefined,
-                }
-              : message
-          )
-        );
-      }
-    );
-
-    const unsubMediaFailed = on(
-      'media_failed',
-      (data: WhatsAppMediaStatusEvent) => {
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === data.message_id
-              ? {
-                  ...message,
-                  media_id: data.media_id || message.media_id,
-                  media_status: 'failed',
-                  media_error: data.error || message.media_error,
-                }
-              : message
-          )
-        );
-      }
-    );
-
-    const unsubReceipt = on(
-      'message_receipt',
-      (data: WhatsAppMessageReceiptEvent) => {
-        noteInstanceActivity(data.instance_id);
-        if (!selectedInstance || data.instance_id !== selectedInstance.id)
-          return;
-        const ids = new Set(data.message_ids || []);
-        setMessages((prev) =>
-          prev.map((message) =>
-            ids.has(message.message_id)
-              ? { ...message, delivery_status: data.status }
-              : message
-          )
-        );
-      }
-    );
-
-    return () => {
-      unsubMessage();
-      unsubStatus();
-      unsubQR();
-      unsubHistoryImported();
-      unsubMediaReady();
-      unsubMediaFailed();
-      unsubReceipt();
-    };
-  }, [
-    clearInstanceActivity,
-    noteInstanceActivity,
-    on,
-    selectedChat,
-    selectedInstance,
-  ]);
-
-  const handleRecoverOrg = async () => {
-    setRecovering(true);
-    try {
-      const result = await accountApi.recoverOrg();
-      toast.success(result.message);
-      setTenantContextError('');
-      setLoading(true);
-      loadInstances();
-    } catch (err: any) {
-      if (err?.code === 'NO_ORG_FOUND') {
-        toast.error(
-          'Nenhuma organizacao encontrada para seu email. Crie uma conta em Onboarding.'
-        );
-      } else {
-        toast.error(err?.message || 'Erro ao recuperar organizacao.');
-      }
-    } finally {
-      setRecovering(false);
-    }
-  };
-
-  const loadInstances = async () => {
-    try {
-      const data = await instanceApi.list();
-      setInstances(data);
-      setServiceUnavailable(false);
-      setServiceError('');
-      setTenantContextError('');
-      setWebSocketEnabled(true);
-      if (data.length > 0 && !selectedInstance) {
-        const linkedInstance = deepLinkInstanceId
-          ? data.find((i) => i.id === deepLinkInstanceId)
-          : null;
-        const connected = data.find((i) => i.status === 'connected');
-        setSelectedInstance(linkedInstance || connected || data[0]);
-      }
-    } catch (err: any) {
-      if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
-        setServiceUnavailable(true);
-        setServiceError(err.message.replace('WHATSAPP_UNAVAILABLE: ', ''));
-        setTenantContextError('');
-        setWebSocketEnabled(false);
-      } else if (isTenantContextError(err)) {
-        setTenantContextError(
-          err.message || 'Organizacao nao identificada para acessar o WhatsApp.'
-        );
-        setWebSocketEnabled(false);
-      } else {
-        logger.error('Failed to load instances:', err);
-        if (err?.status === 403) {
-          toast.error(
-            err.message ||
-              'Sua conta não possui uma organização válida para o WhatsApp.'
-          );
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadChats = async (instanceId: string) => {
-    try {
-      const data = await chatApi.list(instanceId);
-      const normalizedChats = (data || []).filter(isSupportedChat).map((chat) =>
-        whatsappChatToUnified({
-          ...chat,
-          last_message: normalizeMessagePreview(chat.last_message),
-        })
-      );
-      setChats((prev) => {
-        const igChats = prev.filter((c) => c.platform === 'instagram');
-        return sortUnifiedChats([...normalizedChats, ...igChats]);
-      });
-      const linkedChat = normalizedChats.find(
-        (chat) =>
-          (deepLinkChatId && chat.id === deepLinkChatId) ||
-          (deepLinkChatJid && chat.chat_jid === deepLinkChatJid)
-      );
-      if (linkedChat) setSelectedChat(linkedChat);
-    } catch (err: any) {
-      if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
-        logger.error('Failed to load chats:', err);
-      }
-      setChats((prev) => prev.filter((c) => c.platform === 'instagram'));
-    }
-  };
-
-  const loadInstagramConversations = async () => {
-    try {
-      const result = await instagramApi.conversations.list();
-      const igChats = (result.data || []).map(instagramConversationToUnified);
-      setChats((prev) => {
-        const waChats = prev.filter((c) => c.platform === 'whatsapp');
-        return sortUnifiedChats([...waChats, ...igChats]);
-      });
-    } catch (err: any) {
-      logger.error('Failed to load Instagram conversations:', err);
-    }
-  };
-
-  const loadMessages = async (
-    chatId: string,
-    instanceId: string,
-    platform: 'whatsapp' | 'instagram' = 'whatsapp'
-  ) => {
-    setLoadingMessages(true);
-    try {
-      if (platform === 'instagram' && selectedChat?.instagram_conversation_id) {
-        const result = await instagramApi.messages.list(
-          selectedChat.instagram_conversation_id,
-          { limit: 100 }
-        );
-        const unifiedMessages = (result.data || []).map((msg) =>
-          instagramMessageToUnified(
-            msg,
-            selectedChat.instagram_conversation_id!
-          )
-        );
-        setMessages(unifiedMessages);
-      } else {
-        const data = await messageApi.list(chatId, instanceId, 100);
-        setMessages(
-          (data.messages || []).map((m) => ({
-            ...m,
-            platform: 'whatsapp' as const,
-          }))
-        );
-      }
-    } catch (err: any) {
-      if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
-        logger.error('Failed to load messages:', err);
-      }
-      setMessages([]);
-    } finally {
-      setLoadingMessages(false);
-    }
-  };
-
-  const handleSendMessage = useCallback(
-    async (content: string, file?: File) => {
-      if (!selectedChat) return;
-
-      try {
-        if (selectedChat.platform === 'instagram') {
-          const convId = selectedChat.instagram_conversation_id;
-          if (!convId) return;
-          let mediaUrl: string | undefined;
-          if (file) {
-            const uploadedUrl = await uploadFile(
-              file,
-              'imobzymsg',
-              'instagram'
-            );
-            if (!uploadedUrl) {
-              toast.error('Falha ao enviar midia para Instagram.');
-              return;
-            }
-            mediaUrl = uploadedUrl;
-          }
-          const result: any = await instagramApi.messages.send({
-            conversation_id: convId,
-            content,
-            message_type: file ? 'image' : 'text',
-            media_url: mediaUrl,
-          });
-          if (result?.data) {
-            const unifiedMsg = instagramMessageToUnified(result.data, convId);
-            appendSentMessage(unifiedMsg);
-          }
-          updateChatPreview(selectedChat.id, content);
-          toast.success('Mensagem enviada.');
-        } else if (selectedInstance) {
-          if (file) {
-            const result: any = await messageApi.sendMedia(
-              selectedChat.id,
-              selectedInstance.id,
-              file,
-              content
-            );
-            const unifiedMsg: UnifiedMessage = {
-              ...(result?.data || result),
-              platform: 'whatsapp',
-            };
-            appendSentMessage(unifiedMsg);
-            updateChatPreview(
-              selectedChat.id,
-              content || `[${resultTypeFromFile(file)}]`
-            );
-            if (result?.data?.media_status === 'failed') {
-              toast.error(
-                result?.data?.media_error ||
-                  'Midia enviada, mas nao foi salva no MinIO.'
-              );
-            } else {
-              toast.success('Midia enviada.');
-            }
-          } else {
-            const result: any = await messageApi.send(
-              selectedChat.id,
-              selectedInstance.id,
-              content
-            );
-            const unifiedMsg: UnifiedMessage = {
-              ...(result?.data || result),
-              platform: 'whatsapp',
-            };
-            appendSentMessage(unifiedMsg);
-            updateChatPreview(selectedChat.id, content);
-          }
-        }
-      } catch (err: any) {
-        logger.error('Failed to send message:', err);
-        toast.error(err?.message || 'Erro ao enviar mensagem.');
-        throw err;
-      }
-    },
-    [selectedChat, selectedInstance]
-  );
-
-  const handleSelectChat = (chat: UnifiedChat) => {
-    if (
-      chat.platform === 'whatsapp' &&
-      selectedInstance &&
-      chat.instance_id !== selectedInstance.id
-    )
-      return;
-    setSelectedChat(chat);
-    // Clear unread on selection
-    setChats((prev) =>
-      prev.map((c) => (c.id === chat.id ? { ...c, unread_count: 0 } : c))
-    );
-  };
-
-  const handleChatUpdated = (chat: UnifiedChat) => {
-    setSelectedChat(chat);
-    setChats((prev) =>
-      prev.map((c) => (c.id === chat.id ? { ...c, ...chat } : c))
-    );
-  };
-
-  const handleImportHistory = async () => {
-    if (!selectedInstance || importingHistory) return;
-
-    setImportingHistory(true);
-    setHistoryImportStats({
-      importedMessages: 0,
-      importedChats: 0,
-      requestedChats: 0,
-      elapsedSeconds: 0,
-      startedAt: Date.now(),
-    });
-    try {
-      const selectedPeriod =
-        HISTORY_PERIOD_OPTIONS.find(
-          (option) => option.value === historyPeriodDays
-        ) || HISTORY_PERIOD_OPTIONS[2];
-      const result = await instanceApi.importHistory(selectedInstance.id, {
-        chat_limit: selectedPeriod.chatLimit,
-        per_chat: selectedPeriod.perChat,
-        since_days: selectedPeriod.value,
-      });
-      setHistoryImportStats((prev) => ({
-        ...prev,
-        requestedChats: result.requested || 0,
-        importedMessages: result.imported_messages || prev.importedMessages,
-        importedChats: result.imported_chats || prev.importedChats,
-      }));
-      toast.success(result.message || 'Importação e análise iniciadas.');
-      await loadChats(selectedInstance.id);
-      await loadInstagramConversations();
-    } catch (err: any) {
-      logger.error('Failed to import WhatsApp history:', err);
-      toast.error(err?.message || 'Erro ao importar conversas.');
-    } finally {
-      setImportingHistory(false);
-    }
-  };
-
-  const handleHistoryPeriodChange = (value: number) => {
-    if (importingHistory) return;
-    setHistoryPeriodDays(value);
-  };
-
-  const getHistoryPeriodLabel = (value = historyPeriodDays) => {
-    return (
-      HISTORY_PERIOD_OPTIONS.find((option) => option.value === value)?.label ||
-      '60 dias'
-    );
-  };
-
-  const handleDeleteAllChats = async () => {
-    if (!selectedInstance || deletingChats) return;
-
-    const confirmed = window.confirm(
-      'Excluir todas as conversas desta instancia? Isso remove conversas individuais, grupos e mensagens importadas do banco. Depois voce pode importar tudo novamente.'
-    );
-    if (!confirmed) return;
-
-    setDeletingChats(true);
-    try {
-      const result = await chatApi.deleteAll(selectedInstance.id);
-      setSelectedChat(null);
-      setMessages([]);
-      setChats([]);
-      toast.success(
-        `Limpeza concluida: ${result.deleted_chats} chats e ${result.deleted_messages} mensagens removidos.`
-      );
-    } catch (err: any) {
-      logger.error('Failed to delete WhatsApp chats:', err);
-      toast.error(err?.message || 'Erro ao excluir conversas.');
-    } finally {
-      setDeletingChats(false);
-    }
-  };
-
-  const canImportHistory = Boolean(
-    visualSelectedInstance && visualSelectedInstance.status === 'connected'
-  );
-  const canDeleteChats = Boolean(selectedInstance);
-
-  const filteredChats = searchQuery
-    ? chats.filter(
-        (c) =>
-          c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (c.display_name || '')
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          (c.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (c.phone_display || '')
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          normalizeMessagePreview(c.last_message)
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          (c.instagram_contact_username || '')
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          (c.instagram_contact_full_name || '')
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())
-      )
-    : chats;
-
-  const appendSentMessage = (message?: UnifiedMessage) => {
-    if (!message) return;
-    setMessages((prev) =>
-      prev.some((item) => item.message_id === message.message_id)
-        ? prev
-        : [...prev, message]
-    );
-  };
-
-  const updateChatPreview = (chatId: string, preview: string) => {
-    setChats((prev) =>
-      prev
-        .map((chat) =>
-          chat.id === chatId
-            ? {
-                ...chat,
-                last_message: normalizeMessagePreview(preview),
-                last_message_at: new Date().toISOString(),
-              }
-            : chat
-        )
-        .sort((a, b) => {
-          const dateA = a.last_message_at
-            ? new Date(a.last_message_at).getTime()
-            : 0;
-          const dateB = b.last_message_at
-            ? new Date(b.last_message_at).getTime()
-            : 0;
-          return dateB - dateA;
-        })
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[600px]">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4" />
-          <p className="text-text-secondary">Carregando WhatsApp...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (serviceUnavailable) {
-    return (
-      <ServiceUnavailableScreen
-        serviceError={serviceError}
-        onRetry={() => {
-          setLoading(true);
-          setServiceUnavailable(false);
-          loadInstances();
-        }}
-      />
-    );
-  }
-
-  if (tenantContextError) {
-    return (
-      <TenantContextErrorScreen
-        tenantContextError={tenantContextError}
-        recovering={recovering}
-        onRetry={() => {
-          setLoading(true);
-          setTenantContextError('');
-          loadInstances();
-        }}
-        onRecover={handleRecoverOrg}
-      />
-    );
-  }
+export default function WhatsAppDashboard() {
+  const [activeChat, setActiveChat] = useState('c1');
 
   return (
-    <div
-      className={`wa-dashboard ${selectedChat ? 'wa-chat-open' : ''}`}
-      id="whatsapp-dashboard"
-    >
-      {/* Header Bar */}
-      <header className="wa-header">
-        <div className="wa-header-left">
-          <MessageSquare size={20} className="text-[#25D366]" />
-          <h1 className="wa-header-title">Mensagens</h1>
-          <span
-            className={`wa-status-dot ${isConnected ? 'online' : 'offline'}`}
-          />
-          <span className="wa-status-text">
-            {isConnected ? 'Realtime' : 'Offline'}
-          </span>
+    <div className="w-full h-[calc(100vh-2rem)] min-h-[800px] bg-slate-50 font-sans text-slate-800 flex flex-col animate-fade-in overflow-hidden -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 shrink-0">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Central de mensagens</h1>
+          <p className="text-sm text-slate-500 mt-1">Atenda WhatsApp, Instagram e leads em tempo real.</p>
         </div>
-
-        <div className="wa-header-right">
-          {/* Instance Selector */}
-          <div className="wa-instance-selector">
-            <Smartphone size={14} />
-            <select
-              value={selectedInstance?.id || ''}
-              onChange={(e) => {
-                const inst = instances.find((i) => i.id === e.target.value);
-                if (inst) {
-                  setSelectedInstance(inst);
-                  setSelectedChat(null);
-                }
-              }}
-              className="wa-instance-select"
-            >
-              {visualInstances.map((inst) => (
-                <option key={inst.id} value={inst.id}>
-                  {inst.name} {inst.status === 'connected' ? '🟢' : '🔴'}
-                </option>
-              ))}
-              {instances.length === 0 && (
-                <option value="">Nenhuma instância</option>
-              )}
-            </select>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 shadow-sm">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Realtime
           </div>
-
-          <div
-            className="wa-period-selector"
-            title="Periodo do historico a importar"
-          >
-            <Clock3 size={14} />
-            <select
-              value={historyPeriodDays}
-              onChange={(e) =>
-                handleHistoryPeriodChange(Number(e.target.value))
-              }
-              className="wa-period-select"
-              disabled={importingHistory}
-            >
-              {HISTORY_PERIOD_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 shadow-sm">
+            <MessageCircle size={14} className="text-emerald-500" /> WhatsApp conectado
           </div>
-
-          <button
-            onClick={handleImportHistory}
-            className="wa-import-btn"
-            disabled={!canImportHistory || importingHistory}
-            title="Importar conversas e organizar no CRM com IA"
-          >
-            {importingHistory ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <DownloadCloud size={16} />
-            )}
-            <span>Importar</span>
+          <button className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+            <RefreshCw size={16} /> Importar histórico
           </button>
-
-          {(importingHistory ||
-            historyImportStats.importedMessages > 0 ||
-            historyImportStats.requestedChats > 0) && (
-            <div className="wa-import-status" title="Progresso da importacao">
-              <span>{formatElapsed(historyImportStats.elapsedSeconds)}</span>
-              <strong>{historyImportStats.importedMessages}</strong>
-            </div>
-          )}
-
-          <button
-            onClick={() => setShowQueuesManager(true)}
-            className="wa-settings-btn"
-            title="Filas de Atendimento"
-          >
-            <GitMerge size={18} />
+          <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+            <Plus size={16} /> Nova conversa
           </button>
-          <button
-            onClick={() => setShowInstanceManager(true)}
-            className="wa-settings-btn"
-            title="Gerenciar Instâncias"
-          >
-            <Settings size={18} />
+          <button className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 relative shadow-sm ml-2">
+            <Bell size={20} />
+            <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 border-2 border-white rounded-full text-[8px] font-bold text-white flex items-center justify-center">3</span>
           </button>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="wa-main">
-        {/* Sidebar */}
-        <ChatSidebar
-          chats={filteredChats}
-          selectedChat={selectedChat}
-          onSelectChat={handleSelectChat}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onImportHistory={handleImportHistory}
-          importingHistory={importingHistory}
-          canImportHistory={canImportHistory}
-          historyPeriodDays={historyPeriodDays}
-          historyPeriodOptions={HISTORY_PERIOD_OPTIONS}
-          onHistoryPeriodChange={handleHistoryPeriodChange}
-          historyImportStats={historyImportStats}
-          historyPeriodLabel={getHistoryPeriodLabel()}
-          formatImportElapsed={formatElapsed}
-          onDeleteAllChats={handleDeleteAllChats}
-          deletingChats={deletingChats}
-          canDeleteChats={canDeleteChats}
-        />
-
-        {/* Chat Window */}
-        {selectedChat ? (
-          <ChatWindow
-            chat={selectedChat}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            loading={loadingMessages}
-            instanceName={selectedInstance?.name || ''}
-            instanceId={selectedInstance?.id || ''}
-            onChatUpdated={handleChatUpdated}
-            onBack={() => setSelectedChat(null)}
-          />
-        ) : (
-          <div className="wa-empty-workspace">
-            <div className="wa-empty-state">
-              <div className="wa-empty-icon">
-                <MessageSquare size={64} strokeWidth={1} />
-              </div>
-              <h2>Mensagens</h2>
-              <p>Selecione uma conversa para começar</p>
-              {visualSelectedInstance &&
-                visualSelectedInstance.status !== 'connected' && (
-                  <div className="wa-empty-warning">
-                    <WifiOff size={16} />
-                    <span>
-                      Instância desconectada. Vá em configurações para conectar.
-                    </span>
-                  </div>
-                )}
-            </div>
-
-            <aside className="wa-empty-contact-panel">
-              <div className="wa-contact-panel-head">
-                <span>Atendimento</span>
-              </div>
-              <div className="wa-empty-contact-body">
-                <div className="wa-empty-contact-avatar">
-                  <UserRound size={28} />
-                </div>
-                <h3>Card do lead</h3>
-                <p>
-                  Ao clicar em uma conversa, este painel mostra contato, CRM,
-                  tags, responsavel e acoes rapidas.
-                </p>
-              </div>
-              <div className="wa-empty-actions-preview">
-                <span>
-                  <UserRound size={15} /> Editar/vincular lead
-                </span>
-                <span>
-                  <ArrowRightLeft size={15} /> Transferir chat
-                </span>
-                <span>
-                  <Tag size={15} /> Criar tag
-                </span>
-                <span>
-                  <Clock3 size={15} /> Criar tarefa
-                </span>
-                <span>
-                  <ShieldCheck size={15} /> Prioridade
-                </span>
-              </div>
-            </aside>
-          </div>
-        )}
       </div>
 
-      {/* Instance Manager Modal */}
-      {showInstanceManager && (
-        <InstanceManager
-          instances={visualInstances}
-          statusOverrides={instanceStatusOverrides}
-          onClose={() => {
-            setShowInstanceManager(false);
-            loadInstances();
-          }}
-          onInstanceCreated={loadInstances}
-        />
-      )}
+      {/* Main Content (3 Columns) */}
+      <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
+        
+        {/* Left Column: Chat List */}
+        <div className="w-[340px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-hidden">
+          
+          <div className="p-4 border-b border-slate-100 space-y-4 shrink-0">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input type="text" placeholder="Buscar conversas, contatos ou imóveis..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
+              </div>
+              <button className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 shrink-0">
+                <Settings2 size={18} />
+              </button>
+            </div>
 
-      {showQueuesManager && (
-        <QueuesManagerModal onClose={() => setShowQueuesManager(false)} />
-      )}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              <button className="px-4 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-lg whitespace-nowrap">Todos</button>
+              <button className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><MessageCircle size={14} className="text-emerald-500" /> WhatsApp</button>
+              <button className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><Instagram size={14} className="text-pink-500" /> Instagram</button>
+              <button className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><Globe size={14} /> Site</button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">Minha fila <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">18</span></button>
+              <button className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">Sem responsável <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">6</span></button>
+              <button className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">SLA vencido <span className="bg-slate-700 text-white px-1.5 py-0.5 rounded-full">4</span></button>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              <div className="text-center bg-slate-50 rounded-lg p-2 border border-slate-100">
+                <p className="text-lg font-bold text-slate-900">128</p>
+                <p className="text-[9px] text-slate-500 uppercase font-medium">conversas</p>
+              </div>
+              <div className="text-center bg-slate-50 rounded-lg p-2 border border-slate-100">
+                <p className="text-lg font-bold text-slate-900">24</p>
+                <p className="text-[9px] text-slate-500 uppercase font-medium">abertas</p>
+              </div>
+              <div className="text-center bg-slate-50 rounded-lg p-2 border border-slate-100">
+                <p className="text-lg font-bold text-slate-900">7</p>
+                <p className="text-[9px] text-slate-500 uppercase font-medium">aguardando</p>
+              </div>
+              <div className="text-center bg-red-50 rounded-lg p-2 border border-red-100">
+                <p className="text-lg font-bold text-red-600">4</p>
+                <p className="text-[9px] text-red-600 uppercase font-bold">SLA vencido</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+            <span className="text-xs font-bold text-slate-500 flex items-center gap-1 cursor-pointer hover:text-slate-700">Ordenar: Mais recentes <ChevronDown size={14} /></span>
+            <Settings2 size={14} className="text-slate-400 cursor-pointer hover:text-slate-600" />
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            
+            {/* Chat Item 1 (Active) */}
+            <div className={`p-4 border-b border-slate-100 cursor-pointer transition-colors relative ${activeChat === 'c1' ? 'bg-emerald-50/50 border-l-4 border-l-emerald-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}`} onClick={() => setActiveChat('c1')}>
+              <div className="flex gap-3">
+                <div className="relative shrink-0">
+                  <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Marina" className="w-12 h-12 rounded-full object-cover" />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <MessageCircle size={12} className="text-emerald-500" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="font-bold text-slate-900 truncate">Marina Lopes</p>
+                    <span className="text-xs font-bold text-slate-500">11:42</span>
+                  </div>
+                  <p className="text-sm text-slate-600 truncate mb-2">Consegue me mandar opções no Centro?</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1.5">
+                      <span className="px-2 py-0.5 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded">Compra</span>
+                      <span className="px-2 py-0.5 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded">Centro</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-emerald-600">SLA 12min</span>
+                      <span className="w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">2</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Item 2 */}
+            <div className={`p-4 border-b border-slate-100 cursor-pointer transition-colors relative ${activeChat === 'c2' ? 'bg-emerald-50/50 border-l-4 border-l-emerald-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}`} onClick={() => setActiveChat('c2')}>
+              <div className="flex gap-3">
+                <div className="relative shrink-0">
+                  <img src="https://i.pravatar.cc/150?u=a042581f4e29026704e" alt="Paulo" className="w-12 h-12 rounded-full object-cover" />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <Globe size={12} className="text-blue-500" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="font-bold text-slate-900 truncate">Paulo Teste</p>
+                    <span className="text-xs font-bold text-slate-500">11:15</span>
+                  </div>
+                  <p className="text-sm text-slate-900 font-medium truncate mb-2">Tenho interesse no apartamento IMB-0248</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1.5">
+                      <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded">Quente</span>
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">Apartamento</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-red-600">SLA vencido</span>
+                      <AlertCircle size={16} className="text-red-500" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Item 3 */}
+            <div className={`p-4 border-b border-slate-100 cursor-pointer transition-colors relative ${activeChat === 'c3' ? 'bg-emerald-50/50 border-l-4 border-l-emerald-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}`} onClick={() => setActiveChat('c3')}>
+              <div className="flex gap-3">
+                <div className="relative shrink-0">
+                  <img src="https://i.pravatar.cc/150?u=a042581f4e29026704f" alt="André" className="w-12 h-12 rounded-full object-cover" />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <Instagram size={12} className="text-pink-500" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="font-bold text-slate-900 truncate">André Santos</p>
+                    <span className="text-xs font-bold text-slate-500">10:58</span>
+                  </div>
+                  <p className="text-sm text-slate-600 truncate mb-2">Qual o valor da entrada?</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1.5">
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">Financiamento</span>
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">Entrada</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-emerald-600">SLA 28min</span>
+                      <span className="w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">1</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Item 4 */}
+            <div className={`p-4 border-b border-slate-100 cursor-pointer transition-colors relative hover:bg-slate-50 border-l-4 border-l-transparent`}>
+              <div className="flex gap-3">
+                <div className="relative shrink-0">
+                  <img src="https://i.pravatar.cc/150?u=a042581f4e29026704g" alt="Camila" className="w-12 h-12 rounded-full object-cover" />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <Globe size={12} className="text-slate-500" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="font-bold text-slate-900 truncate">Camila Vieira</p>
+                    <span className="text-xs font-bold text-slate-500">10:31</span>
+                  </div>
+                  <p className="text-sm text-slate-600 truncate mb-2">Quero agendar visita amanhã</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1.5">
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">Visita</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-emerald-600">SLA 45min</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Item 5 */}
+            <div className={`p-4 border-b border-slate-100 cursor-pointer transition-colors relative hover:bg-slate-50 border-l-4 border-l-transparent`}>
+              <div className="flex gap-3">
+                <div className="relative shrink-0">
+                  <img src="https://i.pravatar.cc/150?u=a042581f4e29026704h" alt="Roberto" className="w-12 h-12 rounded-full object-cover" />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <MessageCircle size={12} className="text-emerald-500" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="font-bold text-slate-900 truncate">Roberto Lima</p>
+                    <span className="text-xs font-bold text-slate-500">09:47</span>
+                  </div>
+                  <p className="text-sm text-slate-900 font-medium truncate mb-2">Pode falar com minha esposa também?</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1.5">
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">Compra</span>
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">Família</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-emerald-600">SLA 32min</span>
+                      <span className="w-5 h-5 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">1</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button className="w-full py-4 text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-slate-50 border-t border-slate-100">
+              Ver todas as conversas
+            </button>
+          </div>
+        </div>
+
+        {/* Middle Column: Chat Window */}
+        <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm min-w-0 relative">
+          
+          {/* Chat Header */}
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-4">
+              <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Marina" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-slate-900">Marina Lopes</h2>
+                  <Star size={16} className="text-amber-400 fill-amber-400" />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
+                  <MessageCircle size={14} className="text-emerald-500" />
+                  <span>WhatsApp • +55 11 98765-4321</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-8">
+              <div className="hidden lg:block">
+                <p className="text-xs font-medium text-slate-400 mb-1">Lead</p>
+                <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C12 2 7 7.5 7 12C7 14.7614 9.23858 17 12 17C14.7614 17 17 14.7614 17 12C17 7.5 12 2 12 2Z"/></svg>
+                  </div>
+                  Compradora quente
+                </div>
+              </div>
+              <div className="hidden xl:block">
+                <p className="text-xs font-medium text-slate-400 mb-1">Responsável</p>
+                <div className="flex items-center gap-2">
+                  <img src="https://i.pravatar.cc/150?u=a042581f4e29026704i" alt="Juliana" className="w-6 h-6 rounded-full" />
+                  <span className="text-sm font-bold text-slate-700 flex items-center gap-1">Juliana Gomes <ChevronDown size={14} className="text-slate-400" /></span>
+                </div>
+              </div>
+              <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+                <MoreVertical size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Interest Sub-header */}
+          <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500 shadow-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Interesse principal</p>
+                <p className="text-sm font-bold text-slate-700">Apto 3 dorm • Centro • até R$ 850 mil</p>
+              </div>
+            </div>
+            <button className="p-1.5 text-slate-400 hover:text-slate-600 bg-white border border-slate-200 rounded shadow-sm">
+              <Edit2 size={12} />
+            </button>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar bg-[#f8fafc] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+            
+            <div className="flex justify-center">
+              <span className="px-3 py-1 bg-white border border-slate-200 text-xs font-bold text-slate-500 rounded-full shadow-sm">Hoje</span>
+            </div>
+
+            {/* Left Message */}
+            <div className="flex flex-col gap-1 items-start">
+              <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm max-w-[80%]">
+                <p className="text-[15px] text-slate-800">Olá! Tudo bem?</p>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 ml-1">11:32</span>
+            </div>
+            
+            <div className="flex flex-col gap-1 items-start mt-2">
+              <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm max-w-[80%]">
+                <p className="text-[15px] text-slate-800">Consegue me mandar opções no Centro?</p>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 ml-1">11:32</span>
+            </div>
+
+            {/* Right Message */}
+            <div className="flex flex-col gap-1 items-end">
+              <div className="bg-[#dcf8c6] border border-[#c5e6ad] rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-sm max-w-[80%] relative">
+                <p className="text-[15px] text-slate-800 whitespace-pre-line">
+                  Claro, Marina! Tenho ótimas opções na região 🤩{'\n'}
+                  Qual faixa de valor você está buscando?
+                </p>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 mr-1 flex items-center gap-1">11:34 <CheckCircle2 size={12} className="text-blue-500" /></span>
+            </div>
+
+            {/* Left Message */}
+            <div className="flex flex-col gap-1 items-start">
+              <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm max-w-[80%]">
+                <p className="text-[15px] text-slate-800">Até R$ 850 mil, de preferência com 3 quartos ou mais e vaga.</p>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 ml-1">11:36</span>
+            </div>
+
+            {/* Right Message (Rich Card) */}
+            <div className="flex flex-col gap-1 items-end">
+              <div className="bg-[#dcf8c6] border border-[#c5e6ad] rounded-2xl rounded-tr-sm p-3 shadow-sm max-w-[320px]">
+                <p className="text-[15px] text-slate-800 mb-3 px-1">Perfeito! Separei uma opção que combina com o que você busca. Dá uma olhada:</p>
+                <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm mb-2">
+                  <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Apartamento" className="w-full h-32 object-cover" />
+                  <div className="p-3">
+                    <h4 className="font-bold text-slate-900 text-sm">Apartamento 3 suítes - Centro</h4>
+                    <p className="text-xs text-slate-500 mt-1">105 m² • 3 suítes • 2 vagas</p>
+                    <p className="text-base font-bold text-slate-900 mt-2">R$ 850.000</p>
+                  </div>
+                  <button className="w-full py-2 bg-emerald-600 text-white text-xs font-bold transition-colors hover:bg-emerald-700">Enviar detalhes</button>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 mr-1 flex items-center gap-1">11:37 <CheckCircle2 size={12} className="text-blue-500" /></span>
+            </div>
+
+            {/* Left Message */}
+            <div className="flex flex-col gap-1 items-start">
+              <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm max-w-[80%]">
+                <p className="text-[15px] text-slate-800">Nossa, parece perfeito! Pode me enviar mais fotos?</p>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 ml-1">11:38</span>
+            </div>
+
+          </div>
+
+          {/* Quick Actions Suggestions */}
+          <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 backdrop-blur-sm">
+            <button className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Enviar opções
+            </button>
+            <button className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Simular financiamento
+            </button>
+            <button className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+              <Calendar size={12} /> Agendar visita
+            </button>
+            <button className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+              <FileText size={12} /> Pedir documentos
+            </button>
+          </div>
+
+          {/* Input Area */}
+          <div className="p-4 bg-white border-t border-slate-200 shrink-0">
+            <div className="border border-slate-300 rounded-xl bg-white shadow-sm focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500 transition-all">
+              <textarea 
+                placeholder="Digite uma mensagem ou use / para templates..."
+                className="w-full max-h-32 min-h-[48px] p-3 text-sm text-slate-700 outline-none resize-none bg-transparent"
+                rows={1}
+              />
+              <div className="flex items-center justify-between px-3 pb-3">
+                <div className="flex items-center gap-1">
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Paperclip size={18} /></button>
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><ImageIcon size={18} /></button>
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Mic size={18} /></button>
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><FileText size={18} /></button>
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Type size={18} /></button>
+                  <div className="w-px h-5 bg-slate-200 mx-1" />
+                  <button className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors flex items-center gap-1"><Sparkles size={16} /> <span className="text-xs font-bold">IA</span></button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"><Smile size={20} /></button>
+                  <button className="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center transition-colors shadow-md shadow-emerald-600/20">
+                    <Send size={18} className="ml-1" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Lead Details Sidebar */}
+        <div className="w-[320px] xl:w-[360px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-y-auto custom-scrollbar hidden lg:flex">
+          
+          {/* Section: Dados do lead */}
+          <div className="p-4 border-b border-slate-100">
+            <div className="flex items-center justify-between mb-4 cursor-pointer group">
+              <h3 className="font-bold text-slate-900 flex items-center gap-2"><div className="w-4 h-4 rounded-full border-2 border-slate-300" /> Dados do lead</h3>
+              <ChevronDown size={16} className="text-slate-400 group-hover:text-slate-600" />
+            </div>
+            
+            <div className="flex flex-col items-center text-center mb-5">
+              <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Marina" className="w-20 h-20 rounded-full object-cover mb-3 shadow-sm border-2 border-white" />
+              <h2 className="text-lg font-bold text-slate-900 mb-1">Marina Lopes</h2>
+              
+              <div className="space-y-1.5 mt-3 w-full text-left bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-2 text-sm text-slate-600"><MessageCircle size={14} className="text-emerald-500" /> +55 11 98765-4321</div>
+                <div className="flex items-center gap-2 text-sm text-slate-600"><Mail size={14} className="text-slate-400" /> marina.lopes@email.com</div>
+                <div className="flex items-center gap-2 text-sm text-slate-600"><MapPin size={14} className="text-slate-400" /> São Paulo • SP</div>
+              </div>
+            </div>
+
+            <button className="w-full py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors shadow-sm">
+              Ver no CRM
+            </button>
+          </div>
+
+          {/* Section: Funil & Score */}
+          <div className="p-4 border-b border-slate-100 grid grid-cols-3 gap-3">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Funil</p>
+              <p className="text-sm font-bold text-emerald-600">Negociação</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Temperatura</p>
+              <p className="text-sm font-bold text-orange-600 flex items-center gap-1"><Flame size={14} /> Quente <span className="text-slate-700 ml-0.5">78</span></p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Score</p>
+              <p className="text-xs font-bold text-emerald-700 bg-emerald-50 py-1 px-2 rounded w-max border border-emerald-100">78 pontos</p>
+            </div>
+          </div>
+
+          {/* Section: Tags */}
+          <div className="p-4 border-b border-slate-100">
+            <p className="text-xs font-bold text-slate-400 mb-3">Tags</p>
+            <div className="flex flex-wrap gap-2">
+              <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-md border border-slate-200">Compra</span>
+              <span className="px-2.5 py-1 bg-[#dcfce7] text-[#166534] text-xs font-bold rounded-md border border-[#bbf7d0]">Centro</span>
+              <span className="px-2.5 py-1 bg-[#fef9c3] text-[#854d0e] text-xs font-bold rounded-md border border-[#fef08a]">3 quartos+</span>
+              <button className="w-6 h-6 flex items-center justify-center bg-white border border-slate-300 text-slate-400 rounded-md hover:bg-slate-50"><Plus size={14} /></button>
+            </div>
+          </div>
+
+          {/* Section: Próxima ação */}
+          <div className="p-4 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2 mb-3"><Calendar size={14} /> Próxima ação</h3>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-800">Responder opções de imóveis</p>
+                <p className="text-xs text-slate-500 mt-0.5">Hoje até 12:00</p>
+              </div>
+              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded border border-emerald-100">Em andamento</span>
+            </div>
+          </div>
+
+          {/* Section: Imóvel de interesse */}
+          <div className="p-4 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2 mb-3"><Globe size={14} /> Imóvel de interesse</h3>
+            <div className="flex items-center gap-3">
+              <img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80" alt="Building" className="w-12 h-12 rounded-lg object-cover border border-slate-200" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-slate-800">Apto 3 dorm • Centro</p>
+                <p className="text-xs text-slate-500">Até R$ 850 mil</p>
+              </div>
+              <button className="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-md hover:bg-slate-100">Ver imóveis</button>
+            </div>
+          </div>
+
+          {/* Section: Tarefas */}
+          <div className="p-4 border-b border-slate-100">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2"><CheckCircle2 size={14} /> Tarefas (1)</h3>
+              <button className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700">Ver todas</button>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 w-4 h-4 rounded border border-slate-300 bg-white" />
+              <div className="flex-1">
+                <p className="text-sm text-slate-700 font-medium">Enviar proposta financeira</p>
+              </div>
+              <span className="text-[10px] font-bold text-orange-600">Hoje • 15:00</span>
+            </div>
+          </div>
+
+          {/* Section: Ações rápidas */}
+          <div className="p-4 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2 mb-3"><Settings2 size={14} /> Ações rápidas</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
+                <CheckCircle2 size={14} className="text-slate-400" /> Criar tarefa
+              </button>
+              <button className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
+                <Calendar size={14} className="text-slate-400" /> Agendar visita
+              </button>
+              <button className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
+                <Mail size={14} className="text-slate-400" /> Enviar imóvel
+              </button>
+              <button className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
+                <Globe size={14} className="text-slate-400" /> Transferir atendimento
+              </button>
+            </div>
+          </div>
+
+          {/* Section: IA Insight */}
+          <div className="p-4 m-4 mt-0 bg-emerald-50 border border-emerald-100 rounded-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Sparkles size={48} className="text-emerald-600" />
+            </div>
+            <h3 className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 mb-2 relative z-10"><Sparkles size={14} className="text-emerald-600" /> IA - Insight</h3>
+            <p className="text-xs text-emerald-900 mb-3 relative z-10 leading-relaxed">Lead perguntou sobre financiamento. Sugira simulação e 3 imóveis compatíveis.</p>
+            <button className="w-full py-1.5 bg-white border border-emerald-200 text-emerald-700 text-xs font-bold rounded-lg shadow-sm hover:bg-emerald-100 relative z-10 transition-colors">
+              Aplicar sugestão
+            </button>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   );
-};
-
-export default WhatsAppDashboard;
+}

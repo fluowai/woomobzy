@@ -217,12 +217,6 @@ export const SettingsProvider: React.FC<{
         payload.id = idToUse;
       }
 
-      // AUDIT FIX: Always include organization_id to prevent orphan records
-      const activeOrgId = propsOrgId || profileOrgId || platformTenant?.id;
-      if (activeOrgId) {
-        payload.organization_id = activeOrgId;
-      }
-
       const response = await callApi('/api/settings', {
         method: 'PUT',
         body: JSON.stringify(payload),

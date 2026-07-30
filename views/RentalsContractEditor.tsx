@@ -96,7 +96,7 @@ locador_nome, locador_cpf, locador_telefone, locador_email, locatario_nome, loca
 Pedido do usuário: "${userText}"
 `;
 
-      const response = await callApi('api/wootechAi/chat', {
+      const response = await callApi('api/wootech-ai/chat', {
         method: 'POST',
         body: JSON.stringify({
           model: 'auto/wootech',

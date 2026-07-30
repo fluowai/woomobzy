@@ -39,7 +39,7 @@ import aiRoutes from './api/ai/index.js';
 import storageRoutes from './api/storage/index.js';
 import demoRoutes from './api/demo/index.js';
 import fluowaiMigrationRoutes from './api/fluowai-migration/index.js';
-import whatsappRoutes, { setupWhatsAppProxy } from './api/whatsapp/index.js';
+import { setupWhatsAppProxy } from './api/whatsapp/index.js';
 import emailRoutes from './api/email/index.js';
 import siteRoutes from './api/sites/index.js';
 import oruloRoutes from './api/orulo/index.js';
@@ -67,8 +67,6 @@ import {
 } from './lib/platform-config.js';
 import {
   sendWelcomeLimiter,
-  publicLeadLimiter,
-  quizLimiter,
 } from './middleware/rateLimit.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -367,8 +365,6 @@ app.use(
 );
 app.use('/api/campaigns', verifyAuth, requireTenant, campaignRoutes);
 app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
-// app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
-
 // Tenant Resolution
 
 app.get('/api/tenant/resolve', (req, res) => tenantHandler(req, res));
@@ -499,7 +495,7 @@ app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
 setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
 
 // 7. TRATAMENTO GLOBAL DE ERROS (deve vir antes do 404 catch-all)
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const isDev = process.env.NODE_ENV !== 'production';
   console.error('GLOBAL ERROR:', isDev ? err : err.message);
 

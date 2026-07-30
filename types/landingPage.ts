@@ -8,6 +8,7 @@ import {
   PropertyPurpose,
   PropertyStatus,
 } from '../types';
+import { DevelopmentSelectionConfig } from './site';
 
 // ============================================
 // ENUMS
@@ -483,6 +484,7 @@ export interface LandingPage {
 
   // Imóveis
   propertySelection: PropertySelectionConfig;
+  developmentSelection?: DevelopmentSelectionConfig;
 
   // Formulário
   formConfig: LandingPageFormConfig;

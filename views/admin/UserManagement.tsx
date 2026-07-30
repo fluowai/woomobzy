@@ -76,24 +76,20 @@ const UserManagement: React.FC = () => {
         .select('*, full_name:name')
         .order('created_at', { ascending: false });
 
-      // Filtragem por Organização (Privacidade)
-      if (profile?.role !== 'superadmin') {
-        if (profile?.organization_id) {
-          query = query.eq('organization_id', profile.organization_id);
-          // Ocultar membros que são superadmins ou donos do sistema
-          query = query.neq('role', 'superadmin');
-          query = query.not(
-            'email',
-            'in',
-            '("admin@imobzy.com","fluowai@gmail.com")'
-          );
-        } else {
-          // Segurança máxima: se não tem org_id, só vê a si mesmo
-          query = query.eq('id', profile?.id);
-        }
+      // Sempre ocultar superadmins (mega admin, super admin) e contas do sistema
+      query = query.neq('role', 'superadmin');
+      query = query.not(
+        'email',
+        'in',
+        '("admin@imobzy.com","fluowai@gmail.com")'
+      );
+
+      // Isolamento total por organização: usuário só vê usuários da própria organização
+      if (profile?.organization_id) {
+        query = query.eq('organization_id', profile.organization_id);
       } else {
-        // Superadmin vê tudo, mas talvez queira filtrar por org se estiver simulando
-        // (Isso pode ser expandido depois)
+        // Segurança máxima: se não tem org_id, só vê a si mesmo
+        query = query.eq('id', profile?.id);
       }
 
       const { data, error } = await query;

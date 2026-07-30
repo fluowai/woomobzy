@@ -1,11 +1,35 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Loader2, User, Sparkles, PlusCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Bot, Send, Loader2, User, Sparkles, PlusCircle, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+}
+
+const MODELS = [
+  { value: 'wootech-1', label: 'WooTech AI 1', desc: 'Rápido e versátil (padrão)' },
+  { value: 'wootech-2', label: 'WooTech AI 2', desc: 'Criativo e analítico' },
+  { value: 'wootech-3', label: 'WooTech AI 3', desc: 'Premium e robusto' },
+] as const;
+
+const STORAGE_KEY = 'wootech_ai_model';
+
+function getStoredModel(): string {
+  try {
+    return localStorage.getItem(STORAGE_KEY) || 'wootech-1';
+  } catch {
+    return 'wootech-1';
+  }
+}
+
+function storeModel(value: string) {
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    logger.warn('[WooTechAI] Falha ao persistir preferência de modelo');
+  }
 }
 
 const WooTechAI: React.FC = () => {
@@ -18,7 +42,10 @@ const WooTechAI: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(getStoredModel);
+  const [modelOpen, setModelOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -27,6 +54,18 @@ const WooTechAI: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setModelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const currentModel = MODELS.find((m) => m.value === selectedModel) || MODELS[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +89,7 @@ const WooTechAI: React.FC = () => {
         },
         body: JSON.stringify({
           messages: [...messages, { role: 'user', content: userMessage }],
-          model: 'auto/wootech',
+          model: selectedModel,
           stream: false,
         }),
       });
@@ -89,6 +128,12 @@ const WooTechAI: React.FC = () => {
     ]);
   };
 
+  const handleModelSelect = useCallback((value: string) => {
+    setSelectedModel(value);
+    storeModel(value);
+    setModelOpen(false);
+  }, []);
+
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-sm border border-slate-200/60 bg-white">
       {/* Header */}
@@ -99,9 +144,35 @@ const WooTechAI: React.FC = () => {
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight">WooTech AI</h1>
-            <p className="text-xs text-slate-300 font-medium">
-              Assistente Inteligente Avançado
-            </p>
+            <div className="relative" ref={modelRef}>
+              <button
+                onClick={() => setModelOpen((v) => !v)}
+                className="flex items-center gap-1 text-xs text-slate-300 font-medium hover:text-white transition-colors"
+              >
+                {currentModel.label}
+                <ChevronDown size={12} />
+              </button>
+              {modelOpen && (
+                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-50">
+                  {MODELS.map((m) => (
+                    <button
+                      key={m.value}
+                      onClick={() => handleModelSelect(m.value)}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        m.value === selectedModel
+                          ? 'bg-blue-50 text-blue-700 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="font-medium">{m.label}</div>
+                      <div className="text-[11px] text-slate-400 font-normal">
+                        {m.desc}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <button
@@ -193,8 +264,7 @@ const WooTechAI: React.FC = () => {
           </button>
         </form>
         <p className="text-center text-[11px] text-slate-400 mt-3">
-          WooTech AI utiliza roteamento inteligente gratuito via OmniRoute. O
-          conteúdo gerado deve ser revisado.
+          O conteúdo gerado deve ser revisado antes da publicação.
         </p>
       </div>
     </div>

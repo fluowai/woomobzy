@@ -3,61 +3,49 @@ import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
-async function tryOmniRoute(messages, model) {
-  const gatewayUrl =
-    process.env.AI_GATEWAY_URL || 'http://omniroute:20128/v1';
-  const apiKey = process.env.OMNIROUTE_API_KEY || 'dummy';
+const PROVIDERS = {
+  groq: {
+    id: 'groq',
+    label: 'WooTech AI 1',
+    model: 'llama-3.3-70b-versatile',
+    key: () => process.env.GROQ_API_KEY,
+    keyName: 'GROQ_API_KEY',
+  },
+  gemini: {
+    id: 'gemini',
+    label: 'WooTech AI 2',
+    model: 'gemini-2.0-flash',
+    key: () => (process.env.GEMINI_API_KEY || '').trim(),
+    keyName: 'GEMINI_API_KEY',
+  },
+  chatgpt: {
+    id: 'chatgpt',
+    label: 'WooTech AI 3',
+    model: 'gpt-4o-mini',
+    key: () => (process.env.OPENAI_API_KEY || '').trim(),
+    keyName: 'OPENAI_API_KEY',
+  },
+};
 
-  logger.info(`[WooTechAI] Trying OmniRoute at ${gatewayUrl}/chat/completions`);
+const FALLBACK_ORDER = ['groq', 'gemini', 'chatgpt'];
 
-  const response = await fetch(`${gatewayUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({ model, messages, stream: false }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OmniRoute ${response.status}: ${errorText.substring(0, 300)}`);
-  }
-
-  return response.json();
+function isKeyValid(key, keyName) {
+  if (!key) return false;
+  if (key.includes(`YOUR_${keyName}`)) return false;
+  if (key.includes('sk-mock-') || key.includes('mock-key')) return false;
+  if (key === 'dummy') return false;
+  if (key.length < 8) return false;
+  return true;
 }
 
-async function tryPollinations(messages) {
-  logger.info('[WooTechAI] Trying Pollinations fallback');
-
-  const response = await fetch(
-    'https://text.pollinations.ai/openai/chat/completions',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'mistral',
-        messages,
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Pollinations ${response.status}: ${errorText.substring(0, 300)}`);
+async function tryGroq(messages, provider) {
+  const apiKey = provider.key();
+  if (!isKeyValid(apiKey, provider.keyName)) {
+    throw new Error(`${provider.label}: API key não configurada`);
   }
 
-  return response.json();
-}
-
-async function tryOpenRouter(messages) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error('OpenRouter: no API key configured');
-
-  logger.info('[WooTechAI] Trying OpenRouter fallback');
-
   const response = await fetch(
-    'https://openrouter.ai/api/v1/chat/completions',
+    'https://api.groq.com/openai/v1/chat/completions',
     {
       method: 'POST',
       headers: {
@@ -65,27 +53,28 @@ async function tryOpenRouter(messages) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct',
+        model: provider.model,
         messages,
+        stream: false,
       }),
     }
   );
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`OpenRouter ${response.status}: ${errorText.substring(0, 300)}`);
+    throw new Error(
+      `${provider.label} ${response.status}: ${errorText.substring(0, 300)}`
+    );
   }
 
   return response.json();
 }
 
-async function tryGemini(messages) {
-  const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-  if (!geminiKey || geminiKey.includes('YOUR_') || geminiKey.length < 20) {
-    throw new Error('Gemini: no valid API key configured');
+async function tryGemini(messages, provider) {
+  const apiKey = provider.key();
+  if (!isKeyValid(apiKey, provider.keyName)) {
+    throw new Error(`${provider.label}: API key não configurada`);
   }
-
-  logger.info('[WooTechAI] Trying Gemini fallback');
 
   const geminiContents = messages.map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -93,7 +82,7 @@ async function tryGemini(messages) {
   }));
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -103,11 +92,14 @@ async function tryGemini(messages) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Gemini ${response.status}: ${errorText.substring(0, 300)}`);
+    throw new Error(
+      `${provider.label} ${response.status}: ${errorText.substring(0, 300)}`
+    );
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const text =
+    data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
   return {
     choices: [
@@ -119,41 +111,109 @@ async function tryGemini(messages) {
   };
 }
 
+async function tryChatGPT(messages, provider) {
+  const apiKey = provider.key();
+  if (!isKeyValid(apiKey, provider.keyName)) {
+    throw new Error(`${provider.label}: API key não configurada`);
+  }
+
+  const response = await fetch(
+    'https://api.openai.com/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        messages,
+        stream: false,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `${provider.label} ${response.status}: ${errorText.substring(0, 300)}`
+    );
+  }
+
+  return response.json();
+}
+
+const PROVIDER_FN = {
+  groq: tryGroq,
+  gemini: tryGemini,
+  chatgpt: tryChatGPT,
+};
+
+function resolveProvider(model) {
+  if (!model || model === 'auto/wootech') return PROVIDERS.groq;
+
+  if (model === 'wootech-1') return PROVIDERS.groq;
+  if (model === 'wootech-2') return PROVIDERS.gemini;
+  if (model === 'wootech-3') return PROVIDERS.chatgpt;
+
+  const found = Object.values(PROVIDERS).find(
+    (p) => p.id === model || p.label === model
+  );
+  return found || PROVIDERS.groq;
+}
+
 router.post('/chat', async (req, res) => {
   try {
-    const { messages, model = 'auto/wootech', stream = false } = req.body;
+    const { messages, model = 'wootech-1', stream = false } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Messages array is required' });
     }
 
     if (stream) {
-      return res.status(400).json({ error: 'Streaming not supported via fallback' });
+      return res
+        .status(400)
+        .json({ error: 'Streaming not supported via fallback' });
     }
 
-    // Try OmniRoute first
+    const primary = resolveProvider(model);
+    const triedProviders = [primary.id];
+
     try {
-      const data = await tryOmniRoute(messages, model);
+      const fn = PROVIDER_FN[primary.id];
+      const data = await fn(messages, primary);
+      logger.info(
+        `[WooTechAI] ${primary.label} respondeu com sucesso`
+      );
       return res.json(data);
-    } catch (gatewayError) {
-      logger.warn(`[WooTechAI] OmniRoute failed: ${gatewayError.message}`);
+    } catch (primaryError) {
+      logger.warn(
+        `[WooTechAI] ${primary.label} falhou: ${primaryError.message}`
+      );
     }
 
-    // Fallback providers (OpenAI-compatible first)
     const errors = [];
-    for (const attempt of [tryPollinations, tryOpenRouter, tryGemini]) {
+    for (const fallbackId of FALLBACK_ORDER) {
+      if (triedProviders.includes(fallbackId)) continue;
+      triedProviders.push(fallbackId);
+
+      const provider = PROVIDERS[fallbackId];
+      const fn = PROVIDER_FN[fallbackId];
+
       try {
-        const data = await attempt(messages);
-        logger.info(`[WooTechAI] Fallback ${attempt.name} succeeded`);
+        const data = await fn(messages, provider);
+        logger.info(`[WooTechAI] ${provider.label} respondeu (fallback)`);
         return res.json(data);
       } catch (providerError) {
         errors.push(providerError.message);
-        logger.warn(`[WooTechAI] ${attempt.name} failed: ${providerError.message}`);
+        logger.warn(
+          `[WooTechAI] ${provider.label} falhou: ${providerError.message}`
+        );
       }
     }
 
     return res.status(503).json({
-      error: 'Todos os provedores de IA estao indisponiveis.',
+      error: 'Nenhum provedor de IA disponível no momento.',
       details: errors,
     });
   } catch (error) {

@@ -75,7 +75,7 @@ export default function GestaoDocumentos() {
     setUploading(true);
     const fileUrl = await uploadFile(
       file,
-      'imobzyimg',
+      'documents',
       `urban-documents/${profile.organization_id}`
     );
     if (fileUrl) {

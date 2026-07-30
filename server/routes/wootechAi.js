@@ -3,44 +3,50 @@ import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
-const PROVIDERS = {
-  groq: {
-    id: 'groq',
-    label: 'WooTech AI 1',
-    model: 'llama-3.3-70b-versatile',
-    key: () => process.env.GROQ_API_KEY,
-    keyName: 'GROQ_API_KEY',
-  },
-  gemini: {
-    id: 'gemini',
-    label: 'WooTech AI 2',
-    model: 'gemini-2.0-flash',
-    key: () => (process.env.GEMINI_API_KEY || '').trim(),
-    keyName: 'GEMINI_API_KEY',
-  },
-  chatgpt: {
-    id: 'chatgpt',
-    label: 'WooTech AI 3',
-    model: 'gpt-4o-mini',
-    key: () => (process.env.OPENAI_API_KEY || '').trim(),
-    keyName: 'OPENAI_API_KEY',
-  },
+const PROVIDER_DEFS = {
+  groq: { id: 'groq', label: 'Groq', model: 'llama-3.3-70b-versatile', envKey: 'GROQ_API_KEY' },
+  gemini: { id: 'gemini', label: 'Gemini', model: 'gemini-2.0-flash', envKey: 'GEMINI_API_KEY' },
+  chatgpt: { id: 'chatgpt', label: 'ChatGPT', model: 'gpt-4o-mini', envKey: 'OPENAI_API_KEY' },
 };
 
 const FALLBACK_ORDER = ['groq', 'gemini', 'chatgpt'];
 
-function isKeyValid(key, keyName) {
+function isKeyValid(key) {
   if (!key) return false;
-  if (key.includes(`YOUR_${keyName}`)) return false;
   if (key.includes('sk-mock-') || key.includes('mock-key')) return false;
   if (key === 'dummy') return false;
   if (key.length < 8) return false;
   return true;
 }
 
+function resolveProvider(model, apiKeys = {}) {
+  const defs = {
+    groq: { ...PROVIDER_DEFS.groq },
+    gemini: { ...PROVIDER_DEFS.gemini },
+    chatgpt: { ...PROVIDER_DEFS.chatgpt },
+  };
+
+  for (const [id, def] of Object.entries(defs)) {
+    const key = apiKeys[id] || process.env[def.envKey] || '';
+    def.key = typeof key === 'string' ? key.trim() : '';
+  }
+
+  let selected;
+  if (!model || model === 'auto/wootech' || model === 'wootech-1') {
+    selected = defs.groq;
+  } else if (model === 'wootech-2') {
+    selected = defs.gemini;
+  } else if (model === 'wootech-3') {
+    selected = defs.chatgpt;
+  } else {
+    selected = Object.values(defs).find((d) => d.id === model || d.label === model) || defs.groq;
+  }
+
+  return { selected, all: defs };
+}
+
 async function tryGroq(messages, provider) {
-  const apiKey = provider.key();
-  if (!isKeyValid(apiKey, provider.keyName)) {
+  if (!isKeyValid(provider.key)) {
     throw new Error(`${provider.label}: API key não configurada`);
   }
 
@@ -50,7 +56,7 @@ async function tryGroq(messages, provider) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${provider.key}`,
       },
       body: JSON.stringify({
         model: provider.model,
@@ -71,8 +77,7 @@ async function tryGroq(messages, provider) {
 }
 
 async function tryGemini(messages, provider) {
-  const apiKey = provider.key();
-  if (!isKeyValid(apiKey, provider.keyName)) {
+  if (!isKeyValid(provider.key)) {
     throw new Error(`${provider.label}: API key não configurada`);
   }
 
@@ -82,7 +87,7 @@ async function tryGemini(messages, provider) {
   }));
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${provider.key}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -98,22 +103,15 @@ async function tryGemini(messages, provider) {
   }
 
   const data = await response.json();
-  const text =
-    data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
   return {
-    choices: [
-      {
-        message: { role: 'assistant', content: text },
-        index: 0,
-      },
-    ],
+    choices: [{ message: { role: 'assistant', content: text }, index: 0 }],
   };
 }
 
 async function tryChatGPT(messages, provider) {
-  const apiKey = provider.key();
-  if (!isKeyValid(apiKey, provider.keyName)) {
+  if (!isKeyValid(provider.key)) {
     throw new Error(`${provider.label}: API key não configurada`);
   }
 
@@ -123,7 +121,7 @@ async function tryChatGPT(messages, provider) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${provider.key}`,
       },
       body: JSON.stringify({
         model: provider.model,
@@ -149,22 +147,9 @@ const PROVIDER_FN = {
   chatgpt: tryChatGPT,
 };
 
-function resolveProvider(model) {
-  if (!model || model === 'auto/wootech') return PROVIDERS.groq;
-
-  if (model === 'wootech-1') return PROVIDERS.groq;
-  if (model === 'wootech-2') return PROVIDERS.gemini;
-  if (model === 'wootech-3') return PROVIDERS.chatgpt;
-
-  const found = Object.values(PROVIDERS).find(
-    (p) => p.id === model || p.label === model
-  );
-  return found || PROVIDERS.groq;
-}
-
 router.post('/chat', async (req, res) => {
   try {
-    const { messages, model = 'wootech-1', stream = false } = req.body;
+    const { messages, model = 'wootech-1', stream = false, apiKeys = {} } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Messages array is required' });
@@ -176,20 +161,16 @@ router.post('/chat', async (req, res) => {
         .json({ error: 'Streaming not supported via fallback' });
     }
 
-    const primary = resolveProvider(model);
+    const { selected: primary, all: providers } = resolveProvider(model, apiKeys);
     const triedProviders = [primary.id];
 
     try {
       const fn = PROVIDER_FN[primary.id];
       const data = await fn(messages, primary);
-      logger.info(
-        `[WooTechAI] ${primary.label} respondeu com sucesso`
-      );
+      logger.info(`[WooTechAI] ${primary.label} respondeu com sucesso`);
       return res.json(data);
     } catch (primaryError) {
-      logger.warn(
-        `[WooTechAI] ${primary.label} falhou: ${primaryError.message}`
-      );
+      logger.warn(`[WooTechAI] ${primary.label} falhou: ${primaryError.message}`);
     }
 
     const errors = [];
@@ -197,7 +178,7 @@ router.post('/chat', async (req, res) => {
       if (triedProviders.includes(fallbackId)) continue;
       triedProviders.push(fallbackId);
 
-      const provider = PROVIDERS[fallbackId];
+      const provider = providers[fallbackId];
       const fn = PROVIDER_FN[fallbackId];
 
       try {
@@ -206,9 +187,7 @@ router.post('/chat', async (req, res) => {
         return res.json(data);
       } catch (providerError) {
         errors.push(providerError.message);
-        logger.warn(
-          `[WooTechAI] ${provider.label} falhou: ${providerError.message}`
-        );
+        logger.warn(`[WooTechAI] ${provider.label} falhou: ${providerError.message}`);
       }
     }
 

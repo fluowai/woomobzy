@@ -350,3 +350,18 @@ Cinco endpoints estavam falhando no console:
 - Build Vite de produção: passou.
 - ESLint relacionado: 0 erros.
 - Deploy não executado; a implantação das novas imagens permanece pendente.
+
+---
+
+## [2026-07-30] Landing Page: 11 novos settings + 3 atualizados
+
+### Feito
+- Criados settings para: Image, Gallery, Video, PropertyCarousel, PropertyFeatured, PropertySearch, Map, Timeline, Testimonials, BrokerCard, Divider (11 novos)
+- Atualizados: HeroWithForm (formSubtitle, height, textColor, badges), Features (layout), Stats (columns, animated)
+- Registrados todos os 14 components no switch do PropertiesSidebar
+- Corrigido import path em FeaturesBlockSettings (typo `../../../../` → `../../../`)
+- Corrigidos 2 lint errors no CRM: Agenda unclosed div + LeadDetailsModal extra `</div>` + import fantasma `buildMatchWhatsappMessage`
+- Build e type-check: passam com 0 erros
+
+### Pendente
+- Testar cada novo settings panel na UI do editor

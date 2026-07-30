@@ -20,6 +20,7 @@ import {
   X,
   PieChart,
   LogOut,
+  Calendar,
   ChevronRight,
   ShieldAlert,
   DollarSign,
@@ -69,8 +70,9 @@ const RuralLayout: React.FC = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
     { icon: MessageSquare, label: 'Mensagens', path: '/rural/whatsapp' },
     { icon: Mail, label: 'Email', path: '/rural/email' },
-    { icon: Briefcase, label: 'Kanban', path: '/rural/kanban' },
-    { icon: Users, label: 'CRM', path: '/rural/crm' },
+    { icon: Briefcase, label: 'Funil / CRM', path: '/rural/kanban' },
+    { icon: Calendar, label: 'Minha Agenda', path: '/rural/agenda' },
+    { icon: Users, label: 'CRM Leads', path: '/rural/crm' },
   ];
 
   const assetItems: MenuItem[] = [

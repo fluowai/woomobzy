@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { supabase } from '../../../services/supabase';
 import { Lead } from '../../../types';
 import { PipelineStage } from '../kanban/constants';
+import EditLeadModal from './EditLeadModal';
 import {
   getLeadDisplayName,
   getLeadInitials,
@@ -40,6 +41,7 @@ interface LeadDetailsModalProps {
   onDelete: (id: string, name: string) => void;
   stages: PipelineStage[];
   navigate: (path: string) => void;
+  onUpdateLead?: (lead: Lead) => void;
 }
 
 const buildMatchWhatsappMessage = (lead: Lead, matches: any[]) => {
@@ -79,11 +81,90 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
   onDelete,
   stages,
   navigate,
+  onUpdateLead,
 }) => {
   const [matchingProperties, setMatchingProperties] = useState<any[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'historico' | 'matches' | 'detalhes'>('historico');
+  const [activeTab, setActiveTab] = useState<'historico' | 'matches' | 'detalhes' | 'agendamentos'>('historico');
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Agendamentos state
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [showNewAppointmentForm, setShowNewAppointmentForm] = useState(false);
+  const [newAppointment, setNewAppointment] = useState({
+    title: '',
+    appointment_date: '',
+    type: 'reuniao',
+    notes: ''
+  });
+
+  const fetchAppointments = async () => {
+    if (!lead?.id) return;
+    setLoadingAppointments(true);
+    try {
+      const { data, error } = await supabase
+        .from('lead_appointments')
+        .select('*')
+        .eq('lead_id', lead.id)
+        .order('appointment_date', { ascending: true });
+      if (error) throw error;
+      setAppointments(data || []);
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && lead?.id && activeTab === 'agendamentos') {
+      fetchAppointments();
+    }
+  }, [isOpen, lead?.id, activeTab]);
+
+  const handleSaveAppointment = async () => {
+    if (!lead?.id || !newAppointment.title || !newAppointment.appointment_date) {
+      toast.error('Preencha os campos obrigatórios (Título e Data/Hora)');
+      return;
+    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      const { error } = await supabase.from('lead_appointments').insert({
+        lead_id: lead.id,
+        organization_id: lead.organization_id,
+        user_id: user.id,
+        title: newAppointment.title,
+        appointment_date: new Date(newAppointment.appointment_date).toISOString(),
+        type: newAppointment.type,
+        notes: newAppointment.notes,
+        status: 'pending'
+      });
+      if (error) throw error;
+      
+      toast.success('Agendamento criado com sucesso!');
+      setShowNewAppointmentForm(false);
+      setNewAppointment({ title: '', appointment_date: '', type: 'reuniao', notes: '' });
+      fetchAppointments();
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao criar agendamento');
+    }
+  };
+
+  const updateAppointmentStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase.from('lead_appointments').update({ status }).eq('id', id);
+      if (error) throw error;
+      toast.success('Status atualizado');
+      fetchAppointments();
+    } catch (err) {
+      toast.error('Erro ao atualizar status');
+    }
+  };
 
   useEffect(() => {
     if (!isOpen || !lead?.id) return;
@@ -143,6 +224,10 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
             <div>
               <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 {getLeadDisplayName(lead)}
+                <button onClick={() => setIsEditing(true)} className="p-1.5 ml-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors" title="Editar Lead">
+                  <Sparkles size={16} className="hidden" /> {/* just replacing this */}
+                  <span className="text-xs font-bold uppercase tracking-wider">Editar</span>
+                </button>
                 {lead.ai_profile?.temperature && (
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getTemperatureColor(lead.ai_profile.temperature)}`}>
                     {getTemperatureLabel(lead.ai_profile.temperature)}
@@ -332,6 +417,12 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
                     {matchingProperties.length}
                   </span>
                 )}
+              </button>
+              <button
+                onClick={() => setActiveTab('agendamentos')}
+                className={`py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'agendamentos' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+              >
+                Agendamentos
               </button>
               <button
                 onClick={() => setActiveTab('detalhes')}
@@ -542,10 +633,106 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
                   </div>
                 </div>
               )}
+              {activeTab === 'agendamentos' && (
+                <div className="max-w-3xl space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-slate-900">Agenda do Lead</h3>
+                    <button
+                      onClick={() => setShowNewAppointmentForm(!showNewAppointmentForm)}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors"
+                    >
+                      {showNewAppointmentForm ? 'Cancelar' : '+ Novo Agendamento'}
+                    </button>
+                  </div>
+                  
+                  {showNewAppointmentForm && (
+                    <div className="p-4 bg-slate-100 border border-slate-200 rounded-xl space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Título</label>
+                          <input type="text" value={newAppointment.title} onChange={e => setNewAppointment({...newAppointment, title: e.target.value})} className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm" placeholder="Ex: Visita ao imóvel" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Data e Hora</label>
+                          <input type="datetime-local" value={newAppointment.appointment_date} onChange={e => setNewAppointment({...newAppointment, appointment_date: e.target.value})} className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Tipo</label>
+                          <select value={newAppointment.type} onChange={e => setNewAppointment({...newAppointment, type: e.target.value})} className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm">
+                            <option value="reuniao">Reunião / Visita</option>
+                            <option value="retorno">Retorno (Follow-up)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Observações (Opcional)</label>
+                          <input type="text" value={newAppointment.notes} onChange={e => setNewAppointment({...newAppointment, notes: e.target.value})} className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm" placeholder="Ex: Cliente quer ver as chaves" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end pt-2">
+                        <button onClick={handleSaveAppointment} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors">
+                          Salvar Agendamento
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {loadingAppointments ? (
+                      <div className="text-center py-4 text-slate-500">Carregando...</div>
+                    ) : appointments.length === 0 ? (
+                      <div className="text-center py-10 bg-white border border-slate-200 rounded-xl text-slate-500">
+                        Nenhum compromisso marcado para este lead.
+                      </div>
+                    ) : (
+                      appointments.map(apt => (
+                        <div key={apt.id} className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-sm">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl ${apt.type === 'reuniao' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>
+                              <Calendar size={20} />
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900">{apt.title}</p>
+                              <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                <span className="flex items-center gap-1 font-semibold"><Clock size={12} /> {new Date(apt.appointment_date).toLocaleString('pt-BR')}</span>
+                                <span className="capitalize border px-1.5 py-0.5 rounded text-[10px] font-bold">{apt.type === 'reuniao' ? 'Reunião' : 'Retorno'}</span>
+                              </div>
+                              {apt.notes && <p className="text-xs text-slate-400 mt-1">{apt.notes}</p>}
+                            </div>
+                          </div>
+                          <div>
+                            {apt.status === 'pending' ? (
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => updateAppointmentStatus(apt.id, 'completed')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg" title="Marcar como Concluído"><CheckCircle2 size={18} /></button>
+                                <button onClick={() => updateAppointmentStatus(apt.id, 'canceled')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Cancelar"><XCircle size={18} /></button>
+                              </div>
+                            ) : (
+                              <span className={`text-xs font-bold px-2 py-1 rounded-md ${apt.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                                {apt.status === 'completed' ? 'Concluído' : 'Cancelado'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+      
+      <EditLeadModal
+        isOpen={isEditing}
+        lead={lead}
+        onClose={() => setIsEditing(false)}
+        onSaved={(updatedLead) => {
+          if (onUpdateLead) onUpdateLead(updatedLead);
+          else window.location.reload();
+        }}
+      />
     </div>
   );
 };

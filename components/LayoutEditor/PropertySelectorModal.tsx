@@ -39,7 +39,7 @@ export const PropertySelectorModal: React.FC<PropertySelectorModalProps> = ({
   const filteredProperties = properties.filter(
     (p) =>
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.location?.city || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (p.city || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const toggleSelection = (id: string) => {
@@ -138,7 +138,7 @@ export const PropertySelectorModal: React.FC<PropertySelectorModalProps> = ({
                         {property.title}
                       </h3>
                       <p className="text-[10px] text-slate-500 truncate mt-1">
-                        {property.location?.city} - {property.location?.state}
+                        {property.city} - {property.state}
                       </p>
                       <p className="text-xs font-bold text-indigo-600 mt-2">
                         {property.price?.toLocaleString('pt-BR', {

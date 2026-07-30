@@ -60,6 +60,7 @@ const BIUrbano = lazy(() => import('./views/BIUrbano'));
 const CRMLeads = lazy(() => import('./views/CRM/CRMLeads'));
 const ClientsManager = lazy(() => import('./views/CRM/ClientsManager'));
 const KanbanBoard = lazy(() => import('./views/CRM/KanbanBoard'));
+const Agenda = lazy(() => import('./views/CRM/Agenda'));
 const WaitlistLeads = lazy(() => import('./views/admin/WaitlistLeads'));
 const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
 const QuizCampaigns = lazy(() => import('./views/QuizCampaigns'));
@@ -299,6 +300,7 @@ const AppContent: React.FC = () => {
             <Route path="dataroom" element={<DataRoom />} />
             <Route path="crm" element={<CRMLeads />} />
             <Route path="kanban" element={<KanbanBoard />} />
+            <Route path="agenda" element={<Agenda />} />
             <Route path="matchmaking" element={<Matchmaking360 />} />
             <Route path="reports" element={<BIRural />} />
             <Route
@@ -373,6 +375,7 @@ const AppContent: React.FC = () => {
             <Route path="crm" element={<CRMLeads />} />
             <Route path="clients" element={<ClientsManager />} />
             <Route path="kanban" element={<KanbanBoard />} />
+            <Route path="agenda" element={<Agenda />} />
             <Route path="reports" element={<BIUrbano />} />
             <Route path="condominios" element={<AdmCondominios />} />
             <Route path="chaves" element={<ControleChaves />} />

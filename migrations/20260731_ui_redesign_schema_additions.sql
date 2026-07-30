@@ -23,9 +23,8 @@ ALTER TABLE public.leads
   ADD COLUMN IF NOT EXISTS temperature_score integer DEFAULT 0,
   ADD COLUMN IF NOT EXISTS tags jsonb DEFAULT '[]'::jsonb;
 
--- 3. Tabela: conversations / messages (Central de Mensagens)
--- Assuming 'conversations' table handles the chat channels
-ALTER TABLE public.conversations
+-- 3. Tabela: whatsapp_chats (Central de Mensagens)
+ALTER TABLE public.whatsapp_chats
   ADD COLUMN IF NOT EXISTS sla_deadline timestamp with time zone,
   ADD COLUMN IF NOT EXISTS ai_insight text;
 

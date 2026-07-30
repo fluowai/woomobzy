@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Building, TrendingDown, Users, Wrench, Plus, X } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -48,6 +49,7 @@ const priorityColors: Record<string, string> = {
 };
 
 export default function AdmCondominios() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [condominiums, setCondominiums] = useState<Condominium[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -199,7 +201,7 @@ export default function AdmCondominios() {
           </p>
         </div>
         <button
-          onClick={() => setShowCondoModal(true)}
+          onClick={() => navigate('/urban/condominios/novo')}
           className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
         >
           <Plus size={20} /> Novo Condominio

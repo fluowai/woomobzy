@@ -12,7 +12,9 @@ import {
   X,
   Save,
   Trash2,
+  Key,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface Reseller {
   id: string;
@@ -34,6 +36,7 @@ interface Reseller {
 }
 
 const ResellerManager: React.FC = () => {
+  const { impersonateOrganization } = useAuth();
   const [resellers, setResellers] = useState<Reseller[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -378,6 +381,18 @@ const ResellerManager: React.FC = () => {
                       ) : (
                         <CheckCircle size={18} />
                       )}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const reason = prompt('Motivo do acesso (Opcional):');
+                        if (reason !== null) {
+                          await impersonateOrganization(reseller.id, reason);
+                        }
+                      }}
+                      className="p-1.5 text-indigo-500 rounded hover:bg-gray-100"
+                      title="Acessar Painel (Suporte)"
+                    >
+                      <Key size={18} />
                     </button>
                     <button
                       onClick={() => handleOpenModal(reseller)}

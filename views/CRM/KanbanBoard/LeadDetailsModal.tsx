@@ -25,7 +25,6 @@ import { supabase } from '../../../services/supabase';
 import { Lead } from '../../../types';
 import { PipelineStage } from '../kanban/constants';
 import EditLeadModal from './EditLeadModal';
-import { buildMatchWhatsappMessage } from './whatsapp-match-message';
 import { useAuth } from '../../../context/AuthContext';
 import {
   getLeadDisplayName,

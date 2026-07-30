@@ -40,6 +40,7 @@ import storageRoutes from './api/storage/index.js';
 import demoRoutes from './api/demo/index.js';
 import fluowaiMigrationRoutes from './api/fluowai-migration/index.js';
 import { setupWhatsAppProxy } from './api/whatsapp/index.js';
+import { setupInstagramProxy } from './api/instagram/index.js';
 import emailRoutes from './api/email/index.js';
 import siteRoutes from './api/sites/index.js';
 import oruloRoutes from './api/orulo/index.js';
@@ -493,6 +494,7 @@ app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
 // O server real e passado para registrar o upgrade do WebSocket.
 setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
+setupInstagramProxy(app);
 
 // 7. TRATAMENTO GLOBAL DE ERROS (deve vir antes do 404 catch-all)
 app.use((err, req, res, _next) => {

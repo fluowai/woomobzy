@@ -1,347 +1,553 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
-
+import React, { useState } from 'react';
 import {
   FileText,
   Plus,
-  FileSignature,
-  DollarSign,
-  Calendar,
   Search,
-  ArrowRight,
   ChevronRight,
-  TrendingUp,
-  AlertCircle
+  ChevronLeft,
+  AlertCircle,
+  Clock,
+  Percent,
+  Download,
+  Upload,
+  BarChart3,
+  Wallet,
+  ArrowRightLeft,
+  CheckCircle2,
+  CalendarDays,
+  MoreVertical,
+  Filter,
+  Users
 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { useSettings } from '@/context/SettingsContext';
-import { supabase } from '@/services/supabase';
-import { logger } from '@/utils/logger';
-import { RentalsContractEditor } from './RentalsContractEditor';
-
-interface Lease {
-  id: string;
-  tenant_name: string;
-  contract_number: string;
-  status: string;
-  signature_status: string;
-  monthly_rent: number;
-  start_date: string;
-  end_date: string;
-}
-
-interface DashboardStats {
-  receita_mensal: number;
-  valor_inadimplencia: number;
-  ativos: number;
-  pending_signatures: number;
-}
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 export function RentalsManagement() {
-  const { user } = useAuth();
-  const { settings } = useSettings();
-  const [leases, setLeases] = useState<Lease[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isCreatingContract, setIsCreatingContract] = useState(false);
-  const [stats, setStats] = useState<DashboardStats>({
-    receita_mensal: 0,
-    valor_inadimplencia: 0,
-    ativos: 0,
-    pending_signatures: 0,
-  });
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('Todos');
 
-  const fetchData = useCallback(async () => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const headers = { Authorization: `Bearer ${session?.access_token}` };
+  // MOCK DATA for Recharts
+  const fluxoData = [
+    { name: 'Previsto', value: 184000, color: '#10b981' },
+    { name: 'Recebido', value: 162000, color: '#10b981' },
+    { name: 'Repassado', value: 119000, color: '#10b981' },
+  ];
 
-      const [leasesRes, dashboardRes] = await Promise.all([
-        fetch('/api/locacao/leases', { headers }),
-        fetch('/api/locacao/dashboard/resumo', { headers }),
-      ]);
-
-      const leasesData = await leasesRes.json();
-      if (leasesData.success) {
-        setLeases(leasesData.data);
-      }
-
-      const dashData = await dashboardRes.json();
-      if (dashData.success) {
-        const allLeases = leasesData.data || [];
-        const pendingSigs = allLeases.filter(
-          (l: Lease) =>
-            l.signature_status === 'pending_signatures' ||
-            l.status === 'pending_signatures'
-        ).length;
-
-        setStats({
-          receita_mensal: dashData.data.receita_mensal || 0,
-          valor_inadimplencia: dashData.data.valor_inadimplencia || 0,
-          ativos: dashData.data.ativos || 0,
-          pending_signatures: pendingSigs,
-        });
-      }
-    } catch (error) {
-      logger.error('Erro ao buscar dados de locações:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isCreatingContract) {
-      fetchData();
-    }
-  }, [fetchData, isCreatingContract]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value || 0);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            Ativo
-          </span>
-        );
-      case 'draft':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-700 ring-1 ring-inset ring-gray-600/20 dark:bg-gray-500/10 dark:text-gray-400 dark:ring-gray-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
-            Rascunho
-          </span>
-        );
-      case 'pending_signatures':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            Aguard. Assinatura
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/20 dark:bg-indigo-500/10 dark:text-indigo-400 dark:ring-indigo-500/20">
-            {status}
-          </span>
-        );
-    }
-  };
-
-  if (isCreatingContract) {
-    return <RentalsContractEditor onClose={() => setIsCreatingContract(false)} />;
-  }
+  const formatCompactCurrency = (val: number) => 
+    val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+    <div className="w-full max-w-[1600px] mx-auto pb-12 font-sans text-slate-800 animate-fade-in">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 tracking-tight">
-            Gestão de Aluguéis
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Controle de contratos, faturas e repasses da {settings.agencyName}
-          </p>
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+            <span className="font-medium text-slate-400">Imóveis</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-emerald-600 font-semibold">Locações</span>
+          </div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Central de locações</h1>
+          <p className="text-sm text-slate-500 mt-1">Recebimentos, repasses, contratos e pendências em um só fluxo.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <button
-            onClick={() => toast.info('Borderô / Repasses em breve!')}
-            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 hover:border-gray-300 transition-all shadow-sm"
-          >
-            <DollarSign className="w-4 h-4 text-emerald-500" />
-            Borderôs
+        <div className="flex items-center gap-4">
+          <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+            <FileText size={18} /> Gerar cobrança
           </button>
-          <button
-            onClick={() => setIsCreatingContract(true)}
-            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Contrato
+          <button className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+            <Plus size={18} /> Nova locação
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingUp className="w-16 h-16 text-emerald-500" />
+      <div className="flex flex-col xl:flex-row gap-6">
+        
+        {/* Left Column (Main Area) */}
+        <div className="flex-1 flex flex-col gap-6">
+          
+          {/* KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center">
+                <BarChart3 size={20} className="text-slate-500" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-slate-900">R$ 184.320</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Receita prevista</p>
+              </div>
+            </div>
+            
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                <Wallet size={20} className="text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-slate-900">R$ 162.480</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Recebido</p>
+              </div>
+            </div>
+            
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle size={20} className="text-red-500" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-red-500">R$ 8.750</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Em atraso</p>
+              </div>
+            </div>
+            
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                <ArrowRightLeft size={20} className="text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xl font-bold text-slate-900">R$ 128.900</p>
+                  <span className="text-[10px] font-bold text-slate-400">Julho de 2026</span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">A repassar</p>
+              </div>
+            </div>
           </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Receita Prevista
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {formatCurrency(stats.receita_mensal)}
-          </p>
-          <div className="mt-4 flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 w-fit px-2 py-1 rounded-md">
-            + Mensal
-          </div>
-        </div>
 
-        <div className="relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <AlertCircle className="w-16 h-16 text-rose-500" />
-          </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Inadimplência
-          </p>
-          <p className="text-2xl font-bold text-rose-600 dark:text-rose-500">
-            {formatCurrency(stats.valor_inadimplencia)}
-          </p>
-          <div className="mt-4 flex items-center text-xs font-medium text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400 w-fit px-2 py-1 rounded-md">
-            Atrasados
-          </div>
-        </div>
+          {/* Agenda Financeira */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+              Agenda financeira <span className="text-slate-400 text-sm font-medium">• Julho</span>
+            </h3>
+            
+            <div className="flex items-center justify-between mb-8">
+              <button className="p-2 hover:bg-slate-50 rounded-full transition-colors"><ChevronLeft size={20} className="text-slate-400" /></button>
+              
+              <div className="flex gap-8">
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Seg</p>
+                  <p className="text-lg font-medium text-slate-700">28</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Ter</p>
+                  <p className="text-lg font-medium text-slate-700">29</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Qua</p>
+                  <p className="text-lg font-medium text-slate-700">30</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Qui</p>
+                  <p className="text-lg font-medium text-slate-700">31</p>
+                </div>
+                <div className="text-center relative">
+                  <div className="absolute -inset-2 bg-emerald-50 rounded-lg -z-10" />
+                  <p className="text-xs font-bold text-emerald-600 uppercase">Sex</p>
+                  <div className="w-7 h-7 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-bold mx-auto mt-0.5">01</div>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Sáb</p>
+                  <p className="text-lg font-medium text-slate-700">02</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Dom</p>
+                  <p className="text-lg font-medium text-slate-700">03</p>
+                </div>
+              </div>
 
-        <div className="relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <FileText className="w-16 h-16 text-indigo-500" />
-          </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Contratos Ativos
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {stats.ativos}
-          </p>
-          <div className="mt-4 flex items-center text-xs font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-400 w-fit px-2 py-1 rounded-md">
-            Vigentes
-          </div>
-        </div>
+              <button className="p-2 hover:bg-slate-50 rounded-full transition-colors"><ChevronRight size={20} className="text-slate-400" /></button>
+            </div>
 
-        <div className="relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <FileSignature className="w-16 h-16 text-amber-500" />
-          </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Aguardando Assinatura
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {stats.pending_signatures}
-          </p>
-          <div className="mt-4 flex items-center text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 w-fit px-2 py-1 rounded-md">
-            Pendentes
-          </div>
-        </div>
-      </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><Download size={18} /></div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Recebimento <span className="text-slate-400 font-normal">• Residencial Aurora, Apto 401</span></p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700">R$ 2.850</p>
+                <p className="text-xs font-bold text-emerald-600">Hoje</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">Registrar pagamento <ChevronRight size={14} /></p>
+              </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-gray-800/50">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-indigo-500" />
-            Lista de Contratos
-          </h2>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Buscar por inquilino, imóvel..."
-              className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow shadow-sm"
-            />
-          </div>
-        </div>
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600"><Upload size={18} /></div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Repasse <span className="text-slate-400 font-normal">• Carlos Mendes</span></p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700">R$ 2.430</p>
+                <p className="text-xs font-bold text-emerald-600">Hoje</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">Realizar repasse <ChevronRight size={14} /></p>
+              </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
-            <thead className="bg-gray-50/80 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Inquilino</th>
-                <th className="px-6 py-4 font-semibold">Ref / Imóvel</th>
-                <th className="px-6 py-4 font-semibold">Valor (Mês)</th>
-                <th className="px-6 py-4 font-semibold">Vencimento</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                      <p>Carregando contratos...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : leases.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-6 py-16 text-center text-gray-500"
-                  >
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 border border-gray-100 dark:border-gray-700">
-                        <FileText className="w-8 h-8 text-gray-400" />
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600"><Percent size={18} /></div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Reajuste IPCA <span className="text-slate-400 font-normal">• Contrato LOC-0084</span></p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700">+4,23%</p>
+                <p className="text-xs font-bold text-amber-600">Amanhã</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">Aplicar reajuste <ChevronRight size={14} /></p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600"><Search size={18} /></div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Vistoria de saída <span className="text-slate-400 font-normal">• Casa Jardim Europa</span></p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700"></p>
+                <p className="text-xs font-medium text-slate-500">02 ago, 14:00</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">Ver detalhes <ChevronRight size={14} /></p>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600"><FileText size={18} /></div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Renovação contratual <span className="text-slate-400 font-normal">• Mariana Costa</span></p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700"></p>
+                <p className="text-xs font-medium text-slate-500">Em 12 dias</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">Antecipar renovação <ChevronRight size={14} /></p>
+              </div>
+            </div>
+          </div>
+
+          {/* Carteira de locações */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div className="p-6 pb-0 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-900 mb-6">Carteira de locações</h3>
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
+                <div className="flex items-center gap-6 overflow-x-auto">
+                  <button onClick={() => setActiveTab('Todos')} className={`text-sm font-bold border-b-2 pb-2 whitespace-nowrap transition-colors ${activeTab === 'Todos' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                    Todos <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Todos' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}>128</span>
+                  </button>
+                  <button onClick={() => setActiveTab('Em dia')} className={`text-sm font-bold border-b-2 pb-2 whitespace-nowrap transition-colors ${activeTab === 'Em dia' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                    Em dia <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Em dia' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}>112</span>
+                  </button>
+                  <button onClick={() => setActiveTab('Atenção')} className={`text-sm font-bold border-b-2 pb-2 whitespace-nowrap transition-colors ${activeTab === 'Atenção' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                    Atenção <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Atenção' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}>11</span>
+                  </button>
+                  <button onClick={() => setActiveTab('Inadimplentes')} className={`text-sm font-bold border-b-2 pb-2 whitespace-nowrap transition-colors ${activeTab === 'Inadimplentes' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                    Inadimplentes <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Inadimplentes' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}>5</span>
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="text" placeholder="Buscar inquilino ou imóvel..." className="w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
+                  </div>
+                  <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
+                    <Filter size={16} /> Filtros
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-4 pl-6 pr-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Inquilino / Imóvel</th>
+                    <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Aluguel</th>
+                    <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Próximo vencimento</th>
+                    <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Situação</th>
+                    <th className="py-4 pr-6 pl-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Próxima ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  <tr className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
+                    <td className="py-4 pl-6 pr-4">
+                      <div className="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Avatar" className="w-10 h-10 rounded-full bg-slate-100 object-cover" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">Mariana Costa</p>
+                          <p className="text-xs text-slate-500">Residencial Aurora • Apto 401</p>
+                        </div>
                       </div>
-                      <p className="text-base font-medium text-gray-900 dark:text-white mb-1">
-                        Nenhum contrato encontrado
-                      </p>
-                      <p className="text-sm">
-                        Crie um novo contrato para começar a gerenciar locações.
-                      </p>
-                      <button
-                        onClick={() => setIsCreatingContract(true)}
-                        className="mt-4 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-                      >
-                        Criar Primeiro Contrato
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                leases.map((lease) => (
-                  <tr
-                    key={lease.id}
-                    className="hover:bg-gray-50/80 dark:hover:bg-gray-750/50 transition-colors group cursor-pointer"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {lease.tenant_name}
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-bold text-slate-700">R$ 2.850</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-bold text-emerald-600">Hoje</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                        Aguardando pagamento
+                      </span>
+                    </td>
+                    <td className="py-4 pr-6 pl-4">
+                      <div className="flex items-center gap-3 justify-between">
+                        <span className="text-sm font-medium text-emerald-600 flex items-center gap-1.5"><DollarSign size={16} /> Registrar pagamento</span>
+                        <MoreVertical size={16} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">
-                      {lease.contract_number || 'S/N'}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-200">
-                      {formatCurrency(lease.monthly_rent)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        {lease.end_date
-                          ? new Date(lease.end_date).toLocaleDateString('pt-BR')
-                          : '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(lease.status)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() =>
-                          toast.info('Gerenciamento de contrato em breve!')
-                        }
-                        className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
-                      >
-                        Detalhes
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+
+                  <tr className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
+                    <td className="py-4 pl-6 pr-4">
+                      <div className="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026704e" alt="Avatar" className="w-10 h-10 rounded-full bg-slate-100 object-cover" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">Rafael Lima</p>
+                          <p className="text-xs text-slate-500">Ed. Manhattan • Sala 702</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-bold text-slate-700">R$ 4.200</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-medium text-slate-700">05 ago</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        Em dia
+                      </span>
+                    </td>
+                    <td className="py-4 pr-6 pl-4">
+                      <div className="flex items-center gap-3 justify-between">
+                        <span className="text-sm font-medium text-slate-500 flex items-center gap-1.5"><ChevronRight size={16} /> Ver detalhes</span>
+                        <MoreVertical size={16} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
+                    <td className="py-4 pl-6 pr-4">
+                      <div className="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026704f" alt="Avatar" className="w-10 h-10 rounded-full bg-slate-100 object-cover" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">Ana Martins</p>
+                          <p className="text-xs text-slate-500">Parque das Flores • Apto 203</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-bold text-slate-700">R$ 2.150</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-medium text-slate-700">05 ago</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        Pagamento confirmado
+                      </span>
+                    </td>
+                    <td className="py-4 pr-6 pl-4">
+                      <div className="flex items-center gap-3 justify-between">
+                        <span className="text-sm font-medium text-emerald-600 flex items-center gap-1.5"><FileText size={16} /> Enviar recibo</span>
+                        <MoreVertical size={16} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
+                    <td className="py-4 pl-6 pr-4">
+                      <div className="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026704g" alt="Avatar" className="w-10 h-10 rounded-full bg-slate-100 object-cover" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">Lucas Almeida</p>
+                          <p className="text-xs text-slate-500">Sunset Residence • Casa 12</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-bold text-slate-700">R$ 5.800</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-bold text-red-500">28 jul</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-100">
+                        Em atraso 3 dias
+                      </span>
+                    </td>
+                    <td className="py-4 pr-6 pl-4">
+                      <div className="flex items-center gap-3 justify-between">
+                        <span className="text-sm font-medium text-red-600 flex items-center gap-1.5"><AlertCircle size={16} /> Cobrar agora</span>
+                        <MoreVertical size={16} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
+                    <td className="py-4 pl-6 pr-4">
+                      <div className="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026704h" alt="Avatar" className="w-10 h-10 rounded-full bg-slate-100 object-cover" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">Camila Rocha</p>
+                          <p className="text-xs text-slate-500">Centro Empresarial JK • Loja 05</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-bold text-slate-700">R$ 3.600</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm font-medium text-slate-700">10 ago</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                        Reajuste pendente
+                      </span>
+                    </td>
+                    <td className="py-4 pr-6 pl-4">
+                      <div className="flex items-center gap-3 justify-between">
+                        <span className="text-sm font-medium text-amber-600 flex items-center gap-1.5"><Percent size={16} /> Aplicar reajuste</span>
+                        <MoreVertical size={16} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (Sidebar) */}
+        <div className="w-full xl:w-96 shrink-0 space-y-6">
+          
+          {/* Atenção necessária */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">Atenção necessária</h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-100 rounded-xl">
+                <AlertCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">5 aluguéis em atraso <span className="text-red-500 ml-1">• R$ 8.750</span></p>
+                  <p className="text-xs text-slate-500 mt-1">Ação imediata recomendada</p>
+                </div>
+                <button className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver detalhes {'>'}</button>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                <Clock size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">8 contratos vencem em 60 dias</p>
+                  <p className="text-xs text-slate-500 mt-1">Planeje renovações</p>
+                </div>
+                <button className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver contratos {'>'}</button>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <Percent size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">6 reajustes aguardando aplicação</p>
+                  <p className="text-xs text-slate-500 mt-1">Atualize os valores</p>
+                </div>
+                <button className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver reajustes {'>'}</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Fluxo do mês */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">Fluxo do mês</h3>
+            
+            <div className="h-40 w-full mb-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fluxoData} barSize={40}>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
+                  <Tooltip 
+                    cursor={{ fill: '#f1f5f9' }}
+                    formatter={(value: number) => [formatCompactCurrency(value), '']}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                  />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {
+                      fluxoData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))
+                    }
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="flex justify-between text-center px-4">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Previsto</p>
+                <p className="text-xs font-bold text-slate-700">R$ 184 mil</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Recebido</p>
+                <p className="text-xs font-bold text-slate-700">R$ 162 mil</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Repassado</p>
+                <p className="text-xs font-bold text-slate-700">R$ 119 mil</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Repasses */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">Repasses aos proprietários</h3>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">12 programados hoje</p>
+                  <p className="text-xl font-bold text-slate-900">R$ 28.460</p>
+                </div>
+              </div>
+              <button className="px-4 py-2 bg-white border border-emerald-600 text-emerald-600 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors">
+                Ver borderô
+              </button>
+            </div>
+          </div>
+
+          {/* Ações rápidas */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">Ações rápidas</h3>
+            
+            <div className="grid grid-cols-3 gap-3">
+              <button className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <DollarSign size={16} />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">Registrar pagamento</span>
+              </button>
+
+              <button className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Search size={16} />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">Nova vistoria</span>
+              </button>
+
+              <button className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <AlertCircle size={16} />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">Enviar lembrete</span>
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
+
     </div>
   );
 }

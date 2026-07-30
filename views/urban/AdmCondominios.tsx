@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, TrendingDown, Users, Wrench, Plus, X } from 'lucide-react';
+import { Building, TrendingDown, Users, Wrench, Plus, X, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { logger } from '@/utils/logger';
 
 type Condominium = {
   id: string;
@@ -62,7 +63,8 @@ export default function AdmCondominios() {
 
     setLoading(true);
     const organizationId = profile.organization_id;
-    const [{ data: condoData }, { data: ticketData }] = await Promise.all([
+
+    const results = await Promise.allSettled([
       supabase
         .from('condominiums')
         .select('id,name,residents_count,delinquent_units')
@@ -78,8 +80,20 @@ export default function AdmCondominios() {
         .limit(25),
     ]);
 
-    setCondominiums(condoData || []);
-    setTickets((ticketData || []) as Ticket[]);
+    const [condoResult, ticketResult] = results;
+
+    if (condoResult.status === 'fulfilled') {
+      setCondominiums(condoResult.value.data || []);
+    } else {
+      logger.error('[AdmCondominios] Erro ao carregar condomínios:', condoResult.reason);
+    }
+
+    if (ticketResult.status === 'fulfilled') {
+      setTickets((ticketResult.value.data || []) as Ticket[]);
+    } else {
+      logger.error('[AdmCondominios] Erro ao carregar chamados:', ticketResult.reason);
+    }
+
     setLoading(false);
   }, [profile?.organization_id]);
 
@@ -111,36 +125,44 @@ export default function AdmCondominios() {
     const unitLabel = window.prompt('Unidade:')?.trim();
     const category = window.prompt('Categoria:', 'Manutencao')?.trim();
 
-    await supabase.from('condominium_tickets').insert({
-      organization_id: profile.organization_id,
-      condominium_id: condominium.id,
-      unit_label: unitLabel || null,
-      category: category || 'Geral',
-      description,
-      status: 'open',
-      priority: 'medium',
-    });
-    load();
+    try {
+      const { error } = await supabase.from('condominium_tickets').insert({
+        organization_id: profile.organization_id,
+        condominium_id: condominium.id,
+        unit_label: unitLabel || null,
+        category: category || 'Geral',
+        description,
+        status: 'open',
+        priority: 'medium',
+      });
+      if (error) throw error;
+      load();
+    } catch (err) {
+      logger.error('[AdmCondominios] Erro ao criar chamado:', err);
+      window.alert('Erro ao criar chamado: ' + (err instanceof Error ? err.message : 'desconhecido'));
+    }
   };
 
   const handleSaveCondo = async () => {
     if (!profile?.organization_id) return;
     if (!condoForm.name.trim()) return;
 
-    const { error } = await supabase.from('condominiums').insert({
-      organization_id: profile.organization_id,
-      name: condoForm.name.trim(),
-      units_count: condoForm.units_count || 0,
-    });
+    try {
+      const { error } = await supabase.from('condominiums').insert({
+        organization_id: profile.organization_id,
+        name: condoForm.name.trim(),
+        units_count: condoForm.units_count || 0,
+      });
 
-    if (error) {
-      window.alert('Erro ao salvar condominio: ' + error.message);
-      return;
+      if (error) throw error;
+
+      setShowCondoModal(false);
+      setCondoForm({ name: '', units_count: 0 });
+      load();
+    } catch (err) {
+      logger.error('[AdmCondominios] Erro ao salvar condomínio:', err);
+      window.alert('Erro ao salvar condomínio: ' + (err instanceof Error ? err.message : 'desconhecido'));
     }
-
-    setShowCondoModal(false);
-    setCondoForm({ name: '', units_count: 0 });
-    load();
   };
 
   const stats = useMemo(() => {

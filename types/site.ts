@@ -1,4 +1,22 @@
 import { LayoutConfig } from './layout';
+import { PropertySelectionConfig } from './landingPage';
+
+export interface DevelopmentFilters {
+  status?: string[];
+  city?: string[];
+  state?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+export interface DevelopmentSelectionConfig {
+  mode: 'manual' | 'filter' | 'all';
+  developmentIds?: string[];
+  filters?: DevelopmentFilters;
+  sortBy?: 'name' | 'date' | 'price' | 'units';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+}
 
 export interface SiteSettings {
   id?: string;
@@ -125,6 +143,8 @@ export interface Site {
   menuConfig?: SiteMenuItem[];
   contactInfo?: Record<string, any>;
   socialLinks?: Record<string, any>;
+  propertySelection?: PropertySelectionConfig;
+  developmentSelection?: DevelopmentSelectionConfig;
   customCss?: string;
   customJs?: string;
   customHead?: string;

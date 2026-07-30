@@ -4,6 +4,7 @@ import pg from 'pg';
 import {
   verifySuperAdmin,
   verifyAdmin,
+  verifyAuth,
   clearProfileCache,
 } from '../middleware/auth.js';
 import {
@@ -531,13 +532,34 @@ router.post('/impersonate', verifySuperAdmin, async (req, res) => {
   });
 });
 
-router.delete('/impersonations/current', verifySuperAdmin, async (req, res) => {
+router.delete('/impersonations/current', verifyAuth, async (req, res) => {
   try {
     const { sessionId, sessionSecret } = readImpersonationSessionHeaders(
       req.headers
     );
+    if (!sessionId || !sessionSecret) {
+      return res.status(401).json({
+        error: 'Sessão de impersonação obrigatória.',
+        code: 'IMPERSONATION_SESSION_REQUIRED',
+      });
+    }
+
+    // Look up the session to get the original actor_user_id (the superadmin),
+    // since the current auth token may belong to the impersonated user.
+    const { data: sessionRow } = await supabase
+      .from('impersonation_sessions')
+      .select('actor_user_id')
+      .eq('id', sessionId)
+      .maybeSingle();
+
+    if (!sessionRow) {
+      return res.status(404).json({
+        error: 'Sessão de impersonação não encontrada.',
+      });
+    }
+
     const session = await revokeImpersonationSession(supabase, {
-      actorUserId: req.authUserId,
+      actorUserId: sessionRow.actor_user_id,
       sessionId,
       sessionSecret,
       ipAddress: req.ip,
@@ -642,15 +664,17 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
         'id, name, slug, custom_domain, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, created_at, updated_at'
       );
 
-    if (req.realOrgId) {
+    const activeOrgId = req.orgId || req.realOrgId;
+
+    if (activeOrgId) {
       const { data: org } = await supabase
         .from('organizations')
         .select('is_reseller')
-        .eq('id', req.realOrgId)
+        .eq('id', activeOrgId)
         .maybeSingle();
 
       if (org?.is_reseller) {
-        query = query.eq('parent_id', req.realOrgId);
+        query = query.eq('parent_id', activeOrgId);
       }
     }
 

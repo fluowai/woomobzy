@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { siteService } from '../services/sites';
+import { PropertySelectionConfig } from '../types/landingPage';
 import { Site, SitePage, SiteMenuItem } from '../types/site';
 import { Block, BlockType, LandingPageTheme } from '../types/landingPage';
 import HeaderBlock from '../components/LandingPageBlocks/HeaderBlock';
@@ -174,11 +175,7 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
   const loadProperties = async () => {
     if (!site) return;
     try {
-      const { data } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('organization_id', site.organizationId)
-        .limit(20);
+      const data = await siteService.getSiteProperties(site.id);
       setProperties(data || []);
     } catch (error) {
       logger.error('Erro ao carregar imóveis:', error);

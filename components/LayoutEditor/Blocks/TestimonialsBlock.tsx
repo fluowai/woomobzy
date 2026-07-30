@@ -1,5 +1,6 @@
 import React from 'react';
 import { Block } from '../../../types';
+import { Star } from 'lucide-react';
 
 interface TestimonialsBlockProps {
   block: Block;

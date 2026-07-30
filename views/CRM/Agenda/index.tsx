@@ -59,7 +59,7 @@ const Agenda = () => {
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={px-4 py-2 rounded-lg text-sm font-bold capitalize transition-colors \}
+              className={`px-4 py-2 rounded-lg text-sm font-bold capitalize transition-colors ${filterStatus === status ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
             >
               {status === 'pending' ? 'Pendentes' : status === 'completed' ? 'Concluídos' : status === 'canceled' ? 'Cancelados' : 'Todos'}
             </button>
@@ -82,7 +82,7 @@ const Agenda = () => {
           {appointments.map(apt => (
             <div key={apt.id} className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start gap-4">
-                <div className={p-4 rounded-2xl shrink-0 \}>
+                <div className={`p-4 rounded-2xl shrink-0 ${apt.type === 'reuniao' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'}`}>
                   <Calendar size={24} />
                 </div>
                 <div>
@@ -115,7 +115,7 @@ const Agenda = () => {
                     </button>
                   </>
                 ) : (
-                  <span className={lex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-sm \}>
+                  <span className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-sm ${apt.status === 'completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                     {apt.status === 'completed' ? <><CheckCircle2 size={16} /> Concluído</> : <><XCircle size={16} /> Cancelado</>}
                   </span>
                 )}

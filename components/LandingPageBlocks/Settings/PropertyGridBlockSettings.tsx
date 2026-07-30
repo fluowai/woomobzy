@@ -4,7 +4,7 @@ import {
   LandingPage,
   PropertySelectionMode,
 } from '../../../types/landingPage';
-import { PropertySelectorModal } from '../../../LayoutEditor/PropertySelectorModal';
+import { PropertySelectorModal } from '../../LayoutEditor/PropertySelectorModal';
 
 interface PropertyGridBlockSettingsProps {
   config: PropertyGridBlockConfig;
@@ -199,14 +199,14 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
       <PropertySelectorModal
         isOpen={showPropertySelector}
         onClose={() => setShowPropertySelector(false)}
-        selectedIds={page.propertySelection?.mode === 'manual' ? page.propertySelection.selectedIds || [] : []}
+        selectedIds={page.propertySelection?.mode === 'manual' ? page.propertySelection.propertyIds || [] : []}
         onSave={(ids) => {
           onUpdatePage({
             ...page,
             propertySelection: {
               ...page.propertySelection,
               mode: PropertySelectionMode.MANUAL,
-              selectedIds: ids,
+              propertyIds: ids,
             },
           });
         }}

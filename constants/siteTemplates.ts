@@ -4116,7 +4116,6 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       },
     ],
   },
-,
   // --- NOVOS TEMPLATES RURAIS ---
   {
     id: 'agro-moderno',

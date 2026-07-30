@@ -3,6 +3,7 @@ import { Block, TextBlockConfig } from '../../../types';
 
 interface TextBlockProps {
   block: Block;
+  isEditing?: boolean;
 }
 
 export const TextBlock: React.FC<TextBlockProps> = ({ block }) => {

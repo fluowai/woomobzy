@@ -50,10 +50,9 @@ CREATE TABLE IF NOT EXISTS public.development_lots (
   created_at timestamp with time zone DEFAULT now()
 );
 
--- 5. Tabela: lease_contracts / rentals (Central de Locações)
-ALTER TABLE public.lease_contracts
+-- 5. Tabela: leases (Central de Locações)
+ALTER TABLE public.leases
   ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'Em dia',
-  ADD COLUMN IF NOT EXISTS guarantee_type text,
   ADD COLUMN IF NOT EXISTS next_adjustment_date date;
 
 -- 6. Tabela: condominiums (Novo Condomínio)

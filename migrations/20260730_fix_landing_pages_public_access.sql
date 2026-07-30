@@ -13,12 +13,12 @@
 
 -- ============================================
 -- 1. Anon SELECT policy on organizations
---    Only exposes fields needed for public pages
+--    organizations uses status = 'active' instead of is_active
 -- ============================================
 DROP POLICY IF EXISTS "Public read organizations" ON public.organizations;
 CREATE POLICY "Public read organizations"
   ON public.organizations FOR SELECT TO anon
-  USING (is_active = true);
+  USING (status = 'active');
 
 -- ============================================
 -- 2. Drop conflicting landing_pages public policy

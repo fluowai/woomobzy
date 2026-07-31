@@ -1,5 +1,12 @@
 # Handoff
 
+## 2026-07-30 — Migrations 20260730_* aplicadas e verificadas
+
+- 6 migrations executadas em produção via RPC `exec_sql`: **169/169 statements ok, 0 falhas** (landing_pages public access + RLS definitive, condominium_tickets, fix_all_production_errors, consolidated_production_fix, plans RLS insert).
+- Verificação pós-migração via pg direto: 14/14 checks OK (tabelas/colunas/funções/extension/policies); `contracts.title` segue ausente (gap LegalContracts continua aberto).
+- Change set pendente de commit: guard files (fix navegação) + `views/urban/Cobranca.tsx` + docs DEV. Gates type-check/lint/build já verdes.
+- Próxima ação: (1) validar `/urban/cobranca` no navegador; (2) commit do change set; (3) considerar adicionar os `20260730_*` à lista canônica de `scripts/run-migrations.mjs` ou arquivá-los como executados.
+
 ## 2026-07-30 — Migrations em produção: v8 resolvido + 18 aplicadas
 
 - 18 migrations executadas via RPC `exec_sql` (302 statements ok). `v8_fix_bi_rpcs_and_views.sql` resolvido por análise: `billings`/`contracts` já são **tabelas reais** em produção (views inviáveis) e os RPCs `get_bi_stats`/`get_bi_lead_sources` estão no ar. A premissa da migration era falsa — nenhum código usa `billings`.

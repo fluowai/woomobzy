@@ -1,5 +1,11 @@
 # Verificação
 
+## 2026-07-30 — Migrations 20260730_* aplicadas em produção
+
+- `scratch/run_migrations_20260730.mjs` (exec_sql RPC, statement a statement): dry run OK (169 statements); execução real **169/169 ok, 0 falhas, 0 ignorados** nos 6 arquivos.
+- `scratch/verify_20260730.mjs` (pg direto com `SUPABASE_DB_URL`, sslmode removido): **14/14 checks OK** — condominium_tickets, condominiums.status, rental_contracts.{tenant_name,property_id,monthly_rent}, clients, lead_activities.lead_id, get_my_org_id, is_superadmin, handle_updated_at, pgcrypto, policy plans, policy landing_pages (`Public read landing_pages`, com underscore). `contracts.title` ausente conforme esperado.
+- Nenhum commit/push/deploy executado.
+
 ## 2026-07-30 — Resolução do v8 (BI RPCs + views billings/contracts)
 
 - Probe pg em produção (`pg_class`/`information_schema.columns`): `billing`=TABLE(11 cols), `billings`=TABLE(17), `contracts`=TABLE(10), `rental_contracts`=TABLE(47); RPCs `get_bi_stats`→jsonb e `get_bi_lead_sources`→TABLE(name,value) existem e têm assinatura correta.

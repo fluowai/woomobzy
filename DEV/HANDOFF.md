@@ -1,5 +1,19 @@
 # Handoff
 
+## 2026-07-30 — Gap LegalContracts fechado (tabela contracts reparada)
+
+- `contracts` em produção reparada: colunas `title`/`type`/`value`/`template_id`/`contract_type` + RLS por `organization_id` (antes RLS ativa sem policies) + trigger + index. Migration `20260730_fix_contracts_legal_tab.sql` aplicada 7/7 via `exec_sql`.
+- `views/LegalContracts.tsx`: insert envia `contract_type` (NOT NULL). `scripts/run-migrations.mjs`: lista canônica atualizada (6 `20260730_*` + fix contracts + `20260731_ui_redesign_schema_additions.sql`).
+- Verificado: RLS simulada como `authenticated` (transação revertida), verificação final `scratch/verify_20260730_final.mjs` OK, gates type-check/lint/build verdes.
+- Change set pendente de commit: `migrations/20260730_fix_contracts_legal_tab.sql` (novo) + `views/LegalContracts.tsx` + `scripts/run-migrations.mjs` + `.gitignore` + docs DEV. Branch `codex/main-whatsapp-media-hotfix` está 2 commits à frente de origin.
+- Próxima ação: (1) commit do change set; (2) decidir push; (3) validação visual opcional de `/urban/contracts` e `/urban/cobranca`; (4) rodar `20260731_ui_redesign_schema_additions.sql` completa (idempotente — parcialmente aplicada) ou arquivar como executada.
+
+## 2026-07-30 — Análise de segurança concluída (relatório em security-reports/)
+
+- Achados críticos: `SUPABASE_SERVICE_ROLE_KEY` e `SUPABASE_JWT_SECRET` de produção expostos em arquivos rastreados + 212 leaks no histórico git; senha real em scripts de teste.
+- Alta prioridade: webhook Asaas sem verificação; webhooks CVcrm/BIA sem auth; 16 vulns HIGH (npm); `exec_sql` SECURITY DEFINER a confirmar em produção.
+- Próxima ação obrigatória: **rotacionar service role key + JWT secret + senha exposta**, remover segredos dos arquivos e purgar o histórico git (git filter-repo) antes de novos pushes. Relatório completo: `security-reports/RELATORIO_SEGURANCA_2026-07-30.md`.
+
 ## 2026-07-30 — Rural UX batch: ações rápidas, cadastro técnico e due diligence
 
 - 5 views rurais alteradas: quick actions do dashboard navegam para rotas reais; CadastroTecnico ganhou modal de detalhes e exclusão real; DueDiligence ganhou upload de documento por item (20MB); DossieInteligente exige due diligence aprovada (riskScore >= 80) para a minuta; FinanceiroRural navega para `/rural/reports`.

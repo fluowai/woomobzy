@@ -1,5 +1,26 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-07-30] Fix do gap LegalContracts (tabela contracts: colunas + RLS + UI)
+
+- Probe pós-migração em produção: `contracts` tinha RLS ativa **sem nenhuma policy**; `legal_contracts` já existia (migration `20260731_ui_redesign_schema_additions.sql` parcialmente aplicada). Counts: contracts 0, legal_contracts 0, properties 4, leads 2.
+- Nova migration `migrations/20260730_fix_contracts_legal_tab.sql` criada e aplicada em produção via `scratch/apply_contracts_fix.mjs`: **7/7 statements OK** (após trocar splitter bugado pelo correto do runner). `contracts` passou a ter `title`, `type`, `value`, `template_id` (NOT NULL default none), `contract_type` (NOT NULL default none), `status` default `'draft'`, policy RLS por `organization_id`, trigger `set_updated_at` e index.
+- RLS simulada como `authenticated` (INSERT + SELECT OK, transação revertida, 0 rows persistidos).
+- `views/LegalContracts.tsx`: insert agora envia `contract_type` (NOT NULL sem default) — fix de UI.
+- `scripts/run-migrations.mjs`: lista canônica atualizada com os 6 `20260730_*` + `20260730_fix_contracts_legal_tab.sql` + `20260731_ui_redesign_schema_additions.sql` (idempotente).
+- Validação runtime em produção: Cobranca usa `rental_contracts` (select autenticado OK); insert do LegalContracts corrigido.
+- Gates: type-check ✓, eslint 0 erros (10 warnings preexistentes, nenhum no diff) ✓, build ✓.
+- Verificação final `scratch/verify_20260730_final.mjs`: todos os checks passam, 0 dados persistidos. Nenhum push; commit do change set pendente.
+
+## [2026-07-30] Análise de segurança completa (gitleaks + npm audit + revisão manual)
+
+- Ferramentas: gitleaks v8.30.1 instalado via `go install`; docker/semgrep/trivy indisponíveis (SAST não executado — coberto por revisão manual). Scan autorizado, advisory, sem mutações.
+- gitleaks (960 commits): **212 leaks** (115 generic-api-key, 96 jwt). Service role key do Supabase confirmada (fingerprint SHA256) **idêntica** em `.env.production.template` e `.env` de produção, em 9 arquivos rastreados; JWT secret idêntico (`.env.production.template`, `fix_jwt.mjs`); senha real em `test_user_query.mjs`/`test_orgs_query.mjs`.
+- npm audit (prod): **18 vulns** (16 HIGH): axios, nodemailer, multer, react-router, sharp, http-proxy-middleware, imapflow, mailparser, linkify-it, undici, vite, postcss, form-data, body-parser, colorthief, google-tts-api.
+- Revisão manual: webhook Asaas sem verificação (token comentado); webhooks CVcrm/BIA sem auth; `exec_sql` SECURITY DEFINER (verificar grants em prod, `secure_rpc.sql` não é migration); fail-open no webhook Orulo; `rejectUnauthorized:false` em pg direto; stored XSS no `LayoutEditor/CustomHTMLBlock`; Zap `/leads` sem auth; CI com actions não pinadas por SHA + redeploy automático.
+- Pontos fortes confirmados: auth com role do banco, impersonação por sessão curta, RLS em tabelas-chave, CORS allowlist dinâmica, rate limits dedicados, sem service role no frontend, `.env`* ignorados.
+- Artefatos: `security-reports/{gitleaks.json, npm-audit-prod.json, RELATORIO_SEGURANCA_2026-07-30.md}`. `security-reports/` adicionado ao `.gitignore`.
+- Nenhum commit/push/deploy; nenhum segredo rotacionado (aguardando aprovação do maestro).
+
 ## [2026-07-30] Rural UX batch: ações navegáveis + cadastro técnico + due diligence
 
 - `views/RuralDashboard.tsx`: quick actions agora navegam para rotas reais (`/rural/territorio/due-diligence`, `/rural/portal-comprador`, `/rural/properties/new`) em vez de toast "em breve"; botão "Nova Captação" navega para `/rural/properties/new`.

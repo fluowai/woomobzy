@@ -1,5 +1,21 @@
 # Verificação
 
+## 2026-07-30 — Fix do gap LegalContracts (contracts + RLS + UI)
+
+- `scratch/apply_contracts_fix.mjs` (exec_sql RPC): migration `20260730_fix_contracts_legal_tab.sql` aplicada em produção **7/7 statements OK** (colunas `title`/`type`/`value`/`template_id`/`contract_type`, policy RLS, trigger, index). Splitter corrigido: o antigo descartava statements após linhas de comentário.
+- RLS simulada como `authenticated` via transação revertida: INSERT + SELECT em `contracts` OK, 0 rows persistidos.
+- `scratch/verify_20260730_final.mjs` (pg direto): todos os checks passam — colunas presentes, policy ativa, trigger + index, `contracts.status` default `'draft'`.
+- Runtime validado: `views/urban/Cobranca.tsx` lê `rental_contracts` (select autenticado OK); `views/LegalContracts.tsx` insert envia `contract_type`.
+- Gates: `npm run type-check` passou; `npx eslint` em `LegalContracts.tsx`/`run-migrations.mjs` 0 erros (10 warnings preexistentes); `npm run build` passou.
+- Nenhum commit/push/deploy executado.
+
+## 2026-07-30 — Análise de segurança (advisory)
+
+- gitleaks v8.30.1 (histórico, `--redact`): **212 leaks**; confirmados por fingerprint SHA256 contra `.env` local: service role key e JWT secret de produção iguais aos do `.env`; credencial (email/senha) em 2 scripts de teste.
+- npm audit `--omit=dev` (produção): 18 vulnerabilidades (16 high); saída bruta em `security-reports/npm-audit-prod.json`.
+- SAST (semgrep/trivy) **não executado**: ferramentas ausentes e docker daemon inativo — substituído por revisão manual de código/config.
+- Verificação pendente (depende de acesso ao banco/produção): grants de `exec_sql` para anon/authenticated; confirmação visual dos webhooks; aplicação de `secure_rpc.sql` como migration.
+
 ## 2026-07-30 — Rural UX batch (5 views)
 
 - `npm run type-check`: passou (sem output).

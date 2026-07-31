@@ -186,8 +186,14 @@ export async function revokeImpersonationSession(
     .eq('id', sessionId)
     .maybeSingle();
 
-  if (existing && (existing.status === 'revoked' || existing.revoked_at)) {
-    return { id: existing.id, organizationId: existing.tenant_id, revokedAt: existing.revoked_at };
+  if (existing && existing.status !== 'active') {
+    return {
+      id: existing.id,
+      tenant_id: existing.tenant_id,
+      actor_user_id: existing.actor_user_id,
+      status: existing.status,
+      revoked_at: existing.revoked_at,
+    };
   }
 
   const active = await assertValidImpersonationSession(supabase, {

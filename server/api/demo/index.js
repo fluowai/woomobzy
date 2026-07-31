@@ -257,7 +257,9 @@ router.post('/bookings', async (req, res) => {
 router.get('/admin/overview', verifySuperAdmin, async (_req, res) => {
   try {
     const supabase = getSupabaseServer();
-    await ensureDemoSchedulerSchema().catch(() => undefined);
+    await ensureDemoSchedulerSchema().catch((err) =>
+      console.error('[DemoScheduler] provisionamento automatico falhou:', err.message)
+    );
     const [slotsResult, bookingsResult] = await Promise.all([
       supabase
         .from('demo_availability_slots')
@@ -288,7 +290,9 @@ router.get('/admin/overview', verifySuperAdmin, async (_req, res) => {
 router.post('/admin/slots', verifySuperAdmin, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
-    await ensureDemoSchedulerSchema().catch(() => undefined);
+    await ensureDemoSchedulerSchema().catch((err) =>
+      console.error('[DemoScheduler] provisionamento automatico falhou:', err.message)
+    );
     const { date, startTime, endTime, timezoneOffsetMinutes } = req.body || {};
     if (!date || !startTime || !endTime) {
       return res.status(400).json({ error: 'Informe data, início e fim.' });

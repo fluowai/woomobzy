@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Bot, Home, Plus, Loader2, Search, Save, Rocket, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -8,7 +8,6 @@ import {
   type AIAgentPayload,
   type AgentMetrics,
 } from '../services/aiAgents'
-import { instanceApi, type Instance as WhatsAppInstance } from '../views/WhatsApp/hooks/api'
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding'
 import { AgentSidebar } from '../components/agents/AgentSidebar'
 import { AgentPresetGrid, type PresetAgent } from '../components/agents/AgentPresetGrid'
@@ -63,7 +62,6 @@ function presetToBuilder(p: PresetAgent): BuilderState {
 
 const AIAgents: React.FC = () => {
   const [agents, setAgents] = useState<AIAgent[]>([])
-  const [instances, setInstances] = useState<WhatsAppInstance[]>([])
   const [selectedId, setSelectedId] = useState<string>('new')
   const [draft, setDraft] = useState<BuilderState>(DEFAULTS)
   const [loading, setLoading] = useState(true)
@@ -83,7 +81,30 @@ const AIAgents: React.FC = () => {
     ? '/rural/properties/new'
     : '/urban/properties/new'
 
-  useEffect(() => { loadAgents() }, [])
+  const loadAgents = useCallback(async () => {
+    try {
+      setLoading(true)
+      const loaded = await aiAgentService.list()
+      setAgents(loaded)
+    } catch (err: any) {
+      toast.error('Erro ao carregar agentes: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const loadMetrics = useCallback(async (id: string) => {
+    try {
+      setMetricsLoading(true)
+      setMetrics(await aiAgentService.metrics(id))
+    } catch {
+      setMetrics(null)
+    } finally {
+      setMetricsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadAgents() }, [loadAgents])
 
   useEffect(() => {
     if (selectedAgent) {
@@ -108,41 +129,7 @@ const AIAgents: React.FC = () => {
     } else {
       setMetrics(null)
     }
-  }, [selectedId])
-
-  const loadAgents = async () => {
-    try {
-      setLoading(true)
-      const [loaded] = await Promise.all([aiAgentService.list(), loadInstances()])
-      setAgents(loaded)
-    } catch (err: any) {
-      toast.error('Erro ao carregar agentes: ' + err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadInstances = async () => {
-    try {
-      const list = await instanceApi.list()
-      setInstances(list)
-      return list
-    } catch {
-      setInstances([])
-      return []
-    }
-  }
-
-  const loadMetrics = async (id: string) => {
-    try {
-      setMetricsLoading(true)
-      setMetrics(await aiAgentService.metrics(id))
-    } catch {
-      setMetrics(null)
-    } finally {
-      setMetricsLoading(false)
-    }
-  }
+  }, [selectedId, selectedAgent, loadMetrics])
 
   const selectAgent = (id: string) => {
     setSelectedId(id)
@@ -335,21 +322,14 @@ const AIAgents: React.FC = () => {
               />
               <div className="min-w-0 flex-1 space-y-5">
                 {view === 'dashboard' && selectedAgent ? (
-                  <>
-                    <AgentDashboard
-                      agent={selectedAgent}
-                      metrics={metrics}
-                      metricsLoading={metricsLoading}
-                      onEdit={() => setView('builder')}
-                      onToggleStatus={toggleStatus}
-                      onTest={() => setView('builder')}
-                    />
-                    <AgentChatTest
-                      agent={selectedAgent}
-                      draft={draft}
-                      selectedId={selectedId}
-                    />
-                  </>
+                  <AgentDashboard
+                    agent={selectedAgent}
+                    metrics={metrics}
+                    metricsLoading={metricsLoading}
+                    onEdit={() => setView('builder')}
+                    onToggleStatus={toggleStatus}
+                    onTest={() => setView('builder')}
+                  />
                 ) : (
                   <>
                     {agents.length > 0 && <AgentPresetGrid presets={presets} onSelect={applyPreset} />}
@@ -366,13 +346,12 @@ const AIAgents: React.FC = () => {
                       onDelete={deleteAgent}
                       onViewDashboard={selectedAgent ? () => setView('dashboard') : undefined}
                     />
-                    <AgentChatTest
-                      agent={selectedAgent}
-                      draft={draft}
-                      selectedId={selectedId}
-                    />
                   </>
                 )}
+                <AgentChatTest
+                  agent={selectedAgent}
+                  draft={draft}
+                />
               </div>
             </div>
           )}

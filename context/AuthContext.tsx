@@ -14,6 +14,7 @@ import {
 import {
   clearImpersonationSession,
   getStoredImpersonationSession,
+  isImpersonationErrorCode,
   persistImpersonationSession,
 } from '../src/lib/impersonation';
 import { supabase } from '../services/supabase';
@@ -388,10 +389,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         await setDownImpersonationSession();
       }
     } catch (error: any) {
-      logger.warn(
-        '[AuthContext] Falha ao revogar impersonação no servidor:',
-        error?.message || error
-      );
+      if (isImpersonationErrorCode(error?.code)) {
+        logger.info(
+          '[AuthContext] Impersonação já encerrada no servidor:',
+          error?.message || error
+        );
+      } else {
+        logger.warn(
+          '[AuthContext] Falha ao revogar impersonação no servidor:',
+          error?.message || error
+        );
+      }
     } finally {
       clearImpersonationSession();
       setIsImpersonating(false);
@@ -549,6 +557,10 @@ async function setDownImpersonationSession() {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.error || 'Erro ao encerrar o modo suporte');
+    const error = new Error(
+      payload?.error || 'Erro ao encerrar o modo suporte'
+    );
+    (error as any).code = payload?.code || null;
+    throw error;
   }
 }

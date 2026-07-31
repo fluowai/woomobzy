@@ -7,6 +7,7 @@ import { RURAL_TEMPLATES } from './rural';
 import { INCORPORADORA_TEMPLATES } from './incorporadora';
 import { LOTEADORA_TEMPLATES } from './loteadora';
 import { URBANO_TEMPLATES } from './urbano';
+import { CUSTOM_BRANDS_TEMPLATES } from './customBrands';
 
 export type { LandingPageTemplate } from './shared';
 export { generateBlocksFromTemplate } from './shared';
@@ -27,6 +28,7 @@ export const LANDING_PAGE_TEMPLATES: LandingPageTemplate[] = [
   ...PREMIUM_LANDING_PAGE_TEMPLATES,
   ...RURAL_TEMPLATES,
   ...INCORPORADORA_TEMPLATES,
+  ...CUSTOM_BRANDS_TEMPLATES,
 ];
 
 const ALL_TEMPLATES: LandingPageTemplate[] = [

@@ -446,7 +446,8 @@ export default function WhatsAppDashboard() {
         </div>
 
         {/* Right Column: Lead Details Sidebar */}
-        <div className={`w-[320px] xl:w-[360px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-y-auto custom-scrollbar transition-all duration-300 ${isLeadDetailsOpen ? 'mr-0 opacity-100' : '-mr-[360px] w-0 opacity-0 hidden'}`}>
+        {isLeadDetailsOpen && (
+          <div className="w-[320px] xl:w-[360px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
           
           {/* Section: Dados do lead */}
           <div className="p-4 border-b border-slate-100">
@@ -569,7 +570,8 @@ export default function WhatsAppDashboard() {
             </button>
           </div>
 
-        </div>
+          </div>
+        )}
       </div>
 
     </div>

@@ -1,6 +1,5 @@
-import { LandingPageTemplate } from '../shared';
+import { LandingPageTemplate, templateBlock, defaultPremiumTheme } from '../shared';
 import { BlockType } from '../../../types/landingPage';
-import { templateBlock } from '../shared';
 
 const mareHtml = `
   <style>
@@ -987,7 +986,8 @@ export const mareTemplate: LandingPageTemplate = {
   style: 'Sofisticado',
   resources: ['Imóveis', 'Mapas', 'Bairros', 'Guia Local'],
   themeConfig: {
-    primaryColor: '#0B2B42',
+    ...defaultPremiumTheme,
+    primaryColor: '#008C73',
     secondaryColor: '#E37651',
     backgroundColor: '#0B2B42',
     textColor: '#F5EAD6',

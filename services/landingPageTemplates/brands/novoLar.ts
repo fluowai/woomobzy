@@ -1,6 +1,5 @@
-import { LandingPageTemplate } from '../shared';
+import { LandingPageTemplate, templateBlock, defaultPremiumTheme } from '../shared';
 import { BlockType } from '../../../types/landingPage';
-import { templateBlock } from '../shared';
 
 const novoLarHtml = `
   <style>
@@ -952,6 +951,7 @@ export const novoLarTemplate: LandingPageTemplate = {
   style: 'Clássico / Caloroso',
   resources: ['Imóveis', 'Depoimentos', 'Blog', 'Passo a passo'],
   themeConfig: {
+    ...defaultPremiumTheme,
     primaryColor: '#6B2D26',
     secondaryColor: '#1A3E31',
     backgroundColor: '#FDFBF7',

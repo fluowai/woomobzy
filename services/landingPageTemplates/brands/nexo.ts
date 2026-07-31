@@ -1,6 +1,5 @@
-import { LandingPageTemplate } from '../shared';
+import { LandingPageTemplate, templateBlock, defaultPremiumTheme } from '../shared';
 import { BlockType } from '../../../types/landingPage';
-import { templateBlock } from '../shared';
 
 const nexoHtml = `
   <style>
@@ -1168,6 +1167,7 @@ export const nexoTemplate: LandingPageTemplate = {
   style: 'Dark Mode / Futurista',
   resources: ['Busca Inteligente', 'Match de IA', 'Simulador'],
   themeConfig: {
+    ...defaultPremiumTheme,
     primaryColor: '#722ED1',
     secondaryColor: '#A8F25C',
     backgroundColor: '#06060F',

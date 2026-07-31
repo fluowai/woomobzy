@@ -1,6 +1,5 @@
-import { LandingPageTemplate } from '../shared';
+import { LandingPageTemplate, templateBlock, defaultPremiumTheme } from '../shared';
 import { BlockType } from '../../../types/landingPage';
-import { templateBlock } from '../shared';
 
 const entreHtml = `
   <style>
@@ -755,6 +754,7 @@ export const entreTemplate: LandingPageTemplate = {
   style: 'Moderno / Ousado',
   resources: ['Destaques', 'Categorias', 'Banner de Captação'],
   themeConfig: {
+    ...defaultPremiumTheme,
     primaryColor: '#FF4B26',
     secondaryColor: '#111111',
     backgroundColor: '#F9F9F9',

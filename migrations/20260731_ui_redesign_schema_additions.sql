@@ -103,15 +103,19 @@ ALTER TABLE public.development_lots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.financing_simulations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.legal_contracts ENABLE ROW LEVEL SECURITY;
 
--- Políticas básicas de segurança (Tenant Isolation)
+-- Políticas básicas de segurança (Tenant Isolation com organization_id)
+DROP POLICY IF EXISTS "Tenant isolation developments" ON public.developments;
 CREATE POLICY "Tenant isolation developments" ON public.developments 
   FOR ALL TO authenticated USING (organization_id = public.get_my_org_id() OR public.is_superadmin());
 
+DROP POLICY IF EXISTS "Tenant isolation lots" ON public.development_lots;
 CREATE POLICY "Tenant isolation lots" ON public.development_lots 
   FOR ALL TO authenticated USING (development_id IN (SELECT id FROM public.developments WHERE organization_id = public.get_my_org_id() OR public.is_superadmin()));
 
+DROP POLICY IF EXISTS "Tenant isolation simulations" ON public.financing_simulations;
 CREATE POLICY "Tenant isolation simulations" ON public.financing_simulations 
   FOR ALL TO authenticated USING (organization_id = public.get_my_org_id() OR public.is_superadmin());
 
+DROP POLICY IF EXISTS "Tenant isolation contracts" ON public.legal_contracts;
 CREATE POLICY "Tenant isolation contracts" ON public.legal_contracts 
   FOR ALL TO authenticated USING (organization_id = public.get_my_org_id() OR public.is_superadmin());

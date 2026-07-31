@@ -26,11 +26,15 @@ import {
   Calendar,
   CheckCircle2,
   AlertCircle,
-  Flame
+  Flame,
+  PanelRightClose,
+  PanelRightOpen
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function WhatsAppDashboard() {
   const [activeChat, setActiveChat] = useState('c1');
+  const [isLeadDetailsOpen, setIsLeadDetailsOpen] = useState(false);
 
   return (
     <div className="w-full h-[calc(100vh-2rem)] min-h-[800px] bg-slate-50 font-sans text-slate-800 flex flex-col animate-fade-in overflow-hidden -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
@@ -48,13 +52,13 @@ export default function WhatsAppDashboard() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 shadow-sm">
             <MessageCircle size={14} className="text-emerald-500" /> WhatsApp conectado
           </div>
-          <button className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+          <button onClick={() => toast.info('Importação de histórico em breve')} className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
             <RefreshCw size={16} /> Importar histórico
           </button>
-          <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+          <button onClick={() => toast.info('Nova conversa em breve')} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
             <Plus size={16} /> Nova conversa
           </button>
-          <button className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 relative shadow-sm ml-2">
+          <button onClick={() => toast.info('Notificações')} className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 relative shadow-sm ml-2">
             <Bell size={20} />
             <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 border-2 border-white rounded-full text-[8px] font-bold text-white flex items-center justify-center">3</span>
           </button>
@@ -73,22 +77,22 @@ export default function WhatsAppDashboard() {
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input type="text" placeholder="Buscar conversas, contatos ou imóveis..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
               </div>
-              <button className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 shrink-0">
+              <button onClick={() => toast.info('Configurações do chat em breve')} className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 shrink-0">
                 <Settings2 size={18} />
               </button>
             </div>
 
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              <button className="px-4 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-lg whitespace-nowrap">Todos</button>
-              <button className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><MessageCircle size={14} className="text-emerald-500" /> WhatsApp</button>
-              <button className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><Instagram size={14} className="text-pink-500" /> Instagram</button>
-              <button className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><Globe size={14} /> Site</button>
+              <button onClick={() => toast.info('Filtrar: Todos')} className="px-4 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-lg whitespace-nowrap">Todos</button>
+              <button onClick={() => toast.info('Filtrar: WhatsApp')} className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><MessageCircle size={14} className="text-emerald-500" /> WhatsApp</button>
+              <button onClick={() => toast.info('Filtrar: Instagram')} className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><Instagram size={14} className="text-pink-500" /> Instagram</button>
+              <button onClick={() => toast.info('Filtrar: Site')} className="px-3 py-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-lg flex items-center gap-1.5 whitespace-nowrap"><Globe size={14} /> Site</button>
             </div>
 
             <div className="flex items-center gap-2">
-              <button className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">Minha fila <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">18</span></button>
-              <button className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">Sem responsável <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">6</span></button>
-              <button className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">SLA vencido <span className="bg-slate-700 text-white px-1.5 py-0.5 rounded-full">4</span></button>
+              <button onClick={() => toast.info('Minha fila - 18 conversas')} className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">Minha fila <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">18</span></button>
+              <button onClick={() => toast.info('Sem responsável - 6 conversas')} className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">Sem responsável <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">6</span></button>
+              <button onClick={() => toast.info('SLA vencido - 4 conversas')} className="flex-1 py-1.5 px-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold rounded-lg flex items-center justify-between">SLA vencido <span className="bg-slate-700 text-white px-1.5 py-0.5 rounded-full">4</span></button>
             </div>
 
             <div className="grid grid-cols-4 gap-2">
@@ -261,7 +265,7 @@ export default function WhatsAppDashboard() {
               </div>
             </div>
 
-            <button className="w-full py-4 text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-slate-50 border-t border-slate-100">
+            <button onClick={() => toast.info('Todas as conversas em breve')} className="w-full py-4 text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-slate-50 border-t border-slate-100">
               Ver todas as conversas
             </button>
           </div>
@@ -303,7 +307,10 @@ export default function WhatsAppDashboard() {
                   <span className="text-sm font-bold text-slate-700 flex items-center gap-1">Juliana Gomes <ChevronDown size={14} className="text-slate-400" /></span>
                 </div>
               </div>
-              <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+              <button onClick={() => setIsLeadDetailsOpen(!isLeadDetailsOpen)} className={`p-2 rounded-lg transition-colors ${isLeadDetailsOpen ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`} title="Detalhes do Lead">
+                {isLeadDetailsOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+              </button>
+              <button onClick={() => toast.info('Opções do chat')} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors hidden sm:block">
                 <MoreVertical size={20} />
               </button>
             </div>
@@ -320,7 +327,7 @@ export default function WhatsAppDashboard() {
                 <p className="text-sm font-bold text-slate-700">Apto 3 dorm • Centro • até R$ 850 mil</p>
               </div>
             </div>
-            <button className="p-1.5 text-slate-400 hover:text-slate-600 bg-white border border-slate-200 rounded shadow-sm">
+            <button onClick={() => toast.info('Editar interesse em breve')} className="p-1.5 text-slate-400 hover:text-slate-600 bg-white border border-slate-200 rounded shadow-sm">
               <Edit2 size={12} />
             </button>
           </div>
@@ -377,7 +384,7 @@ export default function WhatsAppDashboard() {
                     <p className="text-xs text-slate-500 mt-1">105 m² • 3 suítes • 2 vagas</p>
                     <p className="text-base font-bold text-slate-900 mt-2">R$ 850.000</p>
                   </div>
-                  <button className="w-full py-2 bg-emerald-600 text-white text-xs font-bold transition-colors hover:bg-emerald-700">Enviar detalhes</button>
+                  <button onClick={() => toast.info('Detalhes do imóvel enviados')} className="w-full py-2 bg-emerald-600 text-white text-xs font-bold transition-colors hover:bg-emerald-700">Enviar detalhes</button>
                 </div>
               </div>
               <span className="text-[10px] font-bold text-slate-400 mr-1 flex items-center gap-1">11:37 <CheckCircle2 size={12} className="text-blue-500" /></span>
@@ -395,16 +402,16 @@ export default function WhatsAppDashboard() {
 
           {/* Quick Actions Suggestions */}
           <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 backdrop-blur-sm">
-            <button className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+            <button onClick={() => toast.info('Enviar opções de imóveis')} className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Enviar opções
             </button>
-            <button className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+            <button onClick={() => toast.info('Simulador de financiamento em breve')} className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Simular financiamento
             </button>
-            <button className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+            <button onClick={() => toast.info('Agendamento de visita em breve')} className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
               <Calendar size={12} /> Agendar visita
             </button>
-            <button className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
+            <button onClick={() => toast.info('Pedir documentos')} className="px-3 py-1.5 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-[11px] font-bold rounded-full whitespace-nowrap shadow-sm transition-colors flex items-center gap-1.5">
               <FileText size={12} /> Pedir documentos
             </button>
           </div>
@@ -419,17 +426,17 @@ export default function WhatsAppDashboard() {
               />
               <div className="flex items-center justify-between px-3 pb-3">
                 <div className="flex items-center gap-1">
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Paperclip size={18} /></button>
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><ImageIcon size={18} /></button>
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Mic size={18} /></button>
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><FileText size={18} /></button>
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Type size={18} /></button>
+                  <button onClick={() => toast.info('Anexar arquivo')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Paperclip size={18} /></button>
+                  <button onClick={() => toast.info('Enviar imagem')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><ImageIcon size={18} /></button>
+                  <button onClick={() => toast.info('Gravar áudio')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Mic size={18} /></button>
+                  <button onClick={() => toast.info('Enviar arquivo')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><FileText size={18} /></button>
+                  <button onClick={() => toast.info('Inserir template')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Type size={18} /></button>
                   <div className="w-px h-5 bg-slate-200 mx-1" />
-                  <button className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors flex items-center gap-1"><Sparkles size={16} /> <span className="text-xs font-bold">IA</span></button>
+                  <button onClick={() => toast.info('Assistente IA')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors flex items-center gap-1"><Sparkles size={16} /> <span className="text-xs font-bold">IA</span></button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"><Smile size={20} /></button>
-                  <button className="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center transition-colors shadow-md shadow-emerald-600/20">
+                  <button onClick={() => toast.info('Seletor de emojis em breve')} className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"><Smile size={20} /></button>
+                  <button onClick={() => toast.info('Mensagem enviada')} className="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center transition-colors shadow-md shadow-emerald-600/20">
                     <Send size={18} className="ml-1" />
                   </button>
                 </div>
@@ -439,7 +446,7 @@ export default function WhatsAppDashboard() {
         </div>
 
         {/* Right Column: Lead Details Sidebar */}
-        <div className="w-[320px] xl:w-[360px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-y-auto custom-scrollbar hidden lg:flex">
+        <div className={`w-[320px] xl:w-[360px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-y-auto custom-scrollbar transition-all duration-300 ${isLeadDetailsOpen ? 'mr-0 opacity-100' : '-mr-[360px] w-0 opacity-0 hidden'}`}>
           
           {/* Section: Dados do lead */}
           <div className="p-4 border-b border-slate-100">
@@ -459,7 +466,7 @@ export default function WhatsAppDashboard() {
               </div>
             </div>
 
-            <button className="w-full py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors shadow-sm">
+            <button onClick={() => toast.info('Redirecionando para CRM...')} className="w-full py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors shadow-sm">
               Ver no CRM
             </button>
           </div>
@@ -487,7 +494,7 @@ export default function WhatsAppDashboard() {
               <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-md border border-slate-200">Compra</span>
               <span className="px-2.5 py-1 bg-[#dcfce7] text-[#166534] text-xs font-bold rounded-md border border-[#bbf7d0]">Centro</span>
               <span className="px-2.5 py-1 bg-[#fef9c3] text-[#854d0e] text-xs font-bold rounded-md border border-[#fef08a]">3 quartos+</span>
-              <button className="w-6 h-6 flex items-center justify-center bg-white border border-slate-300 text-slate-400 rounded-md hover:bg-slate-50"><Plus size={14} /></button>
+              <button onClick={() => toast.info('Adicionar tag')} className="w-6 h-6 flex items-center justify-center bg-white border border-slate-300 text-slate-400 rounded-md hover:bg-slate-50"><Plus size={14} /></button>
             </div>
           </div>
 
@@ -512,7 +519,7 @@ export default function WhatsAppDashboard() {
                 <p className="text-sm font-bold text-slate-800">Apto 3 dorm • Centro</p>
                 <p className="text-xs text-slate-500">Até R$ 850 mil</p>
               </div>
-              <button className="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-md hover:bg-slate-100">Ver imóveis</button>
+              <button onClick={() => toast.info('Ver imóveis do lead')} className="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-md hover:bg-slate-100">Ver imóveis</button>
             </div>
           </div>
 
@@ -520,7 +527,7 @@ export default function WhatsAppDashboard() {
           <div className="p-4 border-b border-slate-100">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2"><CheckCircle2 size={14} /> Tarefas (1)</h3>
-              <button className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700">Ver todas</button>
+              <button onClick={() => toast.info('Todas as tarefas em breve')} className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700">Ver todas</button>
             </div>
             <div className="flex items-start gap-3">
               <div className="mt-0.5 w-4 h-4 rounded border border-slate-300 bg-white" />
@@ -535,16 +542,16 @@ export default function WhatsAppDashboard() {
           <div className="p-4 border-b border-slate-100">
             <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2 mb-3"><Settings2 size={14} /> Ações rápidas</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
+              <button onClick={() => toast.info('Criar tarefa em breve')} className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
                 <CheckCircle2 size={14} className="text-slate-400" /> Criar tarefa
               </button>
-              <button className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
+              <button onClick={() => toast.info('Agendar visita em breve')} className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
                 <Calendar size={14} className="text-slate-400" /> Agendar visita
               </button>
-              <button className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
+              <button onClick={() => toast.info('Enviar imóvel ao lead')} className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
                 <Mail size={14} className="text-slate-400" /> Enviar imóvel
               </button>
-              <button className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
+              <button onClick={() => toast.info('Transferir atendimento em breve')} className="py-2 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1.5 shadow-sm">
                 <Globe size={14} className="text-slate-400" /> Transferir atendimento
               </button>
             </div>
@@ -557,7 +564,7 @@ export default function WhatsAppDashboard() {
             </div>
             <h3 className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 mb-2 relative z-10"><Sparkles size={14} className="text-emerald-600" /> IA - Insight</h3>
             <p className="text-xs text-emerald-900 mb-3 relative z-10 leading-relaxed">Lead perguntou sobre financiamento. Sugira simulação e 3 imóveis compatíveis.</p>
-            <button className="w-full py-1.5 bg-white border border-emerald-200 text-emerald-700 text-xs font-bold rounded-lg shadow-sm hover:bg-emerald-100 relative z-10 transition-colors">
+            <button onClick={() => toast.info('Sugestão da IA aplicada')} className="w-full py-1.5 bg-white border border-emerald-200 text-emerald-700 text-xs font-bold rounded-lg shadow-sm hover:bg-emerald-100 relative z-10 transition-colors">
               Aplicar sugestão
             </button>
           </div>

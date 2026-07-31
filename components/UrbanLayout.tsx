@@ -30,6 +30,8 @@ import {
   LucideIcon,
   Landmark,
   Trophy,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -53,6 +55,7 @@ const UrbanLayout: React.FC = () => {
   const subtype = settings?.urbanSubtype || 'imobiliaria';
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
   const isWorkspaceRoute =
@@ -173,7 +176,10 @@ const UrbanLayout: React.FC = () => {
       key={item.path}
       to={item.path}
       end={item.path === '/urban'}
-      onClick={() => setIsMobileMenuOpen(false)}
+      onClick={() => {
+        setIsMobileMenuOpen(false);
+        setIsDesktopSidebarOpen(false);
+      }}
       className={({ isActive }) => {
         const active = isMenuItemActive(item.path, isActive);
         return `workspace-nav-item flex items-center justify-between group ${
@@ -215,11 +221,14 @@ const UrbanLayout: React.FC = () => {
 
   const renderSidebarContent = () => (
     <>
-      <div className="px-6 py-5">
+      <div className="px-6 py-5 flex items-center justify-between">
         <Link
           to="/urban"
           className="flex items-center gap-3 group"
-          onClick={() => setIsMobileMenuOpen(false)}
+          onClick={() => {
+            setIsMobileMenuOpen(false);
+            setIsDesktopSidebarOpen(false);
+          }}
         >
           <img
             src="/logo-wootech-imob.svg"
@@ -227,6 +236,13 @@ const UrbanLayout: React.FC = () => {
             className="workspace-logo transition-transform group-hover:scale-[1.02]"
           />
         </Link>
+        <button
+          onClick={() => setIsDesktopSidebarOpen(false)}
+          className="hidden md:flex text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg p-1.5 transition-colors"
+          title="Recolher Menu"
+        >
+          <PanelLeftClose size={18} />
+        </button>
       </div>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 custom-scrollbar">
@@ -311,8 +327,15 @@ const UrbanLayout: React.FC = () => {
       )}
 
       {!isLandingPageEditor && (
-        <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
-          {renderSidebarContent()}
+        <aside 
+          className={`workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${
+            isDesktopSidebarOpen ? 'w-[280px] border-r border-slate-200' : 'w-0 border-r-0 opacity-0'
+          }`}
+          style={{ width: isDesktopSidebarOpen ? '' : '0px' }}
+        >
+          <div className="w-[280px] h-full flex flex-col">
+            {renderSidebarContent()}
+          </div>
         </aside>
       )}
 
@@ -324,6 +347,19 @@ const UrbanLayout: React.FC = () => {
         >
           <Menu size={21} />
         </button>
+        
+        {!isLandingPageEditor && (
+          <button
+            onClick={() => setIsDesktopSidebarOpen(true)}
+            className={`fixed left-4 top-4 z-[90] hidden md:flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm hover:shadow hover:bg-slate-50 transition-all duration-300 ${
+              isDesktopSidebarOpen ? 'opacity-0 pointer-events-none -translate-x-4' : 'opacity-100 translate-x-0'
+            }`}
+            title="Abrir Menu"
+          >
+            <PanelLeftOpen size={20} />
+          </button>
+        )}
+
         <div
           className={`flex-1 overflow-y-auto ${
             isLandingPageEditor

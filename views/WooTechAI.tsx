@@ -138,6 +138,17 @@ const WooTechAI: React.FC = () => {
       });
 
       if (!response.ok) {
+        if (response.status === 503) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content:
+                '⚠️ **Nenhum provedor de IA disponível.**\n\nPara usar o WooTech AI, você precisa cadastrar sua chave de API de algum provedor (Groq, Gemini ou ChatGPT).\n\n👉 Clique no botão **"Chaves"** no canto superior direito e cole sua chave.',
+            },
+          ]);
+          return;
+        }
         throw new Error('Falha na comunicação com a IA');
       }
 

@@ -33,7 +33,7 @@ import {
 import { toast } from 'sonner';
 
 export default function WhatsAppDashboard() {
-  const [activeChat, setActiveChat] = useState('c1');
+  const [activeChat, setActiveChat] = useState<string | null>(null);
   const [isLeadDetailsOpen, setIsLeadDetailsOpen] = useState(false);
 
   return (
@@ -69,7 +69,7 @@ export default function WhatsAppDashboard() {
       <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
         
         {/* Left Column: Chat List */}
-        <div className="w-[340px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-hidden">
+        <div className={`w-full md:w-[340px] flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-hidden ${activeChat ? 'hidden md:flex' : 'flex'}`}>
           
           <div className="p-4 border-b border-slate-100 space-y-4 shrink-0">
             <div className="flex gap-2">
@@ -272,12 +272,18 @@ export default function WhatsAppDashboard() {
         </div>
 
         {/* Middle Column: Chat Window */}
-        <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm min-w-0 relative">
+        <div className={`flex-1 flex-col bg-white border border-slate-200 rounded-2xl shadow-sm min-w-0 relative ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
           
           {/* Chat Header */}
           <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-4">
-              <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Marina" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />
+            <div className="flex items-center gap-2 sm:gap-4">
+              <button 
+                onClick={() => setActiveChat(null)} 
+                className="md:hidden p-2 -ml-2 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Marina" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white shadow-sm" />
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-bold text-slate-900">Marina Lopes</h2>
@@ -447,7 +453,7 @@ export default function WhatsAppDashboard() {
 
         {/* Right Column: Lead Details Sidebar */}
         {isLeadDetailsOpen && (
-          <div className="w-[320px] xl:w-[360px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
+          <div className="absolute inset-0 z-20 md:relative md:inset-auto w-full md:w-[320px] xl:w-[360px] flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm shrink-0 overflow-y-auto custom-scrollbar animate-in slide-in-from-right duration-300">
           
           {/* Section: Dados do lead */}
           <div className="p-4 border-b border-slate-100">

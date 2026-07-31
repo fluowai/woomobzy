@@ -168,6 +168,8 @@ const UrbanLayout: React.FC = () => {
     { title: 'Sistema', items: systemItems },
   ];
 
+  const isExpanded = isDesktopSidebarOpen || isMobileMenuOpen;
+
   const isMenuItemActive = (path: string, isActive: boolean) =>
     isActive || (path !== '/urban' && pathname.startsWith(path));
 
@@ -178,7 +180,6 @@ const UrbanLayout: React.FC = () => {
       end={item.path === '/urban'}
       onClick={() => {
         setIsMobileMenuOpen(false);
-        setIsDesktopSidebarOpen(false);
       }}
       className={({ isActive }) => {
         const active = isMenuItemActive(item.path, isActive);
@@ -201,9 +202,9 @@ const UrbanLayout: React.FC = () => {
                     : 'text-slate-400 group-hover:text-primary shrink-0'
                 }
               />
-              {isDesktopSidebarOpen && <span className="truncate">{item.label}</span>}
+              {isExpanded && <span className="truncate">{item.label}</span>}
             </div>
-            {isDesktopSidebarOpen && item.path !== '/urban' && (
+            {isExpanded && item.path !== '/urban' && (
               <ChevronRight
                 size={14}
                 className={
@@ -221,14 +222,13 @@ const UrbanLayout: React.FC = () => {
 
   const renderSidebarContent = () => (
     <>
-      <div className={`py-5 flex items-center transition-all ${isDesktopSidebarOpen ? 'px-6 justify-between' : 'px-0 justify-center flex-col gap-4'}`}>
-        {isDesktopSidebarOpen && (
+      <div className={`py-5 flex items-center transition-all ${isExpanded ? 'px-6 justify-between' : 'px-0 justify-center flex-col gap-4'}`}>
+        {isExpanded && (
           <Link
             to="/urban"
             className="flex items-center gap-3 group"
             onClick={() => {
               setIsMobileMenuOpen(false);
-              setIsDesktopSidebarOpen(false);
             }}
           >
             <img
@@ -247,10 +247,10 @@ const UrbanLayout: React.FC = () => {
         </button>
       </div>
 
-      <nav className={`flex-1 overflow-y-auto space-y-5 custom-scrollbar ${isDesktopSidebarOpen ? 'px-3 py-4' : 'px-2 py-4'}`}>
+      <nav className={`flex-1 overflow-y-auto space-y-5 custom-scrollbar ${isExpanded ? 'px-3 py-4' : 'px-2 py-4'}`}>
         {menuSections.map((section) => (
           <div key={section.title} className="space-y-2">
-            {isDesktopSidebarOpen ? (
+            {isExpanded ? (
               <p className="workspace-section-title">{section.title}</p>
             ) : (
               <div className="w-full h-px bg-slate-100 my-2"></div>
@@ -261,7 +261,7 @@ const UrbanLayout: React.FC = () => {
 
         <button
           onClick={() => setIsSupportOpen(true)}
-          className={`workspace-nav-item flex items-center group ${isDesktopSidebarOpen ? 'justify-between w-full' : 'justify-center w-full'}`}
+          className={`workspace-nav-item flex items-center group ${isExpanded ? 'justify-between w-full' : 'justify-center w-full'}`}
           title="Suporte"
         >
           <div className="flex items-center gap-3.5">
@@ -269,17 +269,17 @@ const UrbanLayout: React.FC = () => {
               size={20}
               className="text-slate-400 group-hover:text-primary shrink-0"
             />
-            {isDesktopSidebarOpen && <span>Suporte</span>}
+            {isExpanded && <span>Suporte</span>}
           </div>
         </button>
       </nav>
 
-      <div className={`border-t border-slate-100 bg-slate-50/60 ${isDesktopSidebarOpen ? 'p-4' : 'p-2 flex flex-col items-center gap-2'}`}>
-        <div className={`flex items-center gap-3 bg-white border border-slate-200 rounded-xl ${isDesktopSidebarOpen ? 'mb-3 p-2' : 'p-1'}`}>
+      <div className={`border-t border-slate-100 bg-slate-50/60 ${isExpanded ? 'p-4' : 'p-2 flex flex-col items-center gap-2'}`}>
+        <div className={`flex items-center gap-3 bg-white border border-slate-200 rounded-xl ${isExpanded ? 'mb-3 p-2' : 'p-1'}`}>
           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold border border-primary/20 shrink-0">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'U'}
           </div>
-          {isDesktopSidebarOpen && (
+          {isExpanded && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-900 truncate">
                 {profile?.full_name || profile?.name || 'Carregando...'}
@@ -303,10 +303,10 @@ const UrbanLayout: React.FC = () => {
 
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-semibold transition-all rounded-lg hover:bg-red-50 ${isDesktopSidebarOpen ? 'w-full p-2' : 'p-2 justify-center'}`}
+          className={`flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-semibold transition-all rounded-lg hover:bg-red-50 ${isExpanded ? 'w-full p-2' : 'p-2 justify-center'}`}
           title="Sair"
         >
-          <LogOut size={16} className="shrink-0" /> {isDesktopSidebarOpen && 'Sair'}
+          <LogOut size={16} className="shrink-0" /> {isExpanded && 'Sair'}
         </button>
       </div>
       <SupportModal
@@ -347,13 +347,15 @@ const UrbanLayout: React.FC = () => {
       )}
 
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="fixed left-3 top-3 z-[110] flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md md:hidden"
-          aria-label="Abrir menu"
-        >
-          <Menu size={21} />
-        </button>
+        {!isMobileMenuOpen && (
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="fixed left-3 top-3 z-[110] flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md md:hidden"
+            aria-label="Abrir menu"
+          >
+            <Menu size={21} />
+          </button>
+        )}
         
         <div
           className={`flex-1 overflow-y-auto ${

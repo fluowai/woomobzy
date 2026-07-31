@@ -9,10 +9,12 @@ import {
   CheckCircle,
   Trash2,
   Eye,
+  X,
 } from 'lucide-react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../services/supabase';
+import { propertyService } from '../../services/properties';
 import { useAuth } from '../../context/AuthContext';
 import { isRuralProperty } from '../../utils/propertyNiche';
 import * as toGeoJSON from '@tmcw/togeojson';
@@ -41,6 +43,8 @@ const CadastroTecnico: React.FC = () => {
   const [properties, setProperties] = useState<any[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [detailProperty, setDetailProperty] = useState<any>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [technicalForm, setTechnicalForm] = useState({
     area_agricultavel: '',
     area_reserva: '',
@@ -201,6 +205,62 @@ const CadastroTecnico: React.FC = () => {
       )
     );
     toast.success('Cadastro técnico rural salvo com sucesso.');
+  };
+
+  const handleDelete = async (prop: any) => {
+    if (!confirm(`Excluir a propriedade "${prop.title}"? Essa ação não pode ser desfeita.`)) {
+      return;
+    }
+    setDeletingId(prop.id);
+    try {
+      await propertyService.delete(prop.id);
+      setProperties((prev) => prev.filter((item) => item.id !== prop.id));
+      toast.success('Propriedade excluída.');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir propriedade.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const technicalDetailRows = (prop: any) => {
+    const rt = prop.features?.rural_technical || {};
+    const legal = prop.features?.legal || {};
+    return [
+      {
+        label: 'Localização',
+        value: [prop.city, prop.state].filter(Boolean).join(' / ') || '—',
+      },
+      {
+        label: 'Área Total (ha)',
+        value:
+          prop.total_area_ha || rt.measured_area_ha || rt.area_total_ha || '—',
+      },
+      {
+        label: 'Área Agricultável (ha)',
+        value: rt.area_agricultavel ?? '—',
+      },
+      {
+        label: 'Reserva Legal (ha)',
+        value: rt.area_reserva ?? '—',
+      },
+      { label: 'Bioma', value: rt.bioma || '—' },
+      { label: 'Tipo de Solo', value: rt.tipo_solo || '—' },
+      { label: 'Regime Hídrico', value: rt.regime_hidrico || '—' },
+      { label: 'Topografia', value: rt.topografia || '—' },
+      { label: 'Aptidão', value: rt.aptidao || '—' },
+      { label: 'Score de Liquidez', value: rt.score_liquidez ?? '—' },
+      { label: 'CAR', value: legal?.carNumber || '—' },
+      {
+        label: 'Georreferenciamento',
+        value:
+          legal?.geometry || rt?.geometry
+            ? 'Registrado'
+            : 'Pendente',
+      },
+      { label: 'Status', value: prop.status || 'ativo' },
+      { label: 'Arquivo de Origem', value: rt.source_file || '—' },
+    ];
   };
 
   return (
@@ -539,18 +599,17 @@ const CadastroTecnico: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
                           <button
-                            onClick={() =>
-                              toast.info('Visualização de detalhes em breve')
-                            }
+                            onClick={() => setDetailProperty(prop)}
+                            title="Ver detalhes"
                             className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
                           >
                             <Eye size={16} />
                           </button>
                           <button
-                            onClick={() =>
-                              toast.error('Exclusão não implementada')
-                            }
-                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all"
+                            onClick={() => handleDelete(prop)}
+                            disabled={deletingId === prop.id}
+                            title="Excluir propriedade"
+                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all disabled:opacity-50"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -561,6 +620,45 @@ const CadastroTecnico: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {detailProperty && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-8 shadow-2xl">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-black uppercase italic tracking-tighter">
+                  Cadastro Técnico
+                </h3>
+                <p className="text-sm text-slate-500 font-medium mt-1">
+                  {detailProperty.title}
+                </p>
+              </div>
+              <button
+                onClick={() => setDetailProperty(null)}
+                className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all"
+                aria-label="Fechar detalhes"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {technicalDetailRows(detailProperty).map((row) => (
+                <div
+                  key={row.label}
+                  className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3"
+                >
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    {row.label}
+                  </p>
+                  <p className="text-sm font-bold text-slate-800 mt-1">
+                    {row.value}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -1,5 +1,11 @@
 # Handoff
 
+## 2026-07-30 — Rural UX batch: ações rápidas, cadastro técnico e due diligence
+
+- 5 views rurais alteradas: quick actions do dashboard navegam para rotas reais; CadastroTecnico ganhou modal de detalhes e exclusão real; DueDiligence ganhou upload de documento por item (20MB); DossieInteligente exige due diligence aprovada (riskScore >= 80) para a minuta; FinanceiroRural navega para `/rural/reports`.
+- Gates: type-check/lint/build aprovados; commit realizado. Nenhum push/deploy.
+- Próxima ação: validar no navegador com login em `/rural` (dashboard, cadastro técnico, due diligence, dossiê, financeiro).
+
 ## 2026-07-30 — Migrations 20260730_* aplicadas e verificadas
 
 - 6 migrations executadas em produção via RPC `exec_sql`: **169/169 statements ok, 0 falhas** (landing_pages public access + RLS definitive, condominium_tickets, fix_all_production_errors, consolidated_production_fix, plans RLS insert).

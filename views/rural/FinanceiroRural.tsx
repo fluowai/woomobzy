@@ -17,9 +17,11 @@ import { Lead, Property } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const FinanceiroRural: React.FC = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -399,7 +401,7 @@ const FinanceiroRural: React.FC = () => {
             Últimos Negócios Fechados
           </h4>
           <button
-            onClick={() => toast.info('Relatório completo em desenvolvimento')}
+            onClick={() => navigate('/rural/reports')}
             className="text-xs font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors"
           >
             Ver Relatório Completo

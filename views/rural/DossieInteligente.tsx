@@ -100,6 +100,22 @@ const DossieInteligente: React.FC = () => {
     );
   };
 
+  const requestSaleDraft = async () => {
+    if (!selectedProperty) return;
+    const validation = (selectedProperty.features as any)?.rural_due_diligence
+      ?.validation;
+    const riskScore = Number(validation?.riskScore || 0);
+    if (!validation || riskScore < 80) {
+      toast.info(
+        'A minuta deve ser solicitada após a aprovação jurídica da due diligence.'
+      );
+      return;
+    }
+    toast.success('Due diligence aprovada. Gerando minuta de venda...');
+    await downloadDossier();
+    toast.success('Minuta de venda gerada e enviada para download.');
+  };
+
   return (
     <div className="space-y-10 pb-20 animate-in fade-in duration-700">
       {/* Header */}
@@ -337,11 +353,7 @@ const DossieInteligente: React.FC = () => {
                   </p>
                 </button>
                 <button
-                  onClick={() =>
-                    toast.info(
-                      'A minuta deve ser solicitada após a aprovação jurídica da due diligence.'
-                    )
-                  }
+                  onClick={requestSaleDraft}
                   className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-indigo-600 hover:border-indigo-500 transition-all text-left group"
                 >
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 group-hover:text-white/80 mb-1">

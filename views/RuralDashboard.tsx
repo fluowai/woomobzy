@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
   Users as UsersIcon,
@@ -31,6 +31,7 @@ import {
 
 const RuralDashboard: React.FC = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [ruralProperties, setRuralProperties] = useState<any[]>([]);
   const [leadCount, setLeadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -177,7 +178,8 @@ const RuralDashboard: React.FC = () => {
       desc: 'Sincronizar dados do CAR/SIGEF',
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
-      border: 'border-emerald-100'
+      border: 'border-emerald-100',
+      path: '/rural/territorio/due-diligence'
     },
     {
       icon: Target,
@@ -185,7 +187,8 @@ const RuralDashboard: React.FC = () => {
       desc: 'Mapa de calor de investidores',
       color: 'text-indigo-600',
       bg: 'bg-indigo-50',
-      border: 'border-indigo-100'
+      border: 'border-indigo-100',
+      path: '/rural/portal-comprador'
     },
     {
       icon: Briefcase,
@@ -193,7 +196,8 @@ const RuralDashboard: React.FC = () => {
       desc: 'Criar apresentação personalizada',
       color: 'text-amber-600',
       bg: 'bg-amber-50',
-      border: 'border-amber-100'
+      border: 'border-amber-100',
+      path: '/rural/properties/new'
     },
   ];
 
@@ -222,7 +226,7 @@ const RuralDashboard: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <button className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-amber-500/30 transition-all flex items-center gap-2">
+            <button onClick={() => navigate('/rural/properties/new')} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-amber-500/30 transition-all flex items-center gap-2">
               <Sprout size={18} /> Nova Captação
             </button>
           </div>
@@ -311,7 +315,7 @@ const RuralDashboard: React.FC = () => {
               {quickActions.map((action, idx) => (
                 <button
                   key={idx}
-                  onClick={() => toast.info(`Ação "${action.label}" em breve`)}
+                  onClick={() => navigate(action.path)}
                   className={`flex items-center gap-4 w-full p-4 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group text-left`}
                 >
                   <div className={`p-2.5 rounded-xl border ${action.bg} ${action.border} transition-transform group-hover:scale-110`}>

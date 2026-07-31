@@ -1,5 +1,13 @@
 # Verificação
 
+## 2026-07-30 — Rural UX batch (5 views)
+
+- `npm run type-check`: passou (sem output).
+- `npx eslint` nos 5 arquivos: 0 erros; 4 avisos preexistentes (`MapPin` em RuralDashboard; `FileText`/`PropertyGeo` em CadastroTecnico; hooks-deps em DossieInteligente) — nenhum introduzido pelo diff.
+- `npm run build`: passou; 4.063 módulos transformados; PWA `generateSW` 237 entries.
+- Coberto por revisão de código (sem teste autenticado executado): quick actions, exclusão de propriedade, upload por item (20MB), minuta gated por riskScore >= 80.
+- Pendência: validação visual/funcional no navegador com autenticação em `/rural` (dashboard, cadastro-tecnico, due-diligence, dossie, financeiro).
+
 ## 2026-07-30 — Migrations 20260730_* aplicadas em produção
 
 - `scratch/run_migrations_20260730.mjs` (exec_sql RPC, statement a statement): dry run OK (169 statements); execução real **169/169 ok, 0 falhas, 0 ignorados** nos 6 arquivos.

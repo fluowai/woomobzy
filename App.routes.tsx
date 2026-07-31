@@ -134,6 +134,7 @@ const DirectClientsManager = lazy(
   () => import('./views/megaadmin/DirectClientsManager')
 );
 const SiteManager = lazy(() => import('./views/SiteManager'));
+const MegaTheme = lazy(() => import('./views/sites/megainvestimentos/MegaTheme'));
 const SitePageEditor = lazy(() => import('./views/SitePageEditor'));
 const PublicSite = lazy(() => import('./views/PublicSite'));
 const WhatsAppDashboard = lazy(
@@ -150,6 +151,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<FullScreenSpinner />}>
       <Routes>
+        <Route path="/megainvestimentos" element={<MegaTheme />} />
         <Route path="/" element={<SystemSalesPage />} />
         <Route path="/vendas" element={<SystemSalesPage />} />
         <Route path="/consultoria" element={<SystemSalesPage />} />

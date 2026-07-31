@@ -1,5 +1,12 @@
 # Handoff
 
+## 2026-07-30 — Reforma da aba Agentes IA
+
+- View `views/AIAgents.tsx` reescrita como orquestrador thin com 9 componentes em `components/agents/` (dashboard, form único, presets, chat de teste, métricas reais).
+- `components/AgentPremiumDashboard.tsx` removido (órfão confirmado).
+- type-check, lint e build aprovados. Nenhum commit/push/deploy.
+- Próxima ação: abrir `/urban/ai-agents` e `/rural/ai-agents` com login e validar CRUD + chat; backends de memória/qualificação ainda não expostos no frontend.
+
 ## 2026-07-30 — TemplateManager 500 corrigido
 
 - Tabela `public.global_templates` criada em produção (`epgaftsjmqmpczvzsrcc.supabase.co`) via migração `20260713_global_templates.sql`.

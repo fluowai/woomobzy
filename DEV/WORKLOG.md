@@ -1,5 +1,19 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-07-30] Reforma da aba Agentes IA (views/AIAgents)
+
+### Feito
+- Substituído o dashboard monolítico (2.296 linhas) por view orquestradora thin (~460 linhas) + 9 componentes em `components/agents/`.
+- Componentes novos: AgentAvatar, AgentStatusBadge, AgentFlowSteps, AgentPresetGrid (6 templates: Zya, Otto, Nexus, Max, Íris, Eco), AgentSidebar, AgentForm (5 seções colapsáveis no lugar do wizard de 7 abas), AgentDashboard (dados reais da API), AgentMetricsCard (cérebro neural + distribuição de notas), AgentChatTest (modos corretor/lead).
+- Corrigidos: `TS2349` (handoffRules.map → handoffRuleOptions.map), `TS2322` (cast de handoff_rules), `TS2448` (loadAgents/loadMetrics em useCallback), imports não usados.
+- Removido `components/AgentPremiumDashboard.tsx` (confirmado órfão via grep — nenhum import).
+- Backend e services (`aiAgents.ts`) inalterados; frontend adaptado ao contrato existente.
+
+### Pendente
+- Testar a tela no navegador em `/urban/ai-agents` e `/rural/ai-agents` (requer dev server + autenticação).
+- Validar fluxos: criar a partir de preset, salvar rascunho, publicar, editar, pausar/ativar, chat de teste.
+- Considerar expor endpoints de memória/qualificação (hoje só `metrics` é consumido).
+
 ## [2026-07-28] Execução da auditoria funcional — Onda 0
 
 ### Inventário e infraestrutura

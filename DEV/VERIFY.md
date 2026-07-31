@@ -1,5 +1,13 @@
 # Verificação
 
+## 2026-07-30 — Reforma da aba Agentes IA
+
+- `npm run type-check`: passou (sem output).
+- `npm run lint`: 0 erros; 593 avisos preexistentes, nenhum em `views/AIAgents.tsx` ou `components/agents/`.
+- `npm run build`: passou; 4.059 módulos transformados; bundle da aba `AIAgents-*.js` 94 kB (gzip 15,8 kB).
+- Remoção de `components/AgentPremiumDashboard.tsx` verificada: nenhuma referência restante (grep).
+- Pendência: validação visual/funcional no navegador com autenticação.
+
 ## 2026-07-30 — Fix TemplateManager 500 (global_templates)
 
 - `node --check` em `server/routes/admin-templates.js` e `scripts/run-migrations.mjs`: passou.

@@ -33,9 +33,10 @@ const FinanceiroRural: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const month = new Date();
-        month.setDate(1);
-        const periodMonth = month.toISOString().slice(0, 10);
+        const now = new Date();
+        const periodMonth = `${now.getFullYear()}-${String(
+          now.getMonth() + 1
+        ).padStart(2, '0')}-01`;
         const [leadsData, propsData, goalResult] = await Promise.all([
           leadService.list(),
           propertyService.list(1, 100, 'rural'),
@@ -102,12 +103,14 @@ const FinanceiroRural: React.FC = () => {
   const saveGoal = async () => {
     if (!profile?.organization_id) return;
     setSavingGoal(true);
-    const month = new Date();
-    month.setDate(1);
+    const now = new Date();
+    const periodMonth = `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, '0')}-01`;
     const { error } = await supabase.from('rural_financial_goals').upsert(
       {
         organization_id: profile.organization_id,
-        period_month: month.toISOString().slice(0, 10),
+        period_month: periodMonth,
         target_vgv: goals.monthly_vgv,
         target_sales: goals.monthly_sales,
         commission_rate: goals.commission_rate,

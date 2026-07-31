@@ -180,6 +180,16 @@ export async function revokeImpersonationSession(
   supabase,
   { actorUserId, sessionId, sessionSecret, ipAddress = null }
 ) {
+  const { data: existing } = await supabase
+    .from('impersonation_sessions')
+    .select('id, tenant_id, actor_user_id, status, revoked_at')
+    .eq('id', sessionId)
+    .maybeSingle();
+
+  if (existing && (existing.status === 'revoked' || existing.revoked_at)) {
+    return { id: existing.id, organizationId: existing.tenant_id, revokedAt: existing.revoked_at };
+  }
+
   const active = await assertValidImpersonationSession(supabase, {
     actorUserId,
     sessionId,

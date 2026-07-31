@@ -45,9 +45,9 @@ const Cobranca: React.FC = () => {
 
   const loadContracts = useCallback(async () => {
     const { data } = await supabase
-      .from('contracts')
-      .select('id, tenant_name, property:property_id(title), value')
-      .eq('status', 'Active')
+      .from('rental_contracts')
+      .select('id, tenant_name, property:property_id(title), monthly_rent')
+      .eq('status', 'active')
       .order('tenant_name');
     setContracts(data || []);
   }, []);

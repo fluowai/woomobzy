@@ -161,14 +161,17 @@ const LegalContracts: React.FC = () => {
         clientName: lead?.name || '',
       } as any);
 
+      const contractType =
+        CONTRACT_TEMPLATES.find((t) => t.id === newContract.templateId)
+          ?.name || 'Contrato';
+
       const { data, error } = await supabase
         .from('contracts')
         .insert({
           organization_id: settings.id,
           title: newContract.title,
-          type:
-            CONTRACT_TEMPLATES.find((t) => t.id === newContract.templateId)
-              ?.name || 'Contrato',
+          type: contractType,
+          contract_type: contractType,
           property_id: newContract.propertyId,
           lead_id: newContract.clientId,
           status: 'Draft',

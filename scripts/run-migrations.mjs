@@ -65,6 +65,14 @@ const MIGRATIONS = [
   'migrations/20260713_global_templates.sql',
   'migrations/20260725_add_indexes_reseller.sql',
   'migrations/20260725_reseller_infrastructure.sql',
+  'migrations/20260730_214115_fix_plans_rls_insert.sql',
+  'migrations/20260730_fix_landing_pages_public_access.sql',
+  'migrations/20260730_fix_landing_pages_rls_definitive.sql',
+  'migrations/20260730_fix_condominium_tickets_missing_table.sql',
+  'migrations/20260730_consolidated_production_fix.sql',
+  'migrations/20260730_fix_all_production_errors.sql',
+  'migrations/20260730_fix_contracts_legal_tab.sql',
+  'migrations/20260731_ui_redesign_schema_additions.sql',
 ];
 
 async function executeMigrations() {

@@ -30,6 +30,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Security scan reports (raw scanner output)
+security-reports/
+
 # Secrets backup
 *.secrets.md
 portainer-stack-*-filled.yml

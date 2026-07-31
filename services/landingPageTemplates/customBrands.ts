@@ -123,7 +123,7 @@ const vivaeHtml = `
   </section>
 `;
 
-const vivaeCss = \`
+const vivaeCss = `
   .vivae-jovem-container { font-family: 'Inter', sans-serif; color: #1a1a1a; background: #fffcf8; }
   .vivae-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 60px; background: #fff; }
   .vivae-logo { font-size: 28px; font-weight: 900; color: #0044ff; letter-spacing: -1px; }
@@ -178,7 +178,7 @@ const vivaeCss = \`
   .vivae-card-content p { font-size: 13px; color: #666; margin: 0 0 15px 0; }
   .vivae-card-content strong { font-size: 20px; font-weight: 900; display: block; }
   .vivae-card-content small { font-size: 12px; color: #888; }
-\`;
+`;
 
 
 const neroHtml = `
@@ -256,7 +256,7 @@ const neroHtml = `
   </section>
 `;
 
-const neroCss = \`
+const neroCss = `
   .nero-living-container { font-family: 'Inter', sans-serif; background: #080808; color: #fff; }
   .nero-header { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 30px 80px; z-index: 10; }
   .nero-logo { font-family: 'Playfair Display', serif; font-size: 24px; letter-spacing: 4px; line-height: 1.2; text-align: center; }
@@ -296,7 +296,7 @@ const neroCss = \`
   .nero-features { display: flex; gap: 15px; margin-bottom: 20px; }
   .nero-features span { font-size: 12px; color: rgba(255,255,255,0.6); }
   .nero-card-info a { color: #c3a370; text-decoration: none; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-\`;
+`;
 
 const morarHtml = `
   <header class="morar-header">
@@ -391,7 +391,7 @@ const morarHtml = `
   </section>
 `;
 
-const morarCss = \`
+const morarCss = `
   .morar-clean-container { font-family: 'Inter', sans-serif; background: #fff; color: #1a202c; }
   .morar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 80px; max-width: 1400px; margin: 0 auto; }
   .morar-logo { display: flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 800; color: #1956E3; }
@@ -436,7 +436,7 @@ const morarCss = \`
   .morar-card-body p { font-size: 13px; color: #475569; margin-bottom: 16px; }
   .morar-card-body strong { font-size: 20px; font-weight: 800; color: #1956E3; display: block; }
   .morar-card-body strong span { font-size: 14px; font-weight: 500; color: #64748b; }
-\`;
+`;
 
 
 export const CUSTOM_BRANDS_TEMPLATES: LandingPageTemplate[] = [

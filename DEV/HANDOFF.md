@@ -1,5 +1,18 @@
 # Handoff
 
+## 2026-07-30 — Migrations em produção: v8 resolvido + 18 aplicadas
+
+- 18 migrations executadas via RPC `exec_sql` (302 statements ok). `v8_fix_bi_rpcs_and_views.sql` resolvido por análise: `billings`/`contracts` já são **tabelas reais** em produção (views inviáveis) e os RPCs `get_bi_stats`/`get_bi_lead_sources` estão no ar. A premissa da migration era falsa — nenhum código usa `billings`.
+- Bug real corrigido: `views/urban/Cobranca.tsx` passou a consultar `rental_contracts` (`tenant_name`, `monthly_rent`, `property:property_id(title)`, `status='active'`) em vez de `contracts`. Gates type-check/lint/build OK. Nenhum commit/push/deploy.
+- Próxima ação: (1) validar `/urban/cobranca` no navegador; (2) decidir se aplico as migrations `20260730_*` não executadas (plans RLS, landing pages, condomínio, consolidated/fix-all); (3) commit das alterações pendentes (docs DEV + fix de navegação + Cobranca).
+
+## 2026-07-30 — Fix navegação "voltar" para página de vendas
+
+- Causa raiz: `MegaAdminGuard` redirecionava impersonação/usuários sem permissão para `/`; `SystemSalesPage` exibia a página de vendas mesmo logado; `ResellerManager` não navegava após impersonar.
+- Correções: helper `getPanelHomePath` (NicheRedirect.tsx) centralizando o destino do painel; `MegaAdminGuard`/`SuperAdminGuard` roteiam impersonação para a org impersonada; `SystemSalesPage` redireciona logados via `useEffect`; `ResellerManager` navega para `/admin` após impersonar.
+- Verificado por type-check, eslint (0 erros) e build. Nenhum commit/push/deploy.
+- Próxima ação: abrir os painéis (urbano/rural/super/mega) logado e validar o botão voltar do navegador e o fluxo "Acessar Como" (modo suporte) em produção.
+
 ## 2026-07-30 — Sidebar colapsável (sanfona) portada do Urbano para o Rural
 
 - `components/RuralLayout.tsx` agora tem menu lateral colapsável igual ao Urbano (toggle desktop `280px ↔ 72px`, auto-colapso ao navegar, estados colapsados em todos os blocos). Melhoria: menu móvel mantém labels visíveis.

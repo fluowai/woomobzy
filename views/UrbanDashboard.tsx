@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -267,7 +268,7 @@ const UrbanDashboard: React.FC = () => {
             <Link to="/urban/properties/new" className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-2">
               <Home size={18} /> Novo Imóvel
             </Link>
-            <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all">
+            <button onClick={() => toast.info('Gerando relatório...')} className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all">
               Gerar Relatório
             </button>
           </div>

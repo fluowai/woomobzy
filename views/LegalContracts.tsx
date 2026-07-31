@@ -254,6 +254,23 @@ const LegalContracts: React.FC = () => {
     }
   };
 
+  const handleDownload = async (contract: Contract) => {
+    try {
+      const content = getGeneratedContent(contract);
+      const blob = new Blob([content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${contract.title.replace(/\s+/g, '_')}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Contrato baixado com sucesso');
+    } catch (error) {
+      logger.error('Error downloading contract:', error);
+      toast.error('Erro ao baixar contrato');
+    }
+  };
+
   const getGeneratedContent = (contract: Contract) => {
     const template = CONTRACT_TEMPLATES.find(
       (t) => t.id === contract.templateId
@@ -342,7 +359,7 @@ const LegalContracts: React.FC = () => {
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" placeholder="Buscar no Imobzy..." className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none w-64 transition-all" />
           </div>
-          <button className="relative p-2 text-slate-500 hover:text-slate-700 transition-colors">
+          <button onClick={() => toast.info('Central de notificações em breve')} className="relative p-2 text-slate-500 hover:text-slate-700 transition-colors">
             <Bell size={20} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
           </button>
@@ -412,7 +429,7 @@ const LegalContracts: React.FC = () => {
             <p className="text-xs font-medium text-slate-600">12 contratos vencem nos próximos 30 dias.</p>
           </div>
         </div>
-        <button className="px-4 py-2 bg-white border border-amber-200 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-50 transition-colors">
+        <button onClick={() => setFilterStatus('Active')} className="px-4 py-2 bg-white border border-amber-200 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-50 transition-colors">
           Ver contratos
         </button>
       </div>
@@ -526,7 +543,7 @@ const LegalContracts: React.FC = () => {
                           <Eye size={16} />
                         </button>
                         <button
-                          onClick={() => toast.info('Em breve')}
+                          onClick={() => handleDownload(contract)}
                           className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                           title="Download"
                         >
@@ -551,13 +568,13 @@ const LegalContracts: React.FC = () => {
           <div className="mt-auto p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
             <p>Mostrando 1 a {Math.min(5, filteredContracts.length)} de {contracts.length} contratos</p>
             <div className="flex items-center gap-1">
-              <button className="p-1.5 rounded hover:bg-slate-100 text-slate-400"><ChevronRight size={16} className="rotate-180" /></button>
-              <button className="w-8 h-8 rounded bg-emerald-600 text-white font-medium flex items-center justify-center">1</button>
-              <button className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">2</button>
-              <button className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">3</button>
+              <button onClick={() => toast.info('Primeira página')} className="p-1.5 rounded hover:bg-slate-100 text-slate-400"><ChevronRight size={16} className="rotate-180" /></button>
+              <button onClick={() => toast.info('Página 1')} className="w-8 h-8 rounded bg-emerald-600 text-white font-medium flex items-center justify-center">1</button>
+              <button onClick={() => toast.info('Página 2')} className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">2</button>
+              <button onClick={() => toast.info('Página 3')} className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">3</button>
               <span className="px-1 text-slate-400">...</span>
-              <button className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">26</button>
-              <button className="p-1.5 rounded hover:bg-slate-100 text-slate-400"><ChevronRight size={16} /></button>
+              <button onClick={() => toast.info('Página 26')} className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">26</button>
+              <button onClick={() => toast.info('Última página')} className="p-1.5 rounded hover:bg-slate-100 text-slate-400"><ChevronRight size={16} /></button>
             </div>
           </div>
         </div>
@@ -909,7 +926,7 @@ const LegalContracts: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => toast.info('Impressão em breve')}
+                  onClick={() => window.print()}
                   className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-black/60 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all"
                 >
                   <Printer size={16} /> Imprimir
@@ -924,11 +941,11 @@ const LegalContracts: React.FC = () => {
                   {isSendingWhatsApp ? 'Enviando...' : 'Enviar WhatsApp'}
                 </button>
                 <button
-                  onClick={() => toast.info('Exportação PDF em breve')}
+                  onClick={() => handleDownload(selectedContract)}
                   style={{ backgroundColor: settings.primaryColor }}
                   className="flex items-center gap-2 px-6 py-3 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg hover:scale-105 transition-all"
                 >
-                  <Download size={16} /> Exportar PDF
+                  <Download size={16} /> Exportar
                 </button>
                 <button
                   onClick={() => setIsGeneratorOpen(false)}

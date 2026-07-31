@@ -4,6 +4,7 @@ import {
   LandingPageTheme,
 } from '../../types/landingPage';
 import { Property } from '../../types';
+import { toast } from 'sonner';
 import { MapPin, Maximize2 } from 'lucide-react';
 
 interface PropertyGridBlockProps {
@@ -200,6 +201,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
 
           <button
+            onClick={() => toast.info('Visualizando detalhes do imóvel...')}
             className="px-4 py-2 rounded-lg font-medium text-white transition-transform hover:scale-105"
             style={{ backgroundColor: theme.primaryColor }}
           >

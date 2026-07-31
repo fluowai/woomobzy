@@ -22,6 +22,7 @@ import {
   X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function PropertyManagement() {
   const navigate = useNavigate();
@@ -58,10 +59,10 @@ export default function PropertyManagement() {
           <p className="text-sm text-slate-500 mt-1">Gerencie qualidade, publicação e desempenho comercial dos seus imóveis.</p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+          <button onClick={() => toast.info('Função de importação em breve')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
             <UploadCloud size={18} /> Importar imóveis
           </button>
-          <button className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+          <button onClick={() => navigate('/imoveis/novo')} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
             <Plus size={18} /> Novo imóvel
           </button>
         </div>
@@ -167,8 +168,8 @@ export default function PropertyManagement() {
             </div>
 
             <div className="flex items-center gap-4 text-sm">
-              <button className="text-slate-400 hover:text-slate-600 font-medium flex items-center gap-2"><Filter size={16} /> Limpar filtros</button>
-              <button className="text-emerald-600 font-bold hover:text-emerald-700">Salvar filtro</button>
+              <button onClick={() => toast.info('Filtros limpos')} className="text-slate-400 hover:text-slate-600 font-medium flex items-center gap-2"><Filter size={16} /> Limpar filtros</button>
+              <button onClick={() => toast.info('Filtro salvo com sucesso')} className="text-emerald-600 font-bold hover:text-emerald-700">Salvar filtro</button>
             </div>
           </div>
 
@@ -195,7 +196,7 @@ export default function PropertyManagement() {
             </select>
 
             <div className="flex-1 flex justify-end">
-              <button className="px-4 py-2 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-lg flex items-center gap-2 border border-emerald-100">
+              <button onClick={() => toast.info('Filtro de prioridade removido')} className="px-4 py-2 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-lg flex items-center gap-2 border border-emerald-100">
                 <Filter size={16} /> Prioridade comercial <X size={14} className="ml-1 cursor-pointer" />
               </button>
             </div>
@@ -438,15 +439,15 @@ export default function PropertyManagement() {
                 <ChevronDown size={14} className="text-slate-400" />
               </div>
               <div className="flex items-center gap-1">
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50">{'|<'}</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50">{'<'}</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 text-white font-bold">1</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">2</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">3</button>
+                <button onClick={() => toast.info('Primeira página')} className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50">{'|<'}</button>
+                <button onClick={() => toast.info('Página anterior')} className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50">{'<'}</button>
+                <button onClick={() => toast.info('Página 1')} className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 text-white font-bold">1</button>
+                <button onClick={() => toast.info('Página 2')} className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">2</button>
+                <button onClick={() => toast.info('Página 3')} className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">3</button>
                 <span className="text-slate-400 px-1">...</span>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">25</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">{'>'}</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">{'>|'}</button>
+                <button onClick={() => toast.info('Página 25')} className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">25</button>
+                <button onClick={() => toast.info('Próxima página')} className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">{'>'}</button>
+                <button onClick={() => toast.info('Última página')} className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">{'>|'}</button>
               </div>
             </div>
           </div>
@@ -519,7 +520,7 @@ export default function PropertyManagement() {
               </div>
             </div>
 
-            <button className="w-full py-2.5 bg-white border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold text-sm rounded-lg transition-colors">
+            <button onClick={() => toast.info('Redirecionando para pendências...')} className="w-full py-2.5 bg-white border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold text-sm rounded-lg transition-colors">
               Ver pendências
             </button>
           </div>

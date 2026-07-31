@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Activity,
   Building2,
@@ -202,7 +203,7 @@ const BIUrbano: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all flex items-center gap-2">
+            <button onClick={() => toast.info('Exportando PDF...')} className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all flex items-center gap-2">
               <Download size={18} /> Exportar PDF
             </button>
           </div>

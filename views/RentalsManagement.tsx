@@ -17,7 +17,8 @@ import {
   CalendarDays,
   MoreVertical,
   Filter,
-  Users
+  Users,
+  DollarSign
 } from 'lucide-react';
 import {
   BarChart,
@@ -28,6 +29,7 @@ import {
   Cell
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export function RentalsManagement() {
   const navigate = useNavigate();
@@ -58,10 +60,10 @@ export function RentalsManagement() {
           <p className="text-sm text-slate-500 mt-1">Recebimentos, repasses, contratos e pendências em um só fluxo.</p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+          <button onClick={() => toast.info('Gerador de cobrança em breve')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
             <FileText size={18} /> Gerar cobrança
           </button>
-          <button className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
+          <button onClick={() => navigate('/locacoes/nova')} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2">
             <Plus size={18} /> Nova locação
           </button>
         </div>
@@ -125,7 +127,7 @@ export function RentalsManagement() {
             </h3>
             
             <div className="flex items-center justify-between mb-8">
-              <button className="p-2 hover:bg-slate-50 rounded-full transition-colors"><ChevronLeft size={20} className="text-slate-400" /></button>
+              <button onClick={() => toast.info('Mês anterior')} className="p-2 hover:bg-slate-50 rounded-full transition-colors"><ChevronLeft size={20} className="text-slate-400" /></button>
               
               <div className="flex gap-8">
                 <div className="text-center">
@@ -159,7 +161,7 @@ export function RentalsManagement() {
                 </div>
               </div>
 
-              <button className="p-2 hover:bg-slate-50 rounded-full transition-colors"><ChevronRight size={20} className="text-slate-400" /></button>
+              <button onClick={() => toast.info('Próximo mês')} className="p-2 hover:bg-slate-50 rounded-full transition-colors"><ChevronRight size={20} className="text-slate-400" /></button>
             </div>
 
             <div className="space-y-4">
@@ -251,7 +253,7 @@ export function RentalsManagement() {
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input type="text" placeholder="Buscar inquilino ou imóvel..." className="w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
                   </div>
-                  <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
+                  <button onClick={() => toast.info('Painel de filtros em breve')} className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
                     <Filter size={16} /> Filtros
                   </button>
                 </div>
@@ -434,7 +436,7 @@ export function RentalsManagement() {
                   <p className="text-sm font-bold text-slate-900">5 aluguéis em atraso <span className="text-red-500 ml-1">• R$ 8.750</span></p>
                   <p className="text-xs text-slate-500 mt-1">Ação imediata recomendada</p>
                 </div>
-                <button className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver detalhes {'>'}</button>
+                <button onClick={() => navigate('/locacoes/inadimplentes')} className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver detalhes {'>'}</button>
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
@@ -443,7 +445,7 @@ export function RentalsManagement() {
                   <p className="text-sm font-bold text-slate-900">8 contratos vencem em 60 dias</p>
                   <p className="text-xs text-slate-500 mt-1">Planeje renovações</p>
                 </div>
-                <button className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver contratos {'>'}</button>
+                <button onClick={() => navigate('/contratos')} className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver contratos {'>'}</button>
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
@@ -452,7 +454,7 @@ export function RentalsManagement() {
                   <p className="text-sm font-bold text-slate-900">6 reajustes aguardando aplicação</p>
                   <p className="text-xs text-slate-500 mt-1">Atualize os valores</p>
                 </div>
-                <button className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver reajustes {'>'}</button>
+                <button onClick={() => toast.info('Tela de reajustes em breve')} className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5">Ver reajustes {'>'}</button>
               </div>
             </div>
           </div>
@@ -511,7 +513,7 @@ export function RentalsManagement() {
                   <p className="text-xl font-bold text-slate-900">R$ 28.460</p>
                 </div>
               </div>
-              <button className="px-4 py-2 bg-white border border-emerald-600 text-emerald-600 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors">
+              <button onClick={() => navigate('/locacoes/bordero')} className="px-4 py-2 bg-white border border-emerald-600 text-emerald-600 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors">
                 Ver borderô
               </button>
             </div>
@@ -522,21 +524,21 @@ export function RentalsManagement() {
             <h3 className="text-base font-bold text-slate-900 mb-6">Ações rápidas</h3>
             
             <div className="grid grid-cols-3 gap-3">
-              <button className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+              <button onClick={() => toast.info('Registro de pagamento em breve')} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                 <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <DollarSign size={16} />
                 </div>
                 <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">Registrar pagamento</span>
               </button>
 
-              <button className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+              <button onClick={() => toast.info('Nova vistoria em breve')} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                 <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <Search size={16} />
                 </div>
                 <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">Nova vistoria</span>
               </button>
 
-              <button className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+              <button onClick={() => toast.info('Envio de lembrete em breve')} className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                 <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <AlertCircle size={16} />
                 </div>

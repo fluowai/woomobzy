@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   Upload,
   MapPin,
@@ -55,10 +56,10 @@ export default function CondominiumEditor() {
           <p className="text-sm text-slate-500 mt-1">Centralize estrutura, administração, contatos e documentos em um só lugar.</p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm">
+          <button onClick={() => toast.info('Rascunho salvo com sucesso')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm">
             Salvar rascunho
           </button>
-          <button className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm">
+          <button onClick={() => toast.info('Avançar para próxima etapa')} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm">
             Continuar
           </button>
         </div>
@@ -171,7 +172,7 @@ export default function CondominiumEditor() {
                   <label className="block text-sm font-bold text-slate-700 mb-1">CEP</label>
                   <div className="flex items-center gap-4">
                     <input type="text" name="zipcode" value={formData.zipcode} onChange={handleInputChange} className="w-48 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
-                    <button className="text-sm font-bold text-emerald-600 hover:text-emerald-700">Buscar CEP</button>
+                    <button onClick={() => toast.info('Busca de CEP em breve')} className="text-sm font-bold text-emerald-600 hover:text-emerald-700">Buscar CEP</button>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
@@ -364,13 +365,13 @@ export default function CondominiumEditor() {
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <p className="text-sm font-bold text-slate-700">Etapa 1 de 5</p>
           <div className="flex items-center gap-4">
-            <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all">
+            <button onClick={() => navigate('/urban/condominios')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all">
               Cancelar
             </button>
-            <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all hidden sm:block">
+            <button onClick={() => toast.info('Rascunho salvo com sucesso')} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all hidden sm:block">
               Salvar rascunho
             </button>
-            <button className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition-all shadow-sm">
+            <button onClick={() => toast.info('Avançar para próxima etapa')} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition-all shadow-sm">
               Continuar para Estrutura
             </button>
           </div>

@@ -1,5 +1,12 @@
 # Verificação
 
+## 2026-07-30 — Fix TemplateManager 500 (global_templates)
+
+- `node --check` em `server/routes/admin-templates.js` e `scripts/run-migrations.mjs`: passou.
+- Migração `migrations/20260713_global_templates.sql` executada em produção via RPC `exec_sql`: 7/7 statements OK (table, 3 índices, RLS, 2 policies).
+- Verificação pós-migração: SELECT em `public.global_templates` retorna `[]` sem erro (tabela existe).
+- Pendência: confirmar no navegador que o TemplateManager carrega e faz o seed dos templates padrão no primeiro GET.
+
 ## 2026-07-28 — Auditoria funcional, execução da Onda 0
 
 - `npm run audit:matrix`: 143 rotas; 49 Urbanas, 48 Rurais, 13 Super Admin, 13 Mega Admin e 20 públicas/compartilhadas.

@@ -1,5 +1,12 @@
 # Handoff
 
+## 2026-07-30 — TemplateManager 500 corrigido
+
+- Tabela `public.global_templates` criada em produção (`epgaftsjmqmpczvzsrcc.supabase.co`) via migração `20260713_global_templates.sql`.
+- Rota `GET /api/admin/templates` endurecida: tabela ausente agora responde lista vazia (sem 500), seguindo padrão `isMissingTable` do repo.
+- Seed dos 9 templates padrão ocorre automaticamente no primeiro GET por organização.
+- Verificação pendente: abrir o TemplateManager (Super Admin) e confirmar o seed visualmente; deploy das imagens `server`/`frontend` ainda necessário para a correção de código valer em produção.
+
 ## 2026-07-28 — Execução da Onda 0
 
 - Inventário atual: `DEV/TESTS/FUNCTIONAL_AUDIT_MATRIX.md`, gerado por `npm run audit:matrix`.

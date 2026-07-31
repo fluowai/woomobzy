@@ -97,7 +97,7 @@ export const PropertiesPanel: React.FC = () => {
         );
       }
 
-      case BlockType.TEXT:
+      case BlockType.TEXT: {
         const textConfig = selectedBlock.config as TextBlockConfig;
         return (
           <>
@@ -138,8 +138,9 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
-      case BlockType.IMAGE:
+      case BlockType.IMAGE: {
         const imageConfig = selectedBlock.config as ImageBlockConfig;
         return (
           <>
@@ -179,8 +180,9 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
-      case BlockType.CTA:
+      case BlockType.CTA: {
         const ctaConfig = selectedBlock.config as CTABlockConfig;
         return (
           <>
@@ -232,8 +234,9 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
-      case BlockType.PROPERTY_GRID:
+      case BlockType.PROPERTY_GRID: {
         const gridConfig = selectedBlock.config as PropertyGridBlockConfig;
         return (
           <>
@@ -293,6 +296,7 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
       default:
         return (

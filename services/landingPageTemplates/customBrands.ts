@@ -1,6 +1,10 @@
 import { LandingPageTemplate, defaultPremiumTheme, templateBlock } from './shared';
 import { BlockType } from '../../types/landingPage';
 
+import { mareTemplate } from './brands/mare';
+import { novoLarTemplate } from './brands/novoLar';
+import { nexoTemplate } from './brands/nexo';
+import { entreTemplate } from './brands/entre';
 const buildBrandTemplate = (id: string, name: string, description: string, htmlContent: string, cssContent: string, palette: any): LandingPageTemplate => {
   return {
     id,
@@ -464,5 +468,9 @@ export const CUSTOM_BRANDS_TEMPLATES: LandingPageTemplate[] = [
     morarHtml,
     morarCss,
     { primary: '#1956E3', secondary: '#EF4444', background: '#FFFFFF', text: '#0F172A' }
-  )
+  ),
+  mareTemplate,
+  novoLarTemplate,
+  nexoTemplate,
+  entreTemplate
 ];

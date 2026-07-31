@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 import { AgentOrchestrator } from '../services/ai/agentOrchestrator.js';
-import logger from './utils/logger.js';
+import logger from '../utils/logger.js';
 
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',
@@ -37,7 +37,7 @@ export class AIAutomationEngine {
     } else {
       this.genAI = null;
       this.model = null;
-      console.warn(
+      logger.warn(
         '[AIAutomation] GEMINI_API_KEY não configurada no .env. Tentarei buscar do banco de dados (saas_settings).'
       );
     }
@@ -89,7 +89,7 @@ export class AIAutomationEngine {
 
       return (data || []).reverse();
     } catch (err) {
-      console.warn('[Memory] Erro ao carregar memoria:', err.message);
+      logger.warn('[Memory] Erro ao carregar memoria:', err.message);
       return [];
     }
   }
@@ -107,7 +107,7 @@ export class AIAutomationEngine {
         content: String(content).slice(0, 3000),
       });
     } catch (err) {
-      console.warn('[Memory] Erro ao salvar memoria:', err.message);
+      logger.warn('[Memory] Erro ao salvar memoria:', err.message);
     }
   }
 
@@ -234,7 +234,7 @@ Formato:
       const text = result.response.text();
       return JSON.parse(text.replace(/```json|```/g, '').trim());
     } catch (err) {
-      console.error('[AIAutomation] Erro no processamento IA:', err.message);
+      logger.error('[AIAutomation] Erro no processamento IA:', err.message);
       return null;
     }
   }
@@ -313,10 +313,7 @@ Formato:
           leadId: existingLeadForTools?.id || null,
         });
       } catch (err) {
-        console.error(
-          '[AIAutomation] Erro ao executar orquestrador de ferramentas:',
-          err.message
-        );
+        logger.error('[AIAutomation] Erro ao executar orquestrador de ferramentas:', err.message);
       }
     }
 
@@ -487,7 +484,7 @@ Formato:
       lead = await matchLeadProperties({ supabase, lead, organizationId });
       matchAvailable = true;
     } catch (error) {
-      console.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
+      logger.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
     }
 
     const reply = this._buildWhatsAppReply({ lead, actionPlan, content });
@@ -578,7 +575,7 @@ Formato:
         });
         if (result) results.push(result);
       } catch (err) {
-        console.warn(
+        logger.warn(
           '[AIAutomation] Falha ao analisar conversa importada:',
           chat.id,
           err.message
@@ -784,7 +781,7 @@ Formato:
     try {
       lead = await matchLeadProperties({ supabase, lead, organizationId });
     } catch (error) {
-      console.warn(
+      logger.warn(
         '[AIAutomation] Matchmaking da importacao indisponivel:',
         error.message
       );
@@ -875,7 +872,7 @@ Formato:
       const text = result.response.text();
       return JSON.parse(text.replace(/```json|```/g, '').trim());
     } catch (err) {
-      console.error(
+      logger.error(
         '[AIAutomation] Erro ao analisar conversa importada:',
         err.message
       );
@@ -1298,7 +1295,7 @@ Formato:
       .limit(10);
 
     if (error) {
-      console.warn('[AIAutomation] Agentes nao carregados:', error.message);
+      logger.warn('[AIAutomation] Agentes nao carregados:', error.message);
       return null;
     }
 
@@ -1730,7 +1727,7 @@ Formato:
       if (arrayBuffer.byteLength > 12 * 1024 * 1024) return null;
       return Buffer.from(arrayBuffer);
     } catch (error) {
-      console.warn('[AIAutomation] Midia nao baixada para IA:', error.message);
+      logger.warn('[AIAutomation] Midia nao baixada para IA:', error.message);
       return null;
     }
   }
@@ -1970,7 +1967,7 @@ Formato:
       metadata: activity.metadata || {},
     });
     if (error)
-      console.warn('[AIAutomation] Atividade nao registrada:', error.message);
+      logger.warn('[AIAutomation] Atividade nao registrada:', error.message);
   }
 
   async _upsertTags(supabase, { leadId, organizationId, tags }) {
@@ -1984,7 +1981,7 @@ Formato:
       .from('lead_tags')
       .upsert(rows, { onConflict: 'lead_id,tag' });
     if (error)
-      console.warn('[AIAutomation] Tags nao registradas:', error.message);
+      logger.warn('[AIAutomation] Tags nao registradas:', error.message);
   }
 
   async _upsertFollowUp(supabase, { leadId, organizationId, aiResult }) {
@@ -2018,6 +2015,6 @@ Formato:
       status: 'pending',
     });
     if (error)
-      console.warn('[AIAutomation] Follow-up nao registrado:', error.message);
+      logger.warn('[AIAutomation] Follow-up nao registrado:', error.message);
   }
 }

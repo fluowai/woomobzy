@@ -1,4 +1,8 @@
-import { LandingPageTemplate, templateBlock, defaultPremiumTheme } from '../shared';
+import {
+  LandingPageTemplate,
+  templateBlock,
+  defaultPremiumTheme,
+} from '../shared';
 import { BlockType } from '../../../types/landingPage';
 
 const mareHtml = `
@@ -978,8 +982,10 @@ const mareHtml = `
 export const mareTemplate: LandingPageTemplate = {
   id: 'tmpl-mare-01',
   name: 'Maré (Litoral)',
-  description: 'Template elegante focado em aluguel no litoral com mapa ilustrado e tipografia serifada.',
-  thumbnail: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?ixlib=rb-4.0.3&w=800&q=80',
+  description:
+    'Template elegante focado em aluguel no litoral com mapa ilustrado e tipografia serifada.',
+  thumbnail:
+    'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?ixlib=rb-4.0.3&w=800&q=80',
   category: 'Litoral',
   group: 'Premium',
   objective: 'Capturar Leads e Proprietários',
@@ -994,12 +1000,6 @@ export const mareTemplate: LandingPageTemplate = {
     fontFamily: 'Montserrat, sans-serif',
   },
   blocks: [
-    templateBlock(
-      BlockType.CUSTOM_HTML,
-      0,
-      { code: mareHtml },
-      {},
-      'full'
-    ),
+    templateBlock(BlockType.CUSTOM_HTML, 0, { code: mareHtml }, {}, 'full'),
   ],
 };

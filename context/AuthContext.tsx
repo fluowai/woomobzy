@@ -535,25 +535,22 @@ async function setDownImpersonationSession() {
   } = await supabase.auth.getSession();
   const activeSession = getStoredImpersonationSession();
 
-  const response = await fetch(
-    getApiUrl('/api/admin/impersonations/current'),
-    {
-      method: 'DELETE',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {}),
-        ...(activeSession
-          ? {
-              'x-impersonation-session-id': activeSession.id,
-              'x-impersonation-session-secret': activeSession.secret,
-            }
-          : {}),
-      },
-    }
-  );
+  const response = await fetch(getApiUrl('/api/admin/impersonations/current'), {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {}),
+      ...(activeSession
+        ? {
+            'x-impersonation-session-id': activeSession.id,
+            'x-impersonation-session-secret': activeSession.secret,
+          }
+        : {}),
+    },
+  });
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));

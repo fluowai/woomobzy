@@ -6,12 +6,13 @@ Este documento serve como a **Bíblia Arquitetural do IMOBZY**. O objetivo centr
 
 ## 1. O Padrão Ouro: "Single Codebase, Dynamic Context"
 
-O IMOBZY adota o padrão de **Código Único**. Isso significa que existe apenas uma pasta src/, um único servidor Node/Express (server/) e um único banco de dados Supabase. 
+O IMOBZY adota o padrão de **Código Único**. Isso significa que existe apenas uma pasta src/, um único servidor Node/Express (server/) e um único banco de dados Supabase.
 
 **A Regra de Ouro:**
+
 > 🚫 **NUNCA** duplique rotas, tabelas ou projetos inteiros para atender a um novo nicho.
-> ✅ **SEMPRE** utilize a variável de controle 
-iche para ligar, desligar ou renomear partes da interface sob demanda.
+> ✅ **SEMPRE** utilize a variável de controle
+> iche para ligar, desligar ou renomear partes da interface sob demanda.
 
 ---
 
@@ -20,12 +21,12 @@ iche para ligar, desligar ou renomear partes da interface sob demanda.
 A mágica do IMOBZY acontece no momento do Login / Acesso via Domínio.
 
 1. **A Fonte da Verdade (Banco de Dados):**
-   A tabela organizations possui uma coluna 
-iche (ex: 'rural', 'urbano', 'ambos').
-   
+   A tabela organizations possui uma coluna
+   iche (ex: 'rural', 'urbano', 'ambos').
 2. **O Roteador de Domínio (DomainRouter.tsx):**
-   Quando um cliente acessa ural.imobzy.com ou seu domínio customizado, o sistema lê no banco qual é a organização vinculada àquele domínio e puxa a variável 
-iche.
+   Quando um cliente acessa
+   ural.imobzy.com ou seu domínio customizado, o sistema lê no banco qual é a organização vinculada àquele domínio e puxa a variável
+   iche.
 
 3. **O Cérebro do Frontend (AuthContext.tsx e ModuleContext.tsx):**
    O AuthContext salva o profile.organization.niche em memória. A partir daí, **toda a plataforma sabe em qual modo ela está operando**.
@@ -37,48 +38,57 @@ iche.
 Toda vez que uma nova funcionalidade for criada (por você ou por uma IA), este é o roteiro exato que deve ser seguido:
 
 ### A. Criando Bancos de Dados (Supabase)
-**Não crie tabelas separadas!** (Ex: Não crie ural_properties e urban_properties).
+
+**Não crie tabelas separadas!** (Ex: Não crie
+ural_properties e urban_properties).
+
 - Use sempre tabelas unificadas (ex: properties).
 - Colunas exclusivas do rural (ex: hectares, has_cattle) devem ser opcionais (NULL) para o urbano.
 - Colunas exclusivas do urbano (ex: condominium_fee, garage_spaces) devem ser opcionais para o rural.
-- O campo property_type e 
-iche na tabela ajuda a filtrar.
+- O campo property_type e
+  iche na tabela ajuda a filtrar.
 
 ### B. Escrevendo o Frontend (Componentes React)
-Sempre importe o contexto ou passe a variável 
+
+Sempre importe o contexto ou passe a variável
 iche como Prop para os componentes.
 
 **Exemplo Prático (Formulário de Imóveis):**
-`	sx
+` sx
 import { useAuth } from '@/context/AuthContext';
 
 export function FormularioImovel() {
-  const { organization } = useAuth();
-  const isRural = organization?.niche === 'rural';
+const { organization } = useAuth();
+const isRural = organization?.niche === 'rural';
 
-  return (
-    <form>
-      <input name="price" placeholder="Preço" />
-      
+return (
+
+<form>
+<input name="price" placeholder="Preço" />
+
       {/* Exclusivo Urbano */}
       {!isRural && <input name="condo_fee" placeholder="Valor do Condomínio" />}
-      
+
       {/* Exclusivo Rural */}
       {isRural && <input name="hectares" placeholder="Total de Hectares" />}
     </form>
-  )
+
+)
 }
 `
 
 ### C. Telas Inteiras Exclusivas (Guards)
+
 Se uma tela inteira não faz sentido para um nicho (ex: "Mapa de Culturas Agrícolas" não faz sentido para o Urbano), utilize o componente PanelGuard ou NicheRedirect para bloquear o acesso via URL.
-*Você pode ver exemplos reais disso hoje nos arquivos components/SuperAdminGuard.tsx e components/PanelGuard.tsx.*
+_Você pode ver exemplos reais disso hoje nos arquivos components/SuperAdminGuard.tsx e components/PanelGuard.tsx._
 
 ### D. Textos e Nomenclaturas (Dicionários)
-O corretor rural odeia ser chamado de "corretor de imóveis" (ele vende fazendas). O urbano odeia vender "hectares". 
+
+O corretor rural odeia ser chamado de "corretor de imóveis" (ele vende fazendas). O urbano odeia vender "hectares".
+
 - Nunca digite textos fixos que segmentem o cliente no código.
 - Crie funções utilitárias ou lógicas simples para adaptar a linguagem:
-`	sx
+  `	sx
 const titulo = isRural ? 'Nova Fazenda' : 'Novo Imóvel';
 `
 

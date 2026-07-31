@@ -138,7 +138,10 @@ export const verifyAuth = async (req, res, next) => {
           code: 'INVALID_REQUESTED_ORG',
         });
       }
-      if (requestedOrg.status && requestedOrg.status.toLowerCase() !== 'active') {
+      if (
+        requestedOrg.status &&
+        requestedOrg.status.toLowerCase() !== 'active'
+      ) {
         return res.status(403).json({
           error: 'Organizacao solicitada esta inativa.',
           code: 'REQUESTED_ORG_INACTIVE',
@@ -689,7 +692,12 @@ export function getSafeProfileBootstrapIdentity(user) {
   };
 }
 
-function logMetadataPrivilegeMismatch(user, databaseRole, metadataRole, extra = {}) {
+function logMetadataPrivilegeMismatch(
+  user,
+  databaseRole,
+  metadataRole,
+  extra = {}
+) {
   if (
     metadataRole === 'superadmin' &&
     normalizeRole(databaseRole) !== 'superadmin'

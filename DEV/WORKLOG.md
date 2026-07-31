@@ -17,7 +17,7 @@
 - gitleaks (960 commits): **212 leaks** (115 generic-api-key, 96 jwt). Service role key do Supabase confirmada (fingerprint SHA256) **idêntica** em `.env.production.template` e `.env` de produção, em 9 arquivos rastreados; JWT secret idêntico (`.env.production.template`, `fix_jwt.mjs`); senha real em `test_user_query.mjs`/`test_orgs_query.mjs`.
 - npm audit (prod): **18 vulns** (16 HIGH): axios, nodemailer, multer, react-router, sharp, http-proxy-middleware, imapflow, mailparser, linkify-it, undici, vite, postcss, form-data, body-parser, colorthief, google-tts-api.
 - Revisão manual: webhook Asaas sem verificação (token comentado); webhooks CVcrm/BIA sem auth; `exec_sql` SECURITY DEFINER (verificar grants em prod, `secure_rpc.sql` não é migration); fail-open no webhook Orulo; `rejectUnauthorized:false` em pg direto; stored XSS no `LayoutEditor/CustomHTMLBlock`; Zap `/leads` sem auth; CI com actions não pinadas por SHA + redeploy automático.
-- Pontos fortes confirmados: auth com role do banco, impersonação por sessão curta, RLS em tabelas-chave, CORS allowlist dinâmica, rate limits dedicados, sem service role no frontend, `.env`* ignorados.
+- Pontos fortes confirmados: auth com role do banco, impersonação por sessão curta, RLS em tabelas-chave, CORS allowlist dinâmica, rate limits dedicados, sem service role no frontend, `.env`\* ignorados.
 - Artefatos: `security-reports/{gitleaks.json, npm-audit-prod.json, RELATORIO_SEGURANCA_2026-07-30.md}`. `security-reports/` adicionado ao `.gitignore`.
 - Nenhum commit/push/deploy; nenhum segredo rotacionado (aguardando aprovação do maestro).
 
@@ -90,6 +90,7 @@
 ## [2026-07-30] Reforma da aba Agentes IA (views/AIAgents)
 
 ### Feito
+
 - Substituído o dashboard monolítico (2.296 linhas) por view orquestradora thin (~460 linhas) + 9 componentes em `components/agents/`.
 - Componentes novos: AgentAvatar, AgentStatusBadge, AgentFlowSteps, AgentPresetGrid (6 templates: Zya, Otto, Nexus, Max, Íris, Eco), AgentSidebar, AgentForm (5 seções colapsáveis no lugar do wizard de 7 abas), AgentDashboard (dados reais da API), AgentMetricsCard (cérebro neural + distribuição de notas), AgentChatTest (modos corretor/lead).
 - Corrigidos: `TS2349` (handoffRules.map → handoffRuleOptions.map), `TS2322` (cast de handoff_rules), `TS2448` (loadAgents/loadMetrics em useCallback), imports não usados.
@@ -97,6 +98,7 @@
 - Backend e services (`aiAgents.ts`) inalterados; frontend adaptado ao contrato existente.
 
 ### Pendente
+
 - Testar a tela no navegador em `/urban/ai-agents` e `/rural/ai-agents` (requer dev server + autenticação).
 - Validar fluxos: criar a partir de preset, salvar rascunho, publicar, editar, pausar/ativar, chat de teste.
 - Considerar expor endpoints de memória/qualificação (hoje só `metrics` é consumido).
@@ -383,6 +385,7 @@ Tipos e adaptadores unificados:
 ### Contexto
 
 Cinco endpoints estavam falhando no console:
+
 1. `match_properties_to_lead` RPC 404 — função não existia no banco
 2. `/api/crm/clients` POST 500 — tabela `clients` não existia
 3. `/api/orulo/sync` 400 — credenciais vazias retornavam sem erro
@@ -457,6 +460,7 @@ Cinco endpoints estavam falhando no console:
 ## [2026-07-30] Landing Page: 11 novos settings + 3 atualizados
 
 ### Feito
+
 - Criados settings para: Image, Gallery, Video, PropertyCarousel, PropertyFeatured, PropertySearch, Map, Timeline, Testimonials, BrokerCard, Divider (11 novos)
 - Atualizados: HeroWithForm (formSubtitle, height, textColor, badges), Features (layout), Stats (columns, animated)
 - Registrados todos os 14 components no switch do PropertiesSidebar
@@ -465,6 +469,7 @@ Cinco endpoints estavam falhando no console:
 - Build e type-check: passam com 0 erros
 
 ### Pendente
+
 - Testar cada novo settings panel na UI do editor
 
 ## [2026-07-30] TemplateManager 500 em produção - global_templates

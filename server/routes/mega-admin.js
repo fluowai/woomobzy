@@ -98,7 +98,21 @@ router.get('/resellers', verifyMegaAdmin, async (req, res) => {
 // POST /api/mega/resellers — Criar novo reseller
 router.post('/resellers', verifyMegaAdmin, async (req, res) => {
   try {
-    const { name, slug, owner_name, owner_email, password, niche, document, phone, creci, address, city, state, zip_code } = req.body;
+    const {
+      name,
+      slug,
+      owner_name,
+      owner_email,
+      password,
+      niche,
+      document,
+      phone,
+      creci,
+      address,
+      city,
+      state,
+      zip_code,
+    } = req.body;
 
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
     if (!owner_email) {
@@ -218,7 +232,21 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
 router.put('/resellers/:id', verifyMegaAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, slug, owner_name, owner_email, status, niche, document, phone, creci, address, city, state, zip_code } = req.body;
+    const {
+      name,
+      slug,
+      owner_name,
+      owner_email,
+      status,
+      niche,
+      document,
+      phone,
+      creci,
+      address,
+      city,
+      state,
+      zip_code,
+    } = req.body;
 
     const updatePayload = {};
     if (name) updatePayload.name = name;

@@ -1,15 +1,23 @@
-import React from 'react'
-import { Bot, Power, Settings, MessageSquare, Activity, Zap, Clock } from 'lucide-react'
-import type { AIAgent, AgentMetrics } from '../../services/aiAgents'
-import { AgentMetricsCard } from './AgentMetricsCard'
+import React from 'react';
+import {
+  Bot,
+  Power,
+  Settings,
+  MessageSquare,
+  Activity,
+  Zap,
+  Clock,
+} from 'lucide-react';
+import type { AIAgent, AgentMetrics } from '../../services/aiAgents';
+import { AgentMetricsCard } from './AgentMetricsCard';
 
 interface AgentDashboardProps {
-  agent: AIAgent
-  metrics: AgentMetrics | null
-  metricsLoading: boolean
-  onEdit: () => void
-  onToggleStatus: () => void
-  onTest: () => void
+  agent: AIAgent;
+  metrics: AgentMetrics | null;
+  metricsLoading: boolean;
+  onEdit: () => void;
+  onToggleStatus: () => void;
+  onTest: () => void;
 }
 
 export const AgentDashboard: React.FC<AgentDashboardProps> = ({
@@ -20,9 +28,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   onToggleStatus,
   onTest,
 }) => {
-  const isActive = agent.is_active
-  const toolCount = agent.tools?.length || 0
-  const channelCount = agent.channels?.length || 1
+  const isActive = agent.is_active;
+  const toolCount = agent.tools?.length || 0;
+  const channelCount = agent.channels?.length || 1;
 
   return (
     <div className="space-y-5">
@@ -35,7 +43,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         <div className="relative z-10 flex flex-col items-center gap-6 md:flex-row md:items-start">
           <div className="relative shrink-0">
             <div className="flex h-20 w-20 items-center justify-center rounded-full border border-slate-100 bg-slate-50 shadow-inner">
-              <Bot size={40} className={isActive ? 'text-emerald-500' : 'text-slate-400'} />
+              <Bot
+                size={40}
+                className={isActive ? 'text-emerald-500' : 'text-slate-400'}
+              />
             </div>
             <div
               className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-4 border-white ${
@@ -136,5 +147,5 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         <AgentMetricsCard metrics={metrics} loading={metricsLoading} />
       </div>
     </div>
-  )
-}
+  );
+};

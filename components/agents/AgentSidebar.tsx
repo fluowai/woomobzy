@@ -1,14 +1,14 @@
-import React from 'react'
-import { Bot, Circle, Plus } from 'lucide-react'
-import type { AIAgent } from '../../services/aiAgents'
+import React from 'react';
+import { Bot, Circle, Plus } from 'lucide-react';
+import type { AIAgent } from '../../services/aiAgents';
 
 interface AgentSidebarProps {
-  agents: AIAgent[]
-  selectedId: string
-  onSelect: (id: string) => void
-  onNew: () => void
-  search: string
-  onSearchChange: (value: string) => void
+  agents: AIAgent[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  onNew: () => void;
+  search: string;
+  onSearchChange: (value: string) => void;
 }
 
 export const AgentSidebar: React.FC<AgentSidebarProps> = ({
@@ -19,8 +19,8 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
   search,
   onSearchChange,
 }) => {
-  const activeCount = agents.filter((a) => a.is_active).length
-  const pausedCount = agents.length - activeCount
+  const activeCount = agents.filter((a) => a.is_active).length;
+  const pausedCount = agents.length - activeCount;
 
   return (
     <aside className="w-full shrink-0 space-y-3 lg:w-72">
@@ -120,5 +120,5 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
         </div>
       </div>
     </aside>
-  )
-}
+  );
+};

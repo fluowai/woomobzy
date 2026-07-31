@@ -19,4 +19,3 @@
 
 - Gates: lint, TypeScript, Vitest, build, testes Go quando aplicáveis e Playwright em servidor local.
 - UI: rotas públicas, console do navegador, falhas de rede relevantes, acessibilidade básica e viewports móvel/desktop.
-

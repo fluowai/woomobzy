@@ -10,4 +10,3 @@
 8. Registrar evidências em `.omx` e `DEV/`.
 
 Cada etapa usa teste focado antes do gate amplo. Nenhum arquivo previamente alterado pelo usuário será revertido.
-

@@ -236,8 +236,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
             }
 
             try {
-              const { data, error } = await supabase
-                .rpc('get_tenant_public', { slug_input: potentialSlug });
+              const { data, error } = await supabase.rpc('get_tenant_public', {
+                slug_input: potentialSlug,
+              });
 
               const tenant = data?.[0];
               if (tenant && !error) {
@@ -250,7 +251,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
                 return;
               }
               if (error)
-                log(`[Router] RPC error (first site): ${error.message} (${error.code})`);
+                log(
+                  `[Router] RPC error (first site): ${error.message} (${error.code})`
+                );
             } catch (error) {
               log(`[Router] Exception resolving tenant slug: ${error}`);
             }
@@ -258,8 +261,12 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
             try {
               const { data: orgDirect } = await supabase
                 .from('organizations')
-                .select('id, name, slug, custom_domain, subdomain, niche, logo_url')
-                .or(`slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`);
+                .select(
+                  'id, name, slug, custom_domain, subdomain, niche, logo_url'
+                )
+                .or(
+                  `slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`
+                );
 
               const org = orgDirect?.[0];
               if (org) {
@@ -285,8 +292,9 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
 
         if (potentialSlug) {
           try {
-            const { data, error } = await supabase
-              .rpc('get_tenant_public', { slug_input: potentialSlug });
+            const { data, error } = await supabase.rpc('get_tenant_public', {
+              slug_input: potentialSlug,
+            });
 
             const tenant = data?.[0];
             if (tenant && !error) {
@@ -331,8 +339,12 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
           try {
             const { data: orgDirect } = await supabase
               .from('organizations')
-              .select('id, name, slug, custom_domain, subdomain, niche, logo_url')
-              .or(`slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`);
+              .select(
+                'id, name, slug, custom_domain, subdomain, niche, logo_url'
+              )
+              .or(
+                `slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`
+              );
 
             const org = orgDirect?.[0];
             if (org) {

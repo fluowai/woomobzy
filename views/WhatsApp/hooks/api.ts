@@ -25,7 +25,8 @@ export const WS_URL = normalizeWhatsAppWsUrl(
 );
 
 const providerCache = new Map<string, string>();
-export const setInstanceProviderCache = (id: string, provider: string) => providerCache.set(id, provider);
+export const setInstanceProviderCache = (id: string, provider: string) =>
+  providerCache.set(id, provider);
 export const getInstanceProviderCache = (id: string) => providerCache.get(id);
 
 import { supabase } from '@/services/supabase';
@@ -601,7 +602,8 @@ export const instanceApi = {
 
   list: () => apiRequest<Instance[]>('/instances'),
 
-  get: (id: string) => apiRequest<Instance>(`/instances/${id}`, { instanceId: id }),
+  get: (id: string) =>
+    apiRequest<Instance>(`/instances/${id}`, { instanceId: id }),
 
   delete: (id: string) =>
     apiRequest(`/instances/${id}`, { method: 'DELETE', instanceId: id }),

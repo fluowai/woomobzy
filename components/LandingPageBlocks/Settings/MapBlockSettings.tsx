@@ -91,10 +91,7 @@ const MapBlockSettings: React.FC<MapBlockSettingsProps> = ({
           onChange={(e) => updateField('showCard', e.target.checked)}
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
-        <label
-          htmlFor="map-show-card"
-          className="ml-2 text-sm text-gray-700"
-        >
+        <label htmlFor="map-show-card" className="ml-2 text-sm text-gray-700">
           Mostrar Card Sobreposto
         </label>
       </div>

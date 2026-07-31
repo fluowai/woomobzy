@@ -84,7 +84,14 @@ const IADashboardSummary: React.FC = () => {
                       {insight.text}
                     </p>
                     {insight.actionLabel && (
-                      <button onClick={() => { insight.onAction?.(); if (!insight.onAction) toast.info(insight.actionLabel!) }} className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-widest group-hover/item:gap-2 transition-all">
+                      <button
+                        onClick={() => {
+                          insight.onAction?.();
+                          if (!insight.onAction)
+                            toast.info(insight.actionLabel!);
+                        }}
+                        className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-widest group-hover/item:gap-2 transition-all"
+                      >
                         {insight.actionLabel} <ArrowRight size={12} />
                       </button>
                     )}

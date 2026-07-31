@@ -41,7 +41,9 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   const org = profile.organization;
   const effectiveRequestedPlanId =
     requestedPlanId ||
-    (org.subscription_status === 'payment_required' ? org.plan_id || null : null);
+    (org.subscription_status === 'payment_required'
+      ? org.plan_id || null
+      : null);
   const trialEndsAt = org.trial_ends_at ? new Date(org.trial_ends_at) : null;
   const expiredTrial =
     org.subscription_status === 'trial' &&
@@ -98,8 +100,8 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
 
         {effectiveRequestedPlanId && (
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
-            O plano escolhido está aguardando confirmação de pagamento. O
-            acesso será liberado somente depois da confirmação.
+            O plano escolhido está aguardando confirmação de pagamento. O acesso
+            será liberado somente depois da confirmação.
           </div>
         )}
 

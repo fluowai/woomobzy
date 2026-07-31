@@ -385,7 +385,9 @@ export const PropertiesPanel: React.FC = () => {
         <PropertySelectorModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          selectedIds={(selectedBlock.config as PropertyGridBlockConfig).propertyIds || []}
+          selectedIds={
+            (selectedBlock.config as PropertyGridBlockConfig).propertyIds || []
+          }
           onSave={(ids) => {
             updateConfig({ propertyIds: ids });
           }}

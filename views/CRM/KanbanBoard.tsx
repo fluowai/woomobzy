@@ -279,7 +279,9 @@ const KanbanBoard: React.FC = () => {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
-      <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between border-b px-6 py-4 shadow-md gap-4 ${matchProfile === 'rural' ? 'bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 border-emerald-800' : 'bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 border-indigo-800'}`}>
+      <div
+        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between border-b px-6 py-4 shadow-md gap-4 ${matchProfile === 'rural' ? 'bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 border-emerald-800' : 'bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 border-indigo-800'}`}
+      >
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
             <Search

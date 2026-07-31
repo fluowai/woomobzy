@@ -141,7 +141,9 @@ const GalleryBlockSettings: React.FC<GalleryBlockSettingsProps> = ({
                 <input
                   type="text"
                   value={img.caption || ''}
-                  onChange={(e) => updateImage(index, 'caption', e.target.value)}
+                  onChange={(e) =>
+                    updateImage(index, 'caption', e.target.value)
+                  }
                   placeholder="Legenda (opcional)"
                   className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                 />

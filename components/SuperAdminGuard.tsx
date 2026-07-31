@@ -35,7 +35,7 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   if (loading) return <FullScreenSpinner />;
 
   const role = profile?.role?.toLowerCase();
-  
+
   if ((role === 'superadmin' || role === 'super_admin') && !isImpersonating) {
     const path = location.pathname;
     const isCurrentPathPublic = isPublicPath(path);
@@ -61,7 +61,11 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
         return <Navigate to="/superadmin" replace />;
       }
     }
-  } else if (profile && !['superadmin', 'super_admin'].includes(role || '') && !isImpersonating) {
+  } else if (
+    profile &&
+    !['superadmin', 'super_admin'].includes(role || '') &&
+    !isImpersonating
+  ) {
     const path = location.pathname;
     if (path.startsWith('/megaadmin') || path.startsWith('/superadmin')) {
       const niche = profile?.organization?.niche;

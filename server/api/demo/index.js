@@ -12,7 +12,14 @@ function calculateScore(data = {}) {
   let score = 0;
   if (['6-15', '16-40', '40+'].includes(data.team_size)) score += 2;
   if (['51-150', '150+'].includes(data.monthly_leads)) score += 2;
-  if (['organizar_atendimento', 'aumentar_vendas', 'automatizar_processos'].includes(data.main_goal)) score += 2;
+  if (
+    [
+      'organizar_atendimento',
+      'aumentar_vendas',
+      'automatizar_processos',
+    ].includes(data.main_goal)
+  )
+    score += 2;
   if (['agora', '30_dias'].includes(data.urgency)) score += 1;
   return score;
 }
@@ -51,16 +58,17 @@ function normalizeBooking(booking) {
 function dateFromLocalParts(date, time, timezoneOffsetMinutes = 0) {
   const [year, month, day] = date.split('-').map(Number);
   const [hour, minute] = time.split(':').map(Number);
-  return new Date(Date.UTC(year, month - 1, day, hour, minute, 0) + Number(timezoneOffsetMinutes || 0) * 60 * 1000);
+  return new Date(
+    Date.UTC(year, month - 1, day, hour, minute, 0) +
+      Number(timezoneOffsetMinutes || 0) * 60 * 1000
+  );
 }
 
 function isMissingSchedulerTableError(error) {
-  const text = [
-    error?.code,
-    error?.message,
-    error?.details,
-    error?.hint,
-  ].filter(Boolean).join(' ').toLowerCase();
+  const text = [error?.code, error?.message, error?.details, error?.hint]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 
   return (
     text.includes('demo_availability_slots') &&
@@ -73,11 +81,15 @@ function isMissingSchedulerTableError(error) {
 
 async function ensureDemoSchedulerSchema() {
   if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL ausente para provisionar a agenda automaticamente.');
+    throw new Error(
+      'DATABASE_URL ausente para provisionar a agenda automaticamente.'
+    );
   }
 
   if (!schemaEnsurePromise) {
-    schemaEnsurePromise = db.query(`
+    schemaEnsurePromise = db
+      .query(
+        `
       create extension if not exists pgcrypto;
 
       create table if not exists public.demo_availability_slots (
@@ -115,10 +127,12 @@ async function ensureDemoSchedulerSchema() {
       create index if not exists demo_bookings_slot_id_idx on public.demo_bookings (slot_id);
       create index if not exists demo_bookings_created_at_idx on public.demo_bookings (created_at desc);
       select pg_notify('pgrst', 'reload schema');
-    `).catch((error) => {
-      schemaEnsurePromise = null;
-      throw error;
-    });
+    `
+      )
+      .catch((error) => {
+        schemaEnsurePromise = null;
+        throw error;
+      });
   }
 
   return schemaEnsurePromise;
@@ -145,10 +159,16 @@ router.get('/slots', async (_req, res, next) => {
     }
 
     if (error) throw error;
-    return res.json({ slots: (data || []).map(normalizeSlot), agendaProvisioned: true });
+    return res.json({
+      slots: (data || []).map(normalizeSlot),
+      agendaProvisioned: true,
+    });
   } catch (error) {
     console.error('[DemoScheduler] slots error:', error);
-    if (isMissingSchedulerTableError(error) || /DATABASE_URL ausente/.test(error?.message || '')) {
+    if (
+      isMissingSchedulerTableError(error) ||
+      /DATABASE_URL ausente/.test(error?.message || '')
+    ) {
       return res.json({
         slots: [],
         agendaProvisioned: false,
@@ -174,7 +194,10 @@ router.get('/slots', async (_req, res) => {
     res.json({ slots: (data || []).map(normalizeSlot) });
   } catch (error) {
     console.error('[DemoScheduler] slots error:', error);
-    res.status(500).json({ error: 'Agenda indisponível. Verifique a migration da agenda de demonstração.' });
+    res.status(500).json({
+      error:
+        'Agenda indisponível. Verifique a migration da agenda de demonstração.',
+    });
   }
 });
 
@@ -206,7 +229,9 @@ router.post('/bookings', async (req, res) => {
     });
 
     if (score < REQUIRED_SCORE) {
-      return res.status(422).json({ error: 'Lead ainda não qualificado para agenda direta.' });
+      return res
+        .status(422)
+        .json({ error: 'Lead ainda não qualificado para agenda direta.' });
     }
 
     const { data: slot, error: slotError } = await supabase
@@ -217,7 +242,9 @@ router.post('/bookings', async (req, res) => {
       .single();
 
     if (slotError || !slot) {
-      return res.status(409).json({ error: 'Horário indisponível. Escolha outro horário.' });
+      return res
+        .status(409)
+        .json({ error: 'Horário indisponível. Escolha outro horário.' });
     }
 
     const { data: booking, error: bookingError } = await supabase
@@ -250,7 +277,9 @@ router.post('/bookings', async (req, res) => {
     res.status(201).json({ booking: normalizeBooking(booking) });
   } catch (error) {
     console.error('[DemoScheduler] booking error:', error);
-    res.status(500).json({ error: 'Não foi possível confirmar o agendamento.' });
+    res
+      .status(500)
+      .json({ error: 'Não foi possível confirmar o agendamento.' });
   }
 });
 
@@ -258,13 +287,19 @@ router.get('/admin/overview', verifySuperAdmin, async (_req, res) => {
   try {
     const supabase = getSupabaseServer();
     await ensureDemoSchedulerSchema().catch((err) =>
-      console.error('[DemoScheduler] provisionamento automatico falhou:', err.message)
+      console.error(
+        '[DemoScheduler] provisionamento automatico falhou:',
+        err.message
+      )
     );
     const [slotsResult, bookingsResult] = await Promise.all([
       supabase
         .from('demo_availability_slots')
         .select('*')
-        .gte('starts_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .gte(
+          'starts_at',
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        )
         .order('starts_at', { ascending: true })
         .limit(200),
       supabase
@@ -283,7 +318,9 @@ router.get('/admin/overview', verifySuperAdmin, async (_req, res) => {
     });
   } catch (error) {
     console.error('[DemoScheduler] admin overview error:', error);
-    res.status(500).json({ error: 'Erro ao carregar agenda de demonstrações.' });
+    res
+      .status(500)
+      .json({ error: 'Erro ao carregar agenda de demonstrações.' });
   }
 });
 
@@ -291,7 +328,10 @@ router.post('/admin/slots', verifySuperAdmin, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     await ensureDemoSchedulerSchema().catch((err) =>
-      console.error('[DemoScheduler] provisionamento automatico falhou:', err.message)
+      console.error(
+        '[DemoScheduler] provisionamento automatico falhou:',
+        err.message
+      )
     );
     const { date, startTime, endTime, timezoneOffsetMinutes } = req.body || {};
     if (!date || !startTime || !endTime) {
@@ -302,7 +342,11 @@ router.post('/admin/slots', verifySuperAdmin, async (req, res) => {
     const start = dateFromLocalParts(date, startTime, timezoneOffsetMinutes);
     const end = dateFromLocalParts(date, endTime, timezoneOffsetMinutes);
 
-    for (let cursor = new Date(start); cursor < end; cursor = new Date(cursor.getTime() + 30 * 60 * 1000)) {
+    for (
+      let cursor = new Date(start);
+      cursor < end;
+      cursor = new Date(cursor.getTime() + 30 * 60 * 1000)
+    ) {
       const slotEnd = new Date(cursor.getTime() + 30 * 60 * 1000);
       if (slotEnd <= end) {
         slots.push({
@@ -315,7 +359,9 @@ router.post('/admin/slots', verifySuperAdmin, async (req, res) => {
     }
 
     if (slots.length === 0) {
-      return res.status(400).json({ error: 'Janela precisa ter pelo menos 30 minutos.' });
+      return res
+        .status(400)
+        .json({ error: 'Janela precisa ter pelo menos 30 minutos.' });
     }
 
     const { data, error } = await supabase

@@ -7,7 +7,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { supabase } from '@/services/supabase';
 import { logger } from '@/utils/logger';
 
-export function RentalsBordero() {
+export default function RentalsBordero() {
   const { user } = useAuth();
   const { settings } = useSettings();
 

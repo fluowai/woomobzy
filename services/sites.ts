@@ -61,8 +61,10 @@ const mapSiteToDB = (model: Partial<Site>): any => {
   if (model.menuConfig !== undefined) db.menu_config = model.menuConfig;
   if (model.contactInfo !== undefined) db.contact_info = model.contactInfo;
   if (model.socialLinks !== undefined) db.social_links = model.socialLinks;
-  if (model.propertySelection !== undefined) db.property_selection = model.propertySelection;
-  if (model.developmentSelection !== undefined) db.development_selection = model.developmentSelection;
+  if (model.propertySelection !== undefined)
+    db.property_selection = model.propertySelection;
+  if (model.developmentSelection !== undefined)
+    db.development_selection = model.developmentSelection;
   if (model.customCss !== undefined) db.custom_css = model.customCss;
   if (model.customJs !== undefined) db.custom_js = model.customJs;
   if (model.customHead !== undefined) db.custom_head = model.customHead;
@@ -346,7 +348,11 @@ export const siteService = {
     // Always filter by show_on_site
     query = query.eq('show_on_site', true);
 
-    if (config.mode === 'manual' && config.propertyIds && config.propertyIds.length > 0) {
+    if (
+      config.mode === 'manual' &&
+      config.propertyIds &&
+      config.propertyIds.length > 0
+    ) {
       query = query.in('id', config.propertyIds);
     } else if (config.mode === 'filter' && config.filters) {
       const filters = config.filters;
@@ -425,7 +431,11 @@ export const siteService = {
 
     query = query.eq('show_on_site', true);
 
-    if (config.mode === 'manual' && config.developmentIds && config.developmentIds.length > 0) {
+    if (
+      config.mode === 'manual' &&
+      config.developmentIds &&
+      config.developmentIds.length > 0
+    ) {
       query = query.in('id', config.developmentIds);
     } else if (config.mode === 'filter' && config.filters) {
       const filters = config.filters;

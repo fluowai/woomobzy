@@ -227,14 +227,10 @@ function renderBlockSettings(
       return <TimelineBlockSettings config={cfg} onUpdate={updateConfig} />;
 
     case 'testimonials':
-      return (
-        <TestimonialsBlockSettings config={cfg} onUpdate={updateConfig} />
-      );
+      return <TestimonialsBlockSettings config={cfg} onUpdate={updateConfig} />;
 
     case 'broker_card':
-      return (
-        <BrokerCardBlockSettings config={cfg} onUpdate={updateConfig} />
-      );
+      return <BrokerCardBlockSettings config={cfg} onUpdate={updateConfig} />;
 
     case 'divider':
       return <DividerBlockSettings config={cfg} onUpdate={updateConfig} />;

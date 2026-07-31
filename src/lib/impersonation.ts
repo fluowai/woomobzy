@@ -25,9 +25,7 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function normalizeSession(
-  value: unknown
-): ImpersonationSessionEnvelope | null {
+function normalizeSession(value: unknown): ImpersonationSessionEnvelope | null {
   if (!value || typeof value !== 'object') return null;
 
   const record = value as Record<string, unknown>;
@@ -77,10 +75,7 @@ export function persistImpersonationSession(
     throw new Error('Sessão de impersonação inválida');
   }
 
-  sessionStorage.setItem(
-    IMPERSONATION_STORAGE_KEY,
-    JSON.stringify(normalized)
-  );
+  sessionStorage.setItem(IMPERSONATION_STORAGE_KEY, JSON.stringify(normalized));
   sessionStorage.removeItem(LEGACY_IMPERSONATION_STORAGE_KEY);
   localStorage.removeItem(LEGACY_IMPERSONATION_LOCAL_KEY);
   localStorage.setItem(LEGACY_IMPERSONATION_FLAG_KEY, 'true');

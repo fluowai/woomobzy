@@ -2,13 +2,13 @@
 
 ## Índice
 
-| Arquivo                     | Descrição                                                           | Status       |
-| --------------------------- | ------------------------------------------------------------------- | ------------ |
-| `SPECS/MEGA_ADMIN_PANEL.md` | Planejamento completo do painel Mega Admin                          | PLANEJAMENTO |
-| `SPECS/IA_SQUAD.md`         | Estratégia de Personas/IA e Segmentação (Concorrente Ref: BrokerIA) | PLANEJAMENTO |
-| `SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md` | Auditoria por perfil e prevenção de regressões | PLANEJAMENTO |
-| `WORKLOG.md`                | Log de trabalhos realizados no projeto                              | ATIVO        |
-| `RELATORIO_GAP_URBANO_RURAL.md` | Gap de mudanças aplicadas no Urbano e não no Rural (sidebar sanfona) | CONCLUÍDO  |
+| Arquivo                                  | Descrição                                                            | Status       |
+| ---------------------------------------- | -------------------------------------------------------------------- | ------------ |
+| `SPECS/MEGA_ADMIN_PANEL.md`              | Planejamento completo do painel Mega Admin                           | PLANEJAMENTO |
+| `SPECS/IA_SQUAD.md`                      | Estratégia de Personas/IA e Segmentação (Concorrente Ref: BrokerIA)  | PLANEJAMENTO |
+| `SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md` | Auditoria por perfil e prevenção de regressões                       | PLANEJAMENTO |
+| `WORKLOG.md`                             | Log de trabalhos realizados no projeto                               | ATIVO        |
+| `RELATORIO_GAP_URBANO_RURAL.md`          | Gap de mudanças aplicadas no Urbano e não no Rural (sidebar sanfona) | CONCLUÍDO    |
 
 ## Módulos Implementados
 

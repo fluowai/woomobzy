@@ -629,11 +629,7 @@ async function handleCreateImpersonationSession(
       session,
     });
   } catch (error) {
-    return handleImpersonationError(
-      res,
-      error,
-      'Erro ao ativar modo suporte'
-    );
+    return handleImpersonationError(res, error, 'Erro ao ativar modo suporte');
   }
 }
 

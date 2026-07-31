@@ -29,7 +29,7 @@ import {
   SlidersHorizontal,
   Scale,
   PenTool,
-  Users
+  Users,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import {
@@ -162,8 +162,8 @@ const LegalContracts: React.FC = () => {
       } as any);
 
       const contractType =
-        CONTRACT_TEMPLATES.find((t) => t.id === newContract.templateId)
-          ?.name || 'Contrato';
+        CONTRACT_TEMPLATES.find((t) => t.id === newContract.templateId)?.name ||
+        'Contrato';
 
       const { data, error } = await supabase
         .from('contracts')
@@ -353,29 +353,48 @@ const LegalContracts: React.FC = () => {
             <span>/</span>
             <span>Jurídico</span>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Contratos e Jurídico</h1>
-          <p className="text-sm text-slate-500 mt-1">Gerencie contratos, prazos, assinaturas e conformidade legal.</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+            Contratos e Jurídico
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Gerencie contratos, prazos, assinaturas e conformidade legal.
+          </p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="relative hidden md:block">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="text" placeholder="Buscar no Imobzy..." className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none w-64 transition-all" />
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              placeholder="Buscar no Imobzy..."
+              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none w-64 transition-all"
+            />
           </div>
-          <button onClick={() => toast.info('Central de notificações em breve')} className="relative p-2 text-slate-500 hover:text-slate-700 transition-colors">
+          <button
+            onClick={() => toast.info('Central de notificações em breve')}
+            className="relative p-2 text-slate-500 hover:text-slate-700 transition-colors"
+          >
             <Bell size={20} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
           </button>
-          
+
           <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
             <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-200">
               <User size={18} className="text-slate-500" />
             </div>
             <div className="hidden sm:block text-sm">
-              <p className="font-bold text-slate-900 leading-tight">Administrador</p>
+              <p className="font-bold text-slate-900 leading-tight">
+                Administrador
+              </p>
               <p className="text-xs text-slate-500">Acesso administrativo</p>
             </div>
-            <ChevronRight size={16} className="text-slate-400 hidden sm:block" />
+            <ChevronRight
+              size={16}
+              className="text-slate-400 hidden sm:block"
+            />
           </div>
 
           <button
@@ -390,33 +409,55 @@ const LegalContracts: React.FC = () => {
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full"><FileText size={24} /></div>
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full">
+            <FileText size={24} />
+          </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500">Contratos ativos</p>
+            <p className="text-sm font-semibold text-slate-500">
+              Contratos ativos
+            </p>
             <p className="text-2xl font-bold text-slate-900">128</p>
-            <p className="text-xs font-semibold text-emerald-500">+8 vs. mês anterior</p>
+            <p className="text-xs font-semibold text-emerald-500">
+              +8 vs. mês anterior
+            </p>
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-full"><Calendar size={24} /></div>
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-full">
+            <Calendar size={24} />
+          </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500">Vencem em 30 dias</p>
+            <p className="text-sm font-semibold text-slate-500">
+              Vencem em 30 dias
+            </p>
             <p className="text-2xl font-bold text-slate-900">12</p>
-            <p className="text-xs font-semibold text-amber-500">Atenção necessária</p>
+            <p className="text-xs font-semibold text-amber-500">
+              Atenção necessária
+            </p>
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-full"><PenTool size={24} /></div>
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-full">
+            <PenTool size={24} />
+          </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500">Aguardando assinatura</p>
+            <p className="text-sm font-semibold text-slate-500">
+              Aguardando assinatura
+            </p>
             <p className="text-2xl font-bold text-slate-900">8</p>
-            <p className="text-xs font-semibold text-blue-500">Ação do cliente</p>
+            <p className="text-xs font-semibold text-blue-500">
+              Ação do cliente
+            </p>
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-red-50 text-red-600 rounded-full"><Scale size={24} /></div>
+          <div className="p-3 bg-red-50 text-red-600 rounded-full">
+            <Scale size={24} />
+          </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500">Pendências jurídicas</p>
+            <p className="text-sm font-semibold text-slate-500">
+              Pendências jurídicas
+            </p>
             <p className="text-2xl font-bold text-slate-900">4</p>
             <p className="text-xs font-semibold text-red-500">Requer atenção</p>
           </div>
@@ -428,18 +469,24 @@ const LegalContracts: React.FC = () => {
         <div className="flex items-center gap-3">
           <Bell className="text-amber-500" size={20} />
           <div>
-            <p className="text-sm font-bold text-slate-900">Vencimentos próximos</p>
-            <p className="text-xs font-medium text-slate-600">12 contratos vencem nos próximos 30 dias.</p>
+            <p className="text-sm font-bold text-slate-900">
+              Vencimentos próximos
+            </p>
+            <p className="text-xs font-medium text-slate-600">
+              12 contratos vencem nos próximos 30 dias.
+            </p>
           </div>
         </div>
-        <button onClick={() => setFilterStatus('Active')} className="px-4 py-2 bg-white border border-amber-200 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-50 transition-colors">
+        <button
+          onClick={() => setFilterStatus('Active')}
+          className="px-4 py-2 bg-white border border-amber-200 text-emerald-600 text-xs font-bold rounded-lg hover:bg-emerald-50 transition-colors"
+        >
           Ver contratos
         </button>
       </div>
 
       {/* Main Layout 2 columns */}
       <div className="flex flex-col xl:flex-row gap-6">
-        
         {/* Left Column (Table) */}
         <div className="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
           {/* Table Header/Filters */}
@@ -451,14 +498,23 @@ const LegalContracts: React.FC = () => {
                   onClick={() => setFilterStatus(tab)}
                   className={`pb-2 px-1 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${filterStatus === tab ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
                 >
-                  {tab === 'All' ? 'Todos' : tab === 'Active' ? 'Ativos' : tab === 'Pending' ? 'Pendentes' : 'Rascunhos'}
+                  {tab === 'All'
+                    ? 'Todos'
+                    : tab === 'Active'
+                      ? 'Ativos'
+                      : tab === 'Pending'
+                        ? 'Pendentes'
+                        : 'Rascunhos'}
                 </button>
               ))}
             </div>
-            
+
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative flex-1 sm:w-64">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   type="text"
                   placeholder="Buscar contrato, cliente ou imóvel..."
@@ -468,7 +524,8 @@ const LegalContracts: React.FC = () => {
                 />
               </div>
               <button className="flex items-center gap-2 px-3 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
-                <Filter size={16} /> <span className="hidden sm:inline">Filtros</span>
+                <Filter size={16} />{' '}
+                <span className="hidden sm:inline">Filtros</span>
               </button>
               <button className="p-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
                 <SlidersHorizontal size={16} />
@@ -481,48 +538,91 @@ const LegalContracts: React.FC = () => {
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Contrato</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Imóvel / Referência</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Tipo</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Vencimento</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Responsável</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Contrato
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Imóvel / Referência
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Tipo
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Vencimento
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Responsável
+                  </th>
                   <th className="px-6 py-4"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredContracts.map((contract, i) => (
-                  <tr key={contract.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr
+                    key={contract.id}
+                    className="hover:bg-slate-50/50 transition-colors group"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><FileText size={18} /></div>
+                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                          <FileText size={18} />
+                        </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-900 truncate max-w-[150px]">{contract.title}</p>
-                          <p className="text-[11px] text-slate-500">CTR-{new Date(contract.date).getFullYear()}-{String(i + 10).padStart(4, '0')}</p>
+                          <p className="text-sm font-bold text-slate-900 truncate max-w-[150px]">
+                            {contract.title}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            CTR-{new Date(contract.date).getFullYear()}-
+                            {String(i + 10).padStart(4, '0')}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-slate-900 truncate max-w-[150px]">{contract.propertyName}</p>
-                      <p className="text-[11px] text-slate-500">Ref: {contract.propertyId?.slice(0,6) || '-'}</p>
+                      <p className="text-sm font-semibold text-slate-900 truncate max-w-[150px]">
+                        {contract.propertyName}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Ref: {contract.propertyId?.slice(0, 6) || '-'}
+                      </p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-slate-600 truncate max-w-[120px]">{contract.type}</p>
+                      <p className="text-sm text-slate-600 truncate max-w-[120px]">
+                        {contract.type}
+                      </p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm font-semibold text-slate-900">
                         {new Date(contract.date).toLocaleDateString('pt-BR')}
                       </p>
-                      <p className={`text-[11px] font-medium ${i % 2 === 0 ? 'text-red-500' : 'text-slate-500'}`}>{i % 2 === 0 ? '5 dias' : '30 dias'}</p>
+                      <p
+                        className={`text-[11px] font-medium ${i % 2 === 0 ? 'text-red-500' : 'text-slate-500'}`}
+                      >
+                        {i % 2 === 0 ? '5 dias' : '30 dias'}
+                      </p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${
-                        contract.status === 'Active' ? 'bg-emerald-50 text-emerald-600' :
-                        contract.status === 'Pending' ? 'bg-blue-50 text-blue-600' :
-                        contract.status === 'Draft' ? 'bg-slate-100 text-slate-600' :
-                        'bg-orange-50 text-orange-600'
-                      }`}>
-                        {contract.status === 'Active' ? 'Ativo' : contract.status === 'Pending' ? 'Aguardando assinatura' : contract.status === 'Draft' ? 'Rascunho' : 'Vence em breve'}
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${
+                          contract.status === 'Active'
+                            ? 'bg-emerald-50 text-emerald-600'
+                            : contract.status === 'Pending'
+                              ? 'bg-blue-50 text-blue-600'
+                              : contract.status === 'Draft'
+                                ? 'bg-slate-100 text-slate-600'
+                                : 'bg-orange-50 text-orange-600'
+                        }`}
+                      >
+                        {contract.status === 'Active'
+                          ? 'Ativo'
+                          : contract.status === 'Pending'
+                            ? 'Aguardando assinatura'
+                            : contract.status === 'Draft'
+                              ? 'Rascunho'
+                              : 'Vence em breve'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -530,7 +630,9 @@ const LegalContracts: React.FC = () => {
                         <div className="w-7 h-7 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center border border-slate-200">
                           <User size={14} className="text-slate-400" />
                         </div>
-                        <p className="text-sm font-medium text-slate-700 truncate max-w-[100px]">{contract.clientName}</p>
+                        <p className="text-sm font-medium text-slate-700 truncate max-w-[100px]">
+                          {contract.clientName}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -553,7 +655,11 @@ const LegalContracts: React.FC = () => {
                           <Download size={16} />
                         </button>
                         <button
-                          onClick={() => setContracts(contracts.filter((c) => c.id !== contract.id))}
+                          onClick={() =>
+                            setContracts(
+                              contracts.filter((c) => c.id !== contract.id)
+                            )
+                          }
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                           title="Excluir"
                         >
@@ -569,15 +675,48 @@ const LegalContracts: React.FC = () => {
 
           {/* Pagination */}
           <div className="mt-auto p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
-            <p>Mostrando 1 a {Math.min(5, filteredContracts.length)} de {contracts.length} contratos</p>
+            <p>
+              Mostrando 1 a {Math.min(5, filteredContracts.length)} de{' '}
+              {contracts.length} contratos
+            </p>
             <div className="flex items-center gap-1">
-              <button onClick={() => toast.info('Primeira página')} className="p-1.5 rounded hover:bg-slate-100 text-slate-400"><ChevronRight size={16} className="rotate-180" /></button>
-              <button onClick={() => toast.info('Página 1')} className="w-8 h-8 rounded bg-emerald-600 text-white font-medium flex items-center justify-center">1</button>
-              <button onClick={() => toast.info('Página 2')} className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">2</button>
-              <button onClick={() => toast.info('Página 3')} className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">3</button>
+              <button
+                onClick={() => toast.info('Primeira página')}
+                className="p-1.5 rounded hover:bg-slate-100 text-slate-400"
+              >
+                <ChevronRight size={16} className="rotate-180" />
+              </button>
+              <button
+                onClick={() => toast.info('Página 1')}
+                className="w-8 h-8 rounded bg-emerald-600 text-white font-medium flex items-center justify-center"
+              >
+                1
+              </button>
+              <button
+                onClick={() => toast.info('Página 2')}
+                className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center"
+              >
+                2
+              </button>
+              <button
+                onClick={() => toast.info('Página 3')}
+                className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center"
+              >
+                3
+              </button>
               <span className="px-1 text-slate-400">...</span>
-              <button onClick={() => toast.info('Página 26')} className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center">26</button>
-              <button onClick={() => toast.info('Última página')} className="p-1.5 rounded hover:bg-slate-100 text-slate-400"><ChevronRight size={16} /></button>
+              <button
+                onClick={() => toast.info('Página 26')}
+                className="w-8 h-8 rounded hover:bg-slate-100 text-slate-700 font-medium flex items-center justify-center"
+              >
+                26
+              </button>
+              <button
+                onClick={() => toast.info('Última página')}
+                className="p-1.5 rounded hover:bg-slate-100 text-slate-400"
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
         </div>
@@ -586,38 +725,100 @@ const LegalContracts: React.FC = () => {
         <div className="w-full xl:w-80 space-y-6 shrink-0">
           {/* Visão Rápida */}
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-            <h3 className="text-sm font-bold text-slate-900 mb-6">Visão rápida</h3>
+            <h3 className="text-sm font-bold text-slate-900 mb-6">
+              Visão rápida
+            </h3>
             <div className="flex items-center gap-6">
               <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <svg
+                  className="w-full h-full transform -rotate-90"
+                  viewBox="0 0 36 36"
+                >
                   {/* Background Circle */}
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#f1f5f9" strokeWidth="4" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="transparent"
+                    stroke="#f1f5f9"
+                    strokeWidth="4"
+                  />
                   {/* Segments */}
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#10b981" strokeWidth="4" strokeDasharray="61 39" strokeDashoffset="0" />
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#f59e0b" strokeWidth="4" strokeDasharray="19 81" strokeDashoffset="-61" />
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#3b82f6" strokeWidth="4" strokeDasharray="13 87" strokeDashoffset="-80" />
-                  <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#cbd5e1" strokeWidth="4" strokeDasharray="7 93" strokeDashoffset="-93" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="transparent"
+                    stroke="#10b981"
+                    strokeWidth="4"
+                    strokeDasharray="61 39"
+                    strokeDashoffset="0"
+                  />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="transparent"
+                    stroke="#f59e0b"
+                    strokeWidth="4"
+                    strokeDasharray="19 81"
+                    strokeDashoffset="-61"
+                  />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="transparent"
+                    stroke="#3b82f6"
+                    strokeWidth="4"
+                    strokeDasharray="13 87"
+                    strokeDashoffset="-80"
+                  />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="transparent"
+                    stroke="#cbd5e1"
+                    strokeWidth="4"
+                    strokeDasharray="7 93"
+                    strokeDashoffset="-93"
+                  />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-xl font-bold text-slate-900">128</span>
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase">Total</span>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase">
+                    Total
+                  </span>
                 </div>
               </div>
               <div className="flex-1 space-y-3">
                 <div className="flex items-center justify-between text-xs font-medium">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-slate-700">Ativos</span></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span className="text-slate-700">Ativos</span>
+                  </div>
                   <span className="text-slate-500">78 (61%)</span>
                 </div>
                 <div className="flex items-center justify-between text-xs font-medium">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="text-slate-700">Pendentes</span></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                    <span className="text-slate-700">Pendentes</span>
+                  </div>
                   <span className="text-slate-500">24 (19%)</span>
                 </div>
                 <div className="flex items-center justify-between text-xs font-medium">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span className="text-slate-700">Rascunhos</span></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <span className="text-slate-700">Rascunhos</span>
+                  </div>
                   <span className="text-slate-500">16 (13%)</span>
                 </div>
                 <div className="flex items-center justify-between text-xs font-medium">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-slate-300"></div><span className="text-slate-700">Arquivados</span></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                    <span className="text-slate-700">Arquivados</span>
+                  </div>
                   <span className="text-slate-500">10 (7%)</span>
                 </div>
               </div>
@@ -626,34 +827,60 @@ const LegalContracts: React.FC = () => {
 
           {/* Ações rápidas */}
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-            <h3 className="text-sm font-bold text-slate-900 mb-4">Ações rápidas</h3>
+            <h3 className="text-sm font-bold text-slate-900 mb-4">
+              Ações rápidas
+            </h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3 cursor-pointer group">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors"><FileText size={16} /></div>
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                  <FileText size={16} />
+                </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">Modelos de contrato</p>
-                  <p className="text-xs text-slate-500">Gerencie modelos padrão</p>
+                  <p className="text-sm font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                    Modelos de contrato
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Gerencie modelos padrão
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3 cursor-pointer group">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors"><Users size={16} /></div>
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                  <Users size={16} />
+                </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">Partes e Representantes</p>
-                  <p className="text-xs text-slate-500">Clientes, fiadores e procuradores</p>
+                  <p className="text-sm font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                    Partes e Representantes
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Clientes, fiadores e procuradores
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3 cursor-pointer group">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors"><FileText size={16} /></div>
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                  <FileText size={16} />
+                </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">Cláusulas</p>
-                  <p className="text-xs text-slate-500">Biblioteca de cláusulas</p>
+                  <p className="text-sm font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                    Cláusulas
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Biblioteca de cláusulas
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3 cursor-pointer group">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors"><FileText size={16} /></div>
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                  <FileText size={16} />
+                </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">Relatórios jurídicos</p>
-                  <p className="text-xs text-slate-500">Análises e exportações</p>
+                  <p className="text-sm font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                    Relatórios jurídicos
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Análises e exportações
+                  </p>
                 </div>
               </div>
             </div>
@@ -661,17 +888,23 @@ const LegalContracts: React.FC = () => {
 
           {/* Conformidade */}
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-            <h3 className="text-sm font-bold text-slate-900 mb-3">Conformidade</h3>
+            <h3 className="text-sm font-bold text-slate-900 mb-3">
+              Conformidade
+            </h3>
             <div className="space-y-1">
               <div className="flex items-center justify-between text-sm cursor-pointer hover:bg-slate-50 p-2 -mx-2 rounded-lg transition-colors">
-                <span className="text-slate-600 font-medium">Documentos vencidos</span>
+                <span className="text-slate-600 font-medium">
+                  Documentos vencidos
+                </span>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-red-500">3</span>
                   <ChevronRight size={14} className="text-slate-400" />
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm cursor-pointer hover:bg-slate-50 p-2 -mx-2 rounded-lg transition-colors">
-                <span className="text-slate-600 font-medium">Assinaturas pendentes</span>
+                <span className="text-slate-600 font-medium">
+                  Assinaturas pendentes
+                </span>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-amber-500">8</span>
                   <ChevronRight size={14} className="text-slate-400" />

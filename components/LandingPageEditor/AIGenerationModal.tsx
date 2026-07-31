@@ -27,16 +27,24 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       setLoading(true);
       setError(null);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await axios.post('/api/ai/generate-page', {
-        prompt,
-        niche,
-        organizationId: profile?.organization_id,
-      }, {
-        headers: session?.access_token ? {
-          Authorization: `Bearer ${session.access_token}`,
-        } : {},
-      });
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const response = await axios.post(
+        '/api/ai/generate-page',
+        {
+          prompt,
+          niche,
+          organizationId: profile?.organization_id,
+        },
+        {
+          headers: session?.access_token
+            ? {
+                Authorization: `Bearer ${session.access_token}`,
+              }
+            : {},
+        }
+      );
 
       if (response.data.layout) {
         onGenerate(response.data.layout);

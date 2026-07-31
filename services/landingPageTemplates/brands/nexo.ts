@@ -1,4 +1,8 @@
-import { LandingPageTemplate, templateBlock, defaultPremiumTheme } from '../shared';
+import {
+  LandingPageTemplate,
+  templateBlock,
+  defaultPremiumTheme,
+} from '../shared';
 import { BlockType } from '../../../types/landingPage';
 
 const nexoHtml = `
@@ -1159,8 +1163,10 @@ const nexoHtml = `
 export const nexoTemplate: LandingPageTemplate = {
   id: 'tmpl-nexo-01',
   name: 'Nexo (High-Tech)',
-  description: 'Template focado em IA, agilidade e visual cyberpunk/moderno, ideal para proptechs.',
-  thumbnail: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?ixlib=rb-4.0.3&w=800&q=80',
+  description:
+    'Template focado em IA, agilidade e visual cyberpunk/moderno, ideal para proptechs.',
+  thumbnail:
+    'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?ixlib=rb-4.0.3&w=800&q=80',
   category: 'Proptech',
   group: 'Premium',
   objective: 'Geração de Cadastros',
@@ -1175,12 +1181,6 @@ export const nexoTemplate: LandingPageTemplate = {
     fontFamily: 'Inter, sans-serif',
   },
   blocks: [
-    templateBlock(
-      BlockType.CUSTOM_HTML,
-      0,
-      { code: nexoHtml },
-      {},
-      'full'
-    ),
+    templateBlock(BlockType.CUSTOM_HTML, 0, { code: nexoHtml }, {}, 'full'),
   ],
 };

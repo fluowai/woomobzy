@@ -111,11 +111,9 @@ router.post('/:id/send', async (req, res) => {
     if (bcError) throw bcError;
 
     if (broadcast.status !== 'draft' && broadcast.status !== 'scheduled') {
-      return res
-        .status(400)
-        .json({
-          error: `Cannot send broadcast in '${broadcast.status}' status`,
-        });
+      return res.status(400).json({
+        error: `Cannot send broadcast in '${broadcast.status}' status`,
+      });
     }
 
     await supabase

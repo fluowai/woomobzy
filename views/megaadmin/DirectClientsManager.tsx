@@ -368,7 +368,10 @@ const DirectClientsManager: React.FC = () => {
                         if (!reason) return;
 
                         try {
-                          await impersonateOrganization(DirectClient.id, reason);
+                          await impersonateOrganization(
+                            DirectClient.id,
+                            reason
+                          );
                           window.location.href = '/admin';
                         } catch (err: any) {
                           logger.error(err);

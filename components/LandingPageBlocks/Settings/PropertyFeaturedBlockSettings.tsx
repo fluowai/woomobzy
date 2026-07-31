@@ -65,9 +65,7 @@ const PropertyFeaturedBlockSettings: React.FC<
             onChange={(e) => updateField('showGallery', e.target.checked)}
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
-          <span className="ml-2 text-sm text-gray-700">
-            Mostrar Galeria
-          </span>
+          <span className="ml-2 text-sm text-gray-700">Mostrar Galeria</span>
         </label>
       </div>
     </div>

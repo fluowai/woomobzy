@@ -1,5 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bot, Send, Loader2, User, Sparkles, PlusCircle, ChevronDown, Settings, X, Eye, EyeOff } from 'lucide-react';
+import {
+  Bot,
+  Send,
+  Loader2,
+  User,
+  Sparkles,
+  PlusCircle,
+  ChevronDown,
+  Settings,
+  X,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 
@@ -18,25 +30,61 @@ interface ApiKeys {
 }
 
 const MODELS = [
-  { value: 'groq', label: 'Groq', desc: 'Rápido e versátil (padrão)', provider: 'groq' },
-  { value: 'gemini', label: 'Gemini', desc: 'Criativo e analítico', provider: 'gemini' },
-  { value: 'chatgpt', label: 'ChatGPT', desc: 'Premium e robusto', provider: 'chatgpt' },
-  { value: 'wootech-1', label: 'WooTech AI 1', desc: 'Gateway interno OmniRoute', provider: 'omniroute' },
-  { value: 'wootech-2', label: 'WooTech AI 2', desc: 'API pública Pollinations', provider: 'pollinations' },
-  { value: 'wootech-3', label: 'WooTech AI 3', desc: 'Roteador OpenRouter', provider: 'openrouter' },
+  {
+    value: 'groq',
+    label: 'Groq',
+    desc: 'Rápido e versátil (padrão)',
+    provider: 'groq',
+  },
+  {
+    value: 'gemini',
+    label: 'Gemini',
+    desc: 'Criativo e analítico',
+    provider: 'gemini',
+  },
+  {
+    value: 'chatgpt',
+    label: 'ChatGPT',
+    desc: 'Premium e robusto',
+    provider: 'chatgpt',
+  },
+  {
+    value: 'wootech-1',
+    label: 'WooTech AI 1',
+    desc: 'Gateway interno OmniRoute',
+    provider: 'omniroute',
+  },
+  {
+    value: 'wootech-2',
+    label: 'WooTech AI 2',
+    desc: 'API pública Pollinations',
+    provider: 'pollinations',
+  },
+  {
+    value: 'wootech-3',
+    label: 'WooTech AI 3',
+    desc: 'Roteador OpenRouter',
+    provider: 'openrouter',
+  },
 ] as const;
 
 const STORAGE_KEY_MODEL = 'wootech_ai_model';
 const STORAGE_KEY_KEYS = 'wootech_ai_keys';
 
 function getStoredModel(): string {
-  try { return localStorage.getItem(STORAGE_KEY_MODEL) || 'groq'; }
-  catch { return 'groq'; }
+  try {
+    return localStorage.getItem(STORAGE_KEY_MODEL) || 'groq';
+  } catch {
+    return 'groq';
+  }
 }
 
 function storeModel(value: string) {
-  try { localStorage.setItem(STORAGE_KEY_MODEL, value); }
-  catch { logger.warn('[WooTechAI] Falha ao persistir preferência de modelo'); }
+  try {
+    localStorage.setItem(STORAGE_KEY_MODEL, value);
+  } catch {
+    logger.warn('[WooTechAI] Falha ao persistir preferência de modelo');
+  }
 }
 
 function getStoredKeys(): ApiKeys {
@@ -53,15 +101,25 @@ function getStoredKeys(): ApiKeys {
         openrouter: parsed.openrouter || '',
       };
     }
-    } catch {
-      logger.warn('[WooTechAI] Falha ao carregar chaves salvas');
-    }
-  return { groq: '', gemini: '', chatgpt: '', omniroute: '', pollinations: '', openrouter: '' };
+  } catch {
+    logger.warn('[WooTechAI] Falha ao carregar chaves salvas');
+  }
+  return {
+    groq: '',
+    gemini: '',
+    chatgpt: '',
+    omniroute: '',
+    pollinations: '',
+    openrouter: '',
+  };
 }
 
 function storeKeys(keys: ApiKeys) {
-  try { localStorage.setItem(STORAGE_KEY_KEYS, JSON.stringify(keys)); }
-  catch { logger.warn('[WooTechAI] Falha ao persistir chaves'); }
+  try {
+    localStorage.setItem(STORAGE_KEY_KEYS, JSON.stringify(keys));
+  } catch {
+    logger.warn('[WooTechAI] Falha ao persistir chaves');
+  }
 }
 
 function maskKey(key: string): string {
@@ -70,8 +128,14 @@ function maskKey(key: string): string {
 }
 
 function hasAnyKey(keys: ApiKeys): boolean {
-  return keys.groq.length > 0 || keys.gemini.length > 0 || keys.chatgpt.length > 0
-    || keys.omniroute.length > 0 || keys.pollinations.length > 0 || keys.openrouter.length > 0;
+  return (
+    keys.groq.length > 0 ||
+    keys.gemini.length > 0 ||
+    keys.chatgpt.length > 0 ||
+    keys.omniroute.length > 0 ||
+    keys.pollinations.length > 0 ||
+    keys.openrouter.length > 0
+  );
 }
 
 const WooTechAI: React.FC = () => {
@@ -97,7 +161,9 @@ const WooTechAI: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => { scrollToBottom(); }, [messages]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -109,7 +175,8 @@ const WooTechAI: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const currentModel = MODELS.find((m) => m.value === selectedModel) || MODELS[0];
+  const currentModel =
+    MODELS.find((m) => m.value === selectedModel) || MODELS[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,18 +231,22 @@ const WooTechAI: React.FC = () => {
       }
     } catch (error) {
       logger.error('WooTech AI Error:', error);
-      toast.error('Ocorreu um erro ao conectar com o WooTech AI. Tente novamente.');
+      toast.error(
+        'Ocorreu um erro ao conectar com o WooTech AI. Tente novamente.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleNewChat = () => {
-    setMessages([{
-      role: 'assistant',
-      content:
-        'Olá! Eu sou o WooTech AI. Estou aqui para te ajudar com análises, textos, criativos ou dúvidas sobre o mercado imobiliário e rural. Como posso te ajudar hoje?',
-    }]);
+    setMessages([
+      {
+        role: 'assistant',
+        content:
+          'Olá! Eu sou o WooTech AI. Estou aqui para te ajudar com análises, textos, criativos ou dúvidas sobre o mercado imobiliário e rural. Como posso te ajudar hoje?',
+      },
+    ]);
   };
 
   const handleModelSelect = useCallback((value: string) => {
@@ -231,7 +302,9 @@ const WooTechAI: React.FC = () => {
                       }`}
                     >
                       <div className="font-medium">{m.label}</div>
-                      <div className="text-[11px] text-slate-400 font-normal">{m.desc}</div>
+                      <div className="text-[11px] text-slate-400 font-normal">
+                        {m.desc}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -263,7 +336,9 @@ const WooTechAI: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-              <h2 className="font-bold text-lg">Configuração das Chaves de API</h2>
+              <h2 className="font-bold text-lg">
+                Configuração das Chaves de API
+              </h2>
               <button
                 onClick={() => setSettingsOpen(false)}
                 className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
@@ -273,14 +348,20 @@ const WooTechAI: React.FC = () => {
             </div>
             <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
               <p className="text-sm text-slate-500">
-                Cole suas chaves de API para ativar cada provedor. As chaves ficam salvas apenas no seu navegador.
+                Cole suas chaves de API para ativar cada provedor. As chaves
+                ficam salvas apenas no seu navegador.
               </p>
 
               {MODELS.map((m) => (
-                <div key={m.value} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <div
+                  key={m.value}
+                  className="bg-slate-50 rounded-xl p-4 border border-slate-200"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <h3 className="font-semibold text-slate-800 text-sm">{m.label}</h3>
+                      <h3 className="font-semibold text-slate-800 text-sm">
+                        {m.label}
+                      </h3>
                       <p className="text-xs text-slate-400">{m.desc}</p>
                     </div>
                     {editKeys[m.provider] && (
@@ -294,7 +375,10 @@ const WooTechAI: React.FC = () => {
                       type={visibleKeys[m.provider] ? 'text' : 'password'}
                       value={editKeys[m.provider]}
                       onChange={(e) =>
-                        setEditKeys((prev) => ({ ...prev, [m.provider]: e.target.value }))
+                        setEditKeys((prev) => ({
+                          ...prev,
+                          [m.provider]: e.target.value,
+                        }))
                       }
                       placeholder="Cole sua chave de API aqui..."
                       className="w-full pr-20 pl-3 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-800"
@@ -306,7 +390,11 @@ const WooTechAI: React.FC = () => {
                         className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                         title={visibleKeys[m.provider] ? 'Ocultar' : 'Mostrar'}
                       >
-                        {visibleKeys[m.provider] ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {visibleKeys[m.provider] ? (
+                          <EyeOff size={16} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -319,7 +407,10 @@ const WooTechAI: React.FC = () => {
               ))}
 
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-                <strong className="font-semibold">🔒 Segurança:</strong> As chaves são armazenadas apenas no seu navegador (localStorage) e enviadas diretamente para a API de cada provedor. Nenhuma chave é salva no servidor.
+                <strong className="font-semibold">🔒 Segurança:</strong> As
+                chaves são armazenadas apenas no seu navegador (localStorage) e
+                enviadas diretamente para a API de cada provedor. Nenhuma chave
+                é salva no servidor.
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">

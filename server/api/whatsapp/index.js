@@ -42,7 +42,9 @@ const rewriteWhatsAppPath = (path) => {
 };
 
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
-  const target = resolveWhatsAppTarget(process.env.WHATSMEOW_URL || 'http://127.0.0.1:3100');
+  const target = resolveWhatsAppTarget(
+    process.env.WHATSMEOW_URL || 'http://127.0.0.1:3100'
+  );
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const isProduction = process.env.NODE_ENV === 'production';
   const envAllowedOrigins = process.env.ALLOWED_ORIGINS

@@ -99,8 +99,9 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
           targetPage = lpData;
           if (lpData.organization_id) {
             try {
-              const { data: org } = await supabase
-                .rpc('get_tenant_public', { slug_input: slugOrOrg });
+              const { data: org } = await supabase.rpc('get_tenant_public', {
+                slug_input: slugOrOrg,
+              });
               resolvedOrg = org?.[0] || { id: lpData.organization_id };
             } catch {
               resolvedOrg = { id: lpData.organization_id };
@@ -114,8 +115,10 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       // Fallback or Mode B: Resolve by Organization first
       if (!resolvedOrg) {
         try {
-          const { data: org, error: orgError } = await supabase
-            .rpc('get_tenant_public', { slug_input: slugOrOrg });
+          const { data: org, error: orgError } = await supabase.rpc(
+            'get_tenant_public',
+            { slug_input: slugOrOrg }
+          );
           const orgRow = org?.[0];
           if (!orgError && orgRow) resolvedOrg = orgRow;
         } catch (e) {

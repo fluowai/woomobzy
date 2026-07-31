@@ -1,16 +1,28 @@
-import { LandingPageTemplate, defaultPremiumTheme, templateBlock } from './shared';
+import {
+  LandingPageTemplate,
+  defaultPremiumTheme,
+  templateBlock,
+} from './shared';
 import { BlockType } from '../../types/landingPage';
 
 import { mareTemplate } from './brands/mare';
 import { novoLarTemplate } from './brands/novoLar';
 import { nexoTemplate } from './brands/nexo';
 import { entreTemplate } from './brands/entre';
-const buildBrandTemplate = (id: string, name: string, description: string, htmlContent: string, cssContent: string, palette: any): LandingPageTemplate => {
+const buildBrandTemplate = (
+  id: string,
+  name: string,
+  description: string,
+  htmlContent: string,
+  cssContent: string,
+  palette: any
+): LandingPageTemplate => {
   return {
     id,
     name,
     description,
-    thumbnail: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    thumbnail:
+      'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     category: 'Custom Brand',
     group: 'Premium',
     objective: 'Capturar Leads',
@@ -184,7 +196,6 @@ const vivaeCss = `
   .vivae-card-content strong { font-size: 20px; font-weight: 900; display: block; }
   .vivae-card-content small { font-size: 12px; color: #888; }
 `;
-
 
 const neroHtml = `
   <header class="nero-header">
@@ -443,7 +454,6 @@ const morarCss = `
   .morar-card-body strong span { font-size: 14px; font-weight: 500; color: #64748b; }
 `;
 
-
 export const CUSTOM_BRANDS_TEMPLATES: LandingPageTemplate[] = [
   buildBrandTemplate(
     'vivae-jovem',
@@ -451,7 +461,12 @@ export const CUSTOM_BRANDS_TEMPLATES: LandingPageTemplate[] = [
     'Design vibrante, moderno e focado na jornada do aluguel jovem e descomplicado.',
     vivaeHtml,
     vivaeCss,
-    { primary: '#0044FF', secondary: '#D4FF00', background: '#FFFCF8', text: '#1A1A1A' }
+    {
+      primary: '#0044FF',
+      secondary: '#D4FF00',
+      background: '#FFFCF8',
+      text: '#1A1A1A',
+    }
   ),
   buildBrandTemplate(
     'nero-living',
@@ -459,7 +474,12 @@ export const CUSTOM_BRANDS_TEMPLATES: LandingPageTemplate[] = [
     'Layout de altíssimo padrão com paleta dark e dourada, evocando exclusividade.',
     neroHtml,
     neroCss,
-    { primary: '#C3A370', secondary: '#0F0F0F', background: '#080808', text: '#FFFFFF' }
+    {
+      primary: '#C3A370',
+      secondary: '#0F0F0F',
+      background: '#080808',
+      text: '#FFFFFF',
+    }
   ),
   buildBrandTemplate(
     'morar-clean',
@@ -467,10 +487,15 @@ export const CUSTOM_BRANDS_TEMPLATES: LandingPageTemplate[] = [
     'Layout corporativo focado em usabilidade, segurança e volume de portfólio.',
     morarHtml,
     morarCss,
-    { primary: '#1956E3', secondary: '#EF4444', background: '#FFFFFF', text: '#0F172A' }
+    {
+      primary: '#1956E3',
+      secondary: '#EF4444',
+      background: '#FFFFFF',
+      text: '#0F172A',
+    }
   ),
   mareTemplate,
   novoLarTemplate,
   nexoTemplate,
-  entreTemplate
+  entreTemplate,
 ];

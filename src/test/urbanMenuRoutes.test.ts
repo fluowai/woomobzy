@@ -3,7 +3,10 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const projectRoot = process.cwd();
-const appSource = fs.readFileSync(path.join(projectRoot, 'App.tsx'), 'utf8');
+const appSource = fs.readFileSync(
+  path.join(projectRoot, 'App.routes.tsx'),
+  'utf8'
+);
 const urbanLayoutSource = fs.readFileSync(
   path.join(projectRoot, 'components', 'UrbanLayout.tsx'),
   'utf8'

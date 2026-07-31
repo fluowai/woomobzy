@@ -570,7 +570,8 @@ const DueDiligence: React.FC = () => {
                       className="hidden"
                       onChange={(e) => {
                         const selectedFile = e.target.files?.[0];
-                        if (selectedFile) handleItemUpload(item.id, selectedFile);
+                        if (selectedFile)
+                          handleItemUpload(item.id, selectedFile);
                         e.target.value = '';
                       }}
                     />

@@ -84,7 +84,8 @@ const EXTENSION_BY_MIME = {
   'video/mp4': '.mp4',
   'application/pdf': '.pdf',
   'application/msword': '.doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+    '.docx',
   'text/csv': '.csv',
   'application/json': '.json',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
@@ -117,16 +118,26 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return res.json({
         bucket: existing.bucket,
         path: existing.object_key,
-        publicUrl: getMinioPublicUrl({ bucket: existing.bucket, key: existing.object_key }),
+        publicUrl: getMinioPublicUrl({
+          bucket: existing.bucket,
+          key: existing.object_key,
+        }),
         provider: 'minio',
         reused: true,
         sha256,
       });
     }
 
-    const folder = sanitizePath(req.body.folder || defaultFolderForBucket(bucket));
+    const folder = sanitizePath(
+      req.body.folder || defaultFolderForBucket(bucket)
+    );
     const originalExt = getExtensionForFile(req.file);
-    const filePath = buildContentAddressedKey(req.orgId, folder, sha256, originalExt);
+    const filePath = buildContentAddressedKey(
+      req.orgId,
+      folder,
+      sha256,
+      originalExt
+    );
 
     const result = await uploadToConfiguredStorage(bucket, filePath, req.file);
     if (result.provider === 'minio') {
@@ -165,7 +176,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         hint: 'Configure MINIO_ENDPOINT/MINIO_ACCESS_KEY/MINIO_SECRET_KEY ou defina MEDIA_STORAGE_PROVIDER=supabase no .env.',
       });
     }
-    return res.status(500).json({ error: error.message || 'Erro interno ao enviar arquivo.' });
+    return res
+      .status(500)
+      .json({ error: error.message || 'Erro interno ao enviar arquivo.' });
   }
 });
 
@@ -189,12 +202,19 @@ router.get('/signed-url', async (req, res) => {
     }
 
     const key = String(req.query.path || '').trim();
-    const isTenantPath = key.startsWith(`${req.orgId}/`) || key.startsWith(`${bucket}/${req.orgId}/`);
+    const isTenantPath =
+      key.startsWith(`${req.orgId}/`) ||
+      key.startsWith(`${bucket}/${req.orgId}/`);
     if (!key || !isTenantPath) {
-      return res.status(403).json({ error: 'Arquivo fora da organizacao atual.' });
+      return res
+        .status(403)
+        .json({ error: 'Arquivo fora da organizacao atual.' });
     }
 
-    const expiresInSeconds = Math.max(60, Math.min(Number(req.query.expiresInSeconds) || 300, 3600));
+    const expiresInSeconds = Math.max(
+      60,
+      Math.min(Number(req.query.expiresInSeconds) || 300, 3600)
+    );
     const url = createPresignedGetUrl({
       bucket: minioBucket,
       key,
@@ -204,7 +224,9 @@ router.get('/signed-url', async (req, res) => {
     return res.json({ bucket: minioBucket, path: key, url, expiresInSeconds });
   } catch (error) {
     console.error('[Storage Signed URL Fatal]', error);
-    return res.status(500).json({ error: error.message || 'Erro interno ao assinar URL.' });
+    return res
+      .status(500)
+      .json({ error: error.message || 'Erro interno ao assinar URL.' });
   }
 });
 
@@ -213,11 +235,16 @@ async function uploadToConfiguredStorage(bucket, filePath, file) {
     try {
       return await uploadToMinio(bucket, filePath, file);
     } catch (minioError) {
-      console.warn('[Storage] MinIO upload failed, trying Supabase fallback:', minioError.message);
+      console.warn(
+        '[Storage] MinIO upload failed, trying Supabase fallback:',
+        minioError.message
+      );
       if (allowSupabaseStorageFallback()) {
         return uploadToSupabase(bucket, filePath, file);
       }
-      throw new Error(`MinIO falhou: ${minioError.message}. Configure MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY, ou defina MEDIA_STORAGE_PROVIDER=supabase.`);
+      throw new Error(
+        `MinIO falhou: ${minioError.message}. Configure MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY, ou defina MEDIA_STORAGE_PROVIDER=supabase.`
+      );
     }
   }
 
@@ -225,7 +252,9 @@ async function uploadToConfiguredStorage(bucket, filePath, file) {
     return uploadToSupabase(bucket, filePath, file);
   }
 
-  throw new Error('Nenhum provedor de storage configurado. Configure MINIO_ENDPOINT/MINIO_ACCESS_KEY/MINIO_SECRET_KEY ou defina MEDIA_STORAGE_PROVIDER=supabase no .env.');
+  throw new Error(
+    'Nenhum provedor de storage configurado. Configure MINIO_ENDPOINT/MINIO_ACCESS_KEY/MINIO_SECRET_KEY ou defina MEDIA_STORAGE_PROVIDER=supabase no .env.'
+  );
 }
 
 async function uploadToMinio(bucket, filePath, file) {
@@ -251,7 +280,12 @@ async function uploadToMinio(bucket, filePath, file) {
   };
 }
 
-async function findReusableStorageObject(tenantId, bucket, sha256, logicalBucket = '') {
+async function findReusableStorageObject(
+  tenantId,
+  bucket,
+  sha256,
+  logicalBucket = ''
+) {
   try {
     const supabase = getSupabaseServer();
     let query = supabase
@@ -263,7 +297,9 @@ async function findReusableStorageObject(tenantId, bucket, sha256, logicalBucket
       .is('deleted_at', null);
 
     const tenantPrefix = `${tenantId}/`;
-    const scopedPrefix = logicalBucket ? resolveMinioObjectKey(logicalBucket, tenantPrefix) : tenantPrefix;
+    const scopedPrefix = logicalBucket
+      ? resolveMinioObjectKey(logicalBucket, tenantPrefix)
+      : tenantPrefix;
     if (scopedPrefix !== tenantPrefix) {
       query = query.like('object_key', `${scopedPrefix}%`);
     }
@@ -274,7 +310,8 @@ async function findReusableStorageObject(tenantId, bucket, sha256, logicalBucket
       .maybeSingle();
 
     if (error) {
-      if (/does not exist|schema cache|PGRST/i.test(error.message || '')) return null;
+      if (/does not exist|schema cache|PGRST/i.test(error.message || ''))
+        return null;
       throw error;
     }
     return data || null;
@@ -298,9 +335,8 @@ async function persistStorageObject({
 }) {
   try {
     const supabase = getSupabaseServer();
-    const { error } = await supabase
-      .from('storage_objects')
-      .upsert({
+    const { error } = await supabase.from('storage_objects').upsert(
+      {
         tenant_id: tenantId,
         bucket,
         object_key: objectKey,
@@ -312,23 +348,31 @@ async function persistStorageObject({
         entity_type: entityType || null,
         entity_id: entityId || null,
         deleted_at: null,
-      }, { onConflict: 'bucket,object_key' });
+      },
+      { onConflict: 'bucket,object_key' }
+    );
 
     if (error) {
-      if (/does not exist|schema cache|PGRST/i.test(error.message || '')) return;
+      if (/does not exist|schema cache|PGRST/i.test(error.message || ''))
+        return;
       throw error;
     }
   } catch (error) {
-    console.warn('[Storage Upload] Metadata persist unavailable:', error.message);
+    console.warn(
+      '[Storage Upload] Metadata persist unavailable:',
+      error.message
+    );
   }
 }
 
 async function uploadToSupabase(bucket, filePath, file) {
   const supabase = getSupabaseServer();
-  const { error } = await supabase.storage.from(bucket).upload(filePath, file.buffer, {
-    contentType: file.mimetype || 'application/octet-stream',
-    upsert: false,
-  });
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file.buffer, {
+      contentType: file.mimetype || 'application/octet-stream',
+      upsert: false,
+    });
 
   if (error) {
     console.error('[Storage Upload Error]', error);
@@ -348,11 +392,13 @@ async function uploadToSupabase(bucket, filePath, file) {
 }
 
 function sanitizePath(value) {
-  return String(value)
-    .split('/')
-    .map((part) => part.replace(/[^a-zA-Z0-9._-]/g, '-'))
-    .filter(Boolean)
-    .join('/') || 'uploads';
+  return (
+    String(value)
+      .split('/')
+      .map((part) => part.replace(/[^a-zA-Z0-9._-]/g, '-'))
+      .filter(Boolean)
+      .join('/') || 'uploads'
+  );
 }
 
 function getExtension(fileName) {
@@ -373,7 +419,8 @@ function buildContentAddressedKey(tenantId, folder, sha256, extension) {
 }
 
 function defaultFolderForBucket(bucket) {
-  if (bucket === 'imobzymsg' || bucket === 'whatsapp-media') return 'whatsapp/media';
+  if (bucket === 'imobzymsg' || bucket === 'whatsapp-media')
+    return 'whatsapp/media';
   if (bucket === 'documents') return 'documents';
   if (bucket === 'exports') return 'exports';
   return 'uploads';
@@ -393,7 +440,9 @@ function validateUploadFile(bucket, file) {
   }
 
   if (!allowed.has(file.mimetype)) {
-    throw new Error(`Tipo de arquivo nao permitido para este bucket: ${file.mimetype || 'desconhecido'}`);
+    throw new Error(
+      `Tipo de arquivo nao permitido para este bucket: ${file.mimetype || 'desconhecido'}`
+    );
   }
 }
 

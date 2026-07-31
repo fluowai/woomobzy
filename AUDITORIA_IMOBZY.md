@@ -35,87 +35,88 @@ As evidências que definiram o veredito:
 
 ### 5.1 Tabela de Projetos e Serviços
 
-| Projeto/Serviço | Tecnologia | Responsabilidade | Estado Aparente | Dependências Críticas |
-|---|---|---|---|---|
-| Frontend (raiz) | React 19, Vite 6, TS 5.8 | SPA principal, CRM, painéis, sites públicos | Ativo | API backend, Supabase |
-| Backend (server/) | Express 5, Node.js ESM | API REST principal, 69 route files | Ativo | Supabase (service role), MinIO, RabbitMQ |
-| WhatsApp Service | Go 1.25, whatsmeow | Mensageria WhatsApp, VoIP, mídia | Ativo | Supabase, MinIO, API backend |
-| AI Worker | Python | STT/TTS, Kanban, Ollama | Parcial | API backend (via HTTP) |
-| Document Worker | Python | Processamento documentos | Parcial | API backend |
-| Instagram Service | Node.js/Express | Gerenciamento Instagram | Parcial | Supabase, API backend |
-| Instagram Worker | Python | Automação Instagram | Parcial | Instagram Service |
-| Agro Intelligence | Python (Docker) | Análise agronômica | Não confirmado | API backend |
-| RabbitMQ | 3.13 | Filas de processamento assíncrono | Ativo | API, Workers |
+| Projeto/Serviço   | Tecnologia               | Responsabilidade                            | Estado Aparente | Dependências Críticas                    |
+| ----------------- | ------------------------ | ------------------------------------------- | --------------- | ---------------------------------------- |
+| Frontend (raiz)   | React 19, Vite 6, TS 5.8 | SPA principal, CRM, painéis, sites públicos | Ativo           | API backend, Supabase                    |
+| Backend (server/) | Express 5, Node.js ESM   | API REST principal, 69 route files          | Ativo           | Supabase (service role), MinIO, RabbitMQ |
+| WhatsApp Service  | Go 1.25, whatsmeow       | Mensageria WhatsApp, VoIP, mídia            | Ativo           | Supabase, MinIO, API backend             |
+| AI Worker         | Python                   | STT/TTS, Kanban, Ollama                     | Parcial         | API backend (via HTTP)                   |
+| Document Worker   | Python                   | Processamento documentos                    | Parcial         | API backend                              |
+| Instagram Service | Node.js/Express          | Gerenciamento Instagram                     | Parcial         | Supabase, API backend                    |
+| Instagram Worker  | Python                   | Automação Instagram                         | Parcial         | Instagram Service                        |
+| Agro Intelligence | Python (Docker)          | Análise agronômica                          | Não confirmado  | API backend                              |
+| RabbitMQ          | 3.13                     | Filas de processamento assíncrono           | Ativo           | API, Workers                             |
 
 ### 5.2 Tecnologias e Versões
 
-| Tecnologia | Versão | Estado |
-|---|---|---|
-| React | 19.2.3 | Atual |
-| React Router | 7.15.1 | Atual |
-| Vite | 6.2.0 | Atual |
-| TypeScript | 5.8.2 | Atual |
-| Tailwind CSS | 4.2.1 | Atual |
-| Express | 5.2.1 | Atual |
-| Supabase JS | 2.89.0 | Atual |
-| Node.js | >=20 | Atual |
-| Go | 1.25.0 | Atual |
-| Framer Motion | 12.40.0 | Atual |
-| Recharts | 2.15.0 | Atual |
-| Zod | 3.24.0 | Atual |
-| Lucide React | 0.473.0 | Atual |
-| @dnd-kit/core | 6.3.1 | **Duplicado** |
-| @hello-pangea/dnd | 18.0.1 | **Duplicado** |
+| Tecnologia        | Versão  | Estado        |
+| ----------------- | ------- | ------------- |
+| React             | 19.2.3  | Atual         |
+| React Router      | 7.15.1  | Atual         |
+| Vite              | 6.2.0   | Atual         |
+| TypeScript        | 5.8.2   | Atual         |
+| Tailwind CSS      | 4.2.1   | Atual         |
+| Express           | 5.2.1   | Atual         |
+| Supabase JS       | 2.89.0  | Atual         |
+| Node.js           | >=20    | Atual         |
+| Go                | 1.25.0  | Atual         |
+| Framer Motion     | 12.40.0 | Atual         |
+| Recharts          | 2.15.0  | Atual         |
+| Zod               | 3.24.0  | Atual         |
+| Lucide React      | 0.473.0 | Atual         |
+| @dnd-kit/core     | 6.3.1   | **Duplicado** |
+| @hello-pangea/dnd | 18.0.1  | **Duplicado** |
 
 **Problema de duplicação:** Duas bibliotecas de drag-and-drop (`@dnd-kit` e `@hello-pangea/dnd`) cumprem a mesma função. Isso aumenta o bundle e indica falta de padronização.
 
 ### 5.3 Mapa Funcional
 
-| Módulo | Frontend | Backend | Banco | Integração Real | Testes | Situação |
-|---|---|---|---|---|---|---|
-| CRM - Leads | `views/CRM/CRMLeads.tsx` | `api/crm/leads.routes.js` | `leads` | Sim | Parcial | Funcional |
-| CRM - Kanban | `views/CRM/KanbanBoard.tsx` | `api/crm/index.js` | `leads` | Sim | Não | Funcional |
-| CRM - Clientes | `views/CRM/ClientsManager.tsx` | `api/crm/clients/` | `clients` | Sim | Não | Funcional |
-| CRM - Agenda | `views/CRM/Agenda/` | `api/crm/index.js` | `lead_followups` | Sim | Não | Funcional |
-| Imóveis | `views/PropertyManagement/` | `api/properties/` | `properties` | Sim | Não | Funcional |
-| Editor de Imóvel | `views/PropertyEditor.tsx` | `api/properties/` | `properties` | Sim | Não | Funcional |
-| WhatsApp | `views/WhatsApp/` | Go service (proxy) | `whatsapp_*` | Sim (whatsmeow) | Sim (Go) | **Ativo** |
-| WhatsApp (legado) | N/A | `routes/zap.js` | `instances, messages` | Baileys | Não | **Abandonado** |
-| IA - Assistente | `views/AIAssistant.tsx` | `api/ai/chat.routes.js` | N/A | Gemini/Groq | Não | Funcional |
-| IA - Agentes | `views/AIAgents.tsx` (2296 linhas) | `api/ai/agents.routes.js` | `ai_agents` | Gemini | Não | Funcional |
-| IA - Automação | N/A | `lib/AIAutomation.js` (2022 linhas) | N/A | Gemini | Não | Funcional |
-| IA - WooTech AI | `views/WooTechAI.tsx` | `routes/wootechAi.js` | N/A | OpenAI | Não | Parcial |
-| Sites/Páginas | `views/LandingPage*.tsx` | `api/sites/` | `landing_pages, sites` | Sim | Não | Funcional |
-| Site Manager | `views/SiteManager.tsx` | `api/sites/` | `site_settings` | Sim | Não | Funcional |
-| Portais | N/A | `api/portals/`, `services/*` | N/A | Orulo, Zap, VivaReal | Não | Parcial |
-| Orulo | N/A | `api/orulo/` | `orulo_*` | Sim (via API) | Não | Funcional |
-| Locação | `views/RentalsManagement.tsx` | `api/locacao/` | `leases, rental_contracts` | Sim | Não | Funcional |
-| Rural | `views/rural/*` | `api/rural/` | `properties(urban)` | SICAR, CAR, IBGE | Não | Funcional |
-| Urbano | `views/urban/*` | `api/urban/` | `properties(urban)` | Sim | Não | Funcional |
-| BI - Rural | `views/BIRural.tsx` | `api/rural/` | RPCs | Não | Não | Parcial |
-| BI - Urbano | `views/BIUrbano.tsx` | `api/urban/` | RPCs | Não | Não | Parcial |
-| Quiz | `views/QuizCampaigns.tsx` | `api/quiz/` | `quiz_campaigns, quiz_submissions` | Sim | Não | Funcional |
-| Cobrança | N/A | `api/cobranca/` | `billing, billings` | Asaas | Não | Parcial |
-| Email Center | `views/EmailCenter.tsx` | `api/email/` | `email_accounts, emails` | IMAP/SMTP | Não | Funcional |
-| Data Room | `views/DataRoom.tsx` | `api/valuation/` | `documents` | Sim | Não | Parcial |
-| Avaliações | N/A | `api/valuation/` | `property_valuations` | Sim | Não | Parcial |
-| Due Diligence | `views/rural/DueDiligence.tsx` | `api/rural/` | `due_diligence_items` | Sim | Não | Parcial |
-| Assinaturas | `views/SetupWizard.tsx` | `routes/subscription.js` | `plans, organizations` | Asaas | Não | Funcional |
-| Mega Admin | `views/megaadmin/*` | `routes/mega-admin.js` | Via service role | Supabase | Não | Funcional |
-| Instagram | `views/Instagram/` | Instagram Service | N/A | Instagram API | Não | Parcial |
-| Clube Imobzy | `views/urban/ClubeImobzy.tsx` | N/A | N/A | Não | Não | **Somente interface** |
-| Financial Hub | `views/urban/FinancialHub.tsx` | N/A | N/A | Não | Não | **Somente interface** |
-| Campanhas | N/A | `api/campaigns/` | N/A | Serper | Não | Parcial |
-| Distribuição Leads | N/A | `services/leadDistributionService.js` | `leads` | Sim | Não | Parcial |
-| Sistema - Admin | `views/admin/*` | `routes/admin.js` | Via service role | Supabase | Não | Funcional |
-| Sistema - Super Admin | `views/superadmin/*` | `routes/admin.js` | Via service role | Supabase | Não | Funcional |
-| Contratos Legais | `views/LegalContracts.tsx` | N/A | `contracts` | Sim | Não | **Somente interface**? |
+| Módulo                | Frontend                           | Backend                               | Banco                              | Integração Real      | Testes   | Situação               |
+| --------------------- | ---------------------------------- | ------------------------------------- | ---------------------------------- | -------------------- | -------- | ---------------------- |
+| CRM - Leads           | `views/CRM/CRMLeads.tsx`           | `api/crm/leads.routes.js`             | `leads`                            | Sim                  | Parcial  | Funcional              |
+| CRM - Kanban          | `views/CRM/KanbanBoard.tsx`        | `api/crm/index.js`                    | `leads`                            | Sim                  | Não      | Funcional              |
+| CRM - Clientes        | `views/CRM/ClientsManager.tsx`     | `api/crm/clients/`                    | `clients`                          | Sim                  | Não      | Funcional              |
+| CRM - Agenda          | `views/CRM/Agenda/`                | `api/crm/index.js`                    | `lead_followups`                   | Sim                  | Não      | Funcional              |
+| Imóveis               | `views/PropertyManagement/`        | `api/properties/`                     | `properties`                       | Sim                  | Não      | Funcional              |
+| Editor de Imóvel      | `views/PropertyEditor.tsx`         | `api/properties/`                     | `properties`                       | Sim                  | Não      | Funcional              |
+| WhatsApp              | `views/WhatsApp/`                  | Go service (proxy)                    | `whatsapp_*`                       | Sim (whatsmeow)      | Sim (Go) | **Ativo**              |
+| WhatsApp (legado)     | N/A                                | `routes/zap.js`                       | `instances, messages`              | Baileys              | Não      | **Abandonado**         |
+| IA - Assistente       | `views/AIAssistant.tsx`            | `api/ai/chat.routes.js`               | N/A                                | Gemini/Groq          | Não      | Funcional              |
+| IA - Agentes          | `views/AIAgents.tsx` (2296 linhas) | `api/ai/agents.routes.js`             | `ai_agents`                        | Gemini               | Não      | Funcional              |
+| IA - Automação        | N/A                                | `lib/AIAutomation.js` (2022 linhas)   | N/A                                | Gemini               | Não      | Funcional              |
+| IA - WooTech AI       | `views/WooTechAI.tsx`              | `routes/wootechAi.js`                 | N/A                                | OpenAI               | Não      | Parcial                |
+| Sites/Páginas         | `views/LandingPage*.tsx`           | `api/sites/`                          | `landing_pages, sites`             | Sim                  | Não      | Funcional              |
+| Site Manager          | `views/SiteManager.tsx`            | `api/sites/`                          | `site_settings`                    | Sim                  | Não      | Funcional              |
+| Portais               | N/A                                | `api/portals/`, `services/*`          | N/A                                | Orulo, Zap, VivaReal | Não      | Parcial                |
+| Orulo                 | N/A                                | `api/orulo/`                          | `orulo_*`                          | Sim (via API)        | Não      | Funcional              |
+| Locação               | `views/RentalsManagement.tsx`      | `api/locacao/`                        | `leases, rental_contracts`         | Sim                  | Não      | Funcional              |
+| Rural                 | `views/rural/*`                    | `api/rural/`                          | `properties(urban)`                | SICAR, CAR, IBGE     | Não      | Funcional              |
+| Urbano                | `views/urban/*`                    | `api/urban/`                          | `properties(urban)`                | Sim                  | Não      | Funcional              |
+| BI - Rural            | `views/BIRural.tsx`                | `api/rural/`                          | RPCs                               | Não                  | Não      | Parcial                |
+| BI - Urbano           | `views/BIUrbano.tsx`               | `api/urban/`                          | RPCs                               | Não                  | Não      | Parcial                |
+| Quiz                  | `views/QuizCampaigns.tsx`          | `api/quiz/`                           | `quiz_campaigns, quiz_submissions` | Sim                  | Não      | Funcional              |
+| Cobrança              | N/A                                | `api/cobranca/`                       | `billing, billings`                | Asaas                | Não      | Parcial                |
+| Email Center          | `views/EmailCenter.tsx`            | `api/email/`                          | `email_accounts, emails`           | IMAP/SMTP            | Não      | Funcional              |
+| Data Room             | `views/DataRoom.tsx`               | `api/valuation/`                      | `documents`                        | Sim                  | Não      | Parcial                |
+| Avaliações            | N/A                                | `api/valuation/`                      | `property_valuations`              | Sim                  | Não      | Parcial                |
+| Due Diligence         | `views/rural/DueDiligence.tsx`     | `api/rural/`                          | `due_diligence_items`              | Sim                  | Não      | Parcial                |
+| Assinaturas           | `views/SetupWizard.tsx`            | `routes/subscription.js`              | `plans, organizations`             | Asaas                | Não      | Funcional              |
+| Mega Admin            | `views/megaadmin/*`                | `routes/mega-admin.js`                | Via service role                   | Supabase             | Não      | Funcional              |
+| Instagram             | `views/Instagram/`                 | Instagram Service                     | N/A                                | Instagram API        | Não      | Parcial                |
+| Clube Imobzy          | `views/urban/ClubeImobzy.tsx`      | N/A                                   | N/A                                | Não                  | Não      | **Somente interface**  |
+| Financial Hub         | `views/urban/FinancialHub.tsx`     | N/A                                   | N/A                                | Não                  | Não      | **Somente interface**  |
+| Campanhas             | N/A                                | `api/campaigns/`                      | N/A                                | Serper               | Não      | Parcial                |
+| Distribuição Leads    | N/A                                | `services/leadDistributionService.js` | `leads`                            | Sim                  | Não      | Parcial                |
+| Sistema - Admin       | `views/admin/*`                    | `routes/admin.js`                     | Via service role                   | Supabase             | Não      | Funcional              |
+| Sistema - Super Admin | `views/superadmin/*`               | `routes/admin.js`                     | Via service role                   | Supabase             | Não      | Funcional              |
+| Contratos Legais      | `views/LegalContracts.tsx`         | N/A                                   | `contracts`                        | Sim                  | Não      | **Somente interface**? |
 
 ## 6. Estado do Frontend
 
 ### 6.1 Arquitetura
 
 **Pontos fortes:**
+
 - Lazy loading de todos os componentes de view (otimização de bundle)
 - PWA habilitado com service worker e caching estratégico
 - Separação de chunks: react, charts, maps, supabase
@@ -137,28 +138,28 @@ As evidências que definiram o veredito:
 
 ### 6.2 20 Maiores Arquivos do Frontend
 
-| Arquivo | Linhas | Problema |
-|---|---|---|
-| `constants/siteTemplates.ts` | 4374 | Templates embutidos no bundle |
-| `views/FazendasBrasilPublicSite.tsx` | 2444 | Site público monolítico |
-| `views/AIAgents.tsx` | 2296 | Tela gigante sem componentização |
-| `views/PropertyEditor.tsx` | 2200 | Editor monolítico |
-| `views/OkaPublicSite.tsx` | 1821 | Outro site público |
-| `services/landingPageTemplates/elementor.ts` | 1750 | Templates no bundle |
-| `views/LandingPage.tsx` | 1614 | Editor de página gigante |
-| `views/EmailCenter.tsx` | 1444 | Cliente de email |
-| `views/TemplateCustomizer.tsx` | 1382 | Customizador monolítico |
-| `views/megaadmin/StorageIntelligence.tsx` | 1249 | Tela de painel admin |
-| `services/landingPageTemplates/legacy.ts` | 1153 | Templates legados |
-| `views/LandingPageManager.tsx` | 1078 | Gerenciador |
-| `types/landingPage.ts` | 1077 | Tipos de landing page |
-| `views/WhatsApp/CampaignEditor.tsx` | 1077 | Editor de campanha |
-| `services/landingPageTemplates/designedShowcase.ts` | 1071 | Templates |
-| `views/WhatsApp/WhatsAppDashboard.tsx` | 1042 | Dashboard WhatsApp |
-| `views/megaadmin/FluowaiMigration.tsx` | 999 | Ferramenta de migração |
-| `views/urban/FinancialHub.tsx` | 992 | UI sem backend |
-| `views/SystemSalesPage.tsx` | 991 | Página de vendas |
-| `views/WhatsApp/hooks/api.ts` | 972 | API hooks WhatsApp |
+| Arquivo                                             | Linhas | Problema                         |
+| --------------------------------------------------- | ------ | -------------------------------- |
+| `constants/siteTemplates.ts`                        | 4374   | Templates embutidos no bundle    |
+| `views/FazendasBrasilPublicSite.tsx`                | 2444   | Site público monolítico          |
+| `views/AIAgents.tsx`                                | 2296   | Tela gigante sem componentização |
+| `views/PropertyEditor.tsx`                          | 2200   | Editor monolítico                |
+| `views/OkaPublicSite.tsx`                           | 1821   | Outro site público               |
+| `services/landingPageTemplates/elementor.ts`        | 1750   | Templates no bundle              |
+| `views/LandingPage.tsx`                             | 1614   | Editor de página gigante         |
+| `views/EmailCenter.tsx`                             | 1444   | Cliente de email                 |
+| `views/TemplateCustomizer.tsx`                      | 1382   | Customizador monolítico          |
+| `views/megaadmin/StorageIntelligence.tsx`           | 1249   | Tela de painel admin             |
+| `services/landingPageTemplates/legacy.ts`           | 1153   | Templates legados                |
+| `views/LandingPageManager.tsx`                      | 1078   | Gerenciador                      |
+| `types/landingPage.ts`                              | 1077   | Tipos de landing page            |
+| `views/WhatsApp/CampaignEditor.tsx`                 | 1077   | Editor de campanha               |
+| `services/landingPageTemplates/designedShowcase.ts` | 1071   | Templates                        |
+| `views/WhatsApp/WhatsAppDashboard.tsx`              | 1042   | Dashboard WhatsApp               |
+| `views/megaadmin/FluowaiMigration.tsx`              | 999    | Ferramenta de migração           |
+| `views/urban/FinancialHub.tsx`                      | 992    | UI sem backend                   |
+| `views/SystemSalesPage.tsx`                         | 991    | Página de vendas                 |
+| `views/WhatsApp/hooks/api.ts`                       | 972    | API hooks WhatsApp               |
 
 ### 6.3 Integração Frontend/Backend
 
@@ -169,6 +170,7 @@ As evidências que definiram o veredito:
 ### 7.1 Arquitetura
 
 **Positivo:**
+
 - Separação clara entre API routes (69 arquivos em `server/api/`) e serviços (39 arquivos em `server/services/`)
 - Sistema de middleware para auth, tenant, rate-limit e CORS
 - AsyncLocalStorage para tenant context (BYOB)
@@ -190,34 +192,35 @@ As evidências que definiram o veredito:
 
 ### 7.2 20 Maiores Arquivos do Backend
 
-| Arquivo | Linhas | Domínio |
-|---|---|---|
-| `lib/AIAutomation.js` | 2022 | Automação IA |
-| `services/fluowaiMigrationService.js` | 1714 | Migração cloud |
-| `routes/admin.js` | 1450 | Admin/SuperAdmin |
-| `services/storageIntelligenceService.js` | 1102 | Storage |
-| `api/quiz/index.js` | 909 | Quiz |
-| `services/leadPropertyMatcher.js` | 894 | Matching leads |
-| `middleware/auth.js` | 877 | Autenticação |
-| `api/rural/enrichment.routes.js` | 797 | Rural enrichment |
-| `lib/minio-storage.js` | 789 | Storage MinIO |
-| `routes/public.js` | 778 | Rotas públicas |
-| `services/oruloService.js` | 773 | Portal Orulo |
-| `api/fluowai-migration/index.js` | 724 | Migração cloud |
-| `services/farmValuationService.js` | 715 | Valuation rural |
-| `services/email/emailService.js` | 698 | Email |
-| `api/whatsapp/index.js` | 690 | WhatsApp |
-| `api/cobranca/index.js` | 677 | Cobrança |
-| `api/sites/index.js` | 588 | Sites |
-| `api/orulo/index.js` | 575 | Orulo |
-| `index.js` | 563 | Servidor principal |
-| `domainService.js` | 551 | Domínios/DNS |
+| Arquivo                                  | Linhas | Domínio            |
+| ---------------------------------------- | ------ | ------------------ |
+| `lib/AIAutomation.js`                    | 2022   | Automação IA       |
+| `services/fluowaiMigrationService.js`    | 1714   | Migração cloud     |
+| `routes/admin.js`                        | 1450   | Admin/SuperAdmin   |
+| `services/storageIntelligenceService.js` | 1102   | Storage            |
+| `api/quiz/index.js`                      | 909    | Quiz               |
+| `services/leadPropertyMatcher.js`        | 894    | Matching leads     |
+| `middleware/auth.js`                     | 877    | Autenticação       |
+| `api/rural/enrichment.routes.js`         | 797    | Rural enrichment   |
+| `lib/minio-storage.js`                   | 789    | Storage MinIO      |
+| `routes/public.js`                       | 778    | Rotas públicas     |
+| `services/oruloService.js`               | 773    | Portal Orulo       |
+| `api/fluowai-migration/index.js`         | 724    | Migração cloud     |
+| `services/farmValuationService.js`       | 715    | Valuation rural    |
+| `services/email/emailService.js`         | 698    | Email              |
+| `api/whatsapp/index.js`                  | 690    | WhatsApp           |
+| `api/cobranca/index.js`                  | 677    | Cobrança           |
+| `api/sites/index.js`                     | 588    | Sites              |
+| `api/orulo/index.js`                     | 575    | Orulo              |
+| `index.js`                               | 563    | Servidor principal |
+| `domainService.js`                       | 551    | Domínios/DNS       |
 
 ### 7.3 Inventário de Rotas de API
 
 **69 arquivos de rota** em `server/api/` + **15 arquivos de rota legados** em `server/routes/`.
 
 Domínios com mais rotas:
+
 - Locação: 10 arquivos de rota
 - CRM: 6 arquivos de rota
 - AI: 4 arquivos de rota
@@ -242,6 +245,7 @@ Risco: Rotas legadas como `routes/zap.js` (WhatsApp Baileys) permanecem ativas m
 ### 8.2 Multi-tenancy
 
 **Como funciona:**
+
 - `organizations` é a entidade tenant principal
 - Quase todas as tabelas têm `organization_id` (exceto tabelas do whatsmeow que usam `tenant_id`)
 - Middleware `requireTenant` em `server/middleware/tenant.js` previne spoofing de `organization_id` no body da requisição
@@ -263,67 +267,67 @@ Risco: Rotas legadas como `routes/zap.js` (WhatsApp Baileys) permanecem ativas m
 
 ### 8.3 Tabelas que Precisam de Atenção
 
-| Tabela | Problema | Risco |
-|---|---|---|
-| `"User"`, `"Organization"`, `"Plan"`, `"AccessProfile"` | PascalCase, schema legado. Podem conter dados órfãos | Migração incompleta |
-| `instances`, `contacts`, `messages` | Schema legado de WhatsApp (Baileys) que foi substituído pelo whatsmeow | Abandonado, mas dados existem |
-| `billing` vs `billings` | Duas tabelas de cobrança com nomes similares e estruturas diferentes | Duplicidade |
-| `rental_contracts` vs `leases` | Duas entidades de locação: uma antiga (rental_contracts) e uma nova (leases) que cobre o mesmo domínio com mais campos | Migração incompleta |
-| `whatsmeow_*` (16 tabelas) | Gerenciadas pelo Go service, não pelo backend Node.js. Algumas com dados sensíveis (chaves criptográficas) | Exposição de chaves |
+| Tabela                                                  | Problema                                                                                                               | Risco                         |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `"User"`, `"Organization"`, `"Plan"`, `"AccessProfile"` | PascalCase, schema legado. Podem conter dados órfãos                                                                   | Migração incompleta           |
+| `instances`, `contacts`, `messages`                     | Schema legado de WhatsApp (Baileys) que foi substituído pelo whatsmeow                                                 | Abandonado, mas dados existem |
+| `billing` vs `billings`                                 | Duas tabelas de cobrança com nomes similares e estruturas diferentes                                                   | Duplicidade                   |
+| `rental_contracts` vs `leases`                          | Duas entidades de locação: uma antiga (rental_contracts) e uma nova (leases) que cobre o mesmo domínio com mais campos | Migração incompleta           |
+| `whatsmeow_*` (16 tabelas)                              | Gerenciadas pelo Go service, não pelo backend Node.js. Algumas com dados sensíveis (chaves criptográficas)             | Exposição de chaves           |
 
 ### 8.4 Decisão sobre Reaproveitamento do Schema
 
-| Grupo de Domínio | Decisão | Motivo |
-|---|---|---|
-| `organizations`, `profiles` | Manter | Núcleo do multi-tenancy, dados reais |
-| `properties`, `leads`, `clients` | Manter | Dados operacionais com relacionamentos complexos |
-| `whatsapp_*` (moderno) | Manter | Schema maduro, usado pelo Go service |
-| `whatsmeow_*` | Manter como está | Gerenciado pelo Go service, lib externa |
-| `leases`, `rental_contracts` | Fundir em `leases` | Redundância, migrar dados |
-| `billing`, `billings` | Fundir | Nomenclatura confusa, dados duplicados |
-| `"User"`, `"Organization"` (PascalCase) | Migrar e dropar | Legado, risco de dados órfãos |
-| `instances`, `contacts`, `messages` | Abandonar (dados mantidos para histórico) | Substituído pelo whatsmeow |
-| `migration_*` (6 tabelas) | Manter durante transição | Necessário para migração cloud |
-| `storage_*`, `email_*`, `documents_*` | Manter | Funcionalidades recentes, schema sólido |
-| `ai_agents`, `agent_*` | Manter | Diferencial competitivo |
+| Grupo de Domínio                        | Decisão                                   | Motivo                                           |
+| --------------------------------------- | ----------------------------------------- | ------------------------------------------------ |
+| `organizations`, `profiles`             | Manter                                    | Núcleo do multi-tenancy, dados reais             |
+| `properties`, `leads`, `clients`        | Manter                                    | Dados operacionais com relacionamentos complexos |
+| `whatsapp_*` (moderno)                  | Manter                                    | Schema maduro, usado pelo Go service             |
+| `whatsmeow_*`                           | Manter como está                          | Gerenciado pelo Go service, lib externa          |
+| `leases`, `rental_contracts`            | Fundir em `leases`                        | Redundância, migrar dados                        |
+| `billing`, `billings`                   | Fundir                                    | Nomenclatura confusa, dados duplicados           |
+| `"User"`, `"Organization"` (PascalCase) | Migrar e dropar                           | Legado, risco de dados órfãos                    |
+| `instances`, `contacts`, `messages`     | Abandonar (dados mantidos para histórico) | Substituído pelo whatsmeow                       |
+| `migration_*` (6 tabelas)               | Manter durante transição                  | Necessário para migração cloud                   |
+| `storage_*`, `email_*`, `documents_*`   | Manter                                    | Funcionalidades recentes, schema sólido          |
+| `ai_agents`, `agent_*`                  | Manter                                    | Diferencial competitivo                          |
 
 ## 9. Segurança
 
 ### 9.1 Autenticação
 
-| Achado | Gravidade | Evidência | Impacto | Correção |
-|---|---|---|---|---|
-| Secrets expostos (a rotacionar) | **Crítica** | DEV/HANDOFF.md: "rotacionar todos os segredos previamente expostos" | Comprometimento total se segredos forem usados indevidamente | Rotacionar IMEDIATAMENTE todas as chaves |
-| user_metadata podia elevar privilégio (CORRIGIDO) | Alta (antes) / **Informativo** (agora) | DEV/WORKLOG.md: "user_metadata deixou de poder elevar privilégio" | Foi corrigido na Onda 0 | Já aplicado |
-| Impersonação por header bruto (CORRIGIDO) | Alta (antes) / **Informativo** (agora) | DEV/WORKLOG.md | Foi substituído por sessão com hash | Já aplicado |
-| CI continua com erro em lint e type-check | **Média** | `.github/workflows/ci.yml` linhas 26 e 29 (`continue-on-error: true`) | Erros de tipo e lint não quebram CI, permitindo código de baixa qualidade | Remover `continue-on-error` e fixar erros |
+| Achado                                            | Gravidade                              | Evidência                                                             | Impacto                                                                   | Correção                                  |
+| ------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------- |
+| Secrets expostos (a rotacionar)                   | **Crítica**                            | DEV/HANDOFF.md: "rotacionar todos os segredos previamente expostos"   | Comprometimento total se segredos forem usados indevidamente              | Rotacionar IMEDIATAMENTE todas as chaves  |
+| user_metadata podia elevar privilégio (CORRIGIDO) | Alta (antes) / **Informativo** (agora) | DEV/WORKLOG.md: "user_metadata deixou de poder elevar privilégio"     | Foi corrigido na Onda 0                                                   | Já aplicado                               |
+| Impersonação por header bruto (CORRIGIDO)         | Alta (antes) / **Informativo** (agora) | DEV/WORKLOG.md                                                        | Foi substituído por sessão com hash                                       | Já aplicado                               |
+| CI continua com erro em lint e type-check         | **Média**                              | `.github/workflows/ci.yml` linhas 26 e 29 (`continue-on-error: true`) | Erros de tipo e lint não quebram CI, permitindo código de baixa qualidade | Remover `continue-on-error` e fixar erros |
 
 ### 9.2 Autorização e Isolamento
 
-| Achado | Gravidade | Evidência | Impacto | Correção |
-|---|---|---|---|---|
-| Middleware detecta spoofing de orgId | **Informativo** | `server/middleware/tenant.js:61-75` | Proteção ativa contra manipulação de tenant | Monitorar logs |
-| Fallback por email no recoverTenant | **Média** | `server/middleware/tenant.js:135-157` | Email pode resolver organização errada | Remover fallback por email |
-| Duas nomenclaturas tenant_id/organization_id | **Média** | Uso alternado entre tabelas | Pode causar falha de isolamento em consultas | Padronizar para `organization_id` |
+| Achado                                       | Gravidade       | Evidência                             | Impacto                                      | Correção                          |
+| -------------------------------------------- | --------------- | ------------------------------------- | -------------------------------------------- | --------------------------------- |
+| Middleware detecta spoofing de orgId         | **Informativo** | `server/middleware/tenant.js:61-75`   | Proteção ativa contra manipulação de tenant  | Monitorar logs                    |
+| Fallback por email no recoverTenant          | **Média**       | `server/middleware/tenant.js:135-157` | Email pode resolver organização errada       | Remover fallback por email        |
+| Duas nomenclaturas tenant_id/organization_id | **Média**       | Uso alternado entre tabelas           | Pode causar falha de isolamento em consultas | Padronizar para `organization_id` |
 
 ### 9.3 Entradas e APIs
 
-| Achado | Gravidade | Evidência | Impacto | Correção |
-|---|---|---|---|---|
-| Payload limit 10MB | **Informativo** | `server/index.js:222` | Proteção ativa | OK |
-| Rate limiting global | **Informativo** | `server/index.js:215-221` | Proteção ativa | OK |
-| Helmet CSP em produção | **Informativo** | `server/index.js:146-193` | Proteção ativa | OK |
-| CORS dinâmico | **Informativo** | `server/lib/cors-config.js` | Proteção ativa | OK |
-| sanitize-html disponível | **Informativo** | `package.json:80` | Disponível mas não verificado se usado em todos os pontos | Auditar uso |
+| Achado                   | Gravidade       | Evidência                   | Impacto                                                   | Correção    |
+| ------------------------ | --------------- | --------------------------- | --------------------------------------------------------- | ----------- |
+| Payload limit 10MB       | **Informativo** | `server/index.js:222`       | Proteção ativa                                            | OK          |
+| Rate limiting global     | **Informativo** | `server/index.js:215-221`   | Proteção ativa                                            | OK          |
+| Helmet CSP em produção   | **Informativo** | `server/index.js:146-193`   | Proteção ativa                                            | OK          |
+| CORS dinâmico            | **Informativo** | `server/lib/cors-config.js` | Proteção ativa                                            | OK          |
+| sanitize-html disponível | **Informativo** | `package.json:80`           | Disponível mas não verificado se usado em todos os pontos | Auditar uso |
 
 ### 9.4 Chaves e Segredos
 
-| Achado | Gravidade | Evidência | Impacto | Correção |
-|---|---|---|---|---|
-| Múltiplas chaves de IA no .env (OpenAI, Gemini, Groq) | **Média** | `docker-compose.yml` linhas 48-50, 99-101 | Se expostas, uso indevido com custos | Rotação periódica |
-| Chave JWT do Supabase exposta | **Alta** | HANDOFF.md confirma exposição prévia | Pode forjar tokens | Já deve ter sido rotacionada |
-| Credenciais MinIO no env | **Média** | `docker-compose.yml` linhas 57-62 | Acesso a mídias de todos os tenants | Rotação periódica |
-| WHATSAPP_INTERNAL_TOKEN para comunicação entre serviços | **Informativo** | `docker-compose.yml:52-53` | Protegido por env var | OK |
+| Achado                                                  | Gravidade       | Evidência                                 | Impacto                              | Correção                     |
+| ------------------------------------------------------- | --------------- | ----------------------------------------- | ------------------------------------ | ---------------------------- |
+| Múltiplas chaves de IA no .env (OpenAI, Gemini, Groq)   | **Média**       | `docker-compose.yml` linhas 48-50, 99-101 | Se expostas, uso indevido com custos | Rotação periódica            |
+| Chave JWT do Supabase exposta                           | **Alta**        | HANDOFF.md confirma exposição prévia      | Pode forjar tokens                   | Já deve ter sido rotacionada |
+| Credenciais MinIO no env                                | **Média**       | `docker-compose.yml` linhas 57-62         | Acesso a mídias de todos os tenants  | Rotação periódica            |
+| WHATSAPP_INTERNAL_TOKEN para comunicação entre serviços | **Informativo** | `docker-compose.yml:52-53`                | Protegido por env var                | OK                           |
 
 ## 10. Integrações e WhatsApp
 
@@ -347,26 +351,26 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 
 ### 10.2 Portais Imobiliários
 
-| Integração | Uso | Criticidade | Acoplamento | Segurança | Reaproveitável? |
-|---|---|---|---|---|---|
-| Orulo | Catalogação + credenciais globais | Média | Médio (api/orulo/) | Médio | Sim |
-| Zap/Webmotors | Exportação de imóveis | Média | Médio (services/zapService.js) | Baixo | Sim, com refatoração |
-| VivaReal | Exportação de imóveis | Baixa | Médio (services/vivarealService.js) | Baixo | Sim, com refatoração |
-| Sienge | Integração construtora | Baixa | Alto (services/siengeService.js) | Baixo | Precisa revisão |
+| Integração    | Uso                               | Criticidade | Acoplamento                         | Segurança | Reaproveitável?      |
+| ------------- | --------------------------------- | ----------- | ----------------------------------- | --------- | -------------------- |
+| Orulo         | Catalogação + credenciais globais | Média       | Médio (api/orulo/)                  | Médio     | Sim                  |
+| Zap/Webmotors | Exportação de imóveis             | Média       | Médio (services/zapService.js)      | Baixo     | Sim, com refatoração |
+| VivaReal      | Exportação de imóveis             | Baixa       | Médio (services/vivarealService.js) | Baixo     | Sim, com refatoração |
+| Sienge        | Integração construtora            | Baixa       | Alto (services/siengeService.js)    | Baixo     | Precisa revisão      |
 
 ### 10.3 Demais Integrações
 
-| Integração | Uso | Criticidade | Acoplamento | Segurança | Reaproveitável? |
-|---|---|---|---|---|---|
-| SICAR/CAR | Dados cadastrais rurais | Alta | Alto | Público | Sim |
-| IBGE (Sidra) | Dados censitários | Média | Médio | Público | Sim |
-| MapBiomas/TerraBrasilis | Dados ambientais | Média | Baixo | Público | Sim |
-| Ibama/ConectaGov | Embargos ambientais | Média | Médio | Público | Sim |
-| ONR | Registro de imóveis | Baixa | Médio | Público | Sim |
-| Asaas | Cobrança | Alta | Médio | **Crítico** | Precisa revisão |
-| Email (IMAP/SMTP) | Email Center | Alta | Médio | **Senhas criptografadas** | Sim |
-| Serper | Campanhas | Baixa | Baixo | API Key | Sim |
-| Resend | Email transacional | Baixa | Baixo | API Key | Sim |
+| Integração              | Uso                     | Criticidade | Acoplamento | Segurança                 | Reaproveitável? |
+| ----------------------- | ----------------------- | ----------- | ----------- | ------------------------- | --------------- |
+| SICAR/CAR               | Dados cadastrais rurais | Alta        | Alto        | Público                   | Sim             |
+| IBGE (Sidra)            | Dados censitários       | Média       | Médio       | Público                   | Sim             |
+| MapBiomas/TerraBrasilis | Dados ambientais        | Média       | Baixo       | Público                   | Sim             |
+| Ibama/ConectaGov        | Embargos ambientais     | Média       | Médio       | Público                   | Sim             |
+| ONR                     | Registro de imóveis     | Baixa       | Médio       | Público                   | Sim             |
+| Asaas                   | Cobrança                | Alta        | Médio       | **Crítico**               | Precisa revisão |
+| Email (IMAP/SMTP)       | Email Center            | Alta        | Médio       | **Senhas criptografadas** | Sim             |
+| Serper                  | Campanhas               | Baixa       | Baixo       | API Key                   | Sim             |
+| Resend                  | Email transacional      | Baixa       | Baixo       | API Key                   | Sim             |
 
 ## 11. Inteligência Artificial e Automações
 
@@ -375,6 +379,7 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 **Provedores**: OpenAI, Gemini (principal), Groq (alternativa)
 
 **O que existe:**
+
 - `AIAutomation.js`: motor de automação de IA para WhatsApp (2022 linhas) — funcional, mas monolítico
 - `services/ai/agentOrchestrator.js`: orquestrador de agentes de IA
 - `services/ai/ttsService.js`: texto-para-fala
@@ -384,6 +389,7 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 - Schema completo de agentes (9 tabelas): `ai_agents`, `agent_channels`, `agent_triggers`, `agent_permissions`, `agent_pipelines`, `agent_knowledge_sources`, `agent_handoff_rules`, `agent_metrics_config`, `agent_execution_logs`
 
 **Problemas:**
+
 1. `AIAutomation.js` é monolítico (2022 linhas) — mistura processamento de mensagens, decisão, integração com múltiplos provedores
 2. Dados pessoais podem ser enviados para provedores de IA (Gemini, OpenAI) — risco LGPD
 3. Sem validação visível de saídas de IA (structured output)
@@ -402,16 +408,17 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 
 ### 12.1 Testes
 
-| Tipo | Quantidade | Estado |
-|---|---|---|
-| Testes unitários (Vitest) | 177 arquivos .test.ts* | Funciona (`npm run test`) |
-| Testes E2E (Playwright) | 14 arquivos | Funciona |
-| Testes Go (whatsapp-service) | 5 arquivos | Passam no CI |
-| Testes de integração API | **0** arquivos | **CRÍTICO** |
-| Testes de segurança | 0 específicos | Inexistente |
-| Cobertura | Não configurada | Inexistente |
+| Tipo                         | Quantidade              | Estado                    |
+| ---------------------------- | ----------------------- | ------------------------- |
+| Testes unitários (Vitest)    | 177 arquivos .test.ts\* | Funciona (`npm run test`) |
+| Testes E2E (Playwright)      | 14 arquivos             | Funciona                  |
+| Testes Go (whatsapp-service) | 5 arquivos              | Passam no CI              |
+| Testes de integração API     | **0** arquivos          | **CRÍTICO**               |
+| Testes de segurança          | 0 específicos           | Inexistente               |
+| Cobertura                    | Não configurada         | Inexistente               |
 
 **Problemas:**
+
 - `server/__tests__/` está vazio (0 arquivos)
 - CI roda lint e type-check com `continue-on-error: true`
 - Não há testes de multi-tenancy
@@ -419,18 +426,19 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 
 ### 12.2 Infraestrutura
 
-| Componente | Tecnologia | Estado |
-|---|---|---|
-| Container runtime | Docker + Docker Compose + Swarm | Ativo |
-| Orquestração | Portainer (stacks .yml) | Ativo |
-| Reverse proxy | Traefik com Let's Encrypt | Ativo |
-| Storage de mídia | MinIO | Ativo |
-| Message queue | RabbitMQ 3.13 | Ativo |
-| CI/CD | GitHub Actions (2 workflows) | Ativo |
-| Registro de imagens | GHCR (ghcr.io/fluowai) | Ativo |
-| Imagens Docker | 5 Dockerfiles | **Problemas de segurança** |
+| Componente          | Tecnologia                      | Estado                     |
+| ------------------- | ------------------------------- | -------------------------- |
+| Container runtime   | Docker + Docker Compose + Swarm | Ativo                      |
+| Orquestração        | Portainer (stacks .yml)         | Ativo                      |
+| Reverse proxy       | Traefik com Let's Encrypt       | Ativo                      |
+| Storage de mídia    | MinIO                           | Ativo                      |
+| Message queue       | RabbitMQ 3.13                   | Ativo                      |
+| CI/CD               | GitHub Actions (2 workflows)    | Ativo                      |
+| Registro de imagens | GHCR (ghcr.io/fluowai)          | Ativo                      |
+| Imagens Docker      | 5 Dockerfiles                   | **Problemas de segurança** |
 
 **Problemas:**
+
 1. **Dockerfiles usam node:20 (full)** em vez de variantes slim/alpine — imagens grandes
 2. **Não há health checks** nos Dockerfiles do frontend e api
 3. **Dependência de ações manuais**: deploy em produção parece semi-manual (Portainer stacks com SHA fixo)
@@ -438,55 +446,55 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 
 ### 12.3 Observabilidade
 
-| Aspecto | Presente | Observação |
-|---|---|---|
-| Logs estruturados | Não | `console.log`, `console.error` espalhados |
-| Correlação de requisições | Não | Sem trace ID |
-| Métricas | Não | Não há Prometheus ou similar |
-| Error tracking | Não | Sem Sentry ou similar |
-| Audit logging | Parcial | `api_audit_logs`, `impersonation_sessions`, `agent_execution_logs` |
-| Health check | Sim | `/health` endpoint |
-| Server-Timing headers | Sim | Headers com duração e memória |
+| Aspecto                   | Presente | Observação                                                         |
+| ------------------------- | -------- | ------------------------------------------------------------------ |
+| Logs estruturados         | Não      | `console.log`, `console.error` espalhados                          |
+| Correlação de requisições | Não      | Sem trace ID                                                       |
+| Métricas                  | Não      | Não há Prometheus ou similar                                       |
+| Error tracking            | Não      | Sem Sentry ou similar                                              |
+| Audit logging             | Parcial  | `api_audit_logs`, `impersonation_sessions`, `agent_execution_logs` |
+| Health check              | Sim      | `/health` endpoint                                                 |
+| Server-Timing headers     | Sim      | Headers com duração e memória                                      |
 
 ## 13. LGPD e Proteção de Dados
 
 ### Riscos Identificados
 
-| Risco | Gravidade | Evidência |
-|---|---|---|
-| Dados de leads enviados para IA externa | **Alta** | `AIAutomation.js` envia mensagens para Gemini/OpenAI sem anonimização visível |
-| Senhas de email criptografadas mas descriptografáveis | **Média** | `email_accounts.encrypted_password` — depende da chave de criptografia |
-| Dados financeiros em `clients`, `leases`, `billing` | **Média** | Renda, score de crédito, dados bancários |
-| Dados pessoais em `whatsapp_messages.content` | **Alta** | Mensagens completas armazenadas sem expiração |
-| Logs com dados pessoais | **Média** | `console.error` com emails, userIds |
-| Exclusão lógica inconsistente | **Média** | `storage_objects.deleted_at` existe, mas outras tabelas não têm soft delete |
-| Consentimento de leads | **Não verificado** | Não foi encontrado rastro de registro de consentimento |
-| Compartilhamento com provedores dos EUA | **Alta** | OpenAI, Gemini, Groq — todos servidores estrangeiros |
+| Risco                                                 | Gravidade          | Evidência                                                                     |
+| ----------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------- |
+| Dados de leads enviados para IA externa               | **Alta**           | `AIAutomation.js` envia mensagens para Gemini/OpenAI sem anonimização visível |
+| Senhas de email criptografadas mas descriptografáveis | **Média**          | `email_accounts.encrypted_password` — depende da chave de criptografia        |
+| Dados financeiros em `clients`, `leases`, `billing`   | **Média**          | Renda, score de crédito, dados bancários                                      |
+| Dados pessoais em `whatsapp_messages.content`         | **Alta**           | Mensagens completas armazenadas sem expiração                                 |
+| Logs com dados pessoais                               | **Média**          | `console.error` com emails, userIds                                           |
+| Exclusão lógica inconsistente                         | **Média**          | `storage_objects.deleted_at` existe, mas outras tabelas não têm soft delete   |
+| Consentimento de leads                                | **Não verificado** | Não foi encontrado rastro de registro de consentimento                        |
+| Compartilhamento com provedores dos EUA               | **Alta**           | OpenAI, Gemini, Groq — todos servidores estrangeiros                          |
 
 ## 14. Dívida Técnica e Métricas
 
 ### Métricas Coletadas
 
-| Métrica | Valor |
-|---|---|
-| Total de arquivos JS/TS/TSX | ~2272 |
-| TSX (componentes React) | 359 |
-| TS (lógica/types) | ~1767 |
-| JS (server) | 146 |
-| SQL (migrations + schema) | 167 |
-| Tabelas no banco | 99 |
-| Migrações SQL | 67 |
-| Arquivos de rota API | 69 + 15 legados |
-| Serviços backend | 39 |
-| Arquivos Go (WhatsApp) | 88+ |
-| Dockerfiles | 5 |
-| CI workflows | 2 |
-| TODO/FIXME/HACK no source | 59 |
-| Maior arquivo frontend | 6085 linhas (database.types.ts) |
-| Maior arquivo server | 2022 linhas (AIAutomation.js) |
-| Testes unitários (Vitest) | ~177 arquivos |
-| Testes E2E | 14 |
-| Testes de integração API | 0 |
+| Métrica                     | Valor                           |
+| --------------------------- | ------------------------------- |
+| Total de arquivos JS/TS/TSX | ~2272                           |
+| TSX (componentes React)     | 359                             |
+| TS (lógica/types)           | ~1767                           |
+| JS (server)                 | 146                             |
+| SQL (migrations + schema)   | 167                             |
+| Tabelas no banco            | 99                              |
+| Migrações SQL               | 67                              |
+| Arquivos de rota API        | 69 + 15 legados                 |
+| Serviços backend            | 39                              |
+| Arquivos Go (WhatsApp)      | 88+                             |
+| Dockerfiles                 | 5                               |
+| CI workflows                | 2                               |
+| TODO/FIXME/HACK no source   | 59                              |
+| Maior arquivo frontend      | 6085 linhas (database.types.ts) |
+| Maior arquivo server        | 2022 linhas (AIAutomation.js)   |
+| Testes unitários (Vitest)   | ~177 arquivos                   |
+| Testes E2E                  | 14                              |
+| Testes de integração API    | 0                               |
 
 ### Dívida Técnica Identificada
 
@@ -506,6 +514,7 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 ### Por Nicho
 
 **Rural:**
+
 - Dashboard rural, BI Rural, Cadastro Técnico, Territory Hub
 - GeoInteligência, Dossiê Inteligente, Due Diligence
 - Valuation Rural, Portal Proprietário/Comprador
@@ -513,12 +522,14 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 - Integrações: SICAR, MapBiomas, TerraBrasilis, Ibama, ONR
 
 **Urbano:**
+
 - Dashboard urbano, BI Urbano, Empreendimentos, Loteamentos
 - Locação (leases + rental_contracts), Bordero, Repasse Kanban
 - Financial Hub (UI only), Clube Imobzy (UI only)
 - Contratos, Data Room, Portal do Proprietário
 
 **Transversal:**
+
 - CRM (Leads, Kanban, Clientes, Agenda)
 - Imóveis (gestão + editor)
 - WhatsApp (Go service + dashboard)
@@ -533,58 +544,60 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 
 ### Manter (preservar como estão ou com mínimas alterações)
 
-| Elemento | Motivo |
-|---|---|
-| WhatsApp Go Service | Diferencial competitivo, sophisticated, VoIP, media pipeline |
-| Schema do whatsmeow (16 tabelas) | Gerenciado pela lib, não tocar |
-| Tabelas operacionais: properties, leads, clients | Dados reais, schema maduro |
-| Tabelas de agentes de IA | Diferencial, schema completo |
-| Quiz campaigns | Funcionalidade completa |
-| Orulo integration | API real, funcional |
-| Infra Traefik + Portainer | Funciona em produção |
+| Elemento                                         | Motivo                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| WhatsApp Go Service                              | Diferencial competitivo, sophisticated, VoIP, media pipeline |
+| Schema do whatsmeow (16 tabelas)                 | Gerenciado pela lib, não tocar                               |
+| Tabelas operacionais: properties, leads, clients | Dados reais, schema maduro                                   |
+| Tabelas de agentes de IA                         | Diferencial, schema completo                                 |
+| Quiz campaigns                                   | Funcionalidade completa                                      |
+| Orulo integration                                | API real, funcional                                          |
+| Infra Traefik + Portainer                        | Funciona em produção                                         |
 
 ### Refatorar
 
-| Elemento | O que fazer |
-|---|---|
-| AIAutomation.js (2022 linhas) | Decompor em módulos: orchestrator, providers, handlers |
-| auth.js middleware (877 linhas) | Separar validação de token, resolução de perfil, resolução de org |
-| PropertyEditor.tsx (2200 linhas) | Componentizar por seção |
-| AIAgents.tsx (2296 linhas) | Componentizar por funcionalidade |
-| admin.js route (1450 linhas) | Separar em módulos por domínio |
-| fluowaiMigrationService.js (1714 linhas) | Extrair etapas em módulos |
+| Elemento                                 | O que fazer                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| AIAutomation.js (2022 linhas)            | Decompor em módulos: orchestrator, providers, handlers            |
+| auth.js middleware (877 linhas)          | Separar validação de token, resolução de perfil, resolução de org |
+| PropertyEditor.tsx (2200 linhas)         | Componentizar por seção                                           |
+| AIAgents.tsx (2296 linhas)               | Componentizar por funcionalidade                                  |
+| admin.js route (1450 linhas)             | Separar em módulos por domínio                                    |
+| fluowaiMigrationService.js (1714 linhas) | Extrair etapas em módulos                                         |
 
 ### Reescrever
 
-| Elemento | Motivo |
-|---|---|
-| Rotas legadas (zap.js, jarvis.js, wootechAi.js) | Substituídas ou obsoletas |
-| Node.js WhatsApp handlers | Já substituídos pelo Go service |
-| FinancialHub e ClubeImobzy backend | UI existe, backend não |
-| Landing page templates no frontend | Mover para backend ou CDN |
+| Elemento                                        | Motivo                          |
+| ----------------------------------------------- | ------------------------------- |
+| Rotas legadas (zap.js, jarvis.js, wootechAi.js) | Substituídas ou obsoletas       |
+| Node.js WhatsApp handlers                       | Já substituídos pelo Go service |
+| FinancialHub e ClubeImobzy backend              | UI existe, backend não          |
+| Landing page templates no frontend              | Mover para backend ou CDN       |
 
 ### Eliminar (após migração)
 
-| Elemento | O que fazer |
-|---|---|
-| Tabelas PascalCase | Migrar dados e dropar |
-| @dnd-kit | Padronizar para @hello-pangea/dnd |
-| WhatsApp schema legado (instances, contacts, messages) | Arquivar dados e dropar |
-| rental_contracts | Migrar para leases |
-| billing duplicada | Fundir com billings |
-| WhatsApp Node.js routes | Remover |
+| Elemento                                               | O que fazer                       |
+| ------------------------------------------------------ | --------------------------------- |
+| Tabelas PascalCase                                     | Migrar dados e dropar             |
+| @dnd-kit                                               | Padronizar para @hello-pangea/dnd |
+| WhatsApp schema legado (instances, contacts, messages) | Arquivar dados e dropar           |
+| rental_contracts                                       | Migrar para leases                |
+| billing duplicada                                      | Fundir com billings               |
+| WhatsApp Node.js routes                                | Remover                           |
 
 ## 17. Comparação das Três Estratégias
 
 ### Estratégia A — Continuar e Refatorar
 
 **Prós:**
+
 - Menor risco imediato
 - Clientes existentes não são impactados
 - Entrega contínua de funcionalidades
 - Preserva todo o investimento atual
 
 **Contras:**
+
 - Dívida técnica se acumula
 - Dados órfãos (PascalCase, Baileys) permanecem
 - Arquivos monolíticos permanecem
@@ -595,6 +608,7 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 ### Estratégia B — Reconstrução Híbrida (Strangler Fig) ✅
 
 **Prós:**
+
 - Preserva WhatsApp service, schema, integrações funcionais
 - Permite refatoração profunda sem parar o sistema
 - Substitui progressivamente o que está degradado
@@ -603,6 +617,7 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 - Pode manter clientes em produção durante a transição
 
 **Contras:**
+
 - Complexidade de manter dois sistemas durante transição
 - Sincronização de dados entre módulos
 - Requer disciplina para não continuar acumulando dívida
@@ -610,11 +625,13 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 ### Estratégia C — Criar Tudo do Zero
 
 **Prós:**
+
 - Arquitetura limpa sem dívida técnica
 - Pode escolher tecnologias sem restrições
 - Sem legado para manter
 
 **Contras:**
+
 - Perde o WhatsApp Go service (milhares de horas de desenvolvimento)
 - Perde 67 migrações de schema
 - Precisa reimplementar 40+ integrações
@@ -627,19 +644,20 @@ O serviço WhatsApp em Go (`whatsapp-service/`) é o componente mais sofisticado
 
 ## 18. Matriz de Decisão Ponderada
 
-| Critério | Peso | Refatorar | Híbrida | Do Zero |
-|---|---|---|---|---|
-| Segurança | 20% | 4 (0.8) | **8** (1.6) | 9 (1.8) |
-| Velocidade até valor real | 15% | **8** (1.2) | 6 (0.9) | 2 (0.3) |
-| Risco de regressão | 10% | 5 (0.5) | **8** (0.8) | 3 (0.3) |
-| Escalabilidade | 10% | 3 (0.3) | **7** (0.7) | 9 (0.9) |
-| Manutenibilidade | 15% | 3 (0.45) | **7** (1.05) | 9 (1.35) |
-| Preservação regras negócio | 10% | **9** (0.9) | **9** (0.9) | 3 (0.3) |
-| Migração de dados | 10% | **10** (1.0) | 7 (0.7) | 4 (0.4) |
-| Custo operacional | 5% | 4 (0.2) | **6** (0.3) | 5 (0.25) |
-| Experiência do usuário | 5% | 4 (0.2) | **7** (0.35) | 9 (0.45) |
+| Critério                   | Peso | Refatorar    | Híbrida      | Do Zero  |
+| -------------------------- | ---- | ------------ | ------------ | -------- |
+| Segurança                  | 20%  | 4 (0.8)      | **8** (1.6)  | 9 (1.8)  |
+| Velocidade até valor real  | 15%  | **8** (1.2)  | 6 (0.9)      | 2 (0.3)  |
+| Risco de regressão         | 10%  | 5 (0.5)      | **8** (0.8)  | 3 (0.3)  |
+| Escalabilidade             | 10%  | 3 (0.3)      | **7** (0.7)  | 9 (0.9)  |
+| Manutenibilidade           | 15%  | 3 (0.45)     | **7** (1.05) | 9 (1.35) |
+| Preservação regras negócio | 10%  | **9** (0.9)  | **9** (0.9)  | 3 (0.3)  |
+| Migração de dados          | 10%  | **10** (1.0) | 7 (0.7)      | 4 (0.4)  |
+| Custo operacional          | 5%   | 4 (0.2)      | **6** (0.3)  | 5 (0.25) |
+| Experiência do usuário     | 5%   | 4 (0.2)      | **7** (0.35) | 9 (0.45) |
 
 **Total ponderado:**
+
 - **Estratégia A (Refatorar):** 5.55
 - **Estratégia B (Híbrida):** 7.30 ✅
 - **Estratégia C (Do Zero):** 6.05
@@ -722,12 +740,14 @@ A arquitetura atual já é um monólito modular com serviços satélite. A recom
 A migração híbrida segue o padrão Strangler Fig (Figueira Estranguladora):
 
 ### Fase 0 — Preparação (72h)
+
 1. **Rotacionar segredos** urgentemente (ação já identificada como pendente)
 2. **Aplicar migration de impersonação** pendente (`20260728_harden_impersonation_sessions.sql`)
 3. **Remover `continue-on-error: true`** do CI e fixar erros
 4. **Congelar novas funcionalidades** durante a transição
 
 ### Fase 1 — Fundação (30 dias)
+
 1. **Extrair AIAutomation.js** em módulos
 2. **Criar testes de integração** para as 20 principais rotas
 3. **Remover código morto**: rotas legadas, PascalCase tables (dados preservados)
@@ -736,6 +756,7 @@ A migração híbrida segue o padrão Strangler Fig (Figueira Estranguladora):
 6. **Health checks** nos Dockerfiles
 
 ### Fase 2 — Módulos Core (30-90 dias)
+
 1. **Refatorar frontend** — componentizar PropertyEditor, AIAgents, TemplateCustomizer
 2. **Fundir schemas duplicados**: `rental_contracts` → `leases`, `billing` → `billings`
 3. **Criar testes E2E** para todos os painéis (Urbano, Rural, Super Admin, Mega Admin)
@@ -743,6 +764,7 @@ A migração híbrida segue o padrão Strangler Fig (Figueira Estranguladora):
 5. **Padronizar logger** — remover console.log, usar logger estruturado
 
 ### Fase 3 — Qualidade (90-180 dias)
+
 1. **Implementar observabilidade** — tracing, métricas, error tracking
 2. **Cobertura de testes** > 60%
 3. **RLS em todas as tabelas** — auditoria de políticas
@@ -750,6 +772,7 @@ A migração híbrida segue o padrão Strangler Fig (Figueira Estranguladora):
 5. **Documentação OpenAPI** para todas as rotas
 
 ### Fase 4 — Otimização (180+ dias)
+
 1. **Landing page templates para backend/CDN**
 2. **Cache de camada** Redis/CDN
 3. **Performance** — análise de bundle, lazy loading refino, code splitting por domínio
@@ -759,57 +782,57 @@ A migração híbrida segue o padrão Strangler Fig (Figueira Estranguladora):
 
 ### Primeiras 72 Horas
 
-| Ação | Prioridade | Responsável | Critério de Aceite |
-|---|---|---|---|
-| Rotacionar todos os segredos (Supabase, OpenAI, Gemini, MinIO, WhatsApp tokens) | **Crítica** | Operações | Secrets antigos invalidados, novos em uso |
-| Aplicar migration 20260728_harden_impersonation_sessions.sql | **Crítica** | Dev | Impersonação protegida |
-| Verificar backups do banco | **Crítica** | Operações | Backup recente, restore testado |
-| Remover continue-on-error:true do CI | **Alta** | Dev | CI falha quando lint/type-check falha |
-| Revisar logs em busca de dados pessoais expostos | **Alta** | Dev/Security | Logs sem PII |
-| Verificar se WhatsApp legado (Baileys) está ativo | **Alta** | Dev | Confirmar inativo ou remover |
+| Ação                                                                            | Prioridade  | Responsável  | Critério de Aceite                        |
+| ------------------------------------------------------------------------------- | ----------- | ------------ | ----------------------------------------- |
+| Rotacionar todos os segredos (Supabase, OpenAI, Gemini, MinIO, WhatsApp tokens) | **Crítica** | Operações    | Secrets antigos invalidados, novos em uso |
+| Aplicar migration 20260728_harden_impersonation_sessions.sql                    | **Crítica** | Dev          | Impersonação protegida                    |
+| Verificar backups do banco                                                      | **Crítica** | Operações    | Backup recente, restore testado           |
+| Remover continue-on-error:true do CI                                            | **Alta**    | Dev          | CI falha quando lint/type-check falha     |
+| Revisar logs em busca de dados pessoais expostos                                | **Alta**    | Dev/Security | Logs sem PII                              |
+| Verificar se WhatsApp legado (Baileys) está ativo                               | **Alta**    | Dev          | Confirmar inativo ou remover              |
 
 ### Primeiros 30 Dias
 
-| Entrega | Esforço | Dependências |
-|---|---|---|
-| Testes de integração das 20 principais rotas | Médio | Ambiente de homologação |
-| Extração de AIAutomation.js em módulos | Médio | Nenhuma |
-| Remoção de código morto (rotas legadas, PascalCase) | Pequeno | Backup dos dados |
-| Padronização organization_id/tenant_id | Médio | Schema review |
-| Versionamento de API v1 | Médio | Nenhuma |
-| Remoção de @dnd-kit (manter @hello-pangea/dnd) | Pequeno | Verificar uso |
+| Entrega                                             | Esforço | Dependências            |
+| --------------------------------------------------- | ------- | ----------------------- |
+| Testes de integração das 20 principais rotas        | Médio   | Ambiente de homologação |
+| Extração de AIAutomation.js em módulos              | Médio   | Nenhuma                 |
+| Remoção de código morto (rotas legadas, PascalCase) | Pequeno | Backup dos dados        |
+| Padronização organization_id/tenant_id              | Médio   | Schema review           |
+| Versionamento de API v1                             | Médio   | Nenhuma                 |
+| Remoção de @dnd-kit (manter @hello-pangea/dnd)      | Pequeno | Verificar uso           |
 
 ### 30-90 Dias
 
-| Entrega | Esforço | Dependências |
-|---|---|---|
-| Componentização de PropertyEditor | Grande | Nenhuma |
-| Componentização de AIAgents | Grande | Nenhuma |
-| Fusão rental_contracts → leases | Médio | Migração de dados |
-| Fusão billing → billings | Médio | Migração de dados |
-| Backend do Financial Hub | Médio | Schema adicional |
-| Testes E2E completos | Médio | Contas de homologação |
-| Logger estruturado | Médio | Nenhuma |
+| Entrega                           | Esforço | Dependências          |
+| --------------------------------- | ------- | --------------------- |
+| Componentização de PropertyEditor | Grande  | Nenhuma               |
+| Componentização de AIAgents       | Grande  | Nenhuma               |
+| Fusão rental_contracts → leases   | Médio   | Migração de dados     |
+| Fusão billing → billings          | Médio   | Migração de dados     |
+| Backend do Financial Hub          | Médio   | Schema adicional      |
+| Testes E2E completos              | Médio   | Contas de homologação |
+| Logger estruturado                | Médio   | Nenhuma               |
 
 ### Estimativas por Equipe
 
-| Cenário | 72h | 30d | 90d |
-|---|---|---|---|
-| 1 desenvolvedor | Sobrevivência | Fundação + 1 módulo core | 2-3 módulos core |
-| Equipe pequena (2-3 devs) | Sobrevivência | Fundação + 2 módulos core | Core completo + testes |
-| Equipe estruturada (4-6 devs) | Sobrevivência | Fundação + core completo | Qualidade + LGPD + observabilidade |
+| Cenário                       | 72h           | 30d                       | 90d                                |
+| ----------------------------- | ------------- | ------------------------- | ---------------------------------- |
+| 1 desenvolvedor               | Sobrevivência | Fundação + 1 módulo core  | 2-3 módulos core                   |
+| Equipe pequena (2-3 devs)     | Sobrevivência | Fundação + 2 módulos core | Core completo + testes             |
+| Equipe estruturada (4-6 devs) | Sobrevivência | Fundação + core completo  | Qualidade + LGPD + observabilidade |
 
 ## 22. Riscos e Bloqueadores
 
 ### Riscos Imediatos
 
-| Risco | Probabilidade | Impacto | Mitigação |
-|---|---|---|---|
-| Secrets expostos já comprometidos | Média | **Crítico** | Rotação imediata + auditoria de acessos |
-| Falha de isolamento entre tenants | Baixa | **Alto** | Auditoria de RLS + testes de isolamento |
-| Perda de dados sem backup funcional | Baixa | **Crítico** | Verificar backup e restore |
-| WhatsApp service parar de funcionar | Baixa | **Alto** | O Go service tem autotestes e reconexão |
-| Custo de IA não controlado | Média | Médio | Implementar limites por tenant |
+| Risco                               | Probabilidade | Impacto     | Mitigação                               |
+| ----------------------------------- | ------------- | ----------- | --------------------------------------- |
+| Secrets expostos já comprometidos   | Média         | **Crítico** | Rotação imediata + auditoria de acessos |
+| Falha de isolamento entre tenants   | Baixa         | **Alto**    | Auditoria de RLS + testes de isolamento |
+| Perda de dados sem backup funcional | Baixa         | **Crítico** | Verificar backup e restore              |
+| WhatsApp service parar de funcionar | Baixa         | **Alto**    | O Go service tem autotestes e reconexão |
+| Custo de IA não controlado          | Média         | Médio       | Implementar limites por tenant          |
 
 ### Bloqueadores
 
@@ -835,12 +858,14 @@ A migração híbrida segue o padrão Strangler Fig (Figueira Estranguladora):
 **Devemos realizar uma reconstrução híbrida da Imobzy.**
 
 **Por que essa é a melhor opção:**
+
 - O sistema tem valor real acumulado — WhatsApp service, schema de 99 tabelas, integrações maduras, 67 migrações
 - Recriar do zero perderia conhecimento e tomaria 12-24 meses para atingir paridade
 - Continuar sem refatorar aprofundaria a dívida técnica e aumentaria o custo operacional
 - A abordagem híbrida permite entregar valor continuamente enquanto substitui partes problemáticas
 
 **Por que as outras opções não são as melhores:**
+
 - **Refatorar apenas** — não resolve os problemas estruturais (código morto, schemas duplicados, arquivos monolíticos)
 - **Do zero** — perde o que há de melhor no sistema (WhatsApp, schema, integrações) e arrisca repetir os mesmos erros
 

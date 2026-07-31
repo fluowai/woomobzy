@@ -208,7 +208,11 @@ const CadastroTecnico: React.FC = () => {
   };
 
   const handleDelete = async (prop: any) => {
-    if (!confirm(`Excluir a propriedade "${prop.title}"? Essa ação não pode ser desfeita.`)) {
+    if (
+      !confirm(
+        `Excluir a propriedade "${prop.title}"? Essa ação não pode ser desfeita.`
+      )
+    ) {
       return;
     }
     setDeletingId(prop.id);
@@ -253,10 +257,7 @@ const CadastroTecnico: React.FC = () => {
       { label: 'CAR', value: legal?.carNumber || '—' },
       {
         label: 'Georreferenciamento',
-        value:
-          legal?.geometry || rt?.geometry
-            ? 'Registrado'
-            : 'Pendente',
+        value: legal?.geometry || rt?.geometry ? 'Registrado' : 'Pendente',
       },
       { label: 'Status', value: prop.status || 'ativo' },
       { label: 'Arquivo de Origem', value: rt.source_file || '—' },

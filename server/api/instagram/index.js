@@ -1,6 +1,7 @@
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
-const TARGET = process.env.INSTAGRAM_SERVICE_URL || 'http://instagram-service:3200';
+const TARGET =
+  process.env.INSTAGRAM_SERVICE_URL || 'http://instagram-service:3200';
 
 export const setupInstagramProxy = (app) => {
   const proxy = createProxyMiddleware({
@@ -30,8 +31,14 @@ export const setupInstagramProxy = (app) => {
     if (req.method === 'OPTIONS') {
       res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,Accept,Content-Type,Authorization,X-Requested-With,x-company-id');
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+      );
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Origin,Accept,Content-Type,Authorization,X-Requested-With,x-company-id'
+      );
       return res.sendStatus(204);
     }
     next();

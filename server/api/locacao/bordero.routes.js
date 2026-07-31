@@ -20,11 +20,9 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const { lease_id, year, month } = req.query;
 
     if (!lease_id || !year || !month) {
-      return res
-        .status(400)
-        .json({
-          error: 'Faltam parâmetros obrigatórios (lease_id, year, month)',
-        });
+      return res.status(400).json({
+        error: 'Faltam parâmetros obrigatórios (lease_id, year, month)',
+      });
     }
 
     if (!isValidUUID(lease_id)) {

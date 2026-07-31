@@ -16,10 +16,7 @@ const MegaAdminGuard: React.FC<{ children: React.ReactNode }> = ({
 
   if (!isMegaAdmin(profile) || isImpersonating) {
     return (
-      <Navigate
-        to={getPanelHomePath(profile, { isImpersonating })}
-        replace
-      />
+      <Navigate to={getPanelHomePath(profile, { isImpersonating })} replace />
     );
   }
 

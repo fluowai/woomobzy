@@ -18,15 +18,10 @@ import { getSupabaseServer } from './lib/supabase-server.js';
 import { verifyAuth } from './middleware/auth.js';
 import { requireTenant } from './middleware/tenant.js';
 import { createCorsOptions } from './lib/cors-config.js';
+import logger from './utils/logger.js';
 
 // --- Modular Routes ---
-import adminRoutes from './routes/admin.js';
-import adminTemplateRoutes from './routes/admin-templates.js';
-import internalRoutes from './routes/internal.js';
-import importRoutes from './routes/import.js';
-import publicRoutes from './routes/public.js';
-import onboardingRoutes from './routes/onboarding.js';
-import domainRoutes from './routes/domains.js';
+import routes from './routes/index.js';
 import crmRoutes from './api/crm/index.js';
 import crmClientsRoutes from './api/crm/clients/index.js';
 import propertyRoutes from './api/properties/index.js';
@@ -50,14 +45,6 @@ import valuationRoutes from './api/valuation/index.js';
 import documentRoutes from './api/documents/index.js';
 import externalDataRoutes from './api/external-data/index.js';
 import quizRoutes from './api/quiz/index.js';
-import jarvisRoutes from './routes/jarvis.js';
-import accountRoutes from './routes/account.js';
-import whatsappProxyRoutes from './routes/whatsapp-proxy.js';
-import wootechAiRoutes from './routes/wootechAi.js';
-import cvcrmBiaRoutes from './routes/cvcrmBia.js';
-import megaAdminRoutes from './routes/mega-admin.js';
-import subscriptionRoutes from './routes/subscription.js';
-import zapRoutes from './routes/zap.js';
 import campaignRoutes from './api/campaigns/index.js';
 import campaignContactsRoutes from './api/campaigns/contacts.js';
 import campaignSerperRoutes from './api/campaigns/serper.js';
@@ -66,9 +53,7 @@ import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
 } from './lib/platform-config.js';
-import {
-  sendWelcomeLimiter,
-} from './middleware/rateLimit.js';
+import { sendWelcomeLimiter } from './middleware/rateLimit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -85,12 +70,12 @@ const REQUIRED_ENV_VARS = [
 const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
 
 if (missingVars.length > 0) {
-  console.error(
+  logger.error(
     '\n ERRO CRITICO: Variaveis de ambiente obrigatorias nao encontradas:'
   );
-  missingVars.forEach((v) => console.error(`   ${v}`));
-  console.error('\n -> Em producao Docker: adicione no stack/env do servico');
-  console.error(' -> Em desenvolvimento: verifique o arquivo .env na raiz\n');
+  missingVars.forEach((v) => logger.error(`   ${v}`));
+  logger.error('\n -> Em producao Docker: adicione no stack/env do servico');
+  logger.error(' -> Em desenvolvimento: verifique o arquivo .env na raiz\n');
 }
 
 const app = express();
@@ -195,7 +180,7 @@ app.use(
 if (!isProduction) {
   app.use((req, res, next) => {
     if (!req.originalUrl.includes('/ws')) {
-      console.log(`[DEV] ${req.method} ${req.originalUrl} | IP: ${req.ip}`);
+      logger.debug(`[DEV] ${req.method} ${req.originalUrl} | IP: ${req.ip}`);
     }
     next();
   });
@@ -225,7 +210,7 @@ app.use(express.urlencoded({ extended: true }));
 if (!isProduction) {
   app.use((req, res, next) => {
     const auth = req.headers.authorization ? 'auth' : 'anon';
-    console.log(
+    logger.debug(
       `[${new Date().toISOString()}] ${auth} ${req.method} ${req.path}`
     );
     next();
@@ -291,11 +276,11 @@ app.use(async (req, res, next) => {
             adminData.supabase_service_role_key
           );
           tenantConfigCache.set(tenantDomain, tenantClient);
-          console.log(`🔌 BYOB: Server client resolved for ${tenantDomain}`);
+          logger.info(`BYOB: Server client resolved for ${tenantDomain}`);
         }
       }
     } catch (err) {
-      console.error(`❌ BYOB Middleware Error:`, err);
+      logger.error('BYOB Middleware Error:', err);
     }
   }
 
@@ -312,13 +297,7 @@ app.use(async (req, res, next) => {
 // O cliente é criado sob demanda em cada rota via getSupabaseServer().
 
 // --- API Route Mapping ---
-app.use('/internal', internalRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin/templates', adminTemplateRoutes);
-app.use('/api/import', importRoutes);
-app.use('/api/public', publicRoutes);
-app.use('/api/onboarding', onboardingRoutes);
-app.use('/api/domains', domainRoutes);
+app.use(routes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/crm/clients', crmClientsRoutes);
 app.use('/api/properties', propertyRoutes);
@@ -339,13 +318,13 @@ app.use('/api/valuation', valuationRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/external-data', externalDataRoutes);
 app.use('/api/quiz', quizRoutes);
-app.use('/api/jarvis', jarvisRoutes);
-app.use('/api/account', accountRoutes);
-app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
-app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
-app.use('/api/mega', megaAdminRoutes);
-app.use('/api/subscription', subscriptionRoutes);
-app.use('/api/public/zap', zapRoutes);
+app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
+// Tenant Resolution
+
+app.get('/api/tenant/resolve', (req, res) => tenantHandler(req, res));
+app.get('/api/tenant/current', (req, res) => tenantHandler(req, res));
+
+// Campaigns
 app.use(
   '/api/campaigns/serper',
   verifyAuth,
@@ -365,11 +344,6 @@ app.use(
   campaignContactsRoutes
 );
 app.use('/api/campaigns', verifyAuth, requireTenant, campaignRoutes);
-app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
-// Tenant Resolution
-
-app.get('/api/tenant/resolve', (req, res) => tenantHandler(req, res));
-app.get('/api/tenant/current', (req, res) => tenantHandler(req, res));
 
 // System Status & Health
 app.get('/api/system-status', async (req, res) => {
@@ -383,7 +357,7 @@ app.get('/api/system-status', async (req, res) => {
       environment: process.env.NODE_ENV,
     });
   } catch (error) {
-    console.error('SYSTEM STATUS ERROR:', error.message);
+    logger.error('SYSTEM STATUS ERROR:', error.message);
     return res.status(500).json({
       success: false,
       error: isDev ? error.message : 'Erro ao verificar status',
@@ -418,12 +392,12 @@ app.get('/', (req, res) => res.send(`${PLATFORM_COMMERCIAL_NAME} API Online`));
 const PORT = process.env.PORT || 3002;
 
 const server = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`${PLATFORM_COMMERCIAL_NAME} server active on port ${PORT}`);
+  logger.info(`${PLATFORM_COMMERCIAL_NAME} server active on port ${PORT}`);
 
   try {
     const traefikSync = await syncPlatformTraefikServices();
     if (!traefikSync.skipped) {
-      console.log(
+      logger.info(
         `[Traefik] Platform services synchronized: ${traefikSync.configPath}`
       );
     }
@@ -438,11 +412,11 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     const skippedCount = domainSync.results.filter(
       (result) => result.status !== 'success'
     ).length;
-    console.log(
+    logger.info(
       `[Traefik] Registered domains synchronized: ${syncedCount} ok, ${skippedCount} skipped`
     );
   } catch (error) {
-    console.error(
+    logger.error(
       '[Traefik] Failed to synchronize dynamic configuration:',
       error.message
     );
@@ -476,7 +450,7 @@ app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
       const supabase = getSupabaseServer();
       await supabase.from('lead_activities').insert(activityData);
     } catch (dbErr) {
-      console.warn(
+      logger.warn(
         '[SendWelcome] Nao foi possivel registrar atividade:',
         dbErr.message
       );
@@ -484,7 +458,7 @@ app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
 
     res.json({ success: true, message: 'Boas-vindas registrada' });
   } catch (err) {
-    console.error('[SendWelcome Error]', err.message);
+    logger.error('[SendWelcome Error]', err.message);
     res
       .status(500)
       .json({ success: false, error: 'Erro ao enviar boas-vindas' });
@@ -499,7 +473,7 @@ setupInstagramProxy(app);
 // 7. TRATAMENTO GLOBAL DE ERROS (deve vir antes do 404 catch-all)
 app.use((err, req, res, _next) => {
   const isDev = process.env.NODE_ENV !== 'production';
-  console.error('GLOBAL ERROR:', isDev ? err : err.message);
+  logger.error('GLOBAL ERROR:', isDev ? err : err.message);
 
   if (err.message && err.message.includes('CORS')) {
     return res.status(403).json({

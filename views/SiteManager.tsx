@@ -630,7 +630,8 @@ const SiteManager: React.FC = () => {
               <Home size={20} className="text-indigo-400" /> Seleção de Imóveis
             </h2>
             <p className="text-gray-400 text-sm mt-1">
-              Escolha quais imóveis e lançamentos aparecerão no seu site público.
+              Escolha quais imóveis e lançamentos aparecerão no seu site
+              público.
             </p>
           </div>
           <PropertySelectionPanel

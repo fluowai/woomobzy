@@ -1,50 +1,54 @@
-import React, { useRef, useState, useEffect } from 'react'
-import {
-  Bot, Send, Loader2, MessageCircle, Repeat2,
-} from 'lucide-react'
-import type { AIAgent } from '../../services/aiAgents'
-import { aiAgentService } from '../../services/aiAgents'
-import { callApi } from '../../src/lib/api'
+import React, { useRef, useState, useEffect } from 'react';
+import { Bot, Send, Loader2, MessageCircle, Repeat2 } from 'lucide-react';
+import type { AIAgent } from '../../services/aiAgents';
+import { aiAgentService } from '../../services/aiAgents';
+import { callApi } from '../../src/lib/api';
 
 type TestMessage = {
-  id: string
-  side: 'lead' | 'agent'
-  content: string
-}
+  id: string;
+  side: 'lead' | 'agent';
+  content: string;
+};
 
-type TestMode = 'lead-simulator' | 'agent-reply'
+type TestMode = 'lead-simulator' | 'agent-reply';
 
 interface BuilderDraft {
-  name?: string
-  role?: string
-  response_style?: string
-  channels?: string[]
-  channel?: string
-  instructions?: string
+  name?: string;
+  role?: string;
+  response_style?: string;
+  channels?: string[];
+  channel?: string;
+  instructions?: string;
 }
 
 interface AgentChatTestProps {
-  agent: AIAgent | null
-  draft: BuilderDraft
+  agent: AIAgent | null;
+  draft: BuilderDraft;
 }
 
 function buildDiagnostics(message: string) {
   const text = message
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
+    .toLowerCase();
   const budget = message.match(
     /(?:r\$\s*)?(\d{2,3}(?:[.,]\d{3})*|\d+)\s*(milhao|milhoes|mi|m|mil)?/i
-  )
-  const city = message.match(/\bem\s+([^,.!?]{2,32})(?:[,.!?]|$)/i)
-  const isVisit = /\b(visita|visitar|conhecer|agendar|horario)\b/.test(text)
-  const isRent = /\b(alugar|aluguel|locacao|locar)\b/.test(text)
-  const isSale = /\b(comprar|compra|procuro|busco|quero)\b/.test(text)
+  );
+  const city = message.match(/\bem\s+([^,.!?]{2,32})(?:[,.!?]|$)/i);
+  const isVisit = /\b(visita|visitar|conhecer|agendar|horario)\b/.test(text);
+  const isRent = /\b(alugar|aluguel|locacao|locar)\b/.test(text);
+  const isSale = /\b(comprar|compra|procuro|busco|quero)\b/.test(text);
   const isFinance =
-    /\b(financiamento|entrada|parcela|proposta|r\$|orcamento)\b/.test(text)
+    /\b(financiamento|entrada|parcela|proposta|r\$|orcamento)\b/.test(text);
 
   return {
-    intent: isVisit ? 'Visita' : isRent ? 'Locação' : isSale ? 'Compra' : 'Qualificação',
+    intent: isVisit
+      ? 'Visita'
+      : isRent
+        ? 'Locação'
+        : isSale
+          ? 'Compra'
+          : 'Qualificação',
     budget: budget ? `${budget[1]} ${budget[2] || ''}`.trim() : 'A confirmar',
     city: city?.[1]?.trim() || 'A confirmar',
     temperature:
@@ -54,7 +58,7 @@ function buildDiagnostics(message: string) {
       : isFinance
         ? 'Acionar corretor'
         : 'Qualificar perfil',
-  }
+  };
 }
 
 async function simulateLeadReply(
@@ -67,7 +71,7 @@ async function simulateLeadReply(
     'Responda sempre como cliente/lead, nunca como assistente.',
     'Use mensagens naturais e curtas.',
     'Nao use markdown, nao explique o teste.',
-  ].join(' ')
+  ].join(' ');
 
   const prompt = JSON.stringify({
     agent_under_test: {
@@ -82,16 +86,16 @@ async function simulateLeadReply(
     })),
     broker_message: message,
     task: 'Continue a conversa respondendo apenas como o lead.',
-  })
+  });
 
   try {
     const data = await callApi('/api/ai/chat', {
       method: 'POST',
       body: JSON.stringify({ prompt, systemInstruction, temperature: 0.85 }),
-    })
-    return String(data?.text || '').trim()
+    });
+    return String(data?.text || '').trim();
   } catch {
-    return ''
+    return '';
   }
 }
 
@@ -99,46 +103,46 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
   agent,
   draft,
 }) => {
-  const [testMode, setTestMode] = useState<TestMode>('agent-reply')
-  const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<TestMessage[]>([])
-  const [loading, setLoading] = useState(false)
-  const [sessionId] = useState(() => `agent-test-${Date.now()}`)
-  const chatEndRef = useRef<HTMLDivElement>(null)
+  const [testMode, setTestMode] = useState<TestMode>('agent-reply');
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<TestMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [sessionId] = useState(() => `agent-test-${Date.now()}`);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   const runTest = async (override?: string) => {
-    const msg = (override || input).trim()
-    if (!msg) return
+    const msg = (override || input).trim();
+    if (!msg) return;
 
     const outgoing: TestMessage = {
       id: `${testMode === 'lead-simulator' ? 'agent' : 'lead'}-${Date.now()}`,
       side: testMode === 'lead-simulator' ? 'agent' : 'lead',
       content: msg,
-    }
-    const nextHistory = [...messages, outgoing]
-    setMessages(nextHistory)
-    setInput('')
-    setLoading(true)
+    };
+    const nextHistory = [...messages, outgoing];
+    setMessages(nextHistory);
+    setInput('');
+    setLoading(true);
 
     try {
-      let reply = ''
-      let replySide: TestMessage['side'] = 'agent'
+      let reply = '';
+      let replySide: TestMessage['side'] = 'agent';
 
       if (testMode === 'lead-simulator') {
-        replySide = 'lead'
-        reply = await simulateLeadReply(draft, msg, nextHistory)
+        replySide = 'lead';
+        reply = await simulateLeadReply(draft, msg, nextHistory);
         if (!reply) {
-          reply = 'Entendi. Pode me passar mais detalhes?'
+          reply = 'Entendi. Pode me passar mais detalhes?';
         }
       } else if (agent) {
-        const response = await aiAgentService.chat(agent.id, msg, sessionId)
-        reply = response.reply
+        const response = await aiAgentService.chat(agent.id, msg, sessionId);
+        reply = response.reply;
       } else {
-        reply = `Olá! Recebi sua mensagem. Como posso ajudar com sua busca por imóveis?`
+        reply = `Olá! Recebi sua mensagem. Como posso ajudar com sua busca por imóveis?`;
       }
 
       setMessages((prev) => [
@@ -148,7 +152,7 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
           side: replySide,
           content: reply || 'Não consegui responder agora.',
         },
-      ])
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -157,19 +161,20 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
           side: 'agent',
           content: 'Erro ao conectar. Tente novamente.',
         },
-      ])
+      ]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const resetChat = () => {
-    setMessages([])
-    setInput('')
-  }
+    setMessages([]);
+    setInput('');
+  };
 
-  const lastMessage = [...messages].reverse().find((m) => m.side === 'lead')?.content || ''
-  const diagnostics = buildDiagnostics(lastMessage)
+  const lastMessage =
+    [...messages].reverse().find((m) => m.side === 'lead')?.content || '';
+  const diagnostics = buildDiagnostics(lastMessage);
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_300px]">
@@ -237,7 +242,10 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
             {messages.length === 0 && (
               <div className="flex h-[280px] items-center justify-center text-center">
                 <div className="max-w-sm rounded-lg border border-white/70 bg-white/80 px-5 py-4 shadow-sm">
-                  <MessageCircle className="mx-auto text-emerald-600" size={22} />
+                  <MessageCircle
+                    className="mx-auto text-emerald-600"
+                    size={22}
+                  />
                   <p className="mb-0 mt-2 text-sm font-bold text-slate-800">
                     Escreva a primeira mensagem
                   </p>
@@ -281,8 +289,8 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         <form
           className="border-t border-slate-200 bg-white p-3"
           onSubmit={(e) => {
-            e.preventDefault()
-            runTest()
+            e.preventDefault();
+            runTest();
           }}
         >
           {!agent && testMode === 'agent-reply' && (
@@ -319,7 +327,9 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
 
       <div className="space-y-4">
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <div className="text-xs font-bold text-slate-950">Diagnóstico do teste</div>
+          <div className="text-xs font-bold text-slate-950">
+            Diagnóstico do teste
+          </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Diagnostic label="Intenção" value={diagnostics.intent} />
             <Diagnostic label="Orçamento" value={diagnostics.budget} />
@@ -337,8 +347,8 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const Diagnostic: React.FC<{ label: string; value: string }> = ({
   label,
@@ -350,4 +360,4 @@ const Diagnostic: React.FC<{ label: string; value: string }> = ({
     </div>
     <div className="mt-1 text-xs font-bold text-slate-700">{value}</div>
   </div>
-)
+);

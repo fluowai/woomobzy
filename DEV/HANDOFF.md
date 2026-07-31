@@ -20,7 +20,7 @@
 - Gates: type-check/lint/build aprovados; commit realizado. Nenhum push/deploy.
 - Próxima ação: validar no navegador com login em `/rural` (dashboard, cadastro técnico, due diligence, dossiê, financeiro).
 
-## 2026-07-30 — Migrations 20260730_* aplicadas e verificadas
+## 2026-07-30 — Migrations 20260730\_\* aplicadas e verificadas
 
 - 6 migrations executadas em produção via RPC `exec_sql`: **169/169 statements ok, 0 falhas** (landing_pages public access + RLS definitive, condominium_tickets, fix_all_production_errors, consolidated_production_fix, plans RLS insert).
 - Verificação pós-migração via pg direto: 14/14 checks OK (tabelas/colunas/funções/extension/policies); `contracts.title` segue ausente (gap LegalContracts continua aberto).

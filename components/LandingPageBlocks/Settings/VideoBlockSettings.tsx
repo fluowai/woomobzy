@@ -58,9 +58,7 @@ const VideoBlockSettings: React.FC<VideoBlockSettingsProps> = ({
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-900">
-          Comportamento
-        </h4>
+        <h4 className="text-sm font-medium text-gray-900">Comportamento</h4>
 
         <label className="flex items-center">
           <input

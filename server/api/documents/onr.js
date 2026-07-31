@@ -35,11 +35,9 @@ router.post('/request', verifyAuth, requireTenant, async (req, res) => {
     const { propertyId, registrationNumber, cns, certificateType } = req.body;
 
     if (!registrationNumber || !cns) {
-      return res
-        .status(400)
-        .json({
-          error: 'Número de matrícula e CNS do cartório são obrigatórios.',
-        });
+      return res.status(400).json({
+        error: 'Número de matrícula e CNS do cartório são obrigatórios.',
+      });
     }
 
     const supabase = getSupabaseServer();

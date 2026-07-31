@@ -1,4 +1,8 @@
-import { LandingPageTemplate, templateBlock, defaultPremiumTheme } from '../shared';
+import {
+  LandingPageTemplate,
+  templateBlock,
+  defaultPremiumTheme,
+} from '../shared';
 import { BlockType } from '../../../types/landingPage';
 
 const novoLarHtml = `
@@ -943,8 +947,10 @@ const novoLarHtml = `
 export const novoLarTemplate: LandingPageTemplate = {
   id: 'tmpl-novolar-01',
   name: 'Novo Lar (Família)',
-  description: 'Template focado em famílias, segurança e conforto, com tipografia calorosa e tons terrosos.',
-  thumbnail: 'https://images.unsplash.com/photo-1576941089067-2de3c901e126?ixlib=rb-4.0.3&w=800&q=80',
+  description:
+    'Template focado em famílias, segurança e conforto, com tipografia calorosa e tons terrosos.',
+  thumbnail:
+    'https://images.unsplash.com/photo-1576941089067-2de3c901e126?ixlib=rb-4.0.3&w=800&q=80',
   category: 'Residencial',
   group: 'Premium',
   objective: 'Capturar Leads Qualificados',
@@ -959,12 +965,6 @@ export const novoLarTemplate: LandingPageTemplate = {
     fontFamily: 'Outfit, sans-serif',
   },
   blocks: [
-    templateBlock(
-      BlockType.CUSTOM_HTML,
-      0,
-      { code: novoLarHtml },
-      {},
-      'full'
-    ),
+    templateBlock(BlockType.CUSTOM_HTML, 0, { code: novoLarHtml }, {}, 'full'),
   ],
 };

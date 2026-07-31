@@ -1,4 +1,18 @@
 import fs from 'fs';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+
+if (!jwtSecret) {
+  throw new Error('SUPABASE_JWT_SECRET é obrigatória para fix_jwt.mjs');
+}
 
 const files = [
   'portainer-stack-fazendasbrasil-pronta.yml',
@@ -15,11 +29,11 @@ files.forEach((f) => {
     let c = fs.readFileSync(f, 'utf8');
     c = c.replace(
       /SUPABASE_JWT_SECRET: '.*'/g,
-      "SUPABASE_JWT_SECRET: 'RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=='"
+      `SUPABASE_JWT_SECRET: '${jwtSecret}'`
     );
     c = c.replace(
       /SUPABASE_JWT_SECRET="\${.*}"/g,
-      'SUPABASE_JWT_SECRET="RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=="'
+      `SUPABASE_JWT_SECRET="${jwtSecret}"`
     );
     fs.writeFileSync(f, c);
     console.log('Fixed JWT in', f);

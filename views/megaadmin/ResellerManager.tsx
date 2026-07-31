@@ -594,24 +594,34 @@ const ResellerManager: React.FC = () => {
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-800 mb-3">Endereço</h4>
-                  
+                  <h4 className="text-sm font-bold text-gray-800 mb-3">
+                    Endereço
+                  </h4>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        CEP
+                      </label>
                       <input
                         type="text"
                         value={formData.zip_code}
-                        onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, zip_code: e.target.value })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Cidade
+                      </label>
                       <input
                         type="text"
                         value={formData.city}
-                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, city: e.target.value })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                       />
                     </div>
@@ -619,21 +629,32 @@ const ResellerManager: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="md:col-span-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Endereço (Rua, Número, Bairro)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Endereço (Rua, Número, Bairro)
+                      </label>
                       <input
                         type="text"
                         value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, address: e.target.value })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Estado (UF)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Estado (UF)
+                      </label>
                       <input
                         type="text"
                         maxLength={2}
                         value={formData.state}
-                        onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            state: e.target.value.toUpperCase(),
+                          })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none uppercase"
                       />
                     </div>

@@ -1,6 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, TrendingDown, Users, Wrench, Plus, X, AlertTriangle } from 'lucide-react';
+import {
+  Building,
+  TrendingDown,
+  Users,
+  Wrench,
+  Plus,
+  X,
+  AlertTriangle,
+} from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { logger } from '@/utils/logger';
@@ -85,13 +93,19 @@ export default function AdmCondominios() {
     if (condoResult.status === 'fulfilled') {
       setCondominiums(condoResult.value.data || []);
     } else {
-      logger.error('[AdmCondominios] Erro ao carregar condomínios:', condoResult.reason);
+      logger.error(
+        '[AdmCondominios] Erro ao carregar condomínios:',
+        condoResult.reason
+      );
     }
 
     if (ticketResult.status === 'fulfilled') {
       setTickets((ticketResult.value.data || []) as Ticket[]);
     } else {
-      logger.error('[AdmCondominios] Erro ao carregar chamados:', ticketResult.reason);
+      logger.error(
+        '[AdmCondominios] Erro ao carregar chamados:',
+        ticketResult.reason
+      );
     }
 
     setLoading(false);
@@ -139,7 +153,10 @@ export default function AdmCondominios() {
       load();
     } catch (err) {
       logger.error('[AdmCondominios] Erro ao criar chamado:', err);
-      window.alert('Erro ao criar chamado: ' + (err instanceof Error ? err.message : 'desconhecido'));
+      window.alert(
+        'Erro ao criar chamado: ' +
+          (err instanceof Error ? err.message : 'desconhecido')
+      );
     }
   };
 
@@ -161,7 +178,10 @@ export default function AdmCondominios() {
       load();
     } catch (err) {
       logger.error('[AdmCondominios] Erro ao salvar condomínio:', err);
-      window.alert('Erro ao salvar condomínio: ' + (err instanceof Error ? err.message : 'desconhecido'));
+      window.alert(
+        'Erro ao salvar condomínio: ' +
+          (err instanceof Error ? err.message : 'desconhecido')
+      );
     }
   };
 

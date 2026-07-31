@@ -1,4 +1,8 @@
-import { LandingPageTemplate, templateBlock, defaultPremiumTheme } from '../shared';
+import {
+  LandingPageTemplate,
+  templateBlock,
+  defaultPremiumTheme,
+} from '../shared';
 import { BlockType } from '../../../types/landingPage';
 
 const entreHtml = `
@@ -746,8 +750,10 @@ const entreHtml = `
 export const entreTemplate: LandingPageTemplate = {
   id: 'tmpl-entre-01',
   name: 'Entre (Moderno/Ousado)',
-  description: 'Template vibrante, com tipografia forte e foco em design, ideal para imobiliárias premium com pegada jovem e arquitetônica.',
-  thumbnail: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&w=800&q=80',
+  description:
+    'Template vibrante, com tipografia forte e foco em design, ideal para imobiliárias premium com pegada jovem e arquitetônica.',
+  thumbnail:
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&w=800&q=80',
   category: 'Comercial/Residencial',
   group: 'Premium',
   objective: 'Apresentação de Marca',
@@ -762,12 +768,6 @@ export const entreTemplate: LandingPageTemplate = {
     fontFamily: 'Manrope, sans-serif',
   },
   blocks: [
-    templateBlock(
-      BlockType.CUSTOM_HTML,
-      0,
-      { code: entreHtml },
-      {},
-      'full'
-    ),
+    templateBlock(BlockType.CUSTOM_HTML, 0, { code: entreHtml }, {}, 'full'),
   ],
 };

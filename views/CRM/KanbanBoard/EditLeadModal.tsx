@@ -49,7 +49,9 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
-    const budget = formData.budget ? parseFloat(formData.budget.replace(/[^0-9.-]+/g,"")) : null;
+    const budget = formData.budget
+      ? parseFloat(formData.budget.replace(/[^0-9.-]+/g, ''))
+      : null;
     await leadService.update(lead.id, { ...formData, tags, budget } as any);
     onSaved({ ...lead, ...formData, tags, budget } as Lead);
     setSaving(false);

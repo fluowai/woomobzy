@@ -1,8 +1,25 @@
 import axios from 'axios';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const baseUrl = 'https://app.imobfluow.com.br/api';
-const apiKey = '8b90148caf66df22c8212b810d64270b';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+
+const baseUrl =
+  process.env.WHATSAPP_API_URL || 'https://app.imobfluow.com.br/api';
+const apiKey =
+  process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_API_KEY;
 const instanceName = `test_manual_${Math.floor(Math.random() * 1000)}`;
+
+if (!apiKey) {
+  console.error(
+    '❌ Defina WHATSAPP_SERVICE_TOKEN (ou WHATSAPP_API_KEY) no .env para executar manual_create_test.js.'
+  );
+  process.exit(1);
+}
 
 console.log(`🚀 Tentando criar instância: ${instanceName}`);
 console.log(`📡 URL: ${baseUrl}`);

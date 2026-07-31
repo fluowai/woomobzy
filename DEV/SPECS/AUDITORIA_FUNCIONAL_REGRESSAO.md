@@ -156,12 +156,12 @@ Cada caso deverá conter ID, módulo, função, perfil, pré-condição, massa d
 
 ## 8. Severidade e tratamento
 
-| Nível | Definição | Regra |
-| --- | --- | --- |
-| P0 | vazamento entre tenants, perda/corrupção de dados, indisponibilidade geral ou falha financeira grave | interromper a onda e corrigir imediatamente |
-| P1 | função central de venda, locação, cobrança, acesso ou comunicação indisponível sem contorno seguro | corrigir antes de avançar o gate |
-| P2 | função relevante degradada com contorno conhecido | planejar na própria onda |
-| P3 | problema visual, textual ou secundário sem perda operacional | agrupar para correção controlada |
+| Nível | Definição                                                                                            | Regra                                       |
+| ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| P0    | vazamento entre tenants, perda/corrupção de dados, indisponibilidade geral ou falha financeira grave | interromper a onda e corrigir imediatamente |
+| P1    | função central de venda, locação, cobrança, acesso ou comunicação indisponível sem contorno seguro   | corrigir antes de avançar o gate            |
+| P2    | função relevante degradada com contorno conhecido                                                    | planejar na própria onda                    |
+| P3    | problema visual, textual ou secundário sem perda operacional                                         | agrupar para correção controlada            |
 
 ## 9. Critérios globais de aceite
 
@@ -186,15 +186,15 @@ Cada caso deverá conter ID, módulo, função, perfil, pré-condição, massa d
 
 ## 11. Riscos e mitigação
 
-| Risco | Mitigação |
-| --- | --- |
-| tentar validar tudo ao mesmo tempo e perder rastreabilidade | executar ondas com gates e matriz única |
-| homologação diferente de produção | comparar schema, variáveis, serviços e versão antes da auditoria |
-| teste manual não reproduzível | exigir dados, passos, versão e evidências |
-| correção gerar nova regressão | adicionar teste antes de fechar P0/P1 |
-| testes alterarem dados reais | usar organizações e dados descartáveis fora de produção |
-| excesso de automação frágil | automatizar primeiro fluxos críticos e usar seletores semânticos |
-| documentação divergir do produto | confrontar documentação, rota, menu, API e banco na Onda 0 |
+| Risco                                                       | Mitigação                                                        |
+| ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| tentar validar tudo ao mesmo tempo e perder rastreabilidade | executar ondas com gates e matriz única                          |
+| homologação diferente de produção                           | comparar schema, variáveis, serviços e versão antes da auditoria |
+| teste manual não reproduzível                               | exigir dados, passos, versão e evidências                        |
+| correção gerar nova regressão                               | adicionar teste antes de fechar P0/P1                            |
+| testes alterarem dados reais                                | usar organizações e dados descartáveis fora de produção          |
+| excesso de automação frágil                                 | automatizar primeiro fluxos críticos e usar seletores semânticos |
+| documentação divergir do produto                            | confrontar documentação, rota, menu, API e banco na Onda 0       |
 
 ## 12. Primeiro marco
 

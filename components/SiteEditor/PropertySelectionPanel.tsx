@@ -6,14 +6,7 @@ import {
   PropertyFilters,
 } from '../../types/landingPage';
 import { PropertySelectorModal } from '../LayoutEditor/PropertySelectorModal';
-import {
-  Search,
-  Check,
-  X,
-  Building2,
-  Home,
-  Loader2,
-} from 'lucide-react';
+import { Search, Check, X, Building2, Home, Loader2 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 
 interface PropertySelectionPanelProps {
@@ -194,9 +187,21 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
   site,
 }) => {
   const modeButtons = [
-    { mode: PropertySelectionMode.ALL, label: 'Todos Disponíveis', desc: 'Exibe todos os imóveis com status Disponível' },
-    { mode: PropertySelectionMode.FILTER, label: 'Por Filtro', desc: 'Filtrar por tipo, cidade, preço...' },
-    { mode: PropertySelectionMode.MANUAL, label: 'Seleção Manual', desc: 'Escolher imóveis um por um' },
+    {
+      mode: PropertySelectionMode.ALL,
+      label: 'Todos Disponíveis',
+      desc: 'Exibe todos os imóveis com status Disponível',
+    },
+    {
+      mode: PropertySelectionMode.FILTER,
+      label: 'Por Filtro',
+      desc: 'Filtrar por tipo, cidade, preço...',
+    },
+    {
+      mode: PropertySelectionMode.MANUAL,
+      label: 'Seleção Manual',
+      desc: 'Escolher imóveis um por um',
+    },
   ];
 
   return (
@@ -218,10 +223,16 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                  config.mode === btn.mode ? 'border-indigo-400' : 'border-gray-600'
-                }`}>
-                  {config.mode === btn.mode && <div className="w-2 h-2 rounded-full bg-indigo-400" />}
+                <div
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    config.mode === btn.mode
+                      ? 'border-indigo-400'
+                      : 'border-gray-600'
+                  }`}
+                >
+                  {config.mode === btn.mode && (
+                    <div className="w-2 h-2 rounded-full bg-indigo-400" />
+                  )}
                 </div>
                 <span className="font-medium text-sm">{btn.label}</span>
               </div>
@@ -246,7 +257,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
                   onChange({
                     filters: {
                       ...config.filters,
-                      type: e.target.value ? e.target.value.split(',').map((s) => s.trim()) : undefined,
+                      type: e.target.value
+                        ? e.target.value.split(',').map((s) => s.trim())
+                        : undefined,
                     } as PropertyFilters,
                   })
                 }
@@ -254,7 +267,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Finalidade</label>
+              <label className="block text-xs text-gray-400 mb-1">
+                Finalidade
+              </label>
               <input
                 type="text"
                 placeholder="Ex: Venda, Aluguel"
@@ -263,7 +278,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
                   onChange({
                     filters: {
                       ...config.filters,
-                      purpose: e.target.value ? e.target.value.split(',').map((s) => s.trim()) : undefined,
+                      purpose: e.target.value
+                        ? e.target.value.split(',').map((s) => s.trim())
+                        : undefined,
                     } as PropertyFilters,
                   })
                 }
@@ -280,7 +297,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
                   onChange({
                     filters: {
                       ...config.filters,
-                      city: e.target.value ? e.target.value.split(',').map((s) => s.trim()) : undefined,
+                      city: e.target.value
+                        ? e.target.value.split(',').map((s) => s.trim())
+                        : undefined,
                     } as PropertyFilters,
                   })
                 }
@@ -297,7 +316,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
                   onChange({
                     filters: {
                       ...config.filters,
-                      state: e.target.value ? e.target.value.split(',').map((s) => s.trim()) : undefined,
+                      state: e.target.value
+                        ? e.target.value.split(',').map((s) => s.trim())
+                        : undefined,
                     } as PropertyFilters,
                   })
                 }
@@ -305,7 +326,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Preço Mínimo (R$)</label>
+              <label className="block text-xs text-gray-400 mb-1">
+                Preço Mínimo (R$)
+              </label>
               <input
                 type="number"
                 placeholder="0"
@@ -314,7 +337,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
                   onChange({
                     filters: {
                       ...config.filters,
-                      minPrice: e.target.value ? Number(e.target.value) : undefined,
+                      minPrice: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
                     } as PropertyFilters,
                   })
                 }
@@ -322,7 +347,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Preço Máximo (R$)</label>
+              <label className="block text-xs text-gray-400 mb-1">
+                Preço Máximo (R$)
+              </label>
               <input
                 type="number"
                 placeholder="0"
@@ -331,7 +358,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
                   onChange({
                     filters: {
                       ...config.filters,
-                      maxPrice: e.target.value ? Number(e.target.value) : undefined,
+                      maxPrice: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
                     } as PropertyFilters,
                   })
                 }
@@ -363,7 +392,8 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
           </div>
           {(!config.propertyIds || config.propertyIds.length === 0) && (
             <p className="text-sm text-gray-500">
-              Nenhum imóvel selecionado. Clique em "Selecionar Imóveis" para escolher.
+              Nenhum imóvel selecionado. Clique em "Selecionar Imóveis" para
+              escolher.
             </p>
           )}
         </div>
@@ -393,7 +423,9 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
           <input
             type="number"
             value={config.limit || 20}
-            onChange={(e) => onChange({ limit: parseInt(e.target.value) || 20 })}
+            onChange={(e) =>
+              onChange({ limit: parseInt(e.target.value) || 20 })
+            }
             min={1}
             max={100}
             className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg text-sm border border-gray-600 focus:border-indigo-500 outline-none"
@@ -449,9 +481,21 @@ const DevelopmentTabContent: React.FC<DevelopmentTabContentProps> = ({
   loadingCount,
 }) => {
   const modeButtons = [
-    { mode: 'all' as const, label: 'Todos Ativos', desc: 'Exibe todos os lançamentos ativos' },
-    { mode: 'filter' as const, label: 'Por Filtro', desc: 'Filtrar por cidade, status...' },
-    { mode: 'manual' as const, label: 'Seleção Manual', desc: 'Escolher lançamentos um por um' },
+    {
+      mode: 'all' as const,
+      label: 'Todos Ativos',
+      desc: 'Exibe todos os lançamentos ativos',
+    },
+    {
+      mode: 'filter' as const,
+      label: 'Por Filtro',
+      desc: 'Filtrar por cidade, status...',
+    },
+    {
+      mode: 'manual' as const,
+      label: 'Seleção Manual',
+      desc: 'Escolher lançamentos um por um',
+    },
   ];
 
   return (
@@ -472,10 +516,16 @@ const DevelopmentTabContent: React.FC<DevelopmentTabContentProps> = ({
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                  config.mode === btn.mode ? 'border-indigo-400' : 'border-gray-600'
-                }`}>
-                  {config.mode === btn.mode && <div className="w-2 h-2 rounded-full bg-indigo-400" />}
+                <div
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    config.mode === btn.mode
+                      ? 'border-indigo-400'
+                      : 'border-gray-600'
+                  }`}
+                >
+                  {config.mode === btn.mode && (
+                    <div className="w-2 h-2 rounded-full bg-indigo-400" />
+                  )}
                 </div>
                 <span className="font-medium text-sm">{btn.label}</span>
               </div>
@@ -499,7 +549,9 @@ const DevelopmentTabContent: React.FC<DevelopmentTabContentProps> = ({
                   onChange({
                     filters: {
                       ...config.filters,
-                      status: e.target.value ? e.target.value.split(',').map((s) => s.trim()) : undefined,
+                      status: e.target.value
+                        ? e.target.value.split(',').map((s) => s.trim())
+                        : undefined,
                     },
                   })
                 }
@@ -516,7 +568,9 @@ const DevelopmentTabContent: React.FC<DevelopmentTabContentProps> = ({
                   onChange({
                     filters: {
                       ...config.filters,
-                      city: e.target.value ? e.target.value.split(',').map((s) => s.trim()) : undefined,
+                      city: e.target.value
+                        ? e.target.value.split(',').map((s) => s.trim())
+                        : undefined,
                     },
                   })
                 }
@@ -539,7 +593,8 @@ const DevelopmentTabContent: React.FC<DevelopmentTabContentProps> = ({
           </h4>
           {(!config.developmentIds || config.developmentIds.length === 0) && (
             <p className="text-sm text-gray-500 mt-2">
-              Nenhum lançamento selecionado. Use o modo "Todos Ativos" ou "Por Filtro" para exibir lançamentos.
+              Nenhum lançamento selecionado. Use o modo "Todos Ativos" ou "Por
+              Filtro" para exibir lançamentos.
             </p>
           )}
         </div>
@@ -567,7 +622,9 @@ const DevelopmentTabContent: React.FC<DevelopmentTabContentProps> = ({
           <input
             type="number"
             value={config.limit || 20}
-            onChange={(e) => onChange({ limit: parseInt(e.target.value) || 20 })}
+            onChange={(e) =>
+              onChange({ limit: parseInt(e.target.value) || 20 })
+            }
             min={1}
             max={100}
             className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg text-sm border border-gray-600 focus:border-indigo-500 outline-none"
@@ -576,7 +633,9 @@ const DevelopmentTabContent: React.FC<DevelopmentTabContentProps> = ({
       </div>
 
       <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 flex items-center justify-between">
-        <span className="text-sm text-gray-400">Lançamentos que serão exibidos</span>
+        <span className="text-sm text-gray-400">
+          Lançamentos que serão exibidos
+        </span>
         <span className="text-lg font-bold text-indigo-400">
           {loadingCount ? (
             <Loader2 size={18} className="animate-spin" />

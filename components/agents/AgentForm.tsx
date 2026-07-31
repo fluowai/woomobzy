@@ -1,12 +1,17 @@
-import React from 'react'
+import React from 'react';
 import {
-  UserCheck, Radio, Workflow, Settings2, ShieldCheck,
-  CheckCircle2, ChevronDown,
-} from 'lucide-react'
+  UserCheck,
+  Radio,
+  Workflow,
+  Settings2,
+  ShieldCheck,
+  CheckCircle2,
+  ChevronDown,
+} from 'lucide-react';
 
 interface FieldProps {
-  label: string
-  children: React.ReactNode
+  label: string;
+  children: React.ReactNode;
 }
 
 const Field: React.FC<FieldProps> = ({ label, children }) => (
@@ -16,15 +21,15 @@ const Field: React.FC<FieldProps> = ({ label, children }) => (
     </span>
     {children}
   </label>
-)
+);
 
 interface SectionProps {
-  icon: React.ElementType
-  title: string
-  desc: string
-  open: boolean
-  onToggle: () => void
-  children: React.ReactNode
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
 }
 
 const Section: React.FC<SectionProps> = ({
@@ -55,26 +60,28 @@ const Section: React.FC<SectionProps> = ({
         className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`}
       />
     </button>
-    {open && <div className="border-t border-slate-100 px-5 py-4">{children}</div>}
+    {open && (
+      <div className="border-t border-slate-100 px-5 py-4">{children}</div>
+    )}
   </div>
-)
+);
 
 interface AgentFormProps {
-  name: string
-  role: string
-  personality: string
-  instructions: string
-  responseStyle: string
-  status: string
-  channels: string[]
-  capabilities: string[]
-  tools: string[]
-  autonomyLevel: number
-  handoffRules: Record<string, boolean>
-  onChange: (field: string, value: any) => void
-  onToggleArray: (field: 'capabilities' | 'tools', value: string) => void
-  onToggleChannel: (value: string) => void
-  onToggleHandoff: (ruleId: string) => void
+  name: string;
+  role: string;
+  personality: string;
+  instructions: string;
+  responseStyle: string;
+  status: string;
+  channels: string[];
+  capabilities: string[];
+  tools: string[];
+  autonomyLevel: number;
+  handoffRules: Record<string, boolean>;
+  onChange: (field: string, value: any) => void;
+  onToggleArray: (field: 'capabilities' | 'tools', value: string) => void;
+  onToggleChannel: (value: string) => void;
+  onToggleHandoff: (ruleId: string) => void;
 }
 
 const channelList = [
@@ -83,17 +90,45 @@ const channelList = [
   { id: 'crm', label: 'CRM' },
   { id: 'instagram', label: 'Instagram' },
   { id: 'email', label: 'E-mail' },
-]
+];
 
 const workspaceOptions = [
-  { id: 'Atendimento inicial', label: 'Atendimento inicial', desc: 'Recebe leads, responde dúvidas e inicia qualificação.' },
-  { id: 'Kanban comercial', label: 'Kanban comercial', desc: 'Cria cards, atualiza etapas e registra próximos passos.' },
-  { id: 'Documentação', label: 'Documentação', desc: 'Classifica documentos, PDFs e pendências do processo.' },
-  { id: 'Follow-up', label: 'Follow-up', desc: 'Mantém retorno comercial com timing e contexto.' },
-  { id: 'Agenda', label: 'Agenda', desc: 'Sugere horários e organiza visitas com o time.' },
-  { id: 'Match de imóveis', label: 'Match de imóveis', desc: 'Cruza perfil do lead com oportunidades da carteira.' },
-  { id: 'Pós-venda', label: 'Pós-venda', desc: 'Acompanha satisfação, tarefas e novas oportunidades.' },
-]
+  {
+    id: 'Atendimento inicial',
+    label: 'Atendimento inicial',
+    desc: 'Recebe leads, responde dúvidas e inicia qualificação.',
+  },
+  {
+    id: 'Kanban comercial',
+    label: 'Kanban comercial',
+    desc: 'Cria cards, atualiza etapas e registra próximos passos.',
+  },
+  {
+    id: 'Documentação',
+    label: 'Documentação',
+    desc: 'Classifica documentos, PDFs e pendências do processo.',
+  },
+  {
+    id: 'Follow-up',
+    label: 'Follow-up',
+    desc: 'Mantém retorno comercial com timing e contexto.',
+  },
+  {
+    id: 'Agenda',
+    label: 'Agenda',
+    desc: 'Sugere horários e organiza visitas com o time.',
+  },
+  {
+    id: 'Match de imóveis',
+    label: 'Match de imóveis',
+    desc: 'Cruza perfil do lead com oportunidades da carteira.',
+  },
+  {
+    id: 'Pós-venda',
+    label: 'Pós-venda',
+    desc: 'Acompanha satisfação, tarefas e novas oportunidades.',
+  },
+];
 
 const toolOptions = [
   { id: 'whatsapp', label: 'WhatsApp' },
@@ -111,7 +146,7 @@ const toolOptions = [
   { id: 'simulador-financiamento', label: 'Simulador Financeiro' },
   { id: 'neural-sales', label: 'Neural Sales (Scoring)' },
   { id: 'voice-ai', label: 'Voice AI' },
-]
+];
 
 const handoffRuleOptions = [
   { id: 'visit_requested', label: 'Lead pediu visita' },
@@ -121,29 +156,55 @@ const handoffRuleOptions = [
   { id: 'angry_lead', label: 'Lead ficou irritado' },
   { id: 'low_confidence', label: 'IA não tem certeza' },
   { id: 'property_unavailable', label: 'Imóvel não está disponível' },
-]
+];
 
 const autonomyLevels = [
-  { id: 1, label: 'Assistido', desc: 'Sugere ações, mas precisa de aprovação humana.' },
-  { id: 2, label: 'Semiautônomo', desc: 'Executa ações simples e pede aprovação em casos críticos.' },
-  { id: 3, label: 'Autônomo', desc: 'Responde, movimenta Kanban, agenda e aciona humanos quando necessário.' },
-]
+  {
+    id: 1,
+    label: 'Assistido',
+    desc: 'Sugere ações, mas precisa de aprovação humana.',
+  },
+  {
+    id: 2,
+    label: 'Semiautônomo',
+    desc: 'Executa ações simples e pede aprovação em casos críticos.',
+  },
+  {
+    id: 3,
+    label: 'Autônomo',
+    desc: 'Responde, movimenta Kanban, agenda e aciona humanos quando necessário.',
+  },
+];
 
 export const AgentForm: React.FC<AgentFormProps> = ({
-  name, role, personality, instructions, responseStyle, status,
-  channels, capabilities, tools, autonomyLevel, handoffRules,
-  onChange, onToggleArray, onToggleChannel, onToggleHandoff,
+  name,
+  role,
+  personality,
+  instructions,
+  responseStyle,
+  status,
+  channels,
+  capabilities,
+  tools,
+  autonomyLevel,
+  handoffRules,
+  onChange,
+  onToggleArray,
+  onToggleChannel,
+  onToggleHandoff,
 }) => {
-  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({
+  const [openSections, setOpenSections] = React.useState<
+    Record<string, boolean>
+  >({
     identity: true,
     channels: false,
     operation: false,
     tools: false,
     rules: false,
-  })
+  });
 
   const toggleSection = (id: string) =>
-    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }))
+    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
     <div className="space-y-3">
@@ -252,7 +313,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {workspaceOptions.map((ws) => {
-              const active = capabilities.includes(ws.id)
+              const active = capabilities.includes(ws.id);
               return (
                 <button
                   key={ws.id}
@@ -268,11 +329,13 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                     <span className="text-sm font-bold text-slate-950">
                       {ws.label}
                     </span>
-                    {active && <CheckCircle2 size={16} className="text-emerald-600" />}
+                    {active && (
+                      <CheckCircle2 size={16} className="text-emerald-600" />
+                    )}
                   </div>
                   <p className="mb-0 mt-1 text-xs text-slate-500">{ws.desc}</p>
                 </button>
-              )
+              );
             })}
           </div>
         </div>
@@ -294,7 +357,8 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                 }`}
               >
                 <div className="text-sm font-bold text-slate-950">
-                  {level.label} <span className="text-slate-400">Nível {level.id}</span>
+                  {level.label}{' '}
+                  <span className="text-slate-400">Nível {level.id}</span>
                 </div>
                 <p className="mb-0 mt-1 text-xs text-slate-500">{level.desc}</p>
               </button>
@@ -312,7 +376,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
       >
         <div className="flex flex-wrap gap-2">
           {toolOptions.map((tool) => {
-            const active = tools.includes(tool.id)
+            const active = tools.includes(tool.id);
             return (
               <button
                 key={tool.id}
@@ -327,7 +391,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                 {tool.label}
                 {active && <CheckCircle2 size={14} />}
               </button>
-            )
+            );
           })}
         </div>
       </Section>
@@ -361,5 +425,5 @@ export const AgentForm: React.FC<AgentFormProps> = ({
         </div>
       </Section>
     </div>
-  )
-}
+  );
+};

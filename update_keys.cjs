@@ -1,24 +1,25 @@
 const fs = require('fs');
 const path = require('path');
 
-const OLD_URL = 'lkzcsaydpcnypdevoikr';
-const NEW_URL = 'epgaftsjmqmpczvzsrcc';
+const NEW_REF = process.env.SUPABASE_PROJECT_REF;
+const NEW_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const NEW_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const NEW_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
-const replacements = {
-  // Replace old URL ID with new URL ID
-  lkzcsaydpcnypdevoikr: 'epgaftsjmqmpczvzsrcc',
-  rzvwqygmbtwflndtsvuz: 'epgaftsjmqmpczvzsrcc',
+const missing = [];
+if (!NEW_REF) missing.push('SUPABASE_PROJECT_REF');
+if (!NEW_ANON_KEY) missing.push('VITE_SUPABASE_ANON_KEY');
+if (!NEW_SERVICE_ROLE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+if (!NEW_JWT_SECRET) missing.push('SUPABASE_JWT_SECRET');
 
-  // Replace DB URLs
-  'postgresql://postgres.lkzcsaydpcnypdevoikr:rIGzYBzBCDZslOOH@aws-1-sa-east-1.pooler.supabase.com:5432/postgres':
-    'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
-  'postgresql://postgres.rzvwqygmbtwflndtsvuz:JFke4YBBiDoabTdK@aws-0-sa-east-1.pooler.supabase.com:6543/postgres':
-    'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
-
-  // Replace anon keys (we will just replace the whole line for anon and service role in env files)
-};
-
-const dirsToScan = ['.', 'public'];
+if (missing.length) {
+  console.error(
+    'Variáveis obrigatórias ausentes: ' +
+      missing.join(', ') +
+      '. Nenhum arquivo foi alterado.'
+  );
+  process.exit(1);
+}
 
 const filesToProcess = [
   '.env',
@@ -41,42 +42,40 @@ filesToProcess.forEach((file) => {
   if (fs.existsSync(filePath)) {
     let content = fs.readFileSync(filePath, 'utf8');
 
-    // Simple replaces
-    for (const [oldVal, newVal] of Object.entries(replacements)) {
-      content = content.split(oldVal).join(newVal);
-    }
+    // Replace legacy project ref IDs with the new one.
+    content = content.split('lkzcsaydpcnypdevoikr').join(NEW_REF);
+    content = content.split('rzvwqygmbtwflndtsvuz').join(NEW_REF);
 
-    // Specific regex for anon and service keys
+    // Keys/JWT lines (env and YAML variants)
     content = content.replace(
       /VITE_SUPABASE_ANON_KEY=.*/g,
-      'VITE_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0"'
+      `VITE_SUPABASE_ANON_KEY="${NEW_ANON_KEY}"`
     );
     content = content.replace(
       /VITE_SUPABASE_ANON_KEY: ".*"/g,
-      'VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0"'
+      `VITE_SUPABASE_ANON_KEY: "${NEW_ANON_KEY}"`
     );
     content = content.replace(
       /VITE_SUPABASE_ANON_KEY: '.*'/g,
-      "VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0'"
+      `VITE_SUPABASE_ANON_KEY: '${NEW_ANON_KEY}'`
     );
 
     content = content.replace(
       /SUPABASE_SERVICE_ROLE_KEY=.*/g,
-      'SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo"'
+      `SUPABASE_SERVICE_ROLE_KEY="${NEW_SERVICE_ROLE_KEY}"`
     );
     content = content.replace(
       /SUPABASE_SERVICE_ROLE_KEY: ".*"/g,
-      'SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo"'
+      `SUPABASE_SERVICE_ROLE_KEY: "${NEW_SERVICE_ROLE_KEY}"`
     );
     content = content.replace(
       /SUPABASE_SERVICE_ROLE_KEY: '.*'/g,
-      "SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo'"
+      `SUPABASE_SERVICE_ROLE_KEY: '${NEW_SERVICE_ROLE_KEY}'`
     );
 
-    // JWT secret
     content = content.replace(
       /SUPABASE_JWT_SECRET=.*/g,
-      'SUPABASE_JWT_SECRET="RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=="'
+      `SUPABASE_JWT_SECRET="${NEW_JWT_SECRET}"`
     );
 
     fs.writeFileSync(filePath, content, 'utf8');

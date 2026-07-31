@@ -12,8 +12,14 @@ function replaceInDir(dirPath) {
     } else if (fullPath.endsWith('.js')) {
       let content = fs.readFileSync(fullPath, 'utf8');
       const original = content;
-      content = content.replace(/from\('leases'\)/g, "from('rental_contracts')");
-      content = content.replace(/from\('lease_overview'\)/g, "from('rental_contracts')");
+      content = content.replace(
+        /from\('leases'\)/g,
+        "from('rental_contracts')"
+      );
+      content = content.replace(
+        /from\('lease_overview'\)/g,
+        "from('rental_contracts')"
+      );
       if (content !== original) {
         fs.writeFileSync(fullPath, content);
         console.log(`Updated ${file}`);

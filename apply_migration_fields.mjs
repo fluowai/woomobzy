@@ -2,7 +2,7 @@ import pg from 'pg';
 import fs from 'fs';
 import path from 'path';
 
-const connectionString = 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres';
+const connectionString = process.env.DATABASE_URL;
 
 const pool = new pg.Pool({
   connectionString,
@@ -10,7 +10,11 @@ const pool = new pg.Pool({
 });
 
 async function run() {
-  const sqlPath = path.join(process.cwd(), 'migrations', '20260729_add_complete_fields_organizations.sql');
+  const sqlPath = path.join(
+    process.cwd(),
+    'migrations',
+    '20260729_add_complete_fields_organizations.sql'
+  );
   let sql = fs.readFileSync(sqlPath, 'utf8');
   const client = await pool.connect();
   console.log('Applying migration...');

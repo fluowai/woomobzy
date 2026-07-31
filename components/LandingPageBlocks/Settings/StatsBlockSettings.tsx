@@ -6,7 +6,10 @@ interface StatsBlockSettingsProps {
   onUpdate: (config: any) => void;
 }
 
-const StatsBlockSettings: React.FC<StatsBlockSettingsProps> = ({ config, onUpdate }) => {
+const StatsBlockSettings: React.FC<StatsBlockSettingsProps> = ({
+  config,
+  onUpdate,
+}) => {
   const { stats = [] } = config;
 
   const handleUpdateStat = (index: number, field: string, value: string) => {
@@ -18,10 +21,7 @@ const StatsBlockSettings: React.FC<StatsBlockSettingsProps> = ({ config, onUpdat
   const handleAddStat = () => {
     onUpdate({
       ...config,
-      stats: [
-        ...stats,
-        { icon: '⭐', value: '0', label: 'Novo Item' },
-      ],
+      stats: [...stats, { icon: '⭐', value: '0', label: 'Novo Item' }],
     });
   };
 
@@ -39,7 +39,9 @@ const StatsBlockSettings: React.FC<StatsBlockSettingsProps> = ({ config, onUpdat
         <select
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={config.columns || 3}
-          onChange={(e) => onUpdate({ ...config, columns: parseInt(e.target.value) })}
+          onChange={(e) =>
+            onUpdate({ ...config, columns: parseInt(e.target.value) })
+          }
         >
           <option value={1}>1 Coluna</option>
           <option value={2}>2 Colunas</option>
@@ -56,10 +58,7 @@ const StatsBlockSettings: React.FC<StatsBlockSettingsProps> = ({ config, onUpdat
           onChange={(e) => onUpdate({ ...config, animated: e.target.checked })}
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
-        <label
-          htmlFor="stats-animated"
-          className="ml-2 text-sm text-gray-700"
-        >
+        <label htmlFor="stats-animated" className="ml-2 text-sm text-gray-700">
           Animação ao aparecer
         </label>
       </div>
@@ -76,52 +75,67 @@ const StatsBlockSettings: React.FC<StatsBlockSettingsProps> = ({ config, onUpdat
             <Plus size={20} />
           </button>
         </div>
-        
+
         <div className="space-y-4">
           {stats.map((stat: any, index: number) => (
-            <div key={index} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50 space-y-3 relative group">
+            <div
+              key={index}
+              className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50 space-y-3 relative group"
+            >
               <button
                 onClick={() => handleRemoveStat(index)}
                 className="absolute top-2 right-2 p-1 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-700 rounded"
               >
                 <Trash2 size={16} />
               </button>
-              
+
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Ícone (Emoji)</label>
+                <label className="block text-xs text-gray-400 mb-1">
+                  Ícone (Emoji)
+                </label>
                 <input
                   type="text"
                   value={stat.icon || ''}
-                  onChange={(e) => handleUpdateStat(index, 'icon', e.target.value)}
+                  onChange={(e) =>
+                    handleUpdateStat(index, 'icon', e.target.value)
+                  }
                   className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white"
                   placeholder="Ex: ⭐, 🚀"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Valor</label>
+                <label className="block text-xs text-gray-400 mb-1">
+                  Valor
+                </label>
                 <input
                   type="text"
                   value={stat.value || ''}
-                  onChange={(e) => handleUpdateStat(index, 'value', e.target.value)}
+                  onChange={(e) =>
+                    handleUpdateStat(index, 'value', e.target.value)
+                  }
                   className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white"
                   placeholder="Ex: 500+"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Descrição</label>
+                <label className="block text-xs text-gray-400 mb-1">
+                  Descrição
+                </label>
                 <input
                   type="text"
                   value={stat.label || ''}
-                  onChange={(e) => handleUpdateStat(index, 'label', e.target.value)}
+                  onChange={(e) =>
+                    handleUpdateStat(index, 'label', e.target.value)
+                  }
                   className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white"
                   placeholder="Ex: Imóveis Vendidos"
                 />
               </div>
             </div>
           ))}
-          
+
           {stats.length === 0 && (
             <div className="text-center py-4 text-sm text-gray-500">
               Nenhuma estatística adicionada.

@@ -1,18 +1,18 @@
-import React from 'react'
-import { Sparkles } from 'lucide-react'
-import { AgentAvatar } from './AgentAvatar'
+import React from 'react';
+import { Sparkles } from 'lucide-react';
+import { AgentAvatar } from './AgentAvatar';
 
 export interface PresetAgent {
-  name: string
-  role: string
-  description: string
-  tags: string[]
-  avatar: string
+  name: string;
+  role: string;
+  description: string;
+  tags: string[];
+  avatar: string;
 }
 
 interface AgentPresetGridProps {
-  presets: PresetAgent[]
-  onSelect: (preset: PresetAgent) => void
+  presets: PresetAgent[];
+  onSelect: (preset: PresetAgent) => void;
 }
 
 export const AgentPresetGrid: React.FC<AgentPresetGridProps> = ({
@@ -69,4 +69,4 @@ export const AgentPresetGrid: React.FC<AgentPresetGridProps> = ({
       ))}
     </div>
   </section>
-)
+);

@@ -19,15 +19,16 @@ const TestimonialsBlockSettings: React.FC<TestimonialsBlockSettingsProps> = ({
   const addTestimonial = () => {
     updateField('testimonials', [
       ...testimonials,
-      { name: 'Novo Cliente', text: 'Texto do depoimento', rating: 5, photo: '' },
+      {
+        name: 'Novo Cliente',
+        text: 'Texto do depoimento',
+        rating: 5,
+        photo: '',
+      },
     ]);
   };
 
-  const updateTestimonial = (
-    index: number,
-    field: string,
-    value: any
-  ) => {
+  const updateTestimonial = (index: number, field: string, value: any) => {
     const newItems = [...testimonials];
     newItems[index] = { ...newItems[index], [field]: value };
     updateField('testimonials', newItems);

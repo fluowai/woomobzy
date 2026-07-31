@@ -1,15 +1,32 @@
-import React from 'react'
-import { PhoneCall, Bot, ClipboardCheck, Home, CalendarClock, UserPlus, Repeat2, ArrowRight } from 'lucide-react'
+import React from 'react';
+import {
+  PhoneCall,
+  Bot,
+  ClipboardCheck,
+  Home,
+  CalendarClock,
+  UserPlus,
+  Repeat2,
+  ArrowRight,
+} from 'lucide-react';
 
 const steps = [
   { title: 'Lead entrou', subtitle: 'Novo contato captado', icon: PhoneCall },
   { title: 'IA atende', subtitle: 'Resposta instantânea', icon: Bot },
-  { title: 'IA qualifica', subtitle: 'Entende necessidade', icon: ClipboardCheck },
+  {
+    title: 'IA qualifica',
+    subtitle: 'Entende necessidade',
+    icon: ClipboardCheck,
+  },
   { title: 'Sugere imóvel', subtitle: 'Opções personalizadas', icon: Home },
-  { title: 'Agenda visita', subtitle: 'Sincroniza agenda', icon: CalendarClock },
+  {
+    title: 'Agenda visita',
+    subtitle: 'Sincroniza agenda',
+    icon: CalendarClock,
+  },
   { title: 'Corretor assume', subtitle: 'Recebe contexto', icon: UserPlus },
   { title: 'Follow-up', subtitle: 'Acompanha interesse', icon: Repeat2 },
-]
+];
 
 export const AgentFlowSteps: React.FC = () => (
   <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
@@ -42,4 +59,4 @@ export const AgentFlowSteps: React.FC = () => (
       ))}
     </div>
   </section>
-)
+);

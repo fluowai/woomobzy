@@ -49,18 +49,19 @@ Comportamentos do modo colapsado (todas ausentes no Rural):
 
 ## Divergências de layout (informativas — decidir se alinhar)
 
-| Item | Urbano | Rural |
-|---|---|---|
-| Conteúdo do `<Outlet/>` | sem wrapper de largura | wrapper `max-w-[1600px] mx-auto` (`RuralLayout.tsx:318-324`) |
-| Scroll-to-top ao trocar rota | sem | `useEffect` presente (`RuralLayout.tsx:124-127`) |
-| Tamanho do ícone LogOut | 20 | 14 (menor) |
-| Itens de menu dinâmicos por subtipo (`imobiliaria`/`loteadora`/`incorporadora`) | Sim (`UrbanLayout.tsx:96-120`) | Não |
+| Item                                                                            | Urbano                         | Rural                                                        |
+| ------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------ |
+| Conteúdo do `<Outlet/>`                                                         | sem wrapper de largura         | wrapper `max-w-[1600px] mx-auto` (`RuralLayout.tsx:318-324`) |
+| Scroll-to-top ao trocar rota                                                    | sem                            | `useEffect` presente (`RuralLayout.tsx:124-127`)             |
+| Tamanho do ícone LogOut                                                         | 20                             | 14 (menor)                                                   |
+| Itens de menu dinâmicos por subtipo (`imobiliaria`/`loteadora`/`incorporadora`) | Sim (`UrbanLayout.tsx:96-120`) | Não                                                          |
 
 Observação: os dashboards Urbano e Rural **já estão com o mesmo design premium** (cards, charts, toasts). O RuralDashboard tem toasts funcionais em "Ações Estratégicas" (`RuralDashboard.tsx:314`), e os pares `Financeiro*`, `PortalProprietario*`, `PortalComprador*` já usam `sonner` — **sem gap de toasts/UX detectado nesses pares** (o que há são diferenças de nicho, não atraso de mudança).
 
 ## Sem gap (já aplicado nos dois painéis)
 
 Os commits de sidebar também alteraram views **compartilhadas** usadas pelos dois painéis:
+
 - `views/WhatsApp/WhatsAppDashboard.tsx` (colapso do painel de mensagens)
 - `views/LegalContracts.tsx`, `views/PropertyManagement.tsx`, `views/RentalsManagement.tsx`, `views/urban/CondominiumEditor.tsx` (rural não usa esse, é urbano)
 - `views/BIUrbano.tsx` (específico urbano)
@@ -85,6 +86,7 @@ Portar o item 1 para `components/RuralLayout.tsx`, seguindo o padrão do `UrbanL
 ## Verificação
 
 Após implementar, rodar:
+
 - `npm run type-check`
 - `npm run lint`
 - `npm run build`

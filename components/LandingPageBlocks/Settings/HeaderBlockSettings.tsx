@@ -18,8 +18,10 @@ const HeaderBlockSettings: React.FC<HeaderBlockSettingsProps> = ({
     <div className="space-y-6">
       {/* Brand */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Identidade</h3>
-        
+        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+          Identidade
+        </h3>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Nome da Empresa
@@ -60,8 +62,10 @@ const HeaderBlockSettings: React.FC<HeaderBlockSettingsProps> = ({
 
       {/* Contatos */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Contatos Rápidos</h3>
-        
+        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+          Contatos Rápidos
+        </h3>
+
         <div className="space-y-2">
           <label className="flex items-center gap-2">
             <input
@@ -70,7 +74,9 @@ const HeaderBlockSettings: React.FC<HeaderBlockSettingsProps> = ({
               checked={config.showWhatsApp || false}
               onChange={(e) => handleChange('showWhatsApp', e.target.checked)}
             />
-            <span className="text-sm font-medium text-gray-700">Mostrar Botão WhatsApp</span>
+            <span className="text-sm font-medium text-gray-700">
+              Mostrar Botão WhatsApp
+            </span>
           </label>
           {config.showWhatsApp && (
             <input
@@ -91,7 +97,9 @@ const HeaderBlockSettings: React.FC<HeaderBlockSettingsProps> = ({
               checked={config.showPhone || false}
               onChange={(e) => handleChange('showPhone', e.target.checked)}
             />
-            <span className="text-sm font-medium text-gray-700">Mostrar Telefone Fixo</span>
+            <span className="text-sm font-medium text-gray-700">
+              Mostrar Telefone Fixo
+            </span>
           </label>
           {config.showPhone && (
             <input
@@ -107,8 +115,10 @@ const HeaderBlockSettings: React.FC<HeaderBlockSettingsProps> = ({
 
       {/* Layout */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Estilo</h3>
-        
+        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+          Estilo
+        </h3>
+
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -116,7 +126,9 @@ const HeaderBlockSettings: React.FC<HeaderBlockSettingsProps> = ({
             checked={config.sticky || false}
             onChange={(e) => handleChange('sticky', e.target.checked)}
           />
-          <span className="text-sm font-medium text-gray-700">Fixar no topo (Sticky)</span>
+          <span className="text-sm font-medium text-gray-700">
+            Fixar no topo (Sticky)
+          </span>
         </label>
 
         <label className="flex items-center gap-2">
@@ -126,7 +138,9 @@ const HeaderBlockSettings: React.FC<HeaderBlockSettingsProps> = ({
             checked={config.transparent || false}
             onChange={(e) => handleChange('transparent', e.target.checked)}
           />
-          <span className="text-sm font-medium text-gray-700">Fundo Transparente</span>
+          <span className="text-sm font-medium text-gray-700">
+            Fundo Transparente
+          </span>
         </label>
       </div>
     </div>

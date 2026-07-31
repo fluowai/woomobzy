@@ -199,7 +199,11 @@ const PropertyGridBlockSettings: React.FC<PropertyGridBlockSettingsProps> = ({
       <PropertySelectorModal
         isOpen={showPropertySelector}
         onClose={() => setShowPropertySelector(false)}
-        selectedIds={page.propertySelection?.mode === 'manual' ? page.propertySelection.propertyIds || [] : []}
+        selectedIds={
+          page.propertySelection?.mode === 'manual'
+            ? page.propertySelection.propertyIds || []
+            : []
+        }
         onSave={(ids) => {
           onUpdatePage({
             ...page,

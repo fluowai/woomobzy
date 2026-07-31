@@ -144,7 +144,8 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
 
   try {
     const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const hasGemini = geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20;
+    const hasGemini =
+      geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20;
 
     if (!hasGemini) {
       throw new Error(
@@ -183,7 +184,8 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
 
       if (!groqKey) {
         return res.status(503).json({
-          error: 'Nenhum provedor de IA disponivel. Configure GEMINI_API_KEY ou GROQ_API_KEY no .env do servidor.',
+          error:
+            'Nenhum provedor de IA disponivel. Configure GEMINI_API_KEY ou GROQ_API_KEY no .env do servidor.',
           details: {
             gemini: hasGemini ? 'configured but failed' : 'not configured',
             groq: groqKey ? 'configured' : 'not configured',
@@ -220,15 +222,15 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
         'Groq Fallback Error:',
         groqError.response?.data || groqError.message
       );
-      return res
-        .status(503)
-        .json({
-          error: 'Falha em todos os provedores de IA. Verifique as chaves de API no .env do servidor.',
-          details: {
-            gemini_error: geminiError.message,
-            groq_error: groqError.response?.data?.error?.message || groqError.message,
-          },
-        });
+      return res.status(503).json({
+        error:
+          'Falha em todos os provedores de IA. Verifique as chaves de API no .env do servidor.',
+        details: {
+          gemini_error: geminiError.message,
+          groq_error:
+            groqError.response?.data?.error?.message || groqError.message,
+        },
+      });
     }
   }
 });

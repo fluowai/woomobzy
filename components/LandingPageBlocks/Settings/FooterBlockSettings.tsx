@@ -28,8 +28,10 @@ const FooterBlockSettings: React.FC<FooterBlockSettingsProps> = ({
     <div className="space-y-6">
       {/* Informações da Empresa */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Informações da Empresa</h3>
-        
+        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+          Informações da Empresa
+        </h3>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             URL do Logotipo
@@ -83,7 +85,9 @@ const FooterBlockSettings: React.FC<FooterBlockSettingsProps> = ({
 
       {/* Contato */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Contato</h3>
+        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+          Contato
+        </h3>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -136,7 +140,9 @@ const FooterBlockSettings: React.FC<FooterBlockSettingsProps> = ({
 
       {/* Redes Sociais */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Redes Sociais</h3>
+        <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">
+          Redes Sociais
+        </h3>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -222,7 +222,9 @@ const UrbanLayout: React.FC = () => {
 
   const renderSidebarContent = () => (
     <>
-      <div className={`py-5 flex items-center transition-all ${isExpanded ? 'px-6 justify-between' : 'px-0 justify-center flex-col gap-4'}`}>
+      <div
+        className={`py-5 flex items-center transition-all ${isExpanded ? 'px-6 justify-between' : 'px-0 justify-center flex-col gap-4'}`}
+      >
         {isExpanded && (
           <Link
             to="/urban"
@@ -243,11 +245,17 @@ const UrbanLayout: React.FC = () => {
           className="hidden md:flex text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg p-2 transition-colors"
           title="Alternar Menu"
         >
-          {isDesktopSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+          {isDesktopSidebarOpen ? (
+            <PanelLeftClose size={18} />
+          ) : (
+            <PanelLeftOpen size={18} />
+          )}
         </button>
       </div>
 
-      <nav className={`flex-1 overflow-y-auto space-y-5 custom-scrollbar ${isExpanded ? 'px-3 py-4' : 'px-2 py-4'}`}>
+      <nav
+        className={`flex-1 overflow-y-auto space-y-5 custom-scrollbar ${isExpanded ? 'px-3 py-4' : 'px-2 py-4'}`}
+      >
         {menuSections.map((section) => (
           <div key={section.title} className="space-y-2">
             {isExpanded ? (
@@ -274,8 +282,12 @@ const UrbanLayout: React.FC = () => {
         </button>
       </nav>
 
-      <div className={`border-t border-slate-100 bg-slate-50/60 ${isExpanded ? 'p-4' : 'p-2 flex flex-col items-center gap-2'}`}>
-        <div className={`flex items-center gap-3 bg-white border border-slate-200 rounded-xl ${isExpanded ? 'mb-3 p-2' : 'p-1'}`}>
+      <div
+        className={`border-t border-slate-100 bg-slate-50/60 ${isExpanded ? 'p-4' : 'p-2 flex flex-col items-center gap-2'}`}
+      >
+        <div
+          className={`flex items-center gap-3 bg-white border border-slate-200 rounded-xl ${isExpanded ? 'mb-3 p-2' : 'p-1'}`}
+        >
           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold border border-primary/20 shrink-0">
             {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'U'}
           </div>
@@ -337,7 +349,7 @@ const UrbanLayout: React.FC = () => {
       )}
 
       {!isLandingPageEditor && (
-        <aside 
+        <aside
           className={`workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out border-r border-slate-200 ${
             isDesktopSidebarOpen ? 'w-[280px]' : 'w-[72px]'
           }`}
@@ -356,7 +368,7 @@ const UrbanLayout: React.FC = () => {
             <Menu size={21} />
           </button>
         )}
-        
+
         <div
           className={`flex-1 overflow-y-auto ${
             isLandingPageEditor

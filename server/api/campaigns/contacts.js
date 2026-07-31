@@ -39,12 +39,10 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
     if (!campaign)
       return res.status(404).json({ error: 'Campanha não encontrada' });
     if (!['draft', 'paused'].includes(campaign.status)) {
-      return res
-        .status(400)
-        .json({
-          error:
-            'Só é possível adicionar contatos em campanhas draft ou pausadas',
-        });
+      return res.status(400).json({
+        error:
+          'Só é possível adicionar contatos em campanhas draft ou pausadas',
+      });
     }
 
     // Accept single or bulk
@@ -188,11 +186,9 @@ router.delete('/bulk', verifyAuth, requireTenant, async (req, res) => {
       !status ||
       !['pending', 'failed', 'sent', 'blacklisted'].includes(status)
     ) {
-      return res
-        .status(400)
-        .json({
-          error: 'status inválido. Use: pending, failed, sent, blacklisted',
-        });
+      return res.status(400).json({
+        error: 'status inválido. Use: pending, failed, sent, blacklisted',
+      });
     }
 
     const supabase = getSupabaseServer();
@@ -248,11 +244,9 @@ router.post('/import-serper', verifyAuth, requireTenant, async (req, res) => {
     if (!campaign)
       return res.status(404).json({ error: 'Campanha não encontrada' });
     if (!['draft', 'paused'].includes(campaign.status)) {
-      return res
-        .status(400)
-        .json({
-          error: 'Só é possível importar em campanhas draft ou pausadas',
-        });
+      return res.status(400).json({
+        error: 'Só é possível importar em campanhas draft ou pausadas',
+      });
     }
 
     // Fetch cached Serper results

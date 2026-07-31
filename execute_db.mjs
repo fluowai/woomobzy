@@ -1,8 +1,7 @@
 import pg from 'pg';
 import fs from 'fs';
 
-const connectionString =
-  'postgresql://postgres.epgaftsjmqmpczvzsrcc:JFke4YBBiDoabTdK@aws-0-sa-east-1.pooler.supabase.com:6543/postgres';
+const connectionString = process.env.DATABASE_URL;
 
 const pool = new pg.Pool({
   connectionString,

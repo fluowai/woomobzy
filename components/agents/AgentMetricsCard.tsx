@@ -1,10 +1,10 @@
-import React from 'react'
-import { Brain, Star, Target, TrendingUp, Loader2 } from 'lucide-react'
-import type { AgentMetrics } from '../../services/aiAgents'
+import React from 'react';
+import { Brain, Star, Target, TrendingUp, Loader2 } from 'lucide-react';
+import type { AgentMetrics } from '../../services/aiAgents';
 
 interface AgentMetricsCardProps {
-  metrics: AgentMetrics | null
-  loading: boolean
+  metrics: AgentMetrics | null;
+  loading: boolean;
 }
 
 export const AgentMetricsCard: React.FC<AgentMetricsCardProps> = ({
@@ -16,7 +16,7 @@ export const AgentMetricsCard: React.FC<AgentMetricsCardProps> = ({
       <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <Loader2 className="animate-spin text-emerald-600" size={22} />
       </div>
-    )
+    );
   }
 
   if (!metrics) {
@@ -32,7 +32,7 @@ export const AgentMetricsCard: React.FC<AgentMetricsCardProps> = ({
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -53,9 +53,7 @@ export const AgentMetricsCard: React.FC<AgentMetricsCardProps> = ({
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <Star size={18} className="text-amber-500" />
           <div className="mt-2 text-2xl font-bold text-slate-950">
-            {metrics.average_rating
-              ? metrics.average_rating.toFixed(1)
-              : '-'}
+            {metrics.average_rating ? metrics.average_rating.toFixed(1) : '-'}
           </div>
           <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
             Média avaliações
@@ -87,8 +85,8 @@ export const AgentMetricsCard: React.FC<AgentMetricsCardProps> = ({
           </div>
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((star) => {
-              const count = metrics.rating_distribution?.[star] || 0
-              const pct = (count / (metrics.total_qualifications || 1)) * 100
+              const count = metrics.rating_distribution?.[star] || 0;
+              const pct = (count / (metrics.total_qualifications || 1)) * 100;
               return (
                 <div key={star} className="flex items-center gap-3">
                   <span className="w-4 text-xs font-bold text-slate-600">
@@ -104,11 +102,11 @@ export const AgentMetricsCard: React.FC<AgentMetricsCardProps> = ({
                     {count}
                   </span>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
       )}
     </div>
-  )
-}
+  );
+};

@@ -1,5 +1,22 @@
 # Verificação
 
+## 2026-07-30 — Fix 404 do Metas & Vendas Rurais
+
+- Confirmado via `information_schema`/`pg_class` que `rural_financial_goals`, `rural_property_favorites` e `rural_property_visits` existem em produção (OID ~22204-22246, criadas ~13/07).
+- Reprodução da query exata do console (anon key, `organization_id` + `period_month`): 404 → após `NOTIFY pgrst, 'reload schema'` → 200 `[]`.
+- `npm run type-check`: passou. `npm run lint`: 0 erros; 593 avisos preexistentes, nenhum em `views/rural/FinanceiroRural.tsx`.
+- `period_month` agora sempre `YYYY-MM-01` (sem shift de UTC) no load e no save.
+- Pendência: validação visual/funcional no navegador em `/rural/financeiro` com autenticação (dev server ou produção após deploy).
+
+## 2026-07-30 — Port da sidebar colapsável (sanfona) para o Rural
+
+- `npm run type-check`: passou (sem output).
+- `npx eslint components/RuralLayout.tsx`: 0 erros.
+- `npx prettier --check components/RuralLayout.tsx`: aprovado após `--write`.
+- `npm run build`: passou; `dist` gerado (4.059 módulos, PWA `generateSW` 237 entries).
+- Comportamento coberto por revisão de código (sem teste autenticado executado): toggle desktop `280px ↔ 72px`, auto-colapso ao navegar, menu móvel com labels sempre visíveis (`renderSidebarContent(true)`).
+- Pendência: validação visual/funcional no navegador em `/rural` (desktop + mobile) com autenticação.
+
 ## 2026-07-30 — Reforma da aba Agentes IA
 
 - `npm run type-check`: passou (sem output).

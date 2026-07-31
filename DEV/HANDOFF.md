@@ -1,5 +1,12 @@
 # Handoff
 
+## 2026-07-30 — Sidebar colapsável (sanfona) portada do Urbano para o Rural
+
+- `components/RuralLayout.tsx` agora tem menu lateral colapsável igual ao Urbano (toggle desktop `280px ↔ 72px`, auto-colapso ao navegar, estados colapsados em todos os blocos). Melhoria: menu móvel mantém labels visíveis.
+- Verificado por type-check, eslint e build. Nenhum commit/push/deploy.
+- Próxima ação: abrir `/rural` no navegador (desktop + mobile) com login e validar expandir/recolher, navegação e overlay móvel.
+- Item "Integrações" no menu rural e rota `/rural/clients` permanecem como gaps abertos no relatório `DEV/RELATORIO_GAP_URBANO_RURAL.md`.
+
 ## 2026-07-30 — Reforma da aba Agentes IA
 
 - View `views/AIAgents.tsx` reescrita como orquestrador thin com 9 componentes em `components/agents/` (dashboard, form único, presets, chat de teste, métricas reais).

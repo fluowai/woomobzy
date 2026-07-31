@@ -60,3 +60,6 @@ coverage
 *.bak
 *.backup
 *.new
+
+# Supabase CLI temp download
+supabase/.temp/cli-latest

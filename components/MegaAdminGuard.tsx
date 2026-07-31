@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getPanelHomePath } from './NicheRedirect';
 import FullScreenSpinner from './FullScreenSpinner';
 
 const isMegaAdmin = (profile: any) =>
@@ -14,7 +15,12 @@ const MegaAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   if (loading) return <FullScreenSpinner />;
 
   if (!isMegaAdmin(profile) || isImpersonating) {
-    return <Navigate to="/" replace />;
+    return (
+      <Navigate
+        to={getPanelHomePath(profile, { isImpersonating })}
+        replace
+      />
+    );
   }
 
   return <>{children}</>;

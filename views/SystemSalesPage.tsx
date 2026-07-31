@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
+import { useAuth } from '../context/AuthContext';
+import { getPanelHomePath } from '../components/NicheRedirect';
 
 const navItems = [
   { label: 'Soluções', target: 'solucoes', dropdown: true },
@@ -196,6 +198,7 @@ const BrandLockup = ({ compact = false }: { compact?: boolean }) => (
 
 const SystemSalesPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user, profile, loading: authLoading, isImpersonating } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -205,6 +208,16 @@ const SystemSalesPage: React.FC = () => {
     goal: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Logged-in users who land on a public/sales route (e.g. via browser back)
+  // are sent back to their panel instead of seeing the sales page.
+  useEffect(() => {
+    if (!authLoading && user && profile) {
+      navigate(getPanelHomePath(profile, { isImpersonating }), {
+        replace: true,
+      });
+    }
+  }, [authLoading, user, profile, isImpersonating, navigate]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });

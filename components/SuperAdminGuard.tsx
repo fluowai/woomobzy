@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getPanelHomePath } from './NicheRedirect';
 import FullScreenSpinner from './FullScreenSpinner';
 
 const PUBLIC_PATHS = [
@@ -66,6 +67,20 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
       const niche = profile?.organization?.niche;
       const target = niche === 'rural' ? '/rural' : '/urban';
       return <Navigate to={target} replace />;
+    }
+  } else if (
+    isImpersonating &&
+    profile &&
+    ['superadmin', 'super_admin'].includes(role || '')
+  ) {
+    const path = location.pathname;
+    if (path.startsWith('/megaadmin') || path.startsWith('/superadmin')) {
+      return (
+        <Navigate
+          to={getPanelHomePath(profile, { isImpersonating: true })}
+          replace
+        />
+      );
     }
   }
 

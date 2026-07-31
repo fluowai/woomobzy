@@ -387,6 +387,7 @@ const ResellerManager: React.FC = () => {
                         const reason = prompt('Motivo do acesso (Opcional):');
                         if (reason !== null) {
                           await impersonateOrganization(reseller.id, reason);
+                          window.location.href = '/admin';
                         }
                       }}
                       className="p-1.5 text-indigo-500 rounded hover:bg-gray-100"

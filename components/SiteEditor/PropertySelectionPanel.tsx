@@ -6,7 +6,7 @@ import {
   PropertyFilters,
 } from '../../types/landingPage';
 import { PropertySelectorModal } from '../LayoutEditor/PropertySelectorModal';
-import { Search, Check, X, Building2, Home, Loader2 } from 'lucide-react';
+import { Building2, Home, Loader2 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 
 interface PropertySelectionPanelProps {
@@ -20,7 +20,7 @@ type TabType = 'properties' | 'developments';
 const PropertySelectionPanel: React.FC<PropertySelectionPanelProps> = ({
   site,
   onUpdate,
-  saving,
+  saving: _saving,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('properties');
   const [showManualSelector, setShowManualSelector] = useState(false);
@@ -48,6 +48,7 @@ const PropertySelectionPanel: React.FC<PropertySelectionPanelProps> = ({
 
   useEffect(() => {
     loadCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propConfig, devConfig]);
 
   const loadCounts = async () => {

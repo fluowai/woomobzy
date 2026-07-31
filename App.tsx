@@ -1,9 +1,9 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import DomainRouter from './components/DomainRouter';
-import ImpersonationBanner from './components/ImpersonationBanner';
+
 import TrackingPixels from './components/TrackingPixels';
 
 import { SettingsProvider, useSettings } from './context/SettingsContext';

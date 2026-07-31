@@ -5,7 +5,6 @@ import RuralLayout from './components/RuralLayout';
 import UrbanLayout from './components/UrbanLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import NicheRedirect from './components/NicheRedirect';
-import SuperAdminGuard from './components/SuperAdminGuard';
 import MegaAdminGuard from './components/MegaAdminGuard';
 import SubscriptionGuard from './components/SubscriptionGuard';
 import PanelGuard from './components/PanelGuard';

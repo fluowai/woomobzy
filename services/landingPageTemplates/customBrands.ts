@@ -1,4 +1,5 @@
 import { LandingPageTemplate, defaultPremiumTheme, templateBlock } from './shared';
+import { BlockType } from '../../types/landingPage';
 
 const buildBrandTemplate = (id: string, name: string, description: string, htmlContent: string, cssContent: string, palette: any): LandingPageTemplate => {
   return {
@@ -20,7 +21,7 @@ const buildBrandTemplate = (id: string, name: string, description: string, htmlC
     },
     blocks: [
       templateBlock(
-        'custom-code',
+        BlockType.CUSTOM_HTML,
         0,
         {
           code: `<style>\n${cssContent}\n</style>\n<div class="${id}-container">\n${htmlContent}\n</div>`,

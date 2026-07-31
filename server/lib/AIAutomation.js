@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 import { AgentOrchestrator } from '../services/ai/agentOrchestrator.js';
+import logger from './utils/logger.js';
 
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',

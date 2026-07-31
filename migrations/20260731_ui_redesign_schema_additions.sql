@@ -31,7 +31,7 @@ ALTER TABLE public.whatsapp_chats
 -- 4. Tabela: developments & development_lots (Central de Loteamentos)
 CREATE TABLE IF NOT EXISTS public.developments (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  tenant_id uuid NOT NULL,
+  organization_id uuid NOT NULL,
   name text NOT NULL,
   vgv_total numeric(15,2) DEFAULT 0,
   percent_sold numeric(5,2) DEFAULT 0,
@@ -69,7 +69,7 @@ ALTER TABLE public.condominiums
 -- 7. Tabela: financing_simulations (Simulador Financeiro)
 CREATE TABLE IF NOT EXISTS public.financing_simulations (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  tenant_id uuid NOT NULL,
+  organization_id uuid NOT NULL,
   lead_id uuid,
   bank_name text,
   amortization_type text,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS public.financing_simulations (
 -- 8. Tabela: legal_contracts (Contratos e Jurídico)
 CREATE TABLE IF NOT EXISTS public.legal_contracts (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  tenant_id uuid NOT NULL,
+  organization_id uuid NOT NULL,
   contract_type text,
   title text,
   party_a text,
@@ -104,7 +104,14 @@ ALTER TABLE public.financing_simulations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.legal_contracts ENABLE ROW LEVEL SECURITY;
 
 -- Políticas básicas de segurança (Tenant Isolation)
-CREATE POLICY "Tenant Isolation Developments" ON public.developments FOR ALL USING (tenant_id = (SELECT auth.uid()));
-CREATE POLICY "Tenant Isolation Lots" ON public.development_lots FOR ALL USING (development_id IN (SELECT id FROM public.developments WHERE tenant_id = (SELECT auth.uid())));
-CREATE POLICY "Tenant Isolation Simulations" ON public.financing_simulations FOR ALL USING (tenant_id = (SELECT auth.uid()));
-CREATE POLICY "Tenant Isolation Contracts" ON public.legal_contracts FOR ALL USING (tenant_id = (SELECT auth.uid()));
+CREATE POLICY "Tenant isolation developments" ON public.developments 
+  FOR ALL TO authenticated USING (organization_id = public.get_my_org_id() OR public.is_superadmin());
+
+CREATE POLICY "Tenant isolation lots" ON public.development_lots 
+  FOR ALL TO authenticated USING (development_id IN (SELECT id FROM public.developments WHERE organization_id = public.get_my_org_id() OR public.is_superadmin()));
+
+CREATE POLICY "Tenant isolation simulations" ON public.financing_simulations 
+  FOR ALL TO authenticated USING (organization_id = public.get_my_org_id() OR public.is_superadmin());
+
+CREATE POLICY "Tenant isolation contracts" ON public.legal_contracts 
+  FOR ALL TO authenticated USING (organization_id = public.get_my_org_id() OR public.is_superadmin());

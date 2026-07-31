@@ -97,7 +97,7 @@ const AIAgents: React.FC = () => {
         tools: a.tools?.length ? a.tools : DEFAULTS.tools,
         autonomy_level: a.autonomy_level || 2,
         operation_mode: a.operation_mode || 'Semiautônomo',
-        handoff_rules: { ...defaultHandoff, ...(a.handoff_rules || {}) },
+        handoff_rules: { ...defaultHandoff, ...(a.handoff_rules || {}) } as Record<string, boolean>,
       })
     }
   }, [selectedAgent])

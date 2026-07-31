@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
 import {
   Users,
   UserPlus,
@@ -24,6 +25,7 @@ interface StaffProfile {
 }
 
 const TeamManager: React.FC = () => {
+  const { profile } = useAuth();
   const [staff, setStaff] = useState<StaffProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -32,8 +34,10 @@ const TeamManager: React.FC = () => {
   const [inviteName, setInviteName] = useState('');
 
   useEffect(() => {
-    fetchStaff();
-  }, []);
+    if (profile?.organization_id) {
+      fetchStaff();
+    }
+  }, [profile?.organization_id]);
 
   const fetchStaff = async () => {
     try {
@@ -42,6 +46,7 @@ const TeamManager: React.FC = () => {
         .from('profiles')
         .select('*, full_name:name')
         .eq('role', 'superadmin')
+        .eq('organization_id', profile?.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

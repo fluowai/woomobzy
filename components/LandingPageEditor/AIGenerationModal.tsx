@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, Sparkles, Loader, Info } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../services/supabase';
 
 interface AIGenerationModalProps {
   onGenerate: (layout: any) => void;
@@ -26,10 +27,15 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       setLoading(true);
       setError(null);
 
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await axios.post('/api/ai/generate-page', {
         prompt,
         niche,
         organizationId: profile?.organization_id,
+      }, {
+        headers: session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`,
+        } : {},
       });
 
       if (response.data.layout) {

@@ -309,7 +309,6 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/demo', demoRoutes);
 app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
 app.use('/api/email', emailRoutes);
-app.use('/api/wootech-ai', wootechAiRoutes);
 app.use('/api/sites', siteRoutes);
 app.use('/api/orulo', oruloRoutes);
 app.use('/api/portals', portalRoutes);

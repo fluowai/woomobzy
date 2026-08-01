@@ -39,7 +39,6 @@ const WhatsAppDashboard: React.FC = () => {
     instances,
     selectedInstance,
     setSelectedInstance,
-    chats,
     filteredChats,
     selectedChat,
     handleSelectChat,

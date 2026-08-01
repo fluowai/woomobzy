@@ -134,7 +134,7 @@ const DirectClientsManager = lazy(
   () => import('./views/megaadmin/DirectClientsManager')
 );
 const SiteManager = lazy(() => import('./views/SiteManager'));
-const MegaTheme = lazy(() => import('./views/sites/megainvestimentos/MegaTheme'));
+const MegaTheme = lazy(() => import('./src/views/sites/megainvestimentos/MegaTheme'));
 const SitePageEditor = lazy(() => import('./views/SitePageEditor'));
 const PublicSite = lazy(() => import('./views/PublicSite'));
 const WhatsAppDashboard = lazy(

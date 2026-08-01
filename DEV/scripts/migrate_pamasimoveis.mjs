@@ -165,7 +165,6 @@ async function runMigration() {
         }
 
         // break removido para extrair todos os imóveis da lista
-        break; // Testando apenas o primeiro
       } catch (err) {
         console.error(`Erro ao processar ${url}:`, err.message);
       }

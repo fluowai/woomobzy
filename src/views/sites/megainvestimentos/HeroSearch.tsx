@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, ChevronDown, MapPin, BedDouble, Building } from 'lucide-react';
+import { Search, ChevronDown, MapPin, BedDouble, Building, Home } from 'lucide-react';
 
 export default function HeroSearch() {
   return (

@@ -18,7 +18,6 @@ import {
 import { loadCustomStages, saveCustomStages } from './kanban/helpers';
 
 import NewLeadModal from './KanbanBoard/NewLeadModal';
-import EditLeadModal from './KanbanBoard/EditLeadModal';
 import LeadDetailsModal from './KanbanBoard/LeadDetailsModal';
 import NewStageModal from './KanbanBoard/NewStageModal';
 import LeadCard from './KanbanBoard/LeadCard';
@@ -48,7 +47,6 @@ const KanbanBoard: React.FC = () => {
   const [isStageModalOpen, setIsStageModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [mobileStageId, setMobileStageId] = useState(pipelineStages[0].id);
@@ -84,6 +82,82 @@ const KanbanBoard: React.FC = () => {
       toast.success('Etapa criada no Kanban.');
     },
     [matchProfile]
+  );
+
+  const handleRenameStage = useCallback(
+    (stageId: string, newLabel: string) => {
+      const normalized = newLabel.trim().replace(/\s+/g, ' ').slice(0, 32);
+      if (!normalized) {
+        toast.error('Informe o nome da etapa.');
+        return;
+      }
+      const alreadyExists = pipelineStages.some(
+        (s) =>
+          s.id !== stageId &&
+          s.label.toLocaleLowerCase('pt-BR') ===
+            normalized.toLocaleLowerCase('pt-BR')
+      );
+      if (alreadyExists) {
+        toast.error('Essa etapa ja existe no Kanban.');
+        return;
+      }
+      setCustomStages((prev) => {
+        const next = prev.map((s) =>
+          s.id === stageId ? { ...s, label: normalized } : s
+        );
+        saveCustomStages(matchProfile, next);
+        return next;
+      });
+      toast.success('Etapa renomeada.');
+    },
+    [matchProfile, pipelineStages]
+  );
+
+  const handleDeleteStage = useCallback(
+    (stageId: string) => {
+      const stage = pipelineStages.find((s) => s.id === stageId);
+      const stageLabel = stage?.label || stageId;
+      if (
+        !window.confirm(
+          `Excluir a etapa "${stageLabel}"? Os leads desta etapa serao movidos para a primeira etapa do funil.`
+        )
+      )
+        return;
+      const firstStageId = pipelineStages[0].id;
+      const affectedIds = leads
+        .filter((l) => l.status === stageId)
+        .map((l) => l.id);
+
+      Promise.all(
+        affectedIds.map((leadId) =>
+          leadService.update(leadId, { status: firstStageId } as any)
+        )
+      )
+        .then(() => {
+          setLeads((prev) =>
+            prev.map((l) =>
+              l.status === stageId
+                ? { ...l, status: firstStageId as Lead['status'] }
+                : l
+            )
+          );
+          setCustomStages((prev) => {
+            const next = prev.filter((s) => s.id !== stageId);
+            saveCustomStages(matchProfile, next);
+            return next;
+          });
+          setStageState((prev) => {
+            const { [stageId]: _removed, ...rest } = prev;
+            return rest;
+          });
+          toast.success('Etapa excluida do Kanban.');
+        })
+        .catch((error) => {
+          logger.error('Failed to delete stage', error);
+          toast.error('Erro ao excluir a etapa.');
+        });
+    },
+    [leads, matchProfile, pipelineStages]
   );
 
   const loadLeads = useCallback(async () => {
@@ -436,22 +510,20 @@ const KanbanBoard: React.FC = () => {
         onDelete={handleDelete}
         stages={pipelineStages}
         navigate={navigate}
-      />
-      <EditLeadModal
-        isOpen={isEditOpen}
-        lead={selectedLead}
-        onClose={() => setIsEditOpen(false)}
-        onSaved={(updated) =>
+        onUpdateLead={(updated) => {
           setLeads((prev) =>
             prev.map((l) => (l.id === updated.id ? updated : l))
-          )
-        }
+          );
+          setSelectedLead(updated);
+        }}
       />
       <NewStageModal
         isOpen={isStageModalOpen}
         existingStages={pipelineStages}
         onClose={() => setIsStageModalOpen(false)}
         onCreate={handleCreateStage}
+        onRename={handleRenameStage}
+        onDelete={handleDeleteStage}
       />
     </div>
   );

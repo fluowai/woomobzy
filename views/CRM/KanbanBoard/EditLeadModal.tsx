@@ -45,18 +45,32 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({
 
   const handleSave = async () => {
     setSaving(true);
-    const tags = formData.tags
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const budget = formData.budget
-      ? parseFloat(formData.budget.replace(/[^0-9.-]+/g, ''))
-      : null;
-    await leadService.update(lead.id, { ...formData, tags, budget } as any);
-    onSaved({ ...lead, ...formData, tags, budget } as Lead);
-    setSaving(false);
-    onClose();
-    toast.success('Lead atualizado');
+    try {
+      const tags = formData.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const budget = formData.budget
+        ? parseFloat(formData.budget.replace(/[^0-9.-]+/g, ''))
+        : null;
+      const payload: Partial<Lead> = {
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        notes: formData.notes,
+        classification: formData.classification,
+        tags,
+        budget,
+      };
+      const updated = await leadService.update(lead.id, payload);
+      onSaved({ ...lead, ...payload, tags, budget } as Lead);
+      onClose();
+      toast.success('Lead atualizado');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar lead');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

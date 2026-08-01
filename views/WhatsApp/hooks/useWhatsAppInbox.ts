@@ -620,6 +620,10 @@ export function useWhatsAppInbox(
     );
   };
 
+  const clearSelectedChat = useCallback(() => {
+    setSelectedChat(null);
+  }, []);
+
   const handleImportHistory = async () => {
     if (!selectedInstance || importingHistory) return;
 
@@ -782,6 +786,7 @@ export function useWhatsAppInbox(
     loadInstances,
     handleSendMessage,
     handleChatUpdated,
+    clearSelectedChat,
     handleImportHistory,
     handleHistoryPeriodChange,
     getHistoryPeriodLabel,

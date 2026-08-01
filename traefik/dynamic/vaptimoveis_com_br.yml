@@ -4,7 +4,7 @@
 http:
   routers:
     vaptimoveis_com_br_api:
-      rule: 'Host(`vaptimoveis.com.br`) && PathPrefix(`/api`)'
+      rule: "Host(`vaptimoveis.com.br`) && PathPrefix(`/api`)"
       entryPoints:
         - websecure
       priority: 1000
@@ -13,7 +13,7 @@ http:
       service: imobzy_api@file
 
     vaptimoveis_com_br_frontend:
-      rule: 'Host(`vaptimoveis.com.br`)'
+      rule: "Host(`vaptimoveis.com.br`)"
       entryPoints:
         - websecure
       priority: 100

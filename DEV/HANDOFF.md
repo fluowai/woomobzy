@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-08-01 — Impersonação de revenda ia para /urban em vez de /superadmin
+
+- Sintoma: ao clicar "Acessar Painel (Suporte)" numa revenda no mega admin, o usuário caía no painel/login da imobiliária urbana.
+- Causa raiz: `getPanelHomePath` (`components/NicheRedirect.tsx`) — com `isImpersonating: true`, superadmin com organização definida era enviado a `/rural` ou `/urban` pelo niche, sem checar `is_reseller`.
+- Correção: superadmin impersonando organização com `is_reseller === true` → `/superadmin`; clientes diretos (`is_reseller` false) seguem para `/rural`/`/urban`. Vale para ResellerManager, TenantManager e DirectClientsManager (todos redirecionam via `/admin` → NicheRedirect).
+- Gates: type-check ✓, lint ✓ (0 erros).
+- Próxima ação (maestro): validar no navegador — mega admin → Resellers → ícone de chave numa revenda → deve abrir o painel Super Admin da revenda (não a imobiliária urbana); conferir baner de impersonação e "sair do modo suporte".
+- Atenção: working tree tem mudanças de outras sessões (instagram-worker, etc.) — não push.
+
 ## 2026-08-01 — WhatsApp QR nunca aparecia no frontend (fix frontend + backend)
 
 - Sintoma: instância criada ficava em spinner sem QR (~40s) e sem erro, tanto em `connecting` quanto em `disconnected`.

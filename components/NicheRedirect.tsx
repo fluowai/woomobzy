@@ -47,6 +47,9 @@ export function getPanelHomePath(
       return !profile.organization?.is_reseller ? '/megaadmin' : '/superadmin';
     }
     if (profile.organization) {
+      if (profile.organization.is_reseller) {
+        return '/superadmin';
+      }
       return isRuralOrganization(
         profile.organization.niche,
         profile.organization.name,

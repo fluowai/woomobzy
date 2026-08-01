@@ -1,5 +1,12 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-01] Impersonação de revenda (mega admin) redirecionava para /urban em vez de /superadmin
+
+- Sintoma: mega admin clicava "Acessar Painel" numa revenda (`ResellerManager`) e caía no login/painel da imobiliária urbana.
+- Causa raiz: após `impersonateOrganization` + `window.location.href = '/admin'`, o `NicheRedirect` → `getPanelHomePath` (em `components/NicheRedirect.tsx`) tratava superadmin impersonando como admin/broker e mandava para `/rural`/`/urban` pelo niche — ignorando `organization.is_reseller`.
+- Correção: em `getPanelHomePath`, quando `role === superadmin` e `isImpersonating` e `organization.is_reseller === true` → retorna `/superadmin`; só usa niche (`/rural`|`/urban`) para clientes diretos (`is_reseller` false). Centralizado, então vale para `ResellerManager`, `TenantManager` e `DirectClientsManager`.
+- Gates: type-check ✓, eslint 0 erros ✓ (594 warnings pré-existentes).
+
 ## [2026-08-01] WhatsApp não gerava QR no frontend — fix BUG 1 (frontend) + BUG 2 (backend)
 
 - Sintoma: ao criar uma instância, o QR nunca aparecia (~40s) e o modal ficava em spinner infinito, sem erro. Sem logs de produção do `whatsapp-service`, as correções atacaram os dois lados (egress do proxy Node vs sqlstore no pooler).

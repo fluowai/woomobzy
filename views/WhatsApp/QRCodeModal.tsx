@@ -34,6 +34,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const qrCodeRef = useRef(qrCode);
   const lastQRFetchRef = useRef(0);
+  const emptyQRAttemptsRef = useRef(0);
 
   useEffect(() => {
     qrCodeRef.current = qrCode;
@@ -98,19 +99,17 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
       if (freshInstance.status === 'connected') {
         setQrCode('');
         setLoading(false);
+        emptyQRAttemptsRef.current = 0;
         if (pollingRef.current) clearInterval(pollingRef.current);
         closeTimeoutRef.current = setTimeout(onClose, 1800);
         return;
       }
 
-      if (freshInstance.qr_code && !qrCode) {
+      if (freshInstance.qr_code && !qrCodeRef.current) {
         setQrCode(freshInstance.qr_code);
         setLoading(false);
-      }
-
-      if (freshInstance.status !== 'qr_pending' && !freshInstance.qr_code) {
-        setLoading(true);
-        return;
+        setPairingError('');
+        emptyQRAttemptsRef.current = 0;
       }
 
       const shouldRefreshQR = Date.now() - lastQRFetchRef.current > 2500;
@@ -123,7 +122,22 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
           setLoading(false);
           setPairingError('');
           setExpiresAt(data.expires_at || '');
-        } else if (!qrCodeRef.current) {
+          emptyQRAttemptsRef.current = 0;
+        } else if (
+          freshInstance.status === 'connecting' ||
+          freshInstance.status === 'qr_pending'
+        ) {
+          // Conexão ativa mas QR ainda não emitido — mantém aguardando.
+          setLoading(true);
+        } else if (emptyQRAttemptsRef.current >= 3) {
+          // Várias tentativas sem QR e sem conexão ativa: mostra erro + retry
+          // em vez de spinner infinito.
+          setLoading(false);
+          setPairingError(
+            'QR Code não disponível. Verifique se o WhatsApp está acessível e tente novamente.'
+          );
+        } else {
+          emptyQRAttemptsRef.current += 1;
           setLoading(true);
         }
       }

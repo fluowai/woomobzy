@@ -3,7 +3,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 const TARGET =
   process.env.INSTAGRAM_SERVICE_URL || 'http://instagram-service:3200';
 
-export const setupInstagramProxy = (app) => {
+export const setupInstagramProxy = (app, server) => {
   const proxy = createProxyMiddleware({
     target: TARGET,
     changeOrigin: true,
@@ -22,6 +22,8 @@ export const setupInstagramProxy = (app) => {
             error: 'Servico Instagram Indisponivel',
             code: 'INSTAGRAM_SERVICE_UNREACHABLE',
           });
+        } else if (res && typeof res.destroy === 'function') {
+          res.destroy();
         }
       },
     },
@@ -45,6 +47,16 @@ export const setupInstagramProxy = (app) => {
   });
 
   app.use('/api/instagram', proxy);
+
+  // WebSocket upgrade passthrough (Instagram Dashboard usa /api/instagram/ws).
+  // O instagram-service valida a empresa no primeiro frame (auth), sem token de upgrade.
+  if (server) {
+    server.on('upgrade', (req, socket, head) => {
+      if (req.url?.startsWith('/api/instagram/ws')) {
+        proxy.upgrade(req, socket, head);
+      }
+    });
+  }
 
   console.log(`[Instagram] Proxy montado em /api/instagram -> ${TARGET}`);
 };

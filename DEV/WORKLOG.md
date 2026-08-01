@@ -1,5 +1,19 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-01] Instagram Service — plano de deploy em produção (fix do 502)
+
+- Incidente: `GET /api/instagram/conversations` → 502 "Servico Instagram Indisponivel" em produção (`https://imob.wootech.com.br`).
+- Causa raiz: proxy do api (`server/api/instagram/index.js`) encaminha `/api/instagram/*` para `http://instagram-service:3200`, mas o serviço nunca foi deployado em produção: `docker-compose.yml` não tem `instagram-service`/`instagram-worker`/`redis`; o CI buildava só frontend/api/whatsapp/agro; `.env.production` sem `INSTAGRAM_SERVICE_URL`. O frontend captura o erro e só loga (`useWhatsAppInbox.ts:478`), então o WhatsApp segue normal.
+- Mudanças:
+  - `Dockerfile.instagram-service` e `Dockerfile.instagram-worker`: build copiava do contexto raiz (`COPY package.json ./` + `COPY src ./src`), o que produzia imagem quebrada (`src/` raiz não tem `index.js`). Corrigido para `instagram-service/...` / `instagram-worker/...`.
+  - `server/api/instagram/index.js`: `setupInstagramProxy(app, server)` com upgrade WebSocket de `/api/instagram/ws` (passthrough, espelhando o padrão do WhatsApp); mantém HTTP + CORS.
+  - `server/index.js`: passa `server` ao `setupInstagramProxy`.
+  - `.github/workflows/docker-images.yml`: matrix ganha `instagram-service` (Dockerfile.instagram-service) e `instagram-worker` (Dockerfile.instagram-worker) → `ghcr.io/fluowai/woomobzy-instagram-*`.
+  - `docker-compose.yml`: adicionados `redis` (redis:7-alpine, healthcheck), `instagram-service` (3200) e `instagram-worker` (8000, volumes `instagram_devices`/`instagram_sessions`) na rede `imobfluow_internal`; `INSTAGRAM_SERVICE_URL` no serviço `api`; volumes nomeados `redis_data`, `instagram_devices`, `instagram_sessions`.
+  - `.env.production.template` e `.env.production`: novas vars `INSTAGRAM_SERVICE_URL`, `INSTAGRAM_WORKER_URL`, `INSTAGRAM_INTERNAL_TOKEN`, `INSTAGRAM_ENCRYPTION_SECRET`, `REDIS_URL` (segredos gerados localmente no `.env.production`, que é gitignored).
+- Verificação local: `node --check` OK nos JS alterados; `docker compose config --services` OK (agro, api, frontend, redis, instagram-service, instagram-worker, rabbitmq, whatsapp-service).
+- Pendente (produção): atualizar o stack no Portainer com o novo compose + env vars, publicar imagens e redeployar; a migration `20260726_instagram_integration_module.sql` já cria tabelas/RLS; validar `/api/instagram/conversations` e o WS `/api/instagram/ws`; conectar conta Instagram (QR) e testar envio.
+
 ## [2026-08-01] WhatsAppDashboard — integração dos componentes órfãos + desbloqueio do build
 
 - Retomada da integração da aba Mensagens (`WhatsAppDashboard.tsx` como shell fino usando `ChatSidebar` + `ChatWindow` + `InstanceManager` + `QueuesManagerModal` + telas de erro, consumindo `useWhatsAppInbox`).

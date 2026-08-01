@@ -230,11 +230,11 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 	}
 
 	if err := m.initializeSessionStore(ctx); err != nil {
-		return err
+		return m.failConnect(ctx, instanceID, inst.TenantID, err)
 	}
 	deviceStore, err := m.deviceForInstance(ctx, inst)
 	if err != nil {
-		return err
+		return m.failConnect(ctx, instanceID, inst.TenantID, err)
 	}
 
 	waClient := whatsmeow.NewClient(deviceStore, waLog.Noop)
@@ -295,10 +295,36 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 					zap.Error(statusErr),
 				)
 			}
+			m.hub.BroadcastEventToTenant(uuidToString(inst.TenantID), "instance_status", models.InstanceStatusEvent{
+				InstanceID: instanceID,
+				Status:     models.StatusDisconnected,
+				Error:      "Não foi possível conectar ao WhatsApp. Verifique se a instância tem acesso à internet e tente novamente.",
+			})
 		}
 	}()
 
 	return nil
+}
+
+// failConnect resets an instance to disconnected and notifies the frontend when
+// connection setup fails before the WhatsApp client can be started.
+func (m *Manager) failConnect(ctx context.Context, instanceID uuid.UUID, tenantID *uuid.UUID, err error) error {
+	m.logger.Error("Failed to connect instance",
+		zap.String("id", instanceID.String()),
+		zap.Error(err),
+	)
+	if updateErr := m.instanceRepo.UpdateStatus(ctx, instanceID, models.StatusDisconnected); updateErr != nil {
+		m.logger.Error("Failed to reset status after connect error",
+			zap.String("id", instanceID.String()),
+			zap.Error(updateErr),
+		)
+	}
+	m.hub.BroadcastEventToTenant(uuidToString(tenantID), "instance_status", models.InstanceStatusEvent{
+		InstanceID: instanceID,
+		Status:     models.StatusDisconnected,
+		Error:      "Não foi possível iniciar a conexão com o WhatsApp. Tente novamente em alguns instantes.",
+	})
+	return err
 }
 
 // RequestPairCode generates the code shown in WhatsApp's "link with phone

@@ -14,7 +14,7 @@
 
 | Módulo                | Diretório                                                     | Rotas                                  | Status                                     |
 | --------------------- | ------------------------------------------------------------- | -------------------------------------- | ------------------------------------------ |
-| Instagram Integration | `instagram-service/`, `instagram-worker/`, `views/Instagram/` | `/rural/instagram`, `/urban/instagram` | CONCLUÍDO (fase backend + frontend básico) |
+| Instagram Integration | `instagram-service/`, `instagram-worker/`, `views/Instagram/` | `/rural/instagram`, `/urban/instagram` | CONCLUÍDO (backend + frontend) — deploy em produção pendente |
 | WhatsApp              | `views/WhatsApp/`, `whatsapp-service/`                        | `/rural/whatsapp`, `/urban/whatsapp`   | ATIVO                                      |
 | Financial Hub         | `views/urban/FinancialHub.tsx`                                | `/urban/fintech`                       | ATIVO                                      |
 | Clube Imobzy          | `views/urban/ClubeImobzy.tsx`                                 | `/urban/clube`                         | ATIVO                                      |

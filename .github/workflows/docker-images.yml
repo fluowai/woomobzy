@@ -35,6 +35,14 @@ jobs:
             image: ghcr.io/fluowai/woomobzy-agro
             dockerfile: Dockerfile.agro
             deployment_alias: ghcr.io/fluowai/woomobzy-agro:latest
+          - name: instagram-service
+            image: ghcr.io/fluowai/woomobzy-instagram-service
+            dockerfile: Dockerfile.instagram-service
+            deployment_alias: ghcr.io/fluowai/woomobzy-instagram-service:latest
+          - name: instagram-worker
+            image: ghcr.io/fluowai/woomobzy-instagram-worker
+            dockerfile: Dockerfile.instagram-worker
+            deployment_alias: ghcr.io/fluowai/woomobzy-instagram-worker:latest
 
     steps:
       - name: Checkout

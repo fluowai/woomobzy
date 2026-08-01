@@ -45,6 +45,7 @@ services:
       WHATSMEOW_URL: 'http://whatsapp-service:3100'
       NODE_URL: 'http://api:3002'
       AGRO_INTEL_URL: 'http://agro-intelligence:8000'
+      INSTAGRAM_SERVICE_URL: 'http://instagram-service:3200'
       OPENAI_API_KEY: '${OPENAI_API_KEY}'
       GEMINI_API_KEY: '${GEMINI_API_KEY}'
       GROQ_API_KEY: '${GROQ_API_KEY}'
@@ -139,11 +140,67 @@ services:
     networks:
       - imobfluow_internal
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - imobfluow_internal
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  instagram-service:
+    image: ghcr.io/fluowai/woomobzy-instagram-service:latest
+    environment:
+      NODE_ENV: production
+      PORT: '3200'
+      REDIS_URL: 'redis://redis:6379'
+      INSTAGRAM_WORKER_URL: 'http://instagram-worker:8000'
+      INSTAGRAM_INTERNAL_TOKEN: '${INSTAGRAM_INTERNAL_TOKEN}'
+      ALLOWED_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br'
+      SUPABASE_URL: '${VITE_SUPABASE_URL}'
+      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
+      SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET}'
+    networks:
+      - imobfluow_internal
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  instagram-worker:
+    image: ghcr.io/fluowai/woomobzy-instagram-worker:latest
+    environment:
+      SUPABASE_URL: '${VITE_SUPABASE_URL}'
+      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
+      REDIS_URL: 'redis://redis:6379'
+      INSTAGRAM_INTERNAL_TOKEN: '${INSTAGRAM_INTERNAL_TOKEN}'
+      INSTAGRAM_ENCRYPTION_SECRET: '${INSTAGRAM_ENCRYPTION_SECRET}'
+      NODE_SERVICE_URL: 'http://instagram-service:3200'
+    volumes:
+      - instagram_devices:/data/devices
+      - instagram_sessions:/data/sessions
+    networks:
+      - imobfluow_internal
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   whatsapp_sessions:
   rabbitmq_data_v4:
   imobzy_traefik_dynamic:
     external: true
+  redis_data:
+  instagram_devices:
+  instagram_sessions:
 
 networks:
   wootech1:

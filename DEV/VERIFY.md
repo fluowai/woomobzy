@@ -1,5 +1,12 @@
 # Verificação
 
+## 2026-08-01 — Instagram Service: preparação do deploy de produção
+
+- `node --check server/api/instagram/index.js` e `server/index.js`: passou.
+- `docker compose config --services` (produção): `agro-intelligence, api, frontend, redis, instagram-service, instagram-worker, rabbitmq, whatsapp-service` — passou. Avisos apenas de interpolação local (`.env` sem os tokens Instagram, esperado) e `version` obsoleto.
+- Revisão manual dos Dockerfiles: `COPY` agora aponta para `instagram-service/` e `instagram-worker/` (contexto `.` usado pelo CI e pelo compose local).
+- Não executado (depende do redeploy em produção): build das imagens, deploy, validação runtime de `/api/instagram/conversations` e do WebSocket `/api/instagram/ws`, conexão de conta Instagram via QR.
+
 ## 2026-08-01 — WhatsAppDashboard integrado + desbloqueio de gates
 
 - `npm run type-check`: passou (0 erros) após corrigir `App.routes.tsx` (import `./src/views/sites/megainvestimentos/MegaTheme`) e `HeroSearch.tsx` (`Home` no import do lucide-react).

@@ -1,5 +1,18 @@
 # Handoff
 
+## 2026-08-01 — Plano de deploy do Instagram Service (502 preparado para correção)
+
+- Diagnóstico do 502 "Servico Instagram Indisponivel" em produção: o `instagram-service` nunca foi deployado (proxy do api → `http://instagram-service:3200` inalcançável no compose de produção).
+- Preparado o full deploy no repo (sem commit ainda, branch `codex/main-whatsapp-media-hotfix`, que é buildada pelo CI):
+  - Dockerfiles do instagram corrigidos (copiavam do contexto raiz errado);
+  - proxy `/api/instagram` com suporte a WebSocket (`setupInstagramProxy(app, server)`);
+  - CI builda `woomobzy-instagram-service` e `woomobzy-instagram-worker`;
+  - `docker-compose.yml` com `redis`, `instagram-service`, `instagram-worker`, volumes e `INSTAGRAM_SERVICE_URL` no api;
+  - `.env.production.template`/`.env.production` com `INSTAGRAM_INTERNAL_TOKEN`/`INSTAGRAM_ENCRYPTION_SECRET` gerados.
+- Gates locais: `node --check` OK, `docker compose config` OK. Working tree sujo (change set desta sessão, sem commit/push).
+- Próxima ação (maestro, produção): 1) atualizar o stack no Portainer com o novo `docker-compose.yml` e as env vars `INSTAGRAM_INTERNAL_TOKEN`/`INSTAGRAM_ENCRYPTION_SECRET`; 2) push → CI builda/pública as imagens e aciona o webhook de redeploy; 3) validar `GET /api/instagram/conversations` (200) e o WebSocket `/api/instagram/ws`; 4) conectar conta Instagram via QR e testar envio de DM.
+- Atenção: `.env.production` tem segredos reais e é gitignored — não commitar; replicar os dois segredos novos apenas nos ambientes de deploy.
+
 ## 2026-08-01 — WhatsAppDashboard integrado + gates verdes
 
 - Shell `WhatsAppDashboard.tsx` já reescrito (commit `99abe95`) com `ChatSidebar`/`ChatWindow`/`InstanceManager`/`QueuesManagerModal` via `useWhatsAppInbox`.

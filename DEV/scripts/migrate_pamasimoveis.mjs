@@ -17,6 +17,19 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// MinIO client
+import * as Minio from 'minio';
+const minioEndpoint = (process.env.MINIO_ENDPOINT || '').replace(/^https?:\/\//, '');
+const minioBucket = process.env.MINIO_MEDIA_BUCKET || 'imobfluow';
+const minioClient = new Minio.Client({
+    endPoint: minioEndpoint,
+    port: 443,
+    useSSL: true,
+    accessKey: (process.env.MINIO_ACCESS_KEY || '').replace(/['"]/g, ''),
+    secretKey: (process.env.MINIO_SECRET_KEY || '').replace(/['"]/g, ''),
+    pathStyle: true
+});
+
 async function runMigration() {
   try {
     console.log('1. Buscando revenda Delazari Imóveis...');
@@ -117,7 +130,7 @@ async function runMigration() {
         let parsedPrice = propertyData.price ? propertyData.price.replace(/[R\$\.]/g, '').replace(',', '.') : '0';
         parsedPrice = parseFloat(parsedPrice.trim()) || 0;
 
-        // Fazer o upload das imagens para o Storage Nativo do Supabase
+        // Fazer o upload das imagens para o MinIO
         const uploadedImages = [];
         for (let i = 0; i < propertyData.images.length; i++) {
             const imgUrl = propertyData.images[i];
@@ -128,17 +141,12 @@ async function runMigration() {
                     const buffer = Buffer.from(arrayBuffer);
                     const filename = `pamas/${Date.now()}_${i}.jpg`;
                     
-                    const { data: uploadData, error: uploadError } = await supabase
-                        .storage
-                        .from('imobfluow')
-                        .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true });
-                        
-                    if (uploadError) {
-                        console.error('Erro ao fazer upload da imagem no Supabase:', uploadError.message);
-                    } else {
-                        const { data: publicUrlData } = supabase.storage.from('imobfluow').getPublicUrl(filename);
-                        uploadedImages.push(publicUrlData.publicUrl);
-                    }
+                    await minioClient.putObject(minioBucket, filename, buffer, buffer.length, {
+                        'Content-Type': 'image/jpeg'
+                    });
+                    
+                    const publicUrl = `${process.env.MINIO_PUBLIC_URL}/${minioBucket}/${filename}`;
+                    uploadedImages.push(publicUrl);
                 }
             } catch (err) {
                 console.error(`Falha ao baixar/enviar imagem ${imgUrl}:`, err.message);

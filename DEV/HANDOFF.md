@@ -1,5 +1,22 @@
 # Handoff
 
+## 2026-08-01 — WhatsAppDashboard integrado + gates verdes
+
+- Shell `WhatsAppDashboard.tsx` já reescrito (commit `99abe95`) com `ChatSidebar`/`ChatWindow`/`InstanceManager`/`QueuesManagerModal` via `useWhatsAppInbox`.
+- Esta sessão: removido `setSelectedChatSafe` (não existia) → `clearSelectedChat()`; `onBack` do chat usa `clearSelectedChat`; destructure `chats` não usado removido. Lint da shell limpo.
+- Desbloqueados gates que estavam quebrados desde `afc995c` (Mega Investimentos, não relacionado ao WhatsApp): `App.routes.tsx` importava `./views/sites/megainvestimentos/MegaTheme` (inexistente) → corrigido para `./src/views/...`; `HeroSearch.tsx` usava `Home` sem importar → adicionado ao lucide-react.
+- Gates: type-check ✓, eslint ✓ (4 warnings exhaustive-deps pré-existentes no hook), build ✓ (2m22s), test ✓ (123 tests). Working tree limpo exceto DEV docs.
+- Próxima ação: validar runtime — subir Go whatsapp-service (3100), Node backend (3001/3002) e Vite (3006); testar aba Mensagens em `/urban/whatsapp` e `/rural/whatsapp` com instância conectada.
+- Atenção: não tocar em `DEV/scripts/migrate_pamasimoveis.mjs`; não push (branch 2 commits à frente de origin).
+
+## 2026-08-01 — Kanban CRM com edição completa (cards e etapas)
+
+- Causa raiz: `EditLeadModal` enviava `tags` como coluna de `leads` (inexistente) → PATCH rejeitado → modal travava em "Salvando..." e nunca abria.
+- Correções commitadas (`99abe95`): PATCH `/leads/:id` sincroniza `lead_tags`; `EditLeadModal` com try/catch/toast; `LeadDetailsModal` com `onUpdateLead`; `handleRenameStage`/`handleDeleteStage`; `NewStageModal` com renomear inline + excluir. Fix de tipo `as Lead['status']` no delete de etapa.
+- Gates: type-check ✓ (0 erros no Kanban), lint ✓ (0 erros), build ✓. Branch 2 commits à frente de origin.
+- Próxima ação: validar no navegador `/urban` → CRM → kanban: abrir card → editar → salvar; criar/renomear/excluir etapa; conferir persistência de tags.
+- Atenção: working tree tem mudanças de outra sessão (megainvestimentos, `App.routes.tsx`, `HeroSearch.tsx`, scripts, WhatsAppDashboard) — não tocar; não push antes de conferir.
+
 ## 2026-07-30 — Gap LegalContracts fechado (tabela contracts reparada)
 
 - `contracts` em produção reparada: colunas `title`/`type`/`value`/`template_id`/`contract_type` + RLS por `organization_id` (antes RLS ativa sem policies) + trigger + index. Migration `20260730_fix_contracts_legal_tab.sql` aplicada 7/7 via `exec_sql`.

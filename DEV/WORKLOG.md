@@ -1,5 +1,31 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-01] WhatsAppDashboard — integração dos componentes órfãos + desbloqueio do build
+
+- Retomada da integração da aba Mensagens (`WhatsAppDashboard.tsx` como shell fino usando `ChatSidebar` + `ChatWindow` + `InstanceManager` + `QueuesManagerModal` + telas de erro, consumindo `useWhatsAppInbox`).
+- Correções na shell:
+  - `setSelectedChatSafe` (inexistente) → `clearSelectedChat()` (já exposto pelo hook) no `onChange` do seletor de instância.
+  - `onBack` do `ChatWindow` simplificado para `clearSelectedChat` (removido hack de chat falso `{...selectedChat, id: ''}`).
+  - Removido destructure `chats` não usado (só `filteredChats` é consumido) → lint limpo.
+- Desbloqueio de gates (pré-existente de `afc995c`, não relacionado ao WhatsApp):
+  - `App.routes.tsx:137`: import de `MegaTheme` corrigido para `./src/views/sites/megainvestimentos/MegaTheme` (estava `./views/...`, inexistente → quebrava type-check e build).
+  - `src/views/sites/megainvestimentos/HeroSearch.tsx`: adicionado `Home` ao import do `lucide-react` (era `Home` indefinido).
+- Gates: type-check ✓, eslint ✓ (4 warnings preexistentes de exhaustive-deps no hook), build ✓, test ✓ (25 files / 123 tests).
+- Pendente: validação runtime — subir Go whatsapp-service (3100) + Node backend (3001/3002) + Vite (3006) e conferir a aba com dados reais (nenhum serviço rodando localmente).
+
+## [2026-08-01] Kanban CRM (aba "kambam") — edição completa de cards e etapas
+
+- Causa raiz: `EditLeadModal` enviava `tags: string[]` no `PATCH /leads/:id`, mas `leads` não tem coluna `tags` (ficam em `lead_tags`) → Supabase rejeitava o update → modal travava em "Salvando..." e a edição nunca abria (`isEditOpen` nunca `true`); etapas só podiam ser criadas.
+- Correções:
+  - `server/api/crm/leads.routes.js` PATCH `/leads/:id`: separa `tags` e sincroniza `lead_tags` (delete + reinsert); demais campos inalterados.
+  - `views/CRM/KanbanBoard/EditLeadModal.tsx`: `handleSave` com try/catch/finally + toast de erro (não trava); payload manual com `tags`/`budget` parseados.
+  - `views/CRM/KanbanBoard.tsx`: removido `EditLeadModal` órfão; `LeadDetailsModal` agora recebe `onUpdateLead` (atualiza `leads` e `selectedLead`); adicionados `handleRenameStage` e `handleDeleteStage`.
+  - `views/CRM/KanbanBoard/NewStageModal.tsx`: reescrito com lista de etapas custom, renomear inline (Enter/Escape) e excluir com confirmação.
+- Fix de tipo: `handleDeleteStage` re-mapeia leads de etapa excluída com `status: firstStageId as Lead['status']` (resolve TS2345).
+- Gates: type-check ✓ (0 erros no Kanban/leads), eslint ✓ (0 erros, 595 warnings preexistentes). Commit `99abe95 fix(crm,whatsapp): update CRM kanban and whatsapp layout` (branch `codex/main-whatsapp-media-hotfix`, 2 commits à frente de origin).
+- Observação: working tree tem mudanças de outra sessão em `App.routes.tsx`, `src/views/sites/megainvestimentos/HeroSearch.tsx`, `DEV/scripts/migrate_pamasimoveis.mjs` e `views/WhatsApp/WhatsAppDashboard.tsx` — não relacionadas ao Kanban.
+- Pendente: validação manual no navegador do fluxo abrir card → editar → salvar e criar/renomear/excluir etapa.
+
 ## [2026-07-30] Fix do gap LegalContracts (tabela contracts: colunas + RLS + UI)
 
 - Probe pós-migração em produção: `contracts` tinha RLS ativa **sem nenhuma policy**; `legal_contracts` já existia (migration `20260731_ui_redesign_schema_additions.sql` parcialmente aplicada). Counts: contracts 0, legal_contracts 0, properties 4, leads 2.

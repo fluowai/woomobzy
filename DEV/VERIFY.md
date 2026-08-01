@@ -1,5 +1,13 @@
 # Verificação
 
+## 2026-08-01 — WhatsApp não gerava QR no frontend (fix BUG 1 frontend + BUG 2 backend)
+
+- BUG 1 (`views/WhatsApp/QRCodeModal.tsx`): o polling só consultava `getQRCode` em `qr_pending`; em `connecting`/`disconnected` o fluxo entrava em loading e nunca chamava `getQRCode` → QR perdido e spinner infinito (~40s). Corrigido: `fetchQR` sempre chama `getQRCode`; `emptyQRAttemptsRef` conta 3 tentativas sem QR e sem conexão ativa → tela de erro/retry ("QR Code não disponível..."); em `connected` limpa o QR e fecha o modal em 1.8s.
+- BUG 2 (`whatsapp-service/internal/whatsapp/manager.go`): falhas em `initializeSessionStore`/`deviceForInstance`/`client.Connect()` não resetavam o status nem notificavam o front. Corrigido: helper `failConnect` (status `disconnected` + broadcast `instance_status` com erro) em todas as falhas antes da conexão; goroutine de `client.Connect()` que falha também emite broadcast "Não foi possível conectar ao WhatsApp...".
+- Frontend: `npm run type-check` passou; `npx eslint views/WhatsApp/QRCodeModal.tsx` 0 erros (1 warning pré-existente de exhaustive-deps na L92); `npm run lint` 0 erros (~594 warnings pré-existentes); `npm run build` passou (built in 1m 7s).
+- Backend: `go build ./...` passou; `go vet ./...` passou; `go test ./...` passou (config, handlers, whatsapp, phone) — executados via cópia ASCII em temp (o path com acento da área de trabalho corrompe o `go` nativo no Windows); artefatos temporários removidos.
+- Não executado: validação runtime (subir Go whatsapp-service 3100 + Node 3001/3002 + Vite 3006 e testar QR de instância em `/urban/whatsapp` e `/rural/whatsapp`); alinhamento do `whatsapp-service/.env` local (Supabase `lkzcsaydpcnypdevoikr` vs produção `epgaftsjmqmpczvzsrcc`); push.
+
 ## 2026-08-01 — Instagram Service: preparação do deploy de produção
 
 - `node --check server/api/instagram/index.js` e `server/index.js`: passou.

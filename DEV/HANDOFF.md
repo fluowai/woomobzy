@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-08-01 — WhatsApp QR nunca aparecia no frontend (fix frontend + backend)
+
+- Sintoma: instância criada ficava em spinner sem QR (~40s) e sem erro, tanto em `connecting` quanto em `disconnected`.
+- Corrigido em `views/WhatsApp/QRCodeModal.tsx` (BUG 1): o polling agora sempre consulta `getQRCode` (antes só em `qr_pending` — em `connecting`/`disconnected` o botão ficava preso em loading); 3 tentativas sem QR + sem conexão ativa → erro/retry ("QR Code não disponível..."); em `connected` fecha o modal em 1.8s.
+- Corrigido em `whatsapp-service/internal/whatsapp/manager.go` (BUG 2): qualquer falha antes de `client.Connect()` (sqlstore/egress, device) chama `failConnect` → status `disconnected` + broadcast `instance_status` com a mensagem de erro; falha da goroutine de `client.Connect()` também emite broadcast.
+- Gates: frontend type-check/lint/build ✓; backend `go build`/`go vet`/`go test` ✓ (validado em cópia ASCII em temp por causa do acento no path do Windows — `go` nativo corrompe o módulo path).
+- Próxima ação (maestro): alinhar `whatsapp-service/.env` local com produção (Supabase `epgaftsjmqmpczvzsrcc`, MinIO `nb.consultio.com.br`); subir Go whatsapp-service (3100) + Node backend (3001/3002) + Vite (3006) e criar uma instância para validar o QR (~3s); conferir `/urban/whatsapp` e `/rural/whatsapp`. Depois, push/CI/Portainer como no precedente do Instagram.
+- Atenção: não tocar em mudanças de outra sessão (`App.routes.tsx`, `HeroSearch.tsx`, `DEV/scripts/migrate_pamasimoveis.mjs`, WhatsAppDashboard); não push (branch `codex/main-whatsapp-media-hotfix` 2 commits à frente de origin).
+
 ## 2026-08-01 — Plano de deploy do Instagram Service (502 preparado para correção)
 
 - Diagnóstico do 502 "Servico Instagram Indisponivel" em produção: o `instagram-service` nunca foi deployado (proxy do api → `http://instagram-service:3200` inalcançável no compose de produção).

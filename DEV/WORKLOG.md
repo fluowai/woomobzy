@@ -1,5 +1,15 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-01] WhatsApp não gerava QR no frontend — fix BUG 1 (frontend) + BUG 2 (backend)
+
+- Sintoma: ao criar uma instância, o QR nunca aparecia (~40s) e o modal ficava em spinner infinito, sem erro. Sem logs de produção do `whatsapp-service`, as correções atacaram os dois lados (egress do proxy Node vs sqlstore no pooler).
+- Causa raiz BUG 1 (`views/WhatsApp/QRCodeModal.tsx`): o polling só chamava `getQRCode` quando o status era `qr_pending`; em `connecting`/`disconnected` o fluxo ficava em loading e nunca consultava o backend — o `qr_code` emitido não era buscado → QR perdido / botão preso. Timeouts secundários: proxy Node ~5000ms e auto-connect 30s.
+- Correção BUG 1: `fetchQR` agora sempre chama `getQRCode`; `emptyQRAttemptsRef` conta 3 tentativas sem QR e sem conexão ativa → tela de erro/retry; em `connected` limpa o QR e fecha o modal em 1.8s.
+- Causa raiz BUG 2 (`whatsapp-service/internal/whatsapp/manager.go`): `connectInstance` não tratava falhas de `initializeSessionStore`/`deviceForInstance`/`client.Connect()` — status preso e nenhum broadcast, então o front não tinha como sair do estado.
+- Correção BUG 2: novo helper `failConnect` (status `disconnected` + broadcast `instance_status` com mensagem de erro) aplicado a todas as falhas antes da conexão; goroutine de `client.Connect()` que falha também emite broadcast.
+- Gates: frontend type-check ✓, eslint 0 erros ✓ (1 warning exhaustive-deps pré-existente), build ✓; backend `go build`/`go vet`/`go test` ✓ (via cópia ASCII em temp — path com acento corrompe o `go` nativo no Windows; artefatos temporários removidos).
+- Pendente: validação runtime local/produção do QR (~3s esperado), alinhar `whatsapp-service/.env` local (Supabase/MinIO de produção) e push/CI/Portainer.
+
 ## [2026-08-01] Instagram Service — plano de deploy em produção (fix do 502)
 
 - Incidente: `GET /api/instagram/conversations` → 502 "Servico Instagram Indisponivel" em produção (`https://imob.wootech.com.br`).

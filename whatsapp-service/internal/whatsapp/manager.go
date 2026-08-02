@@ -426,6 +426,29 @@ func (m *Manager) GetPairingError(instanceID uuid.UUID) string {
 	return m.pairingErrors[instanceID]
 }
 
+// PairingErrorRecoverable reports whether the current pairing error can be
+// resolved automatically (e.g. an expired QR code) instead of requiring the
+// user to retry manually.
+func (m *Manager) PairingErrorRecoverable(instanceID uuid.UUID) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if client := m.clients[instanceID]; client != nil {
+		return client.PairingErrorRecoverable()
+	}
+	return false
+}
+
+// ClearPairingError clears a pending pairing error so the QR flow can restart
+// automatically on the next poll.
+func (m *Manager) ClearPairingError(instanceID uuid.UUID) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.pairingErrors, instanceID)
+	if client := m.clients[instanceID]; client != nil {
+		client.ClearPairingError()
+	}
+}
+
 // RequestPairCode generates the code shown in WhatsApp's "link with phone
 // number" flow. It intentionally reuses the QR pre-login connection required
 // by whatsmeow instead of creating a separate login path.

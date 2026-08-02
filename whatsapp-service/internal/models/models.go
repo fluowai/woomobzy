@@ -244,6 +244,10 @@ type InstanceStatusEvent struct {
 	Status     InstanceStatus `json:"status"`
 	Phone      string         `json:"phone,omitempty"`
 	Error      string         `json:"error,omitempty"`
+	// Recoverable marks errors that can be resolved automatically (e.g. a QR
+	// code that expired). Clients use it to keep waiting for a fresh QR
+	// instead of freezing on a terminal error screen.
+	Recoverable bool `json:"recoverable,omitempty"`
 }
 
 // HistoryImportedEvent is emitted after a WhatsApp history sync chunk is stored.

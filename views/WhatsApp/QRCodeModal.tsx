@@ -86,10 +86,21 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
       if (data.instance_id === instance.id) {
         setStatus(data.status);
         if (data.error) {
-          terminalErrorRef.current = true;
-          setPairingError(data.error);
-          setQrCode('');
-          setLoading(false);
+          if (data.recoverable) {
+            // Erro recuperável (ex.: QR expirou): o backend reinicia o fluxo
+            // sozinho. Não congela o polling — aguarda o novo QR aparecer.
+            terminalErrorRef.current = false;
+            setPairingError('');
+            setQrCode('');
+            setLoading(true);
+            qrWaitStartedAtRef.current = Date.now();
+            qrWaitTimedOutRef.current = false;
+          } else {
+            terminalErrorRef.current = true;
+            setPairingError(data.error);
+            setQrCode('');
+            setLoading(false);
+          }
         }
         if (data.status === 'connected') {
           // Auto-close after successful connection

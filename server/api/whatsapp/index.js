@@ -227,7 +227,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         ok: true,
         uptime: process.uptime(),
       },
-      whatsmeow: { ok: service.ok, status: service.status },
+      whatsmeow: {
+        ok: service.ok,
+        status: service.status,
+        version: service.details?.whatsmeow_version,
+      },
     });
   });
 
@@ -241,7 +245,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       const service = await checkWhatsAppService(target);
       res.status(service.ok ? 200 : 503).json({
         ok: service.ok,
-        service: { ok: service.ok, status: service.status },
+        service: {
+          ok: service.ok,
+          status: service.status,
+          version: service.details?.whatsmeow_version,
+        },
         hint: service.ok
           ? 'WhatsMeow esta respondendo.'
           : 'O servico WhatsApp esta temporariamente indisponivel.',
@@ -612,11 +620,13 @@ async function checkWhatsAppService(target) {
     const response = await fetch(healthUrl, {
       signal: AbortSignal.timeout(2500),
     });
+    const details = await response.json().catch(() => null);
 
     return {
       ok: response.ok,
       status: response.status,
       url: healthUrl,
+      details,
     };
   } catch (err) {
     return {

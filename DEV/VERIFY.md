@@ -1,5 +1,15 @@
 # Verificação
 
+## 2026-08-02 — Diagnóstico e atualização do protocolo WhatsApp
+
+- Produção: `https://imob.wootech.com.br/assets/QRCodeModal-CzCKB0xN.js` contém o timeout e o retry atuais; frontend confirmado atualizado.
+- Banco: instância observada ficou `disconnected`, `has_qr=false` e `qr_length=0`; nenhum QR foi persistido para o frontend.
+- GitHub Actions: build das imagens do commit `7129a6f` passou; `deploy-portainer` ficou `skipped` por restrição da workflow à branch `main`.
+- Comparação oficial do WhatsMeow: versão alvo está 19 commits à frente, com atualizações de protocolo e pareamento.
+- Após upgrade: `go test ./...`, `go vet ./...` e `go build ./cmd/server` passaram em cópia ASCII do módulo.
+- O proxy público de saúde passa a refletir apenas a versão não sensível retornada pelo serviço Go.
+- Smoke externo de QR não executado: o driver SQLite local exige CGO; a verificação real permanece dependente do container Linux e do acesso dele ao WhatsApp.
+
 ## 2026-08-01 — WhatsApp: watchdog para QR sem evento
 
 - Causa confirmada: `QRCodeModal.fetchQR` mantinha loading sem limite para `connecting` e `qr_pending`; se o WhatsMeow não emitisse código nem erro terminal, não havia transição de saída.

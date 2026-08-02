@@ -1,5 +1,13 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-02] QR WhatsApp — causa isolada no backend/protocolo
+
+- As capturas mostraram `/instances/:id` em `connecting` e `/qrcode` retornando apenas `pending`; não havia `qr_code` para o React desenhar.
+- Confirmado que o frontend publicado já possui o timeout/retry do commit atual; descartada a hipótese de bundle antigo no navegador.
+- Atualizado `go.mau.fi/whatsmeow` para `v0.0.0-20260730092514-662ad1dc6900`, com lockfile reorganizado por `go mod tidy`.
+- Adicionada identificação `whatsmeow_version` ao `/health`, com testes unitários do resolvedor de versão de build e propagação pelo proxy Node.
+- Mudanças locais preexistentes do inbox foram preservadas e não foram editadas.
+
 ## [2026-08-01] WhatsApp — QR Code sem evento do WhatsMeow não fica mais em loop
 
 - Sintoma reproduzido por inspeção do fluxo: com a instância em `connecting`/`qr_pending` e sem evento `qr_code`, o modal ignorava o limite de tentativas e mantinha “Gerando QR Code...” indefinidamente.

@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-08-02 — QR do WhatsApp não chegava ao frontend
+
+- Evidência de produção: o bundle do frontend já contém o timeout de 30 segundos, mas a instância `b0e96d10-...` terminou `disconnected` sem `qr_code`; portanto, o frontend não recebeu conteúdo para renderizar.
+- O CI publicou frontend e `whatsapp-service` para `7129a6f`, porém o job `deploy-portainer` foi ignorado porque a branch não era `main`; um update manual da stack precisa forçar o pull da imagem `latest`.
+- Correção preparada: WhatsMeow atualizado de `20260630-b572e5b` para `20260730-662ad1d`, incluindo as atualizações oficiais recentes de protocolo e pareamento.
+- `/health` do `whatsapp-service` agora expõe `whatsmeow_version`, e o proxy Node repassa a versão em `/api/whatsapp/health`; isso permite confirmar o binário realmente implantado sem revelar credenciais.
+- Pendente: revisão e autorização do maestro para commit/push; depois, redeploy forçando pull de `ghcr.io/fluowai/woomobzy-whatsapp:latest` e validação do QR real.
+
 ## 2026-08-01 — WhatsApp QR sem loop infinito (frontend + WhatsMeow)
 
 - Causa: o modal tratava `connecting`/`qr_pending` como espera ilimitada; uma conexão Go sem evento do canal QR deixava o usuário preso no spinner.

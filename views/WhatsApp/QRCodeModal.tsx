@@ -25,6 +25,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const [status, setStatus] = useState<Instance['status']>(instance.status);
   const [loading, setLoading] = useState(!instance.qr_code);
   const [pairingError, setPairingError] = useState('');
+  const [notFound, setNotFound] = useState(false);
   const [pairingMode, setPairingMode] = useState<'qr' | 'code'>('qr');
   const [pairingPhone, setPairingPhone] = useState(instance.phone || '');
   const [pairingCode, setPairingCode] = useState('');
@@ -143,7 +144,12 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         }
       }
     } catch (error: any) {
-      if (error?.status && error.status !== 404) {
+      if (error?.status === 404) {
+        setNotFound(true);
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        return;
+      }
+      if (error?.status) {
         setPairingError(error.message || 'Não foi possível gerar o QR Code.');
         setLoading(false);
       }
@@ -246,7 +252,17 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
             </div>
 
             <div className="wa-qr-container">
-              {pairingMode === 'code' ? (
+              {notFound ? (
+                <div className="wa-qr-error">
+                  <p>
+                    Instância não encontrada. Ela pode ter sido removida ou o
+                    acesso expirou.
+                  </p>
+                  <button onClick={onClose} className="wa-qr-retry">
+                    <X size={14} /> Fechar
+                  </button>
+                </div>
+              ) : pairingMode === 'code' ? (
                 <div className="wa-pair-code-box">
                   <label className="wa-pair-phone">
                     <Phone size={16} />

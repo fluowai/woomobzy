@@ -1,5 +1,13 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-01] WhatsApp — 404 no QR Code para instância inexistente (fix no modal)
+
+- Sintoma: `GET /api/whatsapp/instances/:id/qrcode` retornava 404 no console do navegador e o modal ficava em "Gerando QR Code..." sem fim.
+- Causa raiz: a instância `d8a5611e-c472-4cc1-bd80-2574fffdfdc8` não existe no banco de produção (nem no dev); `QRCodeModal` engolia o 404 silenciosamente (`error.status !== 404` em `fetchQR`) e seguia polando a cada 3s.
+- Verificação: `/api/whatsapp/health` em produção OK (`whatsmeow.ok:true`); proxy Node e rota Go `/instances/:id/qrcode` íntegros; instância ausente confirmada via pg direto em produção e dev.
+- Correção: `views/WhatsApp/QRCodeModal.tsx` — `error.status === 404` agora para o polling (`clearInterval`) e renderiza "Instância não encontrada... Fechar" em vez de spinner infinito.
+- Gates: type-check ✓, eslint 0 erros ✓ (594 warnings pré-existentes).
+
 ## [2026-08-01] WhatsApp + estabilização e higiene dos testes E2E
 
 - Ajustado o retry do QR do WhatsApp para registrar falhas pelo logger central e removidos resíduos do provider WAHA.

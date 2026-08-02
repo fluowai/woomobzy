@@ -1,5 +1,13 @@
 # Verificação
 
+## 2026-08-01 — WhatsApp: 404 de QR para instância inexistente (fix frontend)
+
+- Confirmado por pg direto (prod `epgaftsjmqmpczvzsrcc` e dev `lkzcsaydpcnypdevoikr`): a instância `d8a5611e-c472-4cc1-bd80-2574fffdfdc8` não existe em `whatsapp_instances` nem em qualquer tabela whatsapp; produção tem 3 instâncias presas em `connecting`.
+- Health: `curl https://imob.wootech.com.br/api/whatsapp/health` → 200 `{"ok":true,"node":{"ok":true,"uptime":...},"whatsmeow":{"ok":true,"status":200}}`. Proxy Node e rota Go `/instances/:id/qrcode` íntegros — o 404 é do handler Go ao não achar a instância.
+- Fix: `views/WhatsApp/QRCodeModal.tsx` — em `fetchQR`, `error.status === 404` → `setNotFound(true)` + `clearInterval` (para o polling) e renderiza "Instância não encontrada" com botão Fechar. Antes o 404 era ignorado e o modal polava para sempre em spinner.
+- `npm run type-check`: passou. `npm run lint`: 0 erros (594 warnings pré-existentes).
+- Não executado: redeploy/CI (correção só vale em produção após push+Portainer); validação do fluxo real de pareamento.
+
 ## 2026-08-01 — WhatsApp + testes E2E estabilizados
 
 - `npm run type-check`: passou.

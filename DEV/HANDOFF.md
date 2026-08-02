@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-08-01 — WhatsApp: fix do 404 de QR para instância removida (frontend)
+
+- Diagnóstico: `GET /api/whatsapp/instances/d8a5611e-c472-4cc1-bd80-2574fffdfdc8/qrcode` → 404 no console. A instância não existe no banco (pg direto: ausente em `whatsapp_instances` em prod e dev). Proxy Node e rota Go íntegros; `/api/whatsapp/health` OK. O `QRCodeModal` engolia o 404 e polava para sempre.
+- Correção: `views/WhatsApp/QRCodeModal.tsx` — 404 agora para o polling e mostra erro "Instância não encontrada. Ela pode ter sido removida ou o acesso expirou." + botão Fechar.
+- Gates: type-check ✓, eslint ✓ (0 erros, 594 warnings pré-existentes).
+- Próxima ação (maestro): commit + push → CI/Portainer para a correção valer em produção; ao reproduzir, confirmar que o modal para de logar 404 e mostra a mensagem.
+- Atenção: não tocar em mudanças de outras sessões; não push sem conferir.
+
 ## 2026-08-01 — WhatsApp + estabilização dos testes E2E enviados
 
 - A correção local do WhatsApp remove o provider WAHA do frontend e força `connect` antes de tentar obter novamente o QR Code; falhas de reconexão agora usam o logger central.

@@ -59,6 +59,8 @@ type Manager struct {
 	sessionStore      *sqlstore.Container
 }
 
+const qrStartupTimeout = 30 * time.Second
+
 // NewManager creates a new WhatsApp instance manager
 func NewManager(
 	instanceRepo *repository.InstanceRepo,
@@ -302,8 +304,55 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 			})
 		}
 	}()
+	go m.watchQRStartup(instanceID, client, inst.TenantID)
 
 	return nil
+}
+
+// watchQRStartup prevents a pre-login session from remaining in qr_pending
+// forever when WhatsMeow opens the connection but emits neither a QR code nor
+// a terminal QR-channel event.
+func (m *Manager) watchQRStartup(instanceID uuid.UUID, client *Client, tenantID *uuid.UUID) {
+	timer := time.NewTimer(qrStartupTimeout)
+	defer timer.Stop()
+
+	select {
+	case <-client.ctx.Done():
+		return
+	case <-timer.C:
+	}
+
+	m.mu.RLock()
+	currentClient := m.clients[instanceID]
+	m.mu.RUnlock()
+	if !shouldAbortQRStartup(currentClient, client) {
+		return
+	}
+
+	client.Disconnect()
+	message := "O WhatsMeow não gerou o QR Code dentro do tempo esperado. Tente novamente."
+	m.logger.Warn("WhatsApp QR startup timed out",
+		zap.String("id", instanceID.String()),
+		zap.Duration("timeout", qrStartupTimeout),
+	)
+	if err := m.instanceRepo.UpdateStatus(m.ctx, instanceID, models.StatusDisconnected); err != nil {
+		m.logger.Error("Failed to reset status after QR startup timeout",
+			zap.String("id", instanceID.String()),
+			zap.Error(err),
+		)
+	}
+	m.hub.BroadcastEventToTenant(uuidToString(tenantID), "instance_status", models.InstanceStatusEvent{
+		InstanceID: instanceID,
+		Status:     models.StatusDisconnected,
+		Error:      message,
+	})
+}
+
+func shouldAbortQRStartup(currentClient, watchedClient *Client) bool {
+	return currentClient == watchedClient &&
+		watchedClient != nil &&
+		!watchedClient.IsConnected() &&
+		watchedClient.CurrentQRCode() == ""
 }
 
 // failConnect resets an instance to disconnected and notifies the frontend when

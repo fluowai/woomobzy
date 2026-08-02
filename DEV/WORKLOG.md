@@ -1,5 +1,14 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-01] WhatsApp — QR Code sem evento do WhatsMeow não fica mais em loop
+
+- Sintoma reproduzido por inspeção do fluxo: com a instância em `connecting`/`qr_pending` e sem evento `qr_code`, o modal ignorava o limite de tentativas e mantinha “Gerando QR Code...” indefinidamente.
+- Frontend: limite absoluto de 30 segundos no `QRCodeModal`; ao expirar, interrompe o estado de carregamento, mostra uma mensagem acionável e permite uma nova tentativa com relógio reiniciado. Um QR já recebido não é invalidado pelo limite.
+- Backend: watchdog de 30 segundos no `whatsapp-service`; se o cliente atual continuar desconectado e sem QR, encerra a sessão presa, volta a instância para `disconnected` e publica `instance_status` com erro. O watchdog confirma a identidade do cliente para não derrubar uma reconexão mais nova.
+- Regressão: 2 testes Vitest para o limite do modal e teste Go para sessão presa, QR gerado, cliente conectado e cliente substituído.
+- Gates: type-check, lint (0 erros; 594 avisos preexistentes), 125 testes frontend, build Vite, suíte Go e build do servidor passaram.
+- Pendente: deploy e pareamento real em produção; `/api/whatsapp/health` respondeu 200 durante o diagnóstico.
+
 ## [2026-08-01] WhatsApp — 404 no QR Code para instância inexistente (fix no modal)
 
 - Sintoma: `GET /api/whatsapp/instances/:id/qrcode` retornava 404 no console do navegador e o modal ficava em "Gerando QR Code..." sem fim.

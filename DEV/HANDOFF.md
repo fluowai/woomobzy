@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-08-01 — WhatsApp QR sem loop infinito (frontend + WhatsMeow)
+
+- Causa: o modal tratava `connecting`/`qr_pending` como espera ilimitada; uma conexão Go sem evento do canal QR deixava o usuário preso no spinner.
+- Mudanças: timeout de 30s e retry no `views/WhatsApp/QRCodeModal.tsx`; watchdog equivalente em `whatsapp-service/internal/whatsapp/manager.go`, com reset para `disconnected` e evento de erro. Há proteção para QR válido e para clientes substituídos por uma reconexão.
+- Testes novos: `tests/whatsapp-qr-timeout.test.ts` e `whatsapp-service/internal/whatsapp/manager_qr_test.go`.
+- Gates verdes: type-check, lint sem erros, 125 testes frontend, build Vite, testes Go e build do servidor.
+- Próxima ação (maestro): revisar, fazer commit/push e redeploy do frontend + `whatsapp-service`; depois abrir a instância, confirmar QR em poucos segundos e verificar que uma falha deixa o spinner em até 30s com botão de nova tentativa.
+- Nenhum commit, push ou deploy foi executado.
+
 ## 2026-08-01 — WhatsApp: fix do 404 de QR para instância removida (frontend)
 
 - Diagnóstico: `GET /api/whatsapp/instances/d8a5611e-c472-4cc1-bd80-2574fffdfdc8/qrcode` → 404 no console. A instância não existe no banco (pg direto: ausente em `whatsapp_instances` em prod e dev). Proxy Node e rota Go íntegros; `/api/whatsapp/health` OK. O `QRCodeModal` engolia o 404 e polava para sempre.

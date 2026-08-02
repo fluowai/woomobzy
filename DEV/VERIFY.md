@@ -1,5 +1,16 @@
 # Verificação
 
+## 2026-08-01 — WhatsApp: watchdog para QR sem evento
+
+- Causa confirmada: `QRCodeModal.fetchQR` mantinha loading sem limite para `connecting` e `qr_pending`; se o WhatsMeow não emitisse código nem erro terminal, não havia transição de saída.
+- `npm run type-check`: passou.
+- `npm run lint`: passou com 0 erros e 594 avisos preexistentes.
+- `npm run test -- --run`: 26 arquivos e 125 testes passaram; inclui 2 testes novos do timeout de QR.
+- `npm run build`: passou; 4.076 módulos transformados e PWA com 264 entradas.
+- `scripts/test-whatsapp-go.ps1`: `go test ./...` e `go build ./cmd/server` passaram; inclui teste novo do watchdog do QR.
+- `git diff --check`: passou antes da atualização documental.
+- Runtime: `GET https://imob.wootech.com.br/api/whatsapp/health` retornou HTTP 200 com Node e WhatsMeow saudáveis. O pareamento real requer deploy desta alteração e leitura pelo celular, portanto permanece pendente.
+
 ## 2026-08-01 — WhatsApp: 404 de QR para instância inexistente (fix frontend)
 
 - Confirmado por pg direto (prod `epgaftsjmqmpczvzsrcc` e dev `lkzcsaydpcnypdevoikr`): a instância `d8a5611e-c472-4cc1-bd80-2574fffdfdc8` não existe em `whatsapp_instances` nem em qualquer tabela whatsapp; produção tem 3 instâncias presas em `connecting`.

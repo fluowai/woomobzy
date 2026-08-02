@@ -20,6 +20,15 @@ interface QRCodeModalProps {
   onClose: () => void;
 }
 
+export const QR_CODE_WAIT_TIMEOUT_MS = 30_000;
+
+export function didQRCodeWaitTimeout(
+  startedAt: number,
+  now = Date.now()
+): boolean {
+  return now - startedAt >= QR_CODE_WAIT_TIMEOUT_MS;
+}
+
 const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const [qrCode, setQrCode] = useState<string>(instance.qr_code || '');
   const [status, setStatus] = useState<Instance['status']>(instance.status);
@@ -37,6 +46,8 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const qrCodeRef = useRef(qrCode);
   const lastQRFetchRef = useRef(0);
   const emptyQRAttemptsRef = useRef(0);
+  const qrWaitStartedAtRef = useRef(Date.now());
+  const qrWaitTimedOutRef = useRef(false);
 
   useEffect(() => {
     qrCodeRef.current = qrCode;
@@ -46,6 +57,9 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
     // Listen for QR code updates
     const unsubQR = on('qr_code', (data: any) => {
       if (data.instance_id === instance.id) {
+        qrWaitStartedAtRef.current = Date.now();
+        qrWaitTimedOutRef.current = false;
+        qrCodeRef.current = data.qr_code;
         setQrCode(data.qr_code);
         setLoading(false);
         setStatus('qr_pending');
@@ -94,6 +108,19 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   }, [instance.id, on]);
 
   const fetchQR = async () => {
+    if (
+      !qrCodeRef.current &&
+      (qrWaitTimedOutRef.current ||
+        didQRCodeWaitTimeout(qrWaitStartedAtRef.current))
+    ) {
+      qrWaitTimedOutRef.current = true;
+      setLoading(false);
+      setPairingError(
+        'O WhatsMeow não gerou o QR Code em 30 segundos. Tente gerar um novo código.'
+      );
+      return;
+    }
+
     try {
       const freshInstance = await instanceApi.get(instance.id);
       setStatus(freshInstance.status);
@@ -108,6 +135,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
       }
 
       if (freshInstance.qr_code && !qrCodeRef.current) {
+        qrCodeRef.current = freshInstance.qr_code;
         setQrCode(freshInstance.qr_code);
         setLoading(false);
         setPairingError('');
@@ -120,11 +148,16 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         lastQRFetchRef.current = Date.now();
         const data = await instanceApi.getQRCode(instance.id);
         if (data.qr_code) {
+          qrWaitStartedAtRef.current = Date.now();
+          qrWaitTimedOutRef.current = false;
+          qrCodeRef.current = data.qr_code;
           setQrCode(data.qr_code);
           setLoading(false);
           setPairingError('');
           setExpiresAt(data.expires_at || '');
           emptyQRAttemptsRef.current = 0;
+        } else if (qrWaitTimedOutRef.current) {
+          return;
         } else if (
           freshInstance.status === 'connecting' ||
           freshInstance.status === 'qr_pending'
@@ -302,6 +335,9 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                   <p>{pairingError}</p>
                   <button
                     onClick={async () => {
+                      qrWaitStartedAtRef.current = Date.now();
+                      qrWaitTimedOutRef.current = false;
+                      emptyQRAttemptsRef.current = 0;
                       setPairingError('');
                       setLoading(true);
                       setQrCode('');
@@ -337,18 +373,24 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
               ) : (
                 <div className="wa-qr-error">
                   <p>QR Code não disponível</p>
-                  <button onClick={async () => {
-                    setLoading(true);
-                    try {
-                      await instanceApi.connect(instance.id);
-                    } catch (error) {
-                      logger.error(
-                        'Falha ao reconectar instância do WhatsApp',
-                        error
-                      );
-                    }
-                    fetchQR();
-                  }} className="wa-qr-retry">
+                  <button
+                    onClick={async () => {
+                      qrWaitStartedAtRef.current = Date.now();
+                      qrWaitTimedOutRef.current = false;
+                      emptyQRAttemptsRef.current = 0;
+                      setLoading(true);
+                      try {
+                        await instanceApi.connect(instance.id);
+                      } catch (error) {
+                        logger.error(
+                          'Falha ao reconectar instância do WhatsApp',
+                          error
+                        );
+                      }
+                      fetchQR();
+                    }}
+                    className="wa-qr-retry"
+                  >
                     <RefreshCw size={14} /> Tentar novamente
                   </button>
                 </div>
